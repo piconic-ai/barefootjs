@@ -1,21 +1,21 @@
-// Minimal `TemplateAdapter` used by `@barefootjs/client/build`'s
-// `createConfig` for CSR projects.
+// Minimal `TemplateAdapter` passed as `adapter` to `@barefootjs/vite`'s
+// `barefoot()` plugin for CSR projects (see `@barefootjs/client/csr-adapter`).
 //
-// CSR builds emit client JS only — the marked-template output the
-// `TemplateAdapter` contract requires is discarded by the build
-// pipeline when `clientOnly: true` (see `cli/src/lib/build.ts`, the
-// `!config.clientOnly && markedTemplates.length > 0` gate). All this
-// adapter has to do is satisfy the interface so the compiler's
-// pass-2 loop can call `adapter.generate()` without crashing.
+// CSR builds emit client JS only — a CSR project's `vite.config.ts` leaves
+// `templates` unset (see `BarefootViteOptions`), and the plugin's own
+// `assertNoRealTemplateOutput` (`packages/vite/src/plugin.ts`) refuses
+// loudly if any adapter emits real, non-empty template output without a
+// `templates` dir configured to hold it. All this adapter has to do is
+// satisfy the `TemplateAdapter` interface so the compiler's pass-2 loop can
+// call `adapter.generate()` without crashing.
 //
-// Historically `createConfig` reused `HonoAdapter` from
-// `@barefootjs/hono/adapter` here as a "broad-acceptance JS template
-// runtime". That pulled the entire Hono package into a CSR app's
-// `node_modules` for an adapter whose every output was thrown away
-// — confusing for users who picked CSR specifically to avoid an SSR
-// framework dependency. Replacing it with this in-package adapter
-// deletes the transitive Hono dep and keeps the analyzer-side
-// behaviour identical (`acceptsTemplateCall: () => true`).
+// This adapter deliberately does not reuse `HonoAdapter` from
+// `@barefootjs/hono/adapter` as a "broad-acceptance JS template runtime" —
+// that would pull the entire Hono package into a CSR app's `node_modules`
+// for an adapter whose every output is thrown away, confusing for users
+// who picked CSR specifically to avoid an SSR framework dependency. This
+// in-package adapter carries no such transitive dependency, and keeps the
+// analyzer-side behaviour identical (`acceptsTemplateCall: () => true`).
 //
 // What we still need from a "template adapter" in CSR mode:
 //
@@ -53,7 +53,8 @@ import { BaseAdapter } from '@barefootjs/jsx'
 export interface CSRAdapterOptions {
   /**
    * Display name surfaced through `TemplateAdapter.name` — read by
-   * `bf build` for its `Adapter: …` banner. Defaults to `'csr'`.
+   * `@barefootjs/vite`'s `assertNoRealTemplateOutput` when naming the
+   * offending adapter in its error message. Defaults to `'csr'`.
    */
   name?: string
 }

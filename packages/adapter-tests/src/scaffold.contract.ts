@@ -10,7 +10,7 @@
 //   0. The command exits successfully.
 //   1. The target directory is confirmed in stdout.
 //   2. The adapter's runtime package lands in package.json dependencies.
-//   3. barefoot.config.ts is written.
+//   3. vite.config.ts is written.
 //   4. dev and build scripts are present in package.json.
 //   5. The post-scaffold "Get started" guide is printed.
 //   6. The dev-reload contract is satisfied (see dev-reload.contract.ts).
@@ -72,8 +72,8 @@ export function assertScaffoldContract(facts: ScaffoldFacts): void {
   // Step 2: adapter runtime package present in dependencies
   expect(pkg.dependencies?.[facts.adapterPackageName]).toBeTruthy()
 
-  // Step 3: barefoot.config.ts written
-  expect(existsSync(path.join(facts.projectDir, 'barefoot.config.ts'))).toBe(true)
+  // Step 3: vite.config.ts written
+  expect(existsSync(path.join(facts.projectDir, 'vite.config.ts'))).toBe(true)
 
   // Step 4: dev and build scripts present
   expect(pkg.scripts?.dev).toBeString()

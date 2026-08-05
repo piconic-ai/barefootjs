@@ -181,3 +181,88 @@ func TestNewReloadHandler_DetectsBuildIDChange(t *testing.T) {
 		t.Errorf("expected new build-id in data, got: %q", body)
 	}
 }
+
+// GuardAssets: the whole point is that it does NOTHING in dev (dev-origin
+// URLs are the correct, expected value there) regardless of what's in the
+// map.
+func TestGuardAssets_NoopInDev(t *testing.T) {
+	t.Setenv("APP_ENV", "development")
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("GuardAssets panicked in dev mode: %v", r)
+		}
+	}()
+	GuardAssets(map[string]string{"RouterEntry": "http://localhost:5173/static/client/router-entry.ts"})
+}
+
+// GuardAssets: a production run (APP_ENV unset/not "development") with an
+// asset map that resolves to something other than a dev origin (the
+// expected, correctly-tagged case) must not panic.
+func TestGuardAssets_NoopInProductionWithHashedURLs(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("GuardAssets panicked on a legitimate production asset map: %v", r)
+		}
+	}()
+	GuardAssets(map[string]string{"RouterEntry": "/integrations/echo/static/assets/router-entry-DDIPLN_z.js"})
+}
+
+// GuardAssets: an empty map is always a no-op, dev or production — nothing
+// to compare against a dev-origin prefix.
+func TestGuardAssets_NoopWithEmptyMap(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("GuardAssets panicked on an empty map: %v", r)
+		}
+	}()
+	GuardAssets(map[string]string{})
+}
+
+// GuardAssets: the exact mistake this guard exists for — a production run
+// (no APP_ENV=development) whose Assets map still holds a Vite dev-server
+// URL, meaning the binary was built without `-tags production`. Must
+// panic, and the panic message must name the offending entry and point at
+// the fix.
+func TestGuardAssets_PanicsOnDevURLInProduction(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected GuardAssets to panic on a dev-origin URL in production, it did not")
+		}
+		msg, ok := r.(string)
+		if !ok {
+			t.Fatalf("panic value is not a string: %#v", r)
+		}
+		if !strings.Contains(msg, "RouterEntry") {
+			t.Errorf("panic message missing offending key: %q", msg)
+		}
+		if !strings.Contains(msg, "http://localhost:5173") {
+			t.Errorf("panic message missing offending URL: %q", msg)
+		}
+		if !strings.Contains(msg, "-tags production") {
+			t.Errorf("panic message missing the fix: %q", msg)
+		}
+	}()
+	GuardAssets(map[string]string{"RouterEntry": "http://localhost:5173/static/client/router-entry.ts"})
+}
+
+// GuardAssets: same as above but via the 127.0.0.1 form some hosts resolve
+// "localhost" to (resolveDevOrigin's fallback host is a literal
+// "localhost", but this guards the general shape, not just one host).
+func TestGuardAssets_PanicsOn127001URLInProduction(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected GuardAssets to panic on a 127.0.0.1 dev-origin URL in production, it did not")
+		}
+	}()
+	GuardAssets(map[string]string{"RouterEntry": "http://127.0.0.1:5173/static/client/router-entry.ts"})
+}

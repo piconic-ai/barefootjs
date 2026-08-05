@@ -44,6 +44,7 @@ jobs:
           bun run --filter '@barefootjs/shared' build
           bun run --filter '@barefootjs/streaming' build
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/form' build
           bun run --filter '@barefootjs/chart' build

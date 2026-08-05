@@ -82,6 +82,18 @@ try:
 except FileNotFoundError:
     MANIFEST = {}
 
+# The Vite-generated asset map (dist/bf-assets.json, written by
+# `@barefootjs/jinja/vite`'s `afterEmit` hook) -- resolves a hand-written,
+# non-component script entry's bundled URL (dev: Vite origin URL;
+# production: content-hashed manifest path). Read once at process start,
+# same rationale as MANIFEST above: Python has no compile step, so there is
+# nothing to commit -- a fresh copy lands under gitignored dist/ on every
+# build (dev AND production).
+try:
+    ASSETS: dict[str, str] = _json.loads((HERE / "dist" / "bf-assets.json").read_text())
+except FileNotFoundError:
+    ASSETS = {}
+
 # The blog post corpus -- generated at build time by scripts/gen-blog-data.ts
 # from ../shared/blog/posts.ts (the single TS source of truth the JS adapters
 # import directly; this Python server reads the JSON mirror instead). See
@@ -519,6 +531,17 @@ async def ai_chat_stream() -> StreamingResponse:
 # table, structured section-by-section so the two files can be diffed side
 # by side; only the Flask/WSGI -> FastAPI/ASGI idiom differences change
 # (async view functions, `request.query_params` instead of `request.args`).
+# The client router (client/router-entry.ts, its bundled URL resolved into
+# ASSETS["RouterEntry"]) swaps only the content region.
+#
+# No import map is needed (unlike the pre-Vite build): the router bundle's
+# `@barefootjs/client/runtime` import and every compiled island's own
+# `@barefootjs/client` import are ordinary ESM imports Rollup/Vite resolve
+# through their real module graph, collapsing into ONE shared chunk (build)
+# or ONE cached module (dev) automatically -- a single reactive runtime
+# instance without any hand-wired specifier redirection. That this
+# hand-written wiring could simply be deleted is the point of the
+# Vite-based design, not an incidental cleanup.
 #
 # There is no special server-side "partial navigation" endpoint: the router
 # (packages/router/src/router.ts) fetches a full HTML page for every
@@ -628,7 +651,6 @@ def blog_page(root: BarefootJS, title: str, base: str, content_html: str) -> str
     """Assemble the region-shell page around already-rendered content HTML.
     `root` is the request-scoped runtime whose script collector the content
     islands (and the shell islands rendered here) all share."""
-    static = f"{BASE}/client"
     theme = blog_island(root, "ThemeToggle")
     sidebar = blog_island(root, "Sidebar")
     shell = blog_island(
@@ -637,14 +659,8 @@ def blog_page(root: BarefootJS, title: str, base: str, content_html: str) -> str
         {"children": backend.mark_raw(content_html)},     # SSR-only: page content
         {"reader_toolbar": "ReaderToolbar"},
     )
-    import_map = _json.dumps({
-        "imports": {
-            "@barefootjs/client": f"{static}/barefoot.js",
-            "@barefootjs/client/runtime": f"{static}/barefoot.js",
-            "@barefootjs/client/reactive": f"{static}/barefoot.js",
-        }
-    })
     scripts = root.scripts()
+    router_entry = ASSETS.get("RouterEntry", "")
     esc_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return f"""<!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -652,7 +668,6 @@ def blog_page(root: BarefootJS, title: str, base: str, content_html: str) -> str
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc_title}</title>
-<script type="importmap">{import_map}</script>
 <link rel="stylesheet" href="{BASE}/styles/blog.css">
 </head>
 <body>
@@ -665,7 +680,7 @@ def blog_page(root: BarefootJS, title: str, base: str, content_html: str) -> str
 <main>{shell}</main>
 </div>
 {scripts}
-<script type="module" src="{static}/router-entry.js"></script>
+<script type="module" src="{router_entry}"></script>
 </body>
 </html>
 """

@@ -88,38 +88,60 @@ function unusedIsStringName(_n: string): boolean {
 }
 
 export class ErbFilterEmitter implements ParsedExprEmitter {
+  // Plain field declarations + assignment, NOT TS constructor-parameter-
+  // property shorthand: Vite's `bundleConfigFile` externalizes any bare
+  // (non-relative) import when loading `vite.config.ts` (see
+  // `@barefootjs/erb/vite`'s docstring), so this file can be loaded
+  // directly by Node's OWN native TypeScript type-stripping (enabled by
+  // default since Node 22.18/23.6) rather than esbuild — and Node's
+  // strip-only mode does not support parameter properties (`SyntaxError
+  // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
+  private readonly param: string
+  private readonly localVarMap: Map<string, string>
+  // Whether `name` currently names a bare Ruby local bound by an
+  // ENCLOSING loop/block (distinct from `this.param`, which is this
+  // predicate's own — possibly nested — loop param). See
+  // `ErbEmitContext.isLoopBoundName`'s docstring for why ERB needs this
+  // and EP does not.
+  private readonly isLoopBoundOuter: (n: string) => boolean
+  // Reports whether a getter/prop name is string-typed, for the Hash-vs-
+  // Array index-access split (#operand.ts). Defaults to "never" for
+  // callers that don't thread it through.
+  private readonly isStringName: (n: string) => boolean
+  // Records a BF101 for nested callback shapes this emitter can only
+  // degrade — `find*` and the non-predicate methods. Optional so emitter
+  // construction stays possible without an adapter; a missing hook keeps
+  // the old silent-degrade emit.
+  private readonly onUnsupported?: (message: string, reason?: string) => void
+  // The Ruby local to EMIT for a reference matching `this.param` — as
+  // opposed to `this.param` itself, which is only the name to MATCH.
+  // These two are the SAME value everywhere in this file except the
+  // `filter().map()` loop-gating `<if>` (erb-adapter.ts's `renderLoop`,
+  // #2245): `todos.filter(t => t.done).map(todo => ...)` parses the
+  // predicate against the filter callback's OWN param (`t`), but the
+  // Ruby local actually bound by the loop is the MAP callback's param
+  // (`todo`) — Ruby has no per-callback block scope there (unlike the
+  // real nested `.select { |t| ... }` block `callbackMethod` below
+  // builds, where match and render are naturally the same param).
+  // Defaults to `rubyLocal(param)`, i.e. every other construction site is
+  // unaffected.
+  private readonly renderParamAs: string
+
   constructor(
-    private readonly param: string,
-    private readonly localVarMap: Map<string, string>,
-    // Whether `name` currently names a bare Ruby local bound by an
-    // ENCLOSING loop/block (distinct from `this.param`, which is this
-    // predicate's own — possibly nested — loop param). See
-    // `ErbEmitContext.isLoopBoundName`'s docstring for why ERB needs this
-    // and EP does not.
-    private readonly isLoopBoundOuter: (n: string) => boolean = () => false,
-    // Reports whether a getter/prop name is string-typed, for the Hash-vs-
-    // Array index-access split (#operand.ts). Defaults to "never" for
-    // callers that don't thread it through.
-    private readonly isStringName: (n: string) => boolean = unusedIsStringName,
-    // Records a BF101 for nested callback shapes this emitter can only
-    // degrade — `find*` and the non-predicate methods. Optional so emitter
-    // construction stays possible without an adapter; a missing hook keeps
-    // the old silent-degrade emit.
-    private readonly onUnsupported?: (message: string, reason?: string) => void,
-    // The Ruby local to EMIT for a reference matching `this.param` — as
-    // opposed to `this.param` itself, which is only the name to MATCH.
-    // These two are the SAME value everywhere in this file except the
-    // `filter().map()` loop-gating `<if>` (erb-adapter.ts's `renderLoop`,
-    // #2245): `todos.filter(t => t.done).map(todo => ...)` parses the
-    // predicate against the filter callback's OWN param (`t`), but the
-    // Ruby local actually bound by the loop is the MAP callback's param
-    // (`todo`) — Ruby has no per-callback block scope there (unlike the
-    // real nested `.select { |t| ... }` block `callbackMethod` below
-    // builds, where match and render are naturally the same param).
-    // Defaults to `rubyLocal(this.param)`, i.e. every other construction
-    // site is unaffected.
-    private readonly renderParamAs: string = rubyLocal(param),
-  ) {}
+    param: string,
+    localVarMap: Map<string, string>,
+    isLoopBoundOuter: (n: string) => boolean = () => false,
+    isStringName: (n: string) => boolean = unusedIsStringName,
+    onUnsupported?: (message: string, reason?: string) => void,
+    renderParamAs: string = rubyLocal(param),
+  ) {
+    this.param = param
+    this.localVarMap = localVarMap
+    this.isLoopBoundOuter = isLoopBoundOuter
+    this.isStringName = isStringName
+    this.onUnsupported = onUnsupported
+    this.renderParamAs = renderParamAs
+  }
 
   identifier(name: string): string {
     if (name === this.param) return this.renderParamAs
@@ -315,7 +337,13 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
  *   - the `unsupported` fallback returns the safe empty-string Ruby literal.
  */
 export class ErbTopLevelEmitter implements ParsedExprEmitter {
-  constructor(private readonly ctx: ErbEmitContext) {}
+  // Plain field + assignment, not a parameter property — see
+  // `ErbFilterEmitter`'s constructor comment above for why.
+  private readonly ctx: ErbEmitContext
+
+  constructor(ctx: ErbEmitContext) {
+    this.ctx = ctx
+  }
 
   identifier(name: string): string {
     // `undefined` / `null` nested inside a larger expression tree (e.g.

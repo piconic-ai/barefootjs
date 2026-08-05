@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BarefootJS Benchmark — BarefootJS</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { render } from '@barefootjs/client/runtime'
+      await import('./components/Bench.tsx')
+      render(document.getElementById('app'), 'Bench')
+      document.body.dataset.ready = '1'
+    </script>
+  </body>
+</html>

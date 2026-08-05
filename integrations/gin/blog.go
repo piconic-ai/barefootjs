@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"net/http"
 	"sort"
-	"strings"
 
 	bf "github.com/barefootjs/runtime/bf"
 	"github.com/barefootjs/runtime/bf/bfdev"
@@ -16,11 +15,23 @@ import (
 //
 // A region-shell sub-site mounted at `${basePath}/blog`, mirroring the Hono /
 // h3 / Elysia integrations. The islands are the SAME shared components under
-// `../shared/blog`, compiled by this integration's `bf build`. Partial
-// navigation is driven entirely on the client by `@barefootjs/router`
-// (bundled into `static/client/router-entry.js`); the server's only job is to
-// return a plain HTML page per route with the right `bf-region` boundaries —
-// exactly the "any backend, zero cooperation" point the blog itself makes.
+// `../shared/blog`, compiled by this integration's Vite build
+// (vite.config.ts). Partial navigation is driven entirely on the client by
+// `@barefootjs/router` (its bootstrap script's bundled URL is
+// `Assets["RouterEntry"]`, generated into `bf_assets.go` by
+// `@barefootjs/go-template/vite`'s `afterEmit` hook); the server's only job
+// is to return a plain HTML page per route with the right `bf-region`
+// boundaries — exactly the "any backend, zero cooperation" point the blog
+// itself makes.
+//
+// No import map is needed (unlike the pre-Vite build): the router bundle's
+// `@barefootjs/client/runtime` import and every compiled island's own
+// `@barefootjs/client` import are ordinary ESM imports Rollup/Vite resolve
+// through their real module graph, collapsing into ONE shared chunk (build)
+// or ONE cached module (dev) automatically — a single reactive runtime
+// instance without any hand-wired specifier redirection. That this hand-
+// written wiring could simply be deleted is the point of the Vite-based
+// design, not an incidental cleanup.
 
 // blogBasePath is where the blog is mounted; every blog link is built relative
 // to it so the shared components work under any adapter's base path.
@@ -29,24 +40,6 @@ func blogBasePath() string { return basePath + "/blog" }
 // blogSortKeys are the sort values the PostList understands; anything else
 // falls back to "date" (matching the island's `asSortKey`).
 var blogSortKeys = []string{"date", "title", "tag"}
-
-// blogImportMap maps the bare `@barefootjs/client*` specifiers that the router
-// bundle imports to the SAME physical `barefoot.js` the compiled islands import
-// via the relative `./barefoot.js`. Resolving both to one URL gives a single
-// reactive runtime instance, so `searchParams()` is one shared signal and the
-// router's query push reaches the islands' effects.
-func blogImportMap() string {
-	bjs := basePath + "/static/client/barefoot.js"
-	j := fmt.Sprintf(
-		`{"imports":{"@barefootjs/client":%q,"@barefootjs/client/runtime":%q,"@barefootjs/client/reactive":%q}}`,
-		bjs, bjs, bjs,
-	)
-	// Escape "<" so a stray "</script>" in the value (e.g. a misconfigured
-	// BASE_PATH) can't break out of the inline <script type="importmap">. The
-	// replacement is the JS unicode escape backslash-u003c, built by
-	// concatenation so it survives verbatim.
-	return strings.ReplaceAll(j, "<", `\`+"u003c")
-}
 
 // blogFrag renders one island subtree against shared script/portal collectors.
 type blogFrag func(name string, props interface{}) template.HTML
@@ -58,8 +51,10 @@ type blogFrag func(name string, props interface{}) template.HTML
 //
 // Every island — the shell ones AND the route content built by `renderContent`
 // — is rendered through bf.Renderer.RenderFragment against ONE script + portal
-// collector, so `barefoot.js` and each island's client JS are emitted exactly
-// once and share a single runtime instance.
+// collector, so each island's client JS is registered exactly once; the
+// shared `@barefootjs/client` runtime chunk itself is never separately
+// registered at all (see this file's header comment) — the browser follows
+// it as an ESM import from whichever island script loads first.
 func blogPageHTML(title string, renderContent func(frag blogFrag) template.HTML) string {
 	r := bf.NewRenderer(currentTemplates(), nil)
 	sc := bf.NewScriptCollector()
@@ -95,7 +90,6 @@ func blogPageHTML(title string, renderContent func(frag blogFrag) template.HTML)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>%s</title>
-    <script type="importmap">%s</script>
     <link rel="stylesheet" href="%s/shared/styles/blog.css">
 </head>
 <body>
@@ -108,11 +102,10 @@ func blogPageHTML(title string, renderContent func(frag blogFrag) template.HTML)
         <main>%s</main>
     </div>
     %s%s
-    <script type="module" src="%s/static/client/router-entry.js"></script>%s
+    <script type="module" src="%s"></script>%s
 </body>
 </html>`,
 		template.HTMLEscapeString(title),
-		blogImportMap(),
 		basePath,
 		blogBasePath(),
 		themeHTML,
@@ -120,7 +113,7 @@ func blogPageHTML(title string, renderContent func(frag blogFrag) template.HTML)
 		shellHTML,
 		scripts,
 		portals,
-		basePath,
+		Assets["RouterEntry"],
 		devSnippet,
 	)
 }

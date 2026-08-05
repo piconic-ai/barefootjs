@@ -48,18 +48,21 @@ that already produce finished HTML (e.g. `spread_attrs`) share one
 npm install @barefootjs/erb
 ```
 
-Configure the build (`barefoot.config.ts`):
+Configure the build (`vite.config.ts`):
 
 ```typescript
-import { createConfig } from '@barefootjs/erb/build'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/erb/vite'
 
-export default createConfig({
-  components: ['./components'],
-  outDir: 'dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./components'],
+    templates: 'dist/templates',
+  }),
 })
 ```
 
-`bf build` emits one `.erb` file per component plus the client JS bundle. On
+`vite build` emits one `.erb` file per component plus the client JS bundle. On
 the Ruby side, vendor `lib/barefoot_js.rb` (from `@barefootjs/erb`) into your
 app and construct the ERB backend against the output directory:
 

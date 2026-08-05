@@ -721,8 +721,9 @@ class BarefootJS:
     def register_components_from_manifest(
         self, manifest: dict, signal_init: Optional[dict] = None
     ) -> None:
-        """`bf build` emits a manifest describing every component the page
-        might invoke. This walks that manifest and registers one child
+        """`vite build` (via `@barefootjs/jinja/vite`'s `barefoot()` plugin)
+        emits a manifest describing every component the page might invoke.
+        This walks that manifest and registers one child
         renderer per UI registry entry -- the path shape `ui/<name>/index`
         maps to the `<name>` slot key the generated template invokes via
         `bf.render_child('<name>', ...)`.

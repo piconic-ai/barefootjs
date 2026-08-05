@@ -1,10 +1,10 @@
 /**
  * renderImportMapHtml tests
  *
- * The shared importmap-snippet renderer turns a parsed `barefoot-externals.json`
- * into the `<script type="importmap">` (+ `<link rel="modulepreload">`) HTML that
- * `bf build` emits as `barefoot-importmap.html` for template-string adapters
- * (issue #1644). This is the single source of truth for that snippet.
+ * The shared importmap-snippet renderer turns a parsed externals manifest
+ * into the `<script type="importmap">` (+ `<link rel="modulepreload">`) HTML
+ * that template-string adapters render as a static snippet (issue #1644).
+ * This is the single source of truth for that snippet.
  */
 import { describe, test, expect } from 'bun:test'
 import { renderImportMapHtml } from '../import-map'

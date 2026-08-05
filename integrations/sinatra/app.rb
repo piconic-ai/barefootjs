@@ -106,6 +106,16 @@ end
 BLOG_MANIFEST = slurp_json('dist/templates/manifest.json') || {}
 BLOG_DATA = slurp_json('dist/blog-data.json') || { posts: [], listItems: [], allTags: [] }
 
+# The Vite-generated asset map (dist/bf-assets.json, written by
+# `@barefootjs/erb/vite`'s `afterEmit` hook) -- resolves a hand-written,
+# non-component script entry's bundled URL (dev: Vite origin URL;
+# production: content-hashed manifest path). String-keyed (NOT
+# symbolize_names, unlike BLOG_MANIFEST above): a small flat map, not a
+# per-component structure with downstream symbol-keyed reads. Ruby has no
+# compile step, so there is nothing to commit -- a fresh copy lands under
+# gitignored dist/ on every build (dev AND production).
+ASSETS = (File.file?('dist/bf-assets.json') ? (JSON.parse(File.read('dist/bf-assets.json', encoding: 'UTF-8')) rescue {}) : {})
+
 # NOTE on naming: `bf build`'s ERB output files are always named after the
 # PascalCase component/source-file name (e.g. `TodoItem.tsx` ->
 # `templates/TodoItem.erb`) — `BACKEND.render_named` below always takes that
@@ -181,20 +191,24 @@ end
 # Assemble the region-shell page around already-rendered content HTML. `root`
 # is the request-scoped runtime whose script collector the content islands
 # (and the shell islands rendered here) all share.
+#
+# No import map is needed (unlike the pre-Vite build): the router bundle's
+# `@barefootjs/client/runtime` import and every compiled island's own
+# `@barefootjs/client` import are ordinary ESM imports Rollup/Vite resolve
+# through their real module graph, collapsing into ONE shared chunk (build)
+# or ONE cached module (dev) automatically -- a single reactive runtime
+# instance without any hand-wired specifier redirection. That this
+# hand-written wiring could simply be deleted is the point of the
+# Vite-based design, not an incidental cleanup.
 def blog_page(root, title, base, content_html)
-  static = "#{BASE}/client"
   theme = blog_island(root, 'ThemeToggle')
   sidebar = blog_island(root, 'Sidebar')
   shell = blog_island(root, 'PageShell',
                        {}, # no client props
                        { children: BACKEND.mark_raw(content_html) }, # SSR-only: page content
                        { 'reader_toolbar' => 'ReaderToolbar' })
-  importmap = JSON.generate({ imports: {
-    '@barefootjs/client' => "#{static}/barefoot.js",
-    '@barefootjs/client/runtime' => "#{static}/barefoot.js",
-    '@barefootjs/client/reactive' => "#{static}/barefoot.js",
-  } })
   scripts = root.scripts
+  router_entry = ASSETS['RouterEntry'] || ''
   esc_title = root.h(title)
   <<~HTML
     <!DOCTYPE html>
@@ -203,7 +217,6 @@ def blog_page(root, title, base, content_html)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>#{esc_title}</title>
-    <script type="importmap">#{importmap}</script>
     <link rel="stylesheet" href="#{BASE}/styles/blog.css">
     </head>
     <body>
@@ -216,7 +229,7 @@ def blog_page(root, title, base, content_html)
     <main>#{shell}</main>
     </div>
     #{scripts}
-    <script type="module" src="#{static}/router-entry.js"></script>
+    <script type="module" src="#{router_entry}"></script>
     </body>
     </html>
   HTML

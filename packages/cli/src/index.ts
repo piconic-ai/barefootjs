@@ -30,7 +30,6 @@ Daily:
   guide [topic]                               Show framework guides (run \`bf guide\` to list)
   search <query> [--dir <path>] [--registry <url>]  Search components and docs
   preview [component]                         Open visual preview (no arg lists previewable)
-  build [--minify] [--force] [--watch]        Compile components using barefoot.config.ts
 
 Create:
   gen component <name> [comp...]              Generate a new component skeleton + IR test
@@ -68,12 +67,6 @@ Workflow:
 }
 
 switch (command) {
-  case 'build': {
-    const { run } = await import('./commands/build')
-    await run(filteredArgs.slice(1), ctx)
-    break
-  }
-
   case 'init': {
     // Internal: gated by BAREFOOT_INIT_VIA_CREATE=1, which only
     // create-barefootjs sets. Direct `bf init` invocations are

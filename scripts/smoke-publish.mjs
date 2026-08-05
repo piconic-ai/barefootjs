@@ -49,12 +49,14 @@ const PUBLISHABLE = [
   'packages/shared',
   'packages/jsx',
   'packages/client',
+  'packages/vite',
   'packages/streaming',
   'packages/test',
   'packages/adapter-hono',
   'packages/adapter-go-template',
   'packages/adapter-perl',
   'packages/adapter-mojolicious',
+  'packages/adapter-xslate',
   'packages/form',
   'packages/chart',
   'packages/xyflow',
@@ -275,7 +277,6 @@ smoke('bf docs button', 'npx --no-install bf docs button', { expect: 'Category' 
 smoke('bf search button (local)', 'npx --no-install bf search button')
 
 // — compiler + analyzer
-smoke('bf build', 'npx --no-install bf build', { expect: 'Build complete' })
 smoke('bf debug graph Counter', 'npx --no-install bf debug graph Counter', { expect: 'count' })
 smoke('bf debug trace Counter count', 'npx --no-install bf debug trace Counter count', { expect: 'count' })
 // The dynamic profiler lazily imports happy-dom, whose CJS deps hit the
@@ -302,7 +303,11 @@ smoke('bf gen component widget button', 'npx --no-install bf gen component widge
 smoke('bf preview (list after gen)', 'npx --no-install bf preview', { expect: 'button' })
 
 // — full project build + test runner
-smoke('npm run build', 'npm run build', { expect: 'Build complete' })
+// Assert on `manifest.json` rather than a generic Vite build line: the
+// barefoot plugin is what forces `build.manifest`, so seeing it in the
+// emitted file list proves the plugin actually ran and wrote where the
+// config points — not merely that Vite started.
+smoke('npm run build', 'npm run build', { expect: 'manifest.json' })
 // `npm test` dispatches to whichever runner the scaffold picked (`bun
 // test` on bun-detected installs, `vitest run` everywhere else). The
 // matching `bf gen test`-emitted import was wired against the same

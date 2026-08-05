@@ -3,9 +3,6 @@
 <head>
   <meta charset="utf-8">
   <title>Props Reactivity Comparison - CSR</title>
-  <script type="importmap">
-    { "imports": { "@barefootjs/client/runtime": "/static/components/barefoot.js" } }
-  </script>
   <link rel="stylesheet" href="/shared/styles/components.css">
 </head>
 <body>
@@ -16,7 +13,7 @@
   </div>
   <script type="module">
     import { render } from '@barefootjs/client/runtime'
-    await import('/static/components/ReactiveProps.client.js')
+    await import('../../shared/components/ReactiveProps.tsx')
     render(document.getElementById('app'), 'PropsReactivityComparison')
   </script>
 </body>

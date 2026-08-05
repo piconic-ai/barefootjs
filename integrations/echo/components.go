@@ -222,7 +222,7 @@ type PropsStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
-	DisplayValue int `json:"displayValue"`
+	DisplayValue interface{} `json:"displayValue"`
 }
 
 // DestructuredStyleChildInput is the user-facing input type.
@@ -245,7 +245,7 @@ type DestructuredStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
-	DisplayValue int `json:"displayValue"`
+	DisplayValue interface{} `json:"displayValue"`
 }
 
 // PropsReactivityComparisonInput is the user-facing input type.

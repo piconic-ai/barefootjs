@@ -6,11 +6,14 @@
 // (which also handles "is the target directory empty?" pre-flight,
 // which init itself does not).
 //
-// Scaffold output: barefoot.config.ts + server + components/Counter +
+// Scaffold output: vite.config.ts + server + components/Counter +
 // npm scripts so the user can `npm install && npm run dev` and see a
-// working page. The single project config is `barefoot.config.ts`,
-// carrying both `paths` (consumed by registry tooling) and the build
-// options.
+// working page. The single project config is `vite.config.ts` — its
+// `barefoot()` plugin call carries the build options (`components`,
+// `templates`, ...); `paths` (consumed by registry tooling: `bf add`,
+// `search`, `meta:extract`) stays a hardcoded default mirrored below,
+// since `BarefootViteOptions` has no `paths` field (see
+// `context.ts`'s `configFromViteConfig`).
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
@@ -152,9 +155,11 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const projectDir = process.cwd()
   const flags = parseFlags(args)
 
-  const tsConfigPath = path.join(projectDir, 'barefoot.config.ts')
-  if (existsSync(tsConfigPath)) {
-    console.error('Error: barefoot.config.ts already exists. Project is already initialized.')
+  // Every scaffold emits `vite.config.ts` (see `../lib/adapters/*`) — its
+  // presence is the "already initialized" signal.
+  const viteConfigPath = path.join(projectDir, 'vite.config.ts')
+  if (existsSync(viteConfigPath)) {
+    console.error('Error: vite.config.ts already exists. Project is already initialized.')
     process.exit(1)
   }
 
@@ -366,10 +371,13 @@ async function scaffoldApp(
   usesUno: boolean,
   _ctx: CliContext,
 ): Promise<number> {
-  // The single source of truth is `barefoot.config.ts` (written below via
-  // adapter.files). It carries both `paths` (consumed by registry tooling)
-  // and the build options. We mirror the same defaults here so the rest
-  // of init can reason about layout without re-loading the TS file.
+  // `vite.config.ts` (written below via adapter.files) is the single
+  // source of truth for build options (`components`, `templates`, ...).
+  // `paths` — consumed by registry tooling (`bf add`, `search`,
+  // `meta:extract`) — isn't a `barefoot()` option, so it's a hardcoded
+  // default mirrored here (matching `context.ts`'s `DEFAULT_PATHS`) so
+  // the rest of init can reason about layout without re-loading any
+  // config file.
   const paths = {
     components: 'components/ui',
     tokens: 'tokens',
@@ -402,7 +410,7 @@ async function scaffoldApp(
   const pmTypesEntry = runner.typesEntry
 
   // Adapter-contributed files (server, components/Counter, the
-  // companion Counter.test.tsx, barefoot.config.ts, etc.). Adapter
+  // companion Counter.test.tsx, vite.config.ts, etc.). Adapter
   // templates declare every file they want on disk in `adapter.files`,
   // including the IR test paired with the starter Counter — that's
   // why the scaffold ships a green `<pm> test` from minute zero
@@ -510,12 +518,19 @@ async function scaffoldApp(
     type: 'module',
     scripts: {
       ...resolvedAdapterScripts,
-      // The cross-adapter rebuild watcher. Under `--css none` there's no
-      // `unocss --watch` pane to run alongside `bf build --watch`, so it
-      // collapses to a bare build watch (no `concurrently` wrapper).
+      // The cross-adapter rebuild watcher. `vite build --watch` (not
+      // `vite dev`) so it works identically for every adapter, CSR
+      // included: it writes real files to `dist/` on every change,
+      // which a running backend server picks up on its own without
+      // needing a dev-origin/live-reload split (see the CSR adapter's
+      // own `vite.config.ts` docstring for why `vite dev` can't play
+      // that role uniformly — it never writes to disk at all). Under
+      // `--css none` there's no `unocss --watch` pane to run alongside
+      // it, so it collapses to a bare build watch (no `concurrently`
+      // wrapper).
       watch: usesUno
-        ? 'concurrently -k -n build,uno -c blue,magenta "bf build --watch" "unocss --watch"'
-        : 'bf build --watch',
+        ? 'concurrently -k -n build,uno -c blue,magenta "vite build --watch" "unocss --watch"'
+        : 'vite build --watch',
       // `test` is wired to the runner that matches the user's package
       // manager — `bun test` for bun, `vitest run` for npm / pnpm /
       // yarn. The matching `bf gen component` / `bf gen test` output

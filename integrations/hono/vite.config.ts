@@ -1,0 +1,36 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/hono/vite'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+const basePath = process.env.BASE_PATH ?? '/integrations/hono'
+const routerEntry = resolve(HERE, 'client/router-entry.ts')
+
+// This app's own Rollup entry: `client/router-entry.ts` (the
+// `@barefootjs/router` bootstrap for the blog) is a hand-written script,
+// not a `.tsx` component, so `barefoot()`'s own discovery never sees it —
+// per the design, bundling configuration is stock Vite config this plugin
+// never adds on the app's behalf. `assets.RouterEntry` below only resolves
+// the URL Vite bundles this to; THIS is what requests the bundling.
+export default defineConfig({
+  base: `${basePath}/static/components/`,
+  build: {
+    outDir: 'dist/static/components',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: { 'router-entry': routerEntry },
+    },
+  },
+  plugins: barefoot({
+    components: ['components', '../shared/components', '../shared/blog'],
+    // `tsconfig.json`'s `@/components/*` path points here, and
+    // `server.tsx` / `blog.tsx` import compiled components from it.
+    templates: 'dist/components',
+    // The runtime is a shared ESM chunk every bundled entry imports,
+    // followed by the browser on its own. `dist/bf-assets.ts`'s
+    // `Assets.RouterEntry` is what `blog.tsx` reads to resolve
+    // router-entry.js's content-hashed URL.
+    assets: { RouterEntry: routerEntry },
+  }),
+})

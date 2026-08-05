@@ -23,7 +23,7 @@ import type { PreviewAssets } from './assets'
 // Minimal CSR adapter. compileJSX needs a concrete TemplateAdapter, but
 // preview only consumes the client JS output (the marked template is
 // discarded), so every render method is a no-op. Defined inline — rather
-// than importing CSRAdapter from `@barefootjs/client/build` — so the CLI
+// than importing CSRAdapter from `@barefootjs/client/csr-adapter` — so the CLI
 // bundles from `@barefootjs/jsx` source alone and does not require
 // `@barefootjs/client`'s dist to be built first. `acceptsTemplateCall`
 // returns true so the analyzer keeps calls at template scope (matches

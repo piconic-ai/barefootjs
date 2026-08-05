@@ -398,7 +398,7 @@ final class BarefootJS
     // -----------------------------------------------------------------
 
     /**
-     * `bf build` emits a manifest describing every component the page might
+     * `vite build` emits a manifest describing every component the page might
      * invoke. Walks that manifest and registers one child renderer per UI
      * registry entry -- the path shape `ui/<name>/index` maps to the
      * `<name>` slot key the generated template invokes via

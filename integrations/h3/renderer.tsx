@@ -2,14 +2,37 @@
 //
 // HTML page shell, written as a plain hono/jsx component. Nothing here is
 // h3-aware: it's the same layout any host framework would compose, then
-// hand to `renderToHtml`. `<BfImportMap>` and `<BfScripts>` come from
-// `@barefootjs/hono/app` and are framework-agnostic — `BfScripts` emits
-// one `<script type="module">` per manifest entry (no request context
-// needed), which is exactly what lets h3 host BarefootJS without Hono's
-// `jsxRenderer`.
+// hand to `renderToHtml`.
+//
+// No import map: under the Vite build, `@barefootjs/client` is an ordinary
+// bundled ESM specifier every island's compiled entry imports — Rollup
+// folds it into one shared chunk, and the browser follows that import on
+// its own with no specifier redirection needed (same conclusion gin/hono
+// already proved). `<ComponentScripts>` below emits one `<script
+// type="module">` per entry in the generated `Assets` map (`dist/bf-
+// assets.ts`, from `vite.config.ts`'s `assets` option) — h3 has no per-
+// request script collector (unlike `integrations/hono`'s Hono
+// `jsxRenderer`), so every discovered client component's script loads
+// unconditionally on every page, matching the pre-Vite `manifest.json` +
+// `BfScripts` behavior this replaces.
 
-import { BfImportMap, BfScripts } from '@barefootjs/hono/app'
-import type { BarefootBuildManifest } from '@barefootjs/hono/app'
+import { Assets } from './dist/bf-assets'
+
+/** Emits one `<script type="module">` per compiled client component's
+ * resolved URL (see `vite.config.ts`'s `assets` option) — every entry
+ * except `RouterEntry`, which callers place explicitly where the router
+ * bootstrap belongs. */
+export function ComponentScripts() {
+  return (
+    <>
+      {Object.entries(Assets)
+        .filter(([name]) => name !== 'RouterEntry')
+        .map(([, src]) => (
+          <script type="module" src={src} />
+        ))}
+    </>
+  )
+}
 
 // Shared site header — same markup/classes as the hono, echo and
 // mojolicious integrations (styled by shared/styles/layout.css) so every
@@ -35,7 +58,6 @@ function SiteHeader() {
 
 export interface LayoutProps {
   title?: string
-  manifest: BarefootBuildManifest
   /**
    * URL prefix everything is mounted under (the BASE_PATH). Empty for the
    * standalone server; `/integrations/h3` behind the dev proxy. The compiled
@@ -47,8 +69,7 @@ export interface LayoutProps {
   children?: unknown
 }
 
-export function Layout({ title, manifest, base = '', styles, children }: LayoutProps) {
-  const componentsBase = `${base}/static/components`
+export function Layout({ title, base = '', styles, children }: LayoutProps) {
   return (
     <html lang="en" className="dark">
       <head>
@@ -61,12 +82,11 @@ export function Layout({ title, manifest, base = '', styles, children }: LayoutP
         {(styles ?? []).map((href) => (
           <link rel="stylesheet" href={href} />
         ))}
-        <BfImportMap base={componentsBase} />
       </head>
       <body>
         <SiteHeader />
         {children}
-        <BfScripts base={componentsBase} manifest={manifest} />
+        <ComponentScripts />
       </body>
     </html>
   )

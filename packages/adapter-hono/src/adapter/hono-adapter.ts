@@ -69,11 +69,10 @@ export interface HonoAdapterOptions {
   clientJsFilename?: string
 
   /**
-   * Display name surfaced through `JsxAdapter.name` — read by `bf build`
-   * for its `Adapter: …` banner. Defaults to `'hono'`. CSR-mode callers
-   * (`@barefootjs/client/build`) pass `'csr'` so the banner reflects the
-   * mode the user picked at scaffold time instead of leaking the
-   * fact that CSR currently reuses HonoAdapter under the hood.
+   * Display name surfaced through `JsxAdapter.name`. Defaults to `'hono'`.
+   * (CSR mode no longer reuses `HonoAdapter` under the hood — see
+   * `@barefootjs/client/csr-adapter`'s own in-package `CSRAdapter` — so
+   * this option has no CSR-specific caller today.)
    */
   name?: string
 }
@@ -126,7 +125,8 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   extension = '.tsx'
   clientShimSource = '@barefootjs/hono/client-shim'
   // Importmap is injected at render time by the `BfImportMap` component
-  // (reads `barefoot-externals.json`), so `bf build` emits no static snippet.
+  // (from its `externals` prop) — there is no static snippet file for
+  // Hono to emit.
   importMapInjection = 'component' as const
 
   // The Hono SSR runtime is JavaScript (Node / Bun / CF Workers), so any
@@ -165,6 +165,20 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   private rewriteRelativeImport?: (importPath: string) => string
   /** Stack of loop keys for generating data-key / data-key-1 attributes on loop items */
   private loopKeyStack: Array<{ key: string | null; param: string }> = []
+  /**
+   * Per-call `AdapterGenerateOptions.scriptAssets`, stashed for the
+   * duration of one `generate()` call (same lifecycle as
+   * `rewriteRelativeImport`) so `generateImports`/`generateComponent`/
+   * `renderIfStatement` can all see it without threading it through every
+   * method signature. `undefined` means "the caller didn't resolve
+   * scriptAssets", so no script-registration codegen is emitted; `[]`
+   * means "resolved, and empty" (a server-only file, or a client file
+   * whose bundle isn't in the manifest yet); a non-empty array means
+   * "bake exactly these URLs in". See `AdapterGenerateOptions.
+   * scriptAssets`'s docstring for the full precedence contract this
+   * mirrors from `GoTemplateAdapter`.
+   */
+  private scriptAssets?: string[]
 
   constructor(options: HonoAdapterOptions = {}) {
     super()
@@ -180,6 +194,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     this.componentName = ir.metadata.componentName
     this.isClientComponent = ir.metadata.isClientComponent
     this.rewriteRelativeImport = options?.rewriteRelativeImport
+    this.scriptAssets = options?.scriptAssets
 
     // Generate component body FIRST so we can scan it for used imports
     const component = this.generateComponent(ir)
@@ -216,7 +231,19 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       extension: this.extension,
     }
     this.rewriteRelativeImport = undefined
+    this.scriptAssets = undefined
     return result
+  }
+
+  /**
+   * True when `options.scriptAssets` was resolved AND non-empty for this
+   * `generate()` call — the single guard `generateImports`/
+   * `generateComponent`/`renderIfStatement` all consult before emitting
+   * script-registration codegen. See `scriptAssets`'s field docstring for
+   * why `undefined` and `[]` are both "no" here.
+   */
+  private hasScriptAssets(): boolean {
+    return !!this.scriptAssets && this.scriptAssets.length > 0
   }
 
   private generateModuleLevelContextBindings(ir: ComponentIR): string {
@@ -249,6 +276,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
     if (utilImports.length > 0) {
       lines.push(`import { ${utilImports.join(', ')} } from '@barefootjs/hono/utils'`)
+    }
+
+    // Only imported when this call's `scriptAssets` (see the field
+    // docstring, and `generateComponent`) actually resolved to a non-empty
+    // URL list, so a server-only file emits no dead import.
+    if (this.hasScriptAssets()) {
+      lines.push(`import { registerComponentScripts, wrapWithInlineScripts } from '@barefootjs/hono/scripts'`)
     }
 
     // Import Suspense / ErrorBoundary when async boundaries are used. Both
@@ -580,6 +614,18 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const exportPrefix = ir.metadata.isExported === false ? '' : 'export '
     lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
 
+    // Vite-pipeline script registration (see `scriptAssets`'s field
+    // docstring): register this call's resolved URLs against the request
+    // context right away, independent of props — `__bfInlineScripts` is
+    // then threaded through every `return (...)` this function can reach
+    // (the plain tail return below, and both branches of an if-statement
+    // root via `renderIfStatement`) so a component rendered after
+    // `<BfScripts />` (e.g. inside Suspense) ships its scripts inline
+    // instead of silently dropping them from the already-flushed collector.
+    if (this.hasScriptAssets()) {
+      lines.push(`  const __bfInlineScripts = registerComponentScripts(${JSON.stringify(this.scriptAssets)})`)
+    }
+
     // Add props extraction for SolidJS-style pattern
     if (propsExtraction) {
       lines.push(propsExtraction)
@@ -627,9 +673,15 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       return lines.join('\n')
     }
 
-    lines.push(`  return (`)
-    lines.push(`    ${jsxBody}`)
-    lines.push(`  )`)
+    if (this.hasScriptAssets()) {
+      lines.push(`  return wrapWithInlineScripts((`)
+      lines.push(`    ${jsxBody}`)
+      lines.push(`  ), __bfInlineScripts)`)
+    } else {
+      lines.push(`  return (`)
+      lines.push(`    ${jsxBody}`)
+      lines.push(`  )`)
+    }
     lines.push(`}`)
 
     return lines.join('\n')
@@ -1032,11 +1084,19 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Render the consequent (then branch) JSX
     const consequent = this.renderNode(ifStmt.consequent, ctx)
 
+    // Every early-return branch below wraps with `wrapWithInlineScripts`
+    // when this call's `scriptAssets` resolved non-empty — same
+    // `__bfInlineScripts` binding `generateComponent` declares at the top
+    // of the function, reused across every branch this if-chain can take.
+    const wrap = this.hasScriptAssets()
+    const openReturn = wrap ? '    return wrapWithInlineScripts((' : '    return ('
+    const closeReturn = wrap ? '    ), __bfInlineScripts)' : '    )'
+
     // Build the if statement
     lines.unshift(`  if (${ifStmt.condition}) {`)
-    lines.push(`    return (`)
+    lines.push(openReturn)
     lines.push(`      ${consequent}`)
-    lines.push(`    )`)
+    lines.push(closeReturn)
     lines.push(`  }`)
 
     // Handle the alternate (else branch)
@@ -1049,9 +1109,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       } else {
         // Final else branch with regular JSX
         const alternate = this.renderNode(ifStmt.alternate, ctx)
-        lines.push(`  return (`)
+        lines.push(wrap ? '  return wrapWithInlineScripts((' : '  return (')
         lines.push(`    ${alternate}`)
-        lines.push(`  )`)
+        lines.push(wrap ? '  ), __bfInlineScripts)' : '  )')
       }
     } else {
       // No alternate - return null

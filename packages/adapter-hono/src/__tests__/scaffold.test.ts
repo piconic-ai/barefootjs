@@ -124,13 +124,20 @@ describe.skipIf(!INTEGRATION)(
       expect(wrangler.name).toBe('demo-app')
     })
 
-    test('dev script wires bf build --watch + unocss + wrangler dev --live-reload', () => {
+    test('dev script wires vite dev + unocss + wrangler dev --live-reload', () => {
       const pkg = JSON.parse(
         readFileSync(path.join(projectDir, 'package.json'), 'utf-8'),
       ) as { scripts?: Record<string, string> }
-      expect(pkg.scripts?.dev).toContain('bf build --watch')
+      expect(pkg.scripts?.dev).toContain('vite build')
+      expect(pkg.scripts?.dev).toContain('vite dev')
       expect(pkg.scripts?.dev).toContain('unocss --watch')
       expect(pkg.scripts?.dev).toContain('wrangler dev --live-reload')
+    })
+
+    test('vite.config.ts composes @barefootjs/hono/vite', () => {
+      const cfg = readFileSync(path.join(projectDir, 'vite.config.ts'), 'utf-8')
+      expect(cfg).toContain("from '@barefootjs/hono/vite'")
+      expect(cfg).toContain("base: '/components/'")
     })
 
     test('deploy script targets Cloudflare Workers', () => {

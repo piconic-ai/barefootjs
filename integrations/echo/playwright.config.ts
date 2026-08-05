@@ -20,7 +20,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'BASE_PATH=/integrations/echo go run .',
+    // `-tags production`: this runs with APP_ENV unset (production shape —
+    // template cache on), and the untagged default now compiles the DEV
+    // asset map (`bf_assets.go`, `//go:build !production`, localhost URLs).
+    // Without the tag the blog's router-entry `<script>` would 404 against
+    // a Vite dev server nobody started. `bun run build` (a prerequisite of
+    // this suite, see the CI workflow / package.json `test:e2e`) already
+    // wrote the matching `bf_assets_prod.go`.
+    command: 'BASE_PATH=/integrations/echo go run -tags production .',
     url: 'http://localhost:8080/integrations/echo',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,

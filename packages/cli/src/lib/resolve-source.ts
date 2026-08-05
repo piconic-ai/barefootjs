@@ -4,8 +4,8 @@
 // 1. Direct file path (absolute or relative)
 // 2. ui/components/ui/<name>/index.tsx (monorepo layout)
 // 3. project-config `paths.components` (where `bf add` lands registry items)
-// 4. `barefoot.config.ts`'s `components` source dirs (where the user
-//    keeps their own app components — e.g. the scaffold's
+// 4. `vite.config.ts`'s barefoot plugin `components` source dirs (where the
+//    user keeps their own app components — e.g. the scaffold's
 //    `components/Counter.tsx`)
 // 5. Current working directory (PascalCase fallback)
 
@@ -105,7 +105,7 @@ export function resolveComponentSource(
     if (monoPreview) return { filePath: monoPreview, isPreview: true }
   }
 
-  // 3. paths.components from barefoot.config.ts (registry-item layout)
+  // 3. paths.components from the project config (registry-item layout)
   if (ctx.config && ctx.projectDir) {
     const configIndex = tryCandidate(
       path.join(ctx.projectDir, ctx.config.paths.components, nameOrPath, 'index.tsx'),
@@ -119,10 +119,10 @@ export function resolveComponentSource(
     )
     if (configFlat) return { filePath: configFlat }
 
-    // 4. Source dirs from barefoot.config.ts's `components` array. The
-    //    scaffold puts user-authored components (Counter.tsx) here, not
-    //    under `paths.components`. Try both flat (Counter.tsx) and
-    //    nested (Counter/index.tsx) layouts.
+    // 4. Source dirs from vite.config.ts's barefoot plugin `components`
+    //    array. The scaffold puts user-authored components (Counter.tsx)
+    //    here, not under `paths.components`. Try both flat (Counter.tsx)
+    //    and nested (Counter/index.tsx) layouts.
     for (const dir of ctx.config.sourceDirs ?? []) {
       const flat = tryCandidate(
         path.join(ctx.projectDir, dir, `${nameOrPath}.tsx`),

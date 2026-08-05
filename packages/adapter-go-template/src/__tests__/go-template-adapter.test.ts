@@ -5619,3 +5619,63 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
     }
   })
 })
+
+describe('GoTemplateAdapter - scriptAssets (Vite late-binding)', () => {
+  const CLIENT_COMPONENT = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+`
+
+  test('emits one {{.Scripts.Register}} per URL, in order, when scriptAssets is set', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new GoTemplateAdapter().generate(ir, {
+      scriptAssets: ['/assets/runtime-abc123.js', '/assets/counter-def456.js'],
+    })
+    const runtimeIdx = template.indexOf('{{.Scripts.Register "/assets/runtime-abc123.js"}}')
+    const compIdx = template.indexOf('{{.Scripts.Register "/assets/counter-def456.js"}}')
+    expect(runtimeIdx).toBeGreaterThanOrEqual(0)
+    expect(compIdx).toBeGreaterThanOrEqual(0)
+    expect(runtimeIdx).toBeLessThan(compIdx)
+    expect(template).toContain('{{if .Scripts}}')
+    expect(template).not.toContain('/static/client/barefoot.js')
+    expect(template).not.toContain('Counter.client.js')
+  })
+
+  test('emits a single registration for a single-element scriptAssets array', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new GoTemplateAdapter().generate(ir, {
+      scriptAssets: ['/assets/only-one.js'],
+    })
+    expect(template).toContain('{{.Scripts.Register "/assets/only-one.js"}}')
+    expect(template.match(/\.Scripts\.Register/g)?.length).toBe(1)
+  })
+
+  test('an empty scriptAssets array emits no script registrations', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new GoTemplateAdapter().generate(ir, { scriptAssets: [] })
+    expect(template).not.toContain('.Scripts.Register')
+    expect(template).not.toContain('{{if .Scripts}}')
+  })
+
+  test('skipScriptRegistration still wins when scriptAssets is also set', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new GoTemplateAdapter().generate(ir, {
+      skipScriptRegistration: true,
+      scriptAssets: ['/assets/should-not-appear.js'],
+    })
+    expect(template).not.toContain('.Scripts.Register')
+  })
+
+  test('absent scriptAssets falls back to adapter-computed script paths', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const computed = new GoTemplateAdapter().generate(ir).template
+    const explicitUndefined = new GoTemplateAdapter().generate(ir, { scriptAssets: undefined }).template
+    expect(computed).toContain('{{.Scripts.Register "/static/client/barefoot.js"}}')
+    expect(computed).toContain('{{.Scripts.Register "/static/client/Counter.client.js"}}')
+    expect(explicitUndefined).toBe(computed)
+  })
+})

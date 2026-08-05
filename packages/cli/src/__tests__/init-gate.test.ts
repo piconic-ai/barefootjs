@@ -75,18 +75,18 @@ describe('bf init is internal — only create-barefootjs can invoke it', () => {
   test('gate passes when BAREFOOT_INIT_VIA_CREATE=1 is set (sanity)', () => {
     // We don't run a full init here — that would touch the network for
     // the registry probe. Instead we run inside a directory that already
-    // has a barefoot.config.ts, which trips the next guard inside init
+    // has a vite.config.ts, which trips the next guard inside init
     // and exits with a different, init-specific error message. Hitting
     // that error proves the env-var gate let us through.
     const cwd = mktmp()
-    writeFileSync(path.join(cwd, 'barefoot.config.ts'), 'export default {}')
+    writeFileSync(path.join(cwd, 'vite.config.ts'), 'export default {}')
     const result = spawnSync('bun', [CLI_ENTRY, 'init'], {
       env: { ...process.env, BAREFOOT_INIT_VIA_CREATE: '1' },
       encoding: 'utf-8',
       cwd,
     })
     expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('barefoot.config.ts already exists')
+    expect(result.stderr).toContain('vite.config.ts already exists')
     expect(result.stderr).not.toContain('`bf init` is internal')
   })
 })

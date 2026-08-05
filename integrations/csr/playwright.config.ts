@@ -20,9 +20,18 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'bun run build.ts && bun run server.ts',
+    // `bun run build`, not `bun run build.ts` — there has never been a
+    // `build.ts` in this directory, so this command could only ever have
+    // worked when a server was already listening on 3002 and
+    // `reuseExistingServer` skipped it. Nothing caught that: unlike the
+    // other integrations, csr has no e2e job in `.github/workflows`.
+    command: 'bun run build && bun run server.ts',
     url: 'http://localhost:3002',
     reuseExistingServer: !process.env.CI,
-    timeout: 15000,
+    // 30s, matching every other integration whose command builds first. The
+    // old 15s only ever had to cover `server.ts` starting, because the build
+    // half of the command failed instantly on a missing file. A cold
+    // `vite build` here measures ~17s.
+    timeout: 30000,
   },
 })

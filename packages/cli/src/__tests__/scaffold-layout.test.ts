@@ -28,7 +28,7 @@ describe('resolveScaffoldLayout', () => {
     expect(layout.componentsBasePath).toBe('ui/components/ui')
   })
 
-  test('project mode: writes under projectDir using paths.components from barefoot.config.ts', () => {
+  test('project mode: writes under projectDir using paths.components from the project config', () => {
     const layout = resolveScaffoldLayout(
       ctx({
         projectDir: '/Users/me/my-app',

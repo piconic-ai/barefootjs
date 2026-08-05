@@ -20,14 +20,14 @@ import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { mkdir, readdir } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
 import { loadContentFromDisk } from './lib/content-loader'
+import { resolveRelativeImports } from '../../packages/cli/src/lib/resolve-imports'
+import { transpile } from '../../packages/cli/src/lib/runtime'
 import {
   hasUseClientDirective,
   discoverComponentFiles,
   generateHash,
-  resolveRelativeImports,
-} from '../../packages/cli/src/lib/build'
-import { transpile } from '../../packages/cli/src/lib/runtime'
-import { addScriptCollection } from '../../packages/adapter-hono/src/build'
+  addScriptCollection,
+} from '../shared/lib/site-build-helpers'
 
 const ROOT_DIR = dirname(import.meta.path)
 const CONTENT_DIR = resolve(ROOT_DIR, '../../docs/core')

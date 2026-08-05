@@ -22,6 +22,7 @@ use barefootjs::backend_minijinja;
 use barefootjs::JsValue;
 use minijinja::Environment;
 use render::{empty_obj, jb, jobj, js, jn, new_session, render_component};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tower_http::services::ServeDir;
@@ -36,6 +37,15 @@ pub struct AppState {
     /// request in dev instead).
     pub env: Arc<Environment<'static>>,
     pub manifest: Arc<JsValue>,
+    /// The Vite-generated asset map (`dist/bf-assets.json`, written by
+    /// `@barefootjs/rust/vite`'s `afterEmit` hook) -- resolves a
+    /// hand-written, non-component script entry's bundled URL (dev: Vite
+    /// origin URL; production: content-hashed manifest path). Read once at
+    /// startup, same rationale as `manifest` above: there is no compile
+    /// step needing the URL baked in ahead of time -- a fresh copy lands
+    /// under gitignored `dist/` on every build (dev AND production). See
+    /// `blog.rs`'s use for `RouterEntry`.
+    pub assets: Arc<HashMap<String, String>>,
     pub blog: Arc<blog::BlogData>,
     pub sessions: Arc<session::SessionStore>,
 }
@@ -46,6 +56,19 @@ fn base_path() -> String {
 
 fn is_dev() -> bool {
     std::env::var("APP_ENV").map(|v| v == "development").unwrap_or(false)
+}
+
+/// Read `dist/bf-assets.json` (see `AppState.assets`'s docstring) into a
+/// flat `name -> url` map, degrading to empty on a missing/unparsable file
+/// (a fresh build always regenerates it; a missing file just means
+/// `bun run build` hasn't run yet, same fallback as `load_manifest`'s
+/// caller above).
+fn load_assets(path: &PathBuf) -> HashMap<String, String> {
+    let text = match std::fs::read_to_string(path) {
+        Ok(t) => t,
+        Err(_) => return HashMap::new(),
+    };
+    serde_json::from_str(&text).unwrap_or_default()
 }
 
 #[tokio::main]
@@ -64,6 +87,7 @@ async fn main() {
     };
     let env = backend_minijinja::build_environment(&templates_dir);
     let blog_data = blog::load_blog_data(&PathBuf::from("dist/blog-data.json"));
+    let assets = load_assets(&PathBuf::from("dist/bf-assets.json"));
 
     let state = AppState {
         base: Arc::new(base.clone()),
@@ -71,6 +95,7 @@ async fn main() {
         templates_dir: Arc::new(templates_dir),
         env: Arc::new(env),
         manifest: Arc::new(manifest),
+        assets: Arc::new(assets),
         blog: Arc::new(blog_data),
         sessions: Arc::new(session::SessionStore::new()),
     };

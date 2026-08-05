@@ -492,7 +492,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const scriptRegistrations = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
 
     let template = `{{define "${this.state.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
     // Companion children defines execute with the parent's data via `bf_tmpl`.
@@ -615,7 +615,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Props struct) and guards the registrations with `{{if .Scripts}}` for a nil
    * collector.
    */
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string): string {
+  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+    // `scriptAssets`, when present (including `[]`), fully supersedes the
+    // adapter-computed `barefootJsPath` / `clientJsBasePath` fallback pair
+    // below — see `AdapterGenerateOptions.scriptAssets`. The caller (e.g.
+    // the Vite plugin) has already decided the exact ordered URL list,
+    // including whether any script is needed at all.
+    if (scriptAssets) {
+      if (scriptAssets.length === 0) return ''
+      const registrations = scriptAssets.map((url) => `{{.Scripts.Register "${url}"}}`)
+      return `{{if .Scripts}}${registrations.join('')}{{end}}\n`
+    }
+
     const hasInteractivity = hasClientInteractivity(ir)
 
     if (!hasInteractivity) {

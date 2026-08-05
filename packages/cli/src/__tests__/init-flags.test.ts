@@ -56,9 +56,9 @@ describe('bf init --list-adapters', () => {
     expect(r.stdout).toContain('none')
   })
 
-  test('works even when barefoot.config.ts already exists (handled before that guard)', () => {
+  test('works even when vite.config.ts already exists (handled before that guard)', () => {
     const cwd = mktmp()
-    writeFileSync(path.join(cwd, 'barefoot.config.ts'), 'export default {}')
+    writeFileSync(path.join(cwd, 'vite.config.ts'), 'export default {}')
     const r = runInit(['--list-adapters'], cwd)
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('hono')

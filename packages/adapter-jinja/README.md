@@ -48,16 +48,20 @@ satisfy, and the package's own tests under `python/tests/`.
 ## Usage
 
 ```ts
-// barefoot.config.ts
-import { createConfig } from '@barefootjs/jinja/build'
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/jinja/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` then emits `.jinja` templates + client JS under `outDir`. A
+`vite build` then emits `.jinja` templates + client JS under `templates` /
+Vite's own `build.outDir`. A
 Python host renders a component by constructing a `jinja2.Environment`
 (with `autoescape=True`, `undefined=jinja2.ChainableUndefined`,
 `trim_blocks=True`, `lstrip_blocks=True` — see the adapter header comment

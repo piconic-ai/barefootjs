@@ -572,3 +572,63 @@ function Widget({ rows }: { rows: { x: string }[] }) {
     expect(template).toContain('<: $cfg.x :>')
   })
 })
+
+describe('XslateAdapter - scriptAssets (Vite late-binding, PR1)', () => {
+  const CLIENT_COMPONENT = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+`
+
+  test('emits one register_script per URL, in order, when scriptAssets is set', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new XslateAdapter().generate(ir, {
+      scriptAssets: ['/assets/runtime-abc123.js', '/assets/counter-def456.js'],
+    })
+    const runtimeIdx = template.indexOf("$bf.register_script('/assets/runtime-abc123.js')")
+    const compIdx = template.indexOf("$bf.register_script('/assets/counter-def456.js')")
+    expect(runtimeIdx).toBeGreaterThanOrEqual(0)
+    expect(compIdx).toBeGreaterThanOrEqual(0)
+    expect(runtimeIdx).toBeLessThan(compIdx)
+    expect(template).toContain('_bf_reg0')
+    expect(template).toContain('_bf_reg1')
+    expect(template).not.toContain('/static/components/barefoot.js')
+    expect(template).not.toContain('Counter.client.js')
+  })
+
+  test('emits a single registration for a single-element scriptAssets array', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new XslateAdapter().generate(ir, {
+      scriptAssets: ['/assets/only-one.js'],
+    })
+    expect(template).toContain("$bf.register_script('/assets/only-one.js')")
+    expect(template.match(/register_script/g)?.length).toBe(1)
+  })
+
+  test('an empty scriptAssets array emits no script registrations', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new XslateAdapter().generate(ir, { scriptAssets: [] })
+    expect(template).not.toContain('register_script')
+  })
+
+  test('skipScriptRegistration still wins when scriptAssets is also set', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new XslateAdapter().generate(ir, {
+      skipScriptRegistration: true,
+      scriptAssets: ['/assets/should-not-appear.js'],
+    })
+    expect(template).not.toContain('register_script')
+  })
+
+  test('absent scriptAssets falls back to adapter-computed script paths', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const computed = new XslateAdapter().generate(ir).template
+    const explicitUndefined = new XslateAdapter().generate(ir, { scriptAssets: undefined }).template
+    expect(computed).toContain("$bf.register_script('/static/components/barefoot.js')")
+    expect(computed).toContain("$bf.register_script('/static/components/Counter.client.js')")
+    expect(explicitUndefined).toBe(computed)
+  })
+})

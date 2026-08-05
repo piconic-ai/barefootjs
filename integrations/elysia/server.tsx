@@ -23,7 +23,6 @@ import { renderToHtml } from '@barefootjs/hono/render'
 import { withRequestEnv } from '@barefootjs/hono/request-env'
 import { Layout } from './renderer'
 import { renderBlogIndex, renderBlogPost } from './blog'
-import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
 import TodoApp from '@/components/TodoApp'
@@ -132,7 +131,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
   .get(link('/'), async () =>
     html(
       await renderToHtml(
-        <Layout title="BarefootJS + Elysia" manifest={manifest} base={BASE}>
+        <Layout title="BarefootJS + Elysia" base={BASE}>
           <h1>BarefootJS + Elysia Integration</h1>
           <nav>
             <ul>
@@ -152,7 +151,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
   .get(link('/counter'), async () =>
     html(
       await renderToHtml(
-        <Layout title="Counter — BarefootJS + Elysia" manifest={manifest} base={BASE}>
+        <Layout title="Counter — BarefootJS + Elysia" base={BASE}>
           <h1>Counter</h1>
           <Counter initial={0} />
           <p><a href={link('/')}>← Back</a></p>
@@ -164,7 +163,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
   .get(link('/toggle'), async () =>
     html(
       await renderToHtml(
-        <Layout title="Toggle — BarefootJS + Elysia" manifest={manifest} base={BASE}>
+        <Layout title="Toggle — BarefootJS + Elysia" base={BASE}>
           <h1>Toggle</h1>
           <Toggle
             toggleItems={[
@@ -184,7 +183,6 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
       await renderToHtml(
         <Layout
           title="Todo (@client) — BarefootJS + Elysia"
-          manifest={manifest}
           base={BASE}
           styles={[link('/shared/styles/todo-app.css')]}
         >
@@ -203,7 +201,6 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
       await renderToHtml(
         <Layout
           title="Todo (SSR) — BarefootJS + Elysia"
-          manifest={manifest}
           base={BASE}
           styles={[link('/shared/styles/todo-app.css')]}
         >
@@ -222,7 +219,6 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
       await renderToHtml(
         <Layout
           title="AI Chat — BarefootJS + Elysia"
-          manifest={manifest}
           base={BASE}
           styles={[link('/shared/styles/ai-chat.css')]}
         >
@@ -240,11 +236,11 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
 
   // ── Blog (@barefootjs/router showcase) — its own region-shell layout ─────
   .get(link('/blog'), async ({ query }) =>
-    html(await renderToHtml(renderBlogIndex(BASE, manifest, query.tag as string | undefined))),
+    html(await renderToHtml(renderBlogIndex(BASE, query.tag as string | undefined))),
   )
 
   .get(link('/blog/posts/:slug'), async ({ params, set }) => {
-    const node = renderBlogPost(BASE, manifest, params.slug)
+    const node = renderBlogPost(BASE, params.slug)
     if (!node) {
       set.status = 404
       return 'Not found'
@@ -338,7 +334,11 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
   .compile()
 
 // ── static assets ──────────────────────────────────────────────────────────
-// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
+// {BASE}/static/components/* → ./dist/static/components/*  (Vite's hashed
+//                               client bundles — build.outDir, see
+//                               vite.config.ts; NOT dist/components, which
+//                               is the SSR template dir `@/components/*`
+//                               resolves, never served to the browser)
 // {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
 //
 // On Workers these are served by the Assets binding (see wrangler.toml);
@@ -353,7 +353,7 @@ function isStaticPath(pathname: string): boolean {
 
 async function serveFromDisk(pathname: string): Promise<Response> {
   const [dir, prefix] = pathname.startsWith(`${BASE}/static/components/`)
-    ? [join(import.meta.dir, 'dist/components'), `${BASE}/static/components/`]
+    ? [join(import.meta.dir, 'dist/static/components'), `${BASE}/static/components/`]
     : [join(import.meta.dir, '../shared/styles'), `${BASE}/shared/styles/`]
   const rel = normalize(pathname.slice(prefix.length))
   if (rel.startsWith('..') || isAbsolute(rel)) return new Response('Not found', { status: 404 })

@@ -78,6 +78,38 @@ export interface AdapterGenerateOptions {
    * incidentals are unaffected.
    */
   rewriteRelativeImport?: (importPath: string) => string
+  /**
+   * Ordered list of fully-resolved, absolute URLs to emit as ES module
+   * script registrations, in array order. When present (including the
+   * empty array `[]`), this **fully supersedes** the adapter-computed
+   * `clientJsBasePath` / `barefootJsPath` / `scriptBaseName` computation
+   * that adapters otherwise use to bake exactly two script URLs (the
+   * shared runtime, then the component's own `.client.js`) at codegen
+   * time.
+   *
+   * Exists for callers — chiefly the Vite plugin — that only learn the
+   * real script URLs after bundling: under Vite, filenames are content-
+   * hashed, the runtime is not a separately-registered script (it
+   * arrives as an ESM import of a shared chunk pulled in by the
+   * component's own entry), and the number of scripts a component needs
+   * is not fixed at two. The caller is responsible for all of that
+   * resolution — including any dev-server client script and the
+   * component's own entry — and hands the adapter a plain, ordered URL
+   * list to register verbatim.
+   *
+   * `undefined` (the default) means "fall back to the adapter-computed
+   * paths" — this is a purely additive option; every existing caller
+   * that never sets it keeps byte-identical output. An empty array is
+   * semantically distinct from `undefined`: it means "this component
+   * needs no script registrations at all" (e.g. the caller determined
+   * the component has no client interactivity), whereas `undefined`
+   * means "adapter, please decide using the computed path options."
+   *
+   * `skipScriptRegistration: true` still wins over this unconditionally
+   * — it means "a parent/caller will register scripts for me", which
+   * takes precedence regardless of what `scriptAssets` says.
+   */
+  scriptAssets?: string[]
 }
 
 /**
@@ -172,22 +204,22 @@ export interface TemplateAdapter {
   templatesPerComponent?: boolean
   /**
    * How the application author injects the externals importmap (and any
-   * `<link rel="modulepreload">` hints) into the page `<head>` when
-   * `externals` / `bundleEntries` are configured.
+   * `<link rel="modulepreload">` hints) into the page `<head>` when an
+   * externals manifest (`ExternalsManifest`) is in use.
    *
    * - `'component'` — the adapter ships a render-time component (e.g. Hono's
-   *   `BfImportMap`) that reads `barefoot-externals.json`; `bf build` emits no
-   *   static snippet.
+   *   `BfImportMap`) that renders whatever manifest the app passes it; no
+   *   static snippet file is involved.
    * - `'html-snippet'` — the adapter targets a template-string language (Go
-   *   html/template, Mojolicious EP) with no component layer, so `bf build`
-   *   writes a ready-to-include `barefoot-importmap.html` alongside
-   *   `barefoot-externals.json` (via `renderImportMapHtml`).
+   *   html/template, Mojolicious EP) with no component layer, so the app
+   *   renders its manifest to a static `barefoot-importmap.html` snippet
+   *   itself (via `renderImportMapHtml`) and includes it into the page.
    *
    * Optional only for backward compatibility (and internal-only adapters like
    * the CSR test adapter). Every *shipping* adapter must set it — the
    * adapter-tests importmap-injection contract enforces this so a new adapter
-   * cannot silently leave configured `externals` with no injection point.
-   * See issue #1644.
+   * cannot silently leave a configured externals manifest with no injection
+   * point. See issue #1644.
    */
   importMapInjection?: 'component' | 'html-snippet'
   /**

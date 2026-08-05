@@ -77,19 +77,37 @@ const PREDICATE_METHODS: ReadonlySet<string> = new Set([
 ])
 
 export class MojoFilterEmitter implements ParsedExprEmitter {
+  // Plain field declarations + assignment, NOT TS constructor-parameter-
+  // property shorthand: Vite's `bundleConfigFile` externalizes any bare
+  // (non-relative) import when loading `vite.config.ts` (see
+  // `@barefootjs/mojolicious/vite`'s docstring), so this file can be loaded
+  // directly by Node's OWN native TypeScript type-stripping (enabled by
+  // default since Node 22.18/23.6) rather than esbuild — and Node's
+  // strip-only mode does not support parameter properties (`SyntaxError
+  // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
+  private readonly param: string
+  private readonly localVarMap: Map<string, string>
+  // Reports whether a getter/prop name is string-typed, so `===`/`!==`
+  // against it lowers to `eq`/`ne` (#1672). Defaults to "never" for callers
+  // that don't thread it through.
+  private readonly isStringName: (n: string) => boolean
+  // Records a BF101 for nested callback shapes this emitter can only
+  // degrade — `find*` and the non-predicate methods (#2038). Optional so
+  // emitter construction stays possible without an adapter; a missing hook
+  // keeps the old silent-degrade emit.
+  private readonly onUnsupported?: (message: string, reason?: string) => void
+
   constructor(
-    private readonly param: string,
-    private readonly localVarMap: Map<string, string>,
-    // Reports whether a getter/prop name is string-typed, so `===`/`!==`
-    // against it lowers to `eq`/`ne` (#1672). Defaults to "never" for callers
-    // that don't thread it through.
-    private readonly isStringName: (n: string) => boolean = () => false,
-    // Records a BF101 for nested callback shapes this emitter can only
-    // degrade — `find*` and the non-predicate methods (#2038). Optional so
-    // emitter construction stays possible without an adapter; a missing hook
-    // keeps the old silent-degrade emit.
-    private readonly onUnsupported?: (message: string, reason?: string) => void,
-  ) {}
+    param: string,
+    localVarMap: Map<string, string>,
+    isStringName: (n: string) => boolean = () => false,
+    onUnsupported?: (message: string, reason?: string) => void,
+  ) {
+    this.param = param
+    this.localVarMap = localVarMap
+    this.isStringName = isStringName
+    this.onUnsupported = onUnsupported
+  }
 
   identifier(name: string): string {
     if (name === this.param) return `$${this.param}`
@@ -296,7 +314,13 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
  *     shapes the AST can't classify still emit something coherent.
  */
 export class MojoTopLevelEmitter implements ParsedExprEmitter {
-  constructor(private readonly ctx: MojoEmitContext) {}
+  // Plain field + assignment, not a parameter property — see
+  // `MojoFilterEmitter`'s constructor comment above for why.
+  private readonly ctx: MojoEmitContext
+
+  constructor(ctx: MojoEmitContext) {
+    this.ctx = ctx
+  }
 
   identifier(name: string): string {
     // `undefined` / `null` nested inside a larger expression tree

@@ -8,7 +8,7 @@
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
-import { deduplicateGoTypes } from './build.ts'
+import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey, loopKeyToGoFieldPath } from './adapter/lib/go-naming.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import type { NestedComponentInfo } from './adapter/lib/types.ts'
@@ -258,7 +258,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   }
 
   // Merge entry + sibling + child type blocks through the same
-  // `deduplicateGoTypes` helper `bf build` uses. Duplicates arise in two
+  // `deduplicateGoTypes` helper `vite.ts`'s `combineGoTypes` uses. Duplicates arise in two
   // ways (#1896): a multi-component file emits its module-scope shared
   // types (a context-value struct, a data `type Payment = …`) once per
   // component IR — both across the entry source's own sibling exports

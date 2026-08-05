@@ -3,9 +3,6 @@
 <head>
   <meta charset="utf-8">
   <title>Todo App - CSR</title>
-  <script type="importmap">
-    { "imports": { "@barefootjs/client/runtime": "/static/components/barefoot.js" } }
-  </script>
   <link rel="stylesheet" href="/shared/styles/components.css">
   <link rel="stylesheet" href="/shared/styles/todo-app.css">
 </head>
@@ -13,7 +10,7 @@
   <div id="app"></div>
   <script type="module">
     import { render } from '@barefootjs/client/runtime'
-    await import('/static/components/TodoApp.client.js')
+    await import('../../shared/components/TodoApp.tsx')
 
     // Fetch initial todos from API
     const response = await fetch('/api/todos')

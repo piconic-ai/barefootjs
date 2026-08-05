@@ -4,8 +4,8 @@
 // cross-adapter contract defined in `create-barefootjs` and the
 // Mojo-specific wiring:
 //
-//   - `barefoot.config.ts` targets `@barefootjs/mojolicious/build` and
-//     uses `clientJsBasePath: '/static/components/'`.
+//   - `vite.config.ts` targets `@barefootjs/mojolicious/vite` and
+//     uses `base: '/static/components/'`.
 //   - `app.pl` forwards `/static/*` URLs to the on-disk static paths
 //     (Mojolicious's built-in dispatcher does not honour URL prefixes,
 //     so the explicit routes are load-bearing — without them every
@@ -116,7 +116,7 @@ describe.skipIf(!INTEGRATION)(
 
     describe('app.pl serves static assets', () => {
       // Mojolicious's built-in static dispatcher does not honour URL
-      // prefixes. The scaffold's `barefoot.config.ts` and layout `<link>`s
+      // prefixes. The scaffold's `vite.config.ts` and layout `<link>`s
       // all reference `/static/*` URLs, so `app.pl` needs explicit
       // forwarding routes — without them every stylesheet and client bundle
       // 404s in the browser even though the SSR HTML rendered correctly.
@@ -176,10 +176,10 @@ describe.skipIf(!INTEGRATION)(
         expect(app).not.toContain("app->home->child('dist/templates/manifest.json')")
       })
 
-      test('barefoot.config.ts targets the mojolicious adapter', () => {
-        const cfg = readFileSync(path.join(projectDir, 'barefoot.config.ts'), 'utf-8')
-        expect(cfg).toContain("from '@barefootjs/mojolicious/build'")
-        expect(cfg).toContain("clientJsBasePath: '/static/components/'")
+      test('vite.config.ts targets the mojolicious adapter', () => {
+        const cfg = readFileSync(path.join(projectDir, 'vite.config.ts'), 'utf-8')
+        expect(cfg).toContain("from '@barefootjs/mojolicious/vite'")
+        expect(cfg).toContain("base: '/static/components/'")
       })
 
       test('layout stylesheets point at /static/*.css', () => {

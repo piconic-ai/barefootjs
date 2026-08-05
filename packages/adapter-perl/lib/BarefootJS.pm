@@ -339,8 +339,9 @@ sub render_child ($self, $name, @args) {
 # Bulk registration from build manifest
 # ---------------------------------------------------------------------------
 #
-# `bf build` emits dist/templates/manifest.json describing every
-# component the page might invoke (Counter, ui/button/index, ...).
+# `vite build` (via `@barefootjs/mojolicious/vite`'s `barefoot()` plugin)
+# emits dist/templates/manifest.json describing every component the page
+# might invoke (Counter, ui/button/index, ...).
 # This helper walks that manifest and registers one child renderer per
 # UI registry entry — the path shape `ui/<name>/index` maps to the
 # `<name>` slot key Counter.html.ep and friends use via

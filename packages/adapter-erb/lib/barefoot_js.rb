@@ -255,8 +255,9 @@ module BarefootJS
     # Bulk registration from build manifest
     # -----------------------------------------------------------------
     #
-    # `bf build` emits dist/templates/manifest.json describing every
-    # component the page might invoke. This walks that manifest and
+    # `vite build` (via `@barefootjs/erb/vite`'s `barefoot()` plugin) emits
+    # dist/templates/manifest.json describing every component the page
+    # might invoke. This walks that manifest and
     # registers one child renderer per UI registry entry (`ui/<name>/index`
     # -> slot key `<name>`), seeding each child's template vars from the
     # manifest's statically-derived `ssrDefaults` (prop destructure

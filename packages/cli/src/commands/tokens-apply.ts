@@ -66,7 +66,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
-  // The CSS lookup falls back to bare cwd when `barefoot.config.ts` is
+  // The CSS lookup falls back to bare cwd when `vite.config.ts` is
   // missing, so an app that hasn't run the scaffolder yet still gets a
   // useful error pointing at the directory we searched.
   const projectDir = ctx.projectDir ?? process.cwd()

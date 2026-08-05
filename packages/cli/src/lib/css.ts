@@ -45,8 +45,8 @@ export function processCssHead(content: string, usesUno: boolean): string {
 // Handles the concrete shapes the adapters emit:
 //   - the `"unocss --watch"` pane inside a `concurrently` invocation
 //     (and the matching `uno`/`magenta` entries in its -n/-c lists)
-//   - `unocss` links in `&&` chains (`bf build && unocss`,
-//     `bf build && unocss && <next>`, `go mod tidy && bf build && unocss`)
+//   - `unocss` links in `&&` chains (`vite build && unocss`,
+//     `vite build && unocss && <next>`, `go mod tidy && vite build && unocss`)
 // Commands with no UnoCSS reference are returned unchanged.
 export function stripUnocssFromScript(cmd: string): string {
   let out = cmd
@@ -55,10 +55,23 @@ export function stripUnocssFromScript(cmd: string): string {
   //    single-spaced whether the pane sat in the middle or at the end.
   out = out.split(' "unocss --watch"').join('')
   // 2. Re-balance the concurrently name/color lists now that the `uno`
-  //    pane is gone. `uno` is always the middle entry, paired with
-  //    `magenta`, so the two known shapes collapse cleanly.
-  out = out.replace('-n build,uno,server -c blue,magenta,green', '-n build,server -c blue,green')
-  out = out.replace('-n build,uno -c blue,magenta', '-n build -c blue')
+  //    pane is gone. Positional, NOT a match on known pane names: the
+  //    adapters name their other panes differently (`vite,uno,wrangler`,
+  //    `dev,uno,server`, `build,uno,server`, `build,uno`), and a rewrite
+  //    keyed on any one of those spellings silently no-ops on the rest —
+  //    leaving three names for two commands, so `concurrently` labels the
+  //    server pane `uno` and colors it magenta. `uno` is the only entry
+  //    whose position is fixed by construction (it is the pane this
+  //    function just removed); everything else is read off the string.
+  out = out.replace(/-n (\S+) -c (\S+)/, (whole, names: string, colors: string) => {
+    const nameList = names.split(',')
+    const unoIndex = nameList.indexOf('uno')
+    if (unoIndex === -1) return whole
+    const colorList = colors.split(',')
+    nameList.splice(unoIndex, 1)
+    if (unoIndex < colorList.length) colorList.splice(unoIndex, 1)
+    return `-n ${nameList.join(',')} -c ${colorList.join(',')}`
+  })
   // 3. Drop `unocss` from `&&` chains: middle occurrence first, then a
   //    trailing one.
   out = out.split(' && unocss && ').join(' && ')

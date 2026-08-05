@@ -23,8 +23,14 @@ WORKDIR /src/integrations/nethttp
 COPY integrations/nethttp/*.go ./
 ARG TARGETOS
 ARG TARGETARCH
+# `-tags production`: the untagged default compiles `bf_assets.go`
+# (`//go:build !production`, committed, Vite dev-server URLs) so a fresh
+# clone builds with zero ceremony; a deployed image needs the
+# `production`-tagged `bf_assets_prod.go` (hashed build URLs from the
+# `bun run build` this Dockerfile's header comment requires beforehand)
+# instead, or `bfdev.GuardAssets` panics at container startup.
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags="-s -w" -o /out/nethttp-server .
+    go build -tags production -trimpath -ldflags="-s -w" -o /out/nethttp-server .
 
 FROM alpine:3.19
 

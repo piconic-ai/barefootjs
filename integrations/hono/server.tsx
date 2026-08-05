@@ -36,6 +36,22 @@ app.use(renderer)
 // sent in SSE Last-Event-ID — a code change restarts the isolate, the
 // stream drops, the client reconnects, the boot id differs, reload fires.
 // No-op in production (NODE_ENV=production).
+//
+// NOT superseded by Vite's own dev websocket (kept deliberately, unlike
+// the import map above): `vite dev` and `wrangler dev` are two separate
+// processes solving two separate problems — `package.json`'s `dev` script
+// runs both together via `concurrently` so one command covers editing
+// EITHER a shared component (Vite's own websocket reloads for that) OR
+// this file / `blog.tsx` (this SSE reloader catches the Worker restart
+// that causes). Vite's websocket only tells the
+// browser "a CLIENT bundle changed" (the URLs `registerComponentScripts`
+// baked into a page, via `devScriptAssets`'s `@vite/client` entry) — it
+// has no visibility into wrangler restarting the Worker isolate for a
+// SERVER-side `.tsx` edit (`server.tsx`/`blog.tsx`/a component's SSR
+// template regenerated into `dist/components`). This SSE-based reloader is
+// what detects THAT: a Worker restart drops the stream, the client
+// reconnects with a stale boot id, and `event: reload` fires — a signal
+// Vite's own dev server structurally cannot produce for another process.
 app.get('/_bf/reload', createDevReloader())
 
 // Blog — the `@barefootjs/router` showcase (partial navigation across nested /

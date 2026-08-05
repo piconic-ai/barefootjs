@@ -33,7 +33,7 @@ npm run dev
 
 `npm run dev` runs three processes in parallel:
 
-- `bf build --watch` — the BarefootJS compiler. Watches `components/` and emits marked templates plus client JS to `public/components/`.
+- `vite dev` — the BarefootJS compiler, wired in as a Vite plugin. Watches `components/` and serves marked templates plus client JS from `public/components/`.
 - `unocss --watch` — scans your JSX for utility classes and writes `public/uno.css`.
 - `wrangler dev --live-reload` — Cloudflare's local Workers runtime. Serves the app and reloads the browser on rebuilds.
 
@@ -52,8 +52,8 @@ my-app/
 ├── public/                 # Static assets served by Workers
 │   ├── tokens.css          # CSS design tokens
 │   ├── styles.css          # Counter + page styles
-│   └── components/         # Generated client JS (bf build writes here)
-├── barefoot.config.ts      # Compiler + paths config
+│   └── components/         # Generated client JS (vite build writes here)
+├── vite.config.ts          # Compiler (barefoot plugin) + Vite build config
 ├── wrangler.jsonc          # Cloudflare Workers config
 └── uno.config.ts           # UnoCSS scan patterns
 ```
@@ -148,7 +148,7 @@ When you're ready to ship:
 npm run deploy
 ```
 
-This runs `bf build`, generates the final `uno.css`, and calls `wrangler deploy`. The first deploy will prompt you to log into Cloudflare. After that, your app is live on `*.workers.dev`.
+This runs `vite build`, generates the final `uno.css`, and calls `wrangler deploy`. The first deploy will prompt you to log into Cloudflare. After that, your app is live on `*.workers.dev`.
 
 ## Next steps
 

@@ -3,13 +3,20 @@
 //! region-shell layout (header + ThemeToggle in the shell, a hand-authored
 //! sidebar region `nav:0` + the compiled `<PageShell>` nested content
 //! region in the main column) whose islands are the shared blog components
-//! in `../shared/blog`, compiled by this integration's `bf build`.
+//! in `../shared/blog`, compiled by this integration's Vite build
+//! (`vite.config.ts`). The client router (`client/router-entry.ts`, its
+//! bundled URL resolved into `state.assets["RouterEntry"]`) fetches a full
+//! HTML page for every navigation and diffs `[bf-region]` boundaries
+//! client-side, so every route below just returns a normal HTML document.
 //!
-//! There is no special server-side "partial navigation" endpoint: the
-//! client router (`client/router-entry.ts`, bundled to `client/router-
-//! entry.js`) fetches a full HTML page for every navigation and diffs
-//! `[bf-region]` boundaries client-side, so every route below just returns
-//! a normal HTML document.
+//! No import map is needed (unlike the pre-Vite build): the router
+//! bundle's `@barefootjs/client/runtime` import and every compiled
+//! island's own `@barefootjs/client` import are ordinary ESM imports
+//! Rollup/Vite resolve through their real module graph, collapsing into
+//! ONE shared chunk (build) or ONE cached module (dev) automatically -- a
+//! single reactive runtime instance without any hand-wired specifier
+//! redirection. That this hand-written wiring could simply be deleted is
+//! the point of the Vite-based design, not an incidental cleanup.
 //!
 //! `PostList`'s own `params` memo returns an OBJECT built through a helper
 //! function, and `sortClass`/`tagClass` are plain functions called with
@@ -151,15 +158,6 @@ fn blog_base(state: &AppState) -> String {
     format!("{}/blog", state.base)
 }
 
-fn import_map(state: &AppState) -> String {
-    let bjs = format!("{}/client/barefoot.js", state.base);
-    let json = format!(
-        r#"{{"imports":{{"@barefootjs/client":{b:?},"@barefootjs/client/runtime":{b:?},"@barefootjs/client/reactive":{b:?}}}}}"#,
-        b = bjs
-    );
-    json.replace('<', "\\u003c")
-}
-
 fn esc(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
@@ -173,7 +171,7 @@ fn blog_page(state: &AppState, session: &std::sync::Arc<barefootjs::RenderSessio
     let sidebar = render_island(state, session, "Sidebar", empty_obj(), empty_obj())?;
     let (shell, _) = render_component_with_raw_children(state, session, "PageShell", empty_obj(), empty_obj(), content_html)?;
     let scripts = scripts_html(session);
-    let static_base = format!("{}/client", state.base);
+    let router_entry = state.assets.get("RouterEntry").cloned().unwrap_or_default();
 
     Ok(format!(
         r#"<!DOCTYPE html>
@@ -182,7 +180,6 @@ fn blog_page(state: &AppState, session: &std::sync::Arc<barefootjs::RenderSessio
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{title}</title>
-<script type="importmap">{import_map}</script>
 <link rel="stylesheet" href="{base_styles}/styles/blog.css">
 </head>
 <body>
@@ -195,19 +192,18 @@ fn blog_page(state: &AppState, session: &std::sync::Arc<barefootjs::RenderSessio
 <main>{shell}</main>
 </div>
 {scripts}
-<script type="module" src="{static_base}/router-entry.js"></script>
+<script type="module" src="{router_entry}"></script>
 </body>
 </html>
 "#,
         title = esc(title),
-        import_map = import_map(state),
         base_styles = state.base,
         base = base,
         theme = theme,
         sidebar = sidebar,
         shell = shell,
         scripts = scripts,
-        static_base = static_base,
+        router_entry = router_entry,
     ))
 }
 

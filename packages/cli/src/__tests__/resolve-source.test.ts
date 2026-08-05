@@ -32,7 +32,7 @@ function ctxFor(projectDir: string, sourceDirs: string[] = []): CliContext {
 
 describe('resolveComponentSource', () => {
   test('finds a top-level scaffold component via sourceDirs (components/Counter.tsx)', () => {
-    // Mirrors the scaffold layout: `barefoot.config.ts` has
+    // Mirrors the scaffold layout: `vite.config.ts`'s barefoot plugin has
     // `components: ['components']`, the user's Counter.tsx lives at the
     // root of that dir. The pre-fix resolver only searched
     // `paths.components` (i.e. `components/ui/`) and missed it.

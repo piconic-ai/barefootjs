@@ -51,6 +51,7 @@ jobs:
         # resolved by the CLI entrypoint.
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
 
       - name: Extract component metadata

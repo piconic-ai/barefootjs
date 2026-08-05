@@ -304,7 +304,11 @@ const PAGES: PageSpec[] = [
   { path: 'core/adapters/hono-adapter.md' },
   { path: 'core/adapters/go-template-adapter.md' },
   { path: 'core/adapters/custom-adapter.md' },
-  { path: 'core/advanced/code-splitting.md' },
+  // `core/advanced/code-splitting.md` is deliberately absent: it documents
+  // stock Vite/Rollup build config (`manualChunks`) and carries no
+  // component code, while this extractor only reads ```tsx fences. Adding
+  // a token component there purely to keep the page listed here would
+  // hollow out the check rather than extend it.
   { path: 'core/advanced/compiler-internals.md' },
   // `core/advanced/error-codes.md` is handled by the per-BFxxx
   // matcher (see bottom of file) rather than the general extractor:

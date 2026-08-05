@@ -41,8 +41,8 @@ fully-swapping content area), so regions **nest**. The single broad region is th
 degenerate v0 case.
 
 **Author marks, compiler derives.** Zero-input inference of "which subtree is the
-shell" is not feasible: `bf build` compiles strictly per file
-(`discoverComponentFiles`, `packages/cli/src/lib/build.ts`) with no cross-page
+shell" is not feasible: the `barefoot()` Vite plugin compiles strictly per file
+(`discoverComponentFiles`, `packages/vite/src/discover.ts`) with no cross-page
 graph, so one page's tree never reveals that `Shell` is shared. (App Router
 `layout.tsx` and React Router `<Outlet/>` are authored too.) So the author places
 `<Region>` once and the compiler derives the rest:

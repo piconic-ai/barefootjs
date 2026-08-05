@@ -22,7 +22,7 @@ import (
 
 func main() {
 	// Load + cache templates once (re-parsed per request in dev so a
-	// \`bf build --watch\` rebuild shows up on refresh). See bf_render.go.
+	// \`vite dev\` rebuild shows up on refresh). See bf_render.go.
 	renderer := mustNewRenderer()
 
 	mux := http.NewServeMux()
@@ -33,7 +33,7 @@ func main() {
 	MountDevReload(mux)
 
 	// The go-template adapter emits client bundles under dist/client/
-	// and templates reference them at /client/ (per barefoot.config.ts).
+	// and templates reference them at /client/ (per vite.config.ts).
 	// Public assets (CSS) live under public/ and are served at /static/.
 	mux.Handle("/client/", http.StripPrefix("/client/", http.FileServer(http.Dir("dist/client"))))
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("public"))))
@@ -42,7 +42,7 @@ func main() {
 	// so static-asset requests don't fall through to the home handler.
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, req *http.Request) {
 		// \`NewCounterProps\` / \`CounterInput\` are generated into
-		// components.go by \`bf build\` — they wire up scope IDs,
+		// components.go by \`vite build\` / \`vite dev\` — they wire up scope IDs,
 		// child-slot props, and signal initial values. Use them instead
 		// of constructing props by hand.
 		props := NewCounterProps(CounterInput{Initial: 0})

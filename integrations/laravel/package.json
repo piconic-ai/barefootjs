@@ -2,9 +2,10 @@
   "name": "barefootjs-laravel-example",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts && composer install --no-interaction --no-progress",
-    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "build": "vite build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts && composer install --no-interaction --no-progress",
+    "build:watch": "vite dev",
     "dev": "PHP_CLI_SERVER_WORKERS=8 BASE_PATH=/integrations/laravel php artisan serve --host=0.0.0.0 --port=3016",
     "deploy": "bun run build && wrangler deploy",
     "test:e2e": "bunx playwright test",
@@ -18,10 +19,12 @@
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
     "@barefootjs/blade": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
     "@cloudflare/containers": "^0.3.2",
     "@cloudflare/workers-types": "^4",
     "@playwright/test": "^1.41.0",
     "bun-types": "^1.1.0",
+    "vite": "^6.0.0",
     "wrangler": "^4"
   }
 }

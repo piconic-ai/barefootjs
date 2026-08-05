@@ -50,16 +50,20 @@ contract each helper must satisfy, and the package's own tests under
 ## Usage
 
 ```ts
-// barefoot.config.ts
-import { createConfig } from '@barefootjs/twig/build'
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/twig/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` then emits `.twig` templates + client JS under `outDir`. A PHP
+`vite build` then emits `.twig` templates + client JS under `templates` /
+Vite's own `build.outDir`. A PHP
 host renders a component by constructing a `Twig\Environment` (with
 `autoescape: 'html'`, `strict_variables: false`) over a `FilesystemLoader`
 pointed at the emitted templates, wiring in the PHP `TwigBackend` as the

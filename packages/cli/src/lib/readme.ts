@@ -75,7 +75,7 @@ export function generateReadmeMd(
 
   lines.push('## Generated output', '')
   lines.push(
-    "The compiled output directory (produced by `bf build`) is regenerated on every build — don't edit it by hand.",
+    "The compiled output directory (produced by `vite build`) is regenerated on every build — don't edit it by hand.",
     '',
   )
 

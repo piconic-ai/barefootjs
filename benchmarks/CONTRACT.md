@@ -23,9 +23,10 @@ js-framework-benchmark (keyed category).
   - `dist/styles.css` — copied from `benchmarks/apps/shared/styles.css`.
 - Frameworks are bundled from the versions in the repo root `node_modules`
   (react 19.x, solid-js 1.9.x, `@barefootjs/*` workspace sources).
-- BarefootJS app uses the real compiler pipeline (`bf build` /
-  `packages/cli`), NOT hand-written DOM. Solid app uses `babel-preset-solid`
-  (real template compilation). React uses the automatic JSX runtime.
+- BarefootJS app uses the real compiler pipeline (`vite build` via
+  `@barefootjs/vite`'s `barefoot()` plugin), NOT hand-written DOM. Solid app
+  uses `babel-preset-solid` (real template compilation). React uses the
+  automatic JSX runtime.
 
 ## Page structure
 

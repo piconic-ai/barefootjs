@@ -6,26 +6,14 @@ import { createSignal, createSelector } from '@barefootjs/client'
 // js-framework-benchmark parity — same adjectives/colours/nouns, same
 // Math.random() formula, same monotonically-increasing id).
 //
-// NOTE ON WHY THIS IS INLINED RATHER THAN IMPORTED: BarefootJS's compiler
-// DOES support a 'use client' component importing a sibling .ts helper via
-// module-relative imports — resolveRelativeImports() in
-// packages/cli/src/lib/resolve-imports.ts inlines it into the compiled
-// client JS as a top-level IIFE. But that inlining is keyed off
-// `sourceDirsByManifestKey`, which packages/cli/src/lib/build.ts only
-// populates from `result.manifestKey` — and `compileEntry()`
-// (packages/cli/src/lib/build.ts ~line 1878) only sets `manifestKey` inside
-// `if (!config.clientOnly && markedTemplates.length > 0)`. CSR builds
-// (`@barefootjs/client/build`'s `createConfig()`) always set
-// `clientOnly: true`, so `markedTemplates.length` is always 0 and
-// `manifestKey` is always null for every CSR component — so
-// `sourceDirsByManifestKey` is always empty and the sibling-.ts-helper
-// inlining feature never fires in CSR (clientOnly) mode. Importing
-// `buildData` from `../../shared/data` compiled cleanly but left the
-// import specifier unresolved verbatim in the emitted client JS, which
-// 404'd in the browser (the relative path has no equivalent file at that
-// depth under dist/). This is a CLI limitation specific to `clientOnly`
-// builds, not a JSX/IR compiler restriction — reported here rather than
-// worked around with hand-written DOM.
+// NOTE ON WHY THIS IS INLINED RATHER THAN IMPORTED: this app predates the
+// Vite migration (PR 7a-7c), when the legacy `bf build` CLI's `clientOnly`
+// (CSR) mode never inlined a sibling `.ts` helper import — see history for
+// the removed `packages/cli/src/lib/resolve-imports.ts`/`build.ts` for the
+// mechanism that gated it. Real ESM `import` resolution is now Vite's own
+// job, so `import { buildData } from '../../shared/data'` would very
+// likely bundle correctly today. Left inlined rather than re-verified —
+// no functional need to change it.
 const adjectives = [
   'pretty', 'large', 'big', 'small', 'tall', 'short', 'long', 'handsome',
   'plain', 'quaint', 'clean', 'elegant', 'easy', 'angry', 'crazy', 'helpful',

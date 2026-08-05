@@ -49,7 +49,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   if (!ctx.config || !ctx.projectDir) {
     console.error('Error: project config not found. Run `npm create barefootjs@latest` first.')
-    console.error('       (looked for barefoot.config.ts walking up from the cwd)')
+    console.error('       (looked for vite.config.ts walking up from the cwd)')
     process.exit(1)
   }
 

@@ -2,9 +2,10 @@
   "name": "barefootjs-chi-example",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/copy-shared.ts",
-    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "build": "vite build && bun run scripts/gen-blog-data.ts && bun run scripts/copy-shared.ts",
+    "build:watch": "vite dev",
     "dev": "APP_ENV=development BASE_PATH=/integrations/chi go run .",
     "setup": "go mod tidy",
     "deploy": "bun run build && wrangler deploy",
@@ -14,12 +15,14 @@
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
     "@barefootjs/go-template": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
     "@barefootjs/client": "workspace:*",
     "@barefootjs/router": "workspace:*",
     "@cloudflare/containers": "^0.3.2",
     "@cloudflare/workers-types": "^4",
     "@playwright/test": "^1.41.0",
     "bun-types": "^1.1.0",
+    "vite": "^6.0.0",
     "wrangler": "^4"
   }
 }
