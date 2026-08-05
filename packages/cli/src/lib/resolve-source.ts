@@ -105,7 +105,7 @@ export function resolveComponentSource(
     if (monoPreview) return { filePath: monoPreview, isPreview: true }
   }
 
-  // 3. paths.components from vite.config.ts (registry-item layout)
+  // 3. paths.components from the project config (registry-item layout)
   if (ctx.config && ctx.projectDir) {
     const configIndex = tryCandidate(
       path.join(ctx.projectDir, ctx.config.paths.components, nameOrPath, 'index.tsx'),

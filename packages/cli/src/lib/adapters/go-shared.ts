@@ -361,7 +361,7 @@ export function goDevDependencies(): Record<string, string> {
     // `@barefootjs/go-template`'s composed `/vite` wrapper peer-depends
     // on both — a real devDependency here (not just left to a hoisted
     // transitive resolution) so `vite build` / `vite dev` resolve
-    // without an extra install step, matching every migrated
+    // without an extra install step, matching every Vite-based
     // integration's own devDependencies.
     '@barefootjs/vite': 'latest',
     vite: '^6.0.0',

@@ -1,16 +1,18 @@
 // Cross-adapter importmap-injection contract.
 //
-// When `externals` / `bundleEntries` are configured, `bf build` emits
-// `barefoot-externals.json` for EVERY adapter (the importmap + modulepreload
-// manifest). Each adapter must give the application author a way to inject that
-// manifest into the page <head> — otherwise configured externals 404 on their
-// bare specifiers (issues #1639 / #1644). Adapters satisfy this two ways:
+// When an application supplies an externals manifest (the importmap +
+// modulepreload manifest, see `ExternalsManifest`), every adapter must give
+// the application author a way to inject that manifest into the page <head>
+// — otherwise configured externals 404 on their bare specifiers (issues
+// #1639 / #1644). Adapters satisfy this two ways:
 //
-//   - 'component'    — a render-time component (Hono's `BfImportMap`) reads the
-//                      manifest; `bf build` emits no static snippet.
+//   - 'component'    — a render-time component (Hono's `BfImportMap`) renders
+//                      whatever manifest the app passes it; no static
+//                      snippet file is involved.
 //   - 'html-snippet' — a template-string target (Go html/template, Mojolicious
-//                      EP) has no component layer, so `bf build` emits a static
-//                      `barefoot-importmap.html` (via `renderImportMapHtml`).
+//                      EP) has no component layer, so the app renders its
+//                      manifest to a static `barefoot-importmap.html`
+//                      snippet itself (via `renderImportMapHtml`).
 //
 // The contract is adapter-agnostic: a new adapter satisfies it by computing the
 // facts below from its own machinery and passing them to
@@ -34,7 +36,7 @@ export interface ImportMapInjectionFacts {
    * The actual importmap markup this adapter injects for a sample manifest:
    *   - 'component' adapters: the rendered output of the adapter's component
    *     (e.g. `String(BfImportMap({ base, externals: manifest }))`).
-   *   - 'html-snippet' adapters: the static snippet `bf build` would emit
+   *   - 'html-snippet' adapters: the static snippet the app would render
    *     (i.e. `renderImportMapHtml(manifest)`).
    * The contract checks it carries a usable importmap.
    */

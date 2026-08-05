@@ -1,23 +1,24 @@
 /**
  * Shared importmap-snippet renderer.
  *
- * `bf build` emits `barefoot-externals.json` (the `ExternalsManifest`) whenever
- * `externals` / `bundleEntries` are configured. Component adapters (Hono) read
- * that manifest at render time via a JSX component (`BfImportMap`). Template-
- * string adapters (Go html/template, Mojolicious EP) have no component layer, so
- * `bf build` instead emits a static `barefoot-importmap.html` for them to
- * `{{ template }}` / `%= include` into the page `<head>`.
+ * Renders an "externals manifest" (see `ExternalsManifest` below) into the
+ * `<script type="importmap">` (plus `<link rel="modulepreload">`) HTML for
+ * mapping bare specifiers — e.g. a component's `import { z } from 'zod'` —
+ * to browser-resolvable URLs. Component adapters (Hono) read a manifest at
+ * render time via a JSX component (`BfImportMap`); template-string adapters
+ * (Go html/template, Mojolicious EP) have no component layer, so they render
+ * a static HTML snippet from the same manifest to `{{ template }}` /
+ * `%= include` into the page `<head>` instead.
  *
  * This module is the single source of truth for that snippet's HTML, so every
  * adapter's importmap injection point stays in sync. See issue #1644.
  */
 
 /**
- * The subset of `barefoot-externals.json` needed to render the importmap
- * snippet. All fields are optional so a partial or hand-written manifest
- * (e.g. a Hono `BfImportMap` `externals` prop) still type-checks. The strict
- * build-output `ExternalsManifest` is structurally assignable to this, so both
- * the CLI's emitted manifest and a hand-written one feed `renderImportMapHtml`.
+ * The manifest shape needed to render the importmap snippet. All fields are
+ * optional so a partial or hand-written manifest (e.g. a Hono `BfImportMap`
+ * `externals` prop) still type-checks. The all-required `ExternalsManifest`
+ * is structurally assignable to this, so both feed `renderImportMapHtml`.
  * This is the one shared manifest type for every importmap injection path.
  */
 export interface ImportMapManifest {
@@ -28,9 +29,12 @@ export interface ImportMapManifest {
 }
 
 /**
- * Shape of `barefoot-externals.json`, written by `bf build`. This is the build
- * output contract shared by the CLI (which writes it) and the adapters (which
- * consume it) — the all-required superset of {@link ImportMapManifest}.
+ * The all-required superset of {@link ImportMapManifest} — the shape a
+ * caller assembles when it has resolved every field itself (as opposed to a
+ * partial, hand-written one). Nothing in this tree currently produces this
+ * manifest for the app automatically; an app wiring up externals under
+ * `@barefootjs/vite` builds one and passes it to `BfImportMap` /
+ * `renderImportMapHtml` itself.
  */
 export interface ExternalsManifest {
   /** Entries for `<script type="importmap">`. */

@@ -63,8 +63,7 @@ export interface ViteBarefootConfig {
   root: string
   /**
    * Raw `components` entries straight off the barefoot plugin's resolved
-   * options — relative to `root` (or absolute), same shape
-   * `barefoot.config.ts`'s `components` field had. Callers that `path.join`
+   * options — relative to `root` (or absolute). Callers that `path.join`
    * this onto `projectDir` (`resolve-source.ts`, `meta-loader.ts`) keep
    * working unchanged as long as `projectDir === root`, which is exactly
    * what `context.ts` asserts by using `findViteConfig`'s own directory as

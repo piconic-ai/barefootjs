@@ -27,7 +27,7 @@ import {
   discoverComponentFiles,
   generateHash,
   addScriptCollection,
-} from '../shared/lib/legacy-build-helpers'
+} from '../shared/lib/site-build-helpers'
 
 const ROOT_DIR = dirname(import.meta.path)
 const CONTENT_DIR = resolve(ROOT_DIR, '../../docs/core')

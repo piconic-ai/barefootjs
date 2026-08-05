@@ -128,9 +128,9 @@ function isSimpleJsx(code: string): boolean {
  * @param meta - Component metadata loaded from `meta/<name>.json`.
  * @param componentsBasePath - Directory the preview file is placed under,
  *   relative to the project root. Monorepo default mirrors the registry
- *   layout (`ui/components/ui`); scaffolded apps pass
- *   `vite.config.ts`'s `paths.components` (typically `components/ui`)
- *   so the preview lands next to the component, not in `node_modules`.
+ *   layout (`ui/components/ui`); scaffolded apps pass the project config's
+ *   `paths.components` (typically `components/ui`, see `context.ts`) so
+ *   the preview lands next to the component, not in `node_modules`.
  */
 export function generatePreview(
   meta: ComponentMeta,

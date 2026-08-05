@@ -1,14 +1,15 @@
 /**
  * Cross-adapter importmap-injection contract.
  *
- * Every shipping adapter must expose a way to inject the `barefoot-externals.json`
- * importmap (+ modulepreloads) into the page <head>, so configured `externals`
- * resolve in the browser (issues #1639 / #1644). This test runs the shared
- * `assertImportMapInjectionContract` against each adapter's real machinery:
+ * Every shipping adapter must expose a way to inject an externals manifest's
+ * importmap (+ modulepreloads) into the page <head>, so an app's configured
+ * externals resolve in the browser (issues #1639 / #1644). This test runs
+ * the shared `assertImportMapInjectionContract` against each adapter's real
+ * machinery:
  *
  *   - Hono ('component')    → renders `BfImportMap`
  *   - Go / Mojo ('html-snippet') → renders the static `barefoot-importmap.html`
- *     snippet `bf build` emits, via `renderImportMapHtml`
+ *     snippet an app would render via `renderImportMapHtml`
  *
  * Adding a new adapter means adding it to `ADAPTERS` below — the contract then
  * forces it to declare an injection strategy and actually consume the manifest,
@@ -27,8 +28,8 @@ import {
   type ImportMapInjectionFacts,
 } from '../import-map-injection.contract'
 
-// A representative manifest as `bf build` would emit it for a project that
-// configures `externals: { zod: { url: ... } }` against `/static/components/`.
+// A representative manifest for a project whose externals config resolves
+// `zod` against `/static/components/`.
 const BASE = '/static/components'
 const MANIFEST: ExternalsManifest = {
   importmap: {

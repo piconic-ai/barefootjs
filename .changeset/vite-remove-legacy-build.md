@@ -82,7 +82,7 @@ following the breakage rather than guessing:
   `discoverComponentFiles`, `generateHash` from the deleted `build.ts`, and
   `addScriptCollection` from the deleted Hono `build.ts`.** These four are
   pure text/text-discovery helpers with no other live caller post-migration
-  — copied to a new `site/shared/lib/legacy-build-helpers.ts` rather than
+  — copied to a new `site/shared/lib/site-build-helpers.ts` rather than
   resurrected as shared CLI/adapter infrastructure.
 - **The BarefootJS benchmark app** (`benchmarks/apps/barefoot/`, gated into
   CI by `.github/workflows/benchmark.yml` on `packages/client/**` /

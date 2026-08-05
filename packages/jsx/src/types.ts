@@ -2229,7 +2229,7 @@ export interface CompileOptions {
    * Forwarded verbatim to `adapter.generate(..., { scriptAssets })` — see
    * that field's docstring on `AdapterGenerateOptions` for the full
    * precedence rules (`skipScriptRegistration` still wins; `[]` means "no
-   * scripts", distinct from `undefined`'s "use the legacy computed path").
+   * scripts", distinct from `undefined`'s "use the adapter-computed path").
    *
    * This is plain resolved data (an ordered URL list), not a rewrite
    * callback — the caller (chiefly `@barefootjs/vite`) has already done all

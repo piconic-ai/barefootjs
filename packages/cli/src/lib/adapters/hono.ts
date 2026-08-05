@@ -45,10 +45,9 @@ export default app
 
 // No import map: under the Vite build, \`@barefootjs/client\` is an
 // ordinary bundled ESM specifier every island's compiled entry imports —
-// Rollup folds it into one shared chunk (the single-runtime-instance
-// guarantee an import map used to provide under the legacy pipeline),
-// and the browser follows that import on its own with no specifier
-// redirection needed. \`<BfScripts />\` needs no \`manifest\`/\`base\`
+// Rollup folds it into one shared chunk, guaranteeing a single runtime
+// instance, and the browser follows that import on its own with no
+// specifier redirection needed. \`<BfScripts />\` needs no \`manifest\`/\`base\`
 // props either — \`HonoAdapter.generate()\` bakes each component's
 // Vite-resolved script URL(s) in at codegen time (see
 // \`registerComponentScripts\` in \`@barefootjs/hono/scripts\`).
@@ -235,8 +234,8 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // `vite build` runs once up front so `public/components` +
     // `dist/components` exist before `wrangler dev` starts; `vite dev`
     // then takes over the watch loop, re-emitting SSR templates with
-    // dev-origin script URLs on every component edit — mirrors
-    // `@barefootjs/hono`'s own migrated integration.
+    // dev-origin script URLs on every component edit — the same
+    // dev-loop shape as `@barefootjs/hono`'s own Vite integration.
     dev: 'vite build && unocss && concurrently -k -n vite,uno,wrangler -c blue,magenta,green "vite dev" "unocss --watch" "wrangler dev --live-reload"',
     build: 'vite build && unocss',
     deploy: 'vite build && unocss && wrangler deploy',
@@ -281,7 +280,7 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // `@barefootjs/hono`'s composed `/vite` wrapper peer-depends on
     // both — real devDependencies here (not just a hoisted transitive
     // resolution) so `vite build` / `vite dev` resolve without an extra
-    // install step, matching every migrated integration.
+    // install step, matching every Vite-based integration.
     '@barefootjs/vite': 'latest',
     vite: '^6.0.0',
     // Pinned so `<pm> run dev` / `<pm> run deploy` resolve a known

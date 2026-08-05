@@ -63,59 +63,81 @@ describe('processCssHead', () => {
 })
 
 describe('stripUnocssFromScript', () => {
-  // The exact script strings the adapters emit today.
-  const cases: Array<[string, string, string]> = [
-    [
-      'hono dev',
-      'concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "wrangler dev --live-reload"',
-      'concurrently -k -n build,server -c blue,green "bf build --watch" "wrangler dev --live-reload"',
-    ],
-    [
-      'hono build',
-      'bf build && unocss',
-      'bf build',
-    ],
-    [
-      'hono deploy',
-      'bf build && unocss && wrangler deploy',
-      'bf build && wrangler deploy',
-    ],
-    [
-      'hono-node dev',
-      'bf build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "tsx watch server.tsx"',
-      'bf build && concurrently -k -n build,server -c blue,green "bf build --watch" "tsx watch server.tsx"',
-    ],
-    [
-      'go dev',
-      'go mod tidy && bf build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "go run ."',
-      'go mod tidy && bf build && concurrently -k -n build,server -c blue,green "bf build --watch" "go run ."',
-    ],
-    [
-      'go build',
-      'go mod tidy && bf build && unocss',
-      'go mod tidy && bf build',
-    ],
-    [
-      'mojo dev',
-      'concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "morbo app.pl -l http://*:3002"',
-      'concurrently -k -n build,server -c blue,green "bf build --watch" "morbo app.pl -l http://*:3002"',
-    ],
-    [
-      'global watch (init.ts)',
-      'concurrently -k -n build,uno -c blue,magenta "bf build --watch" "unocss --watch"',
-      'concurrently -k -n build -c blue "bf build --watch"',
-    ],
+  // The exact `build` / `deploy` / `start` script strings the adapters emit
+  // today (`&&`-chain stripping only — no `concurrently` pane list to
+  // rebalance). These clean out completely.
+  const chainCases: Array<[string, string, string]> = [
+    ['hono build', 'vite build && unocss', 'vite build'],
+    ['hono deploy', 'vite build && unocss && wrangler deploy', 'vite build && wrangler deploy'],
+    ['hono-node build', 'vite build && unocss', 'vite build'],
+    ['go build', 'go mod tidy && vite build && unocss', 'go mod tidy && vite build'],
+    ['mojo build', 'vite build && unocss', 'vite build'],
+    ['xslate build', 'vite build && unocss', 'vite build'],
+    ['csr build', 'vite build && unocss', 'vite build'],
     // No-op cases: scripts with no UnoCSS reference are untouched.
     ['plain go run', 'go run .', 'go run .'],
     ['plain perl daemon', 'perl app.pl daemon -l http://*:3002', 'perl app.pl daemon -l http://*:3002'],
   ]
 
-  test.each(cases)('%s', (_label, input, expected) => {
+  test.each(chainCases)('%s', (_label, input, expected) => {
     const out = stripUnocssFromScript(input)
     expect(out).toBe(expected)
     expect(out).not.toContain('unocss')
     expect(out).not.toContain('uno,')
   })
+
+  // `dev` scripts carrying a `concurrently` pane list. Every adapter's
+  // pane NAMES differ (`vite,uno,wrangler`, `dev,uno,server`,
+  // `build,uno,server`, `build,uno`) — the rebalance is positional on the
+  // `uno` entry, so all of them come out with the name and color lists
+  // matching the surviving command count. A three-name list left over two
+  // commands is the failure this pins: `concurrently` would label the
+  // server pane `uno` and color it magenta.
+  const rebalancedDevCases: Array<[string, string, string]> = [
+    [
+      'csr dev',
+      'vite build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "vite build --watch" "unocss --watch" "tsx watch server.ts"',
+      'vite build && concurrently -k -n build,server -c blue,green "vite build --watch" "tsx watch server.ts"',
+    ],
+    [
+      'global watch (init.ts, uno)',
+      'concurrently -k -n build,uno -c blue,magenta "vite build --watch" "unocss --watch"',
+      'concurrently -k -n build -c blue "vite build --watch"',
+    ],
+    [
+      'hono dev',
+      'vite build && unocss && concurrently -k -n vite,uno,wrangler -c blue,magenta,green "vite dev" "unocss --watch" "wrangler dev --live-reload"',
+      'vite build && concurrently -k -n vite,wrangler -c blue,green "vite dev" "wrangler dev --live-reload"',
+    ],
+    [
+      'hono-node dev',
+      'vite build && unocss && concurrently -k -n dev,uno,server -c blue,magenta,green "vite dev" "unocss --watch" "tsx watch server.tsx"',
+      'vite build && concurrently -k -n dev,server -c blue,green "vite dev" "tsx watch server.tsx"',
+    ],
+    [
+      'go dev',
+      'go mod tidy && vite build && unocss && concurrently -k -n dev,uno,server -c blue,magenta,green "vite dev" "unocss --watch" "go run ."',
+      'go mod tidy && vite build && concurrently -k -n dev,server -c blue,green "vite dev" "go run ."',
+    ],
+    [
+      'mojo dev',
+      'vite build && unocss && concurrently -k -n dev,uno,server -c blue,magenta,green "vite dev" "unocss --watch" "morbo app.pl -l http://*:3002"',
+      'vite build && concurrently -k -n dev,server -c blue,green "vite dev" "morbo app.pl -l http://*:3002"',
+    ],
+    [
+      'xslate dev',
+      'vite build && unocss && concurrently -k -n dev,uno,server -c blue,magenta,green "vite dev" "unocss --watch" "plackup -s Starman --workers 5 -p 3003 app.psgi"',
+      'vite build && concurrently -k -n dev,server -c blue,green "vite dev" "plackup -s Starman --workers 5 -p 3003 app.psgi"',
+    ],
+  ]
+
+  test.each(rebalancedDevCases)('%s', (_label, input, expected) => {
+    const out = stripUnocssFromScript(input)
+    expect(out).toBe(expected)
+    expect(out).not.toContain('unocss')
+    expect(out).not.toContain('uno,')
+  })
+
 
   test('leaves every adapter script unocss-free', () => {
     for (const adapter of Object.values(ADAPTERS)) {

@@ -86,9 +86,9 @@ describe('adapter registry', () => {
   test('hono-node centralises NODE_ENV checks in env.ts', () => {
     // Generated files import `isDev` / `isProd` from env.ts instead of
     // sprinkling `process.env.NODE_ENV` calls across the project.
-    // renderer.tsx no longer needs env.ts itself — the Vite pipeline
-    // bakes each component's script URL(s) in at codegen time, so
-    // there's no live manifest to gate a dev-only re-read behind.
+    // renderer.tsx doesn't need env.ts — the Vite pipeline bakes each
+    // component's script URL(s) in at codegen time, so there's no live
+    // manifest to gate a dev-only re-read behind.
     const honoNode = ADAPTERS['hono-node']
     expect(honoNode.files['env.ts']).toContain('export const isProd')
     expect(honoNode.files['env.ts']).toContain('export const isDev')
@@ -652,15 +652,14 @@ describe('adapter registry', () => {
     )
   })
 
-  // Issue #2124 item 3a's `bf build --minify` guarantee ("production
-  // build matches the site's '~14 kB min+gzip' runtime-size claim,
-  // measured on a minified build") now comes for free from `vite
-  // build`, which minifies by default — there is no separate flag to
-  // pass or pin. This describe block pins the OPPOSITE half of the old
-  // contract that's still meaningful post-migration: every build/deploy
-  // script actually invokes `vite build` (so it participates in that
-  // default minification at all), and no script hand-rolls a
-  // `--minify`-style flag that `vite build` doesn't recognize.
+  // Issue #2124 item 3a: the scaffold's production build must match the
+  // site's "~14 kB min+gzip" runtime-size claim (site/core/build.ts),
+  // which is measured on a minified build. `vite build` minifies by
+  // default, so there's no separate flag to pass or pin — this pins
+  // instead that every build/deploy script actually invokes `vite build`
+  // (so it participates in that default minification at all), and that
+  // no script hand-rolls a `--minify`-style flag `vite build` doesn't
+  // recognize.
   describe('build/deploy scripts invoke `vite build` (issue #2124)', () => {
     test.each(Object.keys(ADAPTERS))('%s build script includes vite build', (id) => {
       const build = ADAPTERS[id].scripts.build

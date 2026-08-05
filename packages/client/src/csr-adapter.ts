@@ -9,14 +9,13 @@
 // satisfy the `TemplateAdapter` interface so the compiler's pass-2 loop can
 // call `adapter.generate()` without crashing.
 //
-// Historically the legacy build pipeline's `createConfig` reused
-// `HonoAdapter` from `@barefootjs/hono/adapter` here as a "broad-acceptance
-// JS template runtime". That pulled the entire Hono package into a CSR
-// app's `node_modules` for an adapter whose every output was thrown away
-// — confusing for users who picked CSR specifically to avoid an SSR
-// framework dependency. This in-package adapter deletes the transitive
-// Hono dep and keeps the analyzer-side behaviour identical
-// (`acceptsTemplateCall: () => true`).
+// This adapter deliberately does not reuse `HonoAdapter` from
+// `@barefootjs/hono/adapter` as a "broad-acceptance JS template runtime" —
+// that would pull the entire Hono package into a CSR app's `node_modules`
+// for an adapter whose every output is thrown away, confusing for users
+// who picked CSR specifically to avoid an SSR framework dependency. This
+// in-package adapter carries no such transitive dependency, and keeps the
+// analyzer-side behaviour identical (`acceptsTemplateCall: () => true`).
 //
 // What we still need from a "template adapter" in CSR mode:
 //
@@ -54,7 +53,8 @@ import { BaseAdapter } from '@barefootjs/jsx'
 export interface CSRAdapterOptions {
   /**
    * Display name surfaced through `TemplateAdapter.name` — read by
-   * `bf build` for its `Adapter: …` banner. Defaults to `'csr'`.
+   * `@barefootjs/vite`'s `assertNoRealTemplateOutput` when naming the
+   * offending adapter in its error message. Defaults to `'csr'`.
    */
   name?: string
 }

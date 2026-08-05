@@ -155,9 +155,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const projectDir = process.cwd()
   const flags = parseFlags(args)
 
-  // Every scaffold emits `vite.config.ts` now (see `../lib/adapters/*`) —
-  // its presence is the "already initialized" signal. `barefoot.config.ts`
-  // (the legacy build pipeline's config file) no longer exists.
+  // Every scaffold emits `vite.config.ts` (see `../lib/adapters/*`) — its
+  // presence is the "already initialized" signal.
   const viteConfigPath = path.join(projectDir, 'vite.config.ts')
   if (existsSync(viteConfigPath)) {
     console.error('Error: vite.config.ts already exists. Project is already initialized.')

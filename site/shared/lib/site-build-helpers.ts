@@ -2,17 +2,25 @@ import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { hashString } from '../../../packages/cli/src/lib/runtime'
 
-// Small text-manipulation helpers `site/ui/build.ts` and `site/core/build.ts`
-// still need for their own hand-rolled build pipelines (both predate the
-// Vite migration and directly drive `@barefootjs/jsx`'s `compileJSX` rather
-// than going through `@barefootjs/vite`'s `barefoot()` plugin — porting them
-// is a separate, larger project). These used to live in the now-deleted
-// legacy CLI (`packages/cli/src/lib/build.ts`) and Hono adapter
-// (`packages/adapter-hono/src/build.ts`) — copied here verbatim rather than
-// resurrected as shared CLI/adapter infrastructure, since nothing else uses
-// them post-migration (see PR 7a-7c). `resolveRelativeImports` (the other
-// legacy helper both site build scripts use) stays a real, still-live
-// export of `packages/cli/src/lib/resolve-imports.ts` — it wasn't deleted.
+// Text-manipulation helpers used by `site/ui/build.ts` and
+// `site/core/build.ts`, which hand-roll their own build pipeline directly
+// against `@barefootjs/jsx`'s `compileJSX` rather than going through
+// `@barefootjs/vite`'s `barefoot()` plugin (porting them onto the plugin
+// is a separate, larger project):
+//
+//   - `hasUseClientDirective` / `discoverComponentFiles` / `generateHash`
+//     — scan a component source tree and hash file contents ahead of
+//     compilation.
+//   - `addScriptCollection` (+ its `maskComments` helper) — rewrites a
+//     Hono SSR marked template so each component function collects its
+//     own script tags into the request context, for Suspense-safe inline
+//     `<script>` emission.
+//
+// Neither has another caller in the tree, so they live here rather than
+// as shared CLI/adapter infrastructure. `resolveRelativeImports` — the
+// other helper both site build scripts use — is unrelated: it's a real,
+// still-live export of `packages/cli/src/lib/resolve-imports.ts`, and
+// both scripts import it directly rather than through this module.
 
 /**
  * True if `content` starts with a `"use client"` / `'use client'` directive

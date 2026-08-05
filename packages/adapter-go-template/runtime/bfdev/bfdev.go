@@ -1,7 +1,7 @@
 // Package bfdev provides a dev-only browser auto-reload handler.
 //
-// It watches `<distDir>/.dev/build-id` (produced by `bf build --watch`
-// in the @barefootjs/cli package) and streams SSE `event: reload` whenever
+// It watches `<distDir>/.dev/build-id` (written by `vite dev` through the
+// @barefootjs/vite plugin) and streams SSE `event: reload` whenever
 // the sentinel changes. Combined with the inline client snippet returned by
 // Snippet, editing a .tsx component triggers a browser reload automatically.
 //
@@ -31,10 +31,10 @@ import (
 	"time"
 )
 
-// Sentinel path contract with `@barefootjs/cli`
-// (`packages/cli/src/lib/build.ts`, DEV_SENTINEL_SUBDIR / DEV_SENTINEL_FILENAME).
-// Duplicated here so the Go runtime avoids a dependency on the CLI. If the
-// CLI changes these values, update this package in the same PR.
+// Sentinel path contract with `@barefootjs/vite`
+// (`packages/vite/src/dev-server.ts`, DEV_SENTINEL_SUBDIR / DEV_SENTINEL_FILENAME).
+// Duplicated here so the Go runtime avoids a dependency on the plugin. If the
+// plugin changes these values, update this package in the same PR.
 const (
 	devSubdir        = ".dev"
 	buildIDFile      = "build-id"
@@ -54,7 +54,7 @@ const (
 
 // Config configures a dev reload handler or snippet.
 type Config struct {
-	// DistDir is the directory that `bf build` writes output into
+	// DistDir is the directory that `vite build` writes output into
 	// (contains `.dev/build-id`). Required for the handler; ignored by
 	// Snippet.
 	DistDir string

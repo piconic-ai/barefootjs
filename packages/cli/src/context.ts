@@ -64,9 +64,8 @@ export function findProjectConfig(startDir: string): {
  * load failure.
  *
  * No `paths` override exists on the Vite side (`BarefootViteOptions` has no
- * `paths` field — see PR 7a's investigation: no integration overrides
- * `paths`, and there is no root or `ui/` config either), so this always
- * uses `DEFAULT_PATHS` outright rather than merging anything in.
+ * `paths` field), so this always uses `DEFAULT_PATHS` outright rather than
+ * merging anything in.
  */
 async function configFromViteConfig(viteConfigPath: string): Promise<BarefootConfig | null> {
   const viteConfig = await loadViteBarefootConfig(viteConfigPath)

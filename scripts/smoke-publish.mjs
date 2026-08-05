@@ -303,11 +303,10 @@ smoke('bf gen component widget button', 'npx --no-install bf gen component widge
 smoke('bf preview (list after gen)', 'npx --no-install bf preview', { expect: 'button' })
 
 // — full project build + test runner
-// `Build complete` was the legacy CLI's message; the scaffold now runs
-// `vite build`. Assert on `manifest.json` rather than a generic Vite
-// line: the barefoot plugin is what forces `build.manifest`, so seeing
-// it in the emitted file list proves the plugin actually ran and wrote
-// where the config points — not merely that Vite started.
+// Assert on `manifest.json` rather than a generic Vite build line: the
+// barefoot plugin is what forces `build.manifest`, so seeing it in the
+// emitted file list proves the plugin actually ran and wrote where the
+// config points — not merely that Vite started.
 smoke('npm run build', 'npm run build', { expect: 'manifest.json' })
 // `npm test` dispatches to whichever runner the scaffold picked (`bun
 // test` on bun-detected installs, `vitest run` everywhere else). The

@@ -1,15 +1,11 @@
 // Integration test for piconic-ai/barefootjs#1702 — inlining a local
 // (non-component) module into a client component's chunk must not mangle
 // string-literal contents. A data module exporting a code snippet (a
-// string whose *contents* look like real code) used to have its
-// `@barefootjs/client` specifier corrupted by the legacy build pipeline's
-// now-removed specifier-rewrite step. That second step (`bf build`'s
-// `rewriteBarefootClientSpecifiers`) is gone along with the rest of the
-// legacy pipeline (PR 7a-7c) — `resolveRelativeImports` itself (still live:
-// `site/ui/build.ts` and `site/core/build.ts` use it to inline sibling
-// `.ts` helper modules into their own compiled client JS) is what this
-// pins: its inlining must never touch string-literal contents that merely
-// *look* like an import/directive line.
+// string whose *contents* look like real code) must never have that
+// content touched just because it merely *looks* like an import/directive
+// line. `resolveRelativeImports` — used by `site/ui/build.ts` and
+// `site/core/build.ts` to inline sibling `.ts` helper modules into their
+// own compiled client JS — is what this pins.
 import { describe, test, expect, beforeEach, afterAll } from 'bun:test'
 import { resolveRelativeImports } from '../lib/resolve-imports'
 import { mkdirSync, writeFileSync, rmSync, readFileSync } from 'fs'
