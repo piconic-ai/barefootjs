@@ -12,6 +12,7 @@
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '@barefootjs/jsx'
+import type { ComponentIR } from '@barefootjs/jsx'
 import { HonoAdapter } from '../adapter'
 
 function compileMarkedTemplate(source: string, scriptAssets: string[] | undefined, file = 'Demo.tsx'): string {
@@ -109,15 +110,28 @@ describe('HonoAdapter scriptAssets codegen', () => {
  * added constraint that `preloadAssets` is only meaningful alongside a
  * non-empty `scriptAssets` — see `AdapterGenerateOptions.preloadAssets`.
  */
+/** IR for a source, for the tests that drive `generate()` directly rather
+ * than through `compileJSX` — `AdapterGenerateOptions`-only fields (e.g.
+ * `skipScriptRegistration`) have no `CompileOptions` counterpart to travel
+ * through. Mirrors the same helper in every other adapter's suite. */
+function compileToIR(source: string): ComponentIR {
+  const result = compileJSX(source.trimStart(), 'test.tsx', {
+    adapter: new HonoAdapter(),
+    outputIR: true,
+  })
+  const irFile = result.files.find(f => f.type === 'ir')
+  if (!irFile) throw new Error('No IR output')
+  return JSON.parse(irFile.content) as ComponentIR
+}
+
 function compileMarkedTemplateWithPreloads(
   source: string,
   scriptAssets: string[] | undefined,
   preloadAssets: string[] | undefined,
-  extra: { skipScriptRegistration?: boolean } = {},
   file = 'Demo.tsx',
 ): string {
   const adapter = new HonoAdapter()
-  const result = compileJSX(source, file, { adapter, scriptAssets, preloadAssets, ...extra })
+  const result = compileJSX(source, file, { adapter, scriptAssets, preloadAssets })
   const errors = result.errors.filter((e) => e.severity === 'error')
   expect(errors).toEqual([])
   const tmpl = result.files.find((f) => f.type === 'markedTemplate')
@@ -174,17 +188,29 @@ describe('HonoAdapter preloadAssets codegen', () => {
     expect(output).not.toContain('registerComponentScripts')
   })
 
+  // `skipScriptRegistration` lives on `AdapterGenerateOptions`, NOT on
+  // `CompileOptions` — a parent adapter sets it when emitting a child, so it
+  // never travels through `compileJSX`. Exercising it therefore means calling
+  // `generate()` directly, the same way every other adapter's suite does.
+  //
+  // Note what actually enforces this: `hasPreloadAssets()` is conjoined with
+  // `hasScriptAssets()`, so suppressing scripts suppresses preloads
+  // structurally — mutating the `skipScriptRegistration` branch alone cannot
+  // make this test fail. The independent guarantee is pinned by the
+  // "ignored when scriptAssets is empty" test above, which DOES go red when
+  // that conjunct is dropped. Both are kept: this one states the intent a
+  // reader looks for, that one holds the line.
   test('skipScriptRegistration suppresses the preload registration as well as the script registration', () => {
-    const output = compileMarkedTemplateWithPreloads(
-      CLIENT_COMPONENT,
-      ['/static/build/assets/Counter-abc123.js'],
-      ['/static/build/assets/index-def456.js'],
-      { skipScriptRegistration: true },
-    )
-    expect(output).not.toContain('registerComponentPreloads')
-    expect(output).not.toContain('registerComponentScripts')
-    expect(output).not.toContain('wrapWithInlineScripts')
-    expect(output).not.toContain("@barefootjs/hono/scripts'")
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new HonoAdapter().generate(ir, {
+      skipScriptRegistration: true,
+      scriptAssets: ['/static/build/assets/Counter-abc123.js'],
+      preloadAssets: ['/static/build/assets/index-def456.js'],
+    })
+    expect(template).not.toContain('registerComponentPreloads')
+    expect(template).not.toContain('registerComponentScripts')
+    expect(template).not.toContain('wrapWithInlineScripts')
+    expect(template).not.toContain("@barefootjs/hono/scripts'")
   })
 
   test('if-statement root: both branches wrap with wrapWithInlineScripts passing __bfInlinePreloads', () => {
