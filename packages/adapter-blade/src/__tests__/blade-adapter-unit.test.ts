@@ -628,3 +628,88 @@ export function Counter() {
     expect(explicitUndefined).toBe(computed)
   })
 })
+
+describe('BladeAdapter - preloadAssets', () => {
+  const CLIENT_COMPONENT = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+`
+
+  test('non-empty preloadAssets + non-empty scriptAssets: preload registrations emitted, in order, before script registrations', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new BladeAdapter().generate(ir, {
+      scriptAssets: ['/assets/runtime-abc123.js', '/assets/counter-def456.js'],
+      preloadAssets: ['/assets/index-pre1.js', '/assets/shared-pre2.js'],
+    })
+    const pre1Idx = template.indexOf("@php($bf->register_preload('/assets/index-pre1.js'))")
+    const pre2Idx = template.indexOf("@php($bf->register_preload('/assets/shared-pre2.js'))")
+    const script1Idx = template.indexOf("@php($bf->register_script('/assets/runtime-abc123.js'))")
+    const script2Idx = template.indexOf("@php($bf->register_script('/assets/counter-def456.js'))")
+    expect(pre1Idx).toBeGreaterThanOrEqual(0)
+    expect(pre2Idx).toBeGreaterThan(pre1Idx)
+    expect(script1Idx).toBeGreaterThan(pre2Idx)
+    expect(script2Idx).toBeGreaterThan(script1Idx)
+  })
+
+  test('preloadAssets: [] emits no preload registration', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new BladeAdapter().generate(ir, {
+      scriptAssets: ['/assets/runtime-abc123.js'],
+      preloadAssets: [],
+    })
+    expect(template).not.toContain('register_preload')
+    expect(template).toContain("@php($bf->register_script('/assets/runtime-abc123.js'))")
+  })
+
+  test('preloadAssets: undefined emits no preload registration', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new BladeAdapter().generate(ir, {
+      scriptAssets: ['/assets/runtime-abc123.js'],
+      preloadAssets: undefined,
+    })
+    expect(template).not.toContain('register_preload')
+    expect(template).toContain("@php($bf->register_script('/assets/runtime-abc123.js'))")
+  })
+
+  test('preloadAssets non-empty but scriptAssets: [] emits no preload registration (preloads are only meaningful alongside a real script)', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new BladeAdapter().generate(ir, {
+      scriptAssets: [],
+      preloadAssets: ['/assets/index-pre1.js'],
+    })
+    expect(template).not.toContain('register_preload')
+    expect(template).not.toContain('register_script')
+  })
+
+  test('skipScriptRegistration: true suppresses both preloads and scripts', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new BladeAdapter().generate(ir, {
+      skipScriptRegistration: true,
+      scriptAssets: ['/assets/runtime-abc123.js'],
+      preloadAssets: ['/assets/index-pre1.js'],
+    })
+    expect(template).not.toContain('register_preload')
+    expect(template).not.toContain('register_script')
+  })
+
+  // Regression guard: a previous attempt emitted a literal
+  // `<link rel="modulepreload">` tag directly into the component template,
+  // which injected a rendered DOM node before the component's root and
+  // broke hydration across all eight integrations (blade, erb,
+  // go-template, jinja, mojolicious, rust, twig, xslate). Preload hints
+  // must ONLY ever be emitted as no-output register statements (here,
+  // `@php($bf->register_preload(...))`) that the adapter's runtime later
+  // renders itself — never as literal markup baked into the template.
+  test('never emits a literal <link tag into the template', () => {
+    const ir = compileToIR(CLIENT_COMPONENT)
+    const { template } = new BladeAdapter().generate(ir, {
+      scriptAssets: ['/assets/runtime-abc123.js'],
+      preloadAssets: ['/assets/index-pre1.js'],
+    })
+    expect(template).not.toContain('<link')
+  })
+})
