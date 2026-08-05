@@ -1,7 +1,7 @@
 // Stock-route smoke test for the Mojo scaffold contract (#2126).
 //
-// The scaffold's happy path is: `npm run dev` (which starts `bf build
-// --watch` and morbo *concurrently*), then open `/`. That page renders a
+// The scaffold's happy path is: `npm run dev` (which starts `vite dev`
+// and morbo *concurrently*), then open `/`. That page renders a
 // component whose EP template reads props/signals as bare scalars
 // (`% my $count = ($initial // 0);`), and Mojo templates compile under
 // `use strict` — so every one of those scalars must be declared by the
@@ -114,8 +114,8 @@ __DATA__
 //   manifest-at-boot   — the manifest exists before the app loads
 //                        (server restarted after a completed build).
 //   manifest-after-boot — the app loads first, the manifest appears
-//                        afterwards (the concurrent `bf build --watch`
-//                        + morbo dev race on a fresh scaffold).
+//                        afterwards (the concurrent `vite dev` +
+//                        morbo dev race on a fresh scaffold).
 const SMOKE_PL = `use Mojo::Base -strict;
 use Test::More;
 use Test::Mojo;
@@ -161,7 +161,8 @@ describe.skipIf(!PERL_AVAILABLE)('Mojo scaffold stock route (#2126)', () => {
     if (!template || !ssrDefaults) throw new Error('compileJSX produced no template/ssrDefaults')
 
     writeFileSync(path.join(appDir, 'dist/templates/Counter.html.ep'), template.content)
-    // Same entry shape `bf build` writes to dist/templates/manifest.json.
+    // Same entry shape `@barefootjs/vite` writes to
+    // dist/templates/manifest.json.
     writeFileSync(
       path.join(appDir, 'manifest.staged.json'),
       JSON.stringify({

@@ -28,20 +28,19 @@
  * templates have no JS-style imports/types/exports to combine — see
  * `twig-adapter.ts`'s `generate()`, whose `sections.types` is always `''`),
  * so there is nothing across files to stitch together, and no unused-import
- * failure mode to guard against either. Confirmed by reading `./build.ts`'s
- * `createConfig`: unlike Go's, it has NO default `postBuild` of its own —
- * it only forwards a caller-supplied one verbatim. So this composition's
- * core job is just what core's `barefoot()` already does: construct
- * `TwigAdapter` and hand it to core.
+ * failure mode to guard against either. So this composition's core job is
+ * just what core's `barefoot()` already does: construct `TwigAdapter` and
+ * hand it to core.
  *
  * ## No `adapterOptions` either — the other thing Go/Hono still need
  *
  * `TwigAdapterOptions` has exactly two fields, `clientJsBasePath` and
  * `barefootJsPath` — and `TwigAdapter.generateScriptRegistrations` only
- * falls back to them when `scriptAssets` is `undefined` (the legacy `bf
- * build` path). Core's `barefoot()` plugin ALWAYS passes a resolved
- * `scriptAssets` array (build: manifest-hashed; dev: origin-based — see
- * `plugin.ts`), so that fallback is dead code on every Vite-driven build.
+ * falls back to them when `scriptAssets` is `undefined` (i.e. the adapter
+ * is invoked without this Vite plugin). Core's `barefoot()` plugin ALWAYS
+ * passes a resolved `scriptAssets` array (build: manifest-hashed; dev:
+ * origin-based — see `plugin.ts`), so that fallback is dead code on every
+ * Vite-driven build.
  * Unlike Go (`packageName`, still real) or Hono (`clientJsFilename`, still
  * real), Twig has no adapter option left with any effect once Vite drives
  * the build — so this options interface simply omits the field rather than

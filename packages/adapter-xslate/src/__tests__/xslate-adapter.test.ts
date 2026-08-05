@@ -623,12 +623,12 @@ export function Counter() {
     expect(template).not.toContain('register_script')
   })
 
-  test('absent scriptAssets leaves legacy computed-path behavior unchanged', () => {
+  test('absent scriptAssets falls back to adapter-computed script paths', () => {
     const ir = compileToIR(CLIENT_COMPONENT)
-    const legacy = new XslateAdapter().generate(ir).template
+    const computed = new XslateAdapter().generate(ir).template
     const explicitUndefined = new XslateAdapter().generate(ir, { scriptAssets: undefined }).template
-    expect(legacy).toContain("$bf.register_script('/static/components/barefoot.js')")
-    expect(legacy).toContain("$bf.register_script('/static/components/Counter.client.js')")
-    expect(explicitUndefined).toBe(legacy)
+    expect(computed).toContain("$bf.register_script('/static/components/barefoot.js')")
+    expect(computed).toContain("$bf.register_script('/static/components/Counter.client.js')")
+    expect(explicitUndefined).toBe(computed)
   })
 })

@@ -362,7 +362,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
   private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
-    // legacy computed `barefootJsPath` / `clientJsBasePath` pair — see
+    // adapter-computed `barefootJsPath` / `clientJsBasePath` pair — see
     // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
     // plugin) has already decided the exact ordered URL list, including
     // whether any script is needed at all.

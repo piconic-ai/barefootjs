@@ -12,9 +12,9 @@
 // This is the in-repo equivalent of the issue's repro: `bf add toast` →
 // render a <Toast>-using component on mojo → expect 200 with toast markup.
 // It boots a real Mojolicious app with the production plugin against
-// compiler-produced templates plus a manifest in the shape `bf build` now
+// compiler-produced templates plus a manifest in the shape `@barefootjs/vite`
 // emits (per-component rows under `components` — pinned on the emitter side
-// by packages/cli/src/__tests__/build-manifest-components.test.ts).
+// by packages/vite/src/__tests__/component-manifest.test.ts).
 //
 // Runs only when `perl` with Mojolicious is installed (same skip policy as
 // stock-route.test.ts, which this file mirrors).
@@ -176,7 +176,7 @@ describe.skipIf(!PERL_AVAILABLE)('Mojo multi-component registry modules (#2132)'
     if (!probeTemplate) throw new Error('probe compile produced no template')
     writeFileSync(path.join(appDir, 'dist/templates/ToastProbe.html.ep'), probeTemplate.content)
 
-    // Same entry shape `bf build` writes to dist/templates/manifest.json
+    // Same entry shape `@barefootjs/vite` writes to dist/templates/manifest.json
     // (see build-manifest-components.test.ts for the emitter pin).
     writeFileSync(
       path.join(appDir, 'dist/templates/manifest.json'),
