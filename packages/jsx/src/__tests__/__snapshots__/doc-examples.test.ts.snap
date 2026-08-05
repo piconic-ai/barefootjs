@@ -5076,15 +5076,6 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/advanced/code-splitting.md doc-examples L98 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
 "import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
