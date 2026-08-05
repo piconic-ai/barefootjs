@@ -8,8 +8,7 @@
  * this at all (`paths.ts`'s `buildRelativeImportRewriter` docstring) — Go/
  * Mojo/etc. templates have no import syntax. `HonoAdapter` is that adapter
  * here (mirrors `integrations/hono`'s real PageShell → Sidekick-shaped
- * `ReaderToolbar` same-directory import, first caught building that
- * migration).
+ * `ReaderToolbar` same-directory import).
  *
  * Fixture (`../../e2e-fixture-relimport`) reproduces the bug's precondition
  * exactly: `app/` (the Vite root, empty of components) and `blog/` (a

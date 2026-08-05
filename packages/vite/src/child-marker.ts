@@ -5,17 +5,12 @@
  * component's client JS for every OTHER component it references (loop-body
  * children, `initChild`-driven nested components, etc.) — see
  * `packages/jsx/src/ir-to-client-js/child-components.ts`. That specifier
- * is not a real module: it's a marker the LEGACY CLI pipeline
- * post-processes (`packages/jsx/src/combine-client-js.ts`'s
- * `combineParentChildClientJs`) by inlining the named child's compiled JS
- * directly into the parent's file, so the browser needs only one request
- * and the child's `hydrate()`/`registerComponent()` call runs as part of
- * loading the SAME script as the parent.
+ * is not a real module: it's a marker this plugin must resolve at build
+ * time, one way or another, for every reference it stands for.
  *
- * Under Rollup, that inlining step is unnecessary — but simply DROPPING
- * the marker (resolving it to an empty no-op module) is not a safe
- * replacement for every child reference the marker stands for, only for
- * SOME of them. The distinction (found empirically against gin's real
+ * Simply DROPPING the marker (resolving it to an empty no-op module) is
+ * not a safe choice for every child reference the marker stands for, only
+ * for SOME of them. The distinction (found empirically against gin's real
  * TodoApp/TodoItem — no PR01-03 fixture exercised this shape):
  *
  * - A child rendered via `initChild()` (an SSR-hydrated child, or one
@@ -35,11 +30,9 @@
  *   (`packages/client/src/runtime/component.ts`) does one synchronous
  *   `getTemplate(name)` registry lookup with NO queueing — if the
  *   child's script hasn't run yet, it silently renders a placeholder
- *   and NEVER retries. Under the legacy inlined-JS pipeline this could
- *   never happen (the child's `registerComponent` call was physically
- *   inside the parent's own script). Under Rollup, if nothing else on
- *   the page happens to reference the child, ITS SCRIPT NEVER LOADS AT
- *   ALL, and the row permanently fails to render.
+ *   and NEVER retries. If nothing else on the page happens to reference
+ *   the child, ITS SCRIPT NEVER LOADS AT ALL, and the row permanently
+ *   fails to render.
  *
  * Resolving every marker to a REAL import of the named child's `.tsx`
  * source (when discovered) closes this gap the same way Rollup already

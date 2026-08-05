@@ -182,7 +182,7 @@ describe('e2e: vite dev server', () => {
     expect(marker).toContain('DEV BUILD OUTPUT')
   })
 
-  test('writes the legacy cross-language dev-reload sentinel one directory above templates', async () => {
+  test('writes the cross-language dev-reload sentinel one directory above templates', async () => {
     const sentinel = await readIfExists(resolve(templatesDir, '..', '.dev', 'build-id'))
     expect(sentinel).not.toBeNull()
     expect(sentinel).toMatch(/^\d+$/)

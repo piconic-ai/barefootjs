@@ -2,12 +2,11 @@
  * Component discovery: which `.tsx` files live under the configured
  * `components` dirs, and which of those carry a `'use client'` directive.
  *
- * `hasUseClientDirective` and `discoverComponentFiles` are ported verbatim
- * from `packages/cli/src/lib/build.ts` (same behavior, same test coverage
- * intent) rather than imported from `@barefootjs/cli` — that package's
- * `exports` map only publishes the `bf` binary entry point, not this
- * internal module path, and pulling in the CLI's esbuild-heavy dependency
- * graph for two small pure functions would be the wrong shape for a Vite
+ * `hasUseClientDirective` and `discoverComponentFiles` are implemented
+ * standalone rather than imported from `@barefootjs/cli` — that package's
+ * `exports` map only publishes the `bf` binary entry point, not an
+ * internal module path, and pulling in the CLI's whole dependency graph
+ * for two small pure functions would be the wrong shape for a Vite
  * plugin. See CLAUDE.md: "reuse or port it, don't reinvent."
  */
 import { readdir } from 'node:fs/promises'
@@ -119,18 +118,15 @@ export async function discoverComponents(
  *
  * Keyed by each `'use client'` file's own basename without extension —
  * the one-component-per-file convention this repo's shared components
- * follow (`TodoItem.tsx` exports `TodoItem`) and the same convention the
- * legacy CLI's inlining fallback used for its OWN name→file lookup
- * (`combineParentChildClientJs`'s `componentToFile`). Server-only files are
+ * follow (`TodoItem.tsx` exports `TodoItem`). Server-only files are
  * excluded: a `@bf-child:` marker only ever names another component this
  * one instantiates at runtime (`initChild`/`createComponent`), which
  * requires an `init` function only a `'use client'` file has.
  *
- * Known limitation, inherited from the same convention the legacy fallback
- * also only partially covered: a multi-component export file (e.g.
- * `icon/index.tsx` exporting `CopyIcon` + `CheckIcon`) is keyed by its OWN
- * basename (`index`), not by either exported component's name — a
- * `@bf-child:CopyIcon` marker won't resolve through this map and falls
+ * Known limitation of this convention: a multi-component export file
+ * (e.g. `icon/index.tsx` exporting `CopyIcon` + `CheckIcon`) is keyed by
+ * its OWN basename (`index`), not by either exported component's name —
+ * a `@bf-child:CopyIcon` marker won't resolve through this map and falls
  * back to the no-op module (see `plugin.ts`'s `resolveId`).
  */
 export function buildChildNameIndex(discovered: readonly DiscoveredComponent[]): Map<string, string> {

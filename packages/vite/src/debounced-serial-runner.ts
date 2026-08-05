@@ -3,9 +3,7 @@
  * point. Built for `configureServer`'s watcher handlers: a burst of
  * `'change'`/`'add'`/`'unlink'` events (save-twice-quickly, a multi-file
  * save, a `git checkout` touching many files) must not start several
- * overlapping eager passes writing the same template files — the legacy
- * CLI's `watch()` (`packages/cli/src/lib/build.ts`) debounced at 100ms for
- * exactly this reason.
+ * overlapping eager passes writing the same template files.
  *
  * Two, deliberately separate, guarantees:
  *  - **debounce**: `trigger()` calls within `debounceMs` of each other

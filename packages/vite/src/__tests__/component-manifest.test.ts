@@ -1,8 +1,7 @@
 /**
  * Coverage of `buildManifestEntry` — the combined `manifest.json` row
- * builder that reproduces `packages/cli/src/lib/build.ts`'s manifest shape
- * (see `component-manifest.ts`'s header for the exact legacy fields this
- * ports, and the two it deliberately doesn't).
+ * builder (see `component-manifest.ts`'s header for the fields
+ * intentionally not included).
  */
 import { describe, test, expect } from 'bun:test'
 import type { CompileResult, TemplateAdapter } from '@barefootjs/jsx'
@@ -25,8 +24,9 @@ describe('buildManifestEntry', () => {
     expect(row!.entry).toEqual({ markedTemplate: 'Counter.tmpl' })
     // The absent-key contract matters: a consumer checking
     // `'ssrDefaults' in entry` (or PHP's `array_key_exists`) must see FALSE
-    // for a component with no SSR defaults, not an empty object — this is
-    // the exact legacy behavior (`...(ssrDefaults ? { ssrDefaults } : {})`).
+    // for a component with no SSR defaults, not an empty object — see the
+    // `...(ssrDefaults ? { ssrDefaults } : {})` spread in
+    // `buildManifestEntry`.
     expect('ssrDefaults' in row!.entry).toBe(false)
     expect('components' in row!.entry).toBe(false)
   })
@@ -88,9 +88,9 @@ describe('buildManifestEntry', () => {
     )
 
     // Neither exported component's name is 'index' (the file's own
-    // basename) — mirrors the legacy CLI falling through to
-    // `markedTemplates[0]` for a multi-export file (see this module's
-    // "Primary (top-level) template" comment).
+    // basename), so `markedTemplates[0]` is used for a multi-export file
+    // (see `component-manifest.ts`'s "Primary (top-level) template"
+    // comment).
     expect(row!.manifestKey).toBe('ui/toast/index')
     expect(row!.entry.markedTemplate).toBe('ui/toast/Toast.tmpl')
     expect(row!.entry.ssrDefaults).toEqual({ open: { value: false } })

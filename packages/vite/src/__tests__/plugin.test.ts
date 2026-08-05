@@ -303,7 +303,7 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
     expect(greetingTpl).toContain('Hi')
   })
 
-  test('does not refuse (BF103) a sibling-imported child rendered inside a .map() loop — the eager pass always registers every template together (#gin-migration)', async () => {
+  test('does not refuse (BF103) a sibling-imported child rendered inside a .map() loop — the eager pass always registers every template together', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-writebundle-bf103-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
     await writeFile(join(dir, 'src/components/Row.tsx'), '\'use client\'\nexport function Row(props: { label: string }) { return <li>{props.label}</li> }')

@@ -130,7 +130,7 @@ describe('e2e: vite build', () => {
     expect(template).toContain(`{{.Scripts.Register "${expectedUrl}"}}`)
   })
 
-  test('a sibling-imported child rendered inside a CSR .map() loop resolves to a REAL import, not the raw @bf-child: marker (#gin-migration)', async () => {
+  test('a sibling-imported child rendered inside a CSR .map() loop resolves to a REAL import, not the raw @bf-child: marker', async () => {
     const manifest = JSON.parse(await readFile(resolve(outDir, '.vite/manifest.json'), 'utf8'))
     const loopParentKey = Object.keys(manifest).find(k => k.endsWith('LoopParent.tsx'))!
     const loopChildKey = Object.keys(manifest).find(k => k.endsWith('LoopChild.tsx'))!
@@ -163,7 +163,7 @@ describe('e2e: vite build', () => {
     expect(files).toContain('Greeting.tmpl')
   })
 
-  test('writes a combined manifest.json alongside the per-component templates, matching the legacy CLI\'s shape (#2494 review)', async () => {
+  test('writes a combined manifest.json alongside the per-component templates, keyed by component name with markedTemplate + ssrDefaults (#2494 review)', async () => {
     const manifest = JSON.parse(await readFile(resolve(templatesDir, 'manifest.json'), 'utf8'))
 
     // Keyed by component name (GoTemplateAdapter isn't `templatesPerComponent`,

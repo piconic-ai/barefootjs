@@ -5,8 +5,8 @@
  * the component's own `.tsx` module), the localhost-only CORS default,
  * the on-disk marker that flags a `templates` directory as holding dev
  * artifacts (localhost URLs baked in) rather than production output, and
- * the legacy cross-language dev-reload sentinel path (see
- * `devSentinelPath`'s docstring).
+ * the cross-language dev-reload sentinel path (see `devSentinelPath`'s
+ * docstring).
  *
  * The pure, easily-unit-tested pieces live here; the orchestration
  * (compiling, writing files, wiring the watcher) stays in `plugin.ts`
@@ -41,10 +41,9 @@ export const DEFAULT_DEV_CORS_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d
 
 /**
  * Debounce window (ms) for the dev watcher's `'change'` / `'add'` /
- * `'unlink'` handlers, matching the legacy CLI's `watch()`
- * (`packages/cli/src/lib/build.ts`) — long enough to coalesce a
- * save-twice-quickly or a multi-file save/`git checkout` into a single
- * eager pass, short enough that a reload still feels instant.
+ * `'unlink'` handlers — long enough to coalesce a save-twice-quickly or a
+ * multi-file save/`git checkout` into a single eager pass, short enough
+ * that a reload still feels instant.
  */
 export const DEV_WATCH_DEBOUNCE_MS = 100
 
@@ -151,30 +150,27 @@ removes this file.
 `
 
 /**
- * Legacy cross-language dev-reload sentinel: `<outDir>/.dev/build-id`,
- * ONE DIRECTORY ABOVE `templates` — matching `packages/cli/src/lib/
- * build.ts`'s `DEV_SENTINEL_SUBDIR`/`DEV_SENTINEL_FILENAME` under
- * `config.outDir`, where `templatesSubdir` was always a direct child of
- * `outDir` (`layout?.templates ?? 'components'`, never nested deeper) —
- * so "one directory above `templates`" and "the legacy CLI's `outDir`"
- * are the same location for every adapter that followed that layout.
+ * Cross-language dev-reload sentinel: `<outDir>/.dev/build-id`, ONE
+ * DIRECTORY ABOVE `templates`. The path is fixed, not derived from
+ * `templatesDir`, because several server runtimes below poll this exact
+ * location.
  *
- * Several adapter runtimes still poll this exact path for a value change
- * and push an SSE `event: reload` on it — a mechanism that does NOT
- * require the polling process to restart, only the file's mtime/content
- * to change: `bfdev.NewReloadHandler` (Go — echo/gin/chi/nethttp),
+ * Several adapter runtimes poll this exact path for a value change and
+ * push an SSE `event: reload` on it — a mechanism that does NOT require
+ * the polling process to restart, only the file's mtime/content to
+ * change: `bfdev.NewReloadHandler` (Go — echo/gin/chi/nethttp),
  * `Mojolicious::Plugin::BarefootJS::DevReload` /
  * `BarefootJS::DevReload` (Perl — mojolicious/xslate), and
- * `barefoot_js/dev_reload.rb` (Ruby — sinatra/rails, ERB). The legacy CLI
- * (`bf build --watch`) used to write it; nothing did once those adapters'
- * `build:watch` moved to `vite dev` — this restores it from the one place
- * every migrated adapter's dev pass now runs through.
+ * `barefoot_js/dev_reload.rb` (Ruby — sinatra/rails, ERB). `vite dev` is
+ * the only piece of the dev loop those adapters' apps run alongside — if
+ * this plugin didn't write the sentinel, nothing would, and their reload
+ * handlers would never fire.
  *
- * Hono's dev-reload story does not consume this at all: Cloudflare
- * Workers detect a Worker-isolate restart directly (`dev-worker.ts`'s
- * boot id over the SAME SSE endpoint, no file involved), and the Node
- * scaffold target's sentinel-reading `dev.tsx` is fed by the legacy CLI,
- * which is unmigrated. Writing this sentinel unconditionally whenever
+ * Hono's dev-reload story does not consume this at all: both its
+ * Cloudflare Workers target (`dev-worker.ts`'s boot id) and its Node
+ * target (`barefootDevReload`'s SSE endpoint, wired up in the scaffold's
+ * `factory.ts`) detect a restart directly over their own SSE connection,
+ * no file involved. Writing this sentinel unconditionally whenever
  * `templates` is configured is harmless there — nothing reads it — which
  * is what keeps this a zero-config, adapter-agnostic signal rather than a
  * 4th plugin option naming which adapters want it.

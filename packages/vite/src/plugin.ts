@@ -1,9 +1,10 @@
 /**
- * `@barefootjs/vite` — takes over the client-asset half of `bf build`.
- * Vite/Rollup owns bundling, hashing, chunking, tree-shaking and
- * minification; BarefootJS keeps only the JSX → (template, client JS)
- * compile. See `spike-findings.md` (R1-R3) for the mechanics this plugin
- * is built on, and the design doc for the two-engine architecture:
+ * `@barefootjs/vite` — the Vite plugin that turns JSX components into
+ * templates and bundled client JS. Vite/Rollup owns bundling, hashing,
+ * chunking, tree-shaking and minification; BarefootJS keeps only the
+ * JSX → (template, client JS) compile. See `spike-findings.md` (R1-R3)
+ * for the mechanics this plugin is built on, and the design doc for the
+ * two-engine architecture:
  *
  *   1. graph pass (`transform`) — Rollup visits `.tsx` modules it can
  *      reach from `build.rollupOptions.input`; this plugin compiles each
@@ -45,10 +46,9 @@
  * recompile only that file's dependents — it re-runs the ENTIRE eager
  * pass on every tracked change. A change to a shared signal module or a
  * child component changes the *parent's* template too, so anything less
- * than a full re-run needs dependency tracking (the complexity this
- * migration is deleting from the legacy CLI's `build-cache.ts`). The
- * content-hash `CompileCache` makes the full pass cheap: every unchanged
- * file's `compileCanonical` call is a cache hit.
+ * than a full re-run needs dependency tracking, which this design avoids
+ * entirely. The content-hash `CompileCache` makes the full pass cheap:
+ * every unchanged file's `compileCanonical` call is a cache hit.
  *
  * `options.afterEmit`, if supplied, fires once at the end of EITHER eager
  * pass (`writeBundle`'s `mode: 'build'`, `runDevEagerPass`'s `mode: 'dev'`)
@@ -179,14 +179,12 @@ export function barefoot(options: BarefootViteOptions): Plugin {
    * specific discovered component's compile) produced a REAL `markedTemplate`
    * — non-empty content that would otherwise be silently dropped by the
    * `templatesDir === undefined` skip below. `ssrDefaults`/`types` output is
-   * deliberately NOT checked here: the legacy CLI's own `clientOnly` gate
-   * (`packages/cli/src/lib/build.ts`) drops those unconditionally alongside
-   * the template even for an adapter whose components carry real signal
-   * defaults (a CSR `Counter` DOES produce non-empty `ssrDefaults` — proven
-   * by inspection — precisely because that computation reads IR metadata,
-   * not the adapter's `generate()` output), so treating them as
-   * loudness-worthy here would make `templates` impossible to omit for the
-   * one adapter (`CSRAdapter`) this option exists to accommodate.
+   * deliberately NOT checked here: a CSR `Counter` DOES produce non-empty
+   * `ssrDefaults` — proven by inspection — precisely because that
+   * computation reads IR metadata, not the adapter's `generate()` output,
+   * so treating them as loudness-worthy here would make `templates`
+   * impossible to omit for the one adapter (`CSRAdapter`) this option
+   * exists to accommodate.
    */
   function assertNoRealTemplateOutput(result: CompileResult, absPath: string): void {
     const real = result.files.find(f => f.type === 'markedTemplate' && f.content.trim() !== '')
@@ -226,12 +224,10 @@ export function barefoot(options: BarefootViteOptions): Plugin {
         // even though the shape works fine once the app's own template
         // registration (e.g. Go's `filepath.WalkDir` + `ParseFiles` over
         // every `.tmpl`) puts every template on one instance — which this
-        // plugin's design already requires. The legacy CLI makes the same
-        // assumption unconditionally (`packages/cli/src/lib/
-        // build.ts`'s `siblingTemplatesRegistered: true`); this mirrors
-        // it. Harmless for the client-JS graph pass that also calls this
-        // function — the option only ever reaches `adapter.generate()`'s
-        // TEMPLATE codegen, never client JS.
+        // plugin's design already requires. Harmless for the client-JS
+        // graph pass that also calls this function — the option only
+        // ever reaches `adapter.generate()`'s TEMPLATE codegen, never
+        // client JS.
         siblingTemplatesRegistered: true,
       }),
     )
@@ -315,13 +311,13 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     if (templatesDir === undefined) return types
 
     // Written unconditionally every pass (matching `writeEmits`'s own
-    // no-diffing convention for this eager pass, and the legacy CLI's own
-    // always-write-unless-clientOnly behavior) — `discovered` is always the
-    // FULL current set (see this module's docstring on why this plugin
-    // never does a partial/diffed re-run), so this naturally drops a
-    // deleted component's row without any separate cleanup step. `mkdir`
-    // first: an empty `discovered` set means `writeEmits` never ran (no
-    // targets to create `templatesDir` for), so it may not exist yet.
+    // no-diffing convention for this eager pass) — `discovered` is always
+    // the FULL current set (see this module's docstring on why this
+    // plugin never does a partial/diffed re-run), so this naturally drops
+    // a deleted component's row without any separate cleanup step.
+    // `mkdir` first: an empty `discovered` set means `writeEmits` never
+    // ran (no targets to create `templatesDir` for), so it may not exist
+    // yet.
     await mkdir(templatesDir, { recursive: true })
     await writeFile(resolve(templatesDir, 'manifest.json'), JSON.stringify(manifestEntries, null, 2))
 
@@ -381,11 +377,10 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
     await writeFile(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), DEV_ARTIFACT_MARKER_CONTENT)
 
-    // Legacy cross-language dev-reload sentinel (see `devSentinelPath`'s
+    // Cross-language dev-reload sentinel (see `devSentinelPath`'s
     // docstring) — written unconditionally on every pass, initial pass
-    // included, matching the legacy CLI's `watch()` writing it both on
-    // the initial build and every rebuild. A fresh timestamp is enough:
-    // consumers only compare it against their own last-seen value.
+    // included. A fresh timestamp is enough: consumers only compare it
+    // against their own last-seen value.
     const sentinelPath = devSentinelPath(templatesDir)
     await mkdir(resolve(sentinelPath, '..'), { recursive: true })
     await writeFile(sentinelPath, String(Date.now()))

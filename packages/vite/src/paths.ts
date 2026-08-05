@@ -1,13 +1,10 @@
 /**
  * Path helpers for mirroring a component's position under a configured
- * `components` source dir into the `templates` output dir — the same
- * "on-disk layout mirrors source layout" convention `packages/cli/src/lib/
- * build.ts` uses (`effectiveNamesFor` / `effectiveOutName` /
- * `buildRelativeImportRewriter`), ported and simplified for this plugin's
- * needs rather than imported: `@barefootjs/cli`'s only published entry
- * point is the `bf` binary, and that module pulls in the CLI's whole
- * esbuild-based build pipeline (being retired by this very package) as a
- * side effect of import.
+ * `components` source dir into the `templates` output dir.
+ *
+ * Implemented standalone rather than by importing from `@barefootjs/cli`:
+ * that package's only published entry point is the `bf` binary, so
+ * importing it would pull in the whole CLI as a side effect.
  */
 import { basename, dirname, relative, resolve, sep } from 'node:path'
 
@@ -85,12 +82,10 @@ export function perComponentRelPath(relUnderComponentDir: string, componentName:
  * Build a `rewriteRelativeImport` function for `compileJSX` — re-anchors a
  * relative specifier written in `sourcePath` so it still resolves once the
  * template is emitted to `outputPath` under `templatesDir` instead of
- * living beside its source. Ported from `packages/cli/src/lib/build.ts`'s
- * `buildRelativeImportRewriter` (same behavior); ported rather than
- * imported for the reason in this file's header comment. Only exercised by
- * adapters whose templates carry real `import` statements (Hono-shaped
- * JS-runtime adapters) — Go/Mojo/etc. templates have no import syntax and
- * never call this.
+ * living beside its source. Implemented standalone for the reason in this
+ * file's header comment. Only exercised by adapters whose templates carry
+ * real `import` statements (Hono-shaped JS-runtime adapters) — Go/Mojo/etc.
+ * templates have no import syntax and never call this.
  */
 export function buildRelativeImportRewriter(
   sourcePath: string,
