@@ -343,9 +343,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   name = 'blade'
   extension = '.blade.php'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a static
-  // import-map HTML snippet to include into the page <head>.
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the Blade runtime can render in template scope.

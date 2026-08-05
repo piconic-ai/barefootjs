@@ -141,20 +141,6 @@ export type { SourceMapV3 } from './ir-to-client-js/source-map.ts'
 // Client JS Combiner (for build scripts)
 export { combineParentChildClientJs } from './combine-client-js.ts'
 
-// Externals manifest + importmap snippet renderer (shared by adapters and CLI)
-export { renderImportMapHtml } from './import-map.ts'
-export type { ExternalsManifest, ImportMapManifest } from './import-map.ts'
-
-// Build options (shared by adapters and CLI)
-export interface OutputLayout {
-  /** Subdirectory for marked templates (default: 'components') */
-  templates: string
-  /** Subdirectory for client JS files (default: 'components') */
-  clientJs: string
-  /** Subdirectory for runtime (barefoot.js) (default: same as clientJs) */
-  runtime: string
-}
-
 export interface PostBuildContext {
   /** Collected types: componentName → types content */
   types: Map<string, string>
@@ -180,42 +166,6 @@ export interface PostBuildContext {
 }
 
 /**
- * Vendor code-splitting spec for a single package.
- *
- * - `true` / `{ chunk: true }` — locate the package's browser-ready entry
- *   (umd → unpkg → jsdelivr → import condition) and copy it to the output dir.
- * - `{ url }` — CDN passthrough: skip local copy, use the URL as-is in the importmap.
- * - `preload: true` — emit a `<link rel="modulepreload">` hint for this entry.
- * - `rebundle: true` — re-bundle the resolved entry with esbuild into a self-contained
- *   ESM file, inlining all dependencies. Useful for packages (e.g. `yjs`) whose
- *   `dist/*.mjs` files still contain bare external imports that browsers cannot resolve.
- */
-export type ExternalSpec =
-  | true
-  | { chunk?: true; preload?: boolean; rebundle?: boolean }
-  | { url: string; preload?: boolean }
-
-/**
- * An entry point to bundle directly with esbuild.
- * Externals declared in `BuildOptions.externals` are applied automatically.
- * `@barefootjs/client`, `@barefootjs/client/runtime`, and
- * `@barefootjs/client/reactive` are always kept external, so you never need
- * to list them here. They resolve through the page's import map to the shared
- * `barefoot.js` runtime; inlining them would fork the reactive runtime and
- * duplicate signals (#927).
- * Use this for modules that are not barefoot components (e.g. plain TS entry
- * points that import external vendor packages).
- */
-export interface BundleEntry {
-  /** Entry file path relative to the config file */
-  entry: string
-  /** Output filename placed in the client JS output directory */
-  outfile: string
-  /** Additional packages to mark as external beyond those in `externals` */
-  externals?: string[]
-}
-
-/**
  * Project layout paths used by registry tooling (`bf add`, `search`,
  * `meta:extract`, `tokens`, `inspect`, etc.). These are consumed only by
  * non-build tooling — the build pipeline ignores them — but they live in
@@ -228,79 +178,6 @@ export interface BarefootPaths {
   tokens: string
   /** Meta directory (meta/index.json + per-component meta files). */
   meta: string
-}
-
-export interface BuildOptions {
-  /**
-   * Project layout paths. Consumed by registry tooling, not the build pipeline.
-   * Defaults to `{ components: 'components/ui', tokens: 'tokens', meta: 'meta' }`
-   * when omitted.
-   */
-  paths?: BarefootPaths
-  /** Source component directories relative to config file */
-  components?: string[]
-  /** Output directory relative to config file */
-  outDir?: string
-  /** Minify client JS output */
-  minify?: boolean
-  /** Add content hash to client JS filenames */
-  contentHash?: boolean
-  /** Custom output directory layout */
-  outputLayout?: OutputLayout
-  /** Post-build hook called after minification, before manifest write */
-  postBuild?: (ctx: PostBuildContext) => Promise<void> | void
-  /**
-   * Vendor packages to split out as separately-cached browser chunks.
-   * The CLI copies each package's browser-ready bundle to the output dir,
-   * then emits `dist/barefoot-externals.json` with the importmap and
-   * `--external` flag list for use in the app's own `bun build`.
-   *
-   * `@barefootjs/client*` dedup entries are added automatically whenever
-   * this field is non-empty, preventing reactive-primitive duplication (#927).
-   */
-  externals?: Record<string, ExternalSpec>
-  /**
-   * URL base path for vendor chunks in the emitted importmap.
-   * Defaults to `/<runtimeSubdir>/` (e.g., `/static/components/`).
-   */
-  externalsBasePath?: string
-  /**
-   * Additional entry points to bundle with esbuild directly, bypassing the
-   * barefoot component compiler. Useful for plain TS/TSX modules (e.g. canvas
-   * init entry points) that import vendor packages listed in `externals`.
-   * Each entry is bundled as ESM with all `externals` automatically excluded.
-   */
-  bundleEntries?: BundleEntry[]
-  /**
-   * Import prefixes resolved at build time rather than left as bare
-   * specifiers in the emitted client JS. Use this for tsconfig `paths`
-   * aliases like `@/`, `@ui/`, `@app/` so the compiler does not emit
-   * them as browser imports.
-   *
-   * Forwarded to `compileJSX` as `CompileOptions.localImportPrefixes`.
-   */
-  localImportPrefixes?: string[]
-  /**
-   * How the CLI produces `barefoot.js` (the client runtime bundle):
-   *   - `'treeshake'` (default) — bundle only the runtime exports this
-   *     project's compiled client JS actually imports, plus a small
-   *     always-kept public mount API (`render`, `hydrate`, etc.).
-   *   - `'treeshake-exact'` — same collection, but without the always-kept
-   *     set. Smaller output; a hand-written page script the CLI never
-   *     compiles must list any runtime names it calls directly in
-   *     `runtimeKeep`, or they're silently dropped.
-   *   - `'full'` — copy the entire prebuilt runtime bundle verbatim.
-   * See `@barefootjs/cli`'s `runtime-treeshake.ts` for the collector and
-   * `ALWAYS_KEEP_RUNTIME_EXPORTS` for the always-kept names.
-   */
-  runtimeBundle?: 'treeshake' | 'treeshake-exact' | 'full'
-  /**
-   * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
-   * under `runtimeBundle: 'treeshake'` or `'treeshake-exact'` — for names
-   * only ever referenced from hand-written page scripts the CLI never
-   * compiles.
-   */
-  runtimeKeep?: string[]
 }
 
 // AttrValue constructors

@@ -189,7 +189,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   // Sentinel marking a parent-scope `bf-s` slot inside a hoisted-JSX children
   // bake (see `extractScopedHtmlChildren`). Can't appear in real HTML text.
   private static readonly SCOPE_SENTINEL = '__BF_SCOPE_SENTINEL__'
-  importMapInjection = 'html-snippet' as const
 
   // `renderFilterExpr` recursion state. `filterExprDepth` lets the outer call
   // reset `filterExprUnsupported` per independent filter expression; the flag,

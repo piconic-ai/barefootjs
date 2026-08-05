@@ -9,10 +9,9 @@
  *
  * Two pieces:
  *
- *   - **JSX components** (`<BfImportMap />`, `<BfScripts />`,
- *     `<BfDevReload />`) — return raw HTML the caller composes inside
- *     the Layout passed to Hono's `jsxRenderer`. All URL/data inputs
- *     are required props.
+ *   - **JSX components** (`<BfScripts />`, `<BfDevReload />`) — return
+ *     raw HTML the caller composes inside the Layout passed to Hono's
+ *     `jsxRenderer`. All URL/data inputs are required props.
  *
  *   - **Middleware** (`barefootDevReload`) — registers the SSE endpoint
  *     paired with `<BfDevReload />`. Both `endpoint` and `enabled` are
@@ -30,9 +29,6 @@ import type { MiddlewareHandler } from 'hono'
 import { html, raw } from 'hono/html'
 import type { HtmlEscapedString } from 'hono/utils/html'
 import { useRequestContext } from 'hono/jsx-renderer'
-// Zero-dependency subpath — keeps the compiler (and its `typescript` dep) out
-// of this runtime/Workers-bundled module while sharing one importmap renderer.
-import { renderImportMapHtml, type ImportMapManifest } from '@barefootjs/jsx/import-map'
 import { createDevReloader } from './dev-worker.ts'
 // Side-effect import: auto-wires request-scoped `searchParams()` for SSR so any
 // Hono app rendering the BarefootJS scripts gets it without an opt-in step.
@@ -92,62 +88,6 @@ export function relPathFromComponentsBase(p: string): string {
 }
 
 // ── JSX components ─────────────────────────────────────────────────────────
-
-export interface BfImportMapProps {
-  /** Base URL where the runtime + component bundles are served. */
-  base: string
-  /**
-   * Contents of `barefoot-externals.json` (import it and pass it
-   * through). Its `importmap.imports` are merged on top of the
-   * built-in `@barefootjs/client*` mappings so islands importing
-   * configured externals (e.g. `zod`, `@barefootjs/form`) resolve in
-   * the browser. When omitted, only the `@barefootjs/client*`
-   * mappings are emitted — the pre-#1639 behavior.
-   *
-   * Typed with the shared {@link ImportMapManifest} from `@barefootjs/jsx`,
-   * so every importmap-snippet consumer describes the manifest with one
-   * type.
-   */
-  externals?: ImportMapManifest
-  /**
-   * Whether to also emit `<link rel="modulepreload">` for the
-   * manifest's `preloads`. Defaults to `true`; set `false` to emit
-   * the importmap only.
-   */
-  preload?: boolean
-}
-
-/**
- * Emits the `<script type="importmap">` that maps the bare
- * `@barefootjs/client` / `@barefootjs/client/runtime` specifiers to
- * the runtime bundle, plus any externals from `barefoot-externals.json`
- * passed via the `externals` prop. Also emits `<link rel="modulepreload">`
- * for the manifest's `preloads` unless `preload` is `false`. Place in
- * `<head>`.
- *
- * The merge of the `@barefootjs/client*` defaults (synthesized from `base`
- * for prop-less / hand-written manifests) is Hono-specific; the actual HTML
- * rendering — importmap JSON escaping, `<link rel="modulepreload">`
- * emission with `crossorigin` (#1648) — is delegated to the shared
- * `renderImportMapHtml` so this path can never drift from the static
- * `barefoot-importmap.html` snippet emitted for template-string adapters
- * (#1644). Imported from the `@barefootjs/jsx/import-map` subpath, a
- * zero-dependency module, to keep this runtime file free of the compiler.
- */
-export function BfImportMap(props: BfImportMapProps): HtmlEscapedString | Promise<HtmlEscapedString> {
-  const base = props.base.replace(/\/$/, '')
-  // Built-in defaults first, then manifest imports so a configured
-  // `@barefootjs/client` mapping (from a build's configured
-  // `externalsBasePath`) wins over the prop-derived one.
-  const imports: Record<string, string> = {
-    '@barefootjs/client': `${base}/barefoot.js`,
-    '@barefootjs/client/runtime': `${base}/barefoot.js`,
-    ...(props.externals?.importmap?.imports ?? {}),
-  }
-  const preloads = props.preload === false ? [] : props.externals?.preloads ?? []
-
-  return html`${raw(renderImportMapHtml({ importmap: { imports }, preloads }))}`
-}
 
 export interface BfScriptsProps {
   /** Base URL where the runtime + component bundles are served. */

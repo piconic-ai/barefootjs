@@ -243,9 +243,6 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   name = 'twig'
   extension = '.twig'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a static
-  // import-map HTML snippet to include into the page <head>.
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the Twig runtime can render in template scope.

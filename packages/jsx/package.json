@@ -14,10 +14,6 @@
       "types": "./src/scanner/js-scanner.ts",
       "import": "./src/scanner/js-scanner.ts"
     },
-    "./import-map": {
-      "types": "./src/import-map.ts",
-      "import": "./src/import-map.ts"
-    },
     "./jsx-runtime": {
       "types": "./src/jsx-runtime/index.ts"
     },
@@ -38,10 +34,6 @@
         "types": "./dist/scanner/js-scanner.d.ts",
         "import": "./dist/scanner/js-scanner.js"
       },
-      "./import-map": {
-        "types": "./dist/import-map.d.ts",
-        "import": "./dist/import-map.js"
-      },
       "./jsx-runtime": {
         "types": "./src/jsx-runtime/index.ts"
       },
@@ -56,7 +48,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/scanner/js-scanner.ts ./src/import-map.ts --root ./src --outdir ./dist --format esm --external typescript --external @barefootjs/shared --external @barefootjs/client",
+    "build:js": "bun build ./src/index.ts ./src/scanner/js-scanner.ts --root ./src --outdir ./dist --format esm --external typescript --external @barefootjs/shared --external @barefootjs/client",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test && bun run typecheck:tests",
     "typecheck:tests": "tsgo --noEmit -p __tests__/tsconfig.json",

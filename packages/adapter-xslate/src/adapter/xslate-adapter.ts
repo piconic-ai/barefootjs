@@ -163,9 +163,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   name = 'xslate'
   extension = '.tx'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a static
-  // import-map HTML snippet to include into the page <head>.
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the Xslate runtime can render in template scope.

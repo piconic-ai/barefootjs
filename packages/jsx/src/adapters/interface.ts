@@ -203,26 +203,6 @@ export interface TemplateAdapter {
    */
   templatesPerComponent?: boolean
   /**
-   * How the application author injects the externals importmap (and any
-   * `<link rel="modulepreload">` hints) into the page `<head>` when an
-   * externals manifest (`ExternalsManifest`) is in use.
-   *
-   * - `'component'` — the adapter ships a render-time component (e.g. Hono's
-   *   `BfImportMap`) that renders whatever manifest the app passes it; no
-   *   static snippet file is involved.
-   * - `'html-snippet'` — the adapter targets a template-string language (Go
-   *   html/template, Mojolicious EP) with no component layer, so the app
-   *   renders its manifest to a static `barefoot-importmap.html` snippet
-   *   itself (via `renderImportMapHtml`) and includes it into the page.
-   *
-   * Optional only for backward compatibility (and internal-only adapters like
-   * the CSR test adapter). Every *shipping* adapter must set it — the
-   * adapter-tests importmap-injection contract enforces this so a new adapter
-   * cannot silently leave a configured externals manifest with no injection
-   * point. See issue #1644.
-   */
-  importMapInjection?: 'component' | 'html-snippet'
-  /**
    * Module specifier of the SSR shim for `@barefootjs/client` (and
    * `/runtime`). When set, the compiler rewrites client-package imports in
    * SSR templates to point at this shim instead of stripping them. The shim

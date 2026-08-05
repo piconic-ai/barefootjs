@@ -31,7 +31,3 @@ export default defineConfig({
 ```
 
 Vite's dev server and production build both content-hash and cache these chunks automatically — no manifest to wire up by hand, and no `--external` flags to compute for a separate bundler pass. See [Vite's own code-splitting docs](https://vite.dev/guide/build.html#chunking-strategy) for `manualChunks`, dynamic `import()`, and `build.rollupOptions.output`.
-
-## `BfImportMap` (Hono adapter)
-
-The Hono adapter's `<BfImportMap />` component (`@barefootjs/hono/app`) emits the built-in `@barefootjs/client*` browser-specifier mappings. Its optional `manifest` prop takes `{ importmap, preloads }` — pass it only if you construct that shape yourself from your own Vite build output. Most apps don't need to: Vite resolves and bundles everything ahead of time, so there is no browser-side importmap to maintain.

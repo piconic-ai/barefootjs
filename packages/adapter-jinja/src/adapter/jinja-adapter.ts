@@ -193,9 +193,6 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   name = 'jinja'
   extension = '.jinja'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a static
-  // import-map HTML snippet to include into the page <head>.
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the Jinja runtime can render in template scope.

@@ -38,8 +38,6 @@ Pick the closest existing adapter and copy its skeleton; do not design from scra
 Decide and record:
 - **Runtime model**: JS-engine (`clientShimSource`, `acceptsTemplateCall`) vs DSL
   (`templatePrimitives` map only, both others `undefined`).
-- **`importMapInjection`**: `'html-snippet'` for DSL/string-template targets, `'component'` for
-  JS-runtime targets. Required for shipping adapters (#1644).
 - **`templatesPerComponent`** and the template file `extension`.
 - **Where the native runtime lives**: in-package (like `adapter-erb/lib`, `adapter-go-template/runtime`)
   or shared with a sibling (like blade reusing `adapter-php`'s runtime).
@@ -210,7 +208,7 @@ Add a new BarefootJS adapter for <TEMPLATE ENGINE / LANGUAGE> as packages/adapte
 Follow .claude/skills/add-adapter/SKILL.md exactly, phase by phase — read its "Read first"
 list before writing code. Scoping answers: runtime model = <DSL | JS-engine>; copy skeleton
 from packages/adapter-<closest>; native runtime lives <in-package | shared with X>; helper
-naming = <bf_* | bf.* | …>; importMapInjection = <html-snippet | component>.
+naming = <bf_* | bf.* | …>.
 
 Work in small commits: package skeleton first, then the adapter core, then the native runtime
 with golden-vector replay, then grind the conformance suite one fixture at a time (skip list

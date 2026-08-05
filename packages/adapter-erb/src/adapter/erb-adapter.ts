@@ -160,10 +160,6 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   name = 'erb'
   extension = '.erb'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a
-  // static `barefoot-importmap.html` to include in the page <head>, same as
-  // the Mojo/Go adapters.
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the ERB runtime can render in template scope.
