@@ -1,15 +1,7 @@
 ---
 "@barefootjs/jsx": minor
 "@barefootjs/vite": minor
-"@barefootjs/blade": minor
-"@barefootjs/erb": minor
-"@barefootjs/go-template": minor
 "@barefootjs/hono": minor
-"@barefootjs/jinja": minor
-"@barefootjs/mojolicious": minor
-"@barefootjs/rust": minor
-"@barefootjs/twig": minor
-"@barefootjs/xslate": minor
 ---
 
 Emit `<link rel="modulepreload">` hints for a component's transitively-shared chunks
@@ -59,3 +51,20 @@ pre-bundling — there is no stable, hashed chunk graph to preload, so
 
 Purely additive: with `preloadAssets` unset (the default) every existing
 caller keeps byte-identical output.
+
+## Scope: Hono only, for now
+
+Only `@barefootjs/hono` emits the hints. The other eight adapters do not
+register scripts inline — they call a collector (`bf.register_script(...)`,
+backed by `_scripts` state in each native runtime: Rust, PHP, Python, Ruby,
+Perl) whose output the app's layout renders elsewhere in the page. A
+`{% set _bf_reg0 = bf.register_script('…') %}` statement produces no output,
+so prepending it to a component's template is invisible; a `<link>` element
+does render, and prepending THAT injects an extra node immediately before
+every component's root — which breaks hydration's DOM claim structure and
+leaves child islands unhydrated.
+
+Giving those eight the same win means adding a `register_preload` collector
+(plus its render point) to five native runtimes, so that the hints land
+wherever the app already renders the collected scripts. That is a separate,
+larger change; Hono's collector already exists, which is why it lands here.
