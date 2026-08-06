@@ -5,9 +5,6 @@ export function initLabel(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const labelClasses = 'flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50'
 
   const [_s0] = $(__scope, 's0')

@@ -4,11 +4,6 @@ export function initTabs(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const value = _p.value
-  const defaultValue = _p.defaultValue
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const tabsClasses = 'flex flex-col gap-2 w-full'
 
   const [_s0] = $(__scope, 's0')
@@ -29,9 +24,6 @@ export function Tabs(_p, __bfKey) { return createComponent('Tabs', _p, __bfKey) 
 export function initTabsList(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const tabsListClasses = 'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]'
 

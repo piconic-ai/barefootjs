@@ -5,7 +5,6 @@ export function initVariantTag(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const variant = _p.variant ?? 'a'
-  const asChild = _p.asChild ?? false
 
   const variantClasses = { a: 'cls-a', b: 'cls-b' }
   const cls = variantClasses[variant]

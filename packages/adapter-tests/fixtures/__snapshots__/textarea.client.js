@@ -9,14 +9,6 @@ export function initTextarea(__scope, _p = {}) {
   const onChange = _p.onChange ?? (() => {})
   const onBlur = _p.onBlur ?? (() => {})
   const onFocus = _p.onFocus ?? (() => {})
-  const placeholder = _p.placeholder ?? ''
-  const disabled = _p.disabled ?? false
-  const className = _p.className ?? ''
-  const value = _p.value ?? ''
-  const readonly = _p.readonly ?? false
-  const rows = _p.rows
-  const error = _p.error ?? false
-  const describedBy = _p.describedBy
 
   const baseClasses = 'placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
   const focusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'

@@ -4,9 +4,6 @@ export function initTable(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const tableClasses = 'w-full caption-bottom border-collapse text-sm'
 
   const [_s0] = $(__scope, 's0')
@@ -26,9 +23,6 @@ export function Table(_p, __bfKey) { return createComponent('Table', _p, __bfKey
 export function initTableHeader(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const tableHeaderClasses = '[&_tr]:border-b'
 
@@ -50,9 +44,6 @@ export function initTableBody(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const tableBodyClasses = '[&_tr:last-child]:border-0'
 
   const [_s0] = $(__scope, 's0')
@@ -72,9 +63,6 @@ export function TableBody(_p, __bfKey) { return createComponent('TableBody', _p,
 export function initTableFooter(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const tableFooterClasses = 'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0'
 
@@ -96,9 +84,6 @@ export function initTableRow(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const tableRowClasses = 'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors'
 
   const [_s0] = $(__scope, 's0')
@@ -118,9 +103,6 @@ export function TableRow(_p, __bfKey) { return createComponent('TableRow', _p, _
 export function initTableHead(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const tableHeadClasses = 'text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
@@ -142,9 +124,6 @@ export function initTableCell(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const tableCellClasses = 'p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
   const [_s0] = $(__scope, 's0')
@@ -164,9 +143,6 @@ export function TableCell(_p, __bfKey) { return createComponent('TableCell', _p,
 export function initTableCaption(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const tableCaptionClasses = 'text-muted-foreground mt-4 text-sm'
 
@@ -189,7 +165,6 @@ export function initCheckIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -295,7 +270,6 @@ export function initChevronDownIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -401,7 +375,6 @@ export function initChevronUpIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -507,7 +480,6 @@ export function initChevronLeftIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -613,7 +585,6 @@ export function initChevronRightIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -719,7 +690,6 @@ export function initXIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -825,7 +795,6 @@ export function initPlusIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -931,7 +900,6 @@ export function initMinusIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1037,7 +1005,6 @@ export function initSunIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1143,7 +1110,6 @@ export function initMoonIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1249,7 +1215,6 @@ export function initMonitorIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1355,7 +1320,6 @@ export function initCopyIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1461,7 +1425,6 @@ export function initClipboardIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1567,7 +1530,6 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1673,7 +1635,6 @@ export function initMenuIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1779,7 +1740,6 @@ export function initArrowLeftIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1885,7 +1845,6 @@ export function initArrowRightIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1991,7 +1950,6 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2097,7 +2055,6 @@ export function initEllipsisIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2136,7 +2093,6 @@ export function initGitHubIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2175,7 +2131,6 @@ export function initSettingsIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2214,7 +2169,6 @@ export function initGlobeIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2253,7 +2207,6 @@ export function initLogOutIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2292,7 +2245,6 @@ export function initCircleHelpIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2331,7 +2283,6 @@ export function initSearchIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2370,7 +2321,6 @@ export function initCircleCheckIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2409,7 +2359,6 @@ export function initCircleXIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2448,7 +2397,6 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2487,7 +2435,6 @@ export function initInfoIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2526,7 +2473,6 @@ export function initCalendarIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2565,7 +2511,6 @@ export function initGripVerticalIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2604,7 +2549,6 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2710,7 +2654,6 @@ export function initPanelLeftIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2907,7 +2850,6 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
   const onSort = _p.onSort
   const title = _p.title
   const sorted = _p.sorted ?? false
-  const className = _p.className ?? ''
 
   const columnHeaderClasses = 'inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none'
 
@@ -2977,10 +2919,6 @@ export function initDataTablePagination(__scope, _p = {}) {
 
   const onPrev = _p.onPrev
   const onNext = _p.onNext
-  const className = _p.className ?? ''
-  const canPrev = _p.canPrev
-  const canNext = _p.canNext
-  const children = _p.children
 
   const paginationClasses = 'flex items-center justify-between px-2 py-4'
 

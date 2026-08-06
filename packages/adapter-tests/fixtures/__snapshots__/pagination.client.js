@@ -5,7 +5,6 @@ export function initCheckIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -111,7 +110,6 @@ export function initChevronDownIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -217,7 +215,6 @@ export function initChevronUpIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -323,7 +320,6 @@ export function initChevronLeftIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -429,7 +425,6 @@ export function initChevronRightIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -535,7 +530,6 @@ export function initXIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -641,7 +635,6 @@ export function initPlusIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -747,7 +740,6 @@ export function initMinusIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -853,7 +845,6 @@ export function initSunIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -959,7 +950,6 @@ export function initMoonIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1065,7 +1055,6 @@ export function initMonitorIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1171,7 +1160,6 @@ export function initCopyIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1277,7 +1265,6 @@ export function initClipboardIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1383,7 +1370,6 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1489,7 +1475,6 @@ export function initMenuIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1595,7 +1580,6 @@ export function initArrowLeftIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1701,7 +1685,6 @@ export function initArrowRightIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1807,7 +1790,6 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1913,7 +1895,6 @@ export function initEllipsisIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1952,7 +1933,6 @@ export function initGitHubIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -1991,7 +1971,6 @@ export function initSettingsIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2030,7 +2009,6 @@ export function initGlobeIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2069,7 +2047,6 @@ export function initLogOutIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2108,7 +2085,6 @@ export function initCircleHelpIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2147,7 +2123,6 @@ export function initSearchIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2186,7 +2161,6 @@ export function initCircleCheckIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2225,7 +2199,6 @@ export function initCircleXIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2264,7 +2237,6 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2303,7 +2275,6 @@ export function initInfoIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2342,7 +2313,6 @@ export function initCalendarIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2381,7 +2351,6 @@ export function initGripVerticalIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2420,7 +2389,6 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2526,7 +2494,6 @@ export function initPanelLeftIcon(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const size = _p.size
-  const className = _p.className ?? ''
 
   const sizeMap = {
   sm: 16,
@@ -2720,9 +2687,6 @@ export function initPagination(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const [_s0] = $(__scope, 's0')
 
   createEffect(() => {
@@ -2741,9 +2705,6 @@ export function initPaginationContent(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const [_s0] = $(__scope, 's0')
 
   createEffect(() => {
@@ -2761,9 +2722,6 @@ export function PaginationContent(_p, __bfKey) { return createComponent('Paginat
 export function initPaginationItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const [_s0] = $(__scope, 's0')
 
@@ -2822,8 +2780,6 @@ export function initPaginationPrevious(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-
   const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
   const variantClasses = {
   outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
@@ -2868,8 +2824,6 @@ export function initPaginationNext(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-
   const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
   const variantClasses = {
   outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
@@ -2913,8 +2867,6 @@ export function PaginationNext(_p, __bfKey) { return createComponent('Pagination
 export function initPaginationEllipsis(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
 
   const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
