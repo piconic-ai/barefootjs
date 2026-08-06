@@ -53,13 +53,11 @@ function WithPredictableIds({ children }: { children: any }) {
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
 import { docsTabsInitScript } from '@barefootjs/site-shared/lib/docs-tabs-init'
 
-// Import map for resolving @barefootjs/client in client JS
-const importMapScript = JSON.stringify({
-  imports: {
-    '@barefootjs/client': '/static/components/barefoot.js',
-    '@barefootjs/client/runtime': '/static/components/barefoot.js',
-  },
-})
+// No import map: under the Vite build, `@barefootjs/client` is an
+// ordinary bundled ESM specifier every compiled component's entry
+// imports — Rollup folds it into one shared chunk the browser follows on
+// its own. The playground iframe keeps its own import map (it loads the
+// standalone runtime by fixed URL — see playground/page-script.ts).
 
 /**
  * Convert docs NavItem[] to shared SidebarEntry[].
@@ -134,7 +132,6 @@ export const renderer = jsxRenderer(
       <WithPredictableIds>
         <html lang="en">
           <head>
-            <script type="importmap" dangerouslySetInnerHTML={{ __html: importMapScript }} />
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />

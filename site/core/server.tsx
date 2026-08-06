@@ -22,7 +22,12 @@ server.use('/static/components/*', async (c, next) => {
   c.header('Access-Control-Allow-Origin', '*')
 })
 
-// Serve compiled static files (CSS, components, icons, logos, snippets)
+// Client chunks + the standalone runtime live at dist/static/components/
+// (Vite's build.outDir), matching the production URL space exactly — no
+// rewrite. Registered before the generic /static/* rule below so it wins.
+server.use('/static/components/*', serveStatic({ root: './dist' }))
+
+// Serve compiled static files (CSS, icons, logos, snippets)
 server.use('/static/*', serveStatic({
   root: './dist',
   rewriteRequestPath: (path) => path.replace('/static', ''),
