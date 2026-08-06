@@ -39,7 +39,10 @@
 //          → local `src` (covers self-imports like `@barefootjs/client/reactive`).
 //   2. Skip it if that exact version is already live on JSR (idempotent —
 //      a Changesets release only bumps a subset, the rest no-op).
-//   3. `deno publish` the package (unless `--dry-run`).
+//   3. `deno publish` the package (unless `--dry-run`), retrying failures
+//      in additional passes while earlier successes unblock them — see the
+//      fixpoint loop's comment for why package.json edges can't be trusted
+//      to predict what a package's real module graph needs.
 //
 // Flags:
 //   --dry-run            Generate + print manifests; do not query JSR or publish.
@@ -314,20 +317,11 @@ async function jsrHasVersion(name: string, version: string): Promise<boolean> {
 
 // ── Run ───────────────────────────────────────────────────────────────
 const selected = topoSort(candidates).filter(c => !only || only.has(c.pkg.name))
-// Names in this run — the cycle-breaker below consults this to distinguish
-// "dep not live because it's about to be published by THIS run" from a
-// genuinely missing dependency.
-const selectedNames = new Set(selected.map(c => c.pkg.name))
 const generated: string[] = []
 let published = 0
 let skipped = 0
 const errors: string[] = []
 const pending: string[] = []
-// Packages whose version is NOT yet resolvable on JSR (still propagating, or
-// their publish failed). Dependents of these are deferred — their publish-time
-// type-check would just fail on the unresolvable `jsr:` dep — but unrelated
-// packages keep going.
-const unresolved = new Set<string>()
 
 // `deno publish` uploads in seconds, then polls JSR until the server-side
 // publishing task (module-graph + slow-types doc generation) finishes — but on
@@ -340,7 +334,64 @@ const DENO_PUBLISH_TIMEOUT_S = 240 // generous: type-check + upload take seconds
 const VERIFY_TIMEOUT_MS = 6 * 60_000
 const VERIFY_INTERVAL_MS = 15_000
 
+interface WorkItem {
+  dir: string
+  pkg: PkgJson
+}
+
+/** One `deno publish` attempt + JSR-is-source-of-truth verification.
+ * Returns 'published' | 'pend' (submitted, not observably live yet) |
+ * 'failed' (genuine deno error — type error, auth, unresolvable dep). */
+async function publishOne(dir: string, pkg: PkgJson): Promise<'published' | 'pend' | 'failed'> {
+  console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
+  // Type-checking stays ON — the generated `deno.json` carries
+  // `compilerOptions.lib` (Deno's DOM + runtime set) so the DOM types these
+  // libraries export resolve cleanly. --allow-slow-types lets JSR extract the
+  // public API for docs/.d.ts through its (benign) slow-types warning;
+  // --allow-dirty permits the in-tree generated manifest.
+  // `timeout` cuts Deno's post-upload poll short (see DENO_PUBLISH_TIMEOUT_S
+  // note above); the verify loop below is what actually confirms success.
+  const pub = await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty`
+    .cwd(dir)
+    .nothrow()
+  // 124 (TERM) / 137 (KILL) mean our timeout fired while Deno was still
+  // polling — expected, not a failure. Any other non-zero is a genuine
+  // publish error (type error, auth, unresolvable dep, …).
+  const cutShort = pub.exitCode === 124 || pub.exitCode === 137
+  if (pub.exitCode !== 0 && !cutShort) return 'failed'
+
+  // JSR is the source of truth: poll until the version is live, regardless of
+  // whether Deno returned cleanly or we cut its hung poll short.
+  let live = await jsrHasVersion(pkg.name, pkg.version)
+  const deadline = Date.now() + VERIFY_TIMEOUT_MS
+  while (!live && Date.now() < deadline) {
+    await Bun.sleep(VERIFY_INTERVAL_MS)
+    live = await jsrHasVersion(pkg.name, pkg.version)
+  }
+  if (live) {
+    console.log(`  ok    ${pkg.name}@${pkg.version} live on JSR${cutShort ? ' (deno poll cut short)' : ''}`)
+    return 'published'
+  }
+  if (cutShort) {
+    // We cut Deno's poll short and JSR is still finishing server-side — the
+    // expected pending case. A later pass (or re-dispatch) re-checks
+    // jsrHasVersion and skips it once live.
+    console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m`)
+    return 'pend'
+  }
+  // Deno exited 0 — it observed the server-side publishing task complete —
+  // so the version IS published; meta.json is just propagating through the
+  // CDN slower than our verify window (observed past 6m on real runs, e.g.
+  // client@0.13.0, which this path used to misreport as an error). Count it
+  // published; dependents are safe to follow since the registry itself has
+  // the version.
+  console.log(`  ok    ${pkg.name}@${pkg.version} published (per deno); meta.json still propagating`)
+  return 'published'
+}
+
 try {
+  // Phase 1: write every manifest, collect the publish work list.
+  const work: WorkItem[] = []
   for (const { dir, pkg } of selected) {
     const manifest = buildManifest(dir, pkg)
     const exportCount = Object.keys((manifest.exports as object) ?? {}).length
@@ -359,110 +410,54 @@ try {
       console.log(JSON.stringify(manifest, null, 2).split('\n').map(l => `    ${l}`).join('\n'))
       continue
     }
+    work.push({ dir, pkg })
+  }
 
-    if (await jsrHasVersion(pkg.name, pkg.version)) {
-      console.log(`  skip  ${pkg.name}@${pkg.version} (already on JSR)`)
-      skipped++
-      continue
+  // Phase 2: publish to a fixpoint. package.json peer edges form cycles
+  // (client ↔ jsx are mutual peers) that the packages' REAL module graphs
+  // don't — no jsx source file imports @barefootjs/client — so a
+  // dependency-edge defer (the previous design) deadlocked the whole mirror
+  // the moment one cycle member failed: client's publish-time resolution
+  // needs jsx@<version> live, jsx sat deferred behind client, and every
+  // re-dispatch failed identically (0.31.0, run 31109650323). `deno publish`
+  // is the only judge of what a package's graph actually needs, and a failed
+  // attempt costs seconds — so just attempt everything in topo order and
+  // retry the failures while passes make progress: client fails pass 1,
+  // jsx (whose graph never touches client) publishes, pass 2 picks client
+  // up against the now-live jsx, and the rest cascade.
+  let remaining = work
+  for (let pass = 1; remaining.length > 0; pass++) {
+    if (pass > 1) console.log(`\n  pass ${pass}: retrying ${remaining.map(w => w.pkg.name).join(', ')}`)
+    const failed: { item: WorkItem; pend: boolean }[] = []
+    let progressed = false
+    for (const item of remaining) {
+      const { dir, pkg } = item
+      if (await jsrHasVersion(pkg.name, pkg.version)) {
+        console.log(`  skip  ${pkg.name}@${pkg.version} (already on JSR)`)
+        skipped++
+        progressed = true
+        continue
+      }
+      const outcome = await publishOne(dir, pkg)
+      if (outcome === 'published') {
+        published++
+        progressed = true
+      } else {
+        failed.push({ item, pend: outcome === 'pend' })
+      }
     }
-
-    // Defer (transitively) behind any workspace dep that isn't resolvable on
-    // JSR yet; a re-dispatch picks these up once the dep is live.
-    const blockedOn = Object.keys({
-      ...(pkg.dependencies ?? {}),
-      ...(pkg.peerDependencies ?? {}),
-    }).filter(d => unresolved.has(d))
-    if (blockedOn.length > 0) {
-      console.log(`  defer ${pkg.name}@${pkg.version} (dependency not yet on JSR: ${blockedOn.join(', ')})`)
-      unresolved.add(pkg.name)
-      pending.push(`${pkg.name}@${pkg.version} (blocked on ${blockedOn.join(', ')})`)
-      continue
+    if (!progressed || failed.length === 0) {
+      // Fixpoint: nothing new went live this pass (or nothing left) —
+      // classify the leftovers and stop. `pend` stays exit-0 (submitted,
+      // server-side processing; a re-dispatch continues), genuine deno
+      // failures stay errors.
+      for (const f of failed) {
+        if (f.pend) pending.push(`${f.item.pkg.name}@${f.item.pkg.version}`)
+        else errors.push(`${f.item.pkg.name}@${f.item.pkg.version} (deno publish failed)`)
+      }
+      break
     }
-
-    // Workspace-dependency CYCLE breaker: a member of a dependency cycle
-    // (client ↔ jsx are mutual peers, and client's CSRAdapter now
-    // value-imports jsx's BaseAdapter) can never pass publish-time
-    // type-checking — its `jsr:dep@^<version>` import is only resolvable
-    // once the OTHER cycle member is live, and vice versa, so every
-    // (re-)dispatch fails identically. When the only unresolvable deps are
-    // packages THIS run is about to publish, upload with --no-check: the
-    // published manifest keeps the correct constraint, which becomes
-    // resolvable the moment the rest of the run lands, and the sequential
-    // verify loop below guarantees this package is live before its cycle
-    // partner's own (fully checked) publish runs. Type safety isn't lost —
-    // the same sources already type-checked in CI; only Deno's
-    // publish-time re-check is skipped, and only for cycle members.
-    const workspaceDeps = Object.keys({
-      ...(pkg.dependencies ?? {}),
-      ...(pkg.peerDependencies ?? {}),
-    }).filter(d => selectedNames.has(d) && !unresolved.has(d))
-    const pendingDeps: string[] = []
-    for (const dep of workspaceDeps) {
-      const depVersion = versions.get(dep)
-      if (depVersion && !(await jsrHasVersion(dep, depVersion))) pendingDeps.push(dep)
-    }
-    const noCheck = pendingDeps.length > 0
-
-    console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR${noCheck ? ` (--no-check: cycle with ${pendingDeps.join(', ')})` : ''}`)
-    // Type-checking stays ON (except for the cycle case above) — the
-    // generated `deno.json` carries `compilerOptions.lib` (Deno's DOM +
-    // runtime set) so the DOM types these libraries export resolve cleanly.
-    // --allow-slow-types lets JSR extract the public API for docs/.d.ts
-    // through its (benign) slow-types warning; --allow-dirty permits the
-    // in-tree generated manifest.
-    // `timeout` cuts Deno's post-upload poll short (see DENO_PUBLISH_TIMEOUT_S
-    // note above); the verify loop below is what actually confirms success.
-    const pub = noCheck
-      ? await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty --no-check`
-          .cwd(dir)
-          .nothrow()
-      : await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty`
-          .cwd(dir)
-          .nothrow()
-    // 124 (TERM) / 137 (KILL) mean our timeout fired while Deno was still
-    // polling — expected, not a failure. Any other non-zero is a genuine
-    // publish error (type error, auth, unresolvable dep, …).
-    const cutShort = pub.exitCode === 124 || pub.exitCode === 137
-    if (pub.exitCode !== 0 && !cutShort) {
-      errors.push(`${pkg.name}@${pkg.version} (deno exit ${pub.exitCode})`)
-      unresolved.add(pkg.name) // dependents would fail on the missing jsr: dep — defer them
-      continue
-    }
-
-    // JSR is the source of truth: poll until the version is live, regardless of
-    // whether Deno returned cleanly or we cut its hung poll short.
-    let live = await jsrHasVersion(pkg.name, pkg.version)
-    const deadline = Date.now() + VERIFY_TIMEOUT_MS
-    while (!live && Date.now() < deadline) {
-      await Bun.sleep(VERIFY_INTERVAL_MS)
-      live = await jsrHasVersion(pkg.name, pkg.version)
-    }
-    if (live) {
-      console.log(`  ok    ${pkg.name}@${pkg.version} live on JSR${cutShort ? ' (deno poll cut short)' : ''}`)
-      published++
-      continue
-    }
-    if (cutShort) {
-      // We cut Deno's poll short and JSR is still finishing server-side —
-      // the expected pending case. Defer this package's dependents (their
-      // type-check can't resolve the `jsr:` dep yet) but keep going with
-      // unrelated packages; a re-dispatch skips the now-live ones and picks
-      // the pending set up. (This used to `break` the whole run, which let a
-      // single slow package strand everything sorted after it — hono sat 3
-      // releases behind that way.)
-      console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m — deferring dependents, re-dispatch to continue`)
-      unresolved.add(pkg.name)
-      pending.push(`${pkg.name}@${pkg.version}`)
-      continue
-    }
-    // Deno exited 0 — it observed the server-side publishing task complete —
-    // so the version IS published; meta.json is just propagating through the
-    // CDN slower than our verify window (observed past 6m on real runs, e.g.
-    // client@0.13.0, which this path used to misreport as an error). Count it
-    // published; dependents are safe to follow since the registry itself has
-    // the version.
-    console.log(`  ok    ${pkg.name}@${pkg.version} published (per deno); meta.json still propagating`)
-    published++
+    remaining = failed.map(f => f.item)
   }
 } finally {
   if (!keep) for (const f of generated) rmSync(f, { force: true })
