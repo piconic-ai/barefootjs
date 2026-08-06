@@ -314,6 +314,10 @@ async function jsrHasVersion(name: string, version: string): Promise<boolean> {
 
 // ── Run ───────────────────────────────────────────────────────────────
 const selected = topoSort(candidates).filter(c => !only || only.has(c.pkg.name))
+// Names in this run — the cycle-breaker below consults this to distinguish
+// "dep not live because it's about to be published by THIS run" from a
+// genuinely missing dependency.
+const selectedNames = new Set(selected.map(c => c.pkg.name))
 const generated: string[] = []
 let published = 0
 let skipped = 0
@@ -375,17 +379,46 @@ try {
       continue
     }
 
-    console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
-    // Type-checking stays ON — the generated `deno.json` carries
-    // `compilerOptions.lib` (Deno's DOM + runtime set) so the DOM types these
-    // libraries export resolve cleanly. --allow-slow-types lets JSR extract the
-    // public API for docs/.d.ts through its (benign) slow-types warning;
-    // --allow-dirty permits the in-tree generated manifest.
+    // Workspace-dependency CYCLE breaker: a member of a dependency cycle
+    // (client ↔ jsx are mutual peers, and client's CSRAdapter now
+    // value-imports jsx's BaseAdapter) can never pass publish-time
+    // type-checking — its `jsr:dep@^<version>` import is only resolvable
+    // once the OTHER cycle member is live, and vice versa, so every
+    // (re-)dispatch fails identically. When the only unresolvable deps are
+    // packages THIS run is about to publish, upload with --no-check: the
+    // published manifest keeps the correct constraint, which becomes
+    // resolvable the moment the rest of the run lands, and the sequential
+    // verify loop below guarantees this package is live before its cycle
+    // partner's own (fully checked) publish runs. Type safety isn't lost —
+    // the same sources already type-checked in CI; only Deno's
+    // publish-time re-check is skipped, and only for cycle members.
+    const workspaceDeps = Object.keys({
+      ...(pkg.dependencies ?? {}),
+      ...(pkg.peerDependencies ?? {}),
+    }).filter(d => selectedNames.has(d) && !unresolved.has(d))
+    const pendingDeps: string[] = []
+    for (const dep of workspaceDeps) {
+      const depVersion = versions.get(dep)
+      if (depVersion && !(await jsrHasVersion(dep, depVersion))) pendingDeps.push(dep)
+    }
+    const noCheck = pendingDeps.length > 0
+
+    console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR${noCheck ? ` (--no-check: cycle with ${pendingDeps.join(', ')})` : ''}`)
+    // Type-checking stays ON (except for the cycle case above) — the
+    // generated `deno.json` carries `compilerOptions.lib` (Deno's DOM +
+    // runtime set) so the DOM types these libraries export resolve cleanly.
+    // --allow-slow-types lets JSR extract the public API for docs/.d.ts
+    // through its (benign) slow-types warning; --allow-dirty permits the
+    // in-tree generated manifest.
     // `timeout` cuts Deno's post-upload poll short (see DENO_PUBLISH_TIMEOUT_S
     // note above); the verify loop below is what actually confirms success.
-    const pub = await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty`
-      .cwd(dir)
-      .nothrow()
+    const pub = noCheck
+      ? await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty --no-check`
+          .cwd(dir)
+          .nothrow()
+      : await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty`
+          .cwd(dir)
+          .nothrow()
     // 124 (TERM) / 137 (KILL) mean our timeout fired while Deno was still
     // polling — expected, not a failure. Any other non-zero is a genuine
     // publish error (type error, auth, unresolvable dep, …).
