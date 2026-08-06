@@ -182,6 +182,15 @@ export function emitRegistrationAndHydration(
   }
 
   const registryKey = nameForRegistryRef(name)
+  // When the registry key was file-scoped (`Name__<8hex>`, for a
+  // non-exported component — see `component-scope.ts`), carry the plain
+  // name in the def so the runtime has something to build scope IDs from.
+  // The key is an internal disambiguator; `bf-s` is a documented contract
+  // (`Name_abc123`) that the SSR adapters honour, and without this the CSR
+  // path stamps the hashed key into the attribute instead (#2518).
+  if (registryKey !== name) {
+    defParts.push(`name: '${name}'`)
+  }
   const hydrateLine = `hydrate('${registryKey}', { ${defParts.join(', ')} })`
 
   // Emit a callable shim with the original component name so consumers

@@ -11,6 +11,7 @@
  */
 import { readdir } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
+import { listExportedComponents } from '@barefootjs/jsx'
 
 /** Does `content` start with a `'use client'` / `"use client"` directive
  * (after skipping leading block/line comments)? */
@@ -84,26 +85,90 @@ export async function discoverComponentFiles(
 export interface DiscoveredComponent {
   /** Absolute path to the `.tsx` source file. */
   absPath: string
+  /**
+   * The file's full source text, as read by the discovery pass. Retained
+   * (discovery had to read it anyway for the directive/exports checks) so
+   * downstream consumers — the corpus-program seeding and the eager pass's
+   * compile loop — work from the SAME snapshot discovery classified,
+   * instead of re-reading and racing an edit that landed in between.
+   */
+  content: string
   /** Whether the file's content starts with a `'use client'` directive. */
   isClient: boolean
+  /**
+   * Every component this file exports, from `@barefootjs/jsx`'s TS-AST
+   * walk (`listExportedComponents`) — never a regex, and never the
+   * basename standing in for the name. A file exporting more than one
+   * component (`icon/index.tsx` → `CopyIcon` + `CheckIcon`) is why this
+   * exists; see `buildChildNameIndex`.
+   */
+  exportedComponents: string[]
+  /**
+   * `CompileOptions.cssLayerPrefix` this file should compile with, carried
+   * over unchanged from whichever `components` entry's `dir` this file was
+   * discovered under (see `ResolvedComponentDirEntry.cssLayerPrefix`).
+   * `undefined` when that entry set none (or was a plain string entry).
+   */
+  cssLayerPrefix?: string
 }
 
 /**
- * Scan every configured `components` directory (absolute paths) for `.tsx`
- * files and classify each as client (`'use client'`) or server-only.
+ * A `components` directory to scan, already resolved to an absolute `dir`,
+ * plus the per-directory compile behavior `barefoot()`'s `ComponentDirEntry`
+ * (`types.ts`) carries. `discoverComponents` also accepts a plain absolute
+ * path string as shorthand for `{ dir: string }` — the same "string is
+ * exactly equivalent to `{ dir }`" equivalence `ComponentDirEntry` itself
+ * documents — so existing callers that only ever had bare directories
+ * (`integrations/h3`/`elysia`'s `vite.config.ts`, reusing this exported
+ * function to resolve every discovered client component's URL) keep
+ * compiling and behaving unchanged.
+ */
+export interface ResolvedComponentDirEntry {
+  /** Absolute path to the source directory to scan. */
+  dir: string
+  /** Stamped onto every `DiscoveredComponent` found under `dir` — see
+   * `DiscoveredComponent.cssLayerPrefix`. */
+  cssLayerPrefix?: string
+  /** Directory NAMES to skip anywhere under `dir` — passed straight
+   * through to `discoverComponentFiles`. */
+  skipDirs?: string[]
+}
+
+/**
+ * Scan every configured `components` directory for `.tsx` files and
+ * classify each as client (`'use client'`) or server-only. Each entry may
+ * be a plain absolute path (shorthand for `{ dir }`, no `cssLayerPrefix`/
+ * `skipDirs`) or a `ResolvedComponentDirEntry`.
+ *
+ * A file reachable under more than one entry is discovered once, stamped
+ * with the FIRST matching entry's `cssLayerPrefix` — entries are walked in
+ * array order and `seen` short-circuits every later match, the same
+ * first-writer-wins precedence `buildChildNameIndex` already documents for
+ * `@bf-child:` name collisions.
  */
 export async function discoverComponents(
-  componentDirs: string[],
+  entries: readonly (string | ResolvedComponentDirEntry)[],
   readFile: (absPath: string) => Promise<string>,
 ): Promise<DiscoveredComponent[]> {
   const seen = new Set<string>()
   const out: DiscoveredComponent[] = []
-  for (const dir of componentDirs) {
-    for (const absPath of await discoverComponentFiles(dir)) {
+  for (const raw of entries) {
+    const entry: ResolvedComponentDirEntry = typeof raw === 'string' ? { dir: raw } : raw
+    for (const absPath of await discoverComponentFiles(entry.dir, { skipDirs: entry.skipDirs })) {
       if (seen.has(absPath)) continue
       seen.add(absPath)
       const content = await readFile(absPath)
-      out.push({ absPath, isClient: hasUseClientDirective(content) })
+      const isClient = hasUseClientDirective(content)
+      // Only client files can be `@bf-child:` targets, so only they need
+      // their export list parsed — this is a `ts.createSourceFile` per
+      // file and server-only components are the majority in most trees.
+      out.push({
+        absPath,
+        content,
+        isClient,
+        exportedComponents: isClient ? listExportedComponents(content, absPath) : [],
+        cssLayerPrefix: entry.cssLayerPrefix,
+      })
     }
   }
   return out
@@ -116,24 +181,50 @@ export async function discoverComponents(
  * no filesystem access at that phase — see `child-components.ts`), so
  * `resolveId` needs a name→file lookup built from a full discovery pass.
  *
- * Keyed by each `'use client'` file's own basename without extension —
- * the one-component-per-file convention this repo's shared components
- * follow (`TodoItem.tsx` exports `TodoItem`). Server-only files are
- * excluded: a `@bf-child:` marker only ever names another component this
- * one instantiates at runtime (`initChild`/`createComponent`), which
- * requires an `init` function only a `'use client'` file has.
+ * Keyed by each exported component NAME, which is what the marker
+ * carries. Server-only files are excluded: a `@bf-child:` marker only
+ * ever names another component this one instantiates at runtime
+ * (`initChild`/`createComponent`), which requires an `init` function only
+ * a `'use client'` file has.
  *
- * Known limitation of this convention: a multi-component export file
- * (e.g. `icon/index.tsx` exporting `CopyIcon` + `CheckIcon`) is keyed by
- * its OWN basename (`index`), not by either exported component's name —
- * a `@bf-child:CopyIcon` marker won't resolve through this map and falls
- * back to the no-op module (see `plugin.ts`'s `resolveId`).
+ * This used to key on the file's basename, which worked only because the
+ * one-component-per-file convention makes the two coincide
+ * (`TodoItem.tsx` exports `TodoItem`). A file exporting several
+ * components broke it silently: `icon/index.tsx` was keyed `index`, so
+ * `@bf-child:CopyIcon` found nothing and fell through to the no-op module
+ * (`plugin.ts`'s `resolveId`) — a child that never hydrates, with no
+ * diagnostic.
+ *
+ * The blast radius was wider than multi-export files. Because the key was
+ * the bare basename, EVERY colocated `index.tsx` collided on the single
+ * key `"index"` — including single-export ones like `ui/button/index.tsx`
+ * exporting `Button`. No colocated component was reachable as a
+ * `@bf-child:` target at all, whatever its export count. Measured with
+ * `listExportedComponents` over `ui/components` + `site/ui/components`:
+ * 112 files export more than one component, 105 of them `'use client'`.
+ *
+ * First writer wins on a duplicate name, and discovery order is the
+ * `components` option's order — so an earlier directory shadows a later
+ * one, the same precedence the option list already implies.
  */
-export function buildChildNameIndex(discovered: readonly DiscoveredComponent[]): Map<string, string> {
+export function buildChildNameIndex(
+  // Only the fields the index actually reads — callers with a full
+  // `DiscoveredComponent[]` pass it as-is, and tests can construct rows
+  // without dragging in `content`.
+  discovered: readonly Pick<DiscoveredComponent, 'absPath' | 'isClient' | 'exportedComponents'>[],
+): Map<string, string> {
   const index = new Map<string, string>()
   for (const c of discovered) {
     if (!c.isClient) continue
-    index.set(basename(c.absPath).replace(/\.tsx?$/, ''), c.absPath)
+    // Fall back to the basename when the AST walk found no exports: a
+    // file can still be a marker target through the old convention, and
+    // losing that would be a regression rather than a fix.
+    const names = c.exportedComponents.length > 0
+      ? c.exportedComponents
+      : [basename(c.absPath).replace(/\.tsx?$/, '')]
+    for (const name of names) {
+      if (!index.has(name)) index.set(name, c.absPath)
+    }
   }
   return index
 }

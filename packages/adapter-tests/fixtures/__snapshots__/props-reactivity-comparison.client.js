@@ -21,7 +21,7 @@ export function initReactiveChild(__scope, _p = {}) {
   if (_s4) _s4.addEventListener('click', () => { _p.onIncrement() })
 }
 
-hydrate('ReactiveChild__aca6fc98', { init: initReactiveChild, template: (_p) => `<div class="reactive-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><button class="btn-child-increment" bf="s4"> Increment from child </button></div>` })
+hydrate('ReactiveChild__aca6fc98', { init: initReactiveChild, template: (_p) => `<div class="reactive-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><button class="btn-child-increment" bf="s4"> Increment from child </button></div>`, name: 'ReactiveChild' })
 export function ReactiveChild(_p, __bfKey) { return createComponent('ReactiveChild__aca6fc98', _p, __bfKey) }
 export function initReactiveProps(__scope, _p = {}) {
   if (!__scope) return
@@ -106,7 +106,7 @@ export function initPropsStyleChild(__scope, _p = {}) {
 
 }
 
-hydrate('PropsStyleChild__aca6fc98', { init: initPropsStyleChild, template: (_p) => `<div class="props-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeText((_p.value * 10))}<!--/--></span></div>` })
+hydrate('PropsStyleChild__aca6fc98', { init: initPropsStyleChild, template: (_p) => `<div class="props-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeText((_p.value * 10))}<!--/--></span></div>`, name: 'PropsStyleChild' })
 export function PropsStyleChild(_p, __bfKey) { return createComponent('PropsStyleChild__aca6fc98', _p, __bfKey) }
 export function initDestructuredStyleChild(__scope, _p = {}) {
   if (!__scope) return
@@ -137,7 +137,7 @@ export function initDestructuredStyleChild(__scope, _p = {}) {
 
 }
 
-hydrate('DestructuredStyleChild__aca6fc98', { init: initDestructuredStyleChild, template: (_p) => `<div class="destructured-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeText((_p.value * 10))}<!--/--></span></div>` })
+hydrate('DestructuredStyleChild__aca6fc98', { init: initDestructuredStyleChild, template: (_p) => `<div class="destructured-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeText((_p.value * 10))}<!--/--></span></div>`, name: 'DestructuredStyleChild' })
 export function DestructuredStyleChild(_p, __bfKey) { return createComponent('DestructuredStyleChild__aca6fc98', _p, __bfKey) }
 export function initPropsReactivityComparison(__scope, _p = {}) {
   if (!__scope) return

@@ -1,0 +1,74 @@
+name: CI — CSR Integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/jsx/**'
+      - 'packages/vite/**'
+      - 'integrations/csr/**'
+      - 'integrations/shared/**'
+      - '.github/workflows/ci-csr.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/jsx/**'
+      - 'packages/vite/**'
+      - 'integrations/csr/**'
+      - 'integrations/shared/**'
+      - '.github/workflows/ci-csr.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-csr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-csr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      # CSR has no backend adapter: `vite.config.ts` drives `barefoot()` with
+      # `CSRAdapter` from @barefootjs/client itself, and the pages render
+      # entirely in the browser. So the package set is jsx + vite + client,
+      # with no adapter-* build — this is the one integration whose whole
+      # pipeline is those three.
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Run integrations/csr E2E tests
+        run: cd integrations/csr && bun run test:e2e
+
+      - name: Upload Playwright report (integrations/csr)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-integrations-csr
+          path: integrations/csr/playwright-report/
+          retention-days: 30

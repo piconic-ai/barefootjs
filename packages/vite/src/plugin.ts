@@ -63,7 +63,7 @@
  * for `go run .` to compile even in dev.
  */
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { relative, resolve, sep } from 'node:path'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import {
   compileJSX,
@@ -72,8 +72,15 @@ import {
 } from '@barefootjs/jsx'
 import type { BarefootPluginApi, BarefootViteOptions } from './types.ts'
 import { CompileCache } from './compile-cache.ts'
+import { CorpusProgramManager } from './corpus-program.ts'
 import { BF_CHILD_NOOP_ID, bfChildMarkerName } from './child-marker.ts'
-import { buildChildNameIndex, discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
+import {
+  buildChildNameIndex,
+  discoverComponents,
+  isComponentSourceFile,
+  type DiscoveredComponent,
+  type ResolvedComponentDirEntry,
+} from './discover.ts'
 import { resolveClientJsSpecifier } from './resolve-client-js.ts'
 import { buildRelativeImportRewriter, relativeUnderComponentDir, safeRollupEntryName, toPosixRelative } from './paths.ts'
 import { loadManifest, resolvePreloadAssets, resolveScriptAssets } from './manifest.ts'
@@ -108,8 +115,42 @@ function reportErrors(result: CompileResult, source: string, projectDir: string)
   }
 }
 
+/**
+ * Resolves `options.components` (each entry a plain string OR a
+ * `ComponentDirEntry`) against `root` into `ResolvedComponentDirEntry[]` —
+ * `dir` always absolute, `cssLayerPrefix`/`skipDirs` carried through
+ * unchanged, array order preserved. A plain string entry becomes
+ * `{ dir: resolve(root, entry) }` with neither field set, exactly
+ * equivalent to `{ dir: entry }` per `ComponentDirEntry`'s own contract.
+ *
+ * Called twice per plugin instance with two different roots — `config`'s
+ * best-effort `guessedRoot` (Vite's real root isn't resolved yet at that
+ * point in its lifecycle) and `configResolved`'s authoritative
+ * `config.root` — which is why this takes `root` as a parameter instead of
+ * closing over one.
+ */
+function normalizeComponents(
+  components: BarefootViteOptions['components'],
+  root: string,
+): ResolvedComponentDirEntry[] {
+  return components.map(entry =>
+    typeof entry === 'string'
+      ? { dir: resolve(root, entry) }
+      : { dir: resolve(root, entry.dir), cssLayerPrefix: entry.cssLayerPrefix, skipDirs: entry.skipDirs },
+  )
+}
+
 export function barefoot(options: BarefootViteOptions): Plugin {
   const cache = new CompileCache()
+
+  // One shared ts.Program across every compile in this plugin instance —
+  // built once per pass from the discovered files that need type-based
+  // detection, incrementally rebuilt on change. Without it, each such file
+  // pays its own ~500-600 ms `ts.createProgram` type-graph construction
+  // inside `compileJSX`'s per-file fallback (tens of seconds across a real
+  // corpus), and a Reactive<T>-brand importer fails the build outright
+  // with BF050. See `corpus-program.ts`.
+  const corpusProgram = new CorpusProgramManager()
 
   // What `emitTemplatesFor` last wrote for a given source file, keyed by
   // absolute path. The ONLY consumer is the dev watcher's `'unlink'`
@@ -124,6 +165,20 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   // once in `config` with a best-effort root, so `rollupOptions.input` can
   // be set; then again in `configResolved` with Vite's authoritative
   // `root`, which is what `resolveId` / `transform` / `writeBundle` use.
+  //
+  // `dirEntries` is the normalized `options.components` — `dir` resolved
+  // to absolute, `cssLayerPrefix`/`skipDirs` carried through — in the
+  // OPTION'S OWN ORDER, which doubles as precedence: `entryForPath` below
+  // returns the FIRST entry whose `dir` prefixes a given path, so an
+  // earlier `components` entry shadows a later one for a file reachable
+  // under both (the same first-writer-wins precedence
+  // `buildChildNameIndex` already applies to `@bf-child:` name
+  // collisions). `componentDirs` is `dirEntries.map(e => e.dir)`, kept
+  // around unchanged because every existing bit of path arithmetic
+  // (`rewriterFor`, `planEmits`, `buildManifestEntry`,
+  // `safeRollupEntryName`) only ever needs the bare directory list, never
+  // the per-entry options.
+  let dirEntries: ResolvedComponentDirEntry[] = []
   let componentDirs: string[] = []
   // `undefined` exactly when `options.templates` was never set — the CSR
   // degenerate case. Every write path below (`writeEmits`, `manifest.json`,
@@ -198,11 +253,53 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     )
   }
 
+  /**
+   * The FIRST `dirEntries` entry (option order) whose `dir` prefixes
+   * `absPath`, or `undefined` if no configured `components` entry contains
+   * it. This is the single source of precedence: whichever entry a path
+   * resolves to here is also the entry `isUnderComponentDir`'s `skipDirs`
+   * check consults, so a file's `cssLayerPrefix` and its skip/no-skip
+   * verdict always come from the SAME entry, never two different ones.
+   */
+  function entryForPath(absPath: string): ResolvedComponentDirEntry | undefined {
+    return dirEntries.find(entry => absPath === entry.dir || absPath.startsWith(`${entry.dir}/`))
+  }
+
+  /** Does `entry.skipDirs` name any directory component on the path from
+   * `entry.dir` down to `absPath`? Mirrors `discoverComponentFiles`'s own
+   * recursive skip (a directory whose NAME is listed is skipped, along
+   * with everything under it) so a file discovery never walks into is
+   * never treated as a component by the transform gate either — the
+   * "half-fix" this module's docstring on `isUnderComponentDir` warns
+   * about. The file's own basename (the last path segment) is excluded:
+   * `skipDirs` names directories, not files. */
+  function isSkippedByEntry(absPath: string, entry: ResolvedComponentDirEntry): boolean {
+    if (!entry.skipDirs || entry.skipDirs.length === 0) return false
+    const relParts = relative(entry.dir, absPath).split(sep)
+    return relParts.slice(0, -1).some(part => entry.skipDirs!.includes(part))
+  }
+
   function compileCanonical(absPath: string, content: string): CompileResult {
     return cache.getOrCompile(absPath, content, () =>
       compileJSX(content, absPath, {
         adapter: options.adapter,
         sourceMaps: true,
+        // `undefined` for the majority of files (no type-based detection
+        // needed — the analyzer never builds a checker for them); the
+        // shared corpus Program for the rest. Resolved INSIDE the cache
+        // thunk so a cache hit never touches the Program at all.
+        program: corpusProgram.programFor(absPath, content),
+        // Per-directory, from whichever `dirEntries` entry `absPath` falls
+        // under — `undefined` for a plain-string entry (or a file matching
+        // no entry, which shouldn't happen for anything reaching this
+        // function). `CompileCache` is keyed `(absPath, contentHash)` with
+        // NO `cssLayerPrefix` component — deliberately: the prefix is a
+        // pure function of `absPath` via `dirEntries`, and `dirEntries`
+        // only ever changes on a config reload (a full plugin restart,
+        // hence a fresh `cache` too), so two calls with the same
+        // `(absPath, content)` always agree on `cssLayerPrefix` and the
+        // cache key needs no widening. Do not "fix" this later.
+        cssLayerPrefix: entryForPath(absPath)?.cssLayerPrefix,
         // The canonical, cacheable compile always uses an empty
         // scriptAssets ("no scripts") — the one input every discovered
         // file (server-only or client) shares regardless of its eventual
@@ -233,8 +330,23 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     )
   }
 
+  /**
+   * Is `absPath` a component this plugin should treat as live — under a
+   * configured `components` entry AND not inside that entry's `skipDirs`?
+   * Gates `transform` (the graph pass) and the dev watcher's
+   * `change`/`add`/`unlink` handlers. `skipDirs` must gate THIS, not just
+   * `discoverComponents`'s directory walk: discovery only decides what the
+   * EAGER pass walks up front, but a skipped file can still be reached by
+   * an ordinary `import` from a non-skipped sibling — `site/ui`'s
+   * `PageNavigation.tsx` (imported by pages, but living in a skipped
+   * `shared/` dir) is exactly that shape. Without this check the graph
+   * pass would compile it anyway: discovery silently skips it, but
+   * `transform` doesn't, which is the half-fix that used to bite that
+   * layout.
+   */
   function isUnderComponentDir(absPath: string): boolean {
-    return componentDirs.some(dir => absPath === dir || absPath.startsWith(`${dir}/`))
+    const entry = entryForPath(absPath)
+    return entry !== undefined && !isSkippedByEntry(absPath, entry)
   }
 
   /**
@@ -272,8 +384,13 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     // `writeEmits` already produces. Stays empty (and unwritten) when
     // `templatesDir` is undefined.
     const manifestEntries: Record<string, ManifestEntry> = {}
+    // Refresh the shared Program from this pass's full discovery snapshot
+    // BEFORE the compile loop, so the loop never triggers `programFor`'s
+    // one-root-at-a-time incremental rebuilds. A no-op when nothing
+    // type-needing changed — the common case, mirroring `CompileCache`.
+    corpusProgram.seed(discovered)
     for (const component of discovered) {
-      const content = await readFile(component.absPath, 'utf8')
+      const content = component.content
       const canonical = compileCanonical(component.absPath, content)
       reportErrors(canonical, content, projectDir)
 
@@ -284,6 +401,17 @@ export function barefoot(options: BarefootViteOptions): Plugin {
           result = compileJSX(content, component.absPath, {
             adapter: options.adapter,
             sourceMaps: true,
+            // Same shared Program as the canonical compile — this second,
+            // uncached compile re-runs the same analysis with only
+            // `scriptAssets` differing, so skipping it here would re-open
+            // the per-file fallback (and BF050) for exactly the files
+            // that recompile every pass.
+            program: corpusProgram.programFor(component.absPath, content),
+            // Already stamped on `component` by `discoverComponents` from
+            // the same `dirEntries` entry `compileCanonical` would have
+            // derived via `entryForPath` — reused directly rather than
+            // re-derived, since the two always agree.
+            cssLayerPrefix: component.cssLayerPrefix,
             scriptAssets,
             preloadAssets,
             rewriteRelativeImport: rewriterFor(component.absPath),
@@ -367,7 +495,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     const config = resolvedConfig
     if (!config) return
 
-    const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
+    const discovered = await discoverComponents(dirEntries, absPath => readFile(absPath, 'utf8'))
     childNameIndex = buildChildNameIndex(discovered)
     const types = await emitTemplatesFor(discovered, config.root, component => ({
       scriptAssets: devScriptAssets(config, devOrigin, component.absPath),
@@ -425,8 +553,9 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       // convenience `rollupOptions.input` keys this hook picks could be
       // off, not correctness.
       const guessedRoot = userConfig.root ? resolve(process.cwd(), userConfig.root) : process.cwd()
-      const dirs = options.components.map(d => resolve(guessedRoot, d))
-      const found = await discoverComponents(dirs, absPath => readFile(absPath, 'utf8'))
+      const guessedEntries = normalizeComponents(options.components, guessedRoot)
+      const dirs = guessedEntries.map(e => e.dir)
+      const found = await discoverComponents(guessedEntries, absPath => readFile(absPath, 'utf8'))
 
       const input: Record<string, string> = {}
       for (const c of found) {
@@ -474,10 +603,15 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
     async configResolved(config) {
       resolvedConfig = config
-      componentDirs = options.components.map(d => resolve(config.root, d))
+      dirEntries = normalizeComponents(options.components, config.root)
+      componentDirs = dirEntries.map(e => e.dir)
       templatesDir = options.templates !== undefined ? resolve(config.root, options.templates) : undefined
-      const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
+      const discovered = await discoverComponents(dirEntries, absPath => readFile(absPath, 'utf8'))
       childNameIndex = buildChildNameIndex(discovered)
+      // Seed the shared Program now, before Rollup's graph pass starts
+      // calling `transform` — otherwise the first type-needing file the
+      // graph reaches would build the corpus one root at a time.
+      corpusProgram.seed(discovered)
     },
 
     resolveId(source, importer) {
@@ -527,7 +661,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
       // Authoritative discovery — Vite's real root, not `config`'s guess.
       const discovered: DiscoveredComponent[] = await discoverComponents(
-        componentDirs,
+        dirEntries,
         absPath => readFile(absPath, 'utf8'),
       )
 

@@ -15,7 +15,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -29,11 +29,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -85,7 +85,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -99,11 +99,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -157,7 +157,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -171,11 +171,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -218,7 +218,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -232,11 +232,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -279,7 +279,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -293,11 +293,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -350,7 +350,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -364,11 +364,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -418,7 +418,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -432,11 +432,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -492,7 +492,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -506,11 +506,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -553,7 +553,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -567,11 +567,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -614,7 +614,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -628,11 +628,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -675,7 +675,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -689,11 +689,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -736,7 +736,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -750,11 +750,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -796,7 +796,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -810,11 +810,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -856,7 +856,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -870,11 +870,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -916,7 +916,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -930,11 +930,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -976,7 +976,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -990,11 +990,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1036,7 +1036,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1050,11 +1050,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1096,7 +1096,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1110,11 +1110,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1156,7 +1156,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1170,11 +1170,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1216,7 +1216,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1230,11 +1230,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1277,7 +1277,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1291,11 +1291,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1338,7 +1338,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1352,11 +1352,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1408,7 +1408,7 @@ export function initSortedList(__scope, _p = {}) {
 
 }
 
-hydrate('SortedList__b3c36eee', { init: initSortedList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.sort(byPrice).map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul>\` })
+hydrate('SortedList__b3c36eee', { init: initSortedList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.sort(byPrice).map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul>\`, name: 'SortedList' })
 export function SortedList(_p, __bfKey) { return createComponent('SortedList__b3c36eee', _p, __bfKey) }"
 `;
 
@@ -1427,7 +1427,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1441,11 +1441,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1488,7 +1488,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1502,11 +1502,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1548,7 +1548,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1562,11 +1562,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1608,7 +1608,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1622,11 +1622,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1668,7 +1668,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1682,11 +1682,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -1722,7 +1722,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1736,11 +1736,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2121,7 +2121,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2135,11 +2135,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2251,7 +2251,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2265,11 +2265,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2553,7 +2553,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2567,11 +2567,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2629,7 +2629,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2643,11 +2643,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2812,7 +2812,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2826,11 +2826,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2890,7 +2890,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2904,11 +2904,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -2949,7 +2949,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2963,11 +2963,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3007,7 +3007,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3021,11 +3021,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3067,7 +3067,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3081,11 +3081,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3127,7 +3127,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3141,11 +3141,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3196,7 +3196,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3210,11 +3210,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3272,7 +3272,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3286,11 +3286,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3342,7 +3342,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3356,11 +3356,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3453,7 +3453,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3467,11 +3467,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3603,7 +3603,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3617,11 +3617,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3666,7 +3666,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3680,11 +3680,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -3846,7 +3846,7 @@ export function initDialogOverlay(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => \`<div data-slot="dialog-overlay" bf="s0"></div>\` })
+hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => \`<div data-slot="dialog-overlay" bf="s0"></div>\`, name: 'DialogOverlay' })
 export function DialogOverlay(_p, __bfKey) { return createComponent('DialogOverlay__b3c36eee', _p, __bfKey) }"
 `;
 
@@ -3917,7 +3917,7 @@ exports[`docs/core/components/props-type-safety.md doc-examples L54 — (no labe
 
 function initButton() {}
 
-hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) != null ? 'class="' + escapeAttr((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) + '"' : ''} bf="s0">\${_p.children}</button>\` })
+hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) != null ? 'class="' + escapeAttr((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) + '"' : ''} bf="s0">\${_p.children}</button>\`, name: 'Button' })
 export function Button(_p, __bfKey) { return createComponent('Button__b3c36eee', _p, __bfKey) }"
 `;
 
@@ -3946,7 +3946,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3960,11 +3960,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4196,7 +4196,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4210,11 +4210,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4262,7 +4262,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4276,11 +4276,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4328,7 +4328,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4342,11 +4342,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4394,7 +4394,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4408,11 +4408,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4526,7 +4526,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4540,11 +4540,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4609,7 +4609,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4623,11 +4623,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4692,7 +4692,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4706,11 +4706,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4783,7 +4783,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4797,11 +4797,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4849,7 +4849,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4863,11 +4863,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4903,7 +4903,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4917,11 +4917,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -4957,7 +4957,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4971,11 +4971,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -5024,7 +5024,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5038,11 +5038,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -5091,7 +5091,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5105,11 +5105,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -5236,7 +5236,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5250,11 +5250,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
@@ -5319,7 +5319,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5333,11 +5333,11 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
 export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
 export function initExample(__scope, _p = {}) {
   if (!__scope) return

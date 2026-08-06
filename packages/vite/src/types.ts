@@ -43,14 +43,37 @@ export interface AfterEmitContext {
 }
 
 /**
+ * One `components` entry with per-directory compile behavior. A plain
+ * string is exactly equivalent to `{ dir: string }` — see
+ * `BarefootViteOptions.components`.
+ */
+export interface ComponentDirEntry {
+  /** Source directory to scan, relative to the Vite root (or absolute). */
+  dir: string
+  /** `CompileOptions.cssLayerPrefix` for every component under `dir`:
+   *  static class strings get `layer-{value}:` prefixes so a library's
+   *  base classes land in a lower cascade layer than app overrides. Set
+   *  it on library entries, leave it off app entries. */
+  cssLayerPrefix?: string
+  /** Directory NAMES to skip anywhere under `dir` (e.g. `['shared']`). */
+  skipDirs?: string[]
+}
+
+/**
  * Public options for the `barefoot()` Vite plugin. Exactly three
- * BarefootJS-specific fields — everything else (bundling, hashing,
+ * BarefootJS-specific FIELDS — everything else (bundling, hashing,
  * chunking, tree-shaking, minification, dev server, `base`, `outDir`) is
  * stock Vite config. Do not add more fields here; see the design doc for
  * the full list of options this deliberately drops in favor of Vite's own
  * equivalents (`minify` → `build.minify`, `externals` → Rollup's automatic
  * chunk splitting, `clientJsBasePath`/`barefootJsPath` → `base` + manifest
  * resolution, etc).
+ *
+ * The cap is on FIELDS, not on per-directory expressiveness: whether a
+ * directory's classes need a CSS cascade layer, or which subdirectories to
+ * skip, is a function of WHICH `components` entry a file came from — so
+ * that behavior rides on the `components` entries themselves
+ * (`ComponentDirEntry`) rather than becoming a 4th/5th top-level option.
  */
 export interface BarefootViteOptions {
   /** A constructed `TemplateAdapter` instance (e.g. `new
@@ -58,8 +81,13 @@ export interface BarefootViteOptions {
    * the plugin never constructs adapters itself. */
   adapter: TemplateAdapter
   /** Source directories to scan for `.tsx` components, relative to the
-   * Vite project root (or absolute). */
-  components: string[]
+   * Vite project root (or absolute). A plain string is exactly equivalent
+   * to `{ dir: string }` (a `ComponentDirEntry` with no `cssLayerPrefix`/
+   * `skipDirs`) — use the object form only when a directory needs one of
+   * those. Entries are processed in array order, and that order is also
+   * the precedence when the same file is reachable under more than one
+   * entry: the first entry wins. */
+  components: (string | ComponentDirEntry)[]
   /**
    * Where compiled templates, `ssrDefaults`, and adapter-generated types
    * land — relative to the Vite project root (or absolute). This is a

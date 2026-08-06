@@ -33,9 +33,12 @@
  *   there. The real client JS URL is content-hashed and mode-dependent
  *   (dev-origin vs. build-manifest-resolved) — exactly what
  *   `scriptAssets` already resolves and bakes directly into the compiled
- *   template's own script-registration call, so no backend reads
- *   `manifest[name].clientJs` (grep the PHP/Python/Ruby runtimes: zero
- *   hits), and a static value there would be actively misleading.
+ *   template's own script-registration call. No adapter backend or native
+ *   runtime reads `manifest[name].clientJs`; however, `@barefootjs/hono`'s
+ *   `BfPreload` component can read `clientJs` from a caller-supplied
+ *   manifest object (legacy site builds emit one). Plugin-manifest
+ *   consumers wanting preloads use the `preloadAssets` path instead
+ *   (`registerComponentPreloads` → `<link rel="modulepreload">`).
  */
 import type { CompileResult, TemplateAdapter } from '@barefootjs/jsx'
 import { perComponentRelPath, relativeUnderComponentDir, withExtension } from './paths.ts'

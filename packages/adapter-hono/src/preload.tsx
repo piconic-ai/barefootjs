@@ -40,6 +40,12 @@ export interface ManifestEntry {
   markedTemplate: string
   clientJs?: string
   props?: Array<{ name: string; type: string; optional: boolean }>
+  /**
+   * Dependency component names for recursive preloading.
+   * Note: no current producer (neither legacy site build nor @barefootjs/vite)
+   * emits this field, so dependency recursion only activates for
+   * hand-authored manifests. Kept for API compatibility.
+   */
   dependencies?: string[]
 }
 
@@ -84,7 +90,11 @@ export interface BfPreloadProps {
  * Resolves the full dependency chain for given components.
  * Uses a visited set to prevent infinite loops from circular dependencies.
  *
- * @param components - Component names to resolve
+ * Manifest keys are whatever the manifest producer used — the legacy site
+ * build uses path-qualified keys like `ui/button`, so component name entries
+ * must match those exactly. A key mismatch is silently skipped (no error).
+ *
+ * @param components - Component names/keys to resolve (must match manifest keys exactly)
  * @param manifest - Component manifest with dependency information
  * @param visited - Set of already visited component names (for cycle detection)
  * @returns Array of clientJs paths for all dependencies
@@ -126,7 +136,10 @@ function resolveDependencyChain(
  * by all BarefootJS components.
  *
  * When manifest and components props are provided, automatically
- * preloads the full dependency chain for those components.
+ * preloads the full dependency chain for those components. The `components`
+ * array entries must match manifest keys exactly — for the legacy site
+ * build, use path-qualified keys like `ui/button`, not component names.
+ * A mismatched key is silently skipped.
  */
 export function BfPreload({
   staticPath = '/static',

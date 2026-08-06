@@ -26,6 +26,7 @@ import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 import { checkRichTypeMethodCalls } from './rich-type-refusal.ts'
+import { ErrorCodes } from './errors.ts'
 
 /**
  * Extended compile options with required adapter
@@ -116,11 +117,28 @@ function compileMultipleComponents(
   // --- Pass 1: analyze + jsxToIR for ALL components ---
   const entries: { componentIR: ComponentIR; ctx: ReturnType<typeof analyzeComponent> }[] = []
 
-  // Create ts.Program only when the file needs type-based reactivity detection
-  const program = options.program ?? (needsTypeBasedDetection(source) ? createProgramForFile(source, filePath)?.program : undefined)
+  // Create ts.Program only when the file needs type-based reactivity
+  // detection. A caller-supplied Program is only usable while its cached
+  // SourceFile still matches `source` — after an upstream rewrite
+  // (preprocessInlineJsxCallbacks), the analyzer would silently discard
+  // the stale Program PER COMPONENT and rebuild a per-file one each time
+  // (measured: 14 rebuilds ≈ 30 s on site/ui's xyflow-demo.tsx, #2537).
+  // Detect the staleness here instead, so the rewritten source gets ONE
+  // per-file Program shared by every sibling component.
+  const callerProgram =
+    options.program?.getSourceFile(filePath)?.text === source ? options.program : undefined
+  const program = callerProgram ?? (needsTypeBasedDetection(source) ? createProgramForFile(source, filePath)?.program : undefined)
+  // Whether a SHARED Program was genuinely supplied by the caller, as
+  // opposed to the per-file amortization built on the line above. The
+  // distinction feeds BF050: the per-file build is precisely the fallback
+  // that diagnostic exists to flag, so it must not suppress it the way a
+  // caller-supplied corpus Program does. See `analyzeComponent`'s
+  // `programIsShared` docstring — the single-component path gets the same
+  // verdict via its default inference from `options.program`.
+  const programIsShared = options.program !== undefined
 
   for (const componentName of componentNames) {
-    const ctx = analyzeComponent(source, filePath, componentName, program, adapter.acceptsCallbackBody)
+    const ctx = analyzeComponent(source, filePath, componentName, program, adapter.acceptsCallbackBody, programIsShared)
 
     if (!ctx.jsxReturn) {
       errors.push(...ctx.errors)
@@ -150,6 +168,22 @@ function compileMultipleComponents(
     }
 
     entries.push({ componentIR, ctx })
+  }
+
+  // BF050 is a per-FILE diagnostic (it points at the brand-package import
+  // line), but pass 1 runs the analyzer once per component, so a
+  // multi-component file accumulates one identical copy per sibling.
+  // Keep the first.
+  {
+    let seenBf050 = false
+    const deduped = errors.filter(e => {
+      if (e.code !== ErrorCodes.SHARED_PROGRAM_REQUIRED) return true
+      if (seenBf050) return false
+      seenBf050 = true
+      return true
+    })
+    errors.length = 0
+    errors.push(...deduped)
   }
 
   // Emit IR files per component when requested. The contract is "if the
