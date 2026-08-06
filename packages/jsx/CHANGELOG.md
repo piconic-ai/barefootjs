@@ -1,5 +1,312 @@
 # @barefootjs/jsx
 
+## 0.31.0
+
+### Minor Changes
+
+- 3a44cd2: Emit `<link rel="modulepreload">` hints for a component's transitively-shared chunks
+
+  A compiled template registers exactly ONE script — the component's own entry:
+
+  ```js
+  registerComponentScripts([
+    "/integrations/hono/static/components/assets/TodoApp.tsx-CtatJ74J.js",
+  ]);
+  ```
+
+  But that entry is not a leaf. Vite's build manifest for the same component says:
+
+  ```json
+  "../shared/components/TodoApp.tsx": {
+    "file": "assets/TodoApp.tsx-CtatJ74J.js",
+    "imports": ["_index-xrhpkKRC.js", "../shared/components/TodoItem.tsx"]
+  }
+  ```
+
+  and `TodoItem.tsx` in turn imports `_index-xrhpkKRC.js` (the shared runtime
+  chunk, a leaf). So the browser's real load sequence was two sequential waves:
+
+  1. fetch + parse `TodoApp.tsx-<hash>.js`
+  2. only now discover, and fetch, `TodoItem.tsx-<hash>.js` and `index-<hash>.js`
+
+  Nothing emitted a `modulepreload` hint anywhere in the repo, so wave 2 always
+  cost a full extra round trip. On localhost that is invisible — which is
+  exactly why the benchmark suite does not catch this win — but on a
+  100ms-RTT connection it is 100ms of dead time before an island can hydrate.
+
+  `AdapterGenerateOptions.preloadAssets` (a sibling of `scriptAssets`) carries
+  an ordered, fully-resolved list of the entry's transitive chunk URLs,
+  excluding the entry's own file. `@barefootjs/vite`'s `resolvePreloadAssets`
+  resolves it from the build manifest by walking `entry.imports`
+  breadth-first (deterministic order, deduped, cycle-safe) — deliberately NOT
+  following `dynamicImports`, since a dynamic import is by definition not
+  needed for first paint. Every adapter emits a `<link rel="modulepreload"
+crossorigin href="…">` immediately before its `scriptAssets` registrations,
+  in each adapter's own native form. `undefined` means "no preload
+  information" (emits nothing); `[]` means "resolved, nothing to preload"
+  (also emits nothing) — the same `undefined`/`[]` distinction `scriptAssets`
+  already draws. `skipScriptRegistration` still wins over both unconditionally.
+
+  In dev, Vite serves unbundled modules with its own on-demand dependency
+  pre-bundling — there is no stable, hashed chunk graph to preload, so
+  `preloadAssets` is always `[]` there.
+
+  Purely additive: with `preloadAssets` unset (the default) every existing
+  caller keeps byte-identical output.
+
+  ## How the other eight get it
+
+  They don't emit script tags inline — they call a collector
+  (`bf.register_script(...)`) whose output the app's layout renders elsewhere.
+  So the preloads travel the same path: a `register_preload` collector in each
+  of the six native runtimes (Rust, PHP, Ruby, Perl, Python, Go), with its own
+  dedup set, and the EXISTING script-render helper extended to emit the
+  `<link rel="modulepreload" crossorigin>` tags ahead of the
+  `<script type="module">` tags it already emits. Extending that helper is what
+  keeps this non-breaking: no integration's layout changes.
+
+  The adapters emit a no-output register statement, never a literal `<link>` —
+  `{% set %}` produces nothing, while a `<link>` element renders and would
+  inject a node before the component's root, breaking hydration's DOM claim
+  paths.
+
+  An app that also threads the collector into its child renderers (two lines
+  mirroring the `_scripts`/`_script_seen` threading already there) gets hints
+  for chunks registered inside a child too. Skipping that keeps the app
+  working, just with fewer hints — verified against four integrations left
+  unmodified on purpose (fastapi, sinatra, xslate, gin), all green.
+
+- 844ce9c: Remove the externals-importmap subsystem — `renderImportMapHtml`, `BfImportMap`, `TemplateAdapter.importMapInjection`
+
+  `BfImportMap`'s built-in default mapped `@barefootjs/client` to
+  `<base>/barefoot.js`. After the Vite migration no `barefoot.js` exists in
+  any build output — the runtime is a content-hashed shared ESM chunk — so
+  the component's default output pointed at a URL that never existed. It had
+  zero production callers, and `renderImportMapHtml` had exactly one caller
+  (`BfImportMap`) besides its own contract test. Every importmap the repo
+  actually emits (`site/core/renderer.tsx`, `site/ui/renderer.tsx`, the CSR
+  and xyflow docs examples) is, and always was, hand-written — this subsystem
+  was dead weight pointing at broken output.
+
+  This is a **breaking** change, bumped as a MINOR, not a major: BarefootJS is
+  pre-1.0 (0.31.x), where a minor is the breaking-change slot under semver's
+  §4, and 1.0 is a stability commitment this release does not make.
+
+  ## Removed
+
+  - **`@barefootjs/jsx`**: `renderImportMapHtml`, `ImportMapManifest`,
+    `ExternalsManifest`, and the `./import-map` export subpath.
+    `TemplateAdapter.importMapInjection`.
+  - **`@barefootjs/hono`**: `BfImportMap` and `BfImportMapProps` from
+    `@barefootjs/hono/app`. `BfScripts` and `BfDevReload` are unaffected.
+  - **`importMapInjection` declarations** on every adapter that had one:
+    blade, erb, go-template, hono, jinja, mojolicious, rust, twig, xslate.
+    None of them read the field — only the adapter-tests contract test
+    (also removed) did.
+
+  ## Corrected alongside it
+
+  `@barefootjs/router`'s `defaultRehydrate` / `defaultDispose` keep
+  `'@barefootjs/client/runtime'` in a _variable_ so bundlers cannot resolve it —
+  that is what keeps the client runtime an optional peer for a static-shell
+  site. The comment there said the browser resolves it "through the page's
+  import map", and the error message told users to make sure the runtime was
+  "mapped in the page's import map". Neither is actionable: nothing emits such
+  a map, and `BfImportMap` would have mapped that specifier to
+  `<base>/barefoot.js`, which does not exist. The fallback is unreachable in a
+  correctly-wired app anyway — `setupStreaming()` installs the
+  `__bf_hydrate_within` / `__bf_dispose_within` seams the code checks first.
+  The message now names that call instead.
+
+  ## What to do instead
+
+  An app that deliberately externalizes a dependency
+  (`build.rollupOptions.external`) and loads it from a CDN hand-writes its
+  own `<script type="importmap">`, the same way every importmap this repo
+  actually ships already does. See `docs/core/advanced/xyflow-browser-bundle.md`
+  for a worked example, including the two correctness rules that used to live
+  only in the deleted `renderImportMapHtml` (escaping `<` inside the importmap
+  JSON; `crossorigin` on a cross-origin `modulepreload`) — both now documented
+  there, where the hand-written pattern is actually taught.
+
+### Patch Changes
+
+- 09bf535: Accept a caller-resolved script URL list via `AdapterGenerateOptions.scriptAssets`
+
+  Adapters computed their client-JS `<script>` URLs at codegen time from two
+  adapter-construction options — `barefootJsPath` for the shared runtime and
+  `clientJsBasePath + name + '.client.js'` for the component itself. That
+  computation bakes in three assumptions a bundler-driven pipeline breaks: that
+  the URLs are knowable before bundling (they are content-hashed after), that
+  there are exactly two of them (a dev-server client script makes three, a
+  server-only component zero), and that the runtime is a separately-registered
+  script (as an ESM import of a shared chunk it is not registered at all).
+
+  `scriptAssets` is an ordered list of fully-resolved absolute URLs, supplied
+  per-generate, that each adapter emits as one module-script registration per
+  entry in its own native form — `{{.Scripts.Register "…"}}` for Go templates,
+  `<%- bf.register_script('…') -%>` for ERB, `@php($bf->register_script('…'))`
+  for Blade, and so on. The caller owns all resolution.
+
+  Precedence: `skipScriptRegistration` still wins unconditionally; then
+  `scriptAssets` when present; then today's computed paths. `undefined` means
+  "fall back to the legacy computation" and is distinct from `[]`, which means
+  "this component needs no scripts at all".
+
+  Purely additive — with `scriptAssets` unset every existing caller keeps
+  byte-identical output, which the unchanged conformance-fixture corpus
+  confirms.
+
+- 8b2673f: Share one ts.Program across every compile in the Vite plugin — and unblock Reactive<T>-brand components from building through it at all
+
+  Type-based reactivity detection (Reactive<T> brand classification, the
+  BF023/BF024 nullable-loop-key check) needs a `ts.TypeChecker`. The plugin
+  never passed `CompileOptions.program`, so every type-needing file paid its
+  own `ts.createProgram` inside `compileJSX`'s per-file fallback — and the
+  dominant cost of that call is constructing the lib.d.ts/node_modules type
+  graph, not parsing the one source file (~500-800 ms per call regardless of
+  file size; 36-52 s extrapolated across site/ui's 67 type-needing files).
+  Worse than slow: a file importing a Reactive<T>-branded package
+  (`@barefootjs/form`) got BF050 at severity `error` without a shared
+  Program, and the plugin throws on error diagnostics — such a file could
+  not build through the plugin at all.
+
+  `@barefootjs/vite` now maintains a `CorpusProgramManager`: one Program
+  whose roots are every discovered file that `needsTypeBasedDetection` says
+  needs a checker, built once per pass and passed to every compile (both the
+  cached canonical compile and the eager pass's scriptAssets recompile).
+  Watch-mode rebuilds go through `ts.createProgram`'s `oldProgram`
+  incremental path, and in-memory content that diverges from disk falls back
+  to a virtual single-file Program rather than ever handing the analyzer a
+  Program it would reject. Measured on the site/ui corpus: 11.2 s for the
+  67-file type-needing subset (seed + compile) versus 36-52 s extrapolated
+  per-file, with zero per-file Program creations.
+
+  `@barefootjs/jsx` fixes two defects the same measurement surfaced:
+
+  - **BF050 single/multi asymmetry**: the multi-component path pre-builds a
+    per-file Program to amortize it across siblings and passed it down as if
+    the caller had supplied it, suppressing BF050 — so the same brand import
+    failed in a single-component file but silently relied on the per-file
+    fallback in a multi-component one. BF050 now keys off whether the CALLER
+    supplied `options.program` (`analyzeComponent`'s new `programIsShared`
+    parameter), in both paths, and a multi-component file reports it once
+    rather than once per sibling.
+  - **Stale-Program rebuild storm**: when an upstream rewrite
+    (`preprocessInlineJsxCallbacks`, #1211) makes a caller-supplied Program
+    stale, the analyzer silently discarded it PER COMPONENT and rebuilt a
+    per-file Program each time — 14 rebuilds ≈ 30 s on site/ui's
+    `xyflow-demo.tsx` alone. The multi-component path now detects the
+    staleness up front and builds ONE per-file Program for the rewritten
+    source, shared by every sibling.
+
+- ad323bd: Stop the file-scoped registry key from leaking into CSR `bf-s` scope IDs
+
+  Under CSR a non-exported component rendered `bf-s="ToggleItem__be083511_jepihw"`
+  — a doubled underscore and an 8-hex segment ahead of the usual random suffix —
+  where the eighteen SSR integrations render the documented `ToggleItem_abc123`.
+
+  The hash is deliberate and stays: `nameForRegistryRef` rewrites the registry
+  key of a **non-exported** component to `Name__<8hex>` so two files each
+  defining a private component of the same name can't overwrite each other in
+  the one global registry. That key is an internal disambiguator. `bf-s` is a
+  documented contract that `integrations/shared/e2e/toggle.spec.ts` asserts, so
+  CSR was the side in the wrong.
+
+  Root cause was one line in `hydrate()`:
+
+  ```ts
+  def.name = name; // name is the registry KEY
+  ```
+
+  `ComponentDef.name` exists for exactly this — its docstring reads "Used for
+  scope ID generation" — but `hydrate()` overwrote it with the key. The line
+  predates file-scoping, when the key and the display name were always the same
+  string. It is now `def.name ??= name`, keeping the minification fallback while
+  respecting a compiler-supplied name.
+
+  Alongside it: the two runtime sites that built scope IDs straight from the key
+  (`renderChild`, `createComponent`) now read `def.name`, and the compiler emits
+  `name: '<plain>'` on the def whenever it file-scopes the key.
+
+- d7779d0: Stop the emitted init function from eagerly reading props it never uses.
+  `emitPropsExtraction` mirrored the component's destructuring for every
+  prop the reference graph marked as used — including template-only
+  references like `{children}` — and props arrive as getters over the
+  parent's reactive state, so a stray `const children = _p.children` in a
+  wrapper's init evaluated a slot-children getter that INSTANTIATES child
+  components. The duplicate instance attached a second event listener next
+  to the parent's own `upsertChild` wiring: a Label-wrapped Checkbox's
+  toggle cancelled itself out. A final AST pass
+  (`pruneUnusedPropExtractions`, mirroring `resolveFinalImports`'s shape)
+  now removes extraction consts the init body never references. The legacy
+  site pipeline masked this by registration order; Vite's ESM import order
+  (children registered before the parent's init runs) made it bite.
+- c51638e: Add `@barefootjs/vite`: a Vite plugin that takes over the client-asset half of `bf build`
+
+  `bf build` currently owns the whole bundler job itself — esbuild invocation,
+  externals/importmap, vendor chunk splitting, content hashing, tree-shaking,
+  relative-import resolution, build caching (`packages/cli/src/lib/build.ts`,
+  2400+ lines). `@barefootjs/vite` hands all of that to Vite/Rollup and keeps
+  BarefootJS focused on its actual job: JSX → (template, client JS). The
+  public surface is three options — `adapter`, `components`, `templates` —
+  everything else (`minify`, `outDir`, content hashing, externals, chunk
+  splitting, `base`) is stock Vite config the user already knows.
+
+  Two engines, sharing one content-hash-keyed compile cache so no file is
+  compiled more than necessary:
+
+  - a **graph pass** (`transform`, `enforce: 'pre'`) — Rollup visits `.tsx`
+    modules reachable from `build.rollupOptions.input` (every `'use client'`
+    component under `components`); this plugin compiles each one and hands
+    back plain client JS, which survives Vite's built-in esbuild pass
+    untouched and gets bundled, hashed, tree-shaken, chunked, and minified
+    like any other module. A `resolveId` shim maps the compiler's
+    `./foo.client.js` sibling-import specifier (emitted only for relative
+    imports of client-signal-exporting modules) back to the real `./foo.tsx`
+    — alias imports need no shim, `resolve.alias` already resolves them.
+  - an **eager pass** (`writeBundle`) — walks every `.tsx` under `components`
+    directly, not via Rollup's module graph. Server-only components (no
+    `'use client'`) never appear in that graph at all (nothing imports them
+    as a script) but still need a template — this pass is the only place
+    that happens, and it runs in `writeBundle` specifically because Vite's
+    manifest (`build.manifest`, forced on) is only final once Rollup has
+    hashed every output filename. For each `'use client'` component, its
+    entry's real hashed URL is resolved from the manifest and passed as
+    `AdapterGenerateOptions.scriptAssets` (see the `adapter-script-assets`
+    changeset) so the emitted template registers the actual, `base`-prefixed
+    built asset — never a shared-runtime script tag, since the runtime now
+    arrives as an ESM import of a shared chunk the browser follows on its
+    own.
+
+  `@barefootjs/jsx`: `CompileOptions` gains `scriptAssets?: string[]`,
+  threaded straight through to `adapter.generate()`. `AdapterGenerateOptions
+.scriptAssets` shipped in the prior PR, but nothing between it and
+  `compileJSX`'s callers existed to reach it — this closes that gap. Plain
+  resolved data forwarded unchanged, not a rewrite hook.
+
+  `@barefootjs/client` is deliberately left WITHOUT a `sideEffects: false`
+  declaration. Adding one looks correct — and Rollup does tree-shake the
+  runtime down to just the exports a project uses, verified against a real
+  `vite build` — but it breaks the package's own build: `bun build
+./src/index.ts --external '@barefootjs/client/reactive'` then drops the
+  external re-export's import while keeping the `export { … }` list, so
+  every name in `dist/index.js` becomes "not declared in this file" and
+  every downstream consumer fails to load. Tree-shaking already works
+  without the field; do not re-add it without fixing `build:js` first.
+
+  Out of scope for this change (tracked as follow-ups): the dev server /
+  HMR / full-reload story (`configureServer`), migrating the 19
+  `integrations/*` example apps, and combining per-file adapter `types`
+  output (e.g. Go's Props structs) into one backend-native file (Go's
+  `components.go` combination — deduped `package`/import header plus a
+  shared `randomID` helper — lives entirely in `@barefootjs/go-template`'s
+  `barefoot.config.ts` factory today; this plugin has no equivalent hook
+  yet, so it writes each component's raw `types` fragment to its own
+  `.types` file next to its template instead of combining them).
+
+  - @barefootjs/shared@0.31.0
+
 ## 0.30.6
 
 ### Patch Changes

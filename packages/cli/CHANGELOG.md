@@ -1,5 +1,246 @@
 # @barefootjs/cli
 
+## 0.31.0
+
+### Minor Changes
+
+- dd2e5d8: `bf` reads project config from `vite.config.ts`, unblocking deletion of the legacy build pipeline
+
+  All nineteen integrations are migrated to `@barefootjs/vite`, but twenty-two
+  `bf` commands (`docs`, `debug graph`, `debug profile`, `gen-component`,
+  `gen-test`, `meta extract`, `search`, `tokens`, `preview`, and more) still
+  derived their project context — `paths` and `sourceDirs` — from
+  `barefoot.config.ts` via `packages/cli/src/context.ts`. Deleting the legacy
+  config before repointing that context would break every one of them. This
+  PR does the repointing; it deletes nothing.
+
+  **`@barefootjs/vite`**: `barefoot()` now attaches its resolved `options` on
+  the returned plugin's `.api` (`BarefootPluginApi`), Vite's own convention
+  for exposing plugin state to other tooling. `PLUGIN_NAME` (`'barefoot'`) is
+  exported alongside it so a consumer can find the plugin by name in a
+  resolved Vite config's `plugins` array without hardcoding the string
+  independently. Populated synchronously at `barefoot(options)` construction
+  time — not from a lifecycle hook — because a caller going through Vite's
+  own `loadConfigFromFile` (see below) never runs a plugin's hooks at all.
+
+  **Every adapter's `/vite` wrapper** (`@barefootjs/go-template/vite`,
+  `@barefootjs/hono/vite`, and the blade/erb/jinja/mojolicious/rust/twig/
+  xslate equivalents) already returns the SAME plugin object core constructed
+  as one element of its `Plugin[]` array, so `.api` survives unchanged
+  through every wrapper with no code changes needed there — pinned by a new
+  test in each of the two adapters most exercised elsewhere in this repo
+  (`go-template`, `hono`) asserting `plugins[0].api.options` unchanged.
+
+  **`@barefootjs/cli`**: `context.ts` now resolves project config from
+  `vite.config.ts` first, reading the barefoot plugin's `components` off
+  `plugin.api` via Vite's own `loadConfigFromFile` (never by text-parsing the
+  config file — see CLAUDE.md's "never parse imports/TS syntax with regex or
+  string matching" rule). `barefoot.config.ts` remains a fallback — read
+  directly, exactly as before — for a directory that has only that file, or
+  when `vite.config.ts` fails to load or has no barefoot plugin registered.
+  The existing "no config found anywhere" monorepo-fallback behavior (so
+  setup commands like `bf init` still work with zero config) is unchanged.
+  `paths` has no equivalent on the Vite side (`BarefootViteOptions` has no
+  `paths` field — no integration overrides `paths`, and there is no root or
+  `ui/` config either), so the `vite.config.ts` path always uses
+  `DEFAULT_PATHS`.
+
+  Verified against real commands (`bf docs`, `bf debug graph`, `bf tokens`,
+  `bf meta extract`) run from inside a migrated integration with
+  `vite.config.ts` present, and again from a project with only
+  `barefoot.config.ts` (no `vite.config.ts`) to confirm the fallback.
+
+- c92097b: Remove the legacy build pipeline — `bf build`, `barefoot.config.ts`, and every adapter's `createConfig`
+
+  The last PR of the Vite migration (7a resolved `bf`'s project config from
+  `vite.config.ts`; 7b made every scaffold emit `vite.config.ts`). All
+  nineteen integrations run on `@barefootjs/vite`, and nothing depends on the
+  second implementation any more — this deletes it.
+
+  This is a **breaking** change, shipped as one release with the rest of the
+  migration. It is bumped as a MINOR, not a major: BarefootJS is pre-1.0
+  (0.30.x), where a minor is the breaking-change slot under semver's §4, and
+  1.0 is a stability commitment this release does not make. Read the "Removed"
+  and "Moved" sections below as the upgrade checklist regardless of the
+  version digit that moves.
+
+  ## Removed
+
+  - **`bf build` and `bf build --watch`** — the CLI command, its arg parsing,
+    and its `--help` listing are gone. Compile through `vite build` /
+    `vite dev` via `@barefootjs/vite`'s `barefoot()` plugin instead.
+  - **`packages/cli/src/lib/build.ts`** (2469 lines) and everything that
+    existed only to serve it: `runtime-treeshake.ts`, `build-cache.ts`,
+    `emit-ledger.ts`, `config-loader.ts`, `assets-ignore.ts`. `resolve-imports.ts`
+    is the one file on the original removal list that turned out to still be
+    load-bearing — see "What surfaced" below — it stays.
+  - **`barefoot.config.ts`** as a config source. `bf`'s project-context
+    resolution (`context.ts`) now reads `vite.config.ts` only; the
+    `barefoot.config.ts` fallback branch added in 7a (for a transition period
+    where both files could exist) is pruned along with the types
+    (`BarefootBuildConfig`, `defineConfig`) that only served it. The 19
+    `integrations/*/barefoot.config.ts` files — unused since 7b, kept only so
+    this PR could delete them cleanly — are gone.
+  - **Every adapter's `createConfig` factory and `./build` export subpath**
+    (`@barefootjs/hono/build`, `@barefootjs/go-template/build`, and the
+    blade/erb/jinja/mojolicious/rust/twig/xslate/client equivalents). Configure
+    the Vite plugin directly instead: `import { barefoot } from
+'@barefootjs/<adapter>/vite'` in `vite.config.ts`.
+  - **`@barefootjs/hono/dev`** (`dev.tsx`) — dead since `dev-worker.ts`
+    superseded it; imported only by its own test.
+  - **`addScriptCollection`** (Hono's regex/paren-counting rewrite of
+    compiled TS, forbidden by CLAUDE.md's parsing convention) — superseded by
+    `scriptAssets` codegen (#2509).
+
+  ## Moved
+
+  - **`CSRAdapter`** moves from `@barefootjs/client/build` to
+    `@barefootjs/client/csr-adapter` — the adapter class itself was never
+    legacy-pipeline-specific (it's the `TemplateAdapter` every CSR
+    `vite.config.ts` passes to `barefoot({ adapter: new CSRAdapter() })`);
+    only `createConfig`, which lived in the same file, was.
+  - **Go's type-combination helpers** (`combineGoTypes`, `deduplicateGoTypes`,
+    `stripGoPackageHeader`) move from `@barefootjs/go-template/build` to a new
+    internal `go-types.ts` — still wired into `components.go` generation via
+    `@barefootjs/go-template/vite`'s `afterEmit` hook, unchanged behavior.
+
+  ## What surfaced
+
+  Latent dependencies on the "second implementation," found by deleting and
+  following the breakage rather than guessing:
+
+  - **`packages/cli/src/lib/resolve-imports.ts` looked build-only and wasn't.**
+    `site/ui/build.ts` and `site/core/build.ts` — the component-registry and
+    marketing/docs sites' own hand-rolled compiler-invocation scripts, which
+    predate the Vite migration and were never in its scope — call
+    `resolveRelativeImports` directly to inline sibling `.ts` helper modules
+    into their compiled client JS. It stays, now genuinely used only by those
+    two site scripts (`bf build` itself is gone).
+  - **The same two site scripts also imported `hasUseClientDirective`,
+    `discoverComponentFiles`, `generateHash` from the deleted `build.ts`, and
+    `addScriptCollection` from the deleted Hono `build.ts`.** These four are
+    pure text/text-discovery helpers with no other live caller post-migration
+    — copied to a new `site/shared/lib/site-build-helpers.ts` rather than
+    resurrected as shared CLI/adapter infrastructure.
+  - **The BarefootJS benchmark app** (`benchmarks/apps/barefoot/`, gated into
+    CI by `.github/workflows/benchmark.yml` on `packages/client/**` /
+    `benchmarks/**` changes) spawned `bf build` directly against its own
+    `barefoot.config.ts`. Migrated to a `vite.config.ts` mirroring
+    `integrations/csr`'s own CSR setup; `build.ts` now shells out to `vite
+build` instead.
+
+  ## Verified
+
+  - Full-repo `bun run build` and `bun scripts/smoke-publish.mjs` (packs every
+    publishable tarball, scaffolds a project from them with no workspace
+    refs, and runs the full `bf` CLI surface plus `npm run build` / `npm test`
+    against it) green.
+  - `gin` (Go), `hono` (JS/Cloudflare Workers), and `csr` built explicitly
+    (`bun run build`, since not every `playwright.config.ts` builds for you)
+    with their E2E suites green: `gin` 104/104, `hono` 105/105, `csr` 78/79
+    (the one failure — `ToggleItem` ScopeID format — is pre-existing and
+    unrelated to this PR, reproduced identically against the legacy build
+    per the CSR migration's own changeset).
+  - Per-package `bun test`: `cli` 729/729, `client` 625/625, `go-template`
+    1545/1545 (19 skipped — needs `GOTOOLCHAIN=go1.25.6` in this sandbox,
+    which ships go1.24.7 by default), `hono` 1322/1323 (one 5s-timeout flake
+    under concurrent load, passes in isolation), `blade` 1281/1281, `jinja`
+    1260/1260 (21 skipped). `erb`'s 57 failures are a pre-existing sandbox
+    gap (`LANG`/`LC_ALL` unset → Ruby's JSON parser defaults to US-ASCII,
+    rejecting multibyte fixtures) — not introduced by this PR.
+    `mojolicious`/`rust`/`twig`/`xslate` build clean; not run to completion
+    given the identical, low-risk shape of their edits (package.json export
+    removal + an orphaned `build.ts` deletion with no test file referencing
+    it in any of the four) and the consistent clean/environment-only-failure
+    pattern across the seven packages that were run to completion.
+
+- b202137: Scaffolds emit `vite.config.ts` instead of `barefoot.config.ts`
+
+  All nineteen integrations run on `@barefootjs/vite`, and PR 7a made `bf`
+  read its project config from `vite.config.ts` (with `barefoot.config.ts`
+  still working as a fallback). Until now, `bf init` (and therefore
+  `npm create barefootjs@latest`) kept generating fresh projects wired to the
+  legacy pipeline: every scaffold wrote a `barefoot.config.ts` targeting
+  `@barefootjs/<adapter>/build`'s `createConfig`, with `bf build [--watch]`
+  wired into every `dev`/`build`/`start` script. This PR is the last thing
+  standing between here and deleting that pipeline (7c).
+
+  **Every scaffold** (`hono`, `hono-node`, `echo`, `gin`, `chi`, `nethttp`,
+  `mojo`, `xslate`, `csr`) now writes `vite.config.ts` using that adapter's
+  composed plugin — `import { barefoot } from '@barefootjs/<adapter>/vite'`
+  (CSR uses `@barefootjs/vite` directly with `CSRAdapter`, matching the
+  migrated `integrations/csr`) — mirroring the shape of the corresponding
+  migrated integration rather than inventing a new one. `package.json`'s
+  `dev`/`build`/`start` scripts now run `vite build`/`vite dev` (SSR
+  adapters: `vite build` once up front so the compiled templates exist
+  before the backend server starts, then `vite dev` takes over the watch
+  loop with dev-origin script URLs; CSR: `vite build --watch`, since it has
+  no backend to bake a dev-origin URL into — see its `vite.config.ts`'s
+  docstring). `--minify` is gone from every build/deploy script — `vite
+build` minifies production output by default, no flag needed.
+
+  Hono's renderer (`@barefootjs/hono/scripts`'s `<BfScripts />`) no longer
+  needs a hand-wired import map or a `manifest.json` prop: under Vite,
+  `@barefootjs/client` is an ordinary bundled ESM specifier every compiled
+  entry imports, and `HonoAdapter.generate()` bakes each component's
+  Vite-resolved script URL(s) into its SSR template at codegen time.
+
+  Every `vite.config.ts` sets `publicDir: false` — the scaffold's own
+  `public/` (hand-written CSS + `unocss --watch`'s output) is served
+  directly by each backend, not by Vite, and Vite's default publicDir
+  behavior (copy it verbatim into `build.outDir`) would otherwise write a
+  second, build-order-dependent copy that goes stale relative to
+  `unocss`'s own regeneration — discovered by inspecting real build
+  output, not by inspection alone. Every `vite.config.ts` also adds a
+  `resolve.alias` mapping `@/components` to the source `components/`
+  dir, mirroring `tsconfig.json`'s existing path mapping: `tsc`/`tsx`
+  already read that from `tsconfig.json`, but Vite's dev-server dependency
+  pre-scan (esbuild, run before this plugin's own `transform` hook ever
+  sees a file) parses raw source directly and has no notion of tsconfig
+  `paths` without it — `vite dev` failed to resolve the starter Counter's
+  registry `<Button>` import without this.
+
+  The CSR scaffold's starter Counter switches to the bare, registry-free
+  variant (`bundledRegistryComponents: []`, following the Xslate
+  scaffold's own precedent for a different compiler gap): the registry
+  `<Button>`/`<Slot>` pair each re-export named types, and the compiler
+  always emits that re-export line into a component's `markedTemplate`
+  output regardless of adapter. With no `templates` dir configured (CSR's
+  whole point), `@barefootjs/vite`'s `assertNoRealTemplateOutput` guard
+  correctly refuses to silently drop that non-empty output, so `vite
+build` failed outright the moment the scaffold's default Button fetch
+  pulled it in — a latent compiler/CSR interaction no existing
+  integration had ever exercised (every migrated integration's
+  CSR-equivalent Counter uses native `<button>` elements).
+
+  `bf init`'s "already initialized" guard now checks for `vite.config.ts`
+  instead of `barefoot.config.ts`. `packages/adapter-tests/src/
+scaffold.contract.ts`'s cross-adapter contract asserts `vite.config.ts` is
+  written (step 3) instead of `barefoot.config.ts`; the Hono and Mojolicious
+  `scaffold.test.ts` integration suites assert the new config's shape and
+  dev script.
+
+  Verified by scaffolding and building real projects — `chi` (Go),
+  `hono-node` (JS/Node), and `csr` — via the built CLI, installing real
+  packed `@barefootjs/*` tarballs (not a monorepo `file:` symlink, which
+  hits an unrelated dual-module-instance hazard), and running both
+  `<pm> run build` and `<pm> run dev` (the `vite build`/`vite dev` +
+  backend-server watch loop) to a live server serving hydrated SSR HTML /
+  a working CSR page with correctly resolved static assets.
+
+### Patch Changes
+
+- 1b31dc1: Remove the internal `resolve-imports.ts` inliner (and its tests). Its only
+  remaining callers were `site/ui/build.ts` and `site/core/build.ts`, which
+  now build through `@barefootjs/vite` — Rollup owns import resolution,
+  bundling, and dedup for client JS, so the CLI-side inliner is dead code.
+  No published CLI surface changes.
+- Updated dependencies [ad323bd]
+- Updated dependencies [5b05b4b]
+- Updated dependencies [c92097b]
+  - @barefootjs/client@0.31.0
+  - @barefootjs/shared@0.31.0
+
 ## 0.30.6
 
 ### Patch Changes
