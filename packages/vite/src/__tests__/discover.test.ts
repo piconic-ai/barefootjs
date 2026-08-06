@@ -104,6 +104,19 @@ describe('buildChildNameIndex', () => {
     expect(index.has('index')).toBe(false)
   })
 
+  // Wider than the multi-export case: keyed on the basename, EVERY
+  // colocated `index.tsx` collided on the single key "index" — so even a
+  // single-export `ui/button/index.tsx` was unreachable as a marker target.
+  test('single-export colocated index.tsx files resolve by name, and never collide on "index"', () => {
+    const index = buildChildNameIndex([
+      { absPath: '/proj/ui/button/index.tsx', isClient: true, exportedComponents: ['Button'] },
+      { absPath: '/proj/ui/toggle/index.tsx', isClient: true, exportedComponents: ['Toggle'] },
+    ])
+    expect(index.get('Button')).toBe('/proj/ui/button/index.tsx')
+    expect(index.get('Toggle')).toBe('/proj/ui/toggle/index.tsx')
+    expect(index.has('index')).toBe(false)
+  })
+
   test('first writer wins on a duplicate name, so an earlier components dir shadows a later one', () => {
     const index = buildChildNameIndex([
       { absPath: '/proj/a/Button.tsx', isClient: true, exportedComponents: ['Button'] },

@@ -16,6 +16,12 @@ The index now keys on every exported component name, from
 than a new parse or a regex. Files whose export list comes back empty still
 fall back to the basename, so the old convention keeps working.
 
-This was found while surveying `site/ui` for the `@barefootjs/vite`
-migration: 61 of its `'use client'` component files export more than one
-component, so the limitation would have hit at scale.
+The blast radius was wider than multi-export files. Keyed on the bare
+basename, EVERY colocated `index.tsx` collided on the single key `"index"`
+— including single-export ones like `ui/button/index.tsx` exporting
+`Button`. No colocated component was reachable as a `@bf-child:` target at
+all, whatever its export count.
+
+Found while surveying `site/ui` for the `@barefootjs/vite` migration.
+Across `ui/components` + `site/ui/components`, 112 files export more than
+one component, 105 of them `'use client'`.

@@ -145,17 +145,19 @@ export async function discoverComponents(
  * components broke it silently: `icon/index.tsx` was keyed `index`, so
  * `@bf-child:CopyIcon` found nothing and fell through to the no-op module
  * (`plugin.ts`'s `resolveId`) — a child that never hydrates, with no
- * diagnostic. `ui/components` alone has 61 such `'use client'` files.
+ * diagnostic.
+ *
+ * The blast radius was wider than multi-export files. Because the key was
+ * the bare basename, EVERY colocated `index.tsx` collided on the single
+ * key `"index"` — including single-export ones like `ui/button/index.tsx`
+ * exporting `Button`. No colocated component was reachable as a
+ * `@bf-child:` target at all, whatever its export count. Measured with
+ * `listExportedComponents` over `ui/components` + `site/ui/components`:
+ * 112 files export more than one component, 105 of them `'use client'`.
  *
  * First writer wins on a duplicate name, and discovery order is the
  * `components` option's order — so an earlier directory shadows a later
  * one, the same precedence the option list already implies.
- *
- * Known limitation of this convention: a multi-component export file
- * (e.g. `icon/index.tsx` exporting `CopyIcon` + `CheckIcon`) is keyed by
- * its OWN basename (`index`), not by either exported component's name —
- * a `@bf-child:CopyIcon` marker won't resolve through this map and falls
- * back to the no-op module (see `plugin.ts`'s `resolveId`).
  */
 export function buildChildNameIndex(discovered: readonly DiscoveredComponent[]): Map<string, string> {
   const index = new Map<string, string>()
