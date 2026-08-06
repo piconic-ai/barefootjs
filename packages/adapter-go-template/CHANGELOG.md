@@ -1,5 +1,568 @@
 # @barefootjs/go-template
 
+## 0.31.0
+
+### Minor Changes
+
+- 3a44cd2: Emit `<link rel="modulepreload">` hints for a component's transitively-shared chunks
+
+  A compiled template registers exactly ONE script — the component's own entry:
+
+  ```js
+  registerComponentScripts([
+    "/integrations/hono/static/components/assets/TodoApp.tsx-CtatJ74J.js",
+  ]);
+  ```
+
+  But that entry is not a leaf. Vite's build manifest for the same component says:
+
+  ```json
+  "../shared/components/TodoApp.tsx": {
+    "file": "assets/TodoApp.tsx-CtatJ74J.js",
+    "imports": ["_index-xrhpkKRC.js", "../shared/components/TodoItem.tsx"]
+  }
+  ```
+
+  and `TodoItem.tsx` in turn imports `_index-xrhpkKRC.js` (the shared runtime
+  chunk, a leaf). So the browser's real load sequence was two sequential waves:
+
+  1. fetch + parse `TodoApp.tsx-<hash>.js`
+  2. only now discover, and fetch, `TodoItem.tsx-<hash>.js` and `index-<hash>.js`
+
+  Nothing emitted a `modulepreload` hint anywhere in the repo, so wave 2 always
+  cost a full extra round trip. On localhost that is invisible — which is
+  exactly why the benchmark suite does not catch this win — but on a
+  100ms-RTT connection it is 100ms of dead time before an island can hydrate.
+
+  `AdapterGenerateOptions.preloadAssets` (a sibling of `scriptAssets`) carries
+  an ordered, fully-resolved list of the entry's transitive chunk URLs,
+  excluding the entry's own file. `@barefootjs/vite`'s `resolvePreloadAssets`
+  resolves it from the build manifest by walking `entry.imports`
+  breadth-first (deterministic order, deduped, cycle-safe) — deliberately NOT
+  following `dynamicImports`, since a dynamic import is by definition not
+  needed for first paint. Every adapter emits a `<link rel="modulepreload"
+crossorigin href="…">` immediately before its `scriptAssets` registrations,
+  in each adapter's own native form. `undefined` means "no preload
+  information" (emits nothing); `[]` means "resolved, nothing to preload"
+  (also emits nothing) — the same `undefined`/`[]` distinction `scriptAssets`
+  already draws. `skipScriptRegistration` still wins over both unconditionally.
+
+  In dev, Vite serves unbundled modules with its own on-demand dependency
+  pre-bundling — there is no stable, hashed chunk graph to preload, so
+  `preloadAssets` is always `[]` there.
+
+  Purely additive: with `preloadAssets` unset (the default) every existing
+  caller keeps byte-identical output.
+
+  ## How the other eight get it
+
+  They don't emit script tags inline — they call a collector
+  (`bf.register_script(...)`) whose output the app's layout renders elsewhere.
+  So the preloads travel the same path: a `register_preload` collector in each
+  of the six native runtimes (Rust, PHP, Ruby, Perl, Python, Go), with its own
+  dedup set, and the EXISTING script-render helper extended to emit the
+  `<link rel="modulepreload" crossorigin>` tags ahead of the
+  `<script type="module">` tags it already emits. Extending that helper is what
+  keeps this non-breaking: no integration's layout changes.
+
+  The adapters emit a no-output register statement, never a literal `<link>` —
+  `{% set %}` produces nothing, while a `<link>` element renders and would
+  inject a node before the component's root, breaking hydration's DOM claim
+  paths.
+
+  An app that also threads the collector into its child renderers (two lines
+  mirroring the `_scripts`/`_script_seen` threading already there) gets hints
+  for chunks registered inside a child too. Skipping that keeps the app
+  working, just with fewer hints — verified against four integrations left
+  unmodified on purpose (fastapi, sinatra, xslate, gin), all green.
+
+- 844ce9c: Remove the externals-importmap subsystem — `renderImportMapHtml`, `BfImportMap`, `TemplateAdapter.importMapInjection`
+
+  `BfImportMap`'s built-in default mapped `@barefootjs/client` to
+  `<base>/barefoot.js`. After the Vite migration no `barefoot.js` exists in
+  any build output — the runtime is a content-hashed shared ESM chunk — so
+  the component's default output pointed at a URL that never existed. It had
+  zero production callers, and `renderImportMapHtml` had exactly one caller
+  (`BfImportMap`) besides its own contract test. Every importmap the repo
+  actually emits (`site/core/renderer.tsx`, `site/ui/renderer.tsx`, the CSR
+  and xyflow docs examples) is, and always was, hand-written — this subsystem
+  was dead weight pointing at broken output.
+
+  This is a **breaking** change, bumped as a MINOR, not a major: BarefootJS is
+  pre-1.0 (0.31.x), where a minor is the breaking-change slot under semver's
+  §4, and 1.0 is a stability commitment this release does not make.
+
+  ## Removed
+
+  - **`@barefootjs/jsx`**: `renderImportMapHtml`, `ImportMapManifest`,
+    `ExternalsManifest`, and the `./import-map` export subpath.
+    `TemplateAdapter.importMapInjection`.
+  - **`@barefootjs/hono`**: `BfImportMap` and `BfImportMapProps` from
+    `@barefootjs/hono/app`. `BfScripts` and `BfDevReload` are unaffected.
+  - **`importMapInjection` declarations** on every adapter that had one:
+    blade, erb, go-template, hono, jinja, mojolicious, rust, twig, xslate.
+    None of them read the field — only the adapter-tests contract test
+    (also removed) did.
+
+  ## Corrected alongside it
+
+  `@barefootjs/router`'s `defaultRehydrate` / `defaultDispose` keep
+  `'@barefootjs/client/runtime'` in a _variable_ so bundlers cannot resolve it —
+  that is what keeps the client runtime an optional peer for a static-shell
+  site. The comment there said the browser resolves it "through the page's
+  import map", and the error message told users to make sure the runtime was
+  "mapped in the page's import map". Neither is actionable: nothing emits such
+  a map, and `BfImportMap` would have mapped that specifier to
+  `<base>/barefoot.js`, which does not exist. The fallback is unreachable in a
+  correctly-wired app anyway — `setupStreaming()` installs the
+  `__bf_hydrate_within` / `__bf_dispose_within` seams the code checks first.
+  The message now names that call instead.
+
+  ## What to do instead
+
+  An app that deliberately externalizes a dependency
+  (`build.rollupOptions.external`) and loads it from a CDN hand-writes its
+  own `<script type="importmap">`, the same way every importmap this repo
+  actually ships already does. See `docs/core/advanced/xyflow-browser-bundle.md`
+  for a worked example, including the two correctness rules that used to live
+  only in the deleted `renderImportMapHtml` (escaping `<` inside the importmap
+  JSON; `crossorigin` on a cross-origin `modulepreload`) — both now documented
+  there, where the hand-written pattern is actually taught.
+
+- 4139ce0: Add the `afterEmit` escape hatch, and `@barefootjs/go-template/vite`: a composed Vite plugin for Go
+
+  Every adapter's `.tsx` compile can produce a `types` fragment alongside its
+  template (e.g. Go's per-component Props struct) — but the fragment is
+  incomplete on its own: Go's, for instance, calls `randomID(6)` without
+  defining it, and per-component `package`/`import` headers need stripping
+  and merging into ONE file Go's compiler will accept (`html/template`
+  adapters don't get to just concatenate). The legacy CLI did this combining
+  in each adapter's `barefoot.config.ts` `postBuild` hook; `@barefootjs/vite`
+  had no equivalent, so an adapter migrating onto it lost the ability to
+  produce a compilable backend output at all.
+
+  `afterEmit` closes that gap with the narrowest context that can: `types`
+  (a `Map<absolute source path, types content>`), `projectDir` /
+  `templatesDir` / `outDir`, and `mode: 'build' | 'dev'` — fired once at the
+  end of EITHER eager pass, not just `vite build`'s `writeBundle` (an
+  adapter's derived output, like Go's `components.go`, has to exist for
+  `go run .` to even compile in dev). It deliberately never carries emitted
+  client JS: that's the one thing CLAUDE.md's "never add compiler
+  options/hooks for tool-specific output rewriting" rule exists to keep off
+  the table, and the type itself — not just convention — makes handing it
+  over impossible.
+
+  This option is aimed at an adapter's own `/vite` subpath (e.g.
+  `@barefootjs/go-template/vite`, added in a follow-up commit on this same
+  PR), which wires its own `afterEmit` internally to combine `types` into one
+  backend-native file — not something most end users are expected to pass
+  directly.
+
+  ## `@barefootjs/go-template/vite`
+
+  A new subpath exporting `barefoot` (named AND default, matching core's
+  own `packages/vite/src/index.ts` shape exactly) — a Go-specific
+  COMPOSITION of core's `barefoot()`, not a new plugin implementation:
+
+  ```ts
+  import { barefoot } from "@barefootjs/go-template/vite";
+
+  export default defineConfig({
+    base: "/static/build/",
+    build: { outDir: "static/build" },
+    plugins: [
+      barefoot({
+        components: ["src/components"],
+        templates: "internal/views",
+        packageName: "main",
+        typesOutputFile: "components.go",
+      }),
+    ],
+  });
+  ```
+
+  No `adapter` option — this constructs `GoTemplateAdapter` itself and wires
+  its own `afterEmit` to combine every discovered file's `types` fragment
+  into one compilable `components.go` via the EXISTING, already-pure
+  `combineGoTypes` (`@barefootjs/go-template/build`) — reused, not
+  reimplemented. Ports `packageName` / `typesOutputFile` (default
+  `components.go`) / `manualTypes` / `transformTypes` from `./build`'s
+  `createConfig`, plus its write-if-changed behavior (an unrelated eager
+  pass touching `components.go`'s mtime would falsely trip a Go-side file
+  watcher like `air`). `./build` and `createConfig` are NOT removed — both
+  subpaths coexist until the legacy CLI itself is retired in a later PR.
+
+  An additional `assets` option (+ `assetsOutputFile`, default
+  `bf_assets.go`) resolves a hand-written, non-component script entry's
+  Vite-bundled URL (dev origin, or build manifest hash) into a generated Go
+  map — needed by `integrations/gin`'s blog router bootstrap script, which
+  isn't a `.tsx` component so core's own discovery/`scriptAssets` never sees
+  it. You still register the entry as a Rollup input yourself via stock
+  `build.rollupOptions.input`; this option only resolves the URL, it doesn't
+  request the bundling — same "bundling config is stock Vite config"
+  boundary as everything else in this design.
+
+  ## `integrations/gin` migrated to Vite (first non-JS-backend proof)
+
+  `integrations/gin` is the first Go-backed BarefootJS app on this plugin —
+  the whole point of this stack, and the first time BOTH engines had to work
+  against real cross-component composition, not fixture-sized examples.
+  Doing that surfaced three CORE bugs in `@barefootjs/vite` (not gin-specific
+  workarounds — all three are fixed in `packages/vite/src/plugin.ts` and
+  would affect any adapter):
+
+  - **Missing `siblingTemplatesRegistered: true`.** Any component using a
+    sibling-imported child inside a `.map()` loop (`TodoAppSSR` + `TodoItem`)
+    hit BF103 (`Component <X> is imported from a sibling module and used
+inside a loop`) — a real diagnostic for a real cross-template-lookup
+    risk, but one this plugin's OWN design already satisfies unconditionally
+    (the eager pass always writes every discovered template into the same
+    `templates` dir for the app to register together — see `plugin.ts`'s
+    docstring). The legacy CLI sets this flag unconditionally for the exact
+    same reason; the Vite plugin's `compileJSX` calls now do too.
+  - **The `@bf-child:<Name>` marker had no resolution story at all.** The
+    compiler emits `import '/* @bf-child:ChildName */'` for every other
+    component a `.tsx` file references (loop children, `initChild`-driven
+    nested components); the legacy CLI's `combineParentChildClientJs`
+    resolved it by physically inlining the child's JS. Fed to Rollup
+    unresolved, the literal string fails outright
+    (`UNRESOLVED_IMPORT`/`Rollup failed to resolve import`). Dropping it
+    (resolving to an empty module) is SOMETIMES safe — an `initChild`-hydrated
+    child is load-order-tolerant by design (`registry.ts`'s
+    `pendingChildInits` queue) — but NOT for a purely client-rendered loop
+    (`TodoApp`'s `.map()` over `initialTodos`, as opposed to `TodoAppSSR`'s
+    server-rendered rows): `createComponent`'s registry lookup
+    (`packages/client/src/runtime/component.ts`) has NO queueing and
+    silently renders a placeholder forever if the child's script never
+    loads. `resolveId` now resolves a `@bf-child:` marker to the named
+    child's REAL `.tsx` file (via a name→path index built at
+    `configResolved`) when discovery finds one, so Rollup wires a real
+    entry-to-entry import — the SAME mechanism that already makes
+    `@barefootjs/client` a shared chunk, just applied to sibling components
+    too. Falls back to the empty no-op module for a name the simple
+    one-component-per-file index can't cover, rather than failing the build.
+  - **`rollupOptions.input`'s object key broke for `components` dirs outside
+    the Vite root.** This repo's own real layouts already exercise that
+    shape (`components` as a sibling of root, not a descendant — see the dev
+    server's own docstring), but gin's TWO configured dirs
+    (`../shared/components`, `../shared/blog`) are the first BUILD-time
+    (not just dev-time) proof: the root-relative key Rollup uses as the
+    `[name]` chunk-naming substitution came out `../`-prefixed, which Rollup
+    rejects outright (`Invalid substitution "…" for placeholder "[name]"`).
+    `safeRollupEntryName` falls back to the file's position under its
+    configured `componentDir` for an out-of-root file — short and readable
+    (`blog/LikeButton`), not the bare absolute filesystem path (which would
+    also avoid the crash, but bakes the build machine's own directory
+    structure into every output filename).
+
+  None of these three would have been caught by PR01-03's own fixtures —
+  none of them exercised a genuinely cross-component composition (a loop
+  body rendering a sibling-imported child) or an out-of-root `components`
+  dir at BUILD time. `integrations/gin`'s Playwright E2E suite (104 tests,
+  covering every demo page plus the `@barefootjs/router` blog) passes
+  end-to-end against the migrated build.
+
+  One divergence NOT fixed here, reported rather than patched around: a
+  `createMemo` computed directly from a destructured/accessed PROP (not a
+  signal — e.g. `const displayValue = createMemo(() => props.value * 10)`)
+  infers a less precise Go type (`interface{}` instead of `int`) than the
+  legacy CLI's build, which passes a shared `ts.Program` across the whole
+  project to `compileJSX` for full cross-file type-checking; this plugin
+  does not build or share one. The value is still correct at runtime
+  (`interface{}` holds and JSON-marshals it fine — the E2E suite's own
+  `reactive-props` coverage of this exact component passes), so this is a
+  codegen-precision gap, not a correctness bug, but it's real and worth its
+  own follow-up (threading a shared `ts.Program` through the compile cache).
+
+- c92097b: Remove the legacy build pipeline — `bf build`, `barefoot.config.ts`, and every adapter's `createConfig`
+
+  The last PR of the Vite migration (7a resolved `bf`'s project config from
+  `vite.config.ts`; 7b made every scaffold emit `vite.config.ts`). All
+  nineteen integrations run on `@barefootjs/vite`, and nothing depends on the
+  second implementation any more — this deletes it.
+
+  This is a **breaking** change, shipped as one release with the rest of the
+  migration. It is bumped as a MINOR, not a major: BarefootJS is pre-1.0
+  (0.30.x), where a minor is the breaking-change slot under semver's §4, and
+  1.0 is a stability commitment this release does not make. Read the "Removed"
+  and "Moved" sections below as the upgrade checklist regardless of the
+  version digit that moves.
+
+  ## Removed
+
+  - **`bf build` and `bf build --watch`** — the CLI command, its arg parsing,
+    and its `--help` listing are gone. Compile through `vite build` /
+    `vite dev` via `@barefootjs/vite`'s `barefoot()` plugin instead.
+  - **`packages/cli/src/lib/build.ts`** (2469 lines) and everything that
+    existed only to serve it: `runtime-treeshake.ts`, `build-cache.ts`,
+    `emit-ledger.ts`, `config-loader.ts`, `assets-ignore.ts`. `resolve-imports.ts`
+    is the one file on the original removal list that turned out to still be
+    load-bearing — see "What surfaced" below — it stays.
+  - **`barefoot.config.ts`** as a config source. `bf`'s project-context
+    resolution (`context.ts`) now reads `vite.config.ts` only; the
+    `barefoot.config.ts` fallback branch added in 7a (for a transition period
+    where both files could exist) is pruned along with the types
+    (`BarefootBuildConfig`, `defineConfig`) that only served it. The 19
+    `integrations/*/barefoot.config.ts` files — unused since 7b, kept only so
+    this PR could delete them cleanly — are gone.
+  - **Every adapter's `createConfig` factory and `./build` export subpath**
+    (`@barefootjs/hono/build`, `@barefootjs/go-template/build`, and the
+    blade/erb/jinja/mojolicious/rust/twig/xslate/client equivalents). Configure
+    the Vite plugin directly instead: `import { barefoot } from
+'@barefootjs/<adapter>/vite'` in `vite.config.ts`.
+  - **`@barefootjs/hono/dev`** (`dev.tsx`) — dead since `dev-worker.ts`
+    superseded it; imported only by its own test.
+  - **`addScriptCollection`** (Hono's regex/paren-counting rewrite of
+    compiled TS, forbidden by CLAUDE.md's parsing convention) — superseded by
+    `scriptAssets` codegen (#2509).
+
+  ## Moved
+
+  - **`CSRAdapter`** moves from `@barefootjs/client/build` to
+    `@barefootjs/client/csr-adapter` — the adapter class itself was never
+    legacy-pipeline-specific (it's the `TemplateAdapter` every CSR
+    `vite.config.ts` passes to `barefoot({ adapter: new CSRAdapter() })`);
+    only `createConfig`, which lived in the same file, was.
+  - **Go's type-combination helpers** (`combineGoTypes`, `deduplicateGoTypes`,
+    `stripGoPackageHeader`) move from `@barefootjs/go-template/build` to a new
+    internal `go-types.ts` — still wired into `components.go` generation via
+    `@barefootjs/go-template/vite`'s `afterEmit` hook, unchanged behavior.
+
+  ## What surfaced
+
+  Latent dependencies on the "second implementation," found by deleting and
+  following the breakage rather than guessing:
+
+  - **`packages/cli/src/lib/resolve-imports.ts` looked build-only and wasn't.**
+    `site/ui/build.ts` and `site/core/build.ts` — the component-registry and
+    marketing/docs sites' own hand-rolled compiler-invocation scripts, which
+    predate the Vite migration and were never in its scope — call
+    `resolveRelativeImports` directly to inline sibling `.ts` helper modules
+    into their compiled client JS. It stays, now genuinely used only by those
+    two site scripts (`bf build` itself is gone).
+  - **The same two site scripts also imported `hasUseClientDirective`,
+    `discoverComponentFiles`, `generateHash` from the deleted `build.ts`, and
+    `addScriptCollection` from the deleted Hono `build.ts`.** These four are
+    pure text/text-discovery helpers with no other live caller post-migration
+    — copied to a new `site/shared/lib/site-build-helpers.ts` rather than
+    resurrected as shared CLI/adapter infrastructure.
+  - **The BarefootJS benchmark app** (`benchmarks/apps/barefoot/`, gated into
+    CI by `.github/workflows/benchmark.yml` on `packages/client/**` /
+    `benchmarks/**` changes) spawned `bf build` directly against its own
+    `barefoot.config.ts`. Migrated to a `vite.config.ts` mirroring
+    `integrations/csr`'s own CSR setup; `build.ts` now shells out to `vite
+build` instead.
+
+  ## Verified
+
+  - Full-repo `bun run build` and `bun scripts/smoke-publish.mjs` (packs every
+    publishable tarball, scaffolds a project from them with no workspace
+    refs, and runs the full `bf` CLI surface plus `npm run build` / `npm test`
+    against it) green.
+  - `gin` (Go), `hono` (JS/Cloudflare Workers), and `csr` built explicitly
+    (`bun run build`, since not every `playwright.config.ts` builds for you)
+    with their E2E suites green: `gin` 104/104, `hono` 105/105, `csr` 78/79
+    (the one failure — `ToggleItem` ScopeID format — is pre-existing and
+    unrelated to this PR, reproduced identically against the legacy build
+    per the CSR migration's own changeset).
+  - Per-package `bun test`: `cli` 729/729, `client` 625/625, `go-template`
+    1545/1545 (19 skipped — needs `GOTOOLCHAIN=go1.25.6` in this sandbox,
+    which ships go1.24.7 by default), `hono` 1322/1323 (one 5s-timeout flake
+    under concurrent load, passes in isolation), `blade` 1281/1281, `jinja`
+    1260/1260 (21 skipped). `erb`'s 57 failures are a pre-existing sandbox
+    gap (`LANG`/`LC_ALL` unset → Ruby's JSON parser defaults to US-ASCII,
+    rejecting multibyte fixtures) — not introduced by this PR.
+    `mojolicious`/`rust`/`twig`/`xslate` build clean; not run to completion
+    given the identical, low-risk shape of their edits (package.json export
+    removal + an orphaned `build.ts` deletion with no test file referencing
+    it in any of the four) and the consistent clean/environment-only-failure
+    pattern across the seven packages that were run to completion.
+
+### Patch Changes
+
+- 09bf535: Accept a caller-resolved script URL list via `AdapterGenerateOptions.scriptAssets`
+
+  Adapters computed their client-JS `<script>` URLs at codegen time from two
+  adapter-construction options — `barefootJsPath` for the shared runtime and
+  `clientJsBasePath + name + '.client.js'` for the component itself. That
+  computation bakes in three assumptions a bundler-driven pipeline breaks: that
+  the URLs are knowable before bundling (they are content-hashed after), that
+  there are exactly two of them (a dev-server client script makes three, a
+  server-only component zero), and that the runtime is a separately-registered
+  script (as an ESM import of a shared chunk it is not registered at all).
+
+  `scriptAssets` is an ordered list of fully-resolved absolute URLs, supplied
+  per-generate, that each adapter emits as one module-script registration per
+  entry in its own native form — `{{.Scripts.Register "…"}}` for Go templates,
+  `<%- bf.register_script('…') -%>` for ERB, `@php($bf->register_script('…'))`
+  for Blade, and so on. The caller owns all resolution.
+
+  Precedence: `skipScriptRegistration` still wins unconditionally; then
+  `scriptAssets` when present; then today's computed paths. `undefined` means
+  "fall back to the legacy computation" and is distinct from `[]`, which means
+  "this component needs no scripts at all".
+
+  Purely additive — with `scriptAssets` unset every existing caller keeps
+  byte-identical output, which the unchanged conformance-fixture corpus
+  confirms.
+
+- 6919a87: Split the generated Go asset map across inverted build tags so `vite dev` no longer dirties a tracked file
+
+  `@barefootjs/go-template/vite`'s `assets` option writes ONE file
+  (`bf_assets.go`, tracked in `integrations/{echo,gin,chi,nethttp}`) on
+  EVERY eager pass, dev or build. A `vite build` bakes content-hashed
+  production URLs into it; running `vite dev` afterward (or before) baked in
+  a dev-server-origin URL instead — same file, so either pass rewrote
+  whatever the other left there, leaving `git status` permanently dirty
+  after `vite dev` and racing `components.go` (which doesn't churn, because
+  its content is mode-independent) for "why is this generated file never
+  stable".
+
+  Now split across two build-tagged files declaring the SAME `Assets`
+  symbol, so exactly one compiles:
+
+  | File                | Tag                      | Contents          | Tracked    |
+  | ------------------- | ------------------------ | ----------------- | ---------- |
+  | `bf_assets.go`      | `//go:build !production` | dev-server URLs   | committed  |
+  | `bf_assets_prod.go` | `//go:build production`  | hashed build URLs | gitignored |
+
+  The untagged default is DEV (inverted from the usual convention on
+  purpose): dev URLs carry no content hash, so the dev-tagged file is
+  stable — safe, and meant, to commit — while the hashed prod URLs churn
+  every build, so THAT file is gitignored instead. This also means a fresh
+  clone with no prior `vite build` still compiles (`go run .` "just
+  works"); producing the tagged production binary is a deliberate `go build
+-tags production .`.
+
+  Inverting the tag inverts the accident it guards against: previously you
+  could mistakenly ship a dev-tagged build; now you can forget `-tags
+production` and ship one. Forgetting is the likelier mistake and fails
+  silently (the binary compiles, starts, and serves everything except a
+  `<script src="http://localhost:5173/...">` that 404s in front of real
+  users), so `packages/adapter-go-template/runtime/bfdev`'s new
+  `GuardAssets(Assets)` — called once at startup in each of the four Go
+  integrations' `main()` — panics immediately if the process is NOT in dev
+  (`bfdev.IsDevDefault()` false) but `Assets` still holds a dev-origin URL,
+  the only way that combination can arise. A panic, not a logged error,
+  because the alternative is silently serving a broken app indefinitely
+  with no other symptom to catch it on; failing the deploy immediately is
+  the "sound-or-loud" trade this whole split exists to enforce.
+
+  Every call site that runs a Go integration in production shape (`APP_ENV`
+  unset, template cache on) needed the tag added: all four
+  `playwright.config.ts` `webServer.command`s and all four `Dockerfile`s'
+  `go build`. The `docker-compose.yml` dev services and each `.air.toml`
+  (both already set `APP_ENV=development`, both already build untagged) are
+  correctly untouched — the untagged default IS their dev build now.
+
+- 5b05b4b: Fix `./vite` entry points crashing on Node versions without native TypeScript stripping
+
+  Every adapter's `./vite` subpath (and `@barefootjs/vite`'s own `.` entry)
+  pointed at `.ts` source, e.g. `{"types": "./src/vite.ts", "import":
+"./src/vite.ts"}`. That copied the shape of `./build` — which is only ever
+  loaded by `bf build` running under bun, a runtime that reads `.ts`
+  natively — but Vite's own config loader is a different kind of consumer:
+  it externalizes bare imports like `import { barefoot } from
+'@barefootjs/hono/vite'` and lets **Node**, not bun, resolve and load them.
+  This only ever worked in a container whose Node happens to have native
+  type-stripping on by default (22.18+); on any older Node it fails with
+  `TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".ts"` the
+  moment a downstream app's `vite.config.ts` does `import { barefoot } from
+'@barefootjs/<adapter>/vite'`.
+
+  Fix, per package:
+
+  - Every `./vite` subpath (`@barefootjs/blade`, `@barefootjs/erb`,
+    `@barefootjs/go-template`, `@barefootjs/hono`, `@barefootjs/jinja`,
+    `@barefootjs/mojolicious`, `@barefootjs/rust`, `@barefootjs/twig`,
+    `@barefootjs/xslate`) now SPLITS its two conditions instead of pointing
+    both at the same file: `{"types": "./src/vite.ts", "import":
+"./dist/vite.js"}`. TypeScript reads `types`, Node reads `import` — they
+    never had to be the same file, and keeping `types` on real source means
+    every consumer that only ever needed to _type-check_ against this entry
+    (an adapter's own `build:types`, a downstream app's `tsc`) keeps doing so
+    straight from source, with nothing built, exactly as before. Only the
+    condition Node's ESM loader actually resolves (`import`) needs to be
+    built JS. `publishConfig` is untouched — it already swapped both
+    conditions to `dist` at pack time, which is correct: nothing outside
+    this workspace should type-check against source.
+  - `@barefootjs/vite`'s own `.` entry gets the same split (top-level `types`
+    → `./src/index.ts`, `import` → `./dist/index.js`; `publishConfig` keeps
+    swapping both to dist at pack time, restored to its original shape).
+  - Each adapter's `build:js` now bundles `src/vite.ts` in its own `bun
+build` invocation, separate from the `index.ts`/`adapter/index.ts`/
+    `build.ts` invocation those subpaths keep sharing. The `./vite` build
+    does NOT externalize `@barefootjs/jsx` / `@barefootjs/shared` — Node
+    would otherwise hit the exact same `.ts`-extension failure one hop
+    later, resolving `@barefootjs/jsx`'s own (still src-pointing, unchanged)
+    `.` export. `@barefootjs/vite`'s own build drops the same two externals
+    for the same reason. Both keep `typescript` external (a real npm
+    package, already Node-loadable) to avoid bundling the whole TS compiler
+    into every adapter's `./vite` output.
+  - `--target node` on both of the above: bun's default bundle target is
+    `browser`, which polyfills `node:fs/promises` et al. into browser stubs
+    — silently turning every `readFile`/`writeFile`/`mkdir` call into
+    `undefined` at runtime (`TypeError: readFile is not a function`) instead
+    of failing to build. Only surfaces once something (Vite's config loader)
+    actually calls the plugin's manifest-reading code, so it hid behind the
+    same "nothing loads dist under Node" gap as the `.ts`-extension bug.
+  - `@barefootjs/client`'s `./build` entry (already dist-only on both
+    conditions, unchanged by this PR — its consumers always needed it
+    built) had the identical latent runtime bug one level removed:
+    `CSRAdapter` (`csr-adapter.ts`) imports `BaseAdapter` from
+    `@barefootjs/jsx` as a real value, and `build:js` externalized it — so
+    `integrations/csr`'s `vite.config.ts` (`import { CSRAdapter } from
+'@barefootjs/client/build'`) hit the same crash one hop further down the
+    chain. Fixed the same way: stop externalizing `@barefootjs/jsx`, add
+    `--target node`.
+  - Root `build` script keeps `@barefootjs/vite` as an explicit early build
+    step, before the `@barefootjs/hono` / `@barefootjs/go-template` /
+    `@barefootjs/mojolicious` trio and the rest of `--filter '*'`. This is
+    NOT for type resolution (the `types`/`import` split above already
+    decouples that from build order — a scoped `build:types` run, e.g. `cd
+packages/blade && bun run build`, never needs `@barefootjs/vite` built).
+    It's for the RUNTIME resolution real `vite build`/`vite dev` invocations
+    need: `--filter '*'` does not reliably build `@barefootjs/vite` before
+    workspace packages whose OWN build step actually executes a Vite config
+    that imports it (`integrations/nethttp`, `integrations/chi`, and any
+    other integration whose `build` script runs `vite build` for real, not
+    just type-checks) — confirmed by dropping this step and watching a
+    clean `bun run build` fail with `ERR_MODULE_NOT_FOUND` resolving
+    `@barefootjs/vite/dist/index.js` from `adapter-go-template/dist/vite.js`
+    partway through `--filter '*'`.
+  - `packages/vite/tsconfig.json` gains `DOM`/`DOM.Iterable` lib entries
+    (every sibling adapter tsconfig already had them) — still needed
+    independent of the above: `packages/vite`'s OWN `build:types` walks real
+    (non-type-only) imports from `@barefootjs/jsx`, whose `html-types.ts`
+    needs DOM lib to resolve `HTMLButtonElement` and friends. Confirmed by
+    reverting just this file and rebuilding — `tsgo` fails the same way
+    whether or not the root build ordering or the `types`/`import` split are
+    in place.
+
+  **DX cost**: every one of these packages' `./vite` (or `@barefootjs/vite`'s
+  `.`) entry now needs `bun run build` before `vite dev` / `vite build` can
+  actually load and run it — the `import` condition was always meant to be a
+  build artifact, this just stops it accidentally working off raw source.
+  Type-checking (`tsc`/`tsgo` against the `types` condition) needs no build
+  step at all, in any of these packages, scoped or full — that's the whole
+  point of the split. Running an integration's `vite dev`/`vite build`
+  without building workspace packages first fails the same
+  `ERR_UNKNOWN_FILE_EXTENSION` / `ERR_MODULE_NOT_FOUND` way it always would
+  have on a stricter Node; the fix removes the accidental "works because
+  dist happens to already exist from an unrelated build" case rather than
+  adding a new requirement.
+
+  Backstop: `__tests__/vite-entry-node-loadable.test.ts` reads every
+  workspace package's manifest and fails if any `./vite` (or
+  `@barefootjs/vite`'s `.`) export's `import`/`default` condition — the ones
+  Node's ESM loader itself resolves — points at raw `.ts` source. `types` is
+  deliberately exempt (see above); a `.d.ts` declaration file is fine on
+  either condition. A future adapter that copies the old fully-`.ts`-pointing
+  shape, or that regresses `import` back onto source, fails loudly here
+  instead of silently depending on a new-enough Node.
+
+  - @barefootjs/shared@0.31.0
+
 ## 0.30.6
 
 ### Patch Changes
