@@ -40,6 +40,7 @@
 
 import { useRequestContext } from 'hono/jsx-renderer'
 import { Fragment } from 'hono/jsx'
+import type { JSX } from 'hono/jsx/jsx-runtime'
 import { relPathFromComponentsBase, type BarefootBuildManifest } from './app.ts'
 
 export type CollectedScript = {
@@ -284,8 +285,8 @@ export function registerComponentPreloads(urls: string[]): string[] {
  * only ever pass `inlineScripts` (a component with `scriptAssets` but no
  * `preloadAssets`) keep compiling and behaving exactly as before.
  */
-export function wrapWithInlineScripts(jsx: unknown, inlineScripts: string[], inlinePreloads: string[] = []) {
-  if (inlineScripts.length === 0 && inlinePreloads.length === 0) return jsx
+export function wrapWithInlineScripts(jsx: unknown, inlineScripts: string[], inlinePreloads: string[] = []): JSX.Element {
+  if (inlineScripts.length === 0 && inlinePreloads.length === 0) return jsx as JSX.Element
   return (
     <Fragment>
       {inlinePreloads.map(href => <link rel="modulepreload" crossorigin="" href={href} />)}
