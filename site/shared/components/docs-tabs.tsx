@@ -29,6 +29,7 @@ export function DocsTabs({ id, defaultTab, tabs }: DocsTabsProps) {
       <div role="tablist" className="bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px] mb-4">
         {tabs.map((tab) => (
           <button
+            key={tab.label}
             role="tab"
             aria-selected={tab.label === defaultTab}
             data-state={tab.label === defaultTab ? 'active' : 'inactive'}
@@ -42,6 +43,7 @@ export function DocsTabs({ id, defaultTab, tabs }: DocsTabsProps) {
       </div>
       {tabs.map((tab) => (
         <div
+          key={tab.label}
           role="tabpanel"
           data-docs-tab-panel={tab.label}
           className={tab.label === defaultTab ? '' : 'hidden'}
