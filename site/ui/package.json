@@ -1,14 +1,14 @@
 {
   "name": "barefootjs-components",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "bun run build.ts",
     "build:clean": "bun run build.ts --clean",
-    "build:watch": "bun run build:watch.ts",
     "build:registry": "cd ../../ui && bun run build:registry && mkdir -p ../site/ui/dist/r ../site/ui/dist/meta && cp -r dist/r/* ../site/ui/dist/r/ && cp meta/index.json ../site/ui/dist/r/index.json && cp meta/*.json ../site/ui/dist/meta/",
     "build:worker": "bun run build:clean && bun run build:registry",
-    "dev": "bun run --watch server.tsx",
+    "dev": "concurrently -k -n vite,server -c blue,yellow \"bunx vite dev\" \"bun run --watch server.tsx\"",
     "deploy": "bun run build:worker && wrangler deploy",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui"
@@ -25,7 +25,8 @@
     "@shikijs/themes": "^3.21.0",
     "hono": "^4",
     "lucide-static": "^0.562.0",
-    "shiki": "^3.20.0"
+    "shiki": "^3.20.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
@@ -35,6 +36,8 @@
     "bun-types": "^1.1.0",
     "unocss": "^66.0.0",
     "wrangler": "^4.59.0",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "vite": "^6.0.0",
+    "concurrently": "^9.1.0"
   }
 }

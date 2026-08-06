@@ -78,6 +78,7 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/hono' build
 
       - name: Build site
         run: cd site/core && bun run build

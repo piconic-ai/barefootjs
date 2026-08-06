@@ -12,5 +12,12 @@
   },
   "devDependencies": {
     "@barefootjs/test": "workspace:*"
+  },
+  "dependencies": {
+    "@barefootjs/chart": "workspace:*",
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/xyflow": "workspace:*",
+    "embla-carousel": "^8.6.0"
   }
 }

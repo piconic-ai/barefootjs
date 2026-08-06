@@ -11,9 +11,10 @@
  * `return { … }` with no binding — `ReferenceError: Theme is not defined`
  * at load, killing the whole page's client JS.
  *
- * `packages/cli`'s `detectStrippedReferences` (in `resolve-imports.ts`)
- * shares the same classifier for its own dangling-reference scan, so the
- * two "is this a real use" checks in the pipeline can never drift apart.
+ * `packages/cli`'s `detectStrippedReferences` (in the since-deleted
+ * `resolve-imports.ts`) used to share this classifier for its own
+ * dangling-reference scan; `collectExternalImports` is the remaining
+ * caller.
  */
 
 import ts from 'typescript'
@@ -27,10 +28,9 @@ import ts from 'typescript'
  * reference — it reads the binding, it doesn't just spell its name.
  *
  * CONTRACT: this classifies identifier positions in **JavaScript** source.
- * Both current callers parse with `ts.ScriptKind.JS` —
- * `collectValueReferencedNames` below, and `detectStrippedReferences` in
- * `packages/cli/src/lib/resolve-imports.ts`, which parses the assembled
- * bundle. TypeScript-only positions are deliberately NOT handled: an
+ * The current caller parses with `ts.ScriptKind.JS` —
+ * `collectValueReferencedNames` below.
+ * TypeScript-only positions are deliberately NOT handled: an
  * identifier in a type position (`const x: Foo = …`, a
  * `TypeReferenceNode`) is still reported as a value reference, and so are
  * `interface` / `type` / `enum` declaration names. Do not point this at

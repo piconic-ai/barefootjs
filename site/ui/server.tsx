@@ -21,6 +21,11 @@ app.use('/llms.txt', serveStatic({
   rewriteRequestPath: () => '/llms.txt',
 }))
 
+// Client chunks live at dist/static/components/ (Vite's build.outDir),
+// matching the production URL space exactly — no rewrite. Registered
+// before the generic /static/* rule below so it wins.
+app.use('/static/components/*', serveStatic({ root: './dist' }))
+
 // Static file serving (Bun-specific)
 app.use('/static/*', serveStatic({
   root: './dist',
