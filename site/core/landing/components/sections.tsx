@@ -28,6 +28,19 @@ interface CompatLock {
 
 const compat = lock as CompatLock
 
+// Matrix aggregates, at module scope: the template references them
+// (aria-label, matrix-foot), and template scope cannot reach init-body
+// locals (BF061). They only depend on the imported lock file anyway.
+const componentNames = Object.keys(compat.components).sort()
+const adapters = compat.adapters
+const totalCells = componentNames.length * adapters.length
+let okCells = 0
+for (const name of componentNames) {
+  for (const adapter of adapters) {
+    if (compat.components[name]?.[adapter]?.ok) okCells++
+  }
+}
+
 /* ── 2. The fork ─────────────────────────────────────────────── */
 
 export function ForkSection() {
@@ -77,16 +90,6 @@ export function ForkSection() {
 /* ── 3. Proof (matrix) ───────────────────────────────────────── */
 
 export function MatrixSection({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
-  const componentNames = Object.keys(compat.components).sort()
-  const adapters = compat.adapters
-  const totalCells = componentNames.length * adapters.length
-  let okCells = 0
-  for (const name of componentNames) {
-    for (const adapter of adapters) {
-      if (compat.components[name]?.[adapter]?.ok) okCells++
-    }
-  }
-
   return (
     <section className="lp-section">
       <div className="lp-wrap">
@@ -101,13 +104,14 @@ export function MatrixSection({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref
           aria-label={`${componentNames.length} components by ${adapters.length} adapters, ${okCells} of ${totalCells} compiling clean`}
         >
           {adapters.map((adapter) => (
-            <div className="matrix-row">
+            <div key={adapter} className="matrix-row">
               <span className="rlabel">{adapter}</span>
               <div className="cells">
                 {componentNames.map((name) => {
                   const ok = compat.components[name]?.[adapter]?.ok
                   return (
                     <span
+                      key={name}
                       className={`cell${ok ? '' : ' cell-miss'}`}
                       title={ok ? `${name} × ${adapter}` : `${name} × ${adapter} — tracked limitation`}
                     />

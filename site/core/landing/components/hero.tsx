@@ -34,6 +34,18 @@ const DEMO_TABS_SCRIPT = `(function(){
   if (adSelect) adSelect.addEventListener('change', apply);
 })();`
 
+// Flattened example × adapter pairs for the output panels, hoisted so the
+// template loop's body is a single JSX element rather than a nested
+// `.map()` (a shape the compiler rejects with BF021).
+const OUTPUT_PANELS = DEMO_EXAMPLES.flatMap((ex, exIndex) =>
+  ex.outputs.map((out, outIndex) => ({
+    panelId: `${ex.id}-${out.id}`,
+    file: out.file,
+    code: out.code,
+    active: exIndex === 0 && outIndex === 0,
+  }))
+)
+
 export function Hero({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
   return (
     <div className="lp-hero">
@@ -67,12 +79,12 @@ export async function DemoSection() {
               <span>what you write</span>
               <select className="demo-select" data-select="example" aria-label="Example source">
                 {DEMO_EXAMPLES.map((ex, i) => (
-                  <option value={ex.id} selected={i === 0}>{ex.file}</option>
+                  <option key={ex.id} value={ex.id} selected={i === 0}>{ex.file}</option>
                 ))}
               </select>
             </div>
             {DEMO_EXAMPLES.map((ex, i) => (
-              <div className={`src-panel${i === 0 ? ' active' : ''}`} data-example={ex.id}>
+              <div key={ex.id} className={`src-panel${i === 0 ? ' active' : ''}`} data-example={ex.id}>
                 <pre
                   className="shiki shiki-themes github-light github-dark"
                   tabindex={0}
@@ -86,21 +98,20 @@ export async function DemoSection() {
               <span>what your server renders</span>
               <select className="demo-select" data-select="adapter" aria-label="Compiled output language">
                 {DEMO_EXAMPLES[0].outputs.map((out, i) => (
-                  <option value={out.id} selected={i === 0}>{out.label}</option>
+                  <option key={out.id} value={out.id} selected={i === 0}>{out.label}</option>
                 ))}
               </select>
             </div>
-            {DEMO_EXAMPLES.map((ex, i) =>
-              ex.outputs.map((out, j) => (
-                <div
-                  className={`out-panel${i === 0 && j === 0 ? ' active' : ''}`}
-                  data-panel={`${ex.id}-${out.id}`}
-                >
-                  <div className="pane-file-row">{out.file}</div>
-                  <pre tabindex={0}><code>{out.code}</code></pre>
-                </div>
-              ))
-            )}
+            {OUTPUT_PANELS.map((panel) => (
+              <div
+                key={panel.panelId}
+                className={`out-panel${panel.active ? ' active' : ''}`}
+                data-panel={panel.panelId}
+              >
+                <div className="pane-file-row">{panel.file}</div>
+                <pre tabindex={0}><code>{panel.code}</code></pre>
+              </div>
+            ))}
           </div>
         </div>
         <p className="demo-note">
