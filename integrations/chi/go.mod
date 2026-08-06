@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/barefootjs/runtime/bf v0.0.0
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.2.4
 )
 
 replace github.com/barefootjs/runtime/bf => ../../packages/adapter-go-template/runtime
