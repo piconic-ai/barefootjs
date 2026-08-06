@@ -2845,7 +2845,11 @@ describe('Client JS generation', () => {
       const result = compileJSX(source, 'Probe.tsx', { adapter })
       expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
       const js = result.files.find(f => f.type === 'clientJs')!.content
-      expect(js).toContain('const size = _p.size ?? 5')
+      // The destructure default rides the signal seed (and its controlled
+      // effect) — the standalone `const size = …` extraction is pruned when
+      // nothing else in the init reads it.
+      expect(js).toContain('_p.size ?? 5')
+      expect(js).not.toContain('_p.size ?? 0')
     })
   })
 })

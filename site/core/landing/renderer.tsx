@@ -31,13 +31,10 @@ function WithPredictableIds({ children }: { children: any }) {
   return <>{children}</>
 }
 
-// Import map for resolving @barefootjs/client in client JS
-const importMapScript = JSON.stringify({
-  imports: {
-    '@barefootjs/client': '/static/components/barefoot.js',
-    '@barefootjs/client/runtime': '/static/components/barefoot.js',
-  },
-})
+// No import map: under the Vite build, `@barefootjs/client` is an
+// ordinary bundled ESM specifier every compiled component's entry
+// imports — Rollup folds it into one shared chunk the browser follows on
+// its own.
 
 export const landingRenderer = jsxRenderer(
   ({ children, title, description }) => {
@@ -51,7 +48,6 @@ export const landingRenderer = jsxRenderer(
       <WithPredictableIds>
         <html lang="en">
           <head>
-            <script type="importmap" dangerouslySetInnerHTML={{ __html: importMapScript }} />
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />

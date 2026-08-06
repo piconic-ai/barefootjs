@@ -1,3 +1,5 @@
+"use client"
+
 import { DirectionProvider } from '@ui/components/ui/direction'
 import { Input } from '@ui/components/ui/input'
 

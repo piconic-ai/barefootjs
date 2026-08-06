@@ -212,9 +212,6 @@ export function initDialogHeader(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const dialogHeaderClasses = 'flex flex-col gap-2 text-center sm:text-left'
 
   const [_s0] = $(__scope, 's0')
@@ -234,10 +231,6 @@ export function DialogHeader(_p, __bfKey) { return createComponent('DialogHeader
 export function initDialogTitle(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const id = _p.id
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const dialogTitleClasses = 'text-lg leading-none font-semibold'
 
@@ -260,10 +253,6 @@ export function initDialogDescription(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const id = _p.id
-  const className = _p.className ?? ''
-  const children = _p.children
-
   const dialogDescriptionClasses = 'text-muted-foreground text-sm'
 
   const [_s0] = $(__scope, 's0')
@@ -284,9 +273,6 @@ export function DialogDescription(_p, __bfKey) { return createComponent('DialogD
 export function initDialogFooter(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
-  const children = _p.children
 
   const dialogFooterClasses = 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
 

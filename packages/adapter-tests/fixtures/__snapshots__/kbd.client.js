@@ -33,8 +33,6 @@ export function initKbd(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const className = _p.className ?? ''
-  const asChild = _p.asChild ?? false
-  const children = _p.children
 
   const kbdBaseClasses = 'pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3'
 
@@ -69,8 +67,6 @@ export function initKbdGroup(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const className = _p.className ?? ''
-  const asChild = _p.asChild ?? false
-  const children = _p.children
 
   const kbdGroupBaseClasses = 'inline-flex items-center gap-1'
 

@@ -20,7 +20,6 @@ declare module 'hono' {
 }
 import { BfScripts } from '../../packages/adapter-hono/src/scripts'
 import { BfPortals } from '../../packages/adapter-hono/src/portals'
-import { BfPreload, type Manifest } from '../../packages/adapter-hono/src/preload'
 import { SidebarNav } from '../shared/components/sidebar-page-nav'
 import { Header } from '../shared/components/header'
 import { MobileMenu } from '@/components/mobile-menu'
@@ -30,11 +29,6 @@ import { SearchButton } from '@/components/search-button'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { CommandPalette } from '@/components/command-palette'
 import { commandGroups } from './lib/command-groups'
-
-// Import manifest for dependency-aware preloading
-// This enables BfPreload to automatically preload the full dependency chain
-// Example: If Button depends on Slot, preloading Button will also preload Slot
-import manifest from './dist/components/manifest.json' with { type: 'json' }
 
 /**
  * Predictable instance ID generator for E2E testing.
@@ -62,18 +56,13 @@ function WithPredictableIds({ children }: { children: any }) {
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
 import { navSections } from './components/shared/nav-data'
 
-// Import map for resolving bare module specifiers in client JS
-const importMapScript = JSON.stringify({
-  imports: {
-    '@barefootjs/client': '/static/components/barefoot.js',
-    '@barefootjs/client/runtime': '/static/components/barefoot.js',
-    '@barefootjs/form': '/static/components/barefoot-form.js',
-    '@barefootjs/chart': '/static/components/barefoot-chart.js',
-    '@barefootjs/xyflow': '/static/components/barefoot-xyflow.js',
-    'zod': '/static/lib/zod.esm.js',
-    'embla-carousel': '/static/lib/embla-carousel.esm.js',
-  },
-})
+// No import map: under the Vite build, `@barefootjs/client` (and every
+// other library the client JS uses — form, chart, xyflow, zod,
+// embla-carousel) is an ordinary bundled ESM specifier Rollup folds into
+// shared, content-hashed chunks the browser follows on its own. Module
+// preloading likewise rides the compiled templates' own
+// `registerComponentPreloads` calls instead of a manifest-driven
+// `BfPreload`.
 
 export const renderer = jsxRenderer(
   ({ children, title, description }) => {
@@ -101,12 +90,6 @@ export const renderer = jsxRenderer(
       <WithPredictableIds>
         <html lang="en">
           <head>
-            <script type="importmap" dangerouslySetInnerHTML={{ __html: importMapScript }} />
-            <BfPreload
-              manifest={manifest as Manifest}
-              // Manifest keys are path-qualified, not component names
-              components={['ui/button', 'copy-button', 'ui/toggle', 'theme-switcher']}
-            />
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />

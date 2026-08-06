@@ -1,42 +1,34 @@
 /**
  * Build script for the BarefootJS site (landing page + documentation).
  *
- * Generates:
+ * Component compilation is owned by `@barefootjs/vite` (see
+ * vite.config.ts): `vite build` emits compiled SSR templates into
+ * dist/components/ (+ manifest.json) and bundled, content-hashed client
+ * JS into dist/static/components/. This script runs that build first,
+ * then assembles everything else the site serves out of dist/:
+ *
  * - dist/content.json (bundled markdown from docs/core/)
- * - dist/components/{Component}.tsx (Marked Template)
- * - dist/components/{Component}-{hash}.js (Client JS)
- * - dist/components/barefoot.js (Runtime)
- * - dist/components/manifest.json
- * - dist/uno.css (UnoCSS output)
- * - dist/static/globals.css (tokens.css + globals.css + landing.css concatenated)
- * - dist/static/uno.css
- * - dist/static/components/ (client JS for browser)
- * - dist/static/logos/ (framework logos for LP)
- * - dist/static/snippets/ (code snippet files for LP)
+ * - dist/static/components/barefoot.js (standalone runtime for the
+ *   playground iframe — the only consumer left that imports the runtime
+ *   by fixed URL instead of through a bundled chunk)
+ * - dist/uno.css + dist/static/globals.css (tokens + globals + landing)
+ * - dist/static/logos/, dist/static/snippets/, icons
+ * - dist/playground/ (worker + page script + Monaco type bundle)
+ * - dist/_headers, dist/llms.txt
  */
 
-import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
-import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { mkdir, readdir } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
 import { loadContentFromDisk } from './lib/content-loader'
-import { resolveRelativeImports } from '../../packages/cli/src/lib/resolve-imports'
-import { transpile } from '../../packages/cli/src/lib/runtime'
-import {
-  hasUseClientDirective,
-  discoverComponentFiles,
-  generateHash,
-  addScriptCollection,
-} from '../shared/lib/site-build-helpers'
 
 const ROOT_DIR = dirname(import.meta.path)
 const CONTENT_DIR = resolve(ROOT_DIR, '../../docs/core')
 const DIST_DIR = resolve(ROOT_DIR, 'dist')
 const DIST_COMPONENTS_DIR = resolve(DIST_DIR, 'components')
 const DIST_STATIC_DIR = resolve(DIST_DIR, 'static')
+const DIST_STATIC_COMPONENTS_DIR = resolve(DIST_STATIC_DIR, 'components')
 const DOM_PKG_DIR = resolve(ROOT_DIR, '../../packages/client')
 const SHARED_DIR = resolve(ROOT_DIR, '../shared')
-const COMPONENTS_DIR = resolve(ROOT_DIR, 'components')
 const LANDING_COMPONENTS_DIR = resolve(ROOT_DIR, 'landing/components')
 
 import { scanCoreDocs } from '../../packages/cli/src/lib/docs-loader'
@@ -52,10 +44,26 @@ const { pages, content, mdx } = await loadContentFromDisk(CONTENT_DIR)
 await Bun.write(resolve(DIST_DIR, 'content.json'), JSON.stringify({ content, mdx }))
 console.log(`Bundled: ${pages.length} md pages + ${Object.keys(mdx).length} mdx pages → dist/content.json`)
 
-// ── 2. Build and copy barefoot.js runtime ─────────────────────
-// Use the standalone runtime (reactive primitives inlined) so the
-// browser can load the file directly. The sibling `./runtime` entry
-// keeps reactive external for bundler-side deduplication.
+// ── 2. Compile components + bundle client JS via @barefootjs/vite ──
+// Emits dist/components/*.tsx (+ manifest.json) and content-hashed
+// client chunks under dist/static/components/ (emptyOutDir wipes only
+// that directory — see vite.config.ts).
+console.log('Building components with vite...')
+const viteProc = Bun.spawn(['bunx', 'vite', 'build'], {
+  cwd: ROOT_DIR,
+  stdout: 'inherit',
+  stderr: 'inherit',
+})
+if ((await viteProc.exited) !== 0) {
+  throw new Error('vite build failed')
+}
+
+// ── 3. Build and copy barefoot.js runtime ─────────────────────
+// Compiled components load the runtime as an ordinary bundled chunk; the
+// one remaining fixed-URL consumer is the playground's sandboxed iframe,
+// whose import map resolves `@barefootjs/client` to
+// /static/components/barefoot.js (see playground/page-script.ts). Written
+// AFTER the vite build so emptyOutDir can't delete it.
 const barefootFileName = 'barefoot.js'
 const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/standalone.js')
 
@@ -66,11 +74,11 @@ if (!await Bun.file(domDistFile).exists()) {
 }
 
 // Fully minify the runtime at copy time (identifier mangling included —
-// unlike component client JS, only the runtime's ESM export names must
-// survive, and Bun.build preserves those). The runtime is the largest
-// single script the site serves, and the LP's runtime-size claim
-// (hero.tsx, "min+gzip") is measured on this minified build — re-measure
-// and update hero.tsx when runtime changes move it.
+// only the runtime's ESM export names must survive, and Bun.build
+// preserves those). The runtime is the largest single script the site
+// serves, and the LP's runtime-size claim (hero.tsx, "min+gzip") is
+// measured on this minified build — re-measure and update hero.tsx when
+// runtime changes move it.
 const runtimeBuild = await Bun.build({
   entrypoints: [domDistFile],
   target: 'browser',
@@ -81,190 +89,30 @@ if (!runtimeBuild.success || runtimeBuild.outputs.length === 0) {
   for (const log of runtimeBuild.logs) console.error(log)
   throw new Error('Failed to minify barefoot.js runtime')
 }
-await Bun.write(resolve(DIST_COMPONENTS_DIR, barefootFileName), runtimeBuild.outputs[0])
-console.log(`Generated: dist/components/${barefootFileName} (minified)`)
+await Bun.write(resolve(DIST_STATIC_COMPONENTS_DIR, barefootFileName), runtimeBuild.outputs[0])
+console.log(`Generated: dist/static/components/${barefootFileName} (minified)`)
 
-// ── 3. Compile "use client" components ────────────────────────
-
-// Manifest
-const manifest: Record<string, { clientJs?: string; markedTemplate: string }> = {
-  '__barefoot__': { markedTemplate: '', clientJs: `components/${barefootFileName}` }
-}
-
-const adapter = new HonoAdapter()
-
-// Discover components from local, shared, and landing dirs
-const localComponentFiles = await discoverComponentFiles(COMPONENTS_DIR)
-const sharedComponentFiles = await discoverComponentFiles(resolve(SHARED_DIR, 'components'))
-const landingComponentFiles = await discoverComponentFiles(LANDING_COMPONENTS_DIR)
-const componentFiles = [...localComponentFiles, ...sharedComponentFiles, ...landingComponentFiles]
-
-for (const entryPath of componentFiles) {
-  const sourceContent = await Bun.file(entryPath).text()
-  if (!hasUseClientDirective(sourceContent)) continue
-
-  const result = compileJSX(sourceContent, entryPath, { adapter })
-
-  const errors = result.errors.filter(e => e.severity === 'error')
-  const warnings = result.errors.filter(e => e.severity === 'warning')
-
-  if (warnings.length > 0) {
-    console.warn(`Warnings compiling ${entryPath}:`)
-    for (const warning of warnings) console.warn(`  ${warning.message}`)
-  }
-
-  if (errors.length > 0) {
-    console.error(`Errors compiling ${entryPath}:`)
-    for (const error of errors) console.error(`  ${error.message}`)
-    continue
-  }
-
-  // Determine rootDir based on source location
-  const isSharedComponent = entryPath.startsWith(resolve(SHARED_DIR, 'components'))
-  const isLandingComponent = entryPath.startsWith(LANDING_COMPONENTS_DIR)
-  const rootDir = isSharedComponent
-    ? resolve(SHARED_DIR, 'components')
-    : isLandingComponent
-    ? LANDING_COMPONENTS_DIR
-    : COMPONENTS_DIR
-
-  const relativePath = relative(rootDir, entryPath)
-  const dirPath = dirname(relativePath)
-  const baseFileName = relativePath.split('/').pop()!
-  const baseNameNoExt = baseFileName.replace('.tsx', '')
-
-  const outputDir = dirPath === '.' ? DIST_COMPONENTS_DIR : resolve(DIST_COMPONENTS_DIR, dirPath)
-  await mkdir(outputDir, { recursive: true })
-
-  let markedJsxContent = ''
-  let clientJsContent = ''
-
-  for (const file of result.files) {
-    if (file.type === 'markedTemplate') markedJsxContent = file.content
-    else if (file.type === 'clientJs') clientJsContent = file.content
-  }
-
-  if (!markedJsxContent && !clientJsContent) {
-    let transformedSource = sourceContent.replace(/^['"]use client['"];?\s*/m, '')
-    await Bun.write(resolve(outputDir, baseFileName), transformedSource)
-    console.log(`Generated: dist/components/${relativePath}`)
-    manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}` }
-    continue
-  }
-
-  if (markedJsxContent && !clientJsContent) {
-    await Bun.write(resolve(outputDir, baseFileName), markedJsxContent)
-    console.log(`Generated: dist/components/${relativePath}`)
-    manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}` }
-    continue
-  }
-
-  const hasClientJs = clientJsContent.length > 0
-  const hash = generateHash(clientJsContent || markedJsxContent)
-  const clientJsFilename = `${baseNameNoExt}-${hash}.js`
-
-  if (hasClientJs) {
-    await Bun.write(resolve(outputDir, clientJsFilename), clientJsContent)
-    const clientJsRelativePath = dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`
-    console.log(`Generated: dist/components/${clientJsRelativePath}`)
-  }
-
-  if (markedJsxContent && hasClientJs) {
-    const clientJsRelPath = dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`
-    const wrappedContent = addScriptCollection(markedJsxContent, baseNameNoExt, clientJsRelPath)
-    await Bun.write(resolve(outputDir, baseFileName), wrappedContent)
-    console.log(`Generated: dist/components/${relativePath}`)
-  } else if (markedJsxContent) {
-    await Bun.write(resolve(outputDir, baseFileName), markedJsxContent)
-    console.log(`Generated: dist/components/${relativePath}`)
-  }
-
-  const componentName = baseNameNoExt
-  const markedJsxPath = `components/${relativePath}`
-  const clientJsPath = hasClientJs
-    ? `components/${dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`}`
-    : undefined
-
-  manifest[componentName] = {
-    markedTemplate: markedJsxPath,
-    clientJs: clientJsPath,
-  }
-}
-
-// Output manifest
-await Bun.write(resolve(DIST_COMPONENTS_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2))
-console.log('Generated: dist/components/manifest.json')
-
-// Combine parent-child client JS
-const clientJsFiles = new Map<string, string>()
-for (const [name, entry] of Object.entries(manifest)) {
-  if (!entry.clientJs) continue
-  const filePath = resolve(DIST_DIR, entry.clientJs)
-  try { clientJsFiles.set(name, await Bun.file(filePath).text()) } catch {}
-}
-if (clientJsFiles.size > 0) {
-  const combined = combineParentChildClientJs(clientJsFiles)
-  for (const [name, content] of combined) {
-    const entry = manifest[name]
-    if (entry?.clientJs) {
-      await Bun.write(resolve(DIST_DIR, entry.clientJs), content)
-      console.log(`Combined: ${entry.clientJs}`)
-    }
-  }
-}
-
-// Resolve relative imports
-await resolveRelativeImports({
-  distDir: DIST_DIR,
-  manifest,
-  sourceDirs: [COMPONENTS_DIR, resolve(SHARED_DIR, 'components'), LANDING_COMPONENTS_DIR],
-})
-
-// Minify client JS. Runs after combine + import resolution so the pass
-// sees the final file contents; the static/ copies below inherit it.
-// The runtime (barefoot.js) is already minified at copy time above.
-for (const [name, entry] of Object.entries(manifest)) {
-  if (name === '__barefoot__' || !entry.clientJs) continue
-  const filePath = resolve(DIST_DIR, entry.clientJs)
-  const content = await Bun.file(filePath).text().catch(() => '')
-  if (!content) continue
-  try {
-    // loader 'ts': some inlined utility modules carry TS-only syntax
-    // (non-null assertions) that the plain 'js' parser rejects.
-    await Bun.write(filePath, transpile(content, { loader: 'ts', minify: true }))
-  } catch (err) {
-    throw new Error(`Failed to minify ${entry.clientJs}: ${err instanceof Error ? err.message : err}`)
-  }
-}
-console.log('Minified: component client JS')
-
-// Generate index.ts for re-exporting all compiled components
-async function collectExports(dir: string, prefix: string = ''): Promise<string[]> {
-  const exports: string[] = []
-  const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
+// ── 4. Copy .ts modules from landing/components ───────────────
+// Non-component modules (landing/components/shared/*.ts) that emitted
+// templates import relatively — the compiler re-anchors `./shared/...`
+// imports to dist/components/shared/..., so the files must exist there.
+async function copyTsModules(srcDir: string, destDir: string): Promise<void> {
+  const entries = await readdir(srcDir, { withFileTypes: true }).catch(() => [])
   for (const entry of entries) {
-    const fullPath = join(dir, entry.name)
+    const srcPath = join(srcDir, entry.name)
+    const destPath = join(destDir, entry.name)
     if (entry.isDirectory()) {
-      exports.push(...await collectExports(fullPath, `${prefix}${entry.name}/`))
-    } else if (entry.name.endsWith('.tsx')) {
-      const baseName = entry.name.replace('.tsx', '')
-      const content = await Bun.file(fullPath).text()
-      const exportMatches = content.matchAll(/export\s+(?:function|const)\s+(\w+)/g)
-      for (const match of exportMatches) {
-        exports.push(`export { ${match[1]} } from './${prefix}${baseName}'`)
-      }
+      await mkdir(destPath, { recursive: true })
+      await copyTsModules(srcPath, destPath)
+    } else if ((entry.name.endsWith('.ts') || entry.name.endsWith('.js')) && !entry.name.endsWith('.d.ts')) {
+      await Bun.write(destPath, Bun.file(srcPath))
+      console.log(`Copied: dist/components/${relative(DIST_COMPONENTS_DIR, destPath)}`)
     }
   }
-  return exports
 }
+await copyTsModules(LANDING_COMPONENTS_DIR, DIST_COMPONENTS_DIR)
 
-const componentExports = await collectExports(DIST_COMPONENTS_DIR)
-if (componentExports.length > 0) {
-  await Bun.write(resolve(DIST_COMPONENTS_DIR, 'index.ts'), componentExports.join('\n') + '\n')
-  console.log('Generated: dist/components/index.ts')
-}
-
-// ── 4. CSS: Generate tokens from JSON + globals.css + landing.css ─
+// ── 5. CSS: Generate tokens from JSON + globals.css + landing.css ─
 const { loadTokens, generateCSS } = await import('../shared/tokens/index')
 const baseTokens = await loadTokens(resolve(SHARED_DIR, 'tokens/tokens.json'))
 const tokensCSS = generateCSS(baseTokens)
@@ -275,7 +123,7 @@ await Bun.write(resolve(DIST_DIR, 'globals.css'), combinedCSS)
 await Bun.write(resolve(DIST_STATIC_DIR, 'globals.css'), combinedCSS)
 console.log('Generated: dist/static/globals.css (tokens + globals + landing)')
 
-// ── 5. Generate UnoCSS ───────────────────────────────────────
+// ── 6. Generate UnoCSS ───────────────────────────────────────
 // Scan globs come from uno.config.ts (content.filesystem) so the config is
 // the single source of truth — a page dir added there is picked up here too.
 // The CLI doesn't read content.filesystem itself, so pass them as arguments.
@@ -291,7 +139,7 @@ await unoProc.exited
 await Bun.write(resolve(DIST_STATIC_DIR, 'uno.css'), Bun.file(resolve(DIST_DIR, 'uno.css')))
 console.log('Generated: dist/static/uno.css')
 
-// ── 6. Copy icon files ───────────────────────────────────────
+// ── 7. Copy icon files ───────────────────────────────────────
 const IMAGES_DIR = resolve(ROOT_DIR, '../../images/logo')
 const icon32 = resolve(IMAGES_DIR, 'icon-32.png')
 const icon64 = resolve(IMAGES_DIR, 'icon-64.png')
@@ -336,41 +184,7 @@ for (const name of ['logo.svg', 'logo-for-dark.svg', 'logo-for-light.svg', 'text
   }
 }
 
-// ── 7. Copy .ts modules from landing/components (non-component modules) ──
-async function copyTsModules(srcDir: string, destDir: string): Promise<void> {
-  const entries = await readdir(srcDir, { withFileTypes: true }).catch(() => [])
-  for (const entry of entries) {
-    const srcPath = join(srcDir, entry.name)
-    const destPath = join(destDir, entry.name)
-    if (entry.isDirectory()) {
-      await mkdir(destPath, { recursive: true })
-      await copyTsModules(srcPath, destPath)
-    } else if ((entry.name.endsWith('.ts') || entry.name.endsWith('.js')) && !entry.name.endsWith('.d.ts')) {
-      await Bun.write(destPath, Bun.file(srcPath))
-      console.log(`Copied: dist/components/${relative(DIST_COMPONENTS_DIR, destPath)}`)
-    }
-  }
-}
-await copyTsModules(LANDING_COMPONENTS_DIR, DIST_COMPONENTS_DIR)
-
-// ── 8. Copy components/ to static/components/ ────────────────
-async function copyDir(src: string, dest: string) {
-  await mkdir(dest, { recursive: true })
-  const entries = await readdir(src, { withFileTypes: true }).catch(() => [])
-  for (const entry of entries) {
-    const srcPath = join(src, entry.name)
-    const destPath = join(dest, entry.name)
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath)
-    } else {
-      await Bun.write(destPath, Bun.file(srcPath))
-    }
-  }
-}
-await copyDir(DIST_COMPONENTS_DIR, resolve(DIST_STATIC_DIR, 'components'))
-console.log('Copied: dist/static/components/')
-
-// ── 9. Copy LP assets (snippets + logos) ──────────────────────
+// ── 8. Copy LP assets (snippets + logos) ──────────────────────
 const SNIPPETS_SRC = resolve(ROOT_DIR, 'public/static/snippets')
 const SNIPPETS_DEST = resolve(DIST_STATIC_DIR, 'snippets')
 await mkdir(SNIPPETS_DEST, { recursive: true })
@@ -398,7 +212,7 @@ if (logoFiles.length > 0) {
   console.log(`Copied: dist/logos/, dist/static/logos/ (${logoFiles.length} files)`)
 }
 
-// ── 9b. Build playground worker + page script ─────────────────
+// ── 8b. Build playground worker + page script ─────────────────
 const PLAYGROUND_SRC_DIR = resolve(ROOT_DIR, 'playground')
 const PLAYGROUND_DIST_DIR = resolve(DIST_DIR, 'playground')
 const PLAYGROUND_STATIC_DIR = resolve(DIST_STATIC_DIR, 'playground')
@@ -452,7 +266,7 @@ console.log('Generated: dist/playground/page.js (+ static copy)')
 // @barefootjs/client (signals API).
 const PKG_DIR = resolve(ROOT_DIR, '../../packages')
 
-// Ensure @barefootjs/client has its .d.ts built (step 2 builds the runtime
+// Ensure @barefootjs/client has its .d.ts built (step 3 builds the runtime
 // JS if missing, but we also need the declarations here).
 const clientDtsFile = resolve(PKG_DIR, 'client/dist/index.d.ts')
 if (!(await Bun.file(clientDtsFile).exists())) {
@@ -511,7 +325,7 @@ const typeBundle: Record<string, string> = {
 await writePlaygroundAsset('types-bundle.json', new Blob([JSON.stringify(typeBundle)]))
 console.log('Generated: dist/playground/types-bundle.json (+ static copy)')
 
-// ── 9c. Write _headers for Cloudflare Workers static assets ──────
+// ── 8c. Write _headers for Cloudflare Workers static assets ──────
 // The playground iframe runs as `sandbox="allow-scripts"` (no
 // allow-same-origin), so its origin is opaque ("null"). When it imports
 // /static/components/barefoot.js the request is cross-origin and module
@@ -523,7 +337,7 @@ const headersContent = `/static/components/*
 await Bun.write(resolve(DIST_DIR, '_headers'), headersContent)
 console.log('Generated: dist/_headers')
 
-// ── 10. Generate llms.txt ──────────────────────────────────────
+// ── 9. Generate llms.txt ──────────────────────────────────────
 const coreDocs = scanCoreDocs(CONTENT_DIR)
 const coreLlmsTxt = generateCoreLlmsTxt(coreDocs, 'https://barefootjs.dev/docs')
 await Bun.write(resolve(DIST_DIR, 'llms.txt'), coreLlmsTxt)

@@ -38,8 +38,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -108,8 +106,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -180,8 +176,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -241,8 +235,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -302,8 +294,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -373,8 +363,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -441,8 +429,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -515,8 +501,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -576,8 +560,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -637,8 +619,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -698,8 +678,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -759,8 +737,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -819,8 +795,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -879,8 +853,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -939,8 +911,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -999,8 +969,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1059,8 +1027,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1119,8 +1085,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1179,8 +1143,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1239,8 +1201,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1300,8 +1260,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1361,8 +1319,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1450,8 +1406,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1511,8 +1465,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1571,8 +1523,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1631,8 +1581,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1691,8 +1639,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -1745,8 +1691,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2144,8 +2088,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2274,8 +2216,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2576,8 +2516,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2835,8 +2773,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2913,8 +2849,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2972,8 +2906,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3030,8 +2962,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3090,8 +3020,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3150,8 +3078,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3219,8 +3145,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3295,8 +3219,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3365,8 +3287,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3476,8 +3396,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3626,8 +3544,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3689,8 +3605,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -3969,8 +3883,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4168,8 +4080,6 @@ export function initLayout(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const children = _p.children
-
   const [_s0] = $c(__scope, 's0')
 
 
@@ -4219,8 +4129,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4285,8 +4193,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4351,8 +4257,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4417,8 +4321,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4549,8 +4451,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4632,8 +4532,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4715,8 +4613,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4806,8 +4702,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4872,8 +4766,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4926,8 +4818,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -4980,8 +4870,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -5047,8 +4935,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -5114,8 +5000,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -5259,8 +5143,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -5342,8 +5224,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])

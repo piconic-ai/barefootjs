@@ -14,8 +14,8 @@ test.describe('landing page demo', () => {
     await page.goto('/')
     await expect(page.locator('.src-panel.active')).toHaveAttribute('data-example', 'counter')
     await expect(page.locator('.out-panel.active')).toHaveAttribute('data-panel', 'counter-go')
-    // All 8 adapters and all 3 examples are offered.
-    await expect(page.locator('select[data-select="adapter"] option')).toHaveCount(8)
+    // All 9 adapters and all 3 examples are offered.
+    await expect(page.locator('select[data-select="adapter"] option')).toHaveCount(9)
     await expect(page.locator('select[data-select="example"] option')).toHaveCount(3)
   })
 
