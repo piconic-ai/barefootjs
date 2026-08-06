@@ -32,6 +32,12 @@ const PUBLISHABLE = [
   'packages/shared',
   'packages/streaming',
   'packages/jsx',
+  // After shared + jsx (its dependency / peer), before every adapter —
+  // each adapter's `/vite` subpath composes @barefootjs/vite's barefoot().
+  // Missing from this list until 0.31.0, which is why the package was
+  // never on npm even though scaffolds (`bf init` CSR) and the adapters'
+  // peerDependencies already referenced it.
+  'packages/vite',
   'packages/client',
   'packages/router',
   'packages/test',
