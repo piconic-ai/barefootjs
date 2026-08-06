@@ -32,6 +32,7 @@ const PUBLISHABLE = [
   'packages/shared',
   'packages/streaming',
   'packages/jsx',
+  'packages/vite',
   'packages/client',
   'packages/router',
   'packages/test',
