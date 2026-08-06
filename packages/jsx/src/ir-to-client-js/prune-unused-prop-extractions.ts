@@ -22,6 +22,15 @@
  * code (never a regex — see CLAUDE.md), span-based splicing, iterated to
  * a fixpoint so an extraction referenced only by another pruned
  * extraction's default expression is removed too.
+ *
+ * Known limits, both erring toward FALSE-KEEP (an extraction survives and
+ * the eager getter read stays), never false-prune:
+ * - The reference scan is whole-file and scope-unaware: any other
+ *   occurrence of the same identifier text as a value (a module-level
+ *   helper's parameter named `children`, a local in an unrelated closure)
+ *   keeps the extraction alive.
+ * - Splicing removes a statement's full leading trivia, so a comment an
+ *   emitter attached directly above a pruned extraction goes with it.
  */
 import ts from 'typescript'
 import { collectValueReferencedNames } from '../value-references.ts'
@@ -58,7 +67,14 @@ function propExtractionName(stmt: ts.Statement): string | null {
 export function pruneUnusedPropExtractions(code: string): string {
   for (let round = 0; round < 10; round++) {
     const referenced = collectValueReferencedNames(code)
-    if (referenced === null) return code
+    if (referenced === null) {
+      // Unlike resolveFinalImports' identical fallback (where a missed
+      // import fails the build loudly), skipping here silently re-opens
+      // the eager-getter double-instantiation this pass exists to prevent
+      // — so say so.
+      console.warn('[barefootjs] pruneUnusedPropExtractions: generated code did not parse; skipping prune')
+      return code
+    }
 
     const sourceFile = ts.createSourceFile(
       'generated.js',
