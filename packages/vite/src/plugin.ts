@@ -72,6 +72,7 @@ import {
 } from '@barefootjs/jsx'
 import type { BarefootPluginApi, BarefootViteOptions } from './types.ts'
 import { CompileCache } from './compile-cache.ts'
+import { CorpusProgramManager } from './corpus-program.ts'
 import { BF_CHILD_NOOP_ID, bfChildMarkerName } from './child-marker.ts'
 import {
   buildChildNameIndex,
@@ -141,6 +142,15 @@ function normalizeComponents(
 
 export function barefoot(options: BarefootViteOptions): Plugin {
   const cache = new CompileCache()
+
+  // One shared ts.Program across every compile in this plugin instance —
+  // built once per pass from the discovered files that need type-based
+  // detection, incrementally rebuilt on change. Without it, each such file
+  // pays its own ~500-600 ms `ts.createProgram` type-graph construction
+  // inside `compileJSX`'s per-file fallback (tens of seconds across a real
+  // corpus), and a Reactive<T>-brand importer fails the build outright
+  // with BF050. See `corpus-program.ts`.
+  const corpusProgram = new CorpusProgramManager()
 
   // What `emitTemplatesFor` last wrote for a given source file, keyed by
   // absolute path. The ONLY consumer is the dev watcher's `'unlink'`
@@ -274,6 +284,11 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       compileJSX(content, absPath, {
         adapter: options.adapter,
         sourceMaps: true,
+        // `undefined` for the majority of files (no type-based detection
+        // needed — the analyzer never builds a checker for them); the
+        // shared corpus Program for the rest. Resolved INSIDE the cache
+        // thunk so a cache hit never touches the Program at all.
+        program: corpusProgram.programFor(absPath, content),
         // Per-directory, from whichever `dirEntries` entry `absPath` falls
         // under — `undefined` for a plain-string entry (or a file matching
         // no entry, which shouldn't happen for anything reaching this
@@ -369,8 +384,13 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     // `writeEmits` already produces. Stays empty (and unwritten) when
     // `templatesDir` is undefined.
     const manifestEntries: Record<string, ManifestEntry> = {}
+    // Refresh the shared Program from this pass's full discovery snapshot
+    // BEFORE the compile loop, so the loop never triggers `programFor`'s
+    // one-root-at-a-time incremental rebuilds. A no-op when nothing
+    // type-needing changed — the common case, mirroring `CompileCache`.
+    corpusProgram.seed(discovered)
     for (const component of discovered) {
-      const content = await readFile(component.absPath, 'utf8')
+      const content = component.content
       const canonical = compileCanonical(component.absPath, content)
       reportErrors(canonical, content, projectDir)
 
@@ -381,6 +401,12 @@ export function barefoot(options: BarefootViteOptions): Plugin {
           result = compileJSX(content, component.absPath, {
             adapter: options.adapter,
             sourceMaps: true,
+            // Same shared Program as the canonical compile — this second,
+            // uncached compile re-runs the same analysis with only
+            // `scriptAssets` differing, so skipping it here would re-open
+            // the per-file fallback (and BF050) for exactly the files
+            // that recompile every pass.
+            program: corpusProgram.programFor(component.absPath, content),
             // Already stamped on `component` by `discoverComponents` from
             // the same `dirEntries` entry `compileCanonical` would have
             // derived via `entryForPath` — reused directly rather than
@@ -582,6 +608,10 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       templatesDir = options.templates !== undefined ? resolve(config.root, options.templates) : undefined
       const discovered = await discoverComponents(dirEntries, absPath => readFile(absPath, 'utf8'))
       childNameIndex = buildChildNameIndex(discovered)
+      // Seed the shared Program now, before Rollup's graph pass starts
+      // calling `transform` — otherwise the first type-needing file the
+      // graph reaches would build the corpus one root at a time.
+      corpusProgram.seed(discovered)
     },
 
     resolveId(source, importer) {

@@ -85,6 +85,14 @@ export async function discoverComponentFiles(
 export interface DiscoveredComponent {
   /** Absolute path to the `.tsx` source file. */
   absPath: string
+  /**
+   * The file's full source text, as read by the discovery pass. Retained
+   * (discovery had to read it anyway for the directive/exports checks) so
+   * downstream consumers — the corpus-program seeding and the eager pass's
+   * compile loop — work from the SAME snapshot discovery classified,
+   * instead of re-reading and racing an edit that landed in between.
+   */
+  content: string
   /** Whether the file's content starts with a `'use client'` directive. */
   isClient: boolean
   /**
@@ -156,6 +164,7 @@ export async function discoverComponents(
       // file and server-only components are the majority in most trees.
       out.push({
         absPath,
+        content,
         isClient,
         exportedComponents: isClient ? listExportedComponents(content, absPath) : [],
         cssLayerPrefix: entry.cssLayerPrefix,
@@ -198,7 +207,12 @@ export async function discoverComponents(
  * `components` option's order — so an earlier directory shadows a later
  * one, the same precedence the option list already implies.
  */
-export function buildChildNameIndex(discovered: readonly DiscoveredComponent[]): Map<string, string> {
+export function buildChildNameIndex(
+  // Only the fields the index actually reads — callers with a full
+  // `DiscoveredComponent[]` pass it as-is, and tests can construct rows
+  // without dragging in `content`.
+  discovered: readonly Pick<DiscoveredComponent, 'absPath' | 'isClient' | 'exportedComponents'>[],
+): Map<string, string> {
   const index = new Map<string, string>()
   for (const c of discovered) {
     if (!c.isClient) continue

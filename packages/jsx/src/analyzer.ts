@@ -160,15 +160,26 @@ export function analyzeComponent(
   filePath: string,
   targetComponentName?: string,
   program?: ts.Program,
-  acceptsCallbackBody?: CallbackBodyAcceptor
+  acceptsCallbackBody?: CallbackBodyAcceptor,
+  programIsShared?: boolean
 ): AnalyzerContext {
   incrementCounter('filesAnalyzed')
-  // Track whether the caller supplied a shared ts.Program. Used downstream
+  // Track whether a shared ts.Program is genuinely in scope. Used downstream
   // to decide whether the silent per-file fallback should also emit a
   // BF050 diagnostic (issue #1248): when the source needs type-based
-  // detection but no shared Program is in scope, the regex fallback may
-  // misclassify library-getter reactivity.
-  const hadSharedProgram = program !== undefined
+  // detection but no shared Program is in scope, the per-file fallback may
+  // misclassify library-getter reactivity (its virtual host can fail module
+  // resolution, silently collapsing brand types to `any`).
+  //
+  // `programIsShared` lets the caller distinguish "the build supplied a
+  // shared corpus Program" from "the compiler pre-built a per-file Program
+  // to amortize it across sibling components" — the latter is exactly the
+  // fallback BF050 exists to flag, so it must NOT suppress the diagnostic
+  // (the old `program !== undefined` inference did, making the same brand
+  // import fail in a single-component file but pass in a multi-component
+  // one). Defaults to that inference for direct callers who pass a genuine
+  // shared Program (tests, site builds).
+  const hadSharedProgram = programIsShared ?? program !== undefined
   // Pre-pass: inline calls to same-file reactive factory helpers so the
   // downstream analyzer sees ordinary `createSignal(...)` declarations
   // instead of `const [a, b] = customFactory(...)` (#931). Skipped when
