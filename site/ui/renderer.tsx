@@ -104,7 +104,8 @@ export const renderer = jsxRenderer(
             <script type="importmap" dangerouslySetInnerHTML={{ __html: importMapScript }} />
             <BfPreload
               manifest={manifest as Manifest}
-              components={['Button', 'CopyButton', 'Toggle', 'ThemeToggle']}
+              // Manifest keys are path-qualified, not component names
+              components={['ui/button', 'copy-button', 'ui/toggle', 'theme-switcher']}
             />
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
