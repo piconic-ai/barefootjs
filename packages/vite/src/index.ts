@@ -1,6 +1,6 @@
 export { barefoot, PLUGIN_NAME } from './plugin.ts'
 export { barefoot as default } from './plugin.ts'
-export type { AfterEmitContext, BarefootPluginApi, BarefootViteOptions } from './types.ts'
+export type { AfterEmitContext, BarefootPluginApi, BarefootViteOptions, ComponentDirEntry } from './types.ts'
 
 // Re-exported so an adapter's own `/vite` subpath (e.g.
 // `@barefootjs/go-template/vite`) can resolve script/asset URLs the SAME
@@ -22,4 +22,4 @@ export { toPosixRelative } from './paths.ts'
 // with ad hoc, possibly-diverging logic) is exactly the CLAUDE.md
 // "reuse or port it, don't reinvent" rule this module's own docstring
 // already invokes.
-export { discoverComponents, type DiscoveredComponent } from './discover.ts'
+export { discoverComponents, type DiscoveredComponent, type ResolvedComponentDirEntry } from './discover.ts'

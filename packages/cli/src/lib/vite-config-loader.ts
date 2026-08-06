@@ -135,5 +135,12 @@ export async function loadViteBarefootConfig(configPath: string): Promise<ViteBa
     )
   }
 
-  return { root, sourceDirs: [...api.options.components] }
+  // `api.options.components` entries may be a plain string OR a
+  // `ComponentDirEntry` (`@barefootjs/vite`'s per-directory
+  // `cssLayerPrefix`/`skipDirs`) — `sourceDirs` only ever needs the bare
+  // directory, so unwrap `{ dir }` down to `dir`, the same "string is
+  // equivalent to `{ dir: string }`" collapse `ComponentDirEntry` itself
+  // documents.
+  const sourceDirs = api.options.components.map(entry => typeof entry === 'string' ? entry : entry.dir)
+  return { root, sourceDirs }
 }

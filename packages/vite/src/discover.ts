@@ -95,20 +95,58 @@ export interface DiscoveredComponent {
    * exists; see `buildChildNameIndex`.
    */
   exportedComponents: string[]
+  /**
+   * `CompileOptions.cssLayerPrefix` this file should compile with, carried
+   * over unchanged from whichever `components` entry's `dir` this file was
+   * discovered under (see `ResolvedComponentDirEntry.cssLayerPrefix`).
+   * `undefined` when that entry set none (or was a plain string entry).
+   */
+  cssLayerPrefix?: string
 }
 
 /**
- * Scan every configured `components` directory (absolute paths) for `.tsx`
- * files and classify each as client (`'use client'`) or server-only.
+ * A `components` directory to scan, already resolved to an absolute `dir`,
+ * plus the per-directory compile behavior `barefoot()`'s `ComponentDirEntry`
+ * (`types.ts`) carries. `discoverComponents` also accepts a plain absolute
+ * path string as shorthand for `{ dir: string }` — the same "string is
+ * exactly equivalent to `{ dir }`" equivalence `ComponentDirEntry` itself
+ * documents — so existing callers that only ever had bare directories
+ * (`integrations/h3`/`elysia`'s `vite.config.ts`, reusing this exported
+ * function to resolve every discovered client component's URL) keep
+ * compiling and behaving unchanged.
+ */
+export interface ResolvedComponentDirEntry {
+  /** Absolute path to the source directory to scan. */
+  dir: string
+  /** Stamped onto every `DiscoveredComponent` found under `dir` — see
+   * `DiscoveredComponent.cssLayerPrefix`. */
+  cssLayerPrefix?: string
+  /** Directory NAMES to skip anywhere under `dir` — passed straight
+   * through to `discoverComponentFiles`. */
+  skipDirs?: string[]
+}
+
+/**
+ * Scan every configured `components` directory for `.tsx` files and
+ * classify each as client (`'use client'`) or server-only. Each entry may
+ * be a plain absolute path (shorthand for `{ dir }`, no `cssLayerPrefix`/
+ * `skipDirs`) or a `ResolvedComponentDirEntry`.
+ *
+ * A file reachable under more than one entry is discovered once, stamped
+ * with the FIRST matching entry's `cssLayerPrefix` — entries are walked in
+ * array order and `seen` short-circuits every later match, the same
+ * first-writer-wins precedence `buildChildNameIndex` already documents for
+ * `@bf-child:` name collisions.
  */
 export async function discoverComponents(
-  componentDirs: string[],
+  entries: readonly (string | ResolvedComponentDirEntry)[],
   readFile: (absPath: string) => Promise<string>,
 ): Promise<DiscoveredComponent[]> {
   const seen = new Set<string>()
   const out: DiscoveredComponent[] = []
-  for (const dir of componentDirs) {
-    for (const absPath of await discoverComponentFiles(dir)) {
+  for (const raw of entries) {
+    const entry: ResolvedComponentDirEntry = typeof raw === 'string' ? { dir: raw } : raw
+    for (const absPath of await discoverComponentFiles(entry.dir, { skipDirs: entry.skipDirs })) {
       if (seen.has(absPath)) continue
       seen.add(absPath)
       const content = await readFile(absPath)
@@ -120,6 +158,7 @@ export async function discoverComponents(
         absPath,
         isClient,
         exportedComponents: isClient ? listExportedComponents(content, absPath) : [],
+        cssLayerPrefix: entry.cssLayerPrefix,
       })
     }
   }
