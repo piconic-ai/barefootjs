@@ -19,6 +19,7 @@ import { computeDeferredChildSlots } from './html-template.ts'
 import { emitChildComponentImports } from './child-components.ts'
 import { classifyLocalDeclarations } from './init-declarations.ts'
 import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level.ts'
+import { pruneUnusedPropExtractions } from './prune-unused-prop-extractions.ts'
 import { buildPhaseCtx, PHASES, runPhases } from './phases.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import { buildInlinableConstants } from './emit-registration.ts'
@@ -113,7 +114,9 @@ export function generateInitFunction(
   // Replacer-function form: a plain replacement string would let literal
   // `$&`/`$1`/`$$` sequences in user helper bodies or import paths be
   // reinterpreted by `String.replace`'s special-pattern handling.
-  const codeWithModuleConstants = generatedCode.replace(MODULE_CONSTANTS_PLACEHOLDER, () => moduleConstantsCode)
+  const codeWithModuleConstants = pruneUnusedPropExtractions(
+    generatedCode.replace(MODULE_CONSTANTS_PLACEHOLDER, () => moduleConstantsCode),
+  )
   const allImportLines = resolveFinalImports(codeWithModuleConstants, ir, localImportPrefixes)
 
   return codeWithModuleConstants.replace(IMPORT_PLACEHOLDER, () => allImportLines)
