@@ -22,7 +22,7 @@ import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level
 import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports.ts'
-import { applyCssLayerPrefix } from './css-layer-prefixer.ts'
+import { applyCssLayerPrefix, applyCssLayerPrefixToFile } from './css-layer-prefixer.ts'
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
@@ -164,11 +164,16 @@ function compileMultipleComponents(
     // call for why this must run before adapter.generate/generateClientJs.
     decideClientOnlyElision(componentIR.root)
 
-    if (options.cssLayerPrefix) {
-      applyCssLayerPrefix(componentIR, options.cssLayerPrefix)
-    }
-
     entries.push({ componentIR, ctx })
+  }
+
+  // CSS layer prefixing must be FILE-WIDE: per-IR application diverges the
+  // per-component copies of a shared module-scope constant (prefixed in the
+  // components whose class attrs reference it, raw elsewhere), and module
+  // shape emission (#2570) would then declare the constant twice. See
+  // `applyCssLayerPrefixToFile`.
+  if (options.cssLayerPrefix) {
+    applyCssLayerPrefixToFile(entries.map(e => e.componentIR), options.cssLayerPrefix)
   }
 
   // BF050 is a per-FILE diagnostic (it points at the brand-package import

@@ -11,6 +11,8 @@ import {
   extractIdentifiers,
 } from '../css-layer-prefixer'
 import type { ComponentIR, IRElement, IRMetadata, IRTemplatePart, ConstantInfo, TemplateAttr, LiteralAttr } from '../types'
+import { compileJSX } from '../compiler'
+import { TestAdapter } from '../adapters/test-adapter'
 
 describe('prefixClass', () => {
   test('prefixes a simple class', () => {
@@ -451,5 +453,35 @@ describe('applyCssLayerPrefix', () => {
     // baseClasses is transitively referenced → should be prefixed
     const base = ir.metadata.localConstants.find(c => c.name === 'baseClasses')
     expect(base?.value).toBe("'layer-components:bg-primary'")
+  })
+
+  test('multi-component file prefixes a shared const identically in every component IR (#2570)', () => {
+    // `sharedClasses` is used in CLASS position only by CompA; CompB reads it
+    // in a non-class expression. Per-IR application prefixed only CompA's
+    // copy, which — now that module-scope constants are hoisted to ONE
+    // module declaration — emitted the constant twice with different values
+    // ("tabsClasses has already been declared" in the site/ui build). The
+    // file-wide union must leave every IR's copy byte-identical.
+    const source = `
+      const sharedClasses = 'flex flex-col gap-2'
+
+      export function CompA() {
+        return <div className={sharedClasses + ' extra'}>a</div>
+      }
+
+      export function CompB() {
+        return <div data-cls={sharedClasses}>b</div>
+      }
+    `
+    const result = compileJSX(source, '/virtual/Tabs.tsx', {
+      adapter: new TestAdapter(),
+      cssLayerPrefix: 'components',
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+
+    const declarations = template.match(/^const sharedClasses = .*$/gm) ?? []
+    expect(declarations).toHaveLength(1)
+    expect(declarations[0]).toContain('layer-components:flex')
   })
 })

@@ -291,17 +291,31 @@ export abstract class JsxAdapter extends BaseAdapter {
     const candidates = new Map<string, string>()
     for (const c of ir.metadata.localConstants) {
       if (!c.isModule) continue
+      // JSX-valued consts are inlined at their usage sites at IR level
+      // (#547/#569) — same skip as the client's `classifyConstant`.
+      if (c.isJsx || c.isJsxFunction) continue
       candidates.set(c.name, (preserveTypes ? (c.typedValue ?? c.value) : c.value) ?? '')
     }
     for (const f of ir.metadata.localFunctions) {
       if (!f.isModule) continue
+      // JSX-returning helpers (single- and multi-return) are inlined at
+      // their call sites (#569/#932); emitting them too would resurrect
+      // them as dead module-scope declarations — and the multi-return
+      // bodies carry raw source JSX that must not reach the template
+      // verbatim. Same skips as the client's `computeDeclarationScopes`.
+      if (f.isJsxFunction || f.isMultiReturnJsxHelper) continue
       const body = preserveTypes ? (f.typedBody ?? f.body) : f.body
       candidates.set(f.name, body)
     }
 
+    // `$` is a legal identifier character but not a `\\w` one, so plain
+    // `\\b` boundaries misfire around `$`-named bindings — use the same
+    // escaped lookaround idiom as the analyzer's branch-substitution
+    // rewriter (`(?<![\\w$])name(?![\\w$])`).
+    const escapeForRegex = (name: string): string => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const referencesAny = (text: string, names: ReadonlySet<string>): boolean => {
       for (const name of names) {
-        if (new RegExp(`\\b${name}\\b`).test(text)) return true
+        if (new RegExp(`(?<![\\w$])${escapeForRegex(name)}(?![\\w$])`).test(text)) return true
       }
       return false
     }

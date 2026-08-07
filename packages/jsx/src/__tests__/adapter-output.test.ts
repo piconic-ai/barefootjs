@@ -180,7 +180,7 @@ describe('Adapter output', () => {
       expect(exportConstIndex).toBeLessThan(funcStart)
     })
 
-    test('non-exported const stays inside function body', () => {
+    test('non-exported module const stays at module scope, without export', () => {
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/client'
@@ -201,10 +201,14 @@ describe('Adapter output', () => {
       // Non-exported const should NOT appear as 'export const' at module level
       expect(content).not.toContain('export const INTERNAL_VALUE')
 
-      // It should appear inside the function body (indented)
+      // Since #2570, the emitted module preserves the source module's shape:
+      // a module-scope const stays at module scope (a module-scope type
+      // could reference it via `typeof`), BEFORE the component — it is just
+      // not exported. Previously it was localised into the component body.
       const funcStart = content.indexOf('export function MyComponent')
-      const constIndex = content.indexOf("INTERNAL_VALUE = 'secret'")
-      expect(constIndex).toBeGreaterThan(funcStart)
+      const constIndex = content.indexOf("const INTERNAL_VALUE = 'secret'")
+      expect(constIndex).toBeGreaterThanOrEqual(0)
+      expect(constIndex).toBeLessThan(funcStart)
     })
 
     test('exported non-component function at module level', () => {

@@ -58,6 +58,10 @@ describe('ui corpus type-check gate (#2570 / #2573)', () => {
       mkdirSync(join(tmp, 'components', 'ui'), { recursive: true })
       // `../../types` (from a component) and `../../../types` (both shapes
       // appear in ui sources) — mirror the source tree's resolution targets.
+      // Parent dirs created explicitly: `cpSync`'s parent-creation behaviour
+      // for file→file copies is an implementation detail not worth relying on.
+      mkdirSync(join(tmp, 'types'), { recursive: true })
+      mkdirSync(join(tmp, 'components', 'types'), { recursive: true })
       cpSync(UI_TYPES, join(tmp, 'types', 'index.tsx'))
       cpSync(UI_TYPES, join(tmp, 'components', 'types', 'index.tsx'))
 

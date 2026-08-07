@@ -1,0 +1,4 @@
+# mkdtemp scratch dirs from the type-check tests — a killed run can leave one
+# behind, and it must never be committed.
+.consumer-typecheck-*/
+.corpus-typecheck-*/
