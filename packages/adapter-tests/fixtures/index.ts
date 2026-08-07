@@ -468,6 +468,11 @@ import { fixture as aliasedDestructuredProp } from './aliased-destructured-prop'
 // getter (#2525 — see the fixture's docstring).
 import { fixture as aliasedPropSignalTagCollision } from './aliased-prop-signal-tag-collision'
 import { fixture as selectValueSsr } from './select-value-ssr'
+// #2466: the loop half of #2464's controlled-select SSR projection —
+// `.map()`-rendered options get `selected` distributed against their own
+// (per-row) value expression, feeding the same per-row reactive-attribute
+// machinery `applyItem`/`applyOuter` already use.
+import { fixture as selectLoopSelected } from './select-loop-selected'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 import { fixture as signalEarlyReturn } from './signal-early-return'
 // #2477: Record[key] class lookup keyed by a prop forwarded from a parent
@@ -810,6 +815,7 @@ export const jsxFixtures: JSXFixture[] = [
   aliasedDestructuredProp,
   aliasedPropSignalTagCollision,
   selectValueSsr,
+  selectLoopSelected,
   textareaValueSsr,
   signalEarlyReturn,
   branchRootPropAttr,

@@ -9,9 +9,13 @@ import { createFixture } from '../src/types'
  * `clientOnly` (the hydrate-time `.value` binding is unchanged) and
  * distributes `selected={(value) === 'opt'}` onto each statically-valued
  * option — the per-option shape `select-option-selected` proves across
- * every adapter. Options rendered by a dynamic loop are left to the
- * hydrate-time effect (#2466 tracks the reorder interaction). This
- * fixture is the regression armor; `progress-meter-value` guards the
+ * every adapter. Options rendered by a `.map()` loop get the same
+ * treatment against the option's own value EXPRESSION (e.g.
+ * `selected={(value) === o.id}`), which rides the loop's existing per-row
+ * reactive-attribute machinery so `selected` is recomputed on both item
+ * change and outer-signal change — fixing the reorder-drops-selection bug
+ * (#2466; see the `select-loop-selected` fixture / conformance coverage).
+ * This fixture is the regression armor; `progress-meter-value` guards the
  * other direction (elements where `value` IS the legitimate attribute).
  */
 export const fixture = createFixture({
