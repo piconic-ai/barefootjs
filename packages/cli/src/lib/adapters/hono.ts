@@ -289,5 +289,18 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // comment above — this is what makes the bare invocation safe).
     wrangler: '^4.0.0',
   },
+  // `wrangler` pulls in `miniflare`, which pins `undici` to an exact
+  // (non-range) version rather than a caret range — so a vulnerable
+  // `undici` release stays wired in even at the latest resolvable
+  // `wrangler`/`miniflare`, and `npm audit fix` can't bump past it
+  // (nothing to bump: the range is a single exact version). Overriding
+  // `undici` directly is the only way to clear the advisory
+  // (GHSA-8xcm-r25x-g524 and friends) without waiting on `miniflare` to
+  // re-pin. Verified clean (`npm audit` → 0 vulnerabilities) against
+  // wrangler@4.119.0 / miniflare@5.20260801.0-alpha, which pin
+  // undici@7.28.0.
+  overrides: {
+    undici: '^7.29.0',
+  },
   prereqWarnings: () => [],
 }

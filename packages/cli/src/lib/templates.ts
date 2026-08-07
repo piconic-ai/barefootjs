@@ -52,6 +52,17 @@ export interface AdapterTemplate {
   /** package.json dev dependencies. */
   devDependencies: Record<string, string>
   /**
+   * Optional npm `overrides` entries the scaffold's package.json should
+   * carry. For deps that pin a *transitive* dependency to an exact
+   * (non-range) version, `npm audit fix` can't bump it even when a
+   * patched release exists — an override is the only way to force it
+   * without waiting on the upstream package to re-pin. Rendered
+   * verbatim into `package.json#overrides`; omitted entirely when an
+   * adapter needs none, so plain scaffolds don't carry a stray empty
+   * key.
+   */
+  overrides?: Record<string, string>
+  /**
    * Optional deploy hint surfaced as a dedicated "Deploy:" section in
    * the post-scaffold guide. Adapters that don't have an obvious one-
    * command deploy story (Echo, Mojolicious, CSR) leave this unset

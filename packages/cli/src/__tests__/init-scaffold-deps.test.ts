@@ -42,6 +42,7 @@ interface ScaffoldPkgJson {
   scripts: Record<string, string>
   dependencies: Record<string, string>
   devDependencies: Record<string, string>
+  overrides?: Record<string, string>
 }
 
 function scaffold(adapter: string): ScaffoldPkgJson {
@@ -115,5 +116,27 @@ describe('hono scaffold pins wrangler as a devDependency and invokes it directly
       expect(script).not.toContain('yarn dlx wrangler')
       expect(script).not.toContain('deno x npm:wrangler')
     }
+  })
+})
+
+describe('hono scaffold overrides the undici pulled in by wrangler/miniflare', () => {
+  test('package.json carries the undici override from the adapter template', () => {
+    // `wrangler` -> `miniflare` pins `undici` to an exact (non-range)
+    // version, so a vulnerable release stays wired in even at the
+    // latest resolvable `wrangler` and `npm audit fix` can't bump past
+    // it. Assert against the adapter template's own value (not a
+    // hardcoded version here) so a routine bump to the override in
+    // `../lib/adapters/hono.ts` doesn't also require touching this test.
+    const pkg = scaffold('hono')
+    expect(pkg.overrides).toEqual(ADAPTERS.hono.overrides)
+    expect(pkg.overrides?.undici).toBeTruthy()
+  })
+
+  test('adapters without a wrangler/miniflare chain carry no overrides', () => {
+    // Only the Hono (Cloudflare Workers) adapter depends on wrangler ->
+    // miniflare today. Every other adapter should scaffold without a
+    // stray `overrides` key.
+    const pkg = scaffold('csr')
+    expect(pkg.overrides).toBeUndefined()
   })
 })

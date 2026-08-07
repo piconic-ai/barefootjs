@@ -543,6 +543,11 @@ async function scaffoldApp(
     // `^<CLI_VERSION>` here — see `pinBarefootDeps` above.
     dependencies: pinBarefootDeps({ ...adapter.dependencies }),
     devDependencies: pinBarefootDeps({ ...adapterDevDeps, ...pmDevDeps }),
+    // Only present when the adapter declares one (see the doc comment
+    // on `AdapterTemplate.overrides`) — most adapters carry no
+    // transitive-pin vulnerabilities to work around, and a stray empty
+    // `overrides: {}` in every scaffold's package.json would be noise.
+    ...(adapter.overrides ? { overrides: adapter.overrides } : {}),
   }
   if (!existsSync(pkgJsonPath)) {
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
