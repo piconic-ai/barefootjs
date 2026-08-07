@@ -26,12 +26,14 @@ export { Fragment, jsxAttr, jsxEscape, jsxTemplate }
 // See `../resolve-dangerously-set-inner-html.ts` for why this is needed —
 // hono's own `jsxFn` throws for a childless `<svg>`/`<head>` element using
 // `dangerouslySetInnerHTML` (https://github.com/piconic-ai/barefootjs/issues/2557).
+// Intrinsic string tags only: a function component must receive the caller's
+// props untouched (it may forward `dangerouslySetInnerHTML` itself).
 export function jsx(tag: string | Function, props: Record<string, unknown>, key?: string) {
-  return honoJsx(tag, resolveDangerouslySetInnerHTML(props), key)
+  return honoJsx(tag, typeof tag === 'string' ? resolveDangerouslySetInnerHTML(props) : props, key)
 }
 
 export function jsxs(tag: string | Function, props: Record<string, unknown>, key?: string) {
-  return honoJsxs(tag, resolveDangerouslySetInnerHTML(props), key)
+  return honoJsxs(tag, typeof tag === 'string' ? resolveDangerouslySetInnerHTML(props) : props, key)
 }
 
 // Re-export JSX namespace from @barefootjs/jsx, but override Element type for Hono.

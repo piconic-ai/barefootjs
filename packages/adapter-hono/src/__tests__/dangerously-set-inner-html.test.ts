@@ -51,4 +51,20 @@ describe('dangerouslySetInnerHTML with no children (#2557)', () => {
       String(jsx('span', { dangerouslySetInnerHTML: { __html: 'x' }, children: 'real' }))
     ).toThrow('Can only set one of `children` or `props.dangerouslySetInnerHTML`.')
   })
+
+  test('function components receive the caller props untouched', () => {
+    // The workaround is scoped to intrinsic string tags: a user component
+    // must see exactly what the caller passed (it may forward
+    // `dangerouslySetInnerHTML` to an intrinsic element itself).
+    const seen: Record<string, unknown>[] = []
+    const Widget = (props: Record<string, unknown>) => {
+      seen.push(props)
+      return jsx('div', { dangerouslySetInnerHTML: props.dangerouslySetInnerHTML })
+    }
+    const html = String(jsx(Widget, { dangerouslySetInnerHTML: { __html: '<b>fwd</b>' } }))
+    expect(html).toBe('<div><b>fwd</b></div>')
+    expect(seen).toHaveLength(1)
+    expect(seen[0].dangerouslySetInnerHTML).toEqual({ __html: '<b>fwd</b>' })
+    expect('children' in seen[0]).toBe(false)
+  })
 })
