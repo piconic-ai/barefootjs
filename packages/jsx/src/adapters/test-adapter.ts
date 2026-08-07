@@ -325,11 +325,7 @@ export class TestAdapter extends JsxAdapter {
     // Simple stringifier for `template`-kind values; tests only need a
     // recognisable JSX shape, not byte-exact reproduction.
     const v = value as { kind: 'template'; parts: import('../types.ts').IRTemplatePart[] }
-    return '`' + v.parts.map(p => {
-      if (p.type === 'string') return p.value
-      if (p.type === 'ternary') return `\${${p.condition} ? '${p.whenTrue}' : '${p.whenFalse}'}`
-      return `\${(${JSON.stringify(p.cases)})[${p.key}]}`
-    }).join('') + '`'
+    return this.renderTemplatePartsAsJs(v.parts)
   }
 
   private renderComponentProps(comp: IRComponent): string {

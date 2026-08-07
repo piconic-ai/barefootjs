@@ -7,6 +7,7 @@ import ts from 'typescript'
 import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
+import { templatePartsToJsExpr } from '../template-parts.ts'
 import {
   iterateJsTokens,
   isIdentifierLikeToken,
@@ -73,31 +74,11 @@ export function profileBindingId(componentName: string | undefined, slotId: stri
  * Convert a `template` variant's parts into a JS template-literal string.
  * Shared by both `attrValueToString` and any consumer that wants to flatten
  * a structured template into JS-level concatenation.
+ *
+ * Re-exported from the single renderer in `../template-parts.ts` — the
+ * client bundle is plain JS, so it never passes `typed`.
  */
-export function templatePartsToJsExpr(parts: readonly IRTemplatePart[], opts?: { useTemplate?: boolean }): string {
-  let result = '`'
-  for (const part of parts) {
-    if (part.type === 'string') {
-      result += (opts?.useTemplate && part.templateValue) ? part.templateValue : part.value
-    } else if (part.type === 'ternary') {
-      const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
-      result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`
-    } else if (part.type === 'lookup') {
-      // `${MAP[KEY]}` was structurally captured at IR time so SSR
-      // adapters could emit a switch. For client-side JS we rebuild
-      // the equivalent runtime indexed lookup against the resolved
-      // cases — keeps the JSX runtime path semantically identical to
-      // the original `${variantClasses[variant]}` source.
-      const key = (opts?.useTemplate && part.templateKey) ? part.templateKey : part.key
-      const obj = '{' + Object.entries(part.cases).map(
-        ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
-      ).join(', ') + '}'
-      result += `\${(${obj})[${key}]}`
-    }
-  }
-  result += '`'
-  return result
-}
+export { templatePartsToJsExpr }
 
 /**
  * Flatten an `AttrValue` to its raw string form, suitable for HTML attribute

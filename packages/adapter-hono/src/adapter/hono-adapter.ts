@@ -796,7 +796,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       const v = node.valueProp.value
       switch (v.kind) {
         case 'literal': return JSON.stringify(v.value)
-        case 'expression':
+        case 'expression': return this.expressionValueToJs(v)
         case 'spread': return v.expr
         case 'template': return this.renderTemplateLiteralParts(v.parts)
         case 'boolean-attr':
@@ -1292,13 +1292,14 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // runtime sees the decoded string and escapes it on render).
     emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
     emitExpression: (value, name) => {
+      const expr = this.expressionValueToJs(value)
       // Boolean attrs / presence-folded expressions: pass `undefined` when
       // falsy so Hono omits the attribute. Wrap in parens to keep `??`
       // operators inside `expr` from breaking the surrounding `|| undefined`.
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
-        return `${name}={(${value.expr}) || undefined}`
+        return `${name}={(${expr}) || undefined}`
       }
-      return `${name}={${value.expr}}`
+      return `${name}={${expr}}`
     },
     emitBooleanAttr: (_value, name) => name,
     emitBooleanShorthand: () => '',
@@ -1325,7 +1326,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // `calc(...)`) from a JS expression. The decoded value re-encodes
       // so the JSX parser hands the component the same decoded string.
       `${name}="${escapeHtml(value.value)}"`,
-    emitExpression: (value, name) => `${name}={${value.expr}}`,
+    emitExpression: (value, name) => `${name}={${this.expressionValueToJs(value)}}`,
     emitBooleanAttr: (_value, name) => name,
     emitBooleanShorthand: (_value, name) => name,
     emitTemplate: (value, name) => `${name}={${this.renderTemplateLiteralParts(value.parts)}}`,
@@ -1397,7 +1398,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   private attrValueToJsExpr(value: AttrValue): string {
     switch (value.kind) {
       case 'literal': return JSON.stringify(value.value)
-      case 'expression':
+      case 'expression': return this.expressionValueToJs(value)
       case 'spread': return value.expr
       case 'template': return this.renderTemplateLiteralParts(value.parts)
       case 'boolean-shorthand':
@@ -1406,28 +1407,20 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
   }
 
+  /**
+   * Hono runs JS at SSR time, so a structured template can be
+   * re-materialised as the equivalent runtime JS — a `${MAP[KEY]}` lookup
+   * becomes an indexed access against the resolved cases, runtime-identical
+   * to the client emit path. Delegates to the single renderer shared with
+   * that path and with the IR-time component-prop collapse, which also adds
+   * the `preserveTypes` index annotation for this .tsx output (#2565).
+   *
+   * The parts' RAW keys/conditions are used (not their `templateX`
+   * projections) because this output runs inside the destructured-prop
+   * scope of the emitted component.
+   */
   private renderTemplateLiteralParts(parts: IRTemplatePart[]): string {
-    let output = '`'
-    for (const part of parts) {
-      if (part.type === 'string') {
-        output += part.value
-      } else if (part.type === 'ternary') {
-        output += `\${${part.condition} ? '${part.whenTrue}' : '${part.whenFalse}'}`
-      } else if (part.type === 'lookup') {
-        // Hono runs JS at SSR time, so a `${MAP[KEY]}` lookup can be
-        // re-materialised as a runtime indexed access against the
-        // resolved cases — byte-identical to the client emit path in
-        // `ir-to-client-js/utils.ts`. Use `part.key` (raw JS source)
-        // because this output runs inside the destructured-prop scope
-        // of the component, mirroring the `'ternary'` branch above.
-        const obj = '{' + Object.entries(part.cases).map(
-          ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
-        ).join(', ') + '}'
-        output += `\${(${obj})[${part.key}]}`
-      }
-    }
-    output += '`'
-    return output
+    return this.renderTemplatePartsAsJs(parts)
   }
 
 }
