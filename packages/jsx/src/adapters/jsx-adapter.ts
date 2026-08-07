@@ -6,10 +6,13 @@
  */
 
 import type {
+  AttrValue,
   ComponentIR,
   IRNode,
+  IRTemplatePart,
   ImportSpecifier,
 } from '../types.ts'
+import { templatePartsToJsExpr } from '../template-parts.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface.ts'
 import type { CallbackBodyAcceptor } from './interface.ts'
@@ -231,6 +234,44 @@ export abstract class JsxAdapter extends BaseAdapter {
       return node.expr
     }
     return this.renderNode(node)
+  }
+
+  // ===========================================================================
+  // Template Part Rendering
+  // ===========================================================================
+
+  /**
+   * Render a structured `template` variant's parts as JS template-literal
+   * source for this adapter's .tsx output, carrying the `preserveTypes`
+   * index annotation on inlined `lookup` records (#2565 — see
+   * `lookupPartToJsExpr`).
+   */
+  protected renderTemplatePartsAsJs(parts: readonly IRTemplatePart[]): string {
+    return templatePartsToJsExpr(parts, { typed: this.jsxConfig.preserveTypes })
+  }
+
+  /**
+   * The JS source for an `expression` attribute / component-prop value.
+   *
+   * A component-prop `template` is collapsed into an `expression` at IR
+   * construction time (component props are runtime values, not HTML
+   * attribute bodies), which drops it out of `renderTemplatePartsAsJs`'s
+   * reach — the same inlined-record index, minus the type annotation
+   * (#2565). The collapse keeps its `parts`, so re-render from those when
+   * `expr` is still EXACTLY the neutral collapse. Any later rewrite of
+   * `expr` (a presence peel, a prop-ref rewrite) fails the identity check
+   * and wins, so this can only ever add the annotation, never undo a
+   * downstream edit.
+   */
+  protected expressionValueToJs(value: Extract<AttrValue, { kind: 'expression' }>): string {
+    if (
+      this.jsxConfig.preserveTypes &&
+      value.parts &&
+      value.expr === templatePartsToJsExpr(value.parts)
+    ) {
+      return this.renderTemplatePartsAsJs(value.parts)
+    }
+    return value.expr
   }
 
   // ===========================================================================

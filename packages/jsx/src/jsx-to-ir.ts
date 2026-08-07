@@ -59,6 +59,7 @@ import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, type MultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments } from './strip-types.ts'
+import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
 
 // =============================================================================
@@ -6777,8 +6778,8 @@ function processComponentProps(
       // the bare `classes` identifier with no prop refs, so the rewrite
       // no-ops and the module-scope registration template leaks bare
       // destructured props into `renderChild(...)` (#2468).
-      const collapsed = templatePartsToJsString(value.parts)
-      const collapsedTemplate = templatePartsToJsString(value.parts, { useTemplate: true })
+      const collapsed = templatePartsToJsExpr(value.parts)
+      const collapsedTemplate = templatePartsToJsExpr(value.parts, { useTemplate: true })
       value = AttrValueOf.expression(collapsed, {
         parts: value.parts,
         ...(collapsedTemplate !== collapsed && { templateExpr: collapsedTemplate }),
@@ -6818,32 +6819,6 @@ function processComponentProps(
   }
 
   return props
-}
-
-/**
- * Flatten a structured template-literal's parts back into a JS expression
- * string. Used at IR construction time when a structured `template` variant
- * needs to be collapsed into an `expression` for component-prop forwarding —
- * component props are runtime JS values, not HTML attribute bodies.
- */
-function templatePartsToJsString(parts: readonly IRTemplatePart[], opts?: { useTemplate?: boolean }): string {
-  let result = '`'
-  for (const part of parts) {
-    if (part.type === 'string') {
-      result += (opts?.useTemplate && part.templateValue) ? part.templateValue : part.value
-    } else if (part.type === 'ternary') {
-      const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
-      result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`
-    } else if (part.type === 'lookup') {
-      const key = (opts?.useTemplate && part.templateKey) ? part.templateKey : part.key
-      const obj = '{' + Object.entries(part.cases).map(
-        ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
-      ).join(', ') + '}'
-      result += `\${(${obj})[${key}]}`
-    }
-  }
-  result += '`'
-  return result
 }
 
 // =============================================================================
