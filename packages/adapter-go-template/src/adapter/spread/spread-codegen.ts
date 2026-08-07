@@ -225,7 +225,7 @@ export function buildSpreadInitializer(
     //    `{...extras}` resolves to `in.Extras`.
     const param = ir.metadata.propsParams.find(p => p.name === trimmed)
     if (param) {
-      return `in.${capitalizeFieldName(param.name)}`
+      return `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
     }
     // 2. SolidJS-style props object: `function(props: P)` → spread
     //    `{...props}` enumerates all propsParams into a `map[string]any`
@@ -235,8 +235,11 @@ export function buildSpreadInitializer(
     //    `applyRestAttrs` hydrate path still applies them — worse than full
     //    enumeration, better than BF101 blocking the build.
     if (ir.metadata.propsObjectName === trimmed) {
+      // Bag key stays the caller-facing prop name (mirrors the spread bag's
+      // external shape); Input field read is caller-facing too (#2525) —
+      // identity here since the `props`-object pattern has no aliasing.
       const entries = ir.metadata.propsParams.map(p =>
-        `${JSON.stringify(p.name)}: in.${capitalizeFieldName(p.name)}`,
+        `${JSON.stringify(p.sourceName ?? p.name)}: in.${capitalizeFieldName(p.sourceName ?? p.name)}`,
       )
       return `map[string]any{${entries.join(', ')}}`
     }
@@ -344,7 +347,7 @@ function conditionToGoBool(
   if (node.kind !== 'identifier') return null
   const param = ir.metadata.propsParams.find(p => p.name === node.name)
   if (!param) return null
-  const field = `in.${capitalizeFieldName(param.name)}`
+  const field = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   const prim = param.type.kind === 'primitive' ? param.type.primitive : undefined
   let truthy: string
   if (prim === 'boolean') {
@@ -396,7 +399,7 @@ function objectLiteralToGoSpreadMap(
     } else if (val.kind === 'identifier') {
       const param = ir.metadata.propsParams.find(p => p.name === val.name)
       if (!param) return null
-      goVal = `in.${capitalizeFieldName(param.name)}`
+      goVal = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
     } else {
       const indexed = recordIndexAccessToGoMap(ctx, val, ir)
       if (indexed === null) return null
@@ -453,6 +456,10 @@ function recordIndexAccessToGoMap(
     return `${JSON.stringify(e.key)}: ${mapVal}`
   })
   ctx.state.usesFmt = true
-  const field = `in.${capitalizeFieldName(parsed.indexPropName)}`
+  // `parsed.indexPropName` is the LOCAL binding (`parseRecordIndexAccess` is
+  // shared with other adapters and stays name-agnostic); resolve the Input
+  // field caller-facing here (#2525) rather than in the shared parser.
+  const indexParam = ir.metadata.propsParams.find(p => p.name === parsed.indexPropName)
+  const field = `in.${capitalizeFieldName(indexParam?.sourceName ?? parsed.indexPropName)}`
   return `map[string]any{${entries.join(', ')}}[fmt.Sprint(${field})]`
 }

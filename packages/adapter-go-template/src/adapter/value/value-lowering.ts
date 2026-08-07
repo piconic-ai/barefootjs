@@ -40,16 +40,25 @@ const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
  * undefined` half is source-level documentation of nullability, not a
  * Go-representable branch, so it's unwrapped to its single non-
  * undefined/null primitive branch.
+ *
+ * `param.name` is the LOCAL binding — `nillablePropNames` (a source-level
+ * analysis set, `collectNillablePropNames`) stays keyed by it — while the
+ * emitted `in.<Field>` reference is caller-facing (`sourceName ?? name`,
+ * #2525), so the two must resolve separately rather than off one name.
  */
-function nillableAwarePropRef(ctx: GoEmitContext, propName: string, expectedType: TypeInfo): string {
-  const fieldRef = `in.${capitalizeFieldName(propName)}`
+function nillableAwarePropRef(
+  ctx: GoEmitContext,
+  param: { name: string; sourceName?: string },
+  expectedType: TypeInfo,
+): string {
+  const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   const scalar =
     expectedType.kind === 'primitive'
       ? expectedType
       : expectedType.kind === 'union' && expectedType.unionTypes?.length === 2
         ? expectedType.unionTypes.find(t => t.primitive !== 'undefined' && t.primitive !== 'null')
         : undefined
-  if (ctx.state.nillablePropNames.has(propName) && scalar?.kind === 'primitive') {
+  if (ctx.state.nillablePropNames.has(param.name) && scalar?.kind === 'primitive') {
     const goType =
       scalar.primitive === 'boolean' ? 'bool' :
       scalar.primitive === 'number' ? 'float64' :
@@ -70,24 +79,27 @@ export function convertInitialValue(
   ctx: GoEmitContext,
   value: string,
   _typeInfo: TypeInfo,
-  propsParams?: { name: string }[],
+  propsParams?: { name: string; sourceName?: string }[],
   preParsed?: ParsedExpr,
 ): string {
   // Literal unions collapse to their backing primitive the same way
   // `typeInfoToGo` collapses the field's type — the two MUST agree, or a
   // `string` field gets a `nil` seed (#2477's `go run` failure).
   const typeInfo = collapseLiteralUnion(_typeInfo)
-  const propRef = (propName: string): string => nillableAwarePropRef(ctx, propName, typeInfo)
+  const propRef = (param: { name: string; sourceName?: string }): string =>
+    nillableAwarePropRef(ctx, param, typeInfo)
 
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
-    if (propsParams?.some(p => p.name === value)) {
-      return propRef(value)
+    const param = propsParams?.find(p => p.name === value)
+    if (param) {
+      return propRef(param)
     }
   }
 
   const propName = ctx.extractPropNameFromInitialValue(value, preParsed)
-  if (propName && propsParams?.some(p => p.name === propName)) {
-    return propRef(propName)
+  const param = propName ? propsParams?.find(p => p.name === propName) : undefined
+  if (param) {
+    return propRef(param)
   }
 
   if (typeInfo.kind === 'primitive') {
@@ -227,24 +239,28 @@ export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): stri
 export function getSignalInitialValueAsGo(
   ctx: GoEmitContext,
   initialValue: string,
-  propsParams: { name: string }[],
+  propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   signalType?: TypeInfo,
 ): string {
-  const propRef = (propName: string): string =>
-    signalType ? nillableAwarePropRef(ctx, propName, signalType) : `in.${capitalizeFieldName(propName)}`
+  const propRef = (param: { name: string; sourceName?: string }): string =>
+    signalType
+      ? nillableAwarePropRef(ctx, param, signalType)
+      : `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
 
-  if (propsParams.some(p => p.name === initialValue)) {
+  const directParam = propsParams.find(p => p.name === initialValue)
+  if (directParam) {
     const hoisted = propFallbackVars.get(initialValue)
     if (hoisted) return hoisted.varName
-    return propRef(initialValue)
+    return propRef(directParam)
   }
 
   const propName = ctx.extractPropNameFromInitialValue(initialValue)
-  if (propName && propsParams.some(p => p.name === propName)) {
-    const hoisted = propFallbackVars.get(propName)
+  const param = propName ? propsParams.find(p => p.name === propName) : undefined
+  if (param) {
+    const hoisted = propFallbackVars.get(propName!)
     if (hoisted) return hoisted.varName
-    return propRef(propName)
+    return propRef(param)
   }
 
   // single quotes are normalized to Go double quotes
@@ -320,7 +336,7 @@ function resolveMapJoinBaseAsGo(
   ctx: GoEmitContext,
   object: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
-  propsParams: { name: string }[],
+  propsParams: { name: string; sourceName?: string }[],
 ): string | null {
   if (object.kind === 'call' && object.callee.kind === 'identifier' && object.args.length === 0) {
     const calleeName = object.callee.name
@@ -337,8 +353,9 @@ function resolveMapJoinBaseAsGo(
       : object.kind === 'identifier'
         ? object.name
         : null
-  if (propName && propsParams.some(p => p.name === propName)) {
-    return `in.${capitalizeFieldName(propName)}`
+  const param = propName ? propsParams.find(p => p.name === propName) : undefined
+  if (param) {
+    return `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   }
 
   if (object.kind === 'array-literal') {
@@ -376,7 +393,7 @@ export function mapJoinChainToGo(
   ctx: GoEmitContext,
   chain: { object: ParsedExpr; arrow: Extract<ParsedExpr, { kind: 'arrow' }>; sepArg?: ParsedExpr },
   signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
-  propsParams: { name: string }[],
+  propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
   const itemsGo = resolveMapJoinBaseAsGo(ctx, chain.object, signals, propsParams)
@@ -393,11 +410,12 @@ export function mapJoinChainToGo(
   for (const name of freeVars) {
     const sig = signals.find(s => s.getter === name)
     let goExpr: string | null = null
+    const freeVarParam = propsParams.find(p => p.name === name)
     if (sig) {
       goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, sig.type)
-    } else if (propsParams.some(p => p.name === name)) {
+    } else if (freeVarParam) {
       const hoisted = propFallbackVars.get(name)
-      goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(name)}`
+      goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(freeVarParam.sourceName ?? name)}`
     }
     if (goExpr === null) return null
     envEntries.push(`${JSON.stringify(name)}: ${goExpr}`)

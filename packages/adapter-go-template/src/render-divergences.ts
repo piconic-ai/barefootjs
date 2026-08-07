@@ -12,6 +12,12 @@
  * fixture-divergences section of `ui/compat.lock.json` — surfaced on
  * the docs compatibility-matrix page. Graduating an entry means fixing
  * the adapter (or the shared compiler layer) and deleting the line.
+ *
+ * Empty — the file's last live entry (`aliased-destructured-prop`, #2525)
+ * graduated: the Input struct field is now keyed by `sourceName ?? name`
+ * (caller-facing), so the caller-side composite literal `go run`s clean.
+ * Keep the file (and this header) when the set is empty — the next
+ * divergence lands here, not in a re-created file.
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
@@ -29,19 +35,4 @@ export const renderDivergences: RenderDivergences = {
   // production). `buildDynamicChildLoopSeeding` (this package's
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
-
-  // Onboarding TSX-fidelity fixtures (PR #2461): `expectedHtml` was
-  // hand-authored to the CORRECT output while the emission bug lived in
-  // the shared compiler layer — every adapter, including the Hono
-  // reference, used to emit the broken form. That shared-layer defect
-  // (#2460) is now FIXED (b4f5075): `expectedHtml` is generated from the
-  // Hono reference like any other fixture. The remaining gap is
-  // Go-specific — the Input struct field stays keyed by the local
-  // binding instead of `sourceName ?? name`, so the caller-side struct
-  // literal fails `go run` outright — tracked by #2525 (go-template's
-  // `go run` exit-1 failure). Graduate by keying the Input struct field
-  // by `sourceName ?? name` and deleting this line (and the matching
-  // hono `skipJsx` entry, already gone).
-  'aliased-destructured-prop':
-    'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2525)',
 }

@@ -1814,14 +1814,8 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 307,
+    "totalFixtures": 308,
     "fixtures": {
-      "aliased-destructured-prop": {
-        "go-template": {
-          "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:\"count\"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2525)"
-        }
-      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -2785,10 +2779,6 @@
       }
     },
     "docs": {
-      "aliased-destructured-prop": {
-        "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2524)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-destructured-prop.ts"
-      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"

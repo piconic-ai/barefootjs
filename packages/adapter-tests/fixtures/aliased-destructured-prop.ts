@@ -11,10 +11,11 @@ import { createFixture } from '../src/types'
  * `undefined`, `s1` rendered empty) — FIXED, Hono now emits
  * `{ text, n: count }` and this fixture is no longer skipped for it. The
  * template-string adapters used to key `ssrDefaults` / template vars as
- * `count` so props seeding missed; Go's Input struct field is `Count`
- * `json:"count"`, so the caller-side struct literal keyed by the real
- * prop name fails `go run` outright (unknown field N); the shared client
- * JS used to read `_p.count` too. All silent except Go's exit 1.
+ * `count` so props seeding missed — FIXED (#2524). Go's Input struct
+ * field used to be the local `Count`, so the caller-side struct literal
+ * failed `go run` (unknown field N) — FIXED (#2525). The shared client JS
+ * used to read `_p.count` too — FIXED (#2524). All of these were silent
+ * except Go's exit 1.
  * `ParamInfo.sourceName` carries the original property name precisely
  * for this; its docstring rule is "consumers keying into
  * `propsType.properties` must use `sourceName ?? name`".
@@ -39,10 +40,11 @@ import { createFixture } from '../src/types'
  *     local template var. `packages/jsx/src/ssr-defaults.ts`'s
  *     `deriveStashFromDefaults` is the shared TS twin of those runtime
  *     ports.
- *   - Go's `go run` exit-1 failure is STILL tracked by
- *     https://github.com/piconic-ai/barefootjs/issues/2525 — Go's `skipJsx`
- *     pin stays; graduating it means fixing the Go emission and deleting
- *     that pin.
+ *   - Go's `go run` exit-1 failure — FIXED (#2525): the Input struct
+ *     field is caller-facing while the Props field stays LOCAL with a
+ *     caller-facing json tag. Go's `render-divergences.ts` entry (and
+ *     `skipJsx` pin) is deleted; the fixture renders on Go like every
+ *     other adapter.
  */
 export const fixture = createFixture({
   id: 'aliased-destructured-prop',

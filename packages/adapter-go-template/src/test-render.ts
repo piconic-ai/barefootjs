@@ -673,7 +673,12 @@ function buildGoPropsInit(
   // declared params are `className` / `type`) emits a top-level
   // `Placeholder:` initializer and Go fails with `unknown field Placeholder
   // in struct literal of type InputInput`. (#1467 Phase 2b)
-  const declaredParams = new Set((ir?.metadata.propsParams ?? []).map(p => p.name))
+  // `key` is caller-facing (what the fixture's caller supplied), so this
+  // set must be built from `sourceName ?? name` — a local-only set routes
+  // an aliased param into the rest bag.
+  const declaredParams = new Set(
+    (ir?.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name),
+  )
   const restPropsName = ir?.metadata.restPropsName ?? null
   const restBagField = restPropsName ? capitalizeFieldName(restPropsName) : null
 
