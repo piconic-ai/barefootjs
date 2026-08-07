@@ -5,6 +5,23 @@ import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
 type TooltipPlacement = 'top' | 'right' | 'bottom' | 'left'
+const tooltipContainerClasses = 'relative inline-block'
+const tooltipContentBaseClasses = 'z-50 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground whitespace-nowrap'
+const tooltipTransitionClasses = 'absolute transition-[opacity,transform] duration-fast ease-out'
+const tooltipContentOpenClasses = 'opacity-100 scale-100'
+const tooltipContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
+const placementClasses = {
+  top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+  right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+  bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+  left: 'right-full top-1/2 -translate-y-1/2 mr-2',
+}
+const arrowClasses = {
+  top: 'top-full left-1/2 -translate-x-1/2 border-t-primary border-l-transparent border-r-transparent border-b-transparent',
+  right: 'right-full top-1/2 -translate-y-1/2 border-r-primary border-t-transparent border-b-transparent border-l-transparent',
+  bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-primary border-l-transparent border-r-transparent border-t-transparent',
+  left: 'left-full top-1/2 -translate-y-1/2 border-l-primary border-t-transparent border-b-transparent border-r-transparent',
+}
 interface TooltipProps extends HTMLBaseAttributes {
   /** Tooltip content text */
   content: string
@@ -33,9 +50,6 @@ export function Tooltip(__allProps: TooltipProps & { __instanceId?: string; __bf
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Tooltip_${Math.random().toString(36).slice(2, 8)}`
   const open = () => false
-  const tooltipContainerClasses = 'relative inline-block'
-  const tooltipContentOpenClasses = 'opacity-100 scale-100'
-  const tooltipContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

@@ -4,7 +4,12 @@ import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { ChevronUpIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpDownIcon } from '../icon'
 
+const columnHeaderClasses = 'inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none'
+
+const paginationClasses = 'flex items-center justify-between px-2 py-4'
+
 type SortDirection = 'asc' | 'desc' | false
+
 interface DataTableColumnHeaderProps extends HTMLBaseAttributes {
   /** Column title */
   title: string
@@ -13,6 +18,7 @@ interface DataTableColumnHeaderProps extends HTMLBaseAttributes {
   /** Callback when sort is toggled */
   onSort?: () => void
 }
+
 interface DataTablePaginationProps extends HTMLBaseAttributes {
   /** Whether previous page is available */
   canPrev: boolean
@@ -25,6 +31,8 @@ interface DataTablePaginationProps extends HTMLBaseAttributes {
   /** Page info label (rendered as children) */
   children?: Child
 }
+
+const paginationButtonClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2'
 
 type DataTableColumnHeaderPropsWithHydration = DataTableColumnHeaderProps & {
   __instanceId?: string
@@ -34,28 +42,6 @@ type DataTableColumnHeaderPropsWithHydration = DataTableColumnHeaderProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-type SortDirection = 'asc' | 'desc' | false
-interface DataTableColumnHeaderProps extends HTMLBaseAttributes {
-  /** Column title */
-  title: string
-  /** Current sort direction */
-  sorted?: SortDirection
-  /** Callback when sort is toggled */
-  onSort?: () => void
-}
-interface DataTablePaginationProps extends HTMLBaseAttributes {
-  /** Whether previous page is available */
-  canPrev: boolean
-  /** Whether next page is available */
-  canNext: boolean
-  /** Callback for previous page */
-  onPrev: () => void
-  /** Callback for next page */
-  onNext: () => void
-  /** Page info label (rendered as children) */
-  children?: Child
 }
 
 type DataTablePaginationPropsWithHydration = DataTablePaginationProps & {
@@ -72,7 +58,6 @@ export type { DataTableColumnHeaderProps, DataTablePaginationProps, SortDirectio
 
 export function DataTableColumnHeader({ title, sorted = false, onSort, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DataTableColumnHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `DataTableColumnHeader_${Math.random().toString(36).slice(2, 8)}`
-  const columnHeaderClasses = 'inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -88,7 +73,6 @@ export function DataTableColumnHeader({ title, sorted = false, onSort, className
 
 export function DataTablePagination({ canPrev, canNext, onPrev, onNext, children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DataTablePaginationPropsWithHydration) {
   const __scopeId = __instanceId || `DataTablePagination_${Math.random().toString(36).slice(2, 8)}`
-  const paginationClasses = 'flex items-center justify-between px-2 py-4'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

@@ -3,6 +3,10 @@ import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { Slot } from '../slot'
 
+const kbdBaseClasses = 'pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3'
+
+const kbdGroupBaseClasses = 'inline-flex items-center gap-1'
+
 interface KbdProps extends HTMLBaseAttributes {
   /**
    * When true, renders child element with kbd styling instead of `<kbd>`.
@@ -15,6 +19,7 @@ interface KbdProps extends HTMLBaseAttributes {
    */
   children?: Child
 }
+
 interface KbdGroupProps extends HTMLBaseAttributes {
   /**
    * When true, renders child element with group styling instead of `<kbd>`.
@@ -35,30 +40,6 @@ type KbdPropsWithHydration = KbdProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface KbdProps extends HTMLBaseAttributes {
-  /**
-   * When true, renders child element with kbd styling instead of `<kbd>`.
-   * Useful for custom elements with keyboard key appearance.
-   * @default false
-   */
-  asChild?: boolean
-  /**
-   * Children to render inside the kbd element.
-   */
-  children?: Child
-}
-interface KbdGroupProps extends HTMLBaseAttributes {
-  /**
-   * When true, renders child element with group styling instead of `<kbd>`.
-   * @default false
-   */
-  asChild?: boolean
-  /**
-   * Children to render inside the group.
-   */
-  children?: Child
 }
 
 type KbdGroupPropsWithHydration = KbdGroupProps & {

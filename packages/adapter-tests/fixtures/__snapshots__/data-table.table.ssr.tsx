@@ -2,26 +2,49 @@
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../types'
 
+const tableContainerClasses = 'relative w-full overflow-x-auto'
+
+const tableClasses = 'w-full caption-bottom border-collapse text-sm'
+
+const tableHeaderClasses = '[&_tr]:border-b'
+
+const tableBodyClasses = '[&_tr:last-child]:border-0'
+
+const tableFooterClasses = 'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0'
+
+const tableRowClasses = 'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors'
+
+const tableHeadClasses = 'text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
+
+const tableCellClasses = 'p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
+
+const tableCaptionClasses = 'text-muted-foreground mt-4 text-sm'
+
 interface TableProps extends HTMLBaseAttributes {
   /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
   children?: Child
 }
+
 interface TableHeaderProps extends HTMLBaseAttributes {
   /** Header rows */
   children?: Child
 }
+
 interface TableBodyProps extends HTMLBaseAttributes {
   /** Body rows */
   children?: Child
 }
+
 interface TableFooterProps extends HTMLBaseAttributes {
   /** Footer rows */
   children?: Child
 }
+
 interface TableRowProps extends HTMLBaseAttributes {
   /** Row cells */
   children?: Child
 }
+
 interface TableHeadProps extends HTMLBaseAttributes {
   /** Header cell content */
   children?: Child
@@ -32,6 +55,7 @@ interface TableHeadProps extends HTMLBaseAttributes {
   /** Specifies a group of columns for alignment */
   scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
 }
+
 interface TableCellProps extends HTMLBaseAttributes {
   /** Cell content */
   children?: Child
@@ -40,6 +64,7 @@ interface TableCellProps extends HTMLBaseAttributes {
   /** Number of rows a cell should span */
   rowSpan?: number
 }
+
 interface TableCaptionProps extends HTMLBaseAttributes {
   /** Caption text */
   children?: Child
@@ -55,49 +80,6 @@ type TablePropsWithHydration = TableProps & {
   "data-key"?: string | number
 }
 
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
-}
-
 type TableHeaderPropsWithHydration = TableHeaderProps & {
   __instanceId?: string
   __bfScope?: string
@@ -106,49 +88,6 @@ type TableHeaderPropsWithHydration = TableHeaderProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
 }
 
 type TableBodyPropsWithHydration = TableBodyProps & {
@@ -161,49 +100,6 @@ type TableBodyPropsWithHydration = TableBodyProps & {
   "data-key"?: string | number
 }
 
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
-}
-
 type TableFooterPropsWithHydration = TableFooterProps & {
   __instanceId?: string
   __bfScope?: string
@@ -212,49 +108,6 @@ type TableFooterPropsWithHydration = TableFooterProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
 }
 
 type TableRowPropsWithHydration = TableRowProps & {
@@ -267,49 +120,6 @@ type TableRowPropsWithHydration = TableRowProps & {
   "data-key"?: string | number
 }
 
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
-}
-
 type TableHeadPropsWithHydration = TableHeadProps & {
   __instanceId?: string
   __bfScope?: string
@@ -320,49 +130,6 @@ type TableHeadPropsWithHydration = TableHeadProps & {
   "data-key"?: string | number
 }
 
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
-}
-
 type TableCellPropsWithHydration = TableCellProps & {
   __instanceId?: string
   __bfScope?: string
@@ -371,49 +138,6 @@ type TableCellPropsWithHydration = TableCellProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface TableProps extends HTMLBaseAttributes {
-  /** Table content (typically TableHeader, TableBody, TableFooter, TableCaption) */
-  children?: Child
-}
-interface TableHeaderProps extends HTMLBaseAttributes {
-  /** Header rows */
-  children?: Child
-}
-interface TableBodyProps extends HTMLBaseAttributes {
-  /** Body rows */
-  children?: Child
-}
-interface TableFooterProps extends HTMLBaseAttributes {
-  /** Footer rows */
-  children?: Child
-}
-interface TableRowProps extends HTMLBaseAttributes {
-  /** Row cells */
-  children?: Child
-}
-interface TableHeadProps extends HTMLBaseAttributes {
-  /** Header cell content */
-  children?: Child
-  /** Number of columns a header cell should span */
-  colSpan?: number
-  /** Number of rows a header cell should span */
-  rowSpan?: number
-  /** Specifies a group of columns for alignment */
-  scope?: 'col' | 'colgroup' | 'row' | 'rowgroup'
-}
-interface TableCellProps extends HTMLBaseAttributes {
-  /** Cell content */
-  children?: Child
-  /** Number of columns a cell should span */
-  colSpan?: number
-  /** Number of rows a cell should span */
-  rowSpan?: number
-}
-interface TableCaptionProps extends HTMLBaseAttributes {
-  /** Caption text */
-  children?: Child
 }
 
 type TableCaptionPropsWithHydration = TableCaptionProps & {
@@ -430,7 +154,6 @@ export type { TableProps, TableHeaderProps, TableBodyProps, TableFooterProps, Ta
 
 export function Table({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TablePropsWithHydration = {} as TablePropsWithHydration) {
   const __scopeId = __instanceId || `Table_${Math.random().toString(36).slice(2, 8)}`
-  const tableClasses = 'w-full caption-bottom border-collapse text-sm'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -445,7 +168,6 @@ export function Table({ children, className = '', __instanceId, __bfScope: _bfSc
 
 export function TableHeader({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeaderPropsWithHydration = {} as TableHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `TableHeader_${Math.random().toString(36).slice(2, 8)}`
-  const tableHeaderClasses = '[&_tr]:border-b'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -460,7 +182,6 @@ export function TableHeader({ children, className = '', __instanceId, __bfScope:
 
 export function TableBody({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableBodyPropsWithHydration = {} as TableBodyPropsWithHydration) {
   const __scopeId = __instanceId || `TableBody_${Math.random().toString(36).slice(2, 8)}`
-  const tableBodyClasses = '[&_tr:last-child]:border-0'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -475,7 +196,6 @@ export function TableBody({ children, className = '', __instanceId, __bfScope: _
 
 export function TableFooter({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableFooterPropsWithHydration = {} as TableFooterPropsWithHydration) {
   const __scopeId = __instanceId || `TableFooter_${Math.random().toString(36).slice(2, 8)}`
-  const tableFooterClasses = 'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -490,7 +210,6 @@ export function TableFooter({ children, className = '', __instanceId, __bfScope:
 
 export function TableRow({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableRowPropsWithHydration = {} as TableRowPropsWithHydration) {
   const __scopeId = __instanceId || `TableRow_${Math.random().toString(36).slice(2, 8)}`
-  const tableRowClasses = 'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -505,7 +224,6 @@ export function TableRow({ children, className = '', __instanceId, __bfScope: _b
 
 export function TableHead({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeadPropsWithHydration = {} as TableHeadPropsWithHydration) {
   const __scopeId = __instanceId || `TableHead_${Math.random().toString(36).slice(2, 8)}`
-  const tableHeadClasses = 'text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -520,7 +238,6 @@ export function TableHead({ children, className = '', __instanceId, __bfScope: _
 
 export function TableCell({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCellPropsWithHydration = {} as TableCellPropsWithHydration) {
   const __scopeId = __instanceId || `TableCell_${Math.random().toString(36).slice(2, 8)}`
-  const tableCellClasses = 'p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -535,7 +252,6 @@ export function TableCell({ children, className = '', __instanceId, __bfScope: _
 
 export function TableCaption({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCaptionPropsWithHydration = {} as TableCaptionPropsWithHydration) {
   const __scopeId = __instanceId || `TableCaption_${Math.random().toString(36).slice(2, 8)}`
-  const tableCaptionClasses = 'text-muted-foreground mt-4 text-sm'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

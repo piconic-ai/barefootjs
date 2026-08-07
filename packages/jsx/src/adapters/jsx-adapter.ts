@@ -147,11 +147,15 @@ export abstract class JsxAdapter extends BaseAdapter {
       const initialValue = rawInitialValue.trim().startsWith('{') ? `(${rawInitialValue})` : rawInitialValue
 
       // When preserveTypes and typedInitialValue is absent but signal.type has a meaningful
-      // type from a generic parameter, add a type assertion to prevent TS inference issues
+      // type from a generic parameter, add a type assertion to prevent TS inference issues.
+      // A bare `object` raw is the analyzer's coarse KIND, not a real type — asserting
+      // `as object` only destroys the initializer's inferred literal type (a
+      // `{ x: 0, y: 0 }` signal getter stops matching `() => { x: number; y: number }`).
       const needsTypeAssertion = preserveTypes
         && !signal.typedInitialValue
         && signal.type.kind !== 'unknown'
         && signal.type.kind !== 'primitive'
+        && signal.type.raw !== 'object'
       if (needsTypeAssertion) {
         lines.push(`  const ${signal.getter} = () => ${initialValue} as ${signal.type.raw}`)
       } else {
@@ -176,9 +180,17 @@ export abstract class JsxAdapter extends BaseAdapter {
       lines.push(`  const ${memo.name} = ${computation}`)
     }
 
-    // Include local constants — skip unreachable ones (only used in event handlers)
+    // Include local constants — skip unreachable ones (only used in event
+    // handlers). Genuinely module-scope constants are NOT localised here:
+    // they're emitted at module scope by `generateModuleScopeDeclarations`
+    // so module-scope types that reference them (via `typeof`) keep
+    // resolving, matching the client bundle's `emitModuleLevelDeclarations`
+    // (#2570). `moduleScopeDeclarationNames` — not the raw `isModule` flag
+    // — decides the split; see its docstring.
+    const moduleScopeNames = this.moduleScopeDeclarationNames(ir)
     for (const constant of ir.metadata.localConstants) {
       if (constant.isExported) continue
+      if (moduleScopeNames.has(constant.name)) continue
       const keyword = constant.declarationKind ?? 'const'
       if (!constant.value) {
         lines.push(`  ${keyword} ${constant.name}`)
@@ -199,8 +211,11 @@ export abstract class JsxAdapter extends BaseAdapter {
       lines.push(`  ${keyword} ${constant.name} = ${constValue}`)
     }
 
-    // Include local functions — skip unreachable ones (only used in event handlers)
+    // Include local functions — skip unreachable ones (only used in event
+    // handlers). Genuinely module-scope functions stay at module scope,
+    // same as constants above.
     for (const func of localFunctions) {
+      if (moduleScopeNames.has(func.name)) continue
       if (!reachable.has(func.name)) continue
       // Prefer the source-verbatim signature when types are preserved so
       // type-predicate annotations (`element is { tag: unknown; … }`) and
@@ -220,6 +235,172 @@ export abstract class JsxAdapter extends BaseAdapter {
     }
 
     return lines.join('\n')
+  }
+
+  // ===========================================================================
+  // Module-Scope Declarations
+  // ===========================================================================
+
+  /**
+   * Names that genuinely live at module scope in the emitted template.
+   *
+   * The analyzer's `isModule` flag is NOT a lexical-scope oracle: the
+   * module walker recurses into component bodies, so a component-body
+   * helper (calendar's `renderMonthGrid`, xyflow's edge handlers) can
+   * carry `isModule: true` while closing over component state. Hoisting
+   * such a helper breaks every reference (TS2304/TS2552 — and worse,
+   * wrong runtime scope). So candidates are demoted by a forward-
+   * reachability fixpoint, mirroring the client bundle's
+   * `computeDeclarationScopes` (`ir-to-client-js/compute-scope.ts`): a
+   * candidate whose emitted text references component scope — a signal
+   * getter/setter, a memo, a prop, a body const/function, or an already-
+   * demoted candidate — is component-scoped, transitively. Genuinely
+   * module-level declarations cannot reference component scope, so the
+   * fixpoint only ever demotes the mis-flagged.
+   *
+   * Memoized per IR: `generateModuleScopeDeclarations` (module emission)
+   * and `generateSignalInitializers` (body emission) must agree on the
+   * split or a declaration is emitted twice or not at all.
+   */
+  private readonly moduleScopeNamesCache = new WeakMap<ComponentIR, Set<string>>()
+
+  protected moduleScopeDeclarationNames(ir: ComponentIR): Set<string> {
+    const cached = this.moduleScopeNamesCache.get(ir)
+    if (cached) return cached
+
+    const { preserveTypes } = this.jsxConfig
+    const componentScope = new Set<string>()
+    for (const sig of ir.metadata.signals) {
+      if (sig.isModule) continue
+      componentScope.add(sig.getter)
+      if (sig.setter) componentScope.add(sig.setter)
+    }
+    for (const memo of ir.metadata.memos) {
+      if (!memo.isModule) componentScope.add(memo.name)
+    }
+    for (const p of ir.metadata.propsParams) componentScope.add(p.name)
+    if (ir.metadata.propsObjectName) componentScope.add(ir.metadata.propsObjectName)
+    if (ir.metadata.restPropsName) componentScope.add(ir.metadata.restPropsName)
+    for (const c of ir.metadata.localConstants) {
+      if (!c.isModule) componentScope.add(c.name)
+    }
+    for (const f of ir.metadata.localFunctions) {
+      if (!f.isModule) componentScope.add(f.name)
+    }
+
+    const candidates = new Map<string, string>()
+    for (const c of ir.metadata.localConstants) {
+      if (!c.isModule) continue
+      candidates.set(c.name, (preserveTypes ? (c.typedValue ?? c.value) : c.value) ?? '')
+    }
+    for (const f of ir.metadata.localFunctions) {
+      if (!f.isModule) continue
+      const body = preserveTypes ? (f.typedBody ?? f.body) : f.body
+      candidates.set(f.name, body)
+    }
+
+    const referencesAny = (text: string, names: ReadonlySet<string>): boolean => {
+      for (const name of names) {
+        if (new RegExp(`\\b${name}\\b`).test(text)) return true
+      }
+      return false
+    }
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const [name, text] of candidates) {
+        if (referencesAny(text, componentScope)) {
+          candidates.delete(name)
+          componentScope.add(name)
+          changed = true
+        }
+      }
+    }
+
+    const result = new Set(candidates.keys())
+    this.moduleScopeNamesCache.set(ir, result)
+    return result
+  }
+
+  /**
+   * Module-scope type, constant, and function declarations for the
+   * emitted template, kept at MODULE scope in SOURCE ORDER — the emitted
+   * module preserves the source module's shape, as the client bundle
+   * already does (`emitModuleLevelDeclarations` in `ir-to-client-js`).
+   * Root cure for the #2570 family: type declarations are re-emitted
+   * verbatim at module scope, so any value they reference through
+   * `typeof` (a type alias's `keyof typeof strokePaths`, a props
+   * annotation's `keyof typeof modes`) must be declared there too.
+   * Localising those values into each component body — the previous
+   * shape — failed the query with TS2304, and an unresolved
+   * `keyof typeof` degrades to `keyof any`, silently widening the type
+   * to `string | number | symbol` and taking every downstream check
+   * with it.
+   *
+   * EXPORTED module declarations are emitted here too (with their
+   * `export` keyword), interleaved with the non-exported ones in source
+   * order — not split off to `generateModuleExports`' section, which is
+   * emitted after this one and so would put an exported const AFTER a
+   * non-exported const that reads it (input-otp's `patternPresets`
+   * reading `REGEXP_ONLY_DIGITS`): a module-load TDZ crash, not just
+   * TS2448. The compiler skips value declarations in
+   * `generateModuleExports` when `moduleConstantsIncludeExports` is set
+   * on the sections.
+   *
+   * Emission is deliberately UNFILTERED by per-component reachability: an
+   * unused module declaration in the emitted template is harmless and
+   * matches the source module. In a multi-component file each component's
+   * adapter output carries its own block (the analyzer collects the module
+   * declarations lexically preceding the component, so blocks can be
+   * unequal prefixes); the compiler merges them with top-level-STATEMENT
+   * dedup, so shared declarations land exactly once in source order.
+   *
+   * `new WeakMap()` bindings stay client-only, and exported
+   * `createContext()` bindings stay unemitted, exactly as before.
+   */
+  protected generateModuleScopeDeclarations(ir: ComponentIR): string {
+    const { preserveTypes } = this.jsxConfig
+    const moduleNames = this.moduleScopeDeclarationNames(ir)
+    const entries: Array<{ line: number, text: string }> = []
+
+    for (const t of ir.metadata.typeDefinitions) {
+      entries.push({ line: t.loc.start.line, text: t.definition })
+    }
+
+    for (const c of ir.metadata.localConstants) {
+      if (!c.isModule || !moduleNames.has(c.name)) continue
+      const keyword = c.declarationKind ?? 'const'
+      const exportKw = c.isExported ? 'export ' : ''
+      if (!c.value) {
+        entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name}` })
+        continue
+      }
+      const trimmed = c.value.trim()
+      if (/^new WeakMap\b/.test(trimmed)) continue
+      if (c.isExported && /^createContext\b/.test(trimmed)) continue
+      const value = preserveTypes ? (c.typedValue ?? c.value) : c.value
+      entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name} = ${value}` })
+    }
+
+    for (const f of ir.metadata.localFunctions) {
+      if (!f.isModule || !moduleNames.has(f.name)) continue
+      const params = preserveTypes && f.typedParams !== undefined
+        ? f.typedParams
+        : f.params.map(formatParamWithType).join(', ')
+      const returnAnnotation = preserveTypes && f.typedReturnType
+        ? `: ${f.typedReturnType}`
+        : ''
+      const body = preserveTypes ? (f.typedBody ?? f.body) : f.body
+      const asyncKw = f.isAsync ? 'async ' : ''
+      const exportKw = f.isExported ? 'export ' : ''
+      entries.push({
+        line: f.loc.start.line,
+        text: `${exportKw}${asyncKw}function ${f.name}(${params})${returnAnnotation} ${body}`,
+      })
+    }
+
+    entries.sort((a, b) => a.line - b.line)
+    return entries.map(e => e.text).join('\n')
   }
 
   // ===========================================================================

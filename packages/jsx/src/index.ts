@@ -69,7 +69,6 @@ export { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.t
 
 // Module exports generation (compiler layer)
 export { generateModuleExports, extractFunctionParams, formatParamWithType, findReachableNames } from './module-exports.ts'
-export { collectTypeQueryValueNames } from './type-query-refs.ts'
 
 // Adapters
 export { BaseAdapter } from './adapters/interface.ts'

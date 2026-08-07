@@ -5,54 +5,39 @@ import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon } from '../icon'
 import { bfText, bfTextEnd } from '@barefootjs/hono/utils'
 
+interface SelectContextValue {
+  open: () => boolean
+  onOpenChange: (open: boolean) => void
+  value: () => string
+  onValueChange: (value: string) => void
+  disabled: () => boolean
+}
+
 const SelectContext = createContext<SelectContextValue>()
 
-interface SelectProps extends HTMLBaseAttributes {
-  /** Controlled value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** Whether the select is open (controlled) */
-  open?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** Whether the entire select is disabled */
-  disabled?: boolean
-  /** SelectTrigger and SelectContent */
-  children?: Child
-}
-interface SelectTriggerProps extends ButtonHTMLAttributes {
-  /** Trigger content (typically SelectValue) */
-  children?: Child
-}
-interface SelectValueProps extends HTMLBaseAttributes {
-  /** Placeholder text when no value is selected */
-  placeholder?: string
-}
-interface SelectContentProps extends HTMLBaseAttributes {
-  /** SelectItem, SelectGroup, SelectLabel, SelectSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface SelectItemProps extends HTMLBaseAttributes {
-  /** The value for this item */
-  value: string
-  /** Whether this item is disabled */
-  disabled?: boolean
-  /** Item content (label text) */
-  children?: Child
-}
-interface SelectGroupProps extends HTMLBaseAttributes {
-  /** Grouped items */
-  children?: Child
-}
-interface SelectLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface SelectSeparatorProps extends HTMLBaseAttributes {
-}
+const selectTriggerBaseClasses = 'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none'
+
+const selectTriggerFocusClasses = 'focus:border-ring focus:ring-ring/50 focus:ring-[3px]'
+
+const selectTriggerDataStateClasses = 'data-[placeholder]:text-muted-foreground'
+
+const selectContentBaseClasses = 'fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
+
+const selectContentOpenClasses = 'opacity-100 scale-100'
+
+const selectContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
+
+const selectItemBaseClasses = 'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
+
+const selectItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
+
+const selectItemDisabledClasses = 'pointer-events-none opacity-50'
+
+const selectIndicatorClasses = 'absolute left-2 flex size-3.5 shrink-0 items-center justify-center'
+
+const selectLabelClasses = 'px-2 py-1.5 text-sm font-semibold text-foreground'
+
+const selectSeparatorClasses = '-mx-1 my-1 h-px bg-border'
 
 interface SelectProps extends HTMLBaseAttributes {
   /** Controlled value */
@@ -68,20 +53,24 @@ interface SelectProps extends HTMLBaseAttributes {
   /** SelectTrigger and SelectContent */
   children?: Child
 }
+
 interface SelectTriggerProps extends ButtonHTMLAttributes {
   /** Trigger content (typically SelectValue) */
   children?: Child
 }
+
 interface SelectValueProps extends HTMLBaseAttributes {
   /** Placeholder text when no value is selected */
   placeholder?: string
 }
+
 interface SelectContentProps extends HTMLBaseAttributes {
   /** SelectItem, SelectGroup, SelectLabel, SelectSeparator components */
   children?: Child
   /** Alignment relative to trigger */
   align?: 'start' | 'end'
 }
+
 interface SelectItemProps extends HTMLBaseAttributes {
   /** The value for this item */
   value: string
@@ -90,16 +79,21 @@ interface SelectItemProps extends HTMLBaseAttributes {
   /** Item content (label text) */
   children?: Child
 }
+
 interface SelectGroupProps extends HTMLBaseAttributes {
   /** Grouped items */
   children?: Child
 }
+
 interface SelectLabelProps extends HTMLBaseAttributes {
   /** Label text */
   children?: Child
 }
+
 interface SelectSeparatorProps extends HTMLBaseAttributes {
 }
+
+const selectTriggerDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
 
 type SelectGroupPropsWithHydration = SelectGroupProps & {
   __instanceId?: string
@@ -111,53 +105,6 @@ type SelectGroupPropsWithHydration = SelectGroupProps & {
   "data-key"?: string | number
 }
 
-interface SelectProps extends HTMLBaseAttributes {
-  /** Controlled value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** Whether the select is open (controlled) */
-  open?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** Whether the entire select is disabled */
-  disabled?: boolean
-  /** SelectTrigger and SelectContent */
-  children?: Child
-}
-interface SelectTriggerProps extends ButtonHTMLAttributes {
-  /** Trigger content (typically SelectValue) */
-  children?: Child
-}
-interface SelectValueProps extends HTMLBaseAttributes {
-  /** Placeholder text when no value is selected */
-  placeholder?: string
-}
-interface SelectContentProps extends HTMLBaseAttributes {
-  /** SelectItem, SelectGroup, SelectLabel, SelectSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface SelectItemProps extends HTMLBaseAttributes {
-  /** The value for this item */
-  value: string
-  /** Whether this item is disabled */
-  disabled?: boolean
-  /** Item content (label text) */
-  children?: Child
-}
-interface SelectGroupProps extends HTMLBaseAttributes {
-  /** Grouped items */
-  children?: Child
-}
-interface SelectLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface SelectSeparatorProps extends HTMLBaseAttributes {
-}
-
 type SelectLabelPropsWithHydration = SelectLabelProps & {
   __instanceId?: string
   __bfScope?: string
@@ -166,53 +113,6 @@ type SelectLabelPropsWithHydration = SelectLabelProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface SelectProps extends HTMLBaseAttributes {
-  /** Controlled value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** Whether the select is open (controlled) */
-  open?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** Whether the entire select is disabled */
-  disabled?: boolean
-  /** SelectTrigger and SelectContent */
-  children?: Child
-}
-interface SelectTriggerProps extends ButtonHTMLAttributes {
-  /** Trigger content (typically SelectValue) */
-  children?: Child
-}
-interface SelectValueProps extends HTMLBaseAttributes {
-  /** Placeholder text when no value is selected */
-  placeholder?: string
-}
-interface SelectContentProps extends HTMLBaseAttributes {
-  /** SelectItem, SelectGroup, SelectLabel, SelectSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface SelectItemProps extends HTMLBaseAttributes {
-  /** The value for this item */
-  value: string
-  /** Whether this item is disabled */
-  disabled?: boolean
-  /** Item content (label text) */
-  children?: Child
-}
-interface SelectGroupProps extends HTMLBaseAttributes {
-  /** Grouped items */
-  children?: Child
-}
-interface SelectLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface SelectSeparatorProps extends HTMLBaseAttributes {
 }
 
 type SelectSeparatorPropsWithHydration = SelectSeparatorProps & {
@@ -289,8 +189,6 @@ export function SelectValue(__allProps: SelectValueProps & { __instanceId?: stri
 export function SelectContent(__allProps: SelectContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `SelectContent_${Math.random().toString(36).slice(2, 8)}`
-  const selectContentBaseClasses = 'fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
-  const selectContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -308,9 +206,6 @@ export function SelectItem(__allProps: SelectItemProps & { __instanceId?: string
   const __scopeId = __instanceId || `SelectItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
   const stateClasses = () => isDisabled() ? selectItemDisabledClasses : selectItemDefaultClasses
-  const selectItemBaseClasses = 'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
-  const selectItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
-  const selectItemDisabledClasses = 'pointer-events-none opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -340,7 +235,6 @@ export function SelectGroup({ children, className = '', __instanceId, __bfScope:
 
 export function SelectLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectLabelPropsWithHydration = {} as SelectLabelPropsWithHydration) {
   const __scopeId = __instanceId || `SelectLabel_${Math.random().toString(36).slice(2, 8)}`
-  const selectLabelClasses = 'px-2 py-1.5 text-sm font-semibold text-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -355,7 +249,6 @@ export function SelectLabel({ children, className = '', __instanceId, __bfScope:
 
 export function SelectSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectSeparatorPropsWithHydration = {} as SelectSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `SelectSeparator_${Math.random().toString(36).slice(2, 8)}`
-  const selectSeparatorClasses = '-mx-1 my-1 h-px bg-border'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

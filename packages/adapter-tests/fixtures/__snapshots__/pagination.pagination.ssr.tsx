@@ -4,13 +4,41 @@ import { createMemo } from '@barefootjs/hono/client-shim'
 import type { Child } from '../../../types'
 import { ChevronLeftIcon, ChevronRightIcon, EllipsisIcon } from '../icon'
 
+const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+
+const variantClasses = {
+  outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
+  ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
+}
+
+const sizeClasses = {
+  default: 'h-9 px-4 py-2 has-[>svg]:px-3',
+  icon: 'size-9',
+}
+
 interface PaginationProps extends HTMLBaseAttributes {
   children?: Child
 }
+
+interface PaginationContentProps extends HTMLBaseAttributes {
+  children?: Child
+}
+
+interface PaginationItemProps extends HTMLBaseAttributes {
+  children?: Child
+}
+
 interface PaginationLinkProps extends AnchorHTMLAttributes {
   isActive?: boolean
   size?: 'default' | 'icon'
   children?: Child
+}
+
+interface PaginationPrevNextProps extends AnchorHTMLAttributes {
+  children?: Child
+}
+
+interface PaginationEllipsisProps extends HTMLBaseAttributes {
 }
 
 type PaginationPropsWithHydration = PaginationProps & {
@@ -23,15 +51,6 @@ type PaginationPropsWithHydration = PaginationProps & {
   "data-key"?: string | number
 }
 
-interface PaginationContentProps extends HTMLBaseAttributes {
-  children?: Child
-}
-interface PaginationLinkProps extends AnchorHTMLAttributes {
-  isActive?: boolean
-  size?: 'default' | 'icon'
-  children?: Child
-}
-
 type PaginationContentPropsWithHydration = PaginationContentProps & {
   __instanceId?: string
   __bfScope?: string
@@ -40,15 +59,6 @@ type PaginationContentPropsWithHydration = PaginationContentProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface PaginationItemProps extends HTMLBaseAttributes {
-  children?: Child
-}
-interface PaginationLinkProps extends AnchorHTMLAttributes {
-  isActive?: boolean
-  size?: 'default' | 'icon'
-  children?: Child
 }
 
 type PaginationItemPropsWithHydration = PaginationItemProps & {
@@ -61,21 +71,6 @@ type PaginationItemPropsWithHydration = PaginationItemProps & {
   "data-key"?: string | number
 }
 
-interface PaginationLinkProps extends AnchorHTMLAttributes {
-  isActive?: boolean
-  size?: 'default' | 'icon'
-  children?: Child
-}
-
-interface PaginationLinkProps extends AnchorHTMLAttributes {
-  isActive?: boolean
-  size?: 'default' | 'icon'
-  children?: Child
-}
-interface PaginationPrevNextProps extends AnchorHTMLAttributes {
-  children?: Child
-}
-
 type PaginationPreviousPropsWithHydration = PaginationPrevNextProps & {
   __instanceId?: string
   __bfScope?: string
@@ -86,15 +81,6 @@ type PaginationPreviousPropsWithHydration = PaginationPrevNextProps & {
   "data-key"?: string | number
 }
 
-interface PaginationLinkProps extends AnchorHTMLAttributes {
-  isActive?: boolean
-  size?: 'default' | 'icon'
-  children?: Child
-}
-interface PaginationPrevNextProps extends AnchorHTMLAttributes {
-  children?: Child
-}
-
 type PaginationNextPropsWithHydration = PaginationPrevNextProps & {
   __instanceId?: string
   __bfScope?: string
@@ -103,14 +89,6 @@ type PaginationNextPropsWithHydration = PaginationPrevNextProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface PaginationLinkProps extends AnchorHTMLAttributes {
-  isActive?: boolean
-  size?: 'default' | 'icon'
-  children?: Child
-}
-interface PaginationEllipsisProps extends HTMLBaseAttributes {
 }
 
 type PaginationEllipsisPropsWithHydration = PaginationEllipsisProps & {
@@ -171,10 +149,6 @@ export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `PaginationLink_${Math.random().toString(36).slice(2, 8)}`
   const size = () => props.size ?? 'icon'
-  const variantClasses = {
-  outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
-  ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-}
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -190,15 +164,6 @@ export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?
 
 export function PaginationPrevious({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPreviousPropsWithHydration = {} as PaginationPreviousPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationPrevious_${Math.random().toString(36).slice(2, 8)}`
-  const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
-  const variantClasses = {
-  outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
-  ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-}
-  const sizeClasses = {
-  default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-  icon: 'size-9',
-}
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -212,15 +177,6 @@ export function PaginationPrevious({ className = '', children, __instanceId, __b
 
 export function PaginationNext({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationNextPropsWithHydration = {} as PaginationNextPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationNext_${Math.random().toString(36).slice(2, 8)}`
-  const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
-  const variantClasses = {
-  outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
-  ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-}
-  const sizeClasses = {
-  default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-  icon: 'size-9',
-}
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

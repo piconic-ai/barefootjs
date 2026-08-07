@@ -34,7 +34,6 @@ import {
   emitIRNode,
   emitAttrValue,
   buildLoopChainExpr,
-  collectTypeQueryValueNames,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
 
@@ -213,17 +212,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       this.preloadAssets = options?.preloadAssets
     }
 
-    // Generate component body FIRST so we can scan it for used imports
+    // Generate component body FIRST so we can scan it for used imports.
+    // Module-scope declarations stay at module scope (#2570) — see
+    // `generateModuleScopeDeclarations`; they join the scan text so a
+    // helper referenced only from a hoisted declaration still pulls its
+    // import.
     const component = this.generateComponent(ir)
-    const types = this.generateTypes(ir, component)
-    const componentCode = [types, component].filter(Boolean).join('\n')
+    const types = this.generateTypes(ir)
+    const moduleConstants = this.generateModuleScopeDeclarations(ir)
+    const componentCode = [moduleConstants, types, component].filter(Boolean).join('\n')
     const imports = this.generateImports(ir, componentCode)
-    // Constants that must stay at module scope rather than being localised
-    // into each component body — Context bindings (shared object identity)
-    // and consts an emitted type references via `typeof`. Emitted in a
-    // dedicated section so multi-component dedup works on the full block
-    // (not per line, which would split multi-line `({...})` arguments).
-    const moduleConstants = this.generateModuleLevelConstants(ir)
 
     const defaultExport = ir.metadata.hasDefaultExport
       ? `\nexport default ${this.componentName}`
@@ -235,6 +233,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       component,
       defaultExport,
       moduleConstants,
+      moduleConstantsIncludeExports: true,
     }
 
     // Assemble template for backward compat (external consumers using output.template)
@@ -273,52 +272,6 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    */
   private hasPreloadAssets(): boolean {
     return this.hasScriptAssets() && !!this.preloadAssets && this.preloadAssets.length > 0
-  }
-
-  /**
-   * Module-scope constant declarations for the emitted template. Two
-   * disjoint reasons a source module-level const has to stay at module
-   * scope instead of being localised into each component body:
-   *
-   * 1. `createContext()` bindings — providers and consumers in one render
-   *    must share the same Context object identity.
-   *
-   * 2. Any const an emitted TYPE references through `typeof` (#2570).
-   *    Type declarations are re-emitted verbatim at module
-   *    scope, so `type IconName = keyof typeof strokePaths | 'github'`
-   *    lands there while `strokePaths` is localised into the component
-   *    body — TS2304, and worse than a lone error: an unresolved
-   *    `keyof typeof` degrades to `keyof any`, silently widening the alias
-   *    to `string | number | symbol` and taking every downstream check
-   *    with it. The type's own reachability filtering
-   *    (`generateTypes`) is per-component, so this scan deliberately reads
-   *    ALL of `typeDefinitions`: `moduleConstants` is deduped file-wide by
-   *    exact string match, and a per-component set would produce a
-   *    different block per component and emit duplicate declarations.
-   *
-   * The body copy is intentionally left in place — it shadows this one with
-   * an identical value, so runtime behaviour is untouched, and dropping it
-   * would feed a different component body into `generateTypes`'s
-   * reachability seed.
-   */
-  private generateModuleLevelConstants(ir: ComponentIR): string {
-    const typeQueryNames = collectTypeQueryValueNames(
-      ir.metadata.typeDefinitions.map((t) => t.definition),
-    )
-    const lines: string[] = []
-    const emitted = new Set<string>()
-    for (const c of ir.metadata.localConstants) {
-      if (!c.isModule) continue
-      if (c.isExported) continue
-      if (c.systemConstructKind !== 'createContext' && !typeQueryNames.has(c.name)) continue
-      if (!c.value) continue
-      if (emitted.has(c.name)) continue
-      emitted.add(c.name)
-      const keyword = c.declarationKind ?? 'const'
-      const value = this.jsxConfig.preserveTypes ? (c.typedValue ?? c.value) : c.value
-      lines.push(`${keyword} ${c.name} = ${value}`)
-    }
-    return lines.join('\n')
   }
 
   // ===========================================================================
@@ -401,73 +354,23 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   // Types Generation
   // ===========================================================================
 
-  generateTypes(ir: ComponentIR, componentBody?: string): string | null {
+  /**
+   * Per-component synthesized types only. The source module's own type
+   * declarations are NOT emitted here — `generateModuleScopeDeclarations`
+   * carries them once, file-wide, in the module-constants section (#2570).
+   * The per-component reachability scan that used to live here (#1453) is
+   * gone with them: pruning per component both duplicated shared types
+   * across components' sections (TS2300 — the compiler dedups sections by
+   * whole string) and dropped exported types no component referenced
+   * (TS2305 for any consumer's `import type`).
+   */
+  generateTypes(ir: ComponentIR): string | null {
     const lines: string[] = []
-
-    // Include original type definitions — only those referenced in the component body
-    // or transitively referenced by other included type definitions
-    if (componentBody && ir.metadata.typeDefinitions.length > 0) {
-      const propsTypeName = this.getPropsTypeName(ir)
-      // Seed the reachability scan with everything that ends up referencing
-      // a type name in the FINAL emitted file, not just the component body.
-      //
-      // - `propsTypeName` is referenced by the synthesized
-      //   `${Name}PropsWithHydration = ${propsTypeName} & {...}` alias the
-      //   destructured-props branch emits below — but that alias is built
-      //   AFTER this scan, so the body never literally mentions e.g.
-      //   `ButtonProps`. Without seeding it here the alias references an
-      //   undeclared name (TS2304) and TS widens `variant`/`size` to `any`
-      //   at every `Record[variant]` lookup site (TS7053) downstream.
-      //
-      // - Named re-export blocks (`export type { ButtonVariant, ButtonSize,
-      //   ButtonProps }`) are emitted by the compiler's `generateModuleExports`
-      //   AFTER `s.types`. Each re-exported local name needs its declaration
-      //   carried forward too. Issue #1453 covers the full reproduction.
-      const seedText = [
-        componentBody,
-        propsTypeName && !ir.metadata.propsObjectName ? propsTypeName : '',
-        ...ir.metadata.namedExports
-          .filter((block) => block.source === null)
-          .flatMap((block) => block.specifiers.map((s) => s.name)),
-      ].filter(Boolean).join('\n')
-
-      const included = new Set<string>()
-      // First pass: include types directly referenced in the seed text
-      for (const typeDef of ir.metadata.typeDefinitions) {
-        if (new RegExp(`\\b${typeDef.name}\\b`).test(seedText)) {
-          included.add(typeDef.name)
-        }
-      }
-      // Transitive pass: include types referenced by already-included types
-      let changed = true
-      while (changed) {
-        changed = false
-        for (const typeDef of ir.metadata.typeDefinitions) {
-          if (included.has(typeDef.name)) continue
-          for (const name of included) {
-            const includedDef = ir.metadata.typeDefinitions.find(t => t.name === name)
-            if (includedDef && new RegExp(`\\b${typeDef.name}\\b`).test(includedDef.definition)) {
-              included.add(typeDef.name)
-              changed = true
-              break
-            }
-          }
-        }
-      }
-      for (const typeDef of ir.metadata.typeDefinitions) {
-        if (included.has(typeDef.name)) lines.push(typeDef.definition)
-      }
-    } else {
-      for (const typeDef of ir.metadata.typeDefinitions) {
-        lines.push(typeDef.definition)
-      }
-    }
 
     // Generate hydration props type (only when destructured-props pattern uses it;
     // SolidJS-style props use inline type annotation instead)
     const propsTypeName = this.getPropsTypeName(ir)
     if (propsTypeName && !ir.metadata.propsObjectName) {
-      lines.push('')
       lines.push(`type ${this.componentName}PropsWithHydration = ${propsTypeName} & {`)
       lines.push('  __instanceId?: string')
       lines.push('  __bfScope?: string')

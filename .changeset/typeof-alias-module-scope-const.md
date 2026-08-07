@@ -3,12 +3,23 @@
 "@barefootjs/hono": patch
 ---
 
-A type alias re-emitted at module scope now keeps the const it queries with
-`typeof` in scope. Type declarations are emitted verbatim at module scope
-while a source module's constants are localised into each component body, so
-`export type IconName = keyof typeof strokePaths | 'github'` lost its
-referent — TS2304, and worse, an unresolved `keyof typeof` degrades to
-`keyof any`, silently widening the alias to `string | number | symbol` so it
-stopped rejecting invalid values. Such consts are now hoisted to module
-scope alongside the type, the way `createContext()` bindings already were.
-Type-only — no emitted-JS or rendered-HTML change.
+Emitted templates now preserve the source module's shape: type
+declarations, module-scope constants, and module-scope functions are
+emitted at module scope, once per file, in source order — exported and
+non-exported together. Previously type declarations were re-emitted per
+component while values were localised into each component body, a
+structural mismatch behind a family of consumer type-check breaks: a type
+alias querying a localised const (`keyof typeof strokePaths`) failed
+TS2304 and silently widened to `string | number | symbol`; the same query
+in a props annotation did the same through the synthesized hydration
+alias; types shared by several components were redeclared per component
+(TS2300); an exported type no component referenced was pruned from the
+template entirely (TS2305 on the consumer's `import type`); and exported
+consts were emitted below non-exported readers (a module-load TDZ crash).
+Declarations flagged module-level by the analyzer but actually closing
+over component state are demoted back into the body by the same
+reachability fixpoint the client bundle uses. Multi-component files merge
+their module-scope blocks with top-level-statement dedup. Across the
+compiled `ui/` corpus this removes 286 of 447 consumer-visible type
+diagnostics with zero new ones, and a new corpus type-check gate
+(`corpus-typecheck.test.ts`) holds that line. Rendered HTML is unchanged.

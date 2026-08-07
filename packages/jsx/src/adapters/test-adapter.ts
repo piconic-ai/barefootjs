@@ -31,6 +31,7 @@ export class TestAdapter extends JsxAdapter {
     this.componentName = ir.metadata.componentName
 
     const imports = this.generateImports(ir)
+    const moduleConstants = this.generateModuleScopeDeclarations(ir)
     const types = this.generateTypes(ir)
     const component = this.generateComponent(ir)
 
@@ -43,10 +44,12 @@ export class TestAdapter extends JsxAdapter {
       types: types || '',
       component,
       defaultExport,
+      moduleConstants,
+      moduleConstantsIncludeExports: true,
     }
 
     // Assemble template for backward compat
-    const template = [imports, types, component].filter(Boolean).join('\n\n') + defaultExport
+    const template = [imports, moduleConstants, types, component].filter(Boolean).join('\n\n') + defaultExport
 
     return {
       template,
@@ -84,9 +87,9 @@ export class TestAdapter extends JsxAdapter {
   generateTypes(ir: ComponentIR): string | null {
     const lines: string[] = []
 
-    for (const typeDef of ir.metadata.typeDefinitions) {
-      lines.push(typeDef.definition)
-    }
+    // Source type declarations are emitted once at module scope by
+    // `generateModuleScopeDeclarations` (#2570) — only the synthesized
+    // hydration alias is per-component.
 
     // Only generate PropsWithHydration when destructured-props pattern uses it
     const propsTypeName = ir.metadata.propsType?.raw

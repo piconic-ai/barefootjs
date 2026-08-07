@@ -2,6 +2,18 @@
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
+const tabsClasses = 'flex flex-col gap-2 w-full'
+
+const tabsListClasses = 'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]'
+
+const tabsTriggerBaseClasses = 'inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4'
+
+const tabsTriggerFocusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+
+const tabsTriggerStateClasses = 'text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm dark:text-muted-foreground dark:data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30'
+
+const tabsContentClasses = 'flex-1 outline-none'
+
 interface TabsProps extends HTMLBaseAttributes {
   /** Currently selected tab value */
   value?: string
@@ -12,10 +24,12 @@ interface TabsProps extends HTMLBaseAttributes {
   /** Tab components (TabsList and TabsContent) */
   children?: Child
 }
+
 interface TabsListProps extends HTMLBaseAttributes {
   /** TabsTrigger components */
   children?: Child
 }
+
 interface TabsTriggerProps extends ButtonHTMLAttributes {
   /** Value that identifies this tab */
   value: string
@@ -28,6 +42,7 @@ interface TabsTriggerProps extends ButtonHTMLAttributes {
   /** Tab label */
   children?: Child
 }
+
 interface TabsContentProps extends HTMLBaseAttributes {
   /** Value that identifies which tab this content belongs to */
   value: string
@@ -47,41 +62,6 @@ type TabsPropsWithHydration = TabsProps & {
   "data-key"?: string | number
 }
 
-interface TabsProps extends HTMLBaseAttributes {
-  /** Currently selected tab value */
-  value?: string
-  /** Default selected value (uncontrolled) */
-  defaultValue?: string
-  /** Callback when tab changes */
-  onValueChange?: (value: string) => void
-  /** Tab components (TabsList and TabsContent) */
-  children?: Child
-}
-interface TabsListProps extends HTMLBaseAttributes {
-  /** TabsTrigger components */
-  children?: Child
-}
-interface TabsTriggerProps extends ButtonHTMLAttributes {
-  /** Value that identifies this tab */
-  value: string
-  /** Whether this tab is currently selected */
-  selected?: boolean
-  /** Whether this tab is disabled */
-  disabled?: boolean
-  /** Click handler */
-  onClick?: () => void
-  /** Tab label */
-  children?: Child
-}
-interface TabsContentProps extends HTMLBaseAttributes {
-  /** Value that identifies which tab this content belongs to */
-  value: string
-  /** Whether this content is currently visible */
-  selected?: boolean
-  /** Content to display */
-  children?: Child
-}
-
 type TabsListPropsWithHydration = TabsListProps & {
   __instanceId?: string
   __bfScope?: string
@@ -92,46 +72,10 @@ type TabsListPropsWithHydration = TabsListProps & {
   "data-key"?: string | number
 }
 
-interface TabsProps extends HTMLBaseAttributes {
-  /** Currently selected tab value */
-  value?: string
-  /** Default selected value (uncontrolled) */
-  defaultValue?: string
-  /** Callback when tab changes */
-  onValueChange?: (value: string) => void
-  /** Tab components (TabsList and TabsContent) */
-  children?: Child
-}
-interface TabsListProps extends HTMLBaseAttributes {
-  /** TabsTrigger components */
-  children?: Child
-}
-interface TabsTriggerProps extends ButtonHTMLAttributes {
-  /** Value that identifies this tab */
-  value: string
-  /** Whether this tab is currently selected */
-  selected?: boolean
-  /** Whether this tab is disabled */
-  disabled?: boolean
-  /** Click handler */
-  onClick?: () => void
-  /** Tab label */
-  children?: Child
-}
-interface TabsContentProps extends HTMLBaseAttributes {
-  /** Value that identifies which tab this content belongs to */
-  value: string
-  /** Whether this content is currently visible */
-  selected?: boolean
-  /** Content to display */
-  children?: Child
-}
-
 export type { TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps }
 
 export function Tabs({ className = '', value, defaultValue, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TabsPropsWithHydration = {} as TabsPropsWithHydration) {
   const __scopeId = __instanceId || `Tabs_${Math.random().toString(36).slice(2, 8)}`
-  const tabsClasses = 'flex flex-col gap-2 w-full'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -148,7 +92,6 @@ export function Tabs({ className = '', value, defaultValue, children, __instance
 
 export function TabsList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TabsListPropsWithHydration = {} as TabsListPropsWithHydration) {
   const __scopeId = __instanceId || `TabsList_${Math.random().toString(36).slice(2, 8)}`
-  const tabsListClasses = 'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

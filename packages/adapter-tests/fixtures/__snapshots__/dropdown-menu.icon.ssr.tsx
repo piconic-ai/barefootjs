@@ -1,6 +1,19 @@
 /** @jsxImportSource hono/jsx */
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 
+export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
+
+export interface IconProps extends HTMLBaseAttributes {
+  size?: IconSize
+}
+
+const sizeMap = {
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+}
+
 const strokePaths = {
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
@@ -25,10 +38,9 @@ const strokePaths = {
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
 } as const
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
+export type IconName = keyof typeof strokePaths | 'github' | 'search' | 'settings' | 'globe' | 'log-out' | 'circle-help' | 'panel-left' | 'calendar' | 'grip-vertical' | 'loader-circle'
+
+const buttLinecapIcons = ['plus', 'minus'] as const
 
 type CheckIconPropsWithHydration = IconProps & {
   __instanceId?: string
@@ -38,11 +50,6 @@ type CheckIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type ChevronDownIconPropsWithHydration = IconProps & {
@@ -55,11 +62,6 @@ type ChevronDownIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type ChevronUpIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -68,11 +70,6 @@ type ChevronUpIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type ChevronLeftIconPropsWithHydration = IconProps & {
@@ -85,11 +82,6 @@ type ChevronLeftIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type ChevronRightIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -98,11 +90,6 @@ type ChevronRightIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type XIconPropsWithHydration = IconProps & {
@@ -115,11 +102,6 @@ type XIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type PlusIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -128,11 +110,6 @@ type PlusIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type MinusIconPropsWithHydration = IconProps & {
@@ -145,11 +122,6 @@ type MinusIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type SunIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -158,11 +130,6 @@ type SunIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type MoonIconPropsWithHydration = IconProps & {
@@ -175,11 +142,6 @@ type MoonIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type MonitorIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -188,11 +150,6 @@ type MonitorIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type CopyIconPropsWithHydration = IconProps & {
@@ -205,11 +162,6 @@ type CopyIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type ClipboardIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -218,11 +170,6 @@ type ClipboardIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type ClipboardCheckIconPropsWithHydration = IconProps & {
@@ -235,11 +182,6 @@ type ClipboardCheckIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type MenuIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -248,11 +190,6 @@ type MenuIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type ArrowLeftIconPropsWithHydration = IconProps & {
@@ -265,11 +202,6 @@ type ArrowLeftIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type ArrowRightIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -278,11 +210,6 @@ type ArrowRightIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type ArrowUpDownIconPropsWithHydration = IconProps & {
@@ -295,11 +222,6 @@ type ArrowUpDownIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type EllipsisIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -308,11 +230,6 @@ type EllipsisIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type GitHubIconPropsWithHydration = IconProps & {
@@ -325,11 +242,6 @@ type GitHubIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type SettingsIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -338,11 +250,6 @@ type SettingsIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type GlobeIconPropsWithHydration = IconProps & {
@@ -355,11 +262,6 @@ type GlobeIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type LogOutIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -368,11 +270,6 @@ type LogOutIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type CircleHelpIconPropsWithHydration = IconProps & {
@@ -385,11 +282,6 @@ type CircleHelpIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type SearchIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -398,11 +290,6 @@ type SearchIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type CircleCheckIconPropsWithHydration = IconProps & {
@@ -415,11 +302,6 @@ type CircleCheckIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type CircleXIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -428,11 +310,6 @@ type CircleXIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type TriangleAlertIconPropsWithHydration = IconProps & {
@@ -445,11 +322,6 @@ type TriangleAlertIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type InfoIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -458,11 +330,6 @@ type InfoIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type CalendarIconPropsWithHydration = IconProps & {
@@ -475,11 +342,6 @@ type CalendarIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type GripVerticalIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -488,11 +350,6 @@ type GripVerticalIconPropsWithHydration = IconProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
 }
 
 type LoaderCircleIconPropsWithHydration = IconProps & {
@@ -505,11 +362,6 @@ type LoaderCircleIconPropsWithHydration = IconProps & {
   "data-key"?: string | number
 }
 
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-
 type PanelLeftIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
@@ -519,12 +371,6 @@ type PanelLeftIconPropsWithHydration = IconProps & {
   __bfMount?: string
   "data-key"?: string | number
 }
-
-export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
-export interface IconProps extends HTMLBaseAttributes {
-  size?: IconSize
-}
-export type IconName = keyof typeof strokePaths | 'github' | 'search' | 'settings' | 'globe' | 'log-out' | 'circle-help' | 'panel-left' | 'calendar' | 'grip-vertical' | 'loader-circle'
 
 type IconPropsWithHydration = { name: IconName } & IconProps & {
   __instanceId?: string
@@ -538,35 +384,6 @@ type IconPropsWithHydration = { name: IconName } & IconProps & {
 
 export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CheckIconPropsWithHydration = {} as CheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `CheckIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -582,35 +399,6 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
 
 export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronDownIconPropsWithHydration = {} as ChevronDownIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronDownIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -626,35 +414,6 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
 
 export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronUpIconPropsWithHydration = {} as ChevronUpIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronUpIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -670,35 +429,6 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
 
 export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronLeftIconPropsWithHydration = {} as ChevronLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronLeftIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -714,35 +444,6 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
 
 export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronRightIconPropsWithHydration = {} as ChevronRightIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronRightIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -758,35 +459,6 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
 
 export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: XIconPropsWithHydration = {} as XIconPropsWithHydration) {
   const __scopeId = __instanceId || `XIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -802,35 +474,6 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
 
 export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PlusIconPropsWithHydration = {} as PlusIconPropsWithHydration) {
   const __scopeId = __instanceId || `PlusIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -846,35 +489,6 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
 
 export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MinusIconPropsWithHydration = {} as MinusIconPropsWithHydration) {
   const __scopeId = __instanceId || `MinusIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -890,35 +504,6 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
 
 export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SunIconPropsWithHydration = {} as SunIconPropsWithHydration) {
   const __scopeId = __instanceId || `SunIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -934,35 +519,6 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
 
 export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MoonIconPropsWithHydration = {} as MoonIconPropsWithHydration) {
   const __scopeId = __instanceId || `MoonIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -978,35 +534,6 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
 
 export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MonitorIconPropsWithHydration = {} as MonitorIconPropsWithHydration) {
   const __scopeId = __instanceId || `MonitorIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1022,35 +549,6 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
 
 export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CopyIconPropsWithHydration = {} as CopyIconPropsWithHydration) {
   const __scopeId = __instanceId || `CopyIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1066,35 +564,6 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
 
 export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardIconPropsWithHydration = {} as ClipboardIconPropsWithHydration) {
   const __scopeId = __instanceId || `ClipboardIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1110,35 +579,6 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
 
 export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardCheckIconPropsWithHydration = {} as ClipboardCheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `ClipboardCheckIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1154,35 +594,6 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
 
 export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MenuIconPropsWithHydration = {} as MenuIconPropsWithHydration) {
   const __scopeId = __instanceId || `MenuIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1198,35 +609,6 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
 
 export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowLeftIconPropsWithHydration = {} as ArrowLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowLeftIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1242,35 +624,6 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
 
 export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowRightIconPropsWithHydration = {} as ArrowRightIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowRightIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1286,35 +639,6 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
 
 export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowUpDownIconPropsWithHydration = {} as ArrowUpDownIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowUpDownIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1330,12 +654,6 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
 
 export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: EllipsisIconPropsWithHydration = {} as EllipsisIconPropsWithHydration) {
   const __scopeId = __instanceId || `EllipsisIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1351,12 +669,6 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
 
 export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GitHubIconPropsWithHydration = {} as GitHubIconPropsWithHydration) {
   const __scopeId = __instanceId || `GitHubIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1372,12 +684,6 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
 
 export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SettingsIconPropsWithHydration = {} as SettingsIconPropsWithHydration) {
   const __scopeId = __instanceId || `SettingsIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1393,12 +699,6 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
 
 export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GlobeIconPropsWithHydration = {} as GlobeIconPropsWithHydration) {
   const __scopeId = __instanceId || `GlobeIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1414,12 +714,6 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
 
 export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LogOutIconPropsWithHydration = {} as LogOutIconPropsWithHydration) {
   const __scopeId = __instanceId || `LogOutIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1435,12 +729,6 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
 
 export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleHelpIconPropsWithHydration = {} as CircleHelpIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleHelpIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1456,12 +744,6 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
 
 export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SearchIconPropsWithHydration = {} as SearchIconPropsWithHydration) {
   const __scopeId = __instanceId || `SearchIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1477,12 +759,6 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
 
 export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleCheckIconPropsWithHydration = {} as CircleCheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleCheckIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1498,12 +774,6 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
 
 export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleXIconPropsWithHydration = {} as CircleXIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleXIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1519,12 +789,6 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
 
 export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TriangleAlertIconPropsWithHydration = {} as TriangleAlertIconPropsWithHydration) {
   const __scopeId = __instanceId || `TriangleAlertIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1540,12 +804,6 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
 
 export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: InfoIconPropsWithHydration = {} as InfoIconPropsWithHydration) {
   const __scopeId = __instanceId || `InfoIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1561,12 +819,6 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
 
 export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CalendarIconPropsWithHydration = {} as CalendarIconPropsWithHydration) {
   const __scopeId = __instanceId || `CalendarIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1582,12 +834,6 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
 
 export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GripVerticalIconPropsWithHydration = {} as GripVerticalIconPropsWithHydration) {
   const __scopeId = __instanceId || `GripVerticalIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1603,35 +849,6 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
 
 export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LoaderCircleIconPropsWithHydration = {} as LoaderCircleIconPropsWithHydration) {
   const __scopeId = __instanceId || `LoaderCircleIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1647,12 +864,6 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
 
 export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PanelLeftIconPropsWithHydration = {} as PanelLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `PanelLeftIcon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
   // Serialize props for client hydration
@@ -1668,36 +879,6 @@ export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _
 
 export function Icon({ name, size = 'md', className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: IconPropsWithHydration) {
   const __scopeId = __instanceId || `Icon_${Math.random().toString(36).slice(2, 8)}`
-  const sizeMap = {
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-}
-  const strokePaths = {
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-} as const
-  const buttLinecapIcons = ['plus', 'minus'] as const
   const s = sizeMap[size]
   const path = strokePaths[name as keyof typeof strokePaths]
   const linecap = (buttLinecapIcons as readonly string[]).includes(name) ? 'butt' : 'round'

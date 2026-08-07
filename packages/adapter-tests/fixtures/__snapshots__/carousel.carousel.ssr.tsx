@@ -4,8 +4,6 @@ import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { ChevronLeftIcon, ChevronRightIcon } from '../icon'
 
-const CarouselContext = createContext<CarouselContextValue>()
-
 type EmblaOptionsType = {
   axis?: 'x' | 'y'
   loop?: boolean
@@ -14,6 +12,35 @@ type EmblaOptionsType = {
   containScroll?: 'trimSnaps' | 'keepSnaps' | false
   [key: string]: any
 }
+
+type EmblaCarouselType = {
+  scrollPrev: () => void
+  scrollNext: () => void
+  canScrollPrev: () => boolean
+  canScrollNext: () => boolean
+  on: (event: any, callback: () => void) => any
+  destroy: () => void
+}
+
+interface CarouselContextValue {
+  orientation: 'horizontal' | 'vertical'
+  scrollPrev: () => void
+  scrollNext: () => void
+  canScrollPrev: () => boolean
+  canScrollNext: () => boolean
+  setApi: (api: EmblaCarouselType) => void
+  setCanScrollPrev: (v: boolean) => void
+  setCanScrollNext: (v: boolean) => void
+}
+
+const CarouselContext = createContext<CarouselContextValue>()
+
+const carouselClasses = 'relative'
+
+const carouselItemClasses = 'min-w-0 shrink-0 grow-0 basis-full'
+
+const carouselButtonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full'
+
 interface CarouselProps extends HTMLBaseAttributes {
   /** Scroll orientation */
   orientation?: 'horizontal' | 'vertical'
@@ -22,30 +49,42 @@ interface CarouselProps extends HTMLBaseAttributes {
   /** Carousel content */
   children?: Child
 }
+
 interface CarouselContentProps extends HTMLBaseAttributes {
   /** Carousel items */
   children?: Child
   /** Orientation override (read from parent via data attribute during SSR) */
   orientation?: 'horizontal' | 'vertical'
 }
+
 interface CarouselItemProps extends HTMLBaseAttributes {
   /** Scroll orientation (must match parent Carousel) */
   orientation?: 'horizontal' | 'vertical'
   /** Slide content */
   children?: Child
 }
+
 interface CarouselPreviousProps extends ButtonHTMLAttributes {
   /** Scroll orientation (must match parent Carousel) */
   orientation?: 'horizontal' | 'vertical'
   /** Button content override */
   children?: Child
 }
+
 interface CarouselNextProps extends ButtonHTMLAttributes {
   /** Scroll orientation (must match parent Carousel) */
   orientation?: 'horizontal' | 'vertical'
   /** Button content override */
   children?: Child
 }
+
+const prevHorizontalClasses = '-left-12 top-1/2 -translate-y-1/2'
+
+const prevVerticalClasses = '-top-12 left-1/2 -translate-x-1/2 rotate-90'
+
+const nextHorizontalClasses = '-right-12 top-1/2 -translate-y-1/2'
+
+const nextVerticalClasses = '-bottom-12 left-1/2 -translate-x-1/2 rotate-90'
 
 export type { CarouselProps, CarouselContentProps, CarouselItemProps, CarouselPreviousProps, CarouselNextProps }
 
@@ -57,7 +96,6 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   const canScrollNext = () => false
   const setCanScrollNext = (..._args: any[]) => {}
   const orientation = () => props.orientation ?? 'horizontal'
-  const carouselClasses = 'relative'
   let emblaApi
   const scrollPrev = () => emblaApi?.scrollPrev()
   const scrollNext = () => emblaApi?.scrollNext()
@@ -104,7 +142,6 @@ export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: st
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselItem_${Math.random().toString(36).slice(2, 8)}`
   const paddingClass = () => (props.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4'
-  const carouselItemClasses = 'min-w-0 shrink-0 grow-0 basis-full'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -122,9 +159,6 @@ export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanc
   const __scopeId = __instanceId || `CarouselPrevious_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const positionClasses = () => orientation() === 'vertical' ? prevVerticalClasses : prevHorizontalClasses
-  const carouselButtonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full'
-  const prevHorizontalClasses = '-left-12 top-1/2 -translate-y-1/2'
-  const prevVerticalClasses = '-top-12 left-1/2 -translate-x-1/2 rotate-90'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -141,9 +175,6 @@ export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: st
   const __scopeId = __instanceId || `CarouselNext_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const positionClasses = () => orientation() === 'vertical' ? nextVerticalClasses : nextHorizontalClasses
-  const carouselButtonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full'
-  const nextHorizontalClasses = '-right-12 top-1/2 -translate-y-1/2'
-  const nextVerticalClasses = '-bottom-12 left-1/2 -translate-x-1/2 rotate-90'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

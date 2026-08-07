@@ -4,6 +4,9 @@ import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
 import { createSignal, createMemo } from '@barefootjs/hono/client-shim'
 import { CheckIcon } from '../icon'
 
+const baseClasses = 'peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
+const focusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50'
+const errorClasses = 'aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive'
 interface CheckboxProps extends ButtonHTMLAttributes {
   /**
    * Default checked state (for uncontrolled mode).
@@ -36,9 +39,6 @@ export function Checkbox(__allProps: CheckboxProps & { __instanceId?: string; __
   const isChecked = () => isControlled() ? controlledChecked() : internalChecked()
   const classes = () =>
     `${baseClasses} ${focusClasses} ${errorClasses} ${stateClasses} ${props.className ?? ''} grid place-content-center`
-  const baseClasses = 'peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
-  const focusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50'
-  const errorClasses = 'aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive'
   const stateClasses = [
   // Unchecked state
   '[&[data-state=unchecked]]:border-input',
