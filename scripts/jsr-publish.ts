@@ -339,10 +339,17 @@ interface WorkItem {
   pkg: PkgJson
 }
 
-/** One `deno publish` attempt + JSR-is-source-of-truth verification.
- * Returns 'published' | 'pend' (submitted, not observably live yet) |
- * 'failed' (genuine deno error — type error, auth, unresolvable dep). */
-async function publishOne(dir: string, pkg: PkgJson): Promise<'published' | 'pend' | 'failed'> {
+/** Outcome of one publish attempt. `failed` carries deno's exit code so
+ * the run summary can name it — deno's own diagnostics already reach the
+ * workflow log (the `$` below is deliberately not `.quiet()`), but the
+ * summary is what a reader scans first. */
+type PublishOutcome =
+  | { status: 'published' }
+  | { status: 'pend' }
+  | { status: 'failed'; exitCode: number | null }
+
+/** One `deno publish` attempt + JSR-is-source-of-truth verification. */
+async function publishOne(dir: string, pkg: PkgJson): Promise<PublishOutcome> {
   console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
   // Type-checking stays ON — the generated `deno.json` carries
   // `compilerOptions.lib` (Deno's DOM + runtime set) so the DOM types these
@@ -358,7 +365,14 @@ async function publishOne(dir: string, pkg: PkgJson): Promise<'published' | 'pen
   // polling — expected, not a failure. Any other non-zero is a genuine
   // publish error (type error, auth, unresolvable dep, …).
   const cutShort = pub.exitCode === 124 || pub.exitCode === 137
-  if (pub.exitCode !== 0 && !cutShort) return 'failed'
+  if (pub.exitCode !== 0 && !cutShort) {
+    // Deno's own diagnostics (the actionable part — "Could not find version
+    // of X", a type error, an auth failure) are already in the log above:
+    // the `$` call streams them. Name the package and code here so a reader
+    // can tie that output to this attempt, and so the summary can repeat it.
+    console.error(`  fail  ${pkg.name}@${pkg.version} (deno exit ${pub.exitCode}) — see deno output above`)
+    return { status: 'failed', exitCode: pub.exitCode }
+  }
 
   // JSR is the source of truth: poll until the version is live, regardless of
   // whether Deno returned cleanly or we cut its hung poll short.
@@ -370,14 +384,14 @@ async function publishOne(dir: string, pkg: PkgJson): Promise<'published' | 'pen
   }
   if (live) {
     console.log(`  ok    ${pkg.name}@${pkg.version} live on JSR${cutShort ? ' (deno poll cut short)' : ''}`)
-    return 'published'
+    return { status: 'published' }
   }
   if (cutShort) {
     // We cut Deno's poll short and JSR is still finishing server-side — the
     // expected pending case. A later pass (or re-dispatch) re-checks
     // jsrHasVersion and skips it once live.
     console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m`)
-    return 'pend'
+    return { status: 'pend' }
   }
   // Deno exited 0 — it observed the server-side publishing task complete —
   // so the version IS published; meta.json is just propagating through the
@@ -386,7 +400,7 @@ async function publishOne(dir: string, pkg: PkgJson): Promise<'published' | 'pen
   // published; dependents are safe to follow since the registry itself has
   // the version.
   console.log(`  ok    ${pkg.name}@${pkg.version} published (per deno); meta.json still propagating`)
-  return 'published'
+  return { status: 'published' }
 }
 
 try {
@@ -428,7 +442,7 @@ try {
   let remaining = work
   for (let pass = 1; remaining.length > 0; pass++) {
     if (pass > 1) console.log(`\n  pass ${pass}: retrying ${remaining.map(w => w.pkg.name).join(', ')}`)
-    const failed: { item: WorkItem; pend: boolean }[] = []
+    const failed: { item: WorkItem; outcome: Exclude<PublishOutcome, { status: 'published' }> }[] = []
     let progressed = false
     for (const item of remaining) {
       const { dir, pkg } = item
@@ -439,11 +453,11 @@ try {
         continue
       }
       const outcome = await publishOne(dir, pkg)
-      if (outcome === 'published') {
+      if (outcome.status === 'published') {
         published++
         progressed = true
       } else {
-        failed.push({ item, pend: outcome === 'pend' })
+        failed.push({ item, outcome })
       }
     }
     if (!progressed || failed.length === 0) {
@@ -452,8 +466,8 @@ try {
       // server-side processing; a re-dispatch continues), genuine deno
       // failures stay errors.
       for (const f of failed) {
-        if (f.pend) pending.push(`${f.item.pkg.name}@${f.item.pkg.version}`)
-        else errors.push(`${f.item.pkg.name}@${f.item.pkg.version} (deno publish failed)`)
+        if (f.outcome.status === 'pend') pending.push(`${f.item.pkg.name}@${f.item.pkg.version}`)
+        else errors.push(`${f.item.pkg.name}@${f.item.pkg.version} (deno exit ${f.outcome.exitCode})`)
       }
       break
     }
