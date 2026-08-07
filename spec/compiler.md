@@ -843,6 +843,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
 | BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
+| BF048 | `'use client'` file references a same-file sibling component that produced no template — typically a multi-return JSX `switch`/`if`-`else` dispatch, which only #932's non-client verbatim-preservation path can compile (#2556) |
 | BF060 | Reactive binding (signal/memo getter) referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF061 | Init-scope local referenced from template scope (staged-IR; opt-in diagnostic) |
 | BF062 | AwaitExpression in template scope (staged-IR; reserved for Phase 1 dispatcher) |
