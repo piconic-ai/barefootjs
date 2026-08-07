@@ -79,15 +79,5 @@ export function generateReadmeMd(
     '',
   )
 
-  // Only present when the adapter injects a dependency override (see
-  // `AdapterTemplate.overrides`/`overridesNote` in `./templates.ts`) —
-  // package.json can't carry a comment, so this is the only place the
-  // *why* survives past scaffold time for whoever maintains the
-  // generated project next.
-  if (adapter.overrides && adapter.overridesNote) {
-    lines.push('## Dependency overrides', '')
-    lines.push(adapter.overridesNote, '')
-  }
-
   return lines.join('\n')
 }

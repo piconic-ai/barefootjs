@@ -52,38 +52,6 @@ export interface AdapterTemplate {
   /** package.json dev dependencies. */
   devDependencies: Record<string, string>
   /**
-   * Optional forced-version entries for *transitive* dependencies the
-   * scaffold's package.json should carry — e.g. a dep that pins its own
-   * dependency to an exact (non-range) vulnerable version, which leaves
-   * `npm audit fix` with nothing to bump even when a patched release
-   * exists upstream. Keys must be flat (`{ pkg: "range" }`), never
-   * nested/scoped (`{ parent: { pkg: "range" } }`) — bun does not
-   * support nested overrides (as of bun 1.3.11: it warns and silently
-   * ignores the entry, leaving the vulnerable version installed), and
-   * this repo treats bun as a first-class scaffold target. `bf init`
-   * (`../commands/init.ts`'s `overridesField`) renders this map into
-   * whichever field name/shape the *detected* package manager actually
-   * reads (npm/bun/deno: top-level `overrides`; pnpm: nested
-   * `pnpm.overrides`; yarn: top-level `resolutions`) — getting that
-   * per-PM shape wrong is worse than omitting it: an `overrides` key a
-   * PM silently no-ops on (verified: pnpm 10 does this) looks like
-   * protection without providing any. Omitted entirely when an adapter
-   * needs none, so plain scaffolds don't carry a stray empty key.
-   */
-  overrides?: Record<string, string>
-  /**
-   * Human-readable explanation of why `overrides` exists, rendered into
-   * the scaffolded README (see `generateReadmeMd` in `../lib/readme.ts`)
-   * rather than left undiscoverable in the framework's own source
-   * comments. `package.json` is JSON — it can't carry a comment — so
-   * without this, the override is a stray-looking block in a file the
-   * *user* now owns and maintains, with no way to learn why it's there
-   * or when it's safe to delete. Required whenever `overrides` is set;
-   * should name the upstream cause and link a tracking issue for
-   * removal once it's no longer needed.
-   */
-  overridesNote?: string
-  /**
    * Optional deploy hint surfaced as a dedicated "Deploy:" section in
    * the post-scaffold guide. Adapters that don't have an obvious one-
    * command deploy story (Echo, Mojolicious, CSR) leave this unset
