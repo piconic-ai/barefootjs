@@ -134,7 +134,7 @@ export function convertInitialValue(
       if (preParsed?.kind === 'literal' && preParsed.literalType === 'string' && typeof preParsed.value === 'string') {
         return JSON.stringify(preParsed.value)
       }
-      if (value.startsWith("'") || value.endsWith("'")) {
+      if (value.startsWith("'") && value.endsWith("'")) {
         return value.replace(/'/g, '"')
       }
       if (value.startsWith('"') && value.endsWith('"')) {

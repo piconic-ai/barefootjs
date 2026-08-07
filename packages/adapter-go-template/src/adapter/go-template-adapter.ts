@@ -2523,7 +2523,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       let goType: string
       let referencedProp = propsParamMap.get(signal.initialValue)
       if (!referencedProp) {
-        const propName = this.extractPropNameFromInitialValue(signal.initialValue)
+        const propName = this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
         if (propName) referencedProp = propsParamMap.get(propName)
       }
       if (referencedProp) {
@@ -3194,7 +3194,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (signal) {
           let referencedProp = propsParamMap.get(signal.initialValue)
           if (!referencedProp) {
-            const propName = this.extractPropNameFromInitialValue(signal.initialValue)
+            const propName = this.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
             if (propName) referencedProp = propsParamMap.get(propName)
           }
           if (referencedProp) {
