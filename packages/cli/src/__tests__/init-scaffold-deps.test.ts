@@ -131,50 +131,25 @@ describe('hono scaffold pins wrangler as a devDependency and invokes it directly
   })
 })
 
-describe('hono scaffold overrides the undici pulled in by wrangler/miniflare', () => {
-  test('package.json carries the undici override from the adapter template', () => {
-    // `wrangler` -> `miniflare` pins `undici` to an exact (non-range)
-    // version, so a vulnerable release stays wired in even at the
-    // latest resolvable `wrangler` and `npm audit fix` can't bump past
-    // it. Assert against the adapter template's own value (not a
-    // hardcoded version here) so a routine bump to the override in
-    // `../lib/adapters/hono.ts` doesn't also require touching this test.
-    const pkg = scaffold('hono')
-    expect(pkg.overrides).toEqual(ADAPTERS.hono.overrides)
-    expect(pkg.overrides?.undici).toBeTruthy()
-  })
-
-  test('adapters without a wrangler/miniflare chain carry no overrides', () => {
-    // Only the Hono (Cloudflare Workers) adapter depends on wrangler ->
-    // miniflare today. Every other adapter should scaffold without a
-    // stray `overrides` key.
-    const pkg = scaffold('csr')
-    expect(pkg.overrides).toBeUndefined()
-  })
-
-  // Verified empirically (bun 1.3.11 / pnpm 10.33.0 / yarn 1.22.22)
-  // before writing these: a top-level `overrides` key is silently a
-  // no-op under pnpm (installs the vulnerable version with zero
-  // warning — worse than omitting the key, since the package.json
-  // *looks* protected) and is not read by yarn at all (which wants
-  // `resolutions` instead). `overridesField` in `../commands/init.ts`
-  // exists specifically to render the PM-correct shape.
-  test('pnpm-detected scaffold nests the override under pnpm.overrides, not top-level', () => {
-    const pkg = scaffold('hono', 'pnpm/10.33.0 npm/? node/v22.0.0 linux x64')
-    expect(pkg.overrides).toBeUndefined()
-    expect(pkg.pnpm?.overrides).toEqual(ADAPTERS.hono.overrides)
-  })
-
-  test('yarn-detected scaffold uses top-level resolutions, not overrides', () => {
-    const pkg = scaffold('hono', 'yarn/1.22.22 npm/? node/v22.0.0 linux x64')
-    expect(pkg.overrides).toBeUndefined()
-    expect(pkg.resolutions).toEqual(ADAPTERS.hono.overrides)
-  })
-
-  test('npm-detected scaffold keeps the top-level overrides key', () => {
-    const pkg = scaffold('hono', 'npm/10.9.7 node/v22.0.0 linux x64')
-    expect(pkg.overrides).toEqual(ADAPTERS.hono.overrides)
-    expect(pkg.pnpm).toBeUndefined()
-    expect(pkg.resolutions).toBeUndefined()
+describe('scaffolds carry no dependency-override fields', () => {
+  // The Hono scaffold used to force `overrides.undici` because
+  // `wrangler` -> `miniflare` pinned an exact vulnerable `undici`
+  // release (#2566). `miniflare` re-pinned upstream (undici@7.29.0 as
+  // of miniflare 5.20260801.1-alpha), so the override — and the per-PM
+  // `overridesField` plumbing that rendered it — were removed (#2567).
+  // Pin the removal: no scaffold should carry a stray override key in
+  // any PM's shape.
+  test('hono scaffold has no overrides/resolutions in any PM shape', () => {
+    for (const userAgent of [
+      undefined,
+      'npm/10.9.7 node/v22.0.0 linux x64',
+      'pnpm/10.33.0 npm/? node/v22.0.0 linux x64',
+      'yarn/1.22.22 npm/? node/v22.0.0 linux x64',
+    ]) {
+      const pkg = scaffold('hono', userAgent)
+      expect(pkg.overrides).toBeUndefined()
+      expect(pkg.pnpm).toBeUndefined()
+      expect(pkg.resolutions).toBeUndefined()
+    }
   })
 })

@@ -289,40 +289,5 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // comment above — this is what makes the bare invocation safe).
     wrangler: '^4.0.0',
   },
-  // `wrangler` pulls in `miniflare`, which pins `undici` to an exact
-  // (non-range) version rather than a caret range — so a vulnerable
-  // `undici` release stays wired in even at the latest resolvable
-  // `wrangler`/`miniflare`, and `npm audit fix` can't bump past it
-  // (nothing to bump: the range is a single exact version). Overriding
-  // `undici` directly is the only way to clear the advisory
-  // (GHSA-8xcm-r25x-g524 and friends) without waiting on `miniflare` to
-  // re-pin. Verified clean (`npm audit` → 0 vulnerabilities) against
-  // wrangler@4.119.0 / miniflare@5.20260801.0-alpha, which pin
-  // undici@7.28.0.
-  //
-  // Deliberately flat/unscoped (applies to every `undici` resolution in
-  // the scaffold, not just miniflare's) — see the `overrides` doc
-  // comment on `AdapterTemplate` in `../templates.ts` for why a
-  // `{ miniflare: { undici: ... } }` scoped form is off the table (bun
-  // doesn't support nested overrides). The Hono adapter has no other
-  // `undici` consumer today, so the wider blast radius is currently
-  // moot; revisit if that changes.
-  //
-  // Bridge, not a fix: drop this once `miniflare` re-pins past
-  // `undici@7.28.0` on its own — tracked in
-  // https://github.com/piconic-ai/barefootjs/issues/2567.
-  overrides: {
-    undici: '^7.29.0',
-  },
-  // Surfaced in the scaffolded README (package.json can't carry a
-  // comment, so without this the override is undiscoverable to whoever
-  // ends up maintaining the generated project).
-  overridesNote:
-    '`overrides.undici` forces a patched `undici` version. `wrangler` depends on `miniflare`, ' +
-    'which pins `undici` to an exact vulnerable release (see ' +
-    '[GHSA-8xcm-r25x-g524](https://github.com/advisories/GHSA-8xcm-r25x-g524) and related advisories) ' +
-    "rather than a range — so `npm audit fix` can't bump past it on its own. " +
-    'Safe to remove once `miniflare` re-pins `undici` upstream — tracked in ' +
-    '[barefootjs#2567](https://github.com/piconic-ai/barefootjs/issues/2567).',
   prereqWarnings: () => [],
 }

@@ -97,34 +97,6 @@ function pinBarefootDeps(deps: Record<string, string>): Record<string, string> {
   return pinned
 }
 
-// Renders an `AdapterTemplate.overrides` map into whatever field shape
-// the detected package manager actually reads for "force this
-// transitive dependency's version" — the field name (and nesting)
-// differs per PM, and getting it wrong is worse than doing nothing: a
-// stray `overrides` key that a PM silently ignores looks like
-// protection in the generated package.json without providing any
-// (verified empirically — pnpm 10 silently no-ops on a top-level
-// `overrides` key; it only reads `pnpm.overrides`).
-//   - npm, bun, deno: top-level `overrides` (npm's own field; bun
-//     mirrors it — but only the FLAT form, see `AdapterTemplate.overrides`'s
-//     doc comment on why nested/scoped overrides are off the table).
-//   - pnpm: nested under `pnpm.overrides`.
-//   - yarn (classic and berry): top-level `resolutions`.
-function overridesField(
-  pm: PackageManager,
-  overrides: Record<string, string> | undefined,
-): Record<string, unknown> {
-  if (!overrides) return {}
-  switch (pm) {
-    case 'pnpm':
-      return { pnpm: { overrides } }
-    case 'yarn':
-      return { resolutions: overrides }
-    default:
-      return { overrides }
-  }
-}
-
 interface InitFlags {
   name?: string
   adapter?: string
@@ -571,13 +543,6 @@ async function scaffoldApp(
     // `^<CLI_VERSION>` here — see `pinBarefootDeps` above.
     dependencies: pinBarefootDeps({ ...adapter.dependencies }),
     devDependencies: pinBarefootDeps({ ...adapterDevDeps, ...pmDevDeps }),
-    // Only present when the adapter declares one (see the doc comment
-    // on `AdapterTemplate.overrides`) — most adapters carry no
-    // transitive-pin vulnerabilities to work around, and a stray empty
-    // `overrides: {}` in every scaffold's package.json would be noise.
-    // Rendered into the PM-appropriate field name/shape — see
-    // `overridesField` above.
-    ...overridesField(pm, adapter.overrides),
   }
   if (!existsSync(pkgJsonPath)) {
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
