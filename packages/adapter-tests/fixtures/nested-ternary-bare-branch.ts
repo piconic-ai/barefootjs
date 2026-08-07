@@ -9,15 +9,16 @@ import { createFixture } from '../src/types'
  * `wrapWithCondMarker` fragment-embedding path and never exercised the bug.
  * Here the outer condition has no `slotId` (no signal/prop/call involved),
  * so the Hono adapter takes the non-reactive branch: `renderConditional`
- * renders the whenFalse branch — itself an `IRConditional` — through
- * `renderNodeRawCtx`, which used to fall through to the generic
- * `renderNode`/`emitConditional` dispatch and re-wrap the nested ternary in
- * its own `{…}`. That's correct for a JSX-child position but invalid where
- * this nested ternary actually sits: the ALTERNATE of the outer ternary,
- * where only a bare JS expression is legal. The extra brace pair broke the
- * emitted `.tsx`'s parse (`Expected "}" but found "==="`) with zero
- * diagnostics. `renderNodeRawCtx` now special-cases a nested `conditional`
- * node the same way it already special-cases a bare `null`/`undefined`
+ * used to render the whenFalse branch — itself an `IRConditional` — through
+ * `renderNodeRawCtx`, which fell through to the generic
+ * `renderNode`/`emitConditional` dispatch and re-wrapped the nested ternary
+ * in its own `{…}`. That's correct for a JSX-child position but invalid
+ * where this nested ternary actually sits: the ALTERNATE of the outer
+ * ternary, where only a bare JS expression is legal. The extra brace pair
+ * broke the emitted `.tsx`'s parse (`Expected "}" but found "==="`) with
+ * zero diagnostics. Non-reactive branches now render through
+ * `renderBareBranch`, which special-cases a nested `conditional` node the
+ * same way `renderNodeRawCtx` special-cases a bare `null`/`undefined`
  * expression branch, splicing in the bare ternary body
  * (`renderConditionalBody`) instead of a second `{…}`-wrapped copy.
  */
