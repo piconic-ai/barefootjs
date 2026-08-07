@@ -208,7 +208,6 @@ export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceI
 export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxInput_${Math.random().toString(36).slice(2, 8)}`
-  const inputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -256,7 +255,6 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
 export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxGroup_${Math.random().toString(36).slice(2, 8)}`
-  const groupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

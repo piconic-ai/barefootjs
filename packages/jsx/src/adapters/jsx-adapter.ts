@@ -18,6 +18,7 @@ import { BaseAdapter } from './interface.ts'
 import type { CallbackBodyAcceptor } from './interface.ts'
 import { ENV_SIGNAL_CLIENT_FACTORY } from './env-signal.ts'
 import { formatParamWithType, findReachableNames } from '../module-exports.ts'
+import { extractFreeIdentifiersFromText } from '../ir-to-client-js/csr-substitute.ts'
 
 export interface JsxAdapterConfig {
   /** Use typed versions (typedInitialValue, etc.) for type-safe .tsx output */
@@ -252,11 +253,19 @@ export abstract class JsxAdapter extends BaseAdapter {
    * wrong runtime scope). So candidates are demoted by a forward-
    * reachability fixpoint, mirroring the client bundle's
    * `computeDeclarationScopes` (`ir-to-client-js/compute-scope.ts`): a
-   * candidate whose emitted text references component scope — a signal
-   * getter/setter, a memo, a prop, a body const/function, or an already-
-   * demoted candidate — is component-scoped, transitively. Genuinely
-   * module-level declarations cannot reference component scope, so the
-   * fixpoint only ever demotes the mis-flagged.
+   * candidate that references component scope — a signal getter/setter, a
+   * memo, a prop, a body const/function, or an already-demoted candidate
+   * — is component-scoped, transitively. References are REAL identifier
+   * nodes from a TS AST walk (`extractFreeIdentifiersFromText`), not text
+   * matches — a component-scope name occurring inside a candidate's
+   * string literal (`[data-state="open"]` vs a body const `open`) is not
+   * a reference and must not demote it.
+   *
+   * EXPORTED candidates are never demoted: `export` is only legal at
+   * module top level, so an exported declaration is lexically module-
+   * scoped by construction — and a spurious demotion would make it
+   * vanish entirely (the body loop skips exported declarations and
+   * `generateModuleExports` is told to skip value declarations).
    *
    * Memoized per IR: `generateModuleScopeDeclarations` (module emission)
    * and `generateSignalInitializers` (body emission) must agree on the
@@ -268,7 +277,6 @@ export abstract class JsxAdapter extends BaseAdapter {
     const cached = this.moduleScopeNamesCache.get(ir)
     if (cached) return cached
 
-    const { preserveTypes } = this.jsxConfig
     const componentScope = new Set<string>()
     for (const sig of ir.metadata.signals) {
       if (sig.isModule) continue
@@ -288,13 +296,23 @@ export abstract class JsxAdapter extends BaseAdapter {
       if (!f.isModule) componentScope.add(f.name)
     }
 
-    const candidates = new Map<string, string>()
+    // Exported declarations join the emit set unconditionally (see the
+    // docstring); only non-exported candidates enter the demotion
+    // fixpoint, each carrying its REAL free-identifier set.
+    const exported = new Set<string>()
+    const candidates = new Map<string, ReadonlySet<string>>()
     for (const c of ir.metadata.localConstants) {
       if (!c.isModule) continue
       // JSX-valued consts are inlined at their usage sites at IR level
       // (#547/#569) — same skip as the client's `classifyConstant`.
       if (c.isJsx || c.isJsxFunction) continue
-      candidates.set(c.name, (preserveTypes ? (c.typedValue ?? c.value) : c.value) ?? '')
+      if (c.isExported) {
+        exported.add(c.name)
+        continue
+      }
+      // The analyzer precomputes the value's free identifiers; fall back
+      // to the same AST walk for values it didn't cover.
+      candidates.set(c.name, c.freeIdentifiers ?? extractFreeIdentifiersFromText(c.value ?? ''))
     }
     for (const f of ir.metadata.localFunctions) {
       if (!f.isModule) continue
@@ -304,26 +322,30 @@ export abstract class JsxAdapter extends BaseAdapter {
       // bodies carry raw source JSX that must not reach the template
       // verbatim. Same skips as the client's `computeDeclarationScopes`.
       if (f.isJsxFunction || f.isMultiReturnJsxHelper) continue
-      const body = preserveTypes ? (f.typedBody ?? f.body) : f.body
-      candidates.set(f.name, body)
+      if (f.isExported) {
+        exported.add(f.name)
+        continue
+      }
+      // Wrap as an ARROW so the extractor's parameter shadowing applies
+      // (it tracks arrow params only) — param references then don't count
+      // as free, matching the client fixpoint's `refs.delete(p.name)`.
+      const params = f.typedParams !== undefined
+        ? f.typedParams
+        : f.params.map(formatParamWithType).join(', ')
+      candidates.set(f.name, extractFreeIdentifiersFromText(`(${params}) => ${f.body}`))
     }
 
-    // `$` is a legal identifier character but not a `\\w` one, so plain
-    // `\\b` boundaries misfire around `$`-named bindings — use the same
-    // escaped lookaround idiom as the analyzer's branch-substitution
-    // rewriter (`(?<![\\w$])name(?![\\w$])`).
-    const escapeForRegex = (name: string): string => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const referencesAny = (text: string, names: ReadonlySet<string>): boolean => {
-      for (const name of names) {
-        if (new RegExp(`(?<![\\w$])${escapeForRegex(name)}(?![\\w$])`).test(text)) return true
+    const referencesAny = (refs: ReadonlySet<string>, names: ReadonlySet<string>): boolean => {
+      for (const ref of refs) {
+        if (names.has(ref)) return true
       }
       return false
     }
     let changed = true
     while (changed) {
       changed = false
-      for (const [name, text] of candidates) {
-        if (referencesAny(text, componentScope)) {
+      for (const [name, refs] of candidates) {
+        if (referencesAny(refs, componentScope)) {
           candidates.delete(name)
           componentScope.add(name)
           changed = true
@@ -331,7 +353,7 @@ export abstract class JsxAdapter extends BaseAdapter {
       }
     }
 
-    const result = new Set(candidates.keys())
+    const result = new Set([...exported, ...candidates.keys()])
     this.moduleScopeNamesCache.set(ir, result)
     return result
   }

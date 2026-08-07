@@ -20,11 +20,15 @@ const CommandContext = createContext<CommandContextValue>()
 
 const commandRootClasses = 'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground'
 
+const commandInputWrapperClasses = 'flex items-center border-b px-3'
+
 const commandInputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
 
 const commandListClasses = 'max-h-[300px] overflow-y-auto overflow-x-hidden'
 
 const commandGroupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=command-group-heading]]:px-2 [&_[data-slot=command-group-heading]]:py-1.5 [&_[data-slot=command-group-heading]]:text-xs [&_[data-slot=command-group-heading]]:font-medium [&_[data-slot=command-group-heading]]:text-muted-foreground'
+
+const commandItemClasses = 'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'
 
 const commandEmptyClasses = 'py-6 text-center text-sm'
 
@@ -101,10 +105,6 @@ interface CommandDialogProps extends HTMLBaseAttributes {
   children?: Child
 }
 
-const commandInputWrapperClasses = 'flex items-center border-b px-3'
-
-const commandItemClasses = 'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'
-
 type CommandListPropsWithHydration = CommandListProps & {
   __instanceId?: string
   __bfScope?: string
@@ -175,7 +175,6 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
 export function CommandInput(__allProps: CommandInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandInput_${Math.random().toString(36).slice(2, 8)}`
-  const commandInputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -219,7 +218,6 @@ export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: st
 export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandGroup_${Math.random().toString(36).slice(2, 8)}`
-  const commandGroupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=command-group-heading]]:px-2 [&_[data-slot=command-group-heading]]:py-1.5 [&_[data-slot=command-group-heading]]:text-xs [&_[data-slot=command-group-heading]]:font-medium [&_[data-slot=command-group-heading]]:text-muted-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -236,7 +234,6 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
-  const commandItemClasses = 'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

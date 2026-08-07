@@ -19,6 +19,8 @@ const selectTriggerBaseClasses = 'flex h-9 w-full items-center justify-between r
 
 const selectTriggerFocusClasses = 'focus:border-ring focus:ring-ring/50 focus:ring-[3px]'
 
+const selectTriggerDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
+
 const selectTriggerDataStateClasses = 'data-[placeholder]:text-muted-foreground'
 
 const selectContentBaseClasses = 'fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
@@ -92,8 +94,6 @@ interface SelectLabelProps extends HTMLBaseAttributes {
 
 interface SelectSeparatorProps extends HTMLBaseAttributes {
 }
-
-const selectTriggerDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
 
 type SelectGroupPropsWithHydration = SelectGroupProps & {
   __instanceId?: string

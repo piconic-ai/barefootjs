@@ -7,6 +7,16 @@ import { CheckIcon } from '../icon'
 const baseClasses = 'peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
 const focusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50'
 const errorClasses = 'aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive'
+const stateClasses = [
+  // Unchecked state
+  '[&[data-state=unchecked]]:border-input',
+  'dark:[&[data-state=unchecked]]:bg-input/30',
+  '[&[data-state=unchecked]]:bg-background',
+  // Checked state
+  '[&[data-state=checked]]:bg-primary',
+  '[&[data-state=checked]]:text-primary-foreground',
+  '[&[data-state=checked]]:border-primary',
+].join(' ')
 interface CheckboxProps extends ButtonHTMLAttributes {
   /**
    * Default checked state (for uncontrolled mode).
@@ -39,16 +49,6 @@ export function Checkbox(__allProps: CheckboxProps & { __instanceId?: string; __
   const isChecked = () => isControlled() ? controlledChecked() : internalChecked()
   const classes = () =>
     `${baseClasses} ${focusClasses} ${errorClasses} ${stateClasses} ${props.className ?? ''} grid place-content-center`
-  const stateClasses = [
-  // Unchecked state
-  '[&[data-state=unchecked]]:border-input',
-  'dark:[&[data-state=unchecked]]:bg-input/30',
-  '[&[data-state=unchecked]]:bg-background',
-  // Checked state
-  '[&[data-state=checked]]:bg-primary',
-  '[&[data-state=checked]]:text-primary-foreground',
-  '[&[data-state=checked]]:border-primary',
-].join(' ')
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

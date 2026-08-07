@@ -245,7 +245,6 @@ export function DropdownMenu(__allProps: DropdownMenuProps & { __instanceId?: st
 export function DropdownMenuTrigger(__allProps: DropdownMenuTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuTrigger_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

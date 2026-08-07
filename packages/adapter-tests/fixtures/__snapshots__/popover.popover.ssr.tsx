@@ -99,7 +99,6 @@ export function Popover(__allProps: PopoverProps & { __instanceId?: string; __bf
 export function PopoverTrigger(__allProps: PopoverTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `PopoverTrigger_${Math.random().toString(36).slice(2, 8)}`
-  const popoverTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

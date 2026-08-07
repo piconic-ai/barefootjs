@@ -19,6 +19,10 @@ const itemStateClasses = '[&[data-state=checked]]:border-primary [&[data-state=c
 
 const itemErrorClasses = 'aria-[invalid]:border-destructive aria-[invalid]:ring-3 aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40'
 
+const itemDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
+
+const itemClasses = `${itemBaseClasses} ${itemFocusClasses} ${itemStateClasses} ${itemErrorClasses} ${itemDisabledClasses}`
+
 interface RadioGroupProps extends HTMLBaseAttributes {
   /** Default selected value (for uncontrolled mode). */
   defaultValue?: string
@@ -78,8 +82,6 @@ export function RadioGroup(__allProps: RadioGroupProps & { __instanceId?: string
 export function RadioGroupItem(__allProps: RadioGroupItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `RadioGroupItem_${Math.random().toString(36).slice(2, 8)}`
-  const itemDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
-  const itemClasses = `${itemBaseClasses} ${itemFocusClasses} ${itemStateClasses} ${itemErrorClasses} ${itemDisabledClasses}`
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
