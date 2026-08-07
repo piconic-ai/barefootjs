@@ -41,23 +41,26 @@ export function emitPropsExtraction(
 
   for (const propName of neededProps) {
     const prop = ctx.propsParams.find(p => p.name === propName)
+    // `_p` is always keyed by the caller-facing name (#2524 CSR half); the
+    // local binding on the left of `const` stays `propName`.
+    const callerKey = prop?.sourceName ?? propName
     const usage = propUsage.get(propName)
     const defaultVal = prop?.defaultValue
     if (defaultVal) {
       // `props.onInput ?? () => {}` is a syntax error — `??` binds tighter
       // than the arrow head. Wrap arrow defaults in parens.
       const wrappedDefault = prop?.defaultContainsArrow ? `(${defaultVal})` : defaultVal
-      lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? ${wrappedDefault}`)
+      lines.push(`  const ${propName} = ${PROPS_PARAM}.${callerKey} ?? ${wrappedDefault}`)
     } else if (usage?.usedAsLoopArray) {
-      lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? []`)
+      lines.push(`  const ${propName} = ${PROPS_PARAM}.${callerKey} ?? []`)
     } else if (propHasPropertyAccess(usage) && !propsUsedAsConditions.has(propName)) {
-      lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? {}`)
+      lines.push(`  const ${propName} = ${PROPS_PARAM}.${callerKey} ?? {}`)
     } else {
       // No synthesized default for a defaultless optional (`{ size }:
       // { size?: number }`): the JS binding is `undefined` when absent, and
       // a zero default would diverge from SSR (`size ?? 1` seeds 1
       // server-side; a `_p.size ?? 0` extraction would hydrate to 0).
-      lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName}`)
+      lines.push(`  const ${propName} = ${PROPS_PARAM}.${callerKey}`)
     }
   }
   lines.push('')

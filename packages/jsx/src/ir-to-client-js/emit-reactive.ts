@@ -91,10 +91,12 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
     const pattern = new RegExp(`(?<![-.])\\b${prop.name}\\b`, 'g')
     if (!pattern.test(result)) continue
 
+    // `_p` is always keyed by the caller-facing name (#2524 CSR half).
+    const callerKey = prop.sourceName ?? prop.name
     const defaultVal = prop.defaultValue
     const replacement = defaultVal
-      ? `(${PROPS_PARAM}.${prop.name} ?? ${prop.defaultContainsArrow ? `(${defaultVal})` : defaultVal})`
-      : `${PROPS_PARAM}.${prop.name}`
+      ? `(${PROPS_PARAM}.${callerKey} ?? ${prop.defaultContainsArrow ? `(${defaultVal})` : defaultVal})`
+      : `${PROPS_PARAM}.${callerKey}`
     result = result.replace(new RegExp(`(?<![-.])\\b${prop.name}\\b`, 'g'), replacement)
   }
 

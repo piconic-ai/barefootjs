@@ -110,15 +110,41 @@ sub register ($self, $app, $config = {}) {
         $bf->_scope_id($template . '_' . substr(rand() =~ s/^0\.//r, 0, 6));
         $bf->register_components_from_manifest($m);
 
-        # Seed each ssrDefault into the stash unless the caller has
-        # already supplied a value for that key — callers always win.
+        # Seed each ssrDefault into the stash unless the caller has already
+        # supplied a value for that key — callers always win. Resolved
+        # through the production `BarefootJS::_derive_stash_from_defaults`
+        # (the same call `register_components_from_manifest` above makes for
+        # child components) so an aliased destructured prop's CALLER-facing
+        # key (`propName`, e.g. `n` for `{ n: count }`) is honoured — the
+        # caller stash IS the props document for a top-level render (a route
+        # handler sets `$c->stash(n => 5)` before `$c->render(...)`).
+        # Resolving `$d->{value}` directly, ignoring `propName`, was the
+        # #2524 production bug: it could never see a caller-supplied `n`,
+        # only ever the static default.
+        #
+        # CONSTRAINT (documented, not fixed): because the caller stash IS
+        # the props document here, `propName` resolution also sees every
+        # key Mojolicious itself already populates on `$c->stash` before
+        # this hook runs — `action`, `controller`, `template`,
+        # `template_class`, and friends (Mojolicious::Controller's own
+        # reserved stash keys). A ROOT-level component whose destructured
+        # prop happens to alias FROM one of those names (e.g. `{ action:
+        # label }`) resolves `propName => 'action'` against Mojo's OWN
+        # internal value, not a genuinely absent prop — the component
+        # silently picks up the current route's action name instead of its
+        # static default. This can't collide for a CHILD render
+        # (`register_components_from_manifest`'s renderer closure passes a
+        # fresh, purpose-built props hash, never the live `$c->stash`), only
+        # for a root-level render where the stash doubles as both Mojo's
+        # own bookkeeping and the props document. Avoid destructuring a prop
+        # named `action`/`controller`/`template`/`template_class`/etc. on a
+        # ROOT component if this matters to you.
         my $defaults = $entry->{ssrDefaults};
         if (ref($defaults) eq 'HASH') {
-            for my $name (keys %$defaults) {
+            my %extra = BarefootJS::_derive_stash_from_defaults($defaults, $c->stash);
+            for my $name (keys %extra) {
                 next if exists $c->stash->{$name};
-                my $d = $defaults->{$name};
-                my $value = ref($d) eq 'HASH' ? $d->{value} : $d;
-                $c->stash->{$name} = $value;
+                $c->stash->{$name} = $extra{$name};
             }
         }
 

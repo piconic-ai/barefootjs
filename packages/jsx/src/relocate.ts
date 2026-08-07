@@ -15,6 +15,7 @@ import type { Scope, BindingKind, IRMetadata } from './types.ts'
 import { isVisibleIn } from './types.ts'
 import type { AnalyzerContext } from './analyzer-context.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
+import { buildPropAliasMap } from './props-binding.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
@@ -42,6 +43,15 @@ export interface RelocateEnv {
    * `TransformContext._destructuredPropNames`.
    */
   propsForLift: Set<string>
+  /**
+   * Local prop name → caller-facing key (`sourceName ?? name`), entries
+   * only for `ParamInfo`s that rename (`{ n: count }` → `count` → `n`).
+   * `_p` is always keyed by the caller-facing name (#2524 CSR half) — the
+   * `lift-to-prop` action reads this so `count` lifts to `_p.n`, not
+   * `_p.count`. A name absent from this map is un-aliased, so
+   * `propSourceNames.get(name) ?? name` degrades to an identity there.
+   */
+  propSourceNames: ReadonlyMap<string, string>
   /**
    * Name of the props parameter (e.g. `props`). Used to detect
    * `props.X` member access at lift sites — those are not free refs
@@ -179,8 +189,10 @@ function decideAction(
     if (env.propsObjectName !== null && name === env.propsObjectName) {
       return { action: 'lift-to-prop', rewrittenAs: PROPS_PARAM }
     }
-    // Lift `name` → `_p.name`.
-    return { action: 'lift-to-prop', rewrittenAs: `${PROPS_PARAM}.${name}` }
+    // Lift `name` → `_p.<caller-facing key>` — `_p` is always keyed by
+    // the caller-facing name (#2524 CSR half), not the local binding.
+    const callerKey = env.propSourceNames.get(name) ?? name
+    return { action: 'lift-to-prop', rewrittenAs: `${PROPS_PARAM}.${callerKey}` }
   }
 
   if ((kind === 'init-local' || kind === 'sub-init-local') && toScope === 'template') {
@@ -860,6 +872,10 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
     if (kind === 'prop') propsForLift.add(name)
   }
 
+  // propSourceNames: local prop name → caller-facing key, entries only
+  // for `ParamInfo`s that actually rename. See `RelocateEnv.propSourceNames`.
+  const propSourceNames = buildPropAliasMap(src.propsParams) ?? new Map<string, string>()
+
   // aliasTargets (#2069 R2): one-hop alias resolution table for
   // `isCallAcceptedByAdapter`. A const whose FINAL resolved binding kind
   // is `init-local` or `module-local` (i.e. not a signal/memo/prop-alias
@@ -884,6 +900,7 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
     bindings,
     inlinable: new Map(), // populated by compute-inlinability after analyzer runs
     propsForLift,
+    propSourceNames,
     propsObjectName,
     allowFallback: true,
     aliasTargets,

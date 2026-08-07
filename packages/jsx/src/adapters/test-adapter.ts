@@ -5,6 +5,7 @@
  * Generates simple JSX output without framework-specific features.
  */
 
+import ts from 'typescript'
 import type {
   ComponentIR,
   IRNode,
@@ -20,6 +21,7 @@ import type {
 import type { AdapterOutput, TemplateSections } from './interface.ts'
 import { type JsxAdapterConfig, JsxAdapter } from './jsx-adapter.ts'
 import { rewriteImportsForTemplate } from './template-imports.ts'
+import { propsDestructureBinding } from '../props-binding.ts'
 
 export class TestAdapter extends JsxAdapter {
   name = 'test'
@@ -122,8 +124,10 @@ export class TestAdapter extends JsxAdapter {
     const bodyRefText = [jsxBody, signalInits, scopeIdLine].join('\n')
     const bfScopeAlias = /\b__bfScope\b/.test(bodyRefText) ? '__bfScope' : '__bfScope: _bfScope'
 
+    // `key: local` rename-aware bindings, shared with the Hono SSR
+    // destructure — one renderer, zero drift (`propsDestructureBinding`).
     const propsParams = ir.metadata.propsParams
-      .map((p: ParamInfo) => (p.defaultValue ? `${p.name} = ${p.defaultValue}` : p.name))
+      .map((p: ParamInfo) => propsDestructureBinding(p))
       .join(', ')
 
     const restPropsName = ir.metadata.restPropsName

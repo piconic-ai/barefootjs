@@ -484,20 +484,35 @@ _DATE_EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
 def _derive_stash_from_defaults(defaults: dict, props: dict) -> dict:
     """Derive template-stash kvs from a manifest entry's `ssrDefaults`
     section. See BarefootJS.pm's `_derive_stash_from_defaults` docstring for
-    the full field-shape contract."""
+    the full field-shape contract.
+
+    `props` arrives ALREADY keyword-mangled (`render_child` / the manifest
+    renderer closure both mangle every prop key via `jinja_ident` before
+    calling in -- see their docstrings), but `defaults`' own keys and each
+    entry's `propName` are the RAW (un-mangled) spellings `extractSsrDefaults`
+    emitted. For a reserved-word prop (`as`, `for`, `class`, ...) an
+    unmangled lookup/output key misses the mangled `props` map entirely --
+    silently falling back to the static default even when the caller DID
+    supply a value -- and then writes the stash under the RAW key, which a
+    subsequent mangling pass (or the template itself, keyed by the mangled
+    name) never reads. Both the output key and the `propName` lookup are
+    mangled here so this resolves correctly regardless of whether the prop
+    name happens to collide with a reserved word (#2524 follow-up)."""
     extra: dict = {}
     for name, d in (defaults or {}).items():
+        key = jinja_ident(name)
         if not isinstance(d, dict):
-            extra[name] = d
+            extra[key] = d
             continue
         if d.get("isRestProps"):
-            extra[name] = props[name] if name in props else d.get("value")
+            extra[key] = props[key] if key in props else d.get("value")
             continue
         prop_name = d.get("propName")
-        if prop_name is not None and props.get(prop_name) is not None:
-            extra[name] = props[prop_name]
+        mangled_prop_name = jinja_ident(prop_name) if prop_name is not None else None
+        if mangled_prop_name is not None and props.get(mangled_prop_name) is not None:
+            extra[key] = props[mangled_prop_name]
         else:
-            extra[name] = d.get("value")
+            extra[key] = d.get("value")
     return extra
 
 

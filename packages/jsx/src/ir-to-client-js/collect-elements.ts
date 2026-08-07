@@ -933,8 +933,11 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
           // alone was wrong on both counts — it keys on HTML attr names
           // (`aria-invalid` ≠ source key `error`) and omits event handlers.
           // (#1467)
+          // `applyRestAttrs` filters `Object.keys(_p)` — which is always
+          // caller-keyed (#2524 CSR half) — so the exclude list must use
+          // the caller-facing key too, not the local binding name.
           const consumedKeys =
-            spreadVal === elemRestName ? ctx.propsParams.map(p => p.name) : []
+            spreadVal === elemRestName ? ctx.propsParams.map(p => p.sourceName ?? p.name) : []
           const staticAttrKeys = element.attrs
             .filter(a => a.name !== '...')
             .map(a => a.name)

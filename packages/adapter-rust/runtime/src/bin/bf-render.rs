@@ -12,7 +12,7 @@
 
 use barefootjs::backend_minijinja;
 use barefootjs::num::JsValue;
-use barefootjs::runtime::{js_to_mj, BfInstance, ChildRendererSpec, RenderSession};
+use barefootjs::runtime::{BfInstance, ChildRendererSpec, RenderSession};
 use barefootjs::search_params::SearchParams;
 use minijinja::value::Value as MjValue;
 use serde::Deserialize;
@@ -96,11 +96,12 @@ fn run(payload_path: &str) -> Result<String, String> {
             ChildRendererSpec {
                 component_name: child.name.clone(),
                 template: child.template.clone(),
-                // Converted from JSON to `Value` HERE, at registration time
-                // -- `render_child` keeps props as `Value` end-to-end from
-                // this point on (see `ChildRendererSpec::ssr_defaults`'s
-                // docstring).
-                ssr_defaults: js_to_mj(&decode_value(&child.ssr_defaults)),
+                // Kept RAW (`JsValue`, the FULL `{value, propName?,
+                // isRestProps?}` shape) -- `render_child` resolves this
+                // PER-CALL against the real caller props via
+                // `derive_stash_from_defaults` (see `ChildRendererSpec::
+                // ssr_defaults`'s docstring; #2524).
+                ssr_defaults: decode_value(&child.ssr_defaults),
                 rest_props_name: child.rest_props_name.clone(),
                 param_names: child.param_names.clone(),
             },

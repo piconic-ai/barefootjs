@@ -135,7 +135,11 @@ export function collectAstPropRefs(
  * Returns null when `text` does not parse cleanly as an expression —
  * the caller falls back to the legacy regex rewrite.
  */
-function applyScopedPropRefRewrite(text: string, propRefs: Set<string>): string | null {
+function applyScopedPropRefRewrite(
+  text: string,
+  propRefs: Set<string>,
+  propAliases?: ReadonlyMap<string, string>,
+): string | null {
   // Wrap in parens so object literals and arrows parse as expressions.
   const prefix = '('
   const sf = ts.createSourceFile('__bf_prop_rewrite.ts', `${prefix}${text}\n)`, ts.ScriptTarget.Latest, true)
@@ -149,11 +153,15 @@ function applyScopedPropRefRewrite(text: string, propRefs: Set<string>): string 
     const start = n.getStart(sf) - prefix.length
     const end = n.getEnd() - prefix.length
     if (start < 0 || end > text.length) return
+    // `_p` is always keyed by the caller-facing name (`sourceName ?? name`
+    // — #2524 CSR half); the local binding (`n.text`) only survives on the
+    // left of a shorthand expansion.
+    const callerKey = propAliases?.get(n.text) ?? n.text
     if (parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n) {
-      edits.push({ start, end, replacement: `${n.text}: ${PROPS_PARAM}.${n.text}` })
+      edits.push({ start, end, replacement: `${n.text}: ${PROPS_PARAM}.${callerKey}` })
       return
     }
-    edits.push({ start, end, replacement: `${PROPS_PARAM}.${n.text}` })
+    edits.push({ start, end, replacement: `${PROPS_PARAM}.${callerKey}` })
   })
 
   if (edits.length === 0) return text
@@ -177,11 +185,14 @@ function applyScopedPropRefRewrite(text: string, propRefs: Set<string>): string 
 export function applyRegexPropRefRewrite(
   text: string,
   propRefs: Iterable<string>,
+  propAliases?: ReadonlyMap<string, string>,
 ): string {
   const { protect, restore } = createTemplateAwareStringProtector()
   let result = protect(text)
 
   for (const propName of propRefs) {
+    // `_p` is always keyed by the caller-facing name (#2524 CSR half).
+    const callerKey = propAliases?.get(propName) ?? propName
     const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
     result = result.replace(pattern, (match, offset, str) => {
       // Skip object literal keys: preceded by { or , and followed by :
@@ -190,7 +201,7 @@ export function applyRegexPropRefRewrite(
         const before = str.slice(0, offset)
         if (/[{,]\s*$/.test(before)) return match
       }
-      return `${PROPS_PARAM}.${propName}`
+      return `${PROPS_PARAM}.${callerKey}`
     })
   }
 
@@ -209,12 +220,18 @@ export function applyRegexPropRefRewrite(
  *   `text` was produced by inlining a branch-local whose initializer
  *   references the prop). The rewrite only touches genuine value
  *   references, so passing an over-broad set is safe.
+ * @param propAliases - Local name → caller-facing key (`sourceName ?? name`)
+ *   for aliased destructured props (`{ n: count }` → `count` → `n`).
+ *   `_p` is always keyed by the caller-facing name (#2524 CSR half); a name
+ *   absent from this map emits `_p.<name>` unchanged (the un-aliased case,
+ *   where `sourceName ?? name` is an identity).
  */
 export function rewriteBarePropRefs(
   text: string,
   node: ts.Node,
   propNames: Set<string>,
   extraPropRefs?: ReadonlySet<string>,
+  propAliases?: ReadonlyMap<string, string>,
 ): string | undefined {
   // Walk AST to find which prop names are actually used as value references
   const foundPropRefs = new Set<string>()
@@ -225,5 +242,8 @@ export function rewriteBarePropRefs(
     }
   }
   if (foundPropRefs.size === 0) return undefined
-  return applyScopedPropRefRewrite(text, foundPropRefs) ?? applyRegexPropRefRewrite(text, foundPropRefs)
+  return (
+    applyScopedPropRefRewrite(text, foundPropRefs, propAliases) ??
+    applyRegexPropRefRewrite(text, foundPropRefs, propAliases)
+  )
 }

@@ -22,27 +22,24 @@
       }
     },
     {
-      "name": "gen:count:zero",
+      "name": "gen:n:zero",
       "props": {
         "text": "hello",
-        "n": 7,
-        "count": 0
+        "n": 0
       }
     },
     {
-      "name": "gen:count:negative",
+      "name": "gen:n:negative",
       "props": {
         "text": "hello",
-        "n": 7,
-        "count": -7
+        "n": -7
       }
     },
     {
-      "name": "gen:count:large",
+      "name": "gen:n:large",
       "props": {
         "text": "hello",
-        "n": 7,
-        "count": 1234567890
+        "n": 1234567890
       }
     }
   ],

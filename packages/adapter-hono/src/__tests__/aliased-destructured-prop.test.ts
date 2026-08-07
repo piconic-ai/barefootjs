@@ -99,10 +99,11 @@ describe('aliased destructured props (#2460)', () => {
   })
 
   test('aliased prop reaches client-side hydration serialization with the correct value', async () => {
-    // The client init function reads `_p.<localName>` (props-extraction
+    // The client init function reads `_p.<callerKey>` (props-extraction
     // phase), so the SSR-serialized `bf-p` blob must carry the correct
-    // value under the LOCAL key (`count`) — the rename only affects the
-    // caller-facing key, not the local binding the hydration bridge uses.
+    // value under the CALLER-facing key (`n`) — `_p` is uniformly keyed
+    // by `sourceName ?? name` across every producer/consumer (#2524 CSR
+    // half), not the local binding the destructure renames it to.
     const html = await renderHonoComponent({
       adapter: new HonoAdapter(),
       source: `
@@ -120,9 +121,9 @@ describe('aliased destructured props (#2460)', () => {
 
     // The rendered value is correct...
     expect(html).toContain(':<!--bf:s1-->7<!--/-->')
-    // ...and the serialized hydration payload carries it under the LOCAL
-    // binding name, which is what the generated client JS's
-    // `const count = _p.count` extraction reads.
-    expect(html).toMatch(/bf-p="[^"]*count[^"]*7/)
+    // ...and the serialized hydration payload carries it under the
+    // CALLER-facing key, which is what the generated client JS's
+    // `const count = _p.n` extraction reads.
+    expect(html).toMatch(/bf-p="[^"]*n[^"]*7/)
   })
 })

@@ -85,6 +85,18 @@ interface PropParamType {
 /** Matches the IR's `ParamInfo`/`TypeInfo` shapes (structurally). */
 interface PropParam {
   name: string
+  /**
+   * CALLER-facing key for a renaming destructure (`{ n: count }` → `name:
+   * 'count', sourceName: 'n'`); unset for an un-aliased param, where it's
+   * an identity with `name` (`sourceName ?? name`, the repo-wide rule —
+   * see `packages/jsx/src/types.ts`'s `ParamInfo.sourceName` docstring).
+   * Generated data points key their props objects by this, NOT `name`: the
+   * `props` bag this module builds is handed to `render()` as the
+   * CALLER's props, and a caller can only ever supply the caller-facing
+   * spelling — keying by the local binding silently generates a point that
+   * never reaches the aliased prop at all (#2524 follow-up).
+   */
+  sourceName?: string
   optional: boolean
   isRest?: boolean
   defaultValue?: string
@@ -387,17 +399,24 @@ export function generateDataPointsForFixture(fixture: JSXFixture): JSXDataPoint[
   for (const param of propsParams) {
     if (param.isRest) continue
     if (param.name.startsWith('__')) continue
+    // CALLER-facing key (`sourceName ?? name`, the repo-wide rule — see
+    // `PropParam.sourceName`'s docstring above): `props` here is handed to
+    // `render()` as the CALLER's props object, so an aliased param
+    // (`{ n: count }`) must be keyed `n`, not the local binding `count`,
+    // or the generated point never reaches the aliased prop at all (#2524
+    // follow-up).
+    const callerKey = param.sourceName ?? param.name
     for (const { tag, value } of catalogValuesFor(param)) {
       const props: Record<string, unknown> = structuredClone(base)
       if (value === ABSENT) {
-        delete props[param.name]
+        delete props[callerKey]
       } else {
-        props[param.name] = structuredClone(value)
+        props[callerKey] = structuredClone(value)
       }
-      const key = stableStringify(props)
-      if (seen.has(key)) continue
-      seen.add(key)
-      points.push({ name: `gen:${param.name}:${tag}`, props })
+      const dedupeKey = stableStringify(props)
+      if (seen.has(dedupeKey)) continue
+      seen.add(dedupeKey)
+      points.push({ name: `gen:${callerKey}:${tag}`, props })
     }
   }
   return points

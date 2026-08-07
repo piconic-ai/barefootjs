@@ -10,11 +10,11 @@ import { createFixture } from '../src/types'
  * `count` property off a props object shaped `{ text, n }` → always
  * `undefined`, `s1` rendered empty) — FIXED, Hono now emits
  * `{ text, n: count }` and this fixture is no longer skipped for it. The
- * template-string adapters still key `ssrDefaults` / template vars as
- * `count` so props seeding misses; Go's Input struct field is `Count`
+ * template-string adapters used to key `ssrDefaults` / template vars as
+ * `count` so props seeding missed; Go's Input struct field is `Count`
  * `json:"count"`, so the caller-side struct literal keyed by the real
  * prop name fails `go run` outright (unknown field N); the shared client
- * JS reads `_p.count` too. All silent except Go's exit 1.
+ * JS used to read `_p.count` too. All silent except Go's exit 1.
  * `ParamInfo.sourceName` carries the original property name precisely
  * for this; its docstring rule is "consumers keying into
  * `propsType.properties` must use `sourceName ?? name`".
@@ -24,14 +24,25 @@ import { createFixture } from '../src/types'
  * broken party before, which is exactly why #2460 notes no aliased-prop
  * fixture could exist until it was fixed). #2460 itself is CLOSED (fixed
  * in b4f5075) — the shared layer (Hono, `extractSsrDefaults`) now keys
- * off `sourceName ?? name` correctly. The 7 template-string adapters
- * still drop the rename silently and are tracked by
- * https://github.com/piconic-ai/barefootjs/issues/2524; Go's `go run`
- * exit-1 failure is tracked by
- * https://github.com/piconic-ai/barefootjs/issues/2525. Adapters that
- * still drop the rename skip this fixture with a pointer to the
- * relevant tracker; graduating means fixing the emission and deleting
- * the skip entry.
+ * off `sourceName ?? name` correctly.
+ *
+ * Status (#2524 split into two halves, each fixed separately):
+ *   - CSR half (the client JS reading `_p.count` off a `{ text, n }`
+ *     props object) — FIXED (PR A, `claude/2524-csr-props-key`, this
+ *     branch stacks on it).
+ *   - SSR half (the 7 template-string adapters — blade, erb, jinja,
+ *     mojolicious, twig, xslate, rust — silently dropping the rename in
+ *     their `ssrDefaults` seeding) — FIXED here: each harness now derives
+ *     its seeded vars through `deriveStashFromDefaults` (or the matching
+ *     production runtime function) instead of hand-flattening
+ *     `SsrDefault.value`, so a caller-facing `propName` resolves onto the
+ *     local template var. `packages/jsx/src/ssr-defaults.ts`'s
+ *     `deriveStashFromDefaults` is the shared TS twin of those runtime
+ *     ports.
+ *   - Go's `go run` exit-1 failure is STILL tracked by
+ *     https://github.com/piconic-ai/barefootjs/issues/2525 — Go's `skipJsx`
+ *     pin stays; graduating it means fixing the Go emission and deleting
+ *     that pin.
  */
 export const fixture = createFixture({
   id: 'aliased-destructured-prop',

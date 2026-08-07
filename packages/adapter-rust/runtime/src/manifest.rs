@@ -33,22 +33,34 @@
 //! REGISTER a [`ChildRendererSpec`] per entry: [`crate::runtime::BfInstance::
 //! render_child`] already implements that whole contract generically for
 //! every registered child (scope-id chaining, `_bf_slot`/`key` popping,
-//! rest-bag routing, ssrDefaults-then-caller-props merge -- see its
-//! docstring), because it was built to serve `bf-render`'s payload-driven
-//! children the same way. Registering a manifest entry is therefore just:
-//! derive the registry key + template name from `markedTemplate`, flatten
-//! `ssrDefaults` to its static fallback values via
-//! [`derive_stash_from_defaults`] (called with EMPTY props, since the
-//! caller-props override Python's closure applies per-call is already
-//! applied generically, once, inside `render_child`), and derive
-//! `rest_props_name`/`param_names` from which `ssrDefaults` entries carry
-//! `isRestProps`/`propName` (see `packages/jsx/src/ssr-defaults.ts`'s
-//! `extractSsrDefaults`, which only ever sets `propName` to the entry's OWN
-//! key -- so this static-then-override merge order is exactly equivalent
-//! to Python's per-call `props.get(propName, value)` derivation).
+//! rest-bag routing, `derive_stash_from_defaults`-then-caller-props merge --
+//! see its docstring), because it was built to serve `bf-render`'s
+//! payload-driven children the same way. Registering a manifest entry is
+//! therefore just: derive the registry key + template name from
+//! `markedTemplate`, keep `ssrDefaults` RAW (the FULL `{value, propName?,
+//! isRestProps?}` shape, with any STATIC `signal_init` override applied as
+//! a bare replacement value), and derive `rest_props_name`/`param_names`
+//! from which `ssrDefaults` entries carry `isRestProps`/`propName`.
+//!
+//! `ssrDefaults` is stored RAW, not flattened, and resolved PER-CALL inside
+//! `render_child` against the caller's ACTUAL props (#2524). An earlier
+//! version of this function flattened via [`derive_stash_from_defaults`]
+//! called with an EMPTY props document AT REGISTRATION TIME -- on the
+//! (false) assumption that every `propName` equals its own entry's key, so
+//! resolving early against no props and resolving later against the real
+//! caller props would agree. That assumption breaks for an ALIASED
+//! destructured prop (`{ n: count }`, see `packages/jsx/src/ssr-defaults.ts`'s
+//! `extractSsrDefaults`): the entry's own key is the LOCAL binding
+//! (`count`), but `propName` is the CALLER-facing name (`n`) -- resolving
+//! against an empty props document can only ever produce the static
+//! fallback, silently discarding whatever the caller actually passed as
+//! `n`. `param_names` has the matching fix: it carries the CALLER-facing
+//! `propName`, not the entry's own (local) key, since `render_child`'s
+//! rest-bag "keep" set compares against child props keyed by whatever the
+//! calling template passed.
 
 use crate::num::JsValue;
-use crate::runtime::{js_to_mj, ChildRendererSpec, RenderSession};
+use crate::runtime::{ChildRendererSpec, RenderSession};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
@@ -84,12 +96,17 @@ pub fn to_template_name(component_name: &str) -> String {
 ///     rest-props bag the caller may have already assembled), else the
 ///     static `value` fallback (normally `{}`).
 ///   * `propName` set -- prefer `props[propName]` when present AND not
-///     `null`/`undefined`, else the static `value` fallback. Every
-///     `propName` the TS extractor emits equals its own entry's key (see
-///     `extractSsrDefaults`), so this always reads back the SAME key it
-///     writes -- a caller with no relevant props (this module's own
-///     registration path, below) can pass an empty `props` document to get
-///     pure static fallbacks.
+///     `null`/`undefined`, else the static `value` fallback. For an
+///     UN-aliased prop `propName` equals the entry's own key; for an
+///     ALIASED destructured prop (`{ n: count }`, see
+///     `packages/jsx/src/ssr-defaults.ts`'s `extractSsrDefaults`) the
+///     entry's key is the LOCAL binding (`count`) but `propName` is the
+///     CALLER-facing name (`n`) -- callers MUST pass the real caller props
+///     (not an empty document) for this branch to do anything useful (see
+///     `render_child`, which calls this per-call against the actual caller
+///     props; this module's own registration path keeps `ssrDefaults` RAW
+///     and defers to that per-call resolution rather than resolving early
+///     against an empty `props` document -- #2524).
 ///   * neither set -- the static `value` (a signal/memo's default,
 ///     internal to the component, never sourced from `props`).
 pub fn derive_stash_from_defaults(defaults: &JsValue, props: &JsValue) -> JsValue {
@@ -204,17 +221,49 @@ pub fn register_components_from_manifest(
         let template_name = strip_manifest_template_path(marked);
         let registry_key = to_template_name(&component_name);
 
-        let empty_props = JsValue::Object(BTreeMap::new());
         let ssr_defaults = entry_obj.get("ssrDefaults").cloned().unwrap_or_else(|| JsValue::Object(BTreeMap::new()));
-        let mut defaults = derive_stash_from_defaults(&ssr_defaults, &empty_props);
+
+        // Apply any STATIC `signal_init` overrides by REPLACING the
+        // overridden key's entry with the bare override value --
+        // `resolve_child_vars`'s non-object-entry branch (`runtime.rs`) uses
+        // a bare value as-is, unconditionally (ignoring caller props), so an
+        // overridden key now WINS over a same-named caller prop. This is a
+        // DELIBERATE FLIP from the prior contract, not a preservation of it:
+        // previously this function flattened `ssr_defaults` against an EMPTY
+        // props document at registration time and `render_child` applied the
+        // caller's props LAST (`vars = defaults; vars.extend(props)`), so a
+        // caller prop always beat a `signal_init` override. Now
+        // `render_child` applies the RESOLVED extras last (`vars = props;
+        // vars.extend(extra)`), so an override -- and any `propName` that
+        // resolves against the real caller props -- wins instead. This
+        // matches the Python/PHP/Perl ports, where `signal_init_fn`'s
+        // returned `extra` (or the propName-resolved `_derive_stash_from_
+        // defaults` output) is merged LAST over `props`
+        // (`{**props, **extra}` / `props.merge(extra)`) rather than first.
+        // Resolution against the REAL caller props now happens PER-CALL,
+        // inside `render_child`, against these RAW (un-flattened) defaults
+        // -- registering with an EMPTY props document at THIS point (the
+        // pre-#2524-fix shape) is exactly the production bug: it flattened
+        // via `derive_stash_from_defaults` before any caller was known,
+        // discarding `propName` so an aliased destructured prop's
+        // CALLER-facing key could never later resolve.
+        let mut defaults_map = match &ssr_defaults {
+            JsValue::Object(m) => m.clone(),
+            _ => BTreeMap::new(),
+        };
         if let Some(overrides) = signal_init.get(&registry_key) {
-            if let (JsValue::Object(base), Some(over)) = (&mut defaults, overrides.as_object()) {
+            if let Some(over) = overrides.as_object() {
                 for (k, v) in over {
-                    base.insert(k.clone(), v.clone());
+                    defaults_map.insert(k.clone(), v.clone());
                 }
             }
         }
+        let defaults = JsValue::Object(defaults_map);
 
+        // `param_names` carries the CALLER-facing name (`propName`), not the
+        // entry's own (local) key -- `render_child`'s rest-bag "keep" set
+        // compares against child props keyed by whatever the calling
+        // template passed, not the child's local binding (#2524).
         let (rest_props_name, param_names) = match ssr_defaults.as_object() {
             Some(m) => {
                 let mut rest = None;
@@ -223,8 +272,8 @@ pub fn register_components_from_manifest(
                     let Some(dm) = d.as_object() else { continue };
                     if matches!(dm.get("isRestProps"), Some(JsValue::Bool(true))) {
                         rest = Some(name.clone());
-                    } else if dm.contains_key("propName") {
-                        params.push(name.clone());
+                    } else if let Some(prop_name) = dm.get("propName").and_then(|v| v.as_str()) {
+                        params.push(prop_name.to_string());
                     }
                 }
                 (rest, params)
@@ -237,7 +286,7 @@ pub fn register_components_from_manifest(
             ChildRendererSpec {
                 component_name: template_name.clone(),
                 template: template_name,
-                ssr_defaults: js_to_mj(&defaults),
+                ssr_defaults: defaults,
                 rest_props_name,
                 param_names,
             },

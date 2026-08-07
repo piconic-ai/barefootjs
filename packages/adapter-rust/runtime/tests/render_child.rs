@@ -14,9 +14,8 @@
 //! additionally exercises the actual `Object::call_method` dispatch path.
 
 use barefootjs::num::JsValue;
-use barefootjs::runtime::{js_to_mj, ChildRendererSpec};
+use barefootjs::runtime::ChildRendererSpec;
 use barefootjs::{backend_minijinja, BfInstance, RenderSession};
-use minijinja::value::Value as MjValue;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -46,10 +45,11 @@ fn no_defaults() -> JsValue {
     JsValue::Object(BTreeMap::new())
 }
 
-/// `ChildRendererSpec::ssr_defaults`, which is `minijinja::Value` (props
-/// stay `Value` end-to-end through `render_child` -- see its docstring).
-fn no_ssr_defaults() -> MjValue {
-    MjValue::from(BTreeMap::<String, MjValue>::new())
+/// `ChildRendererSpec::ssr_defaults`, which is a RAW `JsValue` (the FULL
+/// `{value, propName?, isRestProps?}` shape, resolved per-call against the
+/// real caller props inside `render_child` -- see its docstring).
+fn no_ssr_defaults() -> JsValue {
+    JsValue::Object(BTreeMap::new())
 }
 
 #[test]
@@ -128,7 +128,7 @@ fn rest_bag_routing_and_ssr_defaults_merge() {
         ChildRendererSpec {
             component_name: "Card".to_string(),
             template: "card".to_string(),
-            ssr_defaults: js_to_mj(&JsValue::Object(defaults)),
+            ssr_defaults: JsValue::Object(defaults),
             rest_props_name: Some("rest".to_string()),
             param_names: vec!["title".to_string()],
         },
@@ -136,6 +136,40 @@ fn rest_bag_routing_and_ssr_defaults_merge() {
     let root = BfInstance::root(session, "Root_test");
     let out = backend_minijinja::render_entry(&env, "root", root.as_mj_value(), &no_defaults(), &[]).unwrap();
     assert_eq!(out, "Hi|Sub|E|dark");
+}
+
+#[test]
+fn aliased_prop_resolves_callers_facing_key_onto_local_template_var() {
+    // #2524 (SSR half): a renaming destructure (`{ n: count }`) keys the
+    // ssrDefaults entry by the LOCAL binding (`count`) but its `propName`
+    // is the CALLER-facing key (`n`) -- the call site passes `n` (it has no
+    // visibility into how the child renames it internally), so
+    // `render_child` must resolve `n` onto the child template's `count`,
+    // not leave `count` at its static (`null`) fallback.
+    let dir = TempDir::new("aliased");
+    dir.write("root.j2", "{{ bf.render_child('badge', {'n': 7}) }}");
+    dir.write("badge.j2", "{{ count }}");
+
+    let env = backend_minijinja::build_environment(&dir.0);
+    let session = RenderSession::new();
+    let mut count_entry = BTreeMap::new();
+    count_entry.insert("value".to_string(), JsValue::Null);
+    count_entry.insert("propName".to_string(), JsValue::from("n"));
+    let mut defaults = BTreeMap::new();
+    defaults.insert("count".to_string(), JsValue::Object(count_entry));
+    session.register_child_renderer(
+        "badge".to_string(),
+        ChildRendererSpec {
+            component_name: "Badge".to_string(),
+            template: "badge".to_string(),
+            ssr_defaults: JsValue::Object(defaults),
+            rest_props_name: None,
+            param_names: vec!["n".to_string()],
+        },
+    );
+    let root = BfInstance::root(session, "Root_test");
+    let out = backend_minijinja::render_entry(&env, "root", root.as_mj_value(), &no_defaults(), &[]).unwrap();
+    assert_eq!(out, "7");
 }
 
 #[test]

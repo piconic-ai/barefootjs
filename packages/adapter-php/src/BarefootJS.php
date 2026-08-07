@@ -511,7 +511,7 @@ final class BarefootJS
                 if ($signalInit !== null) {
                     $extra = $signalInit($props);
                 } elseif ($manifestDefaults !== null) {
-                    $extra = self::deriveStashFromDefaults($manifestDefaults, $props);
+                    $extra = self::deriveStashFromDefaults($manifestDefaults, $props, $parent->backend);
                 }
 
                 $html = $parent->backend->render_named($templateName, $childBf, array_merge($props, $extra));
@@ -554,25 +554,64 @@ final class BarefootJS
     }
 
     /** Derive template-stash kvs from a manifest entry's `ssrDefaults`
-     * section. Each entry shape: `{value, propName, isRestProps}`. */
-    private static function deriveStashFromDefaults($defaults, array $props): array
+     * section. Each entry shape: `{value, propName, isRestProps}`. For
+     * `isRestProps`, the rest bag passes through unchanged (or the static
+     * `{}` if the caller didn't supply one). For ordinary entries the
+     * caller's `$props[propName]` wins when present and non-null, otherwise
+     * the static `value` does. `propName`-less entries (signal / memo
+     * locals) always use the static value.
+     *
+     * `$props` arrives ALREADY keyword-mangled -- `render_child` above (and
+     * every generated child-renderer closure calling this method directly)
+     * mangles every prop key via the engine's `Backend::ident()` before
+     * handing the props array in -- but `$defaults`' own keys and each
+     * entry's `propName` are the RAW (un-mangled) spellings `extractSsrDefaults`
+     * emitted. `$backend`, when supplied, mangles both the output key and
+     * the `propName` lookup through the SAME `ident()` the caller's props
+     * were mangled with, so a reserved-word prop (Twig's `for`/`filter`,
+     * Blade's `bf`, ...) resolves against the mangled `$props` map instead
+     * of silently missing it and falling back to the static default even
+     * when the caller DID supply a value (#2524 follow-up). `$backend` is
+     * optional (defaults to no mangling) only because a caller with no
+     * engine identity to mangle against -- none exist in this codebase
+     * today, but the signature stays permissive for a hand-rolled caller
+     * outside it -- has nothing meaningful to pass; every real caller
+     * (production `register_components_from_manifest` below and the
+     * Twig/Blade `test-render.ts` harnesses) has a `$backend` in scope and
+     * MUST pass it.
+     *
+     * Public (not `private`): mirrors the Ruby port's
+     * `derive_vars_from_defaults` (`packages/adapter-erb/lib/barefoot_js.rb`)
+     * being deliberately public — `register_components_from_manifest` above
+     * uses it for the `ui/*` registry path, but a caller composing a
+     * template render by hand (e.g. this package's own conformance test
+     * harnesses, `packages/adapter-blade` / `packages/adapter-twig`'s
+     * `test-render.ts`, which register child renderers directly rather than
+     * through a manifest) needs the exact same ssrDefaults-seeding logic,
+     * not a hand-flattened re-derivation (#2157 lesson, restated at
+     * `packages/adapter-erb/src/test-render.ts:276-287` — a harness-local
+     * shortcut is exactly what let that class of bug hide). */
+    public static function deriveStashFromDefaults($defaults, array $props, $backend = null): array
     {
+        $ident = ($backend !== null) ? static fn(string $n): string => $backend->ident($n) : static fn(string $n): string => $n;
         $extra = [];
         foreach (self::toAssoc($defaults) as $name => $d) {
+            $key = $ident((string) $name);
             $dArr = ($d instanceof \stdClass || is_array($d)) ? self::toAssoc($d) : null;
             if ($dArr === null) {
-                $extra[$name] = $d;
+                $extra[$key] = $d;
                 continue;
             }
             if (!empty($dArr['isRestProps'])) {
-                $extra[$name] = array_key_exists($name, $props) ? $props[$name] : ($dArr['value'] ?? null);
+                $extra[$key] = array_key_exists($key, $props) ? $props[$key] : ($dArr['value'] ?? null);
                 continue;
             }
             $propName = $dArr['propName'] ?? null;
-            if ($propName !== null && array_key_exists($propName, $props) && $props[$propName] !== null) {
-                $extra[$name] = $props[$propName];
+            $mangledPropName = $propName !== null ? $ident((string) $propName) : null;
+            if ($mangledPropName !== null && array_key_exists($mangledPropName, $props) && $props[$mangledPropName] !== null) {
+                $extra[$key] = $props[$mangledPropName];
             } else {
-                $extra[$name] = $dArr['value'] ?? null;
+                $extra[$key] = $dArr['value'] ?? null;
             }
         }
         return $extra;

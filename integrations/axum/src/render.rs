@@ -127,7 +127,7 @@ pub fn new_session(state: &AppState, signal_init: &HashMap<String, JsValue>) -> 
             barefootjs::ChildRendererSpec {
                 component_name: name.to_string(),
                 template: name.to_string(),
-                ssr_defaults: MjValue::from(BTreeMap::<String, MjValue>::new()),
+                ssr_defaults: empty_obj(),
                 rest_props_name: None,
                 param_names: Vec::new(),
             },

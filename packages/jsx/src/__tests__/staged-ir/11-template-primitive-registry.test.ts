@@ -35,6 +35,7 @@ function envWith(
     propsForLift: new Set(
       bindings.filter(([, k]) => k === 'prop').map(([n]) => n),
     ),
+    propSourceNames: options?.propSourceNames ?? new Map(),
     propsObjectName: options?.propsObjectName ?? 'props',
     allowFallback: options?.allowFallback ?? true,
     templatePrimitives: options?.templatePrimitives,

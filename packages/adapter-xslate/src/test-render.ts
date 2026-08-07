@@ -17,8 +17,8 @@
  * than the Mojo harness's literal `test_<sN>`.
  */
 
-import { compileJSX, extractSsrDefaults, importsSearchParams, evaluateSignalInit, tryEvaluateSignalInit } from '@barefootjs/jsx'
-import type { ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
+import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -343,6 +343,15 @@ function collectImportedComponentNames(ir: ComponentIR): string[] {
  * `ssrDefaults`, shares the parent's script list, and renders the child
  * `.tx` through the same backend. Loop children (no `_bf_slot`) fall back
  * to `<snake_name>` like the Mojo harness.
+ *
+ * Template vars seed through the production `BarefootJS::_derive_stash_from_
+ * defaults` (the same sub `derive_vars_from_defaults`'s Ruby twin and
+ * `register_components_from_manifest`'s Python/PHP twins call) rather than a
+ * flat `(%$defaults, %$child_props)` merge: the flat merge never resolves an
+ * aliased destructured prop's CALLER-facing key (`n`) onto its local
+ * template var (`count`) — `$defaults` carries the FULL `{value, propName?,
+ * isRestProps?}` shape (not flattened to bare values) so the propName
+ * resolution has something to read (#2524 SSR half).
  */
 function buildChildRenderers(
   childTemplates: Map<string, { template: string; ir: ComponentIR }>,
@@ -356,8 +365,10 @@ function buildChildRenderers(
   for (const [componentName, { ir: childIR }] of childTemplates) {
     const snakeName = toSnakeCase(componentName)
     // Statically-derived ssrDefaults the child template's vars seed from
-    // (prop defaults + signal / memo initial values), serialised to a
-    // Perl hashref literal.
+    // (prop defaults + signal / memo initial values), serialised VERBATIM
+    // (propName / isRestProps intact) to a Perl hashref literal — resolved
+    // per-call against the REAL child props by `_derive_stash_from_defaults`
+    // below, not flattened here.
     const ssrDefaults = extractSsrDefaults(childIR.metadata) ?? {}
     const defaultsPerl = ssrDefaultsToPerl(ssrDefaults)
     const restPropsName = childIR.metadata.restPropsName
@@ -379,8 +390,9 @@ function buildChildRenderers(
       // branch and JSX rest semantics: a caller prop the child didn't
       // destructure (`href` on PaginationPrevious's `{...props}` anchor)
       // belongs in the bag, not as a top-level stash var the template
-      // never reads.
-      const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.name)
+      // never reads. Keep-set uses CALLER-facing names (`sourceName ?? name`)
+      // — `$child_props` is keyed by whatever the calling template passed.
+      const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name)
       const keep = JSON.stringify([...new Set([...paramNames, restPropsName, 'children', 'key', '_bf_slot'])])
       lines.push(`    {`)
       lines.push(`      my %keep = map { $_ => 1 } @{ ${perlArrayLiteral(keep)} };`)
@@ -409,8 +421,13 @@ function buildChildRenderers(
     lines.push(`    $child_bf->_child_renderers($bf->_child_renderers);`)
     lines.push(`    $child_bf->_scripts($bf->_scripts);`)
     lines.push(`    $child_bf->_script_seen($bf->_script_seen);`)
-    // Seed template vars: static ssrDefaults first, caller's props win.
-    lines.push(`    my %vars = (%$defaults, %$child_props);`)
+    // Seed template vars through the production `_derive_stash_from_defaults`
+    // — resolves each entry's `propName` against the REAL `$child_props`,
+    // falling back to the static `value`; `isRestProps` entries pass the
+    // already-routed rest bag through. Caller props still win overall via
+    // the final merge (mirrors the ERB harness's `child_props.merge(extra)`).
+    lines.push(`    my %extra = BarefootJS::_derive_stash_from_defaults($defaults, $child_props);`)
+    lines.push(`    my %vars = (%$child_props, %extra);`)
     lines.push(`    my $rendered = $backend->render_named('${snakeName}', $child_bf, \\%vars);`)
     lines.push(`    chomp $rendered;`)
     lines.push(`    return $rendered;`)
@@ -430,20 +447,29 @@ function perlArrayLiteral(jsonArray: string): string {
   return `[${names.map(n => `'${n.replace(/[\\']/g, m => `\\${m}`)}'`).join(', ')}]`
 }
 
-/** Serialise an ssrDefaults map to a Perl hashref literal. */
-function ssrDefaultsToPerl(defaults: Record<string, unknown>): string {
+/**
+ * Serialise an ssrDefaults map to a Perl hashref literal, VERBATIM — `value`
+ * / `propName` / `isRestProps` intact, exactly the shape
+ * `BarefootJS::_derive_stash_from_defaults` expects (and exactly what the
+ * production build manifest embeds). Do NOT flatten to bare `value`s here:
+ * that was the #2524 SSR-half bug — a flattened entry has nothing left for
+ * the propName-aware resolution to read, so an aliased destructured prop's
+ * caller-facing key is silently dropped.
+ */
+function ssrDefaultsToPerl(defaults: Record<string, SsrDefault>): string {
   const entries: string[] = []
   for (const [name, d] of Object.entries(defaults)) {
-    // ssrDefaults entries are `{ value, propName?, isRestProps? }` or a
-    // bare value. The child renderer's caller props win, so we only need
-    // the static fallback `value` here.
-    let value: unknown = d
-    if (d && typeof d === 'object' && 'value' in (d as Record<string, unknown>)) {
-      value = (d as Record<string, unknown>).value
-    }
-    entries.push(`${perlSingleQuote(name)} => ${toPerlLiteral(value)}`)
+    entries.push(`${perlSingleQuote(name)} => ${ssrDefaultEntryToPerl(d)}`)
   }
   return `{${entries.join(', ')}}`
+}
+
+/** Serialise a single `SsrDefault` entry to a Perl hashref literal. */
+function ssrDefaultEntryToPerl(d: SsrDefault): string {
+  const parts: string[] = [`value => ${toPerlLiteral(d.value)}`]
+  if (d.propName !== undefined) parts.push(`propName => ${perlSingleQuote(d.propName)}`)
+  if (d.isRestProps) parts.push(`isRestProps => 1`)
+  return `{${parts.join(', ')}}`
 }
 
 /**
@@ -471,23 +497,30 @@ function buildPerlProps(
   entries.push(`scope_id => '${escapePerlSingleQuoted(explicitScope)}'`)
 
   // Prop params with defaults (before signals, so signals can reference them).
+  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
+  // production `BarefootJS::_derive_stash_from_defaults` this harness ALSO
+  // calls at render time for child components) so an aliased destructured
+  // prop's CALLER-facing key (`propName`, e.g. `n` for `{ n: count }`) is
+  // honoured, not just the local template var name (#2524 SSR half).
+  // `props` is keyed by the caller-facing name, exactly what `propName`
+  // resolves against.
+  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
   for (const param of ir.metadata.propsParams) {
-    if (props && param.name in props) continue
-    if (param.defaultValue) {
-      const result = tryEvaluateSignalInit(param.defaultValue.trim(), props)
-      if (result.ok) {
-        entries.push(`${param.name} => ${toPerlLiteral(result.value)}`)
-        continue
-      }
-    }
+    if (param.isRest) continue
     // No default + no caller value: pass `undef` so Kolon's var lookup
     // for an optional prop doesn't fault before its falsy branch elides.
-    entries.push(`${param.name} => undef`)
+    const value = derivedProps[param.name] ?? null
+    entries.push(`${param.name} => ${toPerlLiteral(value)}`)
   }
 
   // Route undeclared props into the rest bag (`spread_attrs($<rest>)`).
   const restPropsName = ir.metadata.restPropsName
-  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.name))
+  // Caller-facing keys — an aliased destructured prop's DECLARED set for
+  // rest-bag routing must match what the caller actually sent (`n`), not
+  // the local binding (`count`), or the caller's own prop silently gets
+  // swept into the rest bag as an undeclared extra (#2524).
+  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.sourceName ?? p.name))
   const restBagEntries: Array<[string, unknown]> = []
   if (restPropsName && props) {
     for (const [key, value] of Object.entries(props)) {
@@ -502,11 +535,20 @@ function buildPerlProps(
     entries.push(`${restPropsName} => ${toPerlLiteral(Object.fromEntries(restBagEntries))}`)
   }
 
-  // User props.
+  // User props. Skip a key that's already a declared param's LOCAL template
+  // var name — `derivedProps` above already resolved that var correctly
+  // (through `propName`, for an aliased prop); re-pushing the raw
+  // `props[key]` here would silently clobber it with an UNRELATED value
+  // whenever a caller happens to also pass a same-spelled-as-local-name prop
+  // that isn't this param's actual `propName` (#2524 — surfaced by the
+  // aliased-destructured-prop generated data points, which pass both `n`
+  // (the real propName) and an incidental `count` key).
+  const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
+      if (localParamNames.has(key)) continue
       if (typeof value === 'string') {
         entries.push(`${key} => '${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`)
       } else if (typeof value === 'number') {
@@ -534,10 +576,9 @@ function buildPerlProps(
 
   // Memo values seeded from the statically-evaluated ssrDefaults, same
   // as the production plugin's before_render hook.
-  const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
   for (const memo of ir.metadata.memos) {
-    const entry = ssrDefaults[memo.name]
-    const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : 0
+    const entry = rootSsrDefaults[memo.name]
+    const value = entry ? entry.value : 0
     entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)
   }
 
