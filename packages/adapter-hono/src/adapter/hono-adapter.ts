@@ -34,6 +34,7 @@ import {
   emitIRNode,
   emitAttrValue,
   buildLoopChainExpr,
+  collectTypeQueryValueNames,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
 
@@ -217,13 +218,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const types = this.generateTypes(ir, component)
     const componentCode = [types, component].filter(Boolean).join('\n')
     const imports = this.generateImports(ir, componentCode)
-    // Module-level Context bindings (`const Ctx = createContext()`) are
-    // skipped from the SSR signal-initializer block by JsxAdapter — they
-    // need to live at module scope so providers and consumers in the same
-    // render share the same Context object identity. Emitted in a dedicated
-    // section so multi-component dedup works on the full block (not per
-    // line, which would split multi-line `({...})` arguments).
-    const moduleConstants = this.generateModuleLevelContextBindings(ir)
+    // Constants that must stay at module scope rather than being localised
+    // into each component body — Context bindings (shared object identity)
+    // and consts an emitted type references via `typeof`. Emitted in a
+    // dedicated section so multi-component dedup works on the full block
+    // (not per line, which would split multi-line `({...})` arguments).
+    const moduleConstants = this.generateModuleLevelConstants(ir)
 
     const defaultExport = ir.metadata.hasDefaultExport
       ? `\nexport default ${this.componentName}`
@@ -275,13 +275,45 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     return this.hasScriptAssets() && !!this.preloadAssets && this.preloadAssets.length > 0
   }
 
-  private generateModuleLevelContextBindings(ir: ComponentIR): string {
+  /**
+   * Module-scope constant declarations for the emitted template. Two
+   * disjoint reasons a source module-level const has to stay at module
+   * scope instead of being localised into each component body:
+   *
+   * 1. `createContext()` bindings — providers and consumers in one render
+   *    must share the same Context object identity.
+   *
+   * 2. Any const an emitted TYPE references through `typeof` (#2570).
+   *    Type declarations are re-emitted verbatim at module
+   *    scope, so `type IconName = keyof typeof strokePaths | 'github'`
+   *    lands there while `strokePaths` is localised into the component
+   *    body — TS2304, and worse than a lone error: an unresolved
+   *    `keyof typeof` degrades to `keyof any`, silently widening the alias
+   *    to `string | number | symbol` and taking every downstream check
+   *    with it. The type's own reachability filtering
+   *    (`generateTypes`) is per-component, so this scan deliberately reads
+   *    ALL of `typeDefinitions`: `moduleConstants` is deduped file-wide by
+   *    exact string match, and a per-component set would produce a
+   *    different block per component and emit duplicate declarations.
+   *
+   * The body copy is intentionally left in place — it shadows this one with
+   * an identical value, so runtime behaviour is untouched, and dropping it
+   * would feed a different component body into `generateTypes`'s
+   * reachability seed.
+   */
+  private generateModuleLevelConstants(ir: ComponentIR): string {
+    const typeQueryNames = collectTypeQueryValueNames(
+      ir.metadata.typeDefinitions.map((t) => t.definition),
+    )
     const lines: string[] = []
+    const emitted = new Set<string>()
     for (const c of ir.metadata.localConstants) {
       if (!c.isModule) continue
       if (c.isExported) continue
-      if (c.systemConstructKind !== 'createContext') continue
+      if (c.systemConstructKind !== 'createContext' && !typeQueryNames.has(c.name)) continue
       if (!c.value) continue
+      if (emitted.has(c.name)) continue
+      emitted.add(c.name)
       const keyword = c.declarationKind ?? 'const'
       const value = this.jsxConfig.preserveTypes ? (c.typedValue ?? c.value) : c.value
       lines.push(`${keyword} ${c.name} = ${value}`)
