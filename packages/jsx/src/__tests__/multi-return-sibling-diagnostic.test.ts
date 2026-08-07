@@ -124,6 +124,36 @@ describe('Sibling multi-return JSX dispatch produces no template in a client fil
     expect(markedTemplate!.content).toContain('function NavIcon')
   })
 
+  test('legal neighbor: a non-"use client" file never trips BF048, even when a sibling lands in componentNames', () => {
+    // The #932 bypass only skips NON-exported multi-return functions, so an
+    // exported switch-dispatch sibling in a non-client file IS in
+    // `componentNames` and produces no entry — the same set-difference shape
+    // BF048 keys on. But the diagnostic's premise (the 'use client' branch
+    // of #932, `ReferenceError` at hydrate time) doesn't apply outside
+    // client files, so BF048 is gated on a compiled client entry and must
+    // stay silent here.
+    const source = `
+      export function NavIcon({ name }: { name: string }) {
+        switch (name) {
+          case 'home': return <svg><path d="M1"/></svg>
+          case 'bell': return <svg><path d="M2"/></svg>
+          default: return null
+        }
+      }
+      export function Shell() {
+        return (
+          <nav>
+            {['home', 'bell'].map(item => <NavIcon key={item} name={item} />)}
+          </nav>
+        )
+      }
+    `
+
+    const result = compileJSX(source, 'Shell.tsx', { adapter })
+    const errs = result.errors.filter(e => e.severity === 'error')
+    expect(errs.filter(e => e.code === 'BF048')).toHaveLength(0)
+  })
+
   test('legal neighbor: a "use client" sibling whose multi-return body DOES compile (if/else chain, #1401) stays clean', () => {
     // if/else-if chains fold into `conditionalReturns` (#1401) and produce
     // a real ternary template, so the sibling ends up in `entries` and the

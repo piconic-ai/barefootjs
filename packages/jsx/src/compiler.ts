@@ -191,7 +191,13 @@ function compileMultipleComponents(
   // here would fail legal programs (the ir-dynamic-tag / resolver-alias
   // corpus shapes). Only a name declared at module top level can be the
   // dropped-sibling shape this diagnostic exists for.
-  {
+  //
+  // Restricted to 'use client' FILES: only the 'use client' branch of #932
+  // widens `listComponentFunctions` to multi-return dispatch shapes; in a
+  // non-client file an uncompiled sibling is preserved verbatim (that is
+  // the escape hatch the message below recommends), so flagging it there
+  // would fail exactly the programs the fix tells users to write.
+  if (entries.some(e => e.componentIR.metadata.isClientComponent)) {
     const topLevelNames = new Set<string>()
     {
       const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
