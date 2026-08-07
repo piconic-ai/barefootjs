@@ -132,10 +132,24 @@ export function applyCssLayerPrefixToFile(irs: readonly ComponentIR[], layerName
   }
 
   // Apply prefixing to every IR's copy of each referenced constant.
+  //
+  // `typedValue` (the type-annotation-preserving initializer text used by
+  // `preserveTypes` emitters — Hono's `generateModuleScopeDeclarations` /
+  // SSR body block prefer `typedValue ?? value`) is a separate string that
+  // must be prefixed in lockstep with `value`, or an `as const` / annotated
+  // class-map constant is emitted unprefixed even though the class
+  // attributes referencing it were prefixed (#2575). `prefixConstantValue`
+  // only rewrites string-literal contents (see its docstring), so an `as
+  // const` suffix or type annotation elsewhere in the text passes through
+  // unchanged.
   for (const ir of irs) {
     for (const constant of ir.metadata.localConstants) {
-      if (referencedConstants.has(constant.name) && constant.value) {
+      if (!referencedConstants.has(constant.name)) continue
+      if (constant.value) {
         constant.value = prefixConstantValue(constant.value, layerName)
+      }
+      if (constant.typedValue) {
+        constant.typedValue = prefixConstantValue(constant.typedValue, layerName)
       }
     }
   }

@@ -13,6 +13,7 @@ import {
 import type { ComponentIR, IRElement, IRMetadata, IRTemplatePart, ConstantInfo, TemplateAttr, LiteralAttr } from '../types'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-adapter'
 
 describe('prefixClass', () => {
   test('prefixes a simple class', () => {
@@ -483,5 +484,44 @@ describe('applyCssLayerPrefix', () => {
     const declarations = template.match(/^const sharedClasses = .*$/gm) ?? []
     expect(declarations).toHaveLength(1)
     expect(declarations[0]).toContain('layer-components:flex')
+  })
+
+  test('prefixes a `Record`-shaped `as const` class map constant\'s typedValue (#2575)', () => {
+    // `preserveTypes` emitters (Hono) prefer `typedValue ?? value` when
+    // emitting a module-scope constant so `.tsx` output stays type-checked
+    // — see `generateModuleScopeDeclarations` in
+    // `packages/adapter-hono/src/adapter/hono-adapter.ts`'s base class.
+    // `applyCssLayerPrefixToFile` used to rewrite only `value`, leaving
+    // `typedValue` — the string Hono actually emits — unprefixed for any
+    // constant whose initializer carries type syntax (`as const`, a
+    // `satisfies`/`Record<...>` annotation, …). Regression for the fix:
+    // both strings must be prefixed together, and the `as const` assertion
+    // must survive the round trip verbatim.
+    const source = `
+      const toneClasses: Record<'info' | 'warn', string> = {
+        info: 'text-blue-500',
+        warn: 'text-amber-500',
+      } as const
+
+      export function Banner() {
+        return <div className={toneClasses.info}>hi</div>
+      }
+    `
+    const result = compileJSX(source, '/virtual/Banner.tsx', {
+      adapter: new HonoAdapter(),
+      cssLayerPrefix: 'components',
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+
+    const declarations = template.match(/^const toneClasses = [\s\S]*?\} as const$/m) ?? []
+    expect(declarations).toHaveLength(1)
+    const declaration = declarations[0]
+
+    // Classes are prefixed...
+    expect(declaration).toContain("info: 'layer-components:text-blue-500'")
+    expect(declaration).toContain("warn: 'layer-components:text-amber-500'")
+    // ...and the `as const` assertion survives the rewrite.
+    expect(declaration.trim().endsWith('} as const')).toBe(true)
   })
 })
