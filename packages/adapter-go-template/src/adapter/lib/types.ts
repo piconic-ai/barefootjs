@@ -134,7 +134,10 @@ export interface SpreadSlotInfo {
 export interface PropFallbackVar {
   /** Local variable name (typically the lowercase prop identifier). */
   varName: string
-  /** Capitalised Go field name on the `Input` struct. */
+  /**
+   * Capitalised Go field name on the `Input` struct — caller-facing
+   * (`sourceName ?? name`, #2525), since every reader does `in.${fieldName}`.
+   */
   fieldName: string
   /** Go literal used when the input value equals its zero value. */
   goFallback: string

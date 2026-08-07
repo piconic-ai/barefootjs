@@ -4601,12 +4601,14 @@ export function SignalRowChildDerivedProp(props: { rows: Row[] }) {
   })
 
   // An ALIASED destructure (`{ n: count }`) is where the JSX attribute name
-  // (`n` → `"N"`) and the child's own Go field (`Count`) diverge. #2457: the
-  // reconciliation now happens ONCE, at the PARENT's emission site
-  // (`loopRowChildPropOverrides`, via `childPropFieldNames`) — the parent
-  // emits the child's own field name directly, so the rebuilder's switch
-  // (`recordRepropsSpec` / `emitRepropsRegistration`) needs no separate
-  // "wire" name and is keyed uniformly by that one field on both sides.
+  // (`n` → `"N"`) and the child's own Go PROPS field (`Count`) diverge. #2457:
+  // the parent's call-site reconciliation (`loopRowChildPropOverrides`, via
+  // `childPropFieldNames`'s `propsField`) still emits the child's PROPS field
+  // directly, so the pipeline call is unaffected. #2525 separately makes the
+  // child's own Input field CALLER-facing (`"N"`, for a caller-side composite
+  // `BadgeInput{N: 5}` literal) — so the rebuilder's switch, unlike before,
+  // once again needs BOTH names: the Props field as the case label (matching
+  // the call site) and the Input field as the assignment target.
   test('an aliased destructured prop maps the parent name onto the child field', () => {
     const result = compileJSX(`
 'use client'
@@ -4631,16 +4633,53 @@ export function AliasedRowChildDerivedProp(props: { rows: Row[] }) {
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
-    // The parent now writes the child's OWN field name ("Count"), not the
-    // JSX attribute ("N").
+    // The parent now writes the child's own PROPS field name ("Count") —
+    // `bf_with_props`/`bf_reprops` patch the already-constructed Props
+    // instance, so the call site stays keyed by the LOCAL binding.
     expect(template).toContain('(bf_reprops "Badge" $.BadgeSlot0 "Text" .Label "Count" .N)')
     const types = result.files.find(f => f.type === 'types')!.content
+    // Case label: the PROPS field, matching the call site above.
     expect(types).toContain('case "Count":')
-    expect(types).toContain('&in.Count,')
+    // Assignment target: the child's own INPUT field — CALLER-facing (#2525),
+    // so it's "N" here, not "Count". 437f822 removed this field/wire pairing
+    // when Input and Props field names were unified everywhere; #2525
+    // reintroduces it because they diverge again for an aliased prop.
+    expect(types).toContain('&in.N,')
+    expect(types).not.toContain('&in.Count,')
     // "N" — the JSX attribute name — is never a case label: the switch is
-    // keyed by the child's field on both sides, and the parent already
+    // keyed by the child's PROPS field on that side, and the parent already
     // resolved the name before emitting the call.
     expect(types).not.toContain('case "N":')
+  })
+
+  // #2525: the Input struct is keyed by the CALLER-facing name
+  // (`sourceName ?? name`), so `BadgeInput{N: 5}` — the name a handler
+  // actually writes — type-checks. The Props struct's field stays the LOCAL
+  // binding (what `{{.X}}` in the template executes against), and its json
+  // tag flips to the caller-facing name to match the hydration payload key
+  // the shared client JS reads (PR A, #2524, 2e40dc6). `NewBadgeProps`
+  // bridges the two: `Count: in.N`.
+  test('an aliased destructured prop keys the Input struct by the caller-facing name', () => {
+    const result = compileJSX(`
+export function Badge({ text, n: count }: { text: string; n: number }) {
+  return <span class="badge">{text}:{count}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    // Input struct: caller-facing field, no json tag (Input is never
+    // marshalled).
+    expect(types).toContain('type BadgeInput struct {')
+    // Exact-field match (not `.toContain('N int')`, which also matches
+    // `N interface{}`) — tightened to match the adjacent negative's style.
+    expect(types).toContain('\tN int\n')
+    expect(types).not.toContain('Count int\n')
+    // Props struct: LOCAL field, json tag flipped to the caller-facing key.
+    expect(types).toContain('type BadgeProps struct {')
+    expect(types).toContain('Count int `json:"n"`')
+    expect(types).not.toContain('json:"count"')
+    // NewBadgeProps bridges Props(local) from Input(caller-facing).
+    expect(types).toContain('Count: in.N,')
   })
 
   // #2457: the SAME aliased destructure, but with NO derived field — the
@@ -4783,6 +4822,112 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
     expect(template).toContain('{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" .Label)}}')
+  })
+})
+
+describe('GoTemplateAdapter - #2525 collision handling', () => {
+  // A caller-facing prop tag and a same-named signal's LOCAL tag are
+  // different Go identifiers wanting the same string, and
+  // `encoding/json.Marshal` drops BOTH fields under an ambiguous tag — the
+  // identifier de-dup sets cannot catch this (see `claimJsonTag`). The
+  // prop must win: on hono only props occupy `_p`.
+  test("an aliased prop's caller-facing json tag wins over a same-named signal's", () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Counter({ count: initialCount }: { count: number }) {
+  const [count, setCount] = createSignal(initialCount)
+  return <button onClick={() => setCount(count() + 1)}>Count: {count()}</button>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    // The prop keeps the shared "count" wire key...
+    expect(types).toContain('InitialCount int `json:"count"`')
+    // ...and the colliding signal field falls back to `json:"-"` instead of
+    // silently carrying the same tag. Leading `\t` (not `.toContain('Count
+    // int ...')`) so the assertion doesn't false-match inside
+    // "InitialCount int ..." above.
+    expect(types).toContain('\tCount int `json:"-"`')
+    expect(types).not.toContain('\tCount int `json:"count"`')
+    // Exactly one field claims "count".
+    expect((types.match(/json:"count"/g) ?? []).length).toBe(1)
+  })
+
+  // The nested-array skip check must union both namings at all four sites
+  // (`isNestedArrayShadowed`) — a one-sided check lets Input and
+  // Props/NewProps disagree on whether an aliased prop's field exists.
+  test('a nested-array field name collision skips the prop everywhere ({ rows: items } direction)', () => {
+    const result = compileJSX(`
+function Row(props: { label: string }) {
+  return <li>{props.label}</li>
+}
+export function List({ rows: items }: { rows: { id: number; label: string }[] }) {
+  return <ul>{items.map(item => <Row key={item.id} label={item.label} />)}</ul>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    const listInput = types.slice(types.indexOf('type ListInput struct'), types.indexOf('type ListProps struct'))
+    const listPropsAndAfter = types.slice(types.indexOf('type ListProps struct'))
+    // Input carries only the typed nested-array field — no scalar "Items"
+    // field for the aliased prop the LOCAL-only check used to miss.
+    expect(listInput).toContain('Rows []RowInput')
+    expect(listInput).not.toContain('Items')
+    // Props carries exactly ONE `json:"rows"` tag (the nested array's) —
+    // a surviving duplicate would make encoding/json drop both fields.
+    expect((listPropsAndAfter.match(/json:"rows"/g) ?? []).length).toBe(1)
+    expect(listPropsAndAfter).not.toContain('Items')
+  })
+
+  // Same collision, opposite alias direction: the LOCAL name now matches
+  // the nested-array field (so Props/NewProps's LOCAL-only check happened
+  // to skip it by luck), but the CALLER name doesn't — Input's
+  // caller-facing-only check used to keep a live "Items" field with no
+  // Props counterpart, so a caller's override silently never reached the
+  // constructed Props at all.
+  test('a nested-array field name collision skips the prop everywhere ({ items: rows } direction)', () => {
+    const result = compileJSX(`
+function Row(props: { label: string }) {
+  return <li>{props.label}</li>
+}
+export function List({ items: rows }: { items: { id: number; label: string }[] }) {
+  return <ul>{rows.map(item => <Row key={item.id} label={item.label} />)}</ul>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    const listInput = types.slice(types.indexOf('type ListInput struct'), types.indexOf('type ListProps struct'))
+    // Input carries only the typed nested-array field — no dead "Items"
+    // field the caller could write to with no effect.
+    expect(listInput).toContain('Rows []RowInput')
+    expect(listInput).not.toContain('Items')
+    expect(types).not.toContain('in.Items')
+  })
+
+  // `usesSearchParams` gates the field in Input (caller-facing names),
+  // Props (LOCAL) and NewProps with ONE boolean, so its collision check
+  // must union both namings — `{ q: searchParams }` collides only under
+  // the LOCAL one, and a one-sided check redeclares the Go field.
+  test('an aliased prop whose LOCAL binding is `searchParams` does not redeclare the field', () => {
+    const result = compileJSX(`
+'use client'
+import { createSearchParams } from '@barefootjs/client'
+export function Foo({ q: searchParams }: { q: string }) {
+  const [sp] = createSearchParams()
+  return <p>{searchParams}:{sp().get('tag') ?? 'none'}</p>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    const structStart = types.indexOf('type FooProps struct')
+    const fooPropsBody = types.slice(structStart, types.indexOf('}', structStart))
+    // Exactly one "SearchParams" field in the struct body — the prop's
+    // own — never a second `SearchParams bf.SearchParams` reader field
+    // colliding with it (a Go redeclaration error).
+    expect((fooPropsBody.match(/SearchParams/g) ?? []).length).toBe(1)
+    expect(fooPropsBody).toContain('SearchParams string `json:"q"`')
+    expect(types).not.toContain('bf.SearchParams')
   })
 })
 

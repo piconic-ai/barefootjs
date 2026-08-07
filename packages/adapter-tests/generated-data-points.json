@@ -43,6 +43,26 @@
       }
     }
   ],
+  "aliased-prop-signal-tag-collision": [
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    }
+  ],
   "array-flat-dynamic-depth": [
     {
       "name": "gen:depth:zero",

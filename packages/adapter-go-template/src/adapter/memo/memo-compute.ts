@@ -109,7 +109,7 @@ export function matchFilterArmMemo(
   ctx: GoEmitContext,
   body: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
 ): { propName: string; predJSON: string; paramName: string; freeVars: string[] } | null {
   const cb = asCallbackMethodCall(body)
   if (!cb || cb.method !== 'filter') return null
@@ -146,7 +146,7 @@ export function filterArmEarlierSiblingRefs(
   ctx: GoEmitContext,
   memo: { name: string; parsed?: ParsedExpr },
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
 ): string[] {
   if (!memo.parsed) return []
   const match = matchFilterArmMemo(ctx, memo.parsed, signals, propsParams)
@@ -179,7 +179,7 @@ export function computeMemoInitialValue(
   ctx: GoEmitContext,
   memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr },
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   goType?: string,
 ): string {
@@ -221,7 +221,7 @@ export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
   body: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   currentMemoName: string,
   resolving: ReadonlySet<string> = new Set(),
@@ -229,7 +229,8 @@ export function memoInitialFromParsedBody(
   const propRef = (propName: string): string => {
     const hoisted = propFallbackVars.get(propName)
     if (hoisted) return hoisted.varName
-    return `in.${capitalizeFieldName(propName)}`
+    const param = propsParams.find(p => p.name === propName)
+    return `in.${capitalizeFieldName(param?.sourceName ?? propName)}`
   }
   // A request-scoped env-signal read (`searchParams().get('k')`, any local
   // alias, #1922) → the literal key and the reader's canonical field name,
@@ -393,7 +394,9 @@ export function memoInitialFromParsedBody(
       // being concretely typed, wouldn't compile against `nil` either).
       if (param && ctx.state.nillablePropNames.has(propName)) {
         const isNe = body.op === '!==' || body.op === '!='
-        return `in.${capitalizeFieldName(propName)} ${isNe ? '!=' : '=='} nil`
+        // `nillablePropNames` stays keyed by the LOCAL name (a source-level
+        // set); the emitted field is caller-facing (#2525).
+        return `in.${capitalizeFieldName(param.sourceName ?? propName)} ${isNe ? '!=' : '=='} nil`
       }
     }
   }
@@ -544,7 +547,7 @@ export function memoInitialFromParsedBody(
       const varName = body.left.name
       const param = propsParams.find(p => p.name === varName)
       if (param) {
-        const fieldName = capitalizeFieldName(varName)
+        const fieldName = capitalizeFieldName(param.sourceName ?? varName)
         if (param.type) {
           const goType = typeInfoToGo(ctx, param.type, param.defaultValue)
           if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
@@ -574,7 +577,7 @@ export function memoInitialFromParsedBody(
   // () => var — destructured prop, return the input field directly.
   if (body.kind === 'identifier') {
     const param = propsParams.find(p => p.name === body.name)
-    if (param) return `in.${capitalizeFieldName(body.name)}`
+    if (param) return `in.${capitalizeFieldName(param.sourceName ?? body.name)}`
   }
 
   // () => <a> + <b> + … — a string-concatenation chain whose every leaf is a
@@ -607,7 +610,7 @@ function resolveStringConcatChainGo(
   ctx: GoEmitContext,
   expr: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   propRef: (propName: string) => string,
 ): string | null {
@@ -647,7 +650,7 @@ export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
   memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   /**
    * Memo names currently being resolved on this call stack — guards against
@@ -729,7 +732,7 @@ export function resolveGetterValueAsGo(
   ctx: GoEmitContext,
   name: string,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
@@ -745,7 +748,8 @@ export function resolveGetterValueAsGo(
     const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
     const fb = ctx.extractPropFallback(stripped)
     if (fb && capitalizeFieldName(fb.propName) === capitalizeFieldName(memo.name)) {
-      const field = `in.${capitalizeFieldName(fb.propName)}`
+      const fbParam = propsParams.find(p => p.name === fb.propName)
+      const field = `in.${capitalizeFieldName(fbParam?.sourceName ?? fb.propName)}`
       return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${fb.goFallback} }; return v }()`
     }
     return computeMemoInitialValueOrNull(
@@ -755,7 +759,7 @@ export function resolveGetterValueAsGo(
   const param = propsParams.find(p => p.name === name)
   if (param) {
     const hoisted = propFallbackVars.get(name)
-    return hoisted ? hoisted.varName : `in.${capitalizeFieldName(name)}`
+    return hoisted ? hoisted.varName : `in.${capitalizeFieldName(param.sourceName ?? name)}`
   }
   return null
 }
@@ -772,7 +776,7 @@ export function computeComparisonTernaryGo(
   ctx: GoEmitContext,
   parsed: ParsedExpr | undefined,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
@@ -828,7 +832,7 @@ export function resolveComparisonOperandGo(
   ctx: GoEmitContext,
   node: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {

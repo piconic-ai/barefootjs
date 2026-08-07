@@ -158,17 +158,12 @@ type HigherOrderShape = {
 /**
  * Everything needed to emit a component's #2448 props rebuilder, captured when
  * its own types are generated so a PARENT can emit the registration into its
- * own type block (`emitOwnedReprops`). `params` are this component's own
- * Input fields — since #2457, the PARENT (`loopRowChildPropOverrides`, via
- * `childPropFieldNames`) already resolves the JSX attribute name to the
- * child's own field name before emitting the call, so the switch this spec
- * drives is keyed by that one name on both sides; there is no longer a
- * separate "wire" name to carry (an aliased destructure used to make the
- * parent's JSX-attribute name and the child's field name differ — `"N"` vs
- * `Count` — and this spec used to carry both).
+ * own type block (`emitOwnedReprops`). `propsField` (LOCAL) and `inputField`
+ * (caller-facing) diverge only for an aliased destructured prop — one name is
+ * not enough (see `emitRepropsRegistration`).
  */
 type RepropsSpec = {
-  params: string[]
+  params: { propsField: string; inputField: string }[]
   usesSearchParams: boolean
 }
 
@@ -688,35 +683,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childDerivedFieldDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
 
   /**
-   * component name -> (the prop name as WRITTEN AT THE JSX CALL SITE -> that
-   * component's own Go field name). #2457.
+   * component name -> (JSX-attribute name -> that component's own Props
+   * field, LOCAL binding). `bf.WithProps` treats an unknown field as a
+   * silent passthrough, so `bf_with_props`/`bf_reprops` call sites cannot
+   * just capitalize the JSX attribute: for `{ n: count }` that names a
+   * field (`N`) the Props struct doesn't have, dropping the override with
+   * no diagnostic. Input composite literals need no such lookup — Input
+   * fields are caller-facing, so `capitalizeFieldName(jsxName)` already
+   * names them (see `emitChildField`).
    *
-   * `generateInputStruct` / `emitPropsDataFields` name a child's Go field from
-   * its LOCAL binding (`capitalizeFieldName(param.name)`), but a parent
-   * emitting a per-row override
-   * (`loopRowChildPropOverrides`) only knows the JSX attribute it wrote. For
-   * an un-aliased prop those are the same string, so this map is an identity
-   * for every existing shape and every currently-passing fixture stays
-   * byte-identical. For an ALIASED destructure (`{ n: count }`) they differ
-   * (`"N"` vs `Count`) — `bf.WithProps` documents unknown-field pairs as a
-   * silent passthrough, so emitting the JSX name against a struct that has no
-   * such field drops the override with no diagnostic. Resolving through this
-   * map once, at the parent's emission site (the only place that has both
-   * the JSX name and the child's shape), replaces that silent drop with the
-   * correct field.
-   *
-   * Key = `p.sourceName ?? p.name` (identity for an un-aliased param, the JSX
-   * attribute name for an aliased one). Value = `capitalizeFieldName(p.name)`
-   * — the child's own field, from its LOCAL binding, same as
-   * `generateInputStruct` uses.
-   *
-   * Populated from the same two doors as `childDerivedFieldDeps` — inside
-   * `recordDerivedFieldDeps`, unconditionally (before that method's own
-   * `deps.size > 0` gate), so every component gets an entry here regardless
-   * of whether it has a derived field. `recordRepropsSpec` (the other nearby
-   * populator) returns early for components with no derived field or an
-   * ineligible shape — this map must NOT inherit either gate, since an
-   * aliased child with no derived field at all is exactly the #2457 shape.
+   * Populated inside `recordDerivedFieldDeps` BEFORE its `deps.size > 0`
+   * gate: an aliased child with no derived field at all is exactly the
+   * #2457 shape, so this map must not inherit `recordRepropsSpec`'s gates.
    */
   private childPropFieldNames: Map<string, Map<string, string>> = new Map()
 
@@ -798,9 +776,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     const canonical = (local: string): string => capitalizeFieldName(sourceOf.get(local) ?? local)
     const propFieldNames = new Set([...paramNames].map(canonical))
-    // #2457: record the JSX-attribute-name -> child's-own-field-name map for
-    // EVERY component, unconditionally — see `childPropFieldNames`'s
-    // docstring for why this can't share `recordRepropsSpec`'s gates.
+    // Recorded for EVERY component — this must not share `recordRepropsSpec`'s
+    // gates (see `childPropFieldNames`).
     const fieldNames = new Map<string, string>()
     for (const p of ir.metadata.propsParams ?? []) {
       fieldNames.set(p.sourceName ?? p.name, capitalizeFieldName(p.name))
@@ -944,6 +921,53 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.state.contextConsumers.filter(c => !taken.has(this.contextFieldName(c)))
   }
 
+  /**
+   * True when `param`'s prop is subsumed by a same-name nested-component
+   * array field (`<Row>` children collected into `Rows []RowProps`). Must
+   * check the LOCAL and caller-facing name together — Input keys its fields
+   * caller-facing while Props/NewProps key local, so a one-sided check lets
+   * the structs disagree on whether the field exists (a duplicate json tag,
+   * or a dead Input field whose caller writes are silently ignored).
+   */
+  private isNestedArrayShadowed(
+    param: { name: string; sourceName?: string },
+    nestedArrayFields: ReadonlySet<string>,
+  ): boolean {
+    return (
+      nestedArrayFields.has(capitalizeFieldName(param.name)) ||
+      nestedArrayFields.has(capitalizeFieldName(param.sourceName ?? param.name))
+    )
+  }
+
+  /**
+   * Every Go field name these props params could claim — LOCAL and
+   * caller-facing. A context-consumer field must exist in ALL of
+   * Input/Props/NewProps or none, and the three key prop fields under
+   * different namings, so their shared collision gate cannot check just one
+   * (`{ n: searchParams }` collides in Props but not Input).
+   */
+  private propParamFieldNamesUnion(params: ReadonlyArray<{ name: string; sourceName?: string }>): string[] {
+    return params.flatMap(p => [capitalizeFieldName(p.name), capitalizeFieldName(p.sourceName ?? p.name)])
+  }
+
+  /**
+   * Claim `desired` in the struct-wide set of emitted json tags, or fall
+   * back to `json:"-"` on collision. The identifier de-dup sets cannot cover
+   * this: an aliased prop's tag is caller-facing while other fields' tags
+   * stay local, so two DIFFERENT Go identifiers can want the same tag — and
+   * `encoding/json` silently drops every field sharing an ambiguous tag,
+   * losing the key from the bf-p payload entirely. Callers thread one set
+   * through the field-emitting loops in declaration order, so props win;
+   * that matches hono, whose hydration blob is built only from props params
+   * (a signal seeds by reading the prop's key, never a key of its own, so
+   * the dropped tag was never a client read path).
+   */
+  private claimJsonTag(desired: string, taken: Set<string>): string {
+    if (taken.has(desired)) return '-'
+    taken.add(desired)
+    return desired
+  }
+
   generateTypes(ir: ComponentIR): string | null {
     this.state.usesHtmlTemplate = false
     this.state.usesFmt = false
@@ -1004,8 +1028,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Two invariants the emitted code depends on:
    *
    * - **Input is recoverable from Props.** `emitPropsDataFields` and
-   *   `generateInputStruct` emit each props param with the SAME field name and
-   *   the SAME `resolvePropGoType`, so `in.<F> = b.<F>` is exact. A prop read
+   *   `generateInputStruct` emit each props param with the SAME
+   *   `resolvePropGoType`, and the same field name EXCEPT for an aliased
+   *   destructured prop, where Props keeps the LOCAL field and Input keys by
+   *   the CALLER-facing name (a caller-side `BadgeInput{N: 5}` literal must
+   *   type-check). `in.<inputField> = b.<propsField>` bridges the pair
+   *   (identity when un-aliased). A prop read
    *   only by a memo still gets its passthrough field, so nothing is lost.
    *   Shapes that add Input fields with no Props counterpart (a rest bag, a
    *   spread slot, context consumers, nested child Inputs) are declined —
@@ -1016,17 +1044,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *   BfMount come from the base, and the Props-only fields (Scripts,
    *   BfIsRoot/BfIsChild/BfDataKey) are reapplied after the constructor.
    *
-   * The override switch is keyed by the child's own Input field
-   * (`ParamInfo.name`) on both the case label and the assignment target. That
-   * used to differ under an aliased destructure — the case label carried the
-   * name the PARENT wrote (the JSX attribute, `ParamInfo.sourceName ?? name`)
-   * while the assignment targeted the child's own field, so this switch was
-   * where those two sides were reconciled. #2457 moved that reconciliation to
-   * the PARENT (`loopRowChildPropOverrides`, via `childPropFieldNames`): the
-   * parent now emits the child's own field name at the call site, so by the
-   * time a `bf_reprops` pipeline reaches this switch both sides already agree
-   * and there's exactly one place — the parent's emission — where the naming
-   * gets reconciled, instead of two.
+   * The override switch built from `params` is emitted by
+   * `emitRepropsRegistration`.
    */
   private recordRepropsSpec(
     ir: ComponentIR,
@@ -1036,11 +1055,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     if (!this.childDerivedFieldDeps.has(componentName)) return
 
+    // Must mirror `generateInputStruct`'s exclusion/collision checks exactly —
+    // both walk the Input struct's actual (caller-keyed) field names, or the
+    // reprops switch references fields the struct doesn't have.
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
     const params = (ir.metadata.propsParams ?? []).filter(
-      p => !nestedArrayFields.has(capitalizeFieldName(p.name)),
+      p => !this.isNestedArrayShadowed(p, nestedArrayFields),
     )
-    const takenInput = new Set((ir.metadata.propsParams ?? []).map(p => capitalizeFieldName(p.name)))
+    const takenInput = new Set(this.propParamFieldNamesUnion(ir.metadata.propsParams ?? []))
     const eligible =
       nestedComponents.every(n => n.isDynamic && !n.isPropDerived) &&
       spreadSlots.length === 0 &&
@@ -1049,7 +1071,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!eligible) return
 
     this.childRepropsReady.set(componentName, {
-      params: params.map(p => capitalizeFieldName(p.name)),
+      params: params.map(p => ({
+        propsField: capitalizeFieldName(p.name),
+        inputField: capitalizeFieldName(p.sourceName ?? p.name),
+      })),
       usesSearchParams: this.usesSearchParams(ir),
     })
   }
@@ -1108,22 +1133,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t\t\tBfParent: b.BfParent,')
     lines.push('\t\t\tBfMount: b.BfMount,')
     if (usesSearchParams) lines.push('\t\t\tSearchParams: b.SearchParams,')
-    for (const field of params) {
-      lines.push(`\t\t\t${field}: b.${field},`)
+    for (const { propsField, inputField } of params) {
+      lines.push(`\t\t\t${inputField}: b.${propsField},`)
     }
     lines.push('\t\t}')
     lines.push('\t\tfor i := 0; i < len(kv); i += 2 {')
     lines.push('\t\t\tname, _ := kv[i].(string)')
     lines.push('\t\t\tvar err error')
     lines.push('\t\t\tswitch name {')
-    for (const field of params) {
-      // Case label and assignment target are the same name: the child's own
-      // Input field. The parent (`loopRowChildPropOverrides`, via
-      // `childPropFieldNames`, #2457) already resolved the JSX attribute to
-      // this field before emitting the call, so there is nothing left to
-      // reconcile here.
-      lines.push(`\t\t\tcase ${JSON.stringify(field)}:`)
-      lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(field)}, &in.${field}, kv[i+1])`)
+    for (const { propsField, inputField } of params) {
+      // Case label = the child's own PROPS field (what the parent's
+      // `bf_with_props`/`bf_reprops` call is keyed by); target = the Input
+      // field. One name is not enough: an aliased destructure gives
+      // `{ n: count }` → Props `Count`, Input `N` (437f822 had unified the
+      // pair while the two could never diverge).
+      lines.push(`\t\t\tcase ${JSON.stringify(propsField)}:`)
+      lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(propsField)}, &in.${inputField}, kv[i+1])`)
     }
     // No silent drop. `bf_with_props` passes an unknown field through because
     // a rest-bag prop legitimately has no named field — but a rebuilder is
@@ -1301,10 +1326,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private usesSearchParams(ir: ComponentIR): boolean {
     if (this.state.searchParamsLocals.size === 0) return false
-    // Every other field-producing source: a `SearchParams` collision would
-    // redeclare the field and break the Go compile.
+    // A `SearchParams` collision would redeclare the field and break the Go
+    // compile. This ONE boolean gates the field in Input (caller-facing
+    // names), Props (LOCAL names) and NewProps at once, so a prop cannot be
+    // checked under just one naming: `{ x: searchParams }` collides only in
+    // Props, `{ searchParams: x }` only in Input.
     const taken = new Set<string>([
       ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.sourceName ?? p.name)),
       // Env signals (`createSearchParams()`) don't produce a normal value field —
       // they ARE the `SearchParams` binding — so they must not poison this
       // collision set (a getter named `searchParams` would otherwise capitalise
@@ -1351,8 +1380,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
 
     for (const param of ir.metadata.propsParams) {
-      const fieldName = capitalizeFieldName(param.name)
-      if (nestedArrayFields.has(fieldName)) continue
+      // #2525: caller-facing name, not the local destructure binding — a
+      // caller-side composite `BadgeInput{N: 5}` literal is written against
+      // the name the callee's `{ n: count }` destructure was GIVEN, not the
+      // name it renamed to internally. `generatePropsStruct`'s field (what
+      // `{{.X}}` executes against) stays keyed by the local binding — see
+      // `emitPropsDataFields`.
+      const fieldName = capitalizeFieldName(param.sourceName ?? param.name)
+      if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       lines.push(`\t${fieldName} ${goType}`)
     }
@@ -1374,8 +1409,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // `useContext` consumer fields — settable by an enclosing provider; default
-    // applied in NewXxxProps.
-    const takenInput = new Set(ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)))
+    // applied in NewXxxProps. `taken` must union the local and caller-facing
+    // prop names (`propParamFieldNamesUnion`) or Input disagrees with
+    // Props/NewProps on whether the consumer field exists.
+    const takenInput = new Set(this.propParamFieldNamesUnion(ir.metadata.propsParams))
     for (const c of this.nonCollidingContextConsumers(takenInput)) {
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)}`)
     }
@@ -1413,9 +1450,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const propsTypeName = `${componentName}Props`
     this.emitPropsStructHeader(lines, ir, propsTypeName, componentName)
 
-    this.emitPropsDataFields(lines, ir, nestedComponents, propTypeOverrides)
+    // ONE taken-tags set spans every field-emitting loop below — per-loop
+    // sets would let two loops emit the same tag, and `encoding/json` drops
+    // both such fields silently (see `claimJsonTag`).
+    const takenJsonTags = new Set<string>()
 
-    this.emitPropsAuxFields(lines, ir, componentName, nestedComponents, spreadSlots)
+    this.emitPropsDataFields(lines, ir, nestedComponents, propTypeOverrides, takenJsonTags)
+
+    this.emitPropsAuxFields(lines, ir, componentName, nestedComponents, spreadSlots, takenJsonTags)
 
     lines.push('}')
     lines.push('')
@@ -1734,8 +1776,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const propFieldNames = new Set<string>()
     for (const param of ir.metadata.propsParams) {
+      // Props field: LOCAL binding, what the template reads (`{{.X}}`).
+      // Everything on the right of `:` below reads `in.<inputField>`
+      // (caller-facing), never `in.<fieldName>` (local).
       const fieldName = capitalizeFieldName(param.name)
-      if (nestedArrayFields.has(fieldName)) continue
+      const inputField = capitalizeFieldName(param.sourceName ?? param.name)
+      if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const hoisted = propFallbackVars.get(param.name)
       if (hoisted) {
         lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
@@ -1743,17 +1789,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const paramDefault = goPropDefault(param.defaultValue)
         const memoFold = memoFallbacks.get(fieldName)
         if (paramDefault !== null) {
-          lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${fieldName}`, paramDefault)},`)
+          lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${inputField}`, paramDefault)},`)
         } else if (memoFold !== undefined && memoFold.goType === 'string') {
-          lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${fieldName}`, memoFold.goFallback)},`)
+          lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${inputField}`, memoFold.goFallback)},`)
         } else if (memoFold !== undefined) {
           // interface{} field (`size ?? 'icon'`): the string zero-check doesn't
           // compile, so wrap in a nil/empty-tolerant IIFE.
           lines.push(
-            `\t\t${fieldName}: func() interface{} { v := interface{}(in.${fieldName}); if v == nil || v == "" { return ${memoFold.goFallback} }; return v }(),`,
+            `\t\t${fieldName}: func() interface{} { v := interface{}(in.${inputField}); if v == nil || v == "" { return ${memoFold.goFallback} }; return v }(),`,
           )
         } else {
-          lines.push(`\t\t${fieldName}: in.${fieldName},`)
+          lines.push(`\t\t${fieldName}: in.${inputField},`)
         }
       }
       propFieldNames.add(fieldName)
@@ -1823,9 +1869,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // `useContext` consumer fields default to the `createContext` default when
-    // the provider didn't set them.
+    // the provider didn't set them. Props params must contribute BOTH namings
+    // (`propParamFieldNamesUnion`) or this disagrees with Input/Props on
+    // whether the consumer field exists.
     const takenInit = new Set<string>([
-      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+      ...this.propParamFieldNamesUnion(ir.metadata.propsParams),
       ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
       ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
     ])
@@ -1891,14 +1939,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
         // bag to route it into, has nowhere to go — skip over emitting invalid Go.
         if (jsxName.includes('-')) return
-        // Same resolution as `loopRowChildPropOverrides` (#2457): the child's
-        // own Go field, which differs from the JSX attribute under an aliased
-        // destructure (`{ n: count }` → field `Count`). Emitting the attribute
-        // name here put an unknown field in a Go struct literal — a build
-        // error rather than a silent drop, but wrong either way. Falls back to
-        // the capitalized attribute for a child this run never registered.
-        const fieldName =
-          this.childPropFieldNames.get(child.name)?.get(jsxName) ?? capitalizeFieldName(jsxName)
+        // `<Child>Input{...}` composite literal: Input fields are
+        // caller-facing and `jsxName` IS the caller-facing name, so no
+        // `childPropFieldNames` lookup — that map resolves the child's
+        // LOCAL/Props field for `loopRowChildPropOverrides`'s different
+        // struct.
+        const fieldName = capitalizeFieldName(jsxName)
         lines.push(`\t\t\t${fieldName}: ${goValue},`)
       }
       for (const prop of child.props) {
@@ -2425,6 +2471,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     nestedComponents: NestedComponentInfo[],
     propTypeOverrides: Map<string, string>,
+    takenJsonTags: Set<string>,
   ): void {
     // Nested-component array fields are emitted as typed arrays below, not as
     // their raw prop; track them (and emitted names) to skip duplicates.
@@ -2433,12 +2480,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     for (const param of ir.metadata.propsParams) {
       const fieldName = capitalizeFieldName(param.name)
-      if (nestedArrayFields.has(fieldName)) continue
+      if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       // Children are already rendered in the DOM; serialising them into bf-p
       // leaks nested scope ids and bloats the attribute. Exclude from JSON so
       // BfPropsAttr never marshals them.
-      const jsonTag = param.name === 'children' ? '-' : this.toJsonTag(param.name)
+      //
+      // The tag is CALLER-facing even though `fieldName` stays LOCAL: the
+      // tag is the hydration wire format and the client JS reads
+      // `_p.<callerKey>` (#2524) — a local tag would make hydration read the
+      // wrong key. Props are emitted FIRST into `takenJsonTags`, so a prop
+      // always wins a tag collision against a later signal/memo/etc field.
+      const jsonTag =
+        param.name === 'children'
+          ? '-'
+          : this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), takenJsonTags)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
       propFieldNames.add(fieldName)
     }
@@ -2451,7 +2507,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (signal.envReader) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
-      const jsonTag = this.toJsonTag(signal.getter)
+      const jsonTag = this.claimJsonTag(this.toJsonTag(signal.getter), takenJsonTags)
       // A synthesised struct type wins outright — the signal is an untyped
       // object array we gave a concrete element type.
       const synthType = this.state.synthStructTypes.get(signal.getter)
@@ -2501,7 +2557,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const memo of ir.metadata.memos) {
       const fieldName = capitalizeFieldName(memo.name)
       if (propFieldNames.has(fieldName)) continue
-      const jsonTag = this.toJsonTag(memo.name)
+      const jsonTag = this.claimJsonTag(this.toJsonTag(memo.name), takenJsonTags)
       const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
@@ -2513,6 +2569,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     componentName: string,
     nestedComponents: NestedComponentInfo[],
     spreadSlots: SpreadSlotInfo[],
+    takenJsonTags: Set<string>,
   ): void {
     // Computed fields for component-scope derived string consts the template
     // references (e.g. `root = base || '/'`). Not serialised — the route handler
@@ -2527,14 +2584,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // `useContext` consumer fields (skip names already taken by a prop /
-    // signal / memo field).
+    // signal / memo field). Props params must contribute BOTH namings
+    // (`propParamFieldNamesUnion`) or this disagrees with Input on whether
+    // the consumer field exists.
     const takenProps = new Set<string>([
-      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+      ...this.propParamFieldNamesUnion(ir.metadata.propsParams),
       ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
       ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
     ])
     for (const c of this.nonCollidingContextConsumers(takenProps)) {
-      const jsonTag = this.toJsonTag(c.localName)
+      const jsonTag = this.claimJsonTag(this.toJsonTag(c.localName), takenJsonTags)
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
     }
 
@@ -2548,7 +2607,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
       } else {
         // Static + prop-derived arrays go in JSON so the client can hydrate.
-        const jsonTag = this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
+        const jsonTag = this.claimJsonTag(
+          this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`),
+          takenJsonTags,
+        )
         lines.push(`\t${nested.name}s []${elemType} \`json:"${jsonTag}"\``)
       }
     }
@@ -2562,7 +2624,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // map[string]any` field the template reads via `{{bf_spread_attrs}}`.
     // Loop-internal spreads emit inline and don't appear here.
     for (const slot of spreadSlots) {
-      const jsonTag = this.toJsonTag(slot.slotId)
+      const jsonTag = this.claimJsonTag(this.toJsonTag(slot.slotId), takenJsonTags)
       lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
     }
   }
@@ -2870,7 +2932,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private lowerProviderMapMemberValue(
     node: ParsedExpr,
-    propsParams: ReadonlyArray<{ name: string }>,
+    propsParams: ReadonlyArray<{ name: string; sourceName?: string }>,
   ): string | null {
     if (node.kind === 'object-literal') return objectLiteralToGoMap(this.emitCtx, node)
     const literal = parsedLiteralToGo(this.emitCtx, node)
@@ -2889,8 +2951,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // closure below — TS drops property-path narrowing (`node.left.kind
       // === 'member'`) across a nested arrow function boundary.
       const propName = node.left.property
-      if (propsParams.some(param => param.name === propName)) {
-        const fieldRef = `in.${capitalizeFieldName(propName)}`
+      const matchedParam = propsParams.find(param => param.name === propName)
+      if (matchedParam) {
+        // `sourceName ?? name`: the Input struct's field is caller-facing
+        // (#2525). A `props.<key>` member read (this function's shape) has
+        // no destructure aliasing to begin with — `key` IS the caller-facing
+        // name — but resolving through the matched param keeps this in step
+        // with every other `in.<field>` read in the file rather than
+        // re-deriving the assumption locally.
+        const fieldRef = `in.${capitalizeFieldName(matchedParam.sourceName ?? matchedParam.name)}`
         return (
           `func() map[string]interface{} { ` +
           `if m := bf.AsMap(${fieldRef}); m != nil { return m }; ` +
@@ -2911,7 +2980,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private templatePartsToGoCode(
     parts: IRTemplatePart[],
-    propsParams: { name: string }[]
+    propsParams: { name: string; sourceName?: string }[]
   ): string | null {
     const segments: string[] = []
     for (const part of parts) {
@@ -2929,7 +2998,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const keyExpr = part.key.trim()
         const param = propsParams.find(p => p.name === keyExpr)
         if (!param) return null
-        const fieldName = capitalizeFieldName(keyExpr)
+        // Input field is caller-facing (#2525); `keyExpr` is the LOCAL prop
+        // binding used in the source expression.
+        const fieldName = capitalizeFieldName(param.sourceName ?? keyExpr)
         const caseEntries = Object.entries(part.cases)
         if (caseEntries.length === 0) {
           segments.push('""')
@@ -2964,7 +3035,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     expr: string,
     signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
     memos: { name: string; computation: string; deps: string[] }[],
-    propsParams: { name: string }[]
+    propsParams: { name: string; sourceName?: string }[]
   ): string | null {
     // `getter() === 'lit'` / `!==` as a child-instance prop value
     // (`open={openItem() === 'item-1'}`): resolves to a Go bool when the
@@ -3069,8 +3140,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       passthroughName !== null &&
       ((localConst !== undefined && !isPropsDestructureAlias) ||
         this.state.localHelperNames.has(passthroughName))
-    if (passthroughName && !shadowedByLocal && propsParams.some(p => p.name === passthroughName)) {
-      return `in.${capitalizeFieldName(passthroughName)}`
+    const passthroughParam =
+      passthroughName && !shadowedByLocal
+        ? propsParams.find(p => p.name === passthroughName)
+        : undefined
+    if (passthroughParam) {
+      // Input field is caller-facing (#2525); `passthroughName` is the LOCAL
+      // binding (`bareIdentifier`) or the `props.<key>` source key
+      // (`barePropAccess`, never aliased) — resolve through the matched
+      // param rather than assuming the two coincide.
+      return `in.${capitalizeFieldName(passthroughParam.sourceName ?? passthroughParam.name)}`
     }
 
     return null
@@ -3175,7 +3254,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (!param) continue
       // A destructure default already wins via applyGoFallback below.
       if (goPropDefault(param.defaultValue) !== null) continue
-      const fieldName = capitalizeFieldName(match.propName)
+      // `PropFallbackVar.fieldName` is read off the INPUT struct (every
+      // consumer does `in.${fieldName}`, #2525) — caller-facing, not
+      // `match.propName`'s local binding.
+      const fieldName = capitalizeFieldName(param.sourceName ?? match.propName)
       // A `??`-consumed optional scalar lowered to `interface{}` (#2248) —
       // detected off the SAME `resolvePropGoType` pipeline the struct
       // generators use, so this can't drift from the emitted field type. The
@@ -5561,16 +5643,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         })
         continue
       }
-      // #2457: emit the CHILD's own Go field name, not the JSX attribute name.
-      // They differ under an aliased destructure (`{ n: count }` → attribute
-      // `n`, field `Count`); resolving through `childPropFieldNames` here —
-      // the parent's emission site, the only place that has both the JSX
-      // name and the child's shape — means `bf.WithProps`/`bf.RepropsAssign`
-      // never see a name the struct doesn't have. Falls back to today's
-      // capitalized-attribute behaviour for a cross-file child this run's
-      // pre-pass never registered (`childPropFieldNames` has no entry).
-      const fieldName =
-        this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      // Emit the CHILD's own PROPS field name, not the JSX attribute name —
+      // `bf.WithProps`/`bf.RepropsAssign` patch the constructed PROPS
+      // instance, and passing a name the struct doesn't have (an aliased
+      // `{ n: count }` attribute) is a silent passthrough, not an error
+      // (#2457). Stays LOCAL even though the child's Input field is
+      // caller-facing. Falls back to the capitalized attribute for a
+      // cross-file child this run's pre-pass never registered.
+      const fieldName = this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
       args.push(`${JSON.stringify(fieldName)} ${wrapIfMultiToken(go)}`)
     }
     if (args.length === 0) return null

@@ -92,6 +92,16 @@
         "text"
       ]
     },
+    "aliased-prop-signal-tag-collision": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "arithmetic-text": {
       "kinds": [
         "binary",
@@ -4945,9 +4955,9 @@
     "array-method": 67,
     "arrow": 64,
     "binary": 82,
-    "call": 200,
+    "call": 201,
     "conditional": 24,
-    "identifier": 288,
+    "identifier": 289,
     "index-access": 14,
     "literal": 238,
     "logical": 43,

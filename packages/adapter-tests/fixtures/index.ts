@@ -458,6 +458,9 @@ import { fixture as objectCatalogued } from './object-catalogued'
 // Onboarding TSX-fidelity gaps (PR #2461): correct-output pins for
 // #2460/#2463/#2464/#2465 plus one documented React divergence.
 import { fixture as aliasedDestructuredProp } from './aliased-destructured-prop'
+// Aliased prop's caller-facing key colliding with a same-named signal
+// getter (#2525 — see the fixture's docstring).
+import { fixture as aliasedPropSignalTagCollision } from './aliased-prop-signal-tag-collision'
 import { fixture as selectValueSsr } from './select-value-ssr'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 import { fixture as signalEarlyReturn } from './signal-early-return'
@@ -798,6 +801,7 @@ export const jsxFixtures: JSXFixture[] = [
   unionCatalogued,
   objectCatalogued,
   aliasedDestructuredProp,
+  aliasedPropSignalTagCollision,
   selectValueSsr,
   textareaValueSsr,
   signalEarlyReturn,
