@@ -8,7 +8,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { buildPropAliasMap } from './props-binding.ts'
@@ -3316,6 +3316,12 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
         const resolvedType: TypeInfo = member?.type ?? { kind: 'unknown', raw: 'unknown' }
 
         const defaultContainsArrow = element.initializer ? nodeContainsArrow(element.initializer) : false
+        // Structured mirror of `defaultValue`, from the binding element's OWN
+        // `initializer` node — `tsNodeToParsedExpr` converts the already-parsed
+        // AST directly, no re-parse of the `defaultValue` text (same convention
+        // as `SignalInfo.parsed`). An unsupported shape leaves `parsed` unset;
+        // consumers fall back to `defaultValue` text.
+        const parsedDefault = element.initializer ? tsNodeToParsedExpr(element.initializer) : undefined
         ctx.propsParams.push({
           name: localName,
           type: resolvedType,
@@ -3323,6 +3329,7 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
           // the caller may omit the prop.
           optional: !!member?.optional || !!element.initializer,
           defaultValue,
+          ...(parsedDefault && parsedDefault.kind !== 'unsupported' && { parsed: parsedDefault }),
           defaultContainsArrow: defaultContainsArrow || undefined,
           // Only aliased bindings carry the source key — see ParamInfo.sourceName.
           ...(sourcePropName !== localName && { sourceName: sourcePropName }),

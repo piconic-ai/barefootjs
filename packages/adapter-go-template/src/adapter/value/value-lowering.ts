@@ -17,7 +17,7 @@ import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
-import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
+import { numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
 import { collapseLiteralUnion } from '../type/type-codegen.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
@@ -104,18 +104,36 @@ export function convertInitialValue(
 
   if (typeInfo.kind === 'primitive') {
     if (typeInfo.primitive === 'boolean') {
+      // Structural first: the SAME initial value, already parsed
+      // (`SignalInfo.parsed`/module-const `parsed`) — text-matching
+      // `value === 'true'` is the fallback for a caller with no `preParsed`
+      // (an unsupported shape `tsNodeToParsedExpr` couldn't represent).
+      if (preParsed?.kind === 'literal' && preParsed.literalType === 'boolean' && typeof preParsed.value === 'boolean') {
+        return preParsed.value ? 'true' : 'false'
+      }
       return value === 'true' ? 'true' : 'false'
     }
     if (typeInfo.primitive === 'number') {
-      // Leading `-` (#2168 math-methods: `createSignal(-7.6)`) — without it,
-      // a negative initial value never matches either literal shape below
-      // and silently falls to the `0` zero-value fallback, regardless of the
-      // field's Go type.
+      // Structural first — `numberLiteralRawGo` unwraps a leading unary minus
+      // (#2168 math-methods: `createSignal(-7.6)`) off the literal's OWN
+      // `raw` token (exact source spelling, never a re-stringified value).
+      const numGo = preParsed ? numberLiteralRawGo(preParsed) : null
+      if (numGo !== null) return numGo
+      // Text fallback for a caller with no `preParsed`. Leading `-` handled
+      // the same way (without it, a negative initial value never matches
+      // either literal shape below and silently falls to the `0`
+      // zero-value fallback, regardless of the field's Go type).
       if (/^-?\d+$/.test(value)) return value
       if (/^-?\d+\.\d+$/.test(value)) return value
       return '0'
     }
     if (typeInfo.primitive === 'string') {
+      // Structural first: `JSON.stringify` re-quotes/escapes the literal's
+      // unquoted `value` for Go — correct for any embedded quote/backslash,
+      // unlike the text fallback's blind `'` → `"` swap below.
+      if (preParsed?.kind === 'literal' && preParsed.literalType === 'string' && typeof preParsed.value === 'string') {
+        return JSON.stringify(preParsed.value)
+      }
       if (value.startsWith("'") || value.endsWith("'")) {
         return value.replace(/'/g, '"')
       }

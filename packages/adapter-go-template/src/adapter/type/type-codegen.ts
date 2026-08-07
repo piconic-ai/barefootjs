@@ -11,7 +11,7 @@
  * pure.
  */
 
-import type { TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 
@@ -58,6 +58,48 @@ export function collapseLiteralUnion(typeInfo: TypeInfo): TypeInfo {
 }
 
 /**
+ * A literal number's numeric value, unwrapping a leading unary minus (`-7.6`
+ * parses as `{kind:'unary', op:'-', argument:{literalType:'number', value:7.6}}`
+ * — the same shape `parsedLiteralToGo`'s own unary-minus arm unwraps,
+ * `value-lowering.ts`/`parsed-literal-to-go.ts`). Returns `null` for anything
+ * that isn't (possibly negated) a number literal.
+ */
+function literalNumberValue(expr: ParsedExpr): number | null {
+  if (expr.kind === 'literal' && expr.literalType === 'number' && typeof expr.value === 'number') {
+    return expr.value
+  }
+  if (
+    expr.kind === 'unary' &&
+    expr.op === '-' &&
+    expr.argument.kind === 'literal' &&
+    expr.argument.literalType === 'number' &&
+    typeof expr.argument.value === 'number'
+  ) {
+    return -expr.argument.value
+  }
+  return null
+}
+
+/**
+ * Structural counterpart to {@link inferTypeFromValue}: classify a parsed
+ * literal's Go type from its `ParsedExpr` shape instead of its source text.
+ * Returns `null` for anything not covered here (identifier/call/member,
+ * object-literal — same scope `inferTypeFromValue`'s text scan covers, so a
+ * caller falling back to the text path for those sees identical results).
+ */
+function inferGoTypeFromParsed(expr: ParsedExpr): string | null {
+  const n = literalNumberValue(expr)
+  if (n !== null) return Number.isInteger(n) ? 'int' : 'float64'
+  if (expr.kind === 'literal') {
+    if (expr.literalType === 'boolean') return 'bool'
+    if (expr.literalType === 'string') return 'string'
+    return null
+  }
+  if (expr.kind === 'array-literal') return '[]interface{}'
+  return null
+}
+
+/**
  * Convert a `TypeInfo` to a Go type string.
  *
  * @param defaultValue used to infer the type when `typeInfo.kind` is
@@ -65,12 +107,18 @@ export function collapseLiteralUnion(typeInfo: TypeInfo): TypeInfo {
  *   `primitive`/`number` (#2168 math-methods/number-tofixed — a bare TS
  *   `number` blindly mapped to Go `int`, so a fractional signal initial
  *   value like `-7.6` silently truncated to the Go zero value)
+ * @param preParsed the SAME default/initial value as `defaultValue`, already
+ *   parsed to structure (`SignalInfo.parsed` / `ParamInfo.parsed`) — preferred
+ *   over regexing `defaultValue`'s text when present. Callers with no
+ *   structural counterpart (a shape `tsNodeToParsedExpr` doesn't support) pass
+ *   nothing and fall through to the text path.
  * @returns the Go type, falling back to `interface{}` when unresolvable
  */
 export function typeInfoToGo(
   ctx: GoEmitContext,
   _typeInfo: TypeInfo,
   defaultValue?: string,
+  preParsed?: ParsedExpr,
 ): string {
   const typeInfo = collapseLiteralUnion(_typeInfo)
   switch (typeInfo.kind) {
@@ -78,8 +126,11 @@ export function typeInfoToGo(
       switch (typeInfo.primitive) {
         case 'string':
           return 'string'
-        case 'number':
+        case 'number': {
+          const n = preParsed ? literalNumberValue(preParsed) : null
+          if (n !== null) return Number.isInteger(n) ? 'int' : 'float64'
           return defaultValue !== undefined ? numberPrimitiveGoType(defaultValue) : 'int'
+        }
         case 'boolean':
           return 'bool'
         default:
@@ -108,58 +159,68 @@ export function typeInfoToGo(
       if (typeInfo.raw && (ctx.state.localStructFields.has(typeInfo.raw) || ctx.state.localTypeAliases.has(typeInfo.raw))) {
         return typeInfo.raw
       }
-      // Resolve a raw type string pattern (e.g. `Array<Todo>`).
+      // A named type with no backing struct/alias — an external/unresolved
+      // reference. `typeNodeToTypeInfo` already normalises every ARRAY spelling
+      // (`T[]`, `Array<T>`, `ReadonlyArray<T>`) to `kind: 'array'` before a
+      // `TypeInfo` ever reaches here (#2480's structural literal-type pass did
+      // the same for literal unions), so `typeInfo.raw` at this point is never
+      // an array shape — `tsTypeStringToGo` is a plain lookup, not a parser.
       if (typeInfo.raw) {
         const resolved = tsTypeStringToGo(ctx, typeInfo.raw)
         if (resolved !== 'interface{}') return resolved
       }
       return 'interface{}'
-    case 'unknown':
+    case 'unknown': {
+      const inferred = preParsed ? inferGoTypeFromParsed(preParsed) : null
+      if (inferred) return inferred
       if (defaultValue !== undefined) {
         return inferTypeFromValue(defaultValue)
       }
       return 'interface{}'
+    }
     default:
       return 'interface{}'
   }
 }
 
 /**
- * Convert a raw TypeScript type string to a Go type string. Handles primitives,
- * `T[]` / `Array<T>` arrays, and known local types; else `interface{}`.
+ * Look up a raw TypeScript type-reference name against the component's own
+ * Go-backed local types. NOT a parser: by the time a `TypeInfo` reaches here
+ * (`typeInfoToGo`'s `'interface'` case, its one caller) `typeNodeToTypeInfo`
+ * has already normalised every array spelling to `kind: 'array'` and every
+ * primitive keyword to `kind: 'primitive'` — `tsType` is always a bare named
+ * reference (a struct, a string-union alias, or an unbacked/external name),
+ * never `T[]` / `Array<T>` / `'number'` text to re-parse. (#2484: this used to
+ * carry `t.endsWith('[]')` / `Array<(.+)>` regex branches as a fallback for
+ * that dead case — unreachable given the analyzer's normalisation, deleted.)
  */
 export function tsTypeStringToGo(ctx: GoEmitContext, tsType: string): string {
   const t = tsType.trim()
-  if (t === 'number') return 'int'
-  if (t === 'string') return 'string'
-  if (t === 'boolean' || t === 'bool') return 'bool'
-  if (t.endsWith('[]')) {
-    const elem = t.slice(0, -2)
-    return `[]${tsTypeStringToGo(ctx, elem)}`
-  }
-  const arrayMatch = t.match(/^Array<(.+)>$/)
-  if (arrayMatch) return `[]${tsTypeStringToGo(ctx, arrayMatch[1])}`
-  // Same backing gate as `typeInfoToGo`'s 'interface' case above — an
-  // unbacked local type name (a tuple alias with no struct fields) must not
-  // be returned bare, or the generated code references an undeclared type.
   if (ctx.state.localStructFields.has(t) || ctx.state.localTypeAliases.has(t)) return t
   return 'interface{}'
 }
 
 /**
  * Distinguish Go `int` vs `float64` for a `number`-typed field from the
- * literal source text of its default/initial value. Falls back to `int`
- * when `value` isn't recognizably a bare numeric literal (e.g. a
- * destructured default that's itself an expression, `props.initial ?? 0`)
- * — `int` remains the blind fallback for `kind: 'primitive'`; only a
- * literal fractional value (`-7.6`) is positive enough evidence to widen
- * to `float64`.
+ * literal source text of its default/initial value. TEXT FALLBACK: used only
+ * when `typeInfoToGo`'s caller has no structural `ParsedExpr` for the same
+ * value to pass as `preParsed` (see `inferGoTypeFromParsed`/`literalNumberValue`
+ * above, which this mirrors on parsed structure). Falls back to `int` when
+ * `value` isn't recognizably a bare numeric literal (e.g. a destructured
+ * default that's itself an expression, `props.initial ?? 0`) — `int` remains
+ * the blind fallback for `kind: 'primitive'`; only a literal fractional value
+ * (`-7.6`) is positive enough evidence to widen to `float64`.
  */
 function numberPrimitiveGoType(value: string): string {
   return /^-?\d+\.\d+$/.test(value) ? 'float64' : 'int'
 }
 
-/** Infer a Go type from a JS value literal; `interface{}` when unrecognized. */
+/**
+ * Infer a Go type from a JS value literal's source TEXT; `interface{}` when
+ * unrecognized. TEXT FALLBACK: mirrors `inferGoTypeFromParsed` above on raw
+ * text, used only when `typeInfoToGo`'s caller has no structural `ParsedExpr`
+ * for the same value to pass as `preParsed`.
+ */
 export function inferTypeFromValue(value: string): string {
   if (value === 'true' || value === 'false') return 'bool'
   if (/^-?\d+$/.test(value)) return 'int'

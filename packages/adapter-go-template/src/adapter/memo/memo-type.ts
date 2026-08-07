@@ -34,8 +34,8 @@ export function isListFilterMemo(memo: { parsed?: ParsedExpr }): boolean {
 export function isBooleanMemo(
   ctx: GoEmitContext,
   memo: { computation: string; deps: string[]; parsed?: ParsedExpr },
-  signals: { getter: string; initialValue: string; type: TypeInfo }[],
-  propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
+  signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
+  propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }>,
 ): boolean {
   const c = memo.computation
   // A LIST-valued `.filter(arrow)` memo (#2075) is never boolean, even though
@@ -58,13 +58,13 @@ export function isBooleanMemo(
       if (typeInfoToGo(ctx, sig.type) === 'bool') return true
       // Signal initialised from `props.X ?? false` / a boolean prop.
       if (/\?\?\s*(true|false)\b/.test(sig.initialValue)) return true
-      const propName = ctx.extractPropNameFromInitialValue(sig.initialValue) ?? sig.initialValue
+      const propName = ctx.extractPropNameFromInitialValue(sig.initialValue, sig.parsed) ?? sig.initialValue
       const prop = propsParamMap.get(propName)
-      if (prop && typeInfoToGo(ctx, prop.type, prop.defaultValue) === 'bool') return true
+      if (prop && typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed) === 'bool') return true
       return false
     }
     const prop = propsParamMap.get(name)
-    return !!prop && typeInfoToGo(ctx, prop.type, prop.defaultValue) === 'bool'
+    return !!prop && typeInfoToGo(ctx, prop.type, prop.defaultValue, prop.parsed) === 'bool'
   }
   const ternary = c.match(/=>\s*\w+\(\)\s*\?\s*(\w+)\(\)\s*:\s*(\w+)\(\)/)
   if (ternary) {

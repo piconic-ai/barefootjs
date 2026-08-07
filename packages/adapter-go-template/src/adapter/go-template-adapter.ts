@@ -1514,7 +1514,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     itemType: TypeInfo | null | undefined,
   ): Array<{ tsName: string; goName: string; goType: string }> {
     if (!itemType) return []
-    const typeName = itemType.raw?.replace(/\[\]$/, '') ?? itemType.raw
+    // `itemType` is documented as the loop ITEM's type, but historically
+    // could arrive already ARRAY-shaped (`Todo[]`) from a caller that hadn't
+    // unwrapped it — `typeNodeToTypeInfo` normalises every array spelling to
+    // `kind: 'array'` + `elementType`, so read the element structurally
+    // (#2484) instead of regexing a trailing `[]` off `raw`.
+    const typeName = itemType.kind === 'array' ? (itemType.elementType?.raw ?? itemType.raw) : itemType.raw
     if (!typeName) return []
     for (const td of this.state.currentTypeDefinitions) {
       if (td.name === typeName) {
@@ -2522,8 +2527,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (propName) referencedProp = propsParamMap.get(propName)
       }
       if (referencedProp) {
-        const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue)
-        const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
+        const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue, referencedProp.parsed)
+        const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
         // The "prop type wins" heuristic helps when the signal infer is less
         // specific than the prop (e.g. `createSignal(props.todos)` wants
         // `[]Todo`, not `interface{}`). It HURTS when the initial expression
@@ -2545,7 +2550,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           goType = propGoType
         }
       } else {
-        goType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
+        goType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
       }
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
@@ -3158,8 +3163,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Infer the Go type for a memo from its computation and dependencies. */
   private inferMemoType(
     memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
-    signals: { getter: string; initialValue: string; type: TypeInfo }[],
-    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
+    signals: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
+    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }>
   ): string {
     // A LIST-valued `.filter(arrow)` memo (#2075 — the blog PostList `visible`
     // shape) is a slice of the receiver's boxed elements, not a scalar.
@@ -3193,12 +3198,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             if (propName) referencedProp = propsParamMap.get(propName)
           }
           if (referencedProp) {
-            const propType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue)
+            const propType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue, referencedProp.parsed)
             if (propType === 'int' || propType === 'float64') {
               return 'int'
             }
           }
-          const signalType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
+          const signalType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue, signal.parsed)
           if (signalType === 'int' || signalType === 'float64') {
             return 'int'
           }
@@ -3262,7 +3267,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // detected off the SAME `resolvePropGoType` pipeline the struct
       // generators use, so this can't drift from the emitted field type. The
       // concrete pre-flip type is what the hoisted local materializes as.
-      const concreteType = propTypeOverrides.get(param.name) ?? typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
+      const concreteType = propTypeOverrides.get(param.name) ?? typeInfoToGo(this.emitCtx, param.type, param.defaultValue, param.parsed)
       const nullishLowered =
         NULLISH_SCALAR_GO_TYPES.has(concreteType) &&
         resolvePropGoType(this.emitCtx, param, propTypeOverrides) === 'interface{}'
