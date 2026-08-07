@@ -299,6 +299,18 @@ export const HONO_ADAPTER: AdapterTemplate = {
   // re-pin. Verified clean (`npm audit` → 0 vulnerabilities) against
   // wrangler@4.119.0 / miniflare@5.20260801.0-alpha, which pin
   // undici@7.28.0.
+  //
+  // Deliberately flat/unscoped (applies to every `undici` resolution in
+  // the scaffold, not just miniflare's) — see the `overrides` doc
+  // comment on `AdapterTemplate` in `../templates.ts` for why a
+  // `{ miniflare: { undici: ... } }` scoped form is off the table (bun
+  // doesn't support nested overrides). The Hono adapter has no other
+  // `undici` consumer today, so the wider blast radius is currently
+  // moot; revisit if that changes.
+  //
+  // Bridge, not a fix: drop this once `miniflare` re-pins past
+  // `undici@7.28.0` on its own — tracked in
+  // https://github.com/piconic-ai/barefootjs/issues/2567.
   overrides: {
     undici: '^7.29.0',
   },

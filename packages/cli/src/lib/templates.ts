@@ -52,14 +52,23 @@ export interface AdapterTemplate {
   /** package.json dev dependencies. */
   devDependencies: Record<string, string>
   /**
-   * Optional npm `overrides` entries the scaffold's package.json should
-   * carry. For deps that pin a *transitive* dependency to an exact
-   * (non-range) version, `npm audit fix` can't bump it even when a
-   * patched release exists — an override is the only way to force it
-   * without waiting on the upstream package to re-pin. Rendered
-   * verbatim into `package.json#overrides`; omitted entirely when an
-   * adapter needs none, so plain scaffolds don't carry a stray empty
-   * key.
+   * Optional forced-version entries for *transitive* dependencies the
+   * scaffold's package.json should carry — e.g. a dep that pins its own
+   * dependency to an exact (non-range) vulnerable version, which leaves
+   * `npm audit fix` with nothing to bump even when a patched release
+   * exists upstream. Keys must be flat (`{ pkg: "range" }`), never
+   * nested/scoped (`{ parent: { pkg: "range" } }`) — bun does not
+   * support nested overrides (as of bun 1.3.11: it warns and silently
+   * ignores the entry, leaving the vulnerable version installed), and
+   * this repo treats bun as a first-class scaffold target. `bf init`
+   * (`../commands/init.ts`'s `overridesField`) renders this map into
+   * whichever field name/shape the *detected* package manager actually
+   * reads (npm/bun/deno: top-level `overrides`; pnpm: nested
+   * `pnpm.overrides`; yarn: top-level `resolutions`) — getting that
+   * per-PM shape wrong is worse than omitting it: an `overrides` key a
+   * PM silently no-ops on (verified: pnpm 10 does this) looks like
+   * protection without providing any. Omitted entirely when an adapter
+   * needs none, so plain scaffolds don't carry a stray empty key.
    */
   overrides?: Record<string, string>
   /**

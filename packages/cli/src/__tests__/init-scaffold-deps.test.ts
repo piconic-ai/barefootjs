@@ -43,15 +43,27 @@ interface ScaffoldPkgJson {
   dependencies: Record<string, string>
   devDependencies: Record<string, string>
   overrides?: Record<string, string>
+  pnpm?: { overrides?: Record<string, string> }
+  resolutions?: Record<string, string>
 }
 
-function scaffold(adapter: string): ScaffoldPkgJson {
+// `userAgent`, when set, is forwarded as `npm_config_user_agent` so
+// `detectPackageManager` resolves to a PM other than the bun runtime
+// this test itself spawns under — see the UA-checked-before-`versions.bun`
+// order in `detectInvokingPackageManager` (`../lib/pm.ts`). Lets a single
+// test process exercise every PM's package.json shape without actually
+// having pnpm/yarn installed.
+function scaffold(adapter: string, userAgent?: string): ScaffoldPkgJson {
   const cwd = mktmp()
   const result = spawnSync(
     'bun',
     [CLI_ENTRY, 'init', '--name', 'scaffold-deps-test', '--adapter', adapter, '--css', 'none'],
     {
-      env: { ...process.env, BAREFOOT_INIT_VIA_CREATE: '1' },
+      env: {
+        ...process.env,
+        BAREFOOT_INIT_VIA_CREATE: '1',
+        ...(userAgent ? { npm_config_user_agent: userAgent } : {}),
+      },
       encoding: 'utf-8',
       cwd,
     },
@@ -138,5 +150,31 @@ describe('hono scaffold overrides the undici pulled in by wrangler/miniflare', (
     // stray `overrides` key.
     const pkg = scaffold('csr')
     expect(pkg.overrides).toBeUndefined()
+  })
+
+  // Verified empirically (bun 1.3.11 / pnpm 10.33.0 / yarn 1.22.22)
+  // before writing these: a top-level `overrides` key is silently a
+  // no-op under pnpm (installs the vulnerable version with zero
+  // warning — worse than omitting the key, since the package.json
+  // *looks* protected) and is not read by yarn at all (which wants
+  // `resolutions` instead). `overridesField` in `../commands/init.ts`
+  // exists specifically to render the PM-correct shape.
+  test('pnpm-detected scaffold nests the override under pnpm.overrides, not top-level', () => {
+    const pkg = scaffold('hono', 'pnpm/10.33.0 npm/? node/v22.0.0 linux x64')
+    expect(pkg.overrides).toBeUndefined()
+    expect(pkg.pnpm?.overrides).toEqual(ADAPTERS.hono.overrides)
+  })
+
+  test('yarn-detected scaffold uses top-level resolutions, not overrides', () => {
+    const pkg = scaffold('hono', 'yarn/1.22.22 npm/? node/v22.0.0 linux x64')
+    expect(pkg.overrides).toBeUndefined()
+    expect(pkg.resolutions).toEqual(ADAPTERS.hono.overrides)
+  })
+
+  test('npm-detected scaffold keeps the top-level overrides key', () => {
+    const pkg = scaffold('hono', 'npm/10.9.7 node/v22.0.0 linux x64')
+    expect(pkg.overrides).toEqual(ADAPTERS.hono.overrides)
+    expect(pkg.pnpm).toBeUndefined()
+    expect(pkg.resolutions).toBeUndefined()
   })
 })
