@@ -72,6 +72,18 @@ export interface AdapterTemplate {
    */
   overrides?: Record<string, string>
   /**
+   * Human-readable explanation of why `overrides` exists, rendered into
+   * the scaffolded README (see `generateReadmeMd` in `../lib/readme.ts`)
+   * rather than left undiscoverable in the framework's own source
+   * comments. `package.json` is JSON — it can't carry a comment — so
+   * without this, the override is a stray-looking block in a file the
+   * *user* now owns and maintains, with no way to learn why it's there
+   * or when it's safe to delete. Required whenever `overrides` is set;
+   * should name the upstream cause and link a tracking issue for
+   * removal once it's no longer needed.
+   */
+  overridesNote?: string
+  /**
    * Optional deploy hint surfaced as a dedicated "Deploy:" section in
    * the post-scaffold guide. Adapters that don't have an obvious one-
    * command deploy story (Echo, Mojolicious, CSR) leave this unset

@@ -65,4 +65,20 @@ describe('generateReadmeMd', () => {
     expect(readme).toMatch(/regenerated on every build/i)
     expect(readme).toMatch(/don't edit it by hand/i)
   })
+
+  test('explains adapter.overrides in a dedicated section (package.json can\'t carry a comment)', () => {
+    // Hono is the one adapter that injects an override today (wrangler
+    // -> miniflare's exact undici pin) — see AdapterTemplate.overrides.
+    // The README is the only place a user maintaining the generated
+    // project can learn why the override exists or when it's safe to
+    // remove, since JSON has no comment syntax.
+    const readme = generateReadmeMd('my-app', ADAPTERS.hono, 'npm')
+    expect(readme).toContain('## Dependency overrides')
+    expect(readme).toContain(ADAPTERS.hono.overridesNote)
+  })
+
+  test('omits the overrides section for adapters that inject none', () => {
+    const readme = generateReadmeMd('my-app', ADAPTERS.csr, 'npm')
+    expect(readme).not.toContain('## Dependency overrides')
+  })
 })

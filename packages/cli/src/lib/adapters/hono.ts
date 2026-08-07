@@ -314,5 +314,15 @@ export const HONO_ADAPTER: AdapterTemplate = {
   overrides: {
     undici: '^7.29.0',
   },
+  // Surfaced in the scaffolded README (package.json can't carry a
+  // comment, so without this the override is undiscoverable to whoever
+  // ends up maintaining the generated project).
+  overridesNote:
+    '`overrides.undici` forces a patched `undici` version. `wrangler` depends on `miniflare`, ' +
+    'which pins `undici` to an exact vulnerable release (see ' +
+    '[GHSA-8xcm-r25x-g524](https://github.com/advisories/GHSA-8xcm-r25x-g524) and related advisories) ' +
+    "rather than a range — so `npm audit fix` can't bump past it on its own. " +
+    'Safe to remove once `miniflare` re-pins `undici` upstream — tracked in ' +
+    '[barefootjs#2567](https://github.com/piconic-ai/barefootjs/issues/2567).',
   prereqWarnings: () => [],
 }
