@@ -21,9 +21,9 @@
  * ```
  */
 
-import type { HTMLBaseAttributes } from '@barefootjs/jsx'
+import type { SVGSVGAttributes } from '@barefootjs/jsx'
 
-interface SpinnerProps extends HTMLBaseAttributes {
+interface SpinnerProps extends SVGSVGAttributes {
   /** Additional CSS classes to apply. */
   className?: string
 }

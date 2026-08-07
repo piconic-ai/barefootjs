@@ -1,9 +1,9 @@
 /** @jsxImportSource hono/jsx */
-import type { HTMLBaseAttributes } from '@barefootjs/jsx'
+import type { SVGSVGAttributes } from '@barefootjs/jsx'
 
 export type IconSize = 'sm' | 'md' | 'lg' | 'xl'
 
-export interface IconProps extends HTMLBaseAttributes {
+export interface IconProps extends SVGSVGAttributes {
   size?: IconSize
 }
 
