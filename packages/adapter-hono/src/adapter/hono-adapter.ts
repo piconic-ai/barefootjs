@@ -812,6 +812,39 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       return `{bfComment("cond-start:${cond.slotId}")}{bfComment("cond-end:${cond.slotId}")}`
     }
 
+    return `{${this.renderConditionalBody(cond, ctx)}}`
+  }
+
+  /**
+   * The bare ternary text for `cond` — everything `renderConditional` would
+   * wrap in `{…}`, minus that wrapping. `renderConditional` is the ONLY
+   * place that should add the enclosing braces for a JSX-child position.
+   *
+   * The two branches below need genuinely different embedding rules, not
+   * just a brace/no-brace toggle:
+   *
+   * - Non-reactive (`cond.slotId` is null): the whole thing collapses to a
+   *   FLAT `cond ? whenTrue : whenFalse` — one JS expression, wrapped in
+   *   `{…}` exactly once by whichever caller owns that position (either
+   *   `renderConditional` for a JSX-child position, or an ENCLOSING
+   *   ternary's own bare-branch splice when this conditional is itself
+   *   nested — see `renderBareBranch`). So whenTrue/whenFalse must stay
+   *   bare all the way down: a nested conditional branch renders through
+   *   `renderConditionalBody` again (bare), never through the generic
+   *   `renderNode`/`emitConditional` dispatch, which would re-brace it and
+   *   break the .tsx parse where only a plain expression is legal (#2470).
+   *
+   * - Reactive (`cond.slotId` set): each branch is spliced through
+   *   `wrapWithCondMarker`, which expects a self-contained renderable
+   *   chunk — an HTML-element string it can tag with `bf-c`, or otherwise
+   *   text/JSX content it splices directly as JSX CHILDREN inside a
+   *   `<>…</>` fragment. A nested conditional branch here must keep going
+   *   through the ordinary `renderNode`/`emitConditional` dispatch (via
+   *   `renderNodeRawCtx`, unchanged) so it comes back as a complete,
+   *   already-`{…}`-wrapped JSX expression container — valid as fragment
+   *   children, which bare ternary text would not be.
+   */
+  private renderConditionalBody(cond: IRConditional, ctx?: HonoRenderCtx): string {
     // A conditional that is itself a loop item root (#1665 whole-item
     // conditional: `arr.map(t => cond && <li/>)`) makes its branch element the
     // loop item's root, so the `data-key` that reconciliation/hydration expect
@@ -819,26 +852,29 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // the flag through so `renderElement` emits `data-key`, matching the Go /
     // CSR adapters' generic `key`→`data-key` rewrite.
     const branchCtx: HonoRenderCtx | undefined = ctx?.isLoopItemRoot ? { isLoopItemRoot: true } : undefined
+
+    if (!cond.slotId) {
+      const whenTrue = this.renderBareBranch(cond.whenTrue, branchCtx)
+      let whenFalse = this.renderBareBranch(cond.whenFalse, branchCtx)
+      if (!whenFalse || whenFalse === '' || whenFalse === 'null') {
+        whenFalse = 'null'
+      }
+      return `${cond.condition} ? ${whenTrue} : ${whenFalse}`
+    }
+
     const whenTrue = this.renderNodeRawCtx(cond.whenTrue, branchCtx)
     let whenFalse = this.renderNodeRawCtx(cond.whenFalse, branchCtx)
-
-    // Handle empty/null whenFalse
     if (!whenFalse || whenFalse === '' || whenFalse === 'null') {
       whenFalse = 'null'
     }
 
-    // If reactive, wrap with markers
-    if (cond.slotId) {
-      const trueWithMarker = this.wrapWithCondMarker(cond.whenTrue, whenTrue, cond.slotId)
-      // For null false branch, render comment markers so client can insert content later
-      const falseWithMarker = cond.whenFalse.type === 'expression' && cond.whenFalse.expr === 'null'
-        ? `<>{bfComment("cond-start:${cond.slotId}")}{bfComment("cond-end:${cond.slotId}")}</>`
-        : this.wrapWithCondMarker(cond.whenFalse, whenFalse, cond.slotId)
+    const trueWithMarker = this.wrapWithCondMarker(cond.whenTrue, whenTrue, cond.slotId)
+    // For null false branch, render comment markers so client can insert content later
+    const falseWithMarker = cond.whenFalse.type === 'expression' && cond.whenFalse.expr === 'null'
+      ? `<>{bfComment("cond-start:${cond.slotId}")}{bfComment("cond-end:${cond.slotId}")}</>`
+      : this.wrapWithCondMarker(cond.whenFalse, whenFalse, cond.slotId)
 
-      return `{${cond.condition} ? ${trueWithMarker} : ${falseWithMarker}}`
-    }
-
-    return `{${cond.condition} ? ${whenTrue} : ${whenFalse}}`
+    return `${cond.condition} ? ${trueWithMarker} : ${falseWithMarker}`
   }
 
   /**
@@ -851,6 +887,30 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (node.type === 'expression') {
       if (node.expr === 'null' || node.expr === 'undefined') return 'null'
       return node.expr
+    }
+    return this.renderNode(node, ctx)
+  }
+
+  /**
+   * A branch of a NON-reactive conditional's flat ternary (#2470) — the
+   * value must be a bare JS expression, since it's spliced directly into
+   * `cond ? whenTrue : whenFalse`. Mirrors `renderNodeRawCtx`'s existing
+   * `null`/`undefined` special case, extended to a nested conditional: that
+   * branch renders through `renderConditionalBody` itself (bare), instead
+   * of falling through to `renderNode`/`emitConditional`, which would wrap
+   * it in its own `{…}` and break the .tsx parse in this brace-free
+   * position. The `@client`-directive combination is excluded — its
+   * rendering is a pair of independent marker expressions, not a single JS
+   * expression, so it can't be spliced bare into a ternary branch either
+   * way; that shape falls through to the pre-existing (unrelated) behavior.
+   */
+  private renderBareBranch(node: IRNode, ctx?: HonoRenderCtx): string {
+    if (node.type === 'expression') {
+      if (node.expr === 'null' || node.expr === 'undefined') return 'null'
+      return node.expr
+    }
+    if (node.type === 'conditional' && !(node.clientOnly && node.slotId)) {
+      return this.renderConditionalBody(node, ctx)
     }
     return this.renderNode(node, ctx)
   }

@@ -3203,6 +3203,20 @@
         "condition"
       ]
     },
+    "nested-ternary-bare-branch": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
     "nullish-coalescing-destructured": {
       "kinds": [
         "call",
@@ -4954,12 +4968,12 @@
     "array-literal": 70,
     "array-method": 67,
     "arrow": 64,
-    "binary": 82,
+    "binary": 83,
     "call": 201,
     "conditional": 24,
-    "identifier": 289,
+    "identifier": 290,
     "index-access": 14,
-    "literal": 238,
+    "literal": 239,
     "logical": 43,
     "member": 154,
     "object-literal": 55,
@@ -4999,13 +5013,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 42,
+    "binary:===": 43,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 45,
     "literal:null": 23,
     "literal:number": 101,
-    "literal:string": 168,
+    "literal:string": 169,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,
