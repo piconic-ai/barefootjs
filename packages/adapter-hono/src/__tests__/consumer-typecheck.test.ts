@@ -99,11 +99,10 @@ export function Page() {
  * expression, so the inlined literal ends up indexed by the full union.
  *
  * `IconName` is spelled as an explicit literal union rather than the
- * source component's `keyof typeof strokePaths | …` on purpose: the
- * emitted template localises `strokePaths` into the component body, so a
- * module-level alias referring to it would fail TS2304 and widen
- * `keyof typeof` to `string | number | symbol`, masking the TS7053 this
- * test exists to pin.
+ * source component's `keyof typeof strokePaths | …` so this case pins the
+ * lookup annotation ALONE. The alias form is pinned separately below —
+ * before that fix it failed TS2304 and widened `keyof typeof` to
+ * `string | number | symbol`, which would have masked the TS7053 here.
  */
 const ICON_SOURCE = `"use client"
 
@@ -174,6 +173,116 @@ export function Page() {
 }
 `
 
+/**
+ * #2570: a module-level type alias that queries a const with `typeof`.
+ * Type declarations are re-emitted verbatim at MODULE scope while source
+ * module-level consts are localised into each component body, so
+ * `keyof typeof strokePaths` lost its referent — TS2304, and the alias
+ * then degraded to `keyof any`.
+ *
+ * This is the icon component's real shape (`ui/components/ui/icon`): the
+ * union mixes the record's own keys with names handled by early returns.
+ */
+const TYPEOF_ALIAS_SOURCE = `"use client"
+
+const strokePaths = {
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+} as const
+
+export type IconName = keyof typeof strokePaths | 'github'
+
+export function Icon({ name }: { name: IconName }) {
+  if (name === 'github') {
+    return <span>gh</span>
+  }
+  const path = strokePaths[name as keyof typeof strokePaths]
+  return <svg viewBox="0 0 24 24"><path d={path} /></svg>
+}
+`
+
+const TYPEOF_ALIAS_SERVER_SOURCE = `import { Icon } from './components/Icon.tsx'
+
+export function Page() {
+  return (
+    <div>
+      <Icon name="chevron-down" />
+    </div>
+  )
+}
+`
+
+/** Same consumer, but with a name that is NOT in the union. */
+const TYPEOF_ALIAS_BAD_SERVER_SOURCE = `import { Icon } from './components/Icon.tsx'
+
+export function Page() {
+  return (
+    <div>
+      <Icon name="totally-not-an-icon" />
+    </div>
+  )
+}
+`
+
+/**
+ * #2570 through the PROPS-TYPE channel: the `typeof` query lives in the
+ * props annotation (which the emitter folds into the synthesized
+ * `<Name>PropsWithHydration` alias at module scope), not in a named type
+ * alias — so a fix that only scanned `typeDefinitions` missed it.
+ */
+const PROPS_TYPEOF_SOURCE = `"use client"
+
+const modes = { a: 1, b: 2 } as const
+
+export function Box({ mode }: { mode: keyof typeof modes }) {
+  return <div>{modes[mode]}</div>
+}
+`
+
+const PROPS_TYPEOF_SERVER_SOURCE = `import { Box } from './components/Box.tsx'
+
+export function Page() {
+  return <Box mode="a" />
+}
+`
+
+/** Same consumer, but with a key that is NOT in the record. */
+const PROPS_TYPEOF_BAD_SERVER_SOURCE = `import { Box } from './components/Box.tsx'
+
+export function Page() {
+  return <Box mode="zzz" />
+}
+`
+
+/**
+ * #2570's third face: an inline-exported type alias no component body
+ * references. Per-component reachability pruning dropped it from the
+ * emitted template entirely, so a consumer's `import type { Sizer }`
+ * failed TS2305 — and had it survived, its `typeof sizeOf` query needed
+ * the (non-exported, module-scope) function beside it.
+ */
+const EXPORTED_TYPE_SOURCE = `"use client"
+
+function sizeOf(s: 'sm' | 'md') { return s === 'sm' ? 16 : 20 }
+
+export type Sizer = typeof sizeOf
+
+export function Box({ label }: { label: string }) {
+  const n = sizeOf('sm')
+  return <div>{label}{n}</div>
+}
+`
+
+const EXPORTED_TYPE_SERVER_SOURCE = `import { Box } from './components/Box.tsx'
+import type { Sizer } from './components/Box.tsx'
+
+const f: Sizer = (s) => (s === 'sm' ? 16 : 20)
+
+export function Page() {
+  return <Box label={String(f('md'))} />
+}
+`
+
 describe('consumer program type-check', () => {
   test('a compiled template used as a JSX component type-checks clean (#2559)', () => {
     const result = compileJSX(COMPONENT_SOURCE, '/virtual/Counter.tsx', {
@@ -233,5 +342,62 @@ describe('consumer program type-check', () => {
     // `Size` union over the literal and finds no `lg`); the attribute-only
     // fix left this one behind.
     expect(diagnostics).toEqual([])
+  })
+
+  test('a type alias keeps resolving the const it queries with typeof (#2570)', () => {
+    const result = compileJSX(TYPEOF_ALIAS_SOURCE, '/virtual/Icon.tsx', {
+      adapter: new HonoAdapter(),
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content
+
+    // The alias really is re-emitted at module scope with the type query
+    // intact (otherwise the assertions below would pass vacuously), and
+    // the const it queries is hoisted to module scope beside it — exactly
+    // once, since `moduleConstants` dedups file-wide by exact string match.
+    expect(template).toContain('export type IconName = keyof typeof strokePaths')
+    expect(template!.match(/^const strokePaths = \{/gm)).toHaveLength(1)
+
+    expect(typeCheckConsumer('Icon', template!, TYPEOF_ALIAS_SERVER_SOURCE)).toEqual([])
+
+    // The alias must keep its LITERAL key union, not merely resolve. An
+    // unresolved `keyof typeof` degrades to `keyof any`
+    // (`string | number | symbol`), which still type-checks the valid
+    // consumer above while silently accepting anything — so the guard that
+    // actually holds the line is a consumer passing a bogus name.
+    const rejected = typeCheckConsumer('Icon', template!, TYPEOF_ALIAS_BAD_SERVER_SOURCE)
+    expect(rejected.map(d => d.code)).toEqual([2322])
+    expect(rejected[0]!.message).toContain('is not assignable to type \'IconName\'')
+  })
+
+  test('a props-annotation typeof query keeps its referent too (#2570)', () => {
+    const result = compileJSX(PROPS_TYPEOF_SOURCE, '/virtual/Box.tsx', {
+      adapter: new HonoAdapter(),
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content
+
+    expect(typeCheckConsumer('Box', template!, PROPS_TYPEOF_SERVER_SOURCE)).toEqual([])
+
+    // The union must stay literal — an unresolved `typeof modes` widens
+    // `keyof` to `string | number | symbol`, which accepts anything.
+    const rejected = typeCheckConsumer('Box', template!, PROPS_TYPEOF_BAD_SERVER_SOURCE)
+    expect(rejected.map(d => d.code)).toEqual([2322])
+  })
+
+  test('an inline-exported type alias survives emission (#2570)', () => {
+    const result = compileJSX(EXPORTED_TYPE_SOURCE, '/virtual/Box.tsx', {
+      adapter: new HonoAdapter(),
+    })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content
+
+    // The alias is emitted (previously reachability-pruned → TS2305 for
+    // the consumer) AND its `typeof sizeOf` referent is emitted at module
+    // scope beside it.
+    expect(template).toContain('export type Sizer = typeof sizeOf')
+    expect(template).toMatch(/^function sizeOf/m)
+
+    expect(typeCheckConsumer('Box', template!, EXPORTED_TYPE_SERVER_SOURCE)).toEqual([])
   })
 })

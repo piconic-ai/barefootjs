@@ -6,64 +6,39 @@ import type { Child } from '../../../types'
 import { SearchIcon } from '../icon'
 import { bfComment, bfText, bfTextEnd } from '@barefootjs/hono/utils'
 
+interface CommandContextValue {
+  search: () => string
+  onSearchChange: (value: string) => void
+  selectedValue: () => string
+  onSelect: (value: string) => void
+  registerItem: (el: HTMLElement) => void
+  unregisterItem: (el: HTMLElement) => void
+  filter: (value: string, search: string, keywords?: string[]) => boolean
+}
+
 const CommandContext = createContext<CommandContextValue>()
 
-interface CommandProps extends HTMLBaseAttributes {
-  /** Custom filter function */
-  filter?: (value: string, search: string, keywords?: string[]) => boolean
-  /** Callback when an item is selected */
-  onValueChange?: (value: string) => void
-  /** Children */
-  children?: Child
-}
-interface CommandInputProps extends HTMLBaseAttributes {
-  /** Placeholder text */
-  placeholder?: string
-  /** Whether disabled */
-  disabled?: boolean
-}
-interface CommandListProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandEmptyProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandGroupProps extends HTMLBaseAttributes {
-  /** Group heading text */
-  heading?: string
-  /** Children */
-  children?: Child
-}
-interface CommandItemProps extends HTMLBaseAttributes {
-  /** Value for filtering and selection (defaults to textContent) */
-  value?: string
-  /** Keywords for search matching */
-  keywords?: string[]
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when selected */
-  onSelect?: (value: string) => void
-  /** Children */
-  children?: Child
-}
-interface CommandSeparatorProps extends HTMLBaseAttributes {
-}
-interface CommandShortcutProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandDialogProps extends HTMLBaseAttributes {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** Command filter function */
-  filter?: (value: string, search: string, keywords?: string[]) => boolean
-  /** Children */
-  children?: Child
-}
+const commandRootClasses = 'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground'
+
+const commandInputWrapperClasses = 'flex items-center border-b px-3'
+
+const commandInputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
+
+const commandListClasses = 'max-h-[300px] overflow-y-auto overflow-x-hidden'
+
+const commandGroupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=command-group-heading]]:px-2 [&_[data-slot=command-group-heading]]:py-1.5 [&_[data-slot=command-group-heading]]:text-xs [&_[data-slot=command-group-heading]]:font-medium [&_[data-slot=command-group-heading]]:text-muted-foreground'
+
+const commandItemClasses = 'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'
+
+const commandEmptyClasses = 'py-6 text-center text-sm'
+
+const commandSeparatorClasses = '-mx-1 h-px bg-border'
+
+const commandShortcutClasses = 'ml-auto text-xs tracking-widest text-muted-foreground'
+
+const commandDialogContentClasses = 'overflow-hidden p-0'
+
+const commandDialogCommandClasses = '[&_[data-slot=command-input-wrapper]]:h-12'
 
 interface CommandProps extends HTMLBaseAttributes {
   /** Custom filter function */
@@ -73,26 +48,31 @@ interface CommandProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface CommandInputProps extends HTMLBaseAttributes {
   /** Placeholder text */
   placeholder?: string
   /** Whether disabled */
   disabled?: boolean
 }
+
 interface CommandListProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface CommandEmptyProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface CommandGroupProps extends HTMLBaseAttributes {
   /** Group heading text */
   heading?: string
   /** Children */
   children?: Child
 }
+
 interface CommandItemProps extends HTMLBaseAttributes {
   /** Value for filtering and selection (defaults to textContent) */
   value?: string
@@ -105,12 +85,15 @@ interface CommandItemProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface CommandSeparatorProps extends HTMLBaseAttributes {
 }
+
 interface CommandShortcutProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface CommandDialogProps extends HTMLBaseAttributes {
   /** Whether the dialog is open */
   open?: boolean
@@ -132,63 +115,6 @@ type CommandListPropsWithHydration = CommandListProps & {
   "data-key"?: string | number
 }
 
-interface CommandProps extends HTMLBaseAttributes {
-  /** Custom filter function */
-  filter?: (value: string, search: string, keywords?: string[]) => boolean
-  /** Callback when an item is selected */
-  onValueChange?: (value: string) => void
-  /** Children */
-  children?: Child
-}
-interface CommandInputProps extends HTMLBaseAttributes {
-  /** Placeholder text */
-  placeholder?: string
-  /** Whether disabled */
-  disabled?: boolean
-}
-interface CommandListProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandEmptyProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandGroupProps extends HTMLBaseAttributes {
-  /** Group heading text */
-  heading?: string
-  /** Children */
-  children?: Child
-}
-interface CommandItemProps extends HTMLBaseAttributes {
-  /** Value for filtering and selection (defaults to textContent) */
-  value?: string
-  /** Keywords for search matching */
-  keywords?: string[]
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when selected */
-  onSelect?: (value: string) => void
-  /** Children */
-  children?: Child
-}
-interface CommandSeparatorProps extends HTMLBaseAttributes {
-}
-interface CommandShortcutProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandDialogProps extends HTMLBaseAttributes {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** Command filter function */
-  filter?: (value: string, search: string, keywords?: string[]) => boolean
-  /** Children */
-  children?: Child
-}
-
 type CommandSeparatorPropsWithHydration = CommandSeparatorProps & {
   __instanceId?: string
   __bfScope?: string
@@ -197,63 +123,6 @@ type CommandSeparatorPropsWithHydration = CommandSeparatorProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface CommandProps extends HTMLBaseAttributes {
-  /** Custom filter function */
-  filter?: (value: string, search: string, keywords?: string[]) => boolean
-  /** Callback when an item is selected */
-  onValueChange?: (value: string) => void
-  /** Children */
-  children?: Child
-}
-interface CommandInputProps extends HTMLBaseAttributes {
-  /** Placeholder text */
-  placeholder?: string
-  /** Whether disabled */
-  disabled?: boolean
-}
-interface CommandListProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandEmptyProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandGroupProps extends HTMLBaseAttributes {
-  /** Group heading text */
-  heading?: string
-  /** Children */
-  children?: Child
-}
-interface CommandItemProps extends HTMLBaseAttributes {
-  /** Value for filtering and selection (defaults to textContent) */
-  value?: string
-  /** Keywords for search matching */
-  keywords?: string[]
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when selected */
-  onSelect?: (value: string) => void
-  /** Children */
-  children?: Child
-}
-interface CommandSeparatorProps extends HTMLBaseAttributes {
-}
-interface CommandShortcutProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface CommandDialogProps extends HTMLBaseAttributes {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** Command filter function */
-  filter?: (value: string, search: string, keywords?: string[]) => boolean
-  /** Children */
-  children?: Child
 }
 
 type CommandShortcutPropsWithHydration = CommandShortcutProps & {
@@ -279,7 +148,6 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   })
-  const commandRootClasses = 'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground'
   const items = new Set<HTMLElement>()
 
   // Serialize props for client hydration
@@ -307,7 +175,6 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
 export function CommandInput(__allProps: CommandInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandInput_${Math.random().toString(36).slice(2, 8)}`
-  const commandInputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -322,7 +189,6 @@ export function CommandInput(__allProps: CommandInputProps & { __instanceId?: st
 
 export function CommandList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandListPropsWithHydration = {} as CommandListPropsWithHydration) {
   const __scopeId = __instanceId || `CommandList_${Math.random().toString(36).slice(2, 8)}`
-  const commandListClasses = 'max-h-[300px] overflow-y-auto overflow-x-hidden'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -338,7 +204,6 @@ export function CommandList({ className = '', children, __instanceId, __bfScope:
 export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandEmpty_${Math.random().toString(36).slice(2, 8)}`
-  const commandEmptyClasses = 'py-6 text-center text-sm'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -353,7 +218,6 @@ export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: st
 export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandGroup_${Math.random().toString(36).slice(2, 8)}`
-  const commandGroupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=command-group-heading]]:px-2 [&_[data-slot=command-group-heading]]:py-1.5 [&_[data-slot=command-group-heading]]:text-xs [&_[data-slot=command-group-heading]]:font-medium [&_[data-slot=command-group-heading]]:text-muted-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -370,7 +234,6 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
-  const commandItemClasses = 'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -387,7 +250,6 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
 
 export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandSeparatorPropsWithHydration = {} as CommandSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `CommandSeparator_${Math.random().toString(36).slice(2, 8)}`
-  const commandSeparatorClasses = '-mx-1 h-px bg-border'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -401,7 +263,6 @@ export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfS
 
 export function CommandShortcut({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandShortcutPropsWithHydration = {} as CommandShortcutPropsWithHydration) {
   const __scopeId = __instanceId || `CommandShortcut_${Math.random().toString(36).slice(2, 8)}`
-  const commandShortcutClasses = 'ml-auto text-xs tracking-widest text-muted-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -417,7 +278,6 @@ export function CommandShortcut({ className = '', children, __instanceId, __bfSc
 export function CommandDialog(__allProps: CommandDialogProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandDialog_${Math.random().toString(36).slice(2, 8)}`
-  const commandDialogContentClasses = 'overflow-hidden p-0'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

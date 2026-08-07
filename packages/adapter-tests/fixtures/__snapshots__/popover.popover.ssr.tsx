@@ -3,7 +3,22 @@ import { createContext, useContext, createEffect, createPortal, isSSRPortal, fin
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
+interface PopoverContextValue {
+  open: () => boolean
+  onOpenChange: (open: boolean) => void
+}
+
 const PopoverContext = createContext<PopoverContextValue>()
+
+const popoverClasses = 'relative inline-block'
+
+const popoverTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
+
+const popoverContentBaseClasses = 'fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
+
+const popoverContentOpenClasses = 'opacity-100 scale-100'
+
+const popoverContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
 interface PopoverProps extends HTMLBaseAttributes {
   /** Whether the popover is open */
@@ -13,6 +28,26 @@ interface PopoverProps extends HTMLBaseAttributes {
   /** PopoverTrigger and PopoverContent */
   children?: Child
 }
+
+function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} contains a nested interactive element (<button>, <a href>, or [role="button"]) inside the trigger's own <button> — nested interactive elements don't work reliably. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  } else if (siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger followed by an interactive element — this is what the HTML parser produces from a <button>/<Button> nested inside the trigger. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  }
+}
+
 interface PopoverTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
@@ -26,6 +61,7 @@ interface PopoverTriggerProps extends ButtonHTMLAttributes {
   /** Trigger content */
   children?: Child
 }
+
 interface PopoverContentProps extends HTMLBaseAttributes {
   /** Popover content */
   children?: Child
@@ -34,6 +70,7 @@ interface PopoverContentProps extends HTMLBaseAttributes {
   /** Side relative to trigger */
   side?: 'top' | 'bottom'
 }
+
 interface PopoverCloseProps extends ButtonHTMLAttributes {
   /** Button content */
   children?: Child
@@ -44,7 +81,6 @@ export type { PopoverProps, PopoverTriggerProps, PopoverContentProps, PopoverClo
 export function Popover(__allProps: PopoverProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Popover_${Math.random().toString(36).slice(2, 8)}`
-  const popoverClasses = 'relative inline-block'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -63,7 +99,6 @@ export function Popover(__allProps: PopoverProps & { __instanceId?: string; __bf
 export function PopoverTrigger(__allProps: PopoverTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `PopoverTrigger_${Math.random().toString(36).slice(2, 8)}`
-  const popoverTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -85,8 +120,6 @@ export function PopoverTrigger(__allProps: PopoverTriggerProps & { __instanceId?
 export function PopoverContent(__allProps: PopoverContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `PopoverContent_${Math.random().toString(36).slice(2, 8)}`
-  const popoverContentBaseClasses = 'fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
-  const popoverContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

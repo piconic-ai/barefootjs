@@ -28,6 +28,17 @@ export interface TemplateSections {
    * component in a source file.
    */
   moduleConstants?: string
+  /**
+   * When true, the `moduleConstants` section already carries the module's
+   * EXPORTED value declarations (consts/functions, `export` keyword
+   * included) interleaved in source order — so the compiler must NOT
+   * re-emit them via `generateModuleExports` (only `export { … }`
+   * specifier blocks remain its job). JSX adapters set this; keeping the
+   * exported and non-exported declarations in one source-ordered section
+   * is what prevents a non-exported const that reads an exported one from
+   * being emitted above it (a module-load TDZ crash — #2570's input-otp).
+   */
+  moduleConstantsIncludeExports?: boolean
 }
 
 export interface AdapterOutput {

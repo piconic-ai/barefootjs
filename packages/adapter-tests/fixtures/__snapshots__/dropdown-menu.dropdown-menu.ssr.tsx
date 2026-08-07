@@ -5,101 +5,58 @@ import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
 import { bfComment } from '@barefootjs/hono/utils'
 
+interface DropdownMenuContextValue {
+  open: () => boolean
+  onOpenChange: (open: boolean) => void
+}
+
 const DropdownMenuContext = createContext<DropdownMenuContextValue>()
+
+interface DropdownMenuSubContextValue {
+  subOpen: () => boolean
+  onSubOpenChange: (open: boolean) => void
+}
+
 const DropdownMenuSubContext = createContext<DropdownMenuSubContextValue>()
+
+interface DropdownMenuRadioGroupContextValue {
+  value: () => string
+  onValueChange: (value: string) => void
+}
+
 const DropdownMenuRadioGroupContext = createContext<DropdownMenuRadioGroupContextValue>()
 
-interface DropdownMenuProps extends HTMLBaseAttributes {
-  /** Whether the dropdown menu is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** DropdownMenuTrigger and DropdownMenuContent */
-  children?: Child
-}
-interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DropdownMenuTrigger's own
-   * `<button>`. Required whenever `children` is itself an interactive element
-   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
-   * HTML parser and the menu silently never opens.
-   */
-  asChild?: boolean
-  /** Trigger content (any element: button, avatar, icon, etc.) */
-  children?: Child
-}
-interface DropdownMenuContentProps extends HTMLBaseAttributes {
-  /** DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface DropdownMenuItemProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when item is selected (menu auto-closes) */
-  onSelect?: () => void
-  /** Visual variant */
-  variant?: 'default' | 'destructive'
-  /** Item content (text, icons, shortcuts) */
-  children?: Child
-}
-interface DropdownMenuCheckboxItemProps extends HTMLBaseAttributes {
-  /** Whether the checkbox is checked */
-  checked?: boolean
-  /** Callback when checked state changes */
-  onCheckedChange?: (checked: boolean) => void
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuRadioGroupProps extends HTMLBaseAttributes {
-  /** Currently selected value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** RadioItem children */
-  children?: Child
-}
-interface DropdownMenuRadioItemProps extends HTMLBaseAttributes {
-  /** Value for this radio item */
-  value: string
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuSubProps extends HTMLBaseAttributes {
-  /** SubTrigger and SubContent */
-  children?: Child
-}
-interface DropdownMenuSubTriggerProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Trigger content */
-  children?: Child
-}
-interface DropdownMenuSubContentProps extends HTMLBaseAttributes {
-  /** SubContent items */
-  children?: Child
-}
-interface DropdownMenuLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface DropdownMenuSeparatorProps extends HTMLBaseAttributes {
-}
-interface DropdownMenuShortcutProps extends HTMLBaseAttributes {
-  /** Shortcut text (e.g., "Ctrl+Q") */
-  children?: Child
-}
-interface DropdownMenuGroupProps extends HTMLBaseAttributes {
-  /** Grouped menu items */
-  children?: Child
-}
+const dropdownMenuClasses = 'relative inline-block'
+
+const dropdownMenuTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
+
+const dropdownMenuContentBaseClasses = 'fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
+
+const dropdownMenuContentOpenClasses = 'opacity-100 scale-100'
+
+const dropdownMenuContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
+
+const dropdownMenuItemBaseClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden'
+
+const dropdownMenuItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
+
+const dropdownMenuItemDisabledClasses = 'pointer-events-none opacity-50'
+
+const dropdownMenuItemDestructiveClasses = 'text-destructive hover:bg-accent/50 focus:bg-accent focus:text-destructive'
+
+const dropdownMenuCheckableItemClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
+
+const dropdownMenuIndicatorClasses = 'absolute left-2 flex size-3.5 shrink-0 items-center justify-center'
+
+const dropdownMenuSubTriggerClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden'
+
+const dropdownMenuSubContentBaseClasses = 'absolute z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md'
+
+const dropdownMenuLabelClasses = 'px-2 py-1.5 text-sm font-semibold text-foreground'
+
+const dropdownMenuSeparatorClasses = '-mx-1 my-1 h-px bg-border'
+
+const dropdownMenuShortcutClasses = 'ml-auto text-xs tracking-widest text-muted-foreground'
 
 interface DropdownMenuProps extends HTMLBaseAttributes {
   /** Whether the dropdown menu is open */
@@ -109,6 +66,26 @@ interface DropdownMenuProps extends HTMLBaseAttributes {
   /** DropdownMenuTrigger and DropdownMenuContent */
   children?: Child
 }
+
+function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} contains a nested interactive element (<button>, <a href>, or [role="button"]) inside the trigger's own <button> — nested interactive elements don't work reliably. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  } else if (siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger followed by an interactive element — this is what the HTML parser produces from a <button>/<Button> nested inside the trigger. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  }
+}
+
 interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
@@ -122,12 +99,14 @@ interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Trigger content (any element: button, avatar, icon, etc.) */
   children?: Child
 }
+
 interface DropdownMenuContentProps extends HTMLBaseAttributes {
   /** DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator components */
   children?: Child
   /** Alignment relative to trigger */
   align?: 'start' | 'end'
 }
+
 interface DropdownMenuItemProps extends HTMLBaseAttributes {
   /** Whether disabled */
   disabled?: boolean
@@ -138,6 +117,7 @@ interface DropdownMenuItemProps extends HTMLBaseAttributes {
   /** Item content (text, icons, shortcuts) */
   children?: Child
 }
+
 interface DropdownMenuCheckboxItemProps extends HTMLBaseAttributes {
   /** Whether the checkbox is checked */
   checked?: boolean
@@ -148,6 +128,7 @@ interface DropdownMenuCheckboxItemProps extends HTMLBaseAttributes {
   /** Item content */
   children?: Child
 }
+
 interface DropdownMenuRadioGroupProps extends HTMLBaseAttributes {
   /** Currently selected value */
   value?: string
@@ -156,6 +137,7 @@ interface DropdownMenuRadioGroupProps extends HTMLBaseAttributes {
   /** RadioItem children */
   children?: Child
 }
+
 interface DropdownMenuRadioItemProps extends HTMLBaseAttributes {
   /** Value for this radio item */
   value: string
@@ -164,30 +146,37 @@ interface DropdownMenuRadioItemProps extends HTMLBaseAttributes {
   /** Item content */
   children?: Child
 }
+
 interface DropdownMenuSubProps extends HTMLBaseAttributes {
   /** SubTrigger and SubContent */
   children?: Child
 }
+
 interface DropdownMenuSubTriggerProps extends HTMLBaseAttributes {
   /** Whether disabled */
   disabled?: boolean
   /** Trigger content */
   children?: Child
 }
+
 interface DropdownMenuSubContentProps extends HTMLBaseAttributes {
   /** SubContent items */
   children?: Child
 }
+
 interface DropdownMenuLabelProps extends HTMLBaseAttributes {
   /** Label text */
   children?: Child
 }
+
 interface DropdownMenuSeparatorProps extends HTMLBaseAttributes {
 }
+
 interface DropdownMenuShortcutProps extends HTMLBaseAttributes {
   /** Shortcut text (e.g., "Ctrl+Q") */
   children?: Child
 }
+
 interface DropdownMenuGroupProps extends HTMLBaseAttributes {
   /** Grouped menu items */
   children?: Child
@@ -203,98 +192,6 @@ type DropdownMenuLabelPropsWithHydration = DropdownMenuLabelProps & {
   "data-key"?: string | number
 }
 
-interface DropdownMenuProps extends HTMLBaseAttributes {
-  /** Whether the dropdown menu is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** DropdownMenuTrigger and DropdownMenuContent */
-  children?: Child
-}
-interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DropdownMenuTrigger's own
-   * `<button>`. Required whenever `children` is itself an interactive element
-   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
-   * HTML parser and the menu silently never opens.
-   */
-  asChild?: boolean
-  /** Trigger content (any element: button, avatar, icon, etc.) */
-  children?: Child
-}
-interface DropdownMenuContentProps extends HTMLBaseAttributes {
-  /** DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface DropdownMenuItemProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when item is selected (menu auto-closes) */
-  onSelect?: () => void
-  /** Visual variant */
-  variant?: 'default' | 'destructive'
-  /** Item content (text, icons, shortcuts) */
-  children?: Child
-}
-interface DropdownMenuCheckboxItemProps extends HTMLBaseAttributes {
-  /** Whether the checkbox is checked */
-  checked?: boolean
-  /** Callback when checked state changes */
-  onCheckedChange?: (checked: boolean) => void
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuRadioGroupProps extends HTMLBaseAttributes {
-  /** Currently selected value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** RadioItem children */
-  children?: Child
-}
-interface DropdownMenuRadioItemProps extends HTMLBaseAttributes {
-  /** Value for this radio item */
-  value: string
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuSubProps extends HTMLBaseAttributes {
-  /** SubTrigger and SubContent */
-  children?: Child
-}
-interface DropdownMenuSubTriggerProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Trigger content */
-  children?: Child
-}
-interface DropdownMenuSubContentProps extends HTMLBaseAttributes {
-  /** SubContent items */
-  children?: Child
-}
-interface DropdownMenuLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface DropdownMenuSeparatorProps extends HTMLBaseAttributes {
-}
-interface DropdownMenuShortcutProps extends HTMLBaseAttributes {
-  /** Shortcut text (e.g., "Ctrl+Q") */
-  children?: Child
-}
-interface DropdownMenuGroupProps extends HTMLBaseAttributes {
-  /** Grouped menu items */
-  children?: Child
-}
-
 type DropdownMenuSeparatorPropsWithHydration = DropdownMenuSeparatorProps & {
   __instanceId?: string
   __bfScope?: string
@@ -305,98 +202,6 @@ type DropdownMenuSeparatorPropsWithHydration = DropdownMenuSeparatorProps & {
   "data-key"?: string | number
 }
 
-interface DropdownMenuProps extends HTMLBaseAttributes {
-  /** Whether the dropdown menu is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** DropdownMenuTrigger and DropdownMenuContent */
-  children?: Child
-}
-interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DropdownMenuTrigger's own
-   * `<button>`. Required whenever `children` is itself an interactive element
-   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
-   * HTML parser and the menu silently never opens.
-   */
-  asChild?: boolean
-  /** Trigger content (any element: button, avatar, icon, etc.) */
-  children?: Child
-}
-interface DropdownMenuContentProps extends HTMLBaseAttributes {
-  /** DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface DropdownMenuItemProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when item is selected (menu auto-closes) */
-  onSelect?: () => void
-  /** Visual variant */
-  variant?: 'default' | 'destructive'
-  /** Item content (text, icons, shortcuts) */
-  children?: Child
-}
-interface DropdownMenuCheckboxItemProps extends HTMLBaseAttributes {
-  /** Whether the checkbox is checked */
-  checked?: boolean
-  /** Callback when checked state changes */
-  onCheckedChange?: (checked: boolean) => void
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuRadioGroupProps extends HTMLBaseAttributes {
-  /** Currently selected value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** RadioItem children */
-  children?: Child
-}
-interface DropdownMenuRadioItemProps extends HTMLBaseAttributes {
-  /** Value for this radio item */
-  value: string
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuSubProps extends HTMLBaseAttributes {
-  /** SubTrigger and SubContent */
-  children?: Child
-}
-interface DropdownMenuSubTriggerProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Trigger content */
-  children?: Child
-}
-interface DropdownMenuSubContentProps extends HTMLBaseAttributes {
-  /** SubContent items */
-  children?: Child
-}
-interface DropdownMenuLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface DropdownMenuSeparatorProps extends HTMLBaseAttributes {
-}
-interface DropdownMenuShortcutProps extends HTMLBaseAttributes {
-  /** Shortcut text (e.g., "Ctrl+Q") */
-  children?: Child
-}
-interface DropdownMenuGroupProps extends HTMLBaseAttributes {
-  /** Grouped menu items */
-  children?: Child
-}
-
 type DropdownMenuShortcutPropsWithHydration = DropdownMenuShortcutProps & {
   __instanceId?: string
   __bfScope?: string
@@ -405,98 +210,6 @@ type DropdownMenuShortcutPropsWithHydration = DropdownMenuShortcutProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface DropdownMenuProps extends HTMLBaseAttributes {
-  /** Whether the dropdown menu is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** DropdownMenuTrigger and DropdownMenuContent */
-  children?: Child
-}
-interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DropdownMenuTrigger's own
-   * `<button>`. Required whenever `children` is itself an interactive element
-   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
-   * HTML parser and the menu silently never opens.
-   */
-  asChild?: boolean
-  /** Trigger content (any element: button, avatar, icon, etc.) */
-  children?: Child
-}
-interface DropdownMenuContentProps extends HTMLBaseAttributes {
-  /** DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator components */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface DropdownMenuItemProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Callback when item is selected (menu auto-closes) */
-  onSelect?: () => void
-  /** Visual variant */
-  variant?: 'default' | 'destructive'
-  /** Item content (text, icons, shortcuts) */
-  children?: Child
-}
-interface DropdownMenuCheckboxItemProps extends HTMLBaseAttributes {
-  /** Whether the checkbox is checked */
-  checked?: boolean
-  /** Callback when checked state changes */
-  onCheckedChange?: (checked: boolean) => void
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuRadioGroupProps extends HTMLBaseAttributes {
-  /** Currently selected value */
-  value?: string
-  /** Callback when value changes */
-  onValueChange?: (value: string) => void
-  /** RadioItem children */
-  children?: Child
-}
-interface DropdownMenuRadioItemProps extends HTMLBaseAttributes {
-  /** Value for this radio item */
-  value: string
-  /** Whether disabled */
-  disabled?: boolean
-  /** Item content */
-  children?: Child
-}
-interface DropdownMenuSubProps extends HTMLBaseAttributes {
-  /** SubTrigger and SubContent */
-  children?: Child
-}
-interface DropdownMenuSubTriggerProps extends HTMLBaseAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Trigger content */
-  children?: Child
-}
-interface DropdownMenuSubContentProps extends HTMLBaseAttributes {
-  /** SubContent items */
-  children?: Child
-}
-interface DropdownMenuLabelProps extends HTMLBaseAttributes {
-  /** Label text */
-  children?: Child
-}
-interface DropdownMenuSeparatorProps extends HTMLBaseAttributes {
-}
-interface DropdownMenuShortcutProps extends HTMLBaseAttributes {
-  /** Shortcut text (e.g., "Ctrl+Q") */
-  children?: Child
-}
-interface DropdownMenuGroupProps extends HTMLBaseAttributes {
-  /** Grouped menu items */
-  children?: Child
 }
 
 type DropdownMenuGroupPropsWithHydration = DropdownMenuGroupProps & {
@@ -514,7 +227,6 @@ export type { DropdownMenuProps, DropdownMenuTriggerProps, DropdownMenuContentPr
 export function DropdownMenu(__allProps: DropdownMenuProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenu_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuClasses = 'relative inline-block'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -533,7 +245,6 @@ export function DropdownMenu(__allProps: DropdownMenuProps & { __instanceId?: st
 export function DropdownMenuTrigger(__allProps: DropdownMenuTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuTrigger_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -555,8 +266,6 @@ export function DropdownMenuTrigger(__allProps: DropdownMenuTriggerProps & { __i
 export function DropdownMenuContent(__allProps: DropdownMenuContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuContent_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuContentBaseClasses = 'fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
-  const dropdownMenuContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -579,10 +288,6 @@ export function DropdownMenuItem(__allProps: DropdownMenuItemProps & { __instanc
     : isDestructive()
       ? dropdownMenuItemDestructiveClasses
       : dropdownMenuItemDefaultClasses
-  const dropdownMenuItemBaseClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden'
-  const dropdownMenuItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
-  const dropdownMenuItemDisabledClasses = 'pointer-events-none opacity-50'
-  const dropdownMenuItemDestructiveClasses = 'text-destructive hover:bg-accent/50 focus:bg-accent focus:text-destructive'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -600,9 +305,6 @@ export function DropdownMenuCheckboxItem(__allProps: DropdownMenuCheckboxItemPro
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuCheckboxItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
-  const dropdownMenuItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
-  const dropdownMenuItemDisabledClasses = 'pointer-events-none opacity-50'
-  const dropdownMenuCheckableItemClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -638,9 +340,6 @@ export function DropdownMenuRadioItem(__allProps: DropdownMenuRadioItemProps & {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuRadioItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
-  const dropdownMenuItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
-  const dropdownMenuItemDisabledClasses = 'pointer-events-none opacity-50'
-  const dropdownMenuCheckableItemClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -676,9 +375,6 @@ export function DropdownMenuSub(__allProps: DropdownMenuSubProps & { __instanceI
 export function DropdownMenuSubTrigger(__allProps: DropdownMenuSubTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuSubTrigger_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuItemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'
-  const dropdownMenuItemDisabledClasses = 'pointer-events-none opacity-50'
-  const dropdownMenuSubTriggerClasses = 'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden'
   const isDisabled = props.disabled ?? false
 
   // Serialize props for client hydration
@@ -695,7 +391,6 @@ export function DropdownMenuSubTrigger(__allProps: DropdownMenuSubTriggerProps &
 export function DropdownMenuSubContent(__allProps: DropdownMenuSubContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuSubContent_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuSubContentBaseClasses = 'absolute z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -709,7 +404,6 @@ export function DropdownMenuSubContent(__allProps: DropdownMenuSubContentProps &
 
 export function DropdownMenuLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuLabelPropsWithHydration = {} as DropdownMenuLabelPropsWithHydration) {
   const __scopeId = __instanceId || `DropdownMenuLabel_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuLabelClasses = 'px-2 py-1.5 text-sm font-semibold text-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -724,7 +418,6 @@ export function DropdownMenuLabel({ children, className = '', __instanceId, __bf
 
 export function DropdownMenuSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuSeparatorPropsWithHydration = {} as DropdownMenuSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `DropdownMenuSeparator_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuSeparatorClasses = '-mx-1 my-1 h-px bg-border'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -738,7 +431,6 @@ export function DropdownMenuSeparator({ className = '', __instanceId, __bfScope:
 
 export function DropdownMenuShortcut({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuShortcutPropsWithHydration = {} as DropdownMenuShortcutPropsWithHydration) {
   const __scopeId = __instanceId || `DropdownMenuShortcut_${Math.random().toString(36).slice(2, 8)}`
-  const dropdownMenuShortcutClasses = 'ml-auto text-xs tracking-widest text-muted-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

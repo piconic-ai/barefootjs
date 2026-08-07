@@ -80,9 +80,73 @@ export function prefixConstantValue(rawValue: string, layerName: string): string
  * Prefixes static class attributes and class-related constant values.
  */
 export function applyCssLayerPrefix(ir: ComponentIR, layerName: string): void {
-  const referencedConstants = new Set<string>()
-  const constantNames = new Set(ir.metadata.localConstants.map(c => c.name))
+  applyCssLayerPrefixToFile([ir], layerName)
+}
 
+/**
+ * File-wide variant: apply the prefix across ALL of a file's component IRs
+ * with ONE union of referenced constants.
+ *
+ * Each component's IR carries its own `ConstantInfo` copies of the file's
+ * module-scope constants, and per-IR application prefixed only the copies
+ * the component's own class attributes referenced. That was invisible while
+ * every component re-declared the constants inside its body, but module
+ * shape emission (#2570) hoists them to ONE module-scope declaration —
+ * per-component divergence then emits the same constant twice with
+ * different values ("tabsClasses has already been declared", tabs in the
+ * site/ui build). Applying the union keeps every IR's copy byte-identical,
+ * so the compiler's statement-level dedup collapses them to a single,
+ * consistently-prefixed declaration.
+ */
+export function applyCssLayerPrefixToFile(irs: readonly ComponentIR[], layerName: string): void {
+  const referencedConstants = new Set<string>()
+  const constantNames = new Set<string>()
+  for (const ir of irs) {
+    for (const c of ir.metadata.localConstants) constantNames.add(c.name)
+  }
+
+  // Walk every IR tree and process className/class attributes, collecting
+  // referenced constants into the shared union.
+  for (const ir of irs) {
+    collectAndPrefixAttrs(ir, layerName, referencedConstants, constantNames)
+  }
+
+  // Resolve transitive references (constants referencing other constants) —
+  // against every IR's constant list, since a name may only carry a value
+  // in the IRs whose lexical prefix includes it.
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const constName of [...referencedConstants]) {
+      for (const ir of irs) {
+        const constant = ir.metadata.localConstants.find(c => c.name === constName)
+        if (!constant || !constant.value) continue
+        for (const id of extractIdentifiers(constant.value)) {
+          if (constantNames.has(id) && !referencedConstants.has(id)) {
+            referencedConstants.add(id)
+            changed = true
+          }
+        }
+      }
+    }
+  }
+
+  // Apply prefixing to every IR's copy of each referenced constant.
+  for (const ir of irs) {
+    for (const constant of ir.metadata.localConstants) {
+      if (referencedConstants.has(constant.name) && constant.value) {
+        constant.value = prefixConstantValue(constant.value, layerName)
+      }
+    }
+  }
+}
+
+function collectAndPrefixAttrs(
+  ir: ComponentIR,
+  layerName: string,
+  referencedConstants: Set<string>,
+  constantNames: ReadonlySet<string>,
+): void {
   // Walk IR tree and process className/class attributes
   walkIR(ir.root, (node) => {
     if (node.type !== 'element') return
@@ -118,28 +182,6 @@ export function applyCssLayerPrefix(ir: ComponentIR, layerName: string): void {
     }
   })
 
-  // Resolve transitive references (constants referencing other constants)
-  let changed = true
-  while (changed) {
-    changed = false
-    for (const constName of [...referencedConstants]) {
-      const constant = ir.metadata.localConstants.find(c => c.name === constName)
-      if (!constant || !constant.value) continue
-      for (const id of extractIdentifiers(constant.value)) {
-        if (constantNames.has(id) && !referencedConstants.has(id)) {
-          referencedConstants.add(id)
-          changed = true
-        }
-      }
-    }
-  }
-
-  // Apply prefixing to referenced constants
-  for (const constant of ir.metadata.localConstants) {
-    if (referencedConstants.has(constant.name) && constant.value) {
-      constant.value = prefixConstantValue(constant.value, layerName)
-    }
-  }
 }
 
 // =============================================================================
@@ -168,7 +210,7 @@ function prefixIRTemplateParts(parts: IRTemplatePart[], layerName: string): void
 function collectConstantRefs(
   expr: string,
   refs: Set<string>,
-  validNames: Set<string>,
+  validNames: ReadonlySet<string>,
 ): void {
   for (const id of extractIdentifiers(expr)) {
     if (validNames.has(id)) {

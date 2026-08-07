@@ -11,6 +11,7 @@ import type {
   CompileResult,
   FileOutput,
 } from './types.ts'
+import ts from 'typescript'
 import type { TemplateAdapter } from './adapters/interface.ts'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
@@ -21,7 +22,7 @@ import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level
 import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports.ts'
-import { applyCssLayerPrefix } from './css-layer-prefixer.ts'
+import { applyCssLayerPrefix, applyCssLayerPrefixToFile } from './css-layer-prefixer.ts'
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
@@ -163,11 +164,16 @@ function compileMultipleComponents(
     // call for why this must run before adapter.generate/generateClientJs.
     decideClientOnlyElision(componentIR.root)
 
-    if (options.cssLayerPrefix) {
-      applyCssLayerPrefix(componentIR, options.cssLayerPrefix)
-    }
-
     entries.push({ componentIR, ctx })
+  }
+
+  // CSS layer prefixing must be FILE-WIDE: per-IR application diverges the
+  // per-component copies of a shared module-scope constant (prefixed in the
+  // components whose class attrs reference it, raw elsewhere), and module
+  // shape emission (#2570) would then declare the constant twice. See
+  // `applyCssLayerPrefixToFile`.
+  if (options.cssLayerPrefix) {
+    applyCssLayerPrefixToFile(entries.map(e => e.componentIR), options.cssLayerPrefix)
   }
 
   // BF050 is a per-FILE diagnostic (it points at the brand-package import
@@ -220,13 +226,35 @@ function compileMultipleComponents(
     }
   }
 
-  // Module-scope statements (e.g. SSR-side context bindings) are file-wide:
-  // every component in the same source file generates the same block, so we
-  // collect via exact-string dedup and emit once at the file level rather
-  // than per component (per-line dedup of imports drops repeated lines like
-  // closing `})` that recur across multiple multi-line bindings).
-  const moduleConstantsSet = new Set<string>()
-  const moduleConstantsOrdered: string[] = []
+  // Module-scope statements (types, consts, functions, SSR-side context
+  // bindings) are file-wide, but each component's IR may carry a different
+  // SUBSET — the analyzer collects the module declarations lexically
+  // preceding the component, so in a file that interleaves constants with
+  // component functions the blocks are unequal prefixes of one another
+  // (carousel does this). Whole-block string dedup would then emit every
+  // prefix and redeclare each name (TS2300/TS2451), while per-LINE dedup
+  // would corrupt multi-line declarations (repeated `})` lines collapse).
+  // So dedup at the TOP-LEVEL-STATEMENT level via a TS parse of each block
+  // — the repo-wide idiom for splitting emitted source (never regex/line
+  // matching). Identical statements re-collected across components dedup
+  // to their first occurrence, preserving source order.
+  const moduleStatementSeen = new Set<string>()
+  const moduleStatementsOrdered: string[] = []
+  const collectModuleStatements = (block: string): void => {
+    const sf = ts.createSourceFile(
+      '__bf_module_decls.tsx',
+      block,
+      ts.ScriptTarget.Latest,
+      /* setParentNodes */ false,
+      ts.ScriptKind.TSX,
+    )
+    for (const stmt of sf.statements) {
+      const text = stmt.getText(sf)
+      if (moduleStatementSeen.has(text)) continue
+      moduleStatementSeen.add(text)
+      moduleStatementsOrdered.push(text)
+    }
+  }
 
   // Component-name scope: rewrite `hydrate` / `renderChild` / `initChild` /
   // `createComponent` / `upsertChild` keys for non-exported helpers
@@ -271,6 +299,7 @@ function compileMultipleComponents(
       componentIR,
       fileWideInlineExported,
       options.rewriteRelativeImport,
+      { skipValueDeclarations: adapterOutput.sections.moduleConstantsIncludeExports },
     )
 
     const s = adapterOutput.sections
@@ -278,10 +307,7 @@ function compileMultipleComponents(
     const types = s.types
     const component = s.component + (s.defaultExport || '')
     const mc = s.moduleConstants
-    if (mc && !moduleConstantsSet.has(mc)) {
-      moduleConstantsSet.add(mc)
-      moduleConstantsOrdered.push(mc)
-    }
+    if (mc) collectModuleStatements(mc)
 
     allOutputs.push({
       componentName: componentIR.metadata.componentName,
@@ -415,7 +441,7 @@ function compileMultipleComponents(
   // Combine all components
   const combinedTemplate = [
     mergedImports,
-    moduleConstantsOrdered.join('\n\n'),
+    moduleStatementsOrdered.join('\n\n'),
     uniqueTypes.join('\n\n'),
     uniqueModuleExports.length > 0 ? uniqueModuleExports.join('\n') : '',
     ...allOutputs.map(o => o.component),
@@ -721,7 +747,9 @@ export function compileJSX(
   if (adapter.templatesPerComponent) {
     content = adapterOutput.template
   } else {
-    const moduleExports = generateModuleExports(componentIR, undefined, options.rewriteRelativeImport)
+    const moduleExports = generateModuleExports(componentIR, undefined, options.rewriteRelativeImport, {
+      skipValueDeclarations: s.moduleConstantsIncludeExports,
+    })
     content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, s.component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   }

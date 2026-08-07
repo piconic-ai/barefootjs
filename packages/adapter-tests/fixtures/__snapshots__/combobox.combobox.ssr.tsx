@@ -5,58 +5,49 @@ import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
 import { bfText, bfTextEnd, bfComment } from '@barefootjs/hono/utils'
 
+interface ComboboxContextValue {
+  open: () => boolean
+  onOpenChange: (open: boolean) => void
+  value: () => string
+  onValueChange: (value: string) => void
+  search: () => string
+  onSearchChange: (value: string) => void
+  filter: (value: string, search: string) => boolean
+}
+
 const ComboboxContext = createContext<ComboboxContextValue>()
 
-interface ComboboxProps extends HTMLBaseAttributes {
-  /** Controlled selected value */
-  value?: string
-  /** Callback when the selected value changes */
-  onValueChange?: (value: string) => void
-  /** Custom filter function */
-  filter?: (value: string, search: string) => boolean
-  /** Children */
-  children?: Child
-}
-interface ComboboxTriggerProps extends ButtonHTMLAttributes {
-  /** Trigger content (typically ComboboxValue) */
-  children?: Child
-}
-interface ComboboxValueProps extends HTMLBaseAttributes {
-  /** Placeholder text when no value is selected */
-  placeholder?: string
-}
-interface ComboboxContentProps extends HTMLBaseAttributes {
-  /** Content children */
-  children?: Child
-  /** Alignment relative to trigger */
-  align?: 'start' | 'end'
-}
-interface ComboboxInputProps extends HTMLBaseAttributes {
-  /** Placeholder text */
-  placeholder?: string
-  /** Whether disabled */
-  disabled?: boolean
-}
-interface ComboboxEmptyProps extends HTMLBaseAttributes {
-  /** Children */
-  children?: Child
-}
-interface ComboboxItemProps extends HTMLBaseAttributes {
-  /** The value for this item */
-  value: string
-  /** Whether this item is disabled */
-  disabled?: boolean
-  /** Item content (label text) */
-  children?: Child
-}
-interface ComboboxGroupProps extends HTMLBaseAttributes {
-  /** Group heading text */
-  heading?: string
-  /** Children */
-  children?: Child
-}
-interface ComboboxSeparatorProps extends HTMLBaseAttributes {
-}
+const triggerBaseClasses = 'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none'
+
+const triggerFocusClasses = 'focus:border-ring focus:ring-ring/50 focus:ring-[3px]'
+
+const triggerDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
+
+const triggerDataStateClasses = 'data-[placeholder]:text-muted-foreground'
+
+const contentBaseClasses = 'fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
+
+const contentOpenClasses = 'opacity-100 scale-100'
+
+const contentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
+
+const inputWrapperClasses = 'flex items-center border-b px-3'
+
+const inputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
+
+const itemBaseClasses = 'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
+
+const itemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'
+
+const itemDisabledClasses = 'pointer-events-none opacity-50'
+
+const indicatorClasses = 'absolute left-2 flex size-3.5 shrink-0 items-center justify-center'
+
+const emptyClasses = 'py-6 text-center text-sm'
+
+const groupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground'
+
+const separatorClasses = '-mx-1 my-1 h-px bg-border'
 
 interface ComboboxProps extends HTMLBaseAttributes {
   /** Controlled selected value */
@@ -68,30 +59,36 @@ interface ComboboxProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface ComboboxTriggerProps extends ButtonHTMLAttributes {
   /** Trigger content (typically ComboboxValue) */
   children?: Child
 }
+
 interface ComboboxValueProps extends HTMLBaseAttributes {
   /** Placeholder text when no value is selected */
   placeholder?: string
 }
+
 interface ComboboxContentProps extends HTMLBaseAttributes {
   /** Content children */
   children?: Child
   /** Alignment relative to trigger */
   align?: 'start' | 'end'
 }
+
 interface ComboboxInputProps extends HTMLBaseAttributes {
   /** Placeholder text */
   placeholder?: string
   /** Whether disabled */
   disabled?: boolean
 }
+
 interface ComboboxEmptyProps extends HTMLBaseAttributes {
   /** Children */
   children?: Child
 }
+
 interface ComboboxItemProps extends HTMLBaseAttributes {
   /** The value for this item */
   value: string
@@ -100,12 +97,14 @@ interface ComboboxItemProps extends HTMLBaseAttributes {
   /** Item content (label text) */
   children?: Child
 }
+
 interface ComboboxGroupProps extends HTMLBaseAttributes {
   /** Group heading text */
   heading?: string
   /** Children */
   children?: Child
 }
+
 interface ComboboxSeparatorProps extends HTMLBaseAttributes {
 }
 
@@ -194,8 +193,6 @@ export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: 
 export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxContent_${Math.random().toString(36).slice(2, 8)}`
-  const contentBaseClasses = 'fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
-  const contentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -211,7 +208,6 @@ export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceI
 export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxInput_${Math.random().toString(36).slice(2, 8)}`
-  const inputClasses = 'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -227,7 +223,6 @@ export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: 
 export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxEmpty_${Math.random().toString(36).slice(2, 8)}`
-  const emptyClasses = 'py-6 text-center text-sm'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -244,9 +239,6 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
   const __scopeId = __instanceId || `ComboboxItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
   const stateClasses = () => isDisabled() ? itemDisabledClasses : itemDefaultClasses
-  const itemBaseClasses = 'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden'
-  const itemDefaultClasses = 'text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'
-  const itemDisabledClasses = 'pointer-events-none opacity-50'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -263,7 +255,6 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
 export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxGroup_${Math.random().toString(36).slice(2, 8)}`
-  const groupClasses = 'overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -278,7 +269,6 @@ export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: 
 
 export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ComboboxSeparatorPropsWithHydration = {} as ComboboxSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `ComboboxSeparator_${Math.random().toString(36).slice(2, 8)}`
-  const separatorClasses = '-mx-1 my-1 h-px bg-border'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

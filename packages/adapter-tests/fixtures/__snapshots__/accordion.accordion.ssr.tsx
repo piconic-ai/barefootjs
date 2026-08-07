@@ -4,12 +4,34 @@ import { createContext, useContext, createMemo, createEffect, provideContextSSR 
 import type { Child } from '../../../types'
 import { ChevronDownIcon } from '../icon'
 
+interface AccordionItemContextValue {
+  open: () => boolean
+  onOpenChange: (open: boolean) => void
+}
+
 const AccordionItemContext = createContext<AccordionItemContextValue>()
+
+const accordionClasses = 'w-full'
+
+const accordionItemClasses = 'border-b last:border-b-0'
+
+const accordionTriggerBaseClasses = 'flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50'
+
+const accordionTriggerFocusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+
+const accordionContentBaseClasses = 'grid transition-[grid-template-rows,visibility] duration-normal ease-out'
+
+const accordionContentOpenClasses = 'grid-rows-[1fr] visible'
+
+const accordionContentClosedClasses = 'grid-rows-[0fr] invisible'
+
+const accordionContentInnerClasses = 'overflow-hidden text-sm'
 
 interface AccordionProps extends HTMLBaseAttributes {
   /** AccordionItem components */
   children?: Child
 }
+
 interface AccordionItemProps extends HTMLBaseAttributes {
   /** Unique identifier for this item */
   value: string
@@ -22,6 +44,7 @@ interface AccordionItemProps extends HTMLBaseAttributes {
   /** AccordionTrigger and AccordionContent */
   children?: Child
 }
+
 interface AccordionTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
@@ -30,6 +53,7 @@ interface AccordionTriggerProps extends ButtonHTMLAttributes {
   /** Trigger label */
   children?: Child
 }
+
 interface AccordionContentProps extends HTMLBaseAttributes {
   /** Content to display */
   children?: Child
@@ -45,40 +69,10 @@ type AccordionPropsWithHydration = AccordionProps & {
   "data-key"?: string | number
 }
 
-interface AccordionProps extends HTMLBaseAttributes {
-  /** AccordionItem components */
-  children?: Child
-}
-interface AccordionItemProps extends HTMLBaseAttributes {
-  /** Unique identifier for this item */
-  value: string
-  /** Whether this item is open */
-  open?: boolean
-  /** Whether this item is disabled */
-  disabled?: boolean
-  /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void
-  /** AccordionTrigger and AccordionContent */
-  children?: Child
-}
-interface AccordionTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
-  asChild?: boolean
-  /** Trigger label */
-  children?: Child
-}
-interface AccordionContentProps extends HTMLBaseAttributes {
-  /** Content to display */
-  children?: Child
-}
-
 export type { AccordionProps, AccordionItemProps, AccordionTriggerProps, AccordionContentProps }
 
 export function Accordion({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: AccordionPropsWithHydration = {} as AccordionPropsWithHydration) {
   const __scopeId = __instanceId || `Accordion_${Math.random().toString(36).slice(2, 8)}`
-  const accordionClasses = 'w-full'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -94,7 +88,6 @@ export function Accordion({ children, className = '', __instanceId, __bfScope: _
 export function AccordionItem(__allProps: AccordionItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `AccordionItem_${Math.random().toString(36).slice(2, 8)}`
-  const accordionItemClasses = 'border-b last:border-b-0'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -138,8 +131,6 @@ export function AccordionContent(__allProps: AccordionContentProps & { __instanc
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `AccordionContent_${Math.random().toString(36).slice(2, 8)}`
   const className = () => props.className ?? ''
-  const accordionContentBaseClasses = 'grid transition-[grid-template-rows,visibility] duration-normal ease-out'
-  const accordionContentClosedClasses = 'grid-rows-[0fr] invisible'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

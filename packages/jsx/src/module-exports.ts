@@ -21,10 +21,19 @@ export function generateModuleExports(
   ir: ComponentIR,
   extraInlineExported: ReadonlySet<string> = new Set(),
   rewriteRelativeImport?: (importPath: string) => string,
+  options?: {
+    /**
+     * Skip `export const` / `export function` value declarations — the
+     * adapter already emitted them inside its module-scope section, in
+     * source order (see `TemplateSections.moduleConstantsIncludeExports`).
+     * `export { … } [from '…']` specifier blocks are still emitted.
+     */
+    skipValueDeclarations?: boolean
+  },
 ): string | null {
   const lines: string[] = []
 
-  for (const constant of ir.metadata.localConstants) {
+  for (const constant of options?.skipValueDeclarations ? [] : ir.metadata.localConstants) {
     if (!constant.isExported) continue
     const keyword = constant.declarationKind ?? 'const'
     if (!constant.value) {
@@ -38,7 +47,7 @@ export function generateModuleExports(
     lines.push(`export ${keyword} ${constant.name} = ${constant.value}`)
   }
 
-  for (const func of ir.metadata.localFunctions) {
+  for (const func of options?.skipValueDeclarations ? [] : ir.metadata.localFunctions) {
     if (!func.isExported) continue
     // Prefer the source-verbatim signature so type predicates and explicit
     // `:unknown` parameter annotations survive — see FunctionInfo.typedParams

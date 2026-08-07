@@ -3,69 +3,36 @@ import { createContext, useContext, createEffect, createPortal, isSSRPortal, pro
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
+interface DialogContextValue {
+  open: () => boolean
+  onOpenChange: (open: boolean) => void
+}
+
 const DialogContext = createContext<DialogContextValue>()
 
-interface DialogProps {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** Scope ID for SSR portal support (explicit) */
-  scopeId?: string
-  /** Scope ID from compiler (auto-passed via hydration props) */
-  __instanceId?: string
-  /** Scope ID from compiler in loops (auto-passed via hydration props) */
-  __bfScope?: string
-  /** Dialog content */
-  children?: Child
-}
-interface DialogTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
-   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
-   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
-   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
-   */
-  asChild?: boolean
-  /** Button content */
-  children?: Child
-}
-interface DialogOverlayProps extends HTMLBaseAttributes {
-}
-interface DialogContentProps extends HTMLBaseAttributes {
-  /** Dialog content */
-  children?: Child
-  /** ID of the title element for aria-labelledby */
-  ariaLabelledby?: string
-  /** ID of the description element for aria-describedby */
-  ariaDescribedby?: string
-}
-interface DialogHeaderProps extends HTMLBaseAttributes {
-  /** Header content (typically DialogTitle and DialogDescription) */
-  children?: Child
-}
-interface DialogTitleProps extends HTMLBaseAttributes {
-  /** ID for aria-labelledby reference */
-  id?: string
-  /** Title text */
-  children?: Child
-}
-interface DialogDescriptionProps extends HTMLBaseAttributes {
-  /** ID for aria-describedby reference */
-  id?: string
-  /** Description text */
-  children?: Child
-}
-interface DialogFooterProps extends HTMLBaseAttributes {
-  /** Footer content (typically action buttons) */
-  children?: Child
-}
-interface DialogCloseProps extends ButtonHTMLAttributes {
-  /** Button content */
-  children?: Child
-}
+const dialogOverlayBaseClasses = 'fixed inset-0 z-50 bg-black/80 transition-opacity duration-200'
+
+const dialogOverlayOpenClasses = 'opacity-100'
+
+const dialogOverlayClosedClasses = 'opacity-0 pointer-events-none'
+
+const dialogContentBaseClasses = 'fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg'
+
+const dialogContentOpenClasses = 'opacity-100 scale-100'
+
+const dialogContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
+
+const dialogHeaderClasses = 'flex flex-col gap-2 text-center sm:text-left'
+
+const dialogTitleClasses = 'text-lg leading-none font-semibold'
+
+const dialogDescriptionClasses = 'text-muted-foreground text-sm'
+
+const dialogFooterClasses = 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
+
+const dialogTriggerClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3'
+
+const dialogCloseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3'
 
 interface DialogProps {
   /** Whether the dialog is open */
@@ -81,6 +48,26 @@ interface DialogProps {
   /** Dialog content */
   children?: Child
 }
+
+function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} contains a nested interactive element (<button>, <a href>, or [role="button"]) inside the trigger's own <button> — nested interactive elements don't work reliably. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  } else if (siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger followed by an interactive element — this is what the HTML parser produces from a <button>/<Button> nested inside the trigger. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  }
+}
+
 interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
@@ -94,8 +81,10 @@ interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Button content */
   children?: Child
 }
+
 interface DialogOverlayProps extends HTMLBaseAttributes {
 }
+
 interface DialogContentProps extends HTMLBaseAttributes {
   /** Dialog content */
   children?: Child
@@ -104,30 +93,37 @@ interface DialogContentProps extends HTMLBaseAttributes {
   /** ID of the description element for aria-describedby */
   ariaDescribedby?: string
 }
+
 interface DialogHeaderProps extends HTMLBaseAttributes {
   /** Header content (typically DialogTitle and DialogDescription) */
   children?: Child
 }
+
 interface DialogTitleProps extends HTMLBaseAttributes {
   /** ID for aria-labelledby reference */
   id?: string
   /** Title text */
   children?: Child
 }
+
 interface DialogDescriptionProps extends HTMLBaseAttributes {
   /** ID for aria-describedby reference */
   id?: string
   /** Description text */
   children?: Child
 }
+
 interface DialogFooterProps extends HTMLBaseAttributes {
   /** Footer content (typically action buttons) */
   children?: Child
 }
+
 interface DialogCloseProps extends ButtonHTMLAttributes {
   /** Button content */
   children?: Child
 }
+
+export const DialogRoot = Dialog
 
 type DialogHeaderPropsWithHydration = DialogHeaderProps & {
   __instanceId?: string
@@ -137,68 +133,6 @@ type DialogHeaderPropsWithHydration = DialogHeaderProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface DialogProps {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** Scope ID for SSR portal support (explicit) */
-  scopeId?: string
-  /** Scope ID from compiler (auto-passed via hydration props) */
-  __instanceId?: string
-  /** Scope ID from compiler in loops (auto-passed via hydration props) */
-  __bfScope?: string
-  /** Dialog content */
-  children?: Child
-}
-interface DialogTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
-   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
-   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
-   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
-   */
-  asChild?: boolean
-  /** Button content */
-  children?: Child
-}
-interface DialogOverlayProps extends HTMLBaseAttributes {
-}
-interface DialogContentProps extends HTMLBaseAttributes {
-  /** Dialog content */
-  children?: Child
-  /** ID of the title element for aria-labelledby */
-  ariaLabelledby?: string
-  /** ID of the description element for aria-describedby */
-  ariaDescribedby?: string
-}
-interface DialogHeaderProps extends HTMLBaseAttributes {
-  /** Header content (typically DialogTitle and DialogDescription) */
-  children?: Child
-}
-interface DialogTitleProps extends HTMLBaseAttributes {
-  /** ID for aria-labelledby reference */
-  id?: string
-  /** Title text */
-  children?: Child
-}
-interface DialogDescriptionProps extends HTMLBaseAttributes {
-  /** ID for aria-describedby reference */
-  id?: string
-  /** Description text */
-  children?: Child
-}
-interface DialogFooterProps extends HTMLBaseAttributes {
-  /** Footer content (typically action buttons) */
-  children?: Child
-}
-interface DialogCloseProps extends ButtonHTMLAttributes {
-  /** Button content */
-  children?: Child
 }
 
 type DialogTitlePropsWithHydration = DialogTitleProps & {
@@ -211,68 +145,6 @@ type DialogTitlePropsWithHydration = DialogTitleProps & {
   "data-key"?: string | number
 }
 
-interface DialogProps {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** Scope ID for SSR portal support (explicit) */
-  scopeId?: string
-  /** Scope ID from compiler (auto-passed via hydration props) */
-  __instanceId?: string
-  /** Scope ID from compiler in loops (auto-passed via hydration props) */
-  __bfScope?: string
-  /** Dialog content */
-  children?: Child
-}
-interface DialogTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
-   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
-   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
-   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
-   */
-  asChild?: boolean
-  /** Button content */
-  children?: Child
-}
-interface DialogOverlayProps extends HTMLBaseAttributes {
-}
-interface DialogContentProps extends HTMLBaseAttributes {
-  /** Dialog content */
-  children?: Child
-  /** ID of the title element for aria-labelledby */
-  ariaLabelledby?: string
-  /** ID of the description element for aria-describedby */
-  ariaDescribedby?: string
-}
-interface DialogHeaderProps extends HTMLBaseAttributes {
-  /** Header content (typically DialogTitle and DialogDescription) */
-  children?: Child
-}
-interface DialogTitleProps extends HTMLBaseAttributes {
-  /** ID for aria-labelledby reference */
-  id?: string
-  /** Title text */
-  children?: Child
-}
-interface DialogDescriptionProps extends HTMLBaseAttributes {
-  /** ID for aria-describedby reference */
-  id?: string
-  /** Description text */
-  children?: Child
-}
-interface DialogFooterProps extends HTMLBaseAttributes {
-  /** Footer content (typically action buttons) */
-  children?: Child
-}
-interface DialogCloseProps extends ButtonHTMLAttributes {
-  /** Button content */
-  children?: Child
-}
-
 type DialogDescriptionPropsWithHydration = DialogDescriptionProps & {
   __instanceId?: string
   __bfScope?: string
@@ -281,68 +153,6 @@ type DialogDescriptionPropsWithHydration = DialogDescriptionProps & {
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
-}
-
-interface DialogProps {
-  /** Whether the dialog is open */
-  open?: boolean
-  /** Callback when open state should change */
-  onOpenChange?: (open: boolean) => void
-  /** Scope ID for SSR portal support (explicit) */
-  scopeId?: string
-  /** Scope ID from compiler (auto-passed via hydration props) */
-  __instanceId?: string
-  /** Scope ID from compiler in loops (auto-passed via hydration props) */
-  __bfScope?: string
-  /** Dialog content */
-  children?: Child
-}
-interface DialogTriggerProps extends ButtonHTMLAttributes {
-  /** Whether disabled */
-  disabled?: boolean
-  /**
-   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
-   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
-   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
-   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
-   */
-  asChild?: boolean
-  /** Button content */
-  children?: Child
-}
-interface DialogOverlayProps extends HTMLBaseAttributes {
-}
-interface DialogContentProps extends HTMLBaseAttributes {
-  /** Dialog content */
-  children?: Child
-  /** ID of the title element for aria-labelledby */
-  ariaLabelledby?: string
-  /** ID of the description element for aria-describedby */
-  ariaDescribedby?: string
-}
-interface DialogHeaderProps extends HTMLBaseAttributes {
-  /** Header content (typically DialogTitle and DialogDescription) */
-  children?: Child
-}
-interface DialogTitleProps extends HTMLBaseAttributes {
-  /** ID for aria-labelledby reference */
-  id?: string
-  /** Title text */
-  children?: Child
-}
-interface DialogDescriptionProps extends HTMLBaseAttributes {
-  /** ID for aria-describedby reference */
-  id?: string
-  /** Description text */
-  children?: Child
-}
-interface DialogFooterProps extends HTMLBaseAttributes {
-  /** Footer content (typically action buttons) */
-  children?: Child
-}
-interface DialogCloseProps extends ButtonHTMLAttributes {
-  /** Button content */
-  children?: Child
 }
 
 type DialogFooterPropsWithHydration = DialogFooterProps & {
@@ -356,7 +166,6 @@ type DialogFooterPropsWithHydration = DialogFooterProps & {
 }
 
 export type { DialogProps, DialogTriggerProps, DialogOverlayProps, DialogContentProps, DialogHeaderProps, DialogTitleProps, DialogDescriptionProps, DialogFooterProps, DialogCloseProps }
-export const DialogRoot = Dialog
 
 export function Dialog(__allProps: DialogProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
@@ -379,7 +188,6 @@ export function Dialog(__allProps: DialogProps & { __instanceId?: string; __bfSc
 export function DialogTrigger(__allProps: DialogTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DialogTrigger_${Math.random().toString(36).slice(2, 8)}`
-  const dialogTriggerClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -401,8 +209,6 @@ export function DialogTrigger(__allProps: DialogTriggerProps & { __instanceId?: 
 export function DialogOverlay(__allProps: DialogOverlayProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps: _bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DialogOverlay_${Math.random().toString(36).slice(2, 8)}`
-  const dialogOverlayBaseClasses = 'fixed inset-0 z-50 bg-black/80 transition-opacity duration-200'
-  const dialogOverlayClosedClasses = 'opacity-0 pointer-events-none'
 
   return (
     <div data-slot="dialog-overlay" data-state="closed" id={props.id} className={`${dialogOverlayBaseClasses} ${dialogOverlayClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" />
@@ -412,8 +218,6 @@ export function DialogOverlay(__allProps: DialogOverlayProps & { __instanceId?: 
 export function DialogContent(__allProps: DialogContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DialogContent_${Math.random().toString(36).slice(2, 8)}`
-  const dialogContentBaseClasses = 'fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg'
-  const dialogContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -429,7 +233,6 @@ export function DialogContent(__allProps: DialogContentProps & { __instanceId?: 
 
 export function DialogHeader({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogHeaderPropsWithHydration = {} as DialogHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `DialogHeader_${Math.random().toString(36).slice(2, 8)}`
-  const dialogHeaderClasses = 'flex flex-col gap-2 text-center sm:text-left'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -444,7 +247,6 @@ export function DialogHeader({ className = '', children, __instanceId, __bfScope
 
 export function DialogTitle({ className = '', id, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogTitlePropsWithHydration = {} as DialogTitlePropsWithHydration) {
   const __scopeId = __instanceId || `DialogTitle_${Math.random().toString(36).slice(2, 8)}`
-  const dialogTitleClasses = 'text-lg leading-none font-semibold'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -460,7 +262,6 @@ export function DialogTitle({ className = '', id, children, __instanceId, __bfSc
 
 export function DialogDescription({ className = '', id, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogDescriptionPropsWithHydration = {} as DialogDescriptionPropsWithHydration) {
   const __scopeId = __instanceId || `DialogDescription_${Math.random().toString(36).slice(2, 8)}`
-  const dialogDescriptionClasses = 'text-muted-foreground text-sm'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -476,7 +277,6 @@ export function DialogDescription({ className = '', id, children, __instanceId, 
 
 export function DialogFooter({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogFooterPropsWithHydration = {} as DialogFooterPropsWithHydration) {
   const __scopeId = __instanceId || `DialogFooter_${Math.random().toString(36).slice(2, 8)}`
-  const dialogFooterClasses = 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -492,7 +292,6 @@ export function DialogFooter({ className = '', children, __instanceId, __bfScope
 export function DialogClose(__allProps: DialogCloseProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DialogClose_${Math.random().toString(36).slice(2, 8)}`
-  const dialogCloseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3'
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
