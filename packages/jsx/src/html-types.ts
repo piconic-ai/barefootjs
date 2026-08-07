@@ -253,8 +253,9 @@ export interface SVGPresentationAttributes {
 // ============================================================================
 
 /**
- * Full attribute set for the root `<svg>` element, narrowed to
- * `SVGSVGElement` for `ref`.
+ * Attributes for the root `<svg>` element, narrowed to `SVGSVGElement` for
+ * `ref`. A curated subset mirroring the intrinsic `svg` entry — not the full
+ * SVG attribute surface.
  *
  * Public so components that render an `<svg>` as their root and accept
  * passthrough props (icons, spinners, and similar) can type their props with
