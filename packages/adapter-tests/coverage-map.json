@@ -910,6 +910,7 @@
         "object-literal"
       ],
       "axes": [
+        "literal:boolean",
         "literal:string"
       ],
       "contexts": [
@@ -945,6 +946,7 @@
       ],
       "axes": [
         "array-method:join",
+        "literal:boolean",
         "literal:string",
         "logical:&&",
         "logical:||"
@@ -2452,6 +2454,7 @@
       ],
       "axes": [
         "array-method:join",
+        "literal:boolean",
         "literal:string",
         "logical:&&",
         "logical:||"
@@ -3769,9 +3772,12 @@
     },
     "rest-spread-child-attrs": {
       "kinds": [
-        "identifier"
+        "identifier",
+        "literal"
       ],
-      "axes": [],
+      "axes": [
+        "literal:string"
+      ],
       "contexts": [
         "attribute"
       ]
@@ -4720,6 +4726,7 @@
         "template-literal"
       ],
       "axes": [
+        "literal:boolean",
         "literal:string"
       ],
       "contexts": [
@@ -4973,7 +4980,7 @@
     "conditional": 24,
     "identifier": 290,
     "index-access": 14,
-    "literal": 239,
+    "literal": 240,
     "logical": 43,
     "member": 154,
     "object-literal": 55,
@@ -5016,10 +5023,10 @@
     "binary:===": 43,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 45,
+    "literal:boolean": 49,
     "literal:null": 23,
     "literal:number": 101,
-    "literal:string": 169,
+    "literal:string": 170,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,
