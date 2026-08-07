@@ -514,9 +514,9 @@ describe('applyCssLayerPrefix', () => {
     expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
 
-    const declarations = template.match(/^const toneClasses = [\s\S]*?\} as const$/m) ?? []
+    const declarations = [...template.matchAll(/^const toneClasses = [\s\S]*?\} as const$/gm)]
     expect(declarations).toHaveLength(1)
-    const declaration = declarations[0]
+    const declaration = declarations[0][0]
 
     // Classes are prefixed...
     expect(declaration).toContain("info: 'layer-components:text-blue-500'")
