@@ -62,6 +62,7 @@ import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
+import { BindingScope } from './scope/binding-scope.ts'
 
 // =============================================================================
 // Transform Context
@@ -102,12 +103,18 @@ interface TransformContext {
    * `_p.<local>` (#2524 CSR half: `_p` is always caller-keyed).
    */
   _destructuredPropAliases?: Map<string, string> | null
-  /** Active loop parameter names for slotId assignment to loop-param-dependent expressions */
-  loopParams: Set<string>
+  /**
+   * The active `.map()`/callback binding stack (#2482 Stage 1a) — replaces
+   * the former mutable per-name `Set<string>` mutated in lockstep with
+   * `transformMapCall` entry/exit. `enterLoopRow`/`enterCallback` return a
+   * NEW `BindingScope`; restoring the saved parent reference on exit is
+   * the whole mechanism (no `.delete()` bookkeeping to get wrong).
+   */
+  scope: BindingScope
   /**
    * Count of enclosing `.map()` loops (0 = outermost), incremented/
    * decremented in lockstep with entering/leaving `transformMapCall`.
-   * Unlike `loopParams` (a name Set that can gain several entries for
+   * Unlike `scope` (a binding stack that can gain several bound names for
    * ONE loop level via destructuring), this is a plain per-level
    * counter — the single source of truth `IRLoop.depth` is stamped
    * from, so every adapter's `data-key`/`data-key-N` suffix derives
@@ -133,8 +140,8 @@ interface TransformContext {
   /**
    * Memoized free-refs binding environment. Built lazily by
    * `makeBindingEnv` and reused across every `resolveFreeRefs` call as
-   * long as `loopParams` content is unchanged. Invalidated by serializing
-   * `loopParams` into `_bindingEnvLoopKey` and comparing on read.
+   * long as `scope`'s bound names are unchanged. Invalidated by serializing
+   * `scope.boundNames()` into `_bindingEnvLoopKey` and comparing on read.
    */
   _bindingEnv?: BindingEnvironment
   _bindingEnvLoopKey?: string
@@ -526,14 +533,15 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   if (!propNames) return dateLowered === text ? undefined : dateLowered
   // #2222: a name bound as an enclosing loop callback's item/index param
   // refers to the loop binding, not the prop, at THIS transform position —
-  // `ctx.loopParams` is the live loop-param set (destructured binding
+  // `ctx.scope` is the live loop-binding stack (destructured binding
   // names and the index included), maintained by `transformMapCall` as it
   // enters/leaves each callback, so this guard is scope-accurate rather
   // than the coarse whole-component exclusion the SSR adapters use
   // (#2221). Filter into a fresh set — `getDestructuredPropNames` caches
   // its set on ctx and must not be mutated.
-  if (ctx.loopParams.size > 0) {
-    const filtered = new Set([...propNames].filter(n => !ctx.loopParams.has(n)))
+  const boundNames = ctx.scope.boundNames()
+  if (boundNames.size > 0) {
+    const filtered = new Set([...propNames].filter(n => !boundNames.has(n)))
     if (filtered.size === 0) return dateLowered === text ? undefined : dateLowered
     propNames = filtered
   }
@@ -662,7 +670,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     spreadIdCounter: 0,
     isRoot: true,
     insideComponentChildren: false,
-    loopParams: new Set(),
+    scope: BindingScope.EMPTY,
     loopDepth: 0,
     patterns: {
       signals: analyzer.signals.map(s => ({
@@ -791,21 +799,24 @@ function generateSpreadSlotId(ctx: TransformContext): string {
 /**
  * Build the binding environment for `resolveFreeRefs` from the current
  * transform context. The analyzer's collected bindings (signals, memos,
- * props, locals, imports) plus the active loop params form the resolution
- * frame; the TypeChecker, when available, is forwarded so library getters
- * carrying the Reactive<T> brand are recognised.
+ * props, locals, imports) plus the active loop-bound names form the
+ * resolution frame; the TypeChecker, when available, is forwarded so
+ * library getters carrying the Reactive<T> brand are recognised.
  *
  * Memoized on `ctx`: the returned env is identity-stable as long as
- * `loopParams` content is unchanged, which keeps the `WeakMap`-keyed
+ * `ctx.scope`'s bound names are unchanged, which keeps the `WeakMap`-keyed
  * binding-table cache in `free-refs.ts` warm across every expression in
- * the same loop scope. `loopParams` is `.add`/`.delete`-mutated as the
- * visitor enters / leaves `.map()` callbacks, so we serialize its
- * contents into a key rather than relying on Set identity.
+ * the same loop scope. `ctx.scope` is REASSIGNED (never mutated) as the
+ * visitor enters / leaves `.map()` callbacks (#2482 Stage 1a), so we
+ * serialize its bound names into a key rather than relying on object
+ * identity — a sibling loop at the same nesting level would otherwise get
+ * a spurious cache miss/hit mismatch across restores.
  */
 function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
-  const loopKey = ctx.loopParams.size === 0
+  const boundNames = ctx.scope.boundNames()
+  const loopKey = boundNames.size === 0
     ? ''
-    : Array.from(ctx.loopParams).sort().join('\0')
+    : Array.from(boundNames).sort().join('\0')
   if (ctx._bindingEnv && ctx._bindingEnvLoopKey === loopKey) {
     return ctx._bindingEnv
   }
@@ -820,9 +831,10 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
     localFunctions: a.localFunctions,
     imports: a.imports,
     ambientGlobals: a.ambientGlobals,
-    // Snapshot — the env must observe a stable view even if `ctx.loopParams`
-    // is later mutated by an enclosing visitor frame.
-    loopParams: new Set(ctx.loopParams),
+    // `boundNames()` already returns a fresh Set per call — a stable
+    // snapshot even if `ctx.scope` is later reassigned by an enclosing
+    // visitor frame.
+    loopParams: boundNames,
     checker: a.checker,
   }
   ctx._bindingEnv = env
@@ -2170,8 +2182,9 @@ function transformExpressionInner(
   // @client expressions always need slotId and are treated as reactive for client-side evaluation
   // Expressions inside loops that reference the loop parameter need slotId
   // so fine-grained effects can target them for per-item signal updates
-  const refsLoopParam = ctx.loopParams.size > 0
-    && Array.from(ctx.loopParams).some(p => new RegExp(`\\b${p}\\b`).test(exprText))
+  const scopeBoundNames = ctx.scope.boundNames()
+  const refsLoopParam = scopeBoundNames.size > 0
+    && Array.from(scopeBoundNames).some(p => new RegExp(`\\b${p}\\b`).test(exprText))
 
   // Compute AST-derived flags. `callsReactive` recognises signal-getter / memo
   // calls even inside deeper expressions (e.g., `format(count())`); `hasCalls`
@@ -4021,8 +4034,8 @@ function transformMapCall(
   method: 'map' | 'flatMap' = 'map'
 ): IRLoop | null {
   // Capture nesting depth before we register this map's own params.
-  // ctx.loopParams is populated by the *outer* map; if non-empty we are inside one.
-  const isNested = ctx.loopParams.size > 0
+  // ctx.scope is populated by the *outer* map; if any names are bound we are inside one.
+  const isNested = ctx.scope.boundNames().size > 0
   // Diagnostic count at entry — the structural net at the scalar fallthrough
   // de-dups against refusals fired DURING this call (leaf-wiring, DSL gates),
   // never against unrelated diagnostics recorded before it.
@@ -4322,17 +4335,17 @@ function transformMapCall(
       }
     }
 
-    // Register loop params so expressions referencing them get slotId.
-    // For destructured patterns, register the individual binding names —
-    // `\b${param}\b` never matches a bare name like `cfg` when `param` is
-    // `[, cfg]`, which would otherwise leave reactive-expression detection
-    // silently broken for destructured callbacks.
-    if (paramBindings) {
-      for (const b of paramBindings) ctx.loopParams.add(b.name)
-    } else {
-      ctx.loopParams.add(param)
-    }
-    if (index) ctx.loopParams.add(index)
+    // Register loop-bound names so expressions referencing them get slotId,
+    // by entering a new BindingScope frame for this row (#2482 Stage 1a).
+    // For destructured patterns, the frame binds the individual binding
+    // names — `\b${param}\b` never matches a bare name like `cfg` when
+    // `param` is `[, cfg]`, which would otherwise leave reactive-expression
+    // detection silently broken for destructured callbacks.
+    // `savedScope` is restored (not deleted-from) at the matching exit site
+    // below, so a nested loop reusing a param name can never corrupt the
+    // outer scope.
+    const savedScope = ctx.scope
+    ctx.scope = ctx.scope.enterLoopRow({ param, index, paramBindings })
     ctx.loopDepth++
 
     // Logical control flow (`cond && <X/>`, `a ?? themeLogo()`) as the map
@@ -4697,13 +4710,10 @@ function transformMapCall(
       )
     }
 
-    // Unregister loop params
-    if (paramBindings) {
-      for (const b of paramBindings) ctx.loopParams.delete(b.name)
-    } else {
-      ctx.loopParams.delete(param)
-    }
-    if (index) ctx.loopParams.delete(index)
+    // Restore the parent scope — the BindingScope twin of the old
+    // "unregister loop params" delete block, but by reference rather than
+    // by name, so it can never miss an entry the add-site added.
+    ctx.scope = savedScope
     ctx.loopDepth--
   }
 
@@ -6137,7 +6147,7 @@ function tryResolveTemplateSpanFromConst(
     // item/index binding shadowing a same-named const — resolving the
     // const would bake the outer value into every row. Fall back to
     // the bare-expression path, which sees the loop binding.
-    if (ctx.loopParams.has(expr.text)) return null
+    if (ctx.scope.isBound(expr.text)) return null
     const constInfo = findLocalConst(expr.text, ctx.analyzer)
     if (!constInfo) return null
     const ast = parseConstInitializer(constInfo)
@@ -6154,7 +6164,7 @@ function tryResolveTemplateSpanFromConst(
     // Same loop-shadowing guard as the ${IDENT} arm: `tone[k]` inside
     // `items.map((tone) => …)` must read the row's `tone`, not a
     // same-named module/component record const.
-    if (ctx.loopParams.has(expr.expression.text)) return null
+    if (ctx.scope.isBound(expr.expression.text)) return null
     const constInfo = findLocalConst(expr.expression.text, ctx.analyzer)
     if (!constInfo) return null
     const ast = parseConstInitializer(constInfo)
@@ -6326,9 +6336,9 @@ function tryResolveIdentifierAsTemplateLiteral(
   // outer const's literal into the IR here bakes the same hard-coded
   // value into EVERY adapter's output (e.g. `key={label}` inside
   // `.map((label) => ...)` becoming a constant duplicate key).
-  // `ctx.loopParams` is the live loop-param set (destructured binding
+  // `ctx.scope` is the live loop-binding stack (destructured binding
   // names and index included), so the guard is scope-accurate.
-  if (ctx.loopParams.has(ident.text)) return null
+  if (ctx.scope.isBound(ident.text)) return null
   const constInfo = findLocalConst(ident.text, ctx.analyzer)
   if (!constInfo) return null
   const ast = parseConstInitializer(constInfo)
@@ -7004,8 +7014,9 @@ function isSignalOrMemoArray(array: string, ctx: TransformContext): boolean {
  * like {item.name} to reactive (they use a separate slotId path).
  */
 function referencesLoopParam(expr: string, ctx: TransformContext): boolean {
-  if (ctx.loopParams.size === 0) return false
-  for (const p of ctx.loopParams) {
+  const boundNames = ctx.scope.boundNames()
+  if (boundNames.size === 0) return false
+  for (const p of boundNames) {
     if (new RegExp(`\\b${p}\\b`).test(expr)) return true
   }
   return false
@@ -7129,10 +7140,11 @@ function hasReactiveAttributes(attrs: IRAttribute[], ctx: TransformContext): boo
     if (isSignalOrMemoReference(valueToCheck, ctx) || isPropsReference(valueToCheck, ctx)) {
       return true
     }
-    // Check if attribute references any active loop parameters —
+    // Check if attribute references any active loop-bound names —
     // loop root elements need a slotId so className can be updated reactively.
-    if (ctx.loopParams.size > 0) {
-      for (const p of ctx.loopParams) {
+    const scopeBoundNames = ctx.scope.boundNames()
+    if (scopeBoundNames.size > 0) {
+      for (const p of scopeBoundNames) {
         if (new RegExp(`\\b${p}\\b`).test(valueToCheck)) return true
       }
     }
