@@ -214,6 +214,10 @@ export { buildLoopChainExpr } from './loop-chain.ts'
 export type { LoopChainInputs } from './loop-chain.ts'
 export { isLowerableLoopDestructure, isLowerableObjectRestDestructure } from './loop-destructure.ts'
 
+// Binding scope (#2482) — shared loop-bound-name resolution service
+export { BindingScope } from './scope/binding-scope.ts'
+export type { ScopeBindingSource, ScopeBinding, ScopeFrame, LoopBindingSource } from './scope/binding-scope.ts'
+
 // Debug analysis
 export {
   buildComponentGraph,
