@@ -197,7 +197,10 @@ export abstract class JsxAdapter extends BaseAdapter {
         // No initializer (e.g. `let emblaApi: EmblaCarouselType | undefined`)
         // — carry the declared type annotation through so `.tsx` output
         // doesn't fall back to implicit `any` (TS7034/TS7005, #2573).
-        const typeAnnotation = preserveTypes && constant.type ? `: ${constant.type.raw}` : ''
+        const typeAnnotation =
+          preserveTypes && (constant.typeAnnotation ?? constant.type)
+            ? `: ${constant.typeAnnotation ?? constant.type?.raw}`
+            : ''
         lines.push(`  ${keyword} ${constant.name}${typeAnnotation}`)
         continue
       }
@@ -213,7 +216,17 @@ export abstract class JsxAdapter extends BaseAdapter {
       const constValue = preserveTypes
         ? (constant.typedValue ?? constant.value)
         : constant.value
-      lines.push(`  ${keyword} ${constant.name} = ${constValue}`)
+      // Preserve an explicit `let` type annotation from source (#2589) —
+      // without it, TS infers the initializer's (often narrower) type and
+      // later reassignments/reads fail under strict (TS7034/TS7005, and
+      // TS2339 via `never` narrowing). `const` is left alone: its type
+      // always infers correctly from the (immutable) initializer, so
+      // adding annotations there would only churn snapshots.
+      const letTypeAnnotation =
+        preserveTypes && keyword === 'let' && constant.typeAnnotation
+          ? `: ${constant.typeAnnotation}`
+          : ''
+      lines.push(`  ${keyword} ${constant.name}${letTypeAnnotation} = ${constValue}`)
     }
 
     // Include local functions — skip unreachable ones (only used in event
@@ -412,14 +425,29 @@ export abstract class JsxAdapter extends BaseAdapter {
       const keyword = c.declarationKind ?? 'const'
       const exportKw = c.isExported ? 'export ' : ''
       if (!c.value) {
-        entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name}` })
+        // No initializer (e.g. module-scope `let pending: number`) — carry
+        // the declared type annotation through, mirroring the function-scope
+        // fix above (#2573 / #2589).
+        const typeAnnotation =
+          preserveTypes && (c.typeAnnotation ?? c.type)
+            ? `: ${c.typeAnnotation ?? c.type?.raw}`
+            : ''
+        entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name}${typeAnnotation}` })
         continue
       }
       const trimmed = c.value.trim()
       if (/^new WeakMap\b/.test(trimmed)) continue
       if (c.isExported && /^createContext\b/.test(trimmed)) continue
       const value = preserveTypes ? (c.typedValue ?? c.value) : c.value
-      entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name} = ${value}` })
+      // Preserve an explicit module-scope `let` type annotation from source
+      // (#2589) — see the function-scope sibling above for rationale. `const`
+      // is left alone: its type always infers correctly from the (immutable)
+      // initializer.
+      const letTypeAnnotation =
+        preserveTypes && keyword === 'let' && c.typeAnnotation
+          ? `: ${c.typeAnnotation}`
+          : ''
+      entries.push({ line: c.loc.start.line, text: `${exportKw}${keyword} ${c.name}${letTypeAnnotation} = ${value}` })
     }
 
     for (const f of ir.metadata.localFunctions) {

@@ -525,9 +525,15 @@ function visit(
         }
         continue
       }
+      // An initializer is required for `const` (TS grammar enforces this),
+      // but an uninitialized module-scope `let` (e.g. `let pending: number`)
+      // is legal source and must still be collected — mirroring the
+      // component-scope path below (line ~687), which has never gated on
+      // `decl.initializer` — so its declared type carries into the emitted
+      // template instead of the declaration vanishing outright (#2589).
       if (
         ts.isIdentifier(decl.name) &&
-        decl.initializer &&
+        (decl.initializer || isLet) &&
         !isArrowComponentFunction(decl)
       ) {
         collectConstant(decl, ctx, true, isLet ? 'let' : 'const', isExported)
@@ -3203,6 +3209,7 @@ function collectConstant(
     value,
     parsed,
     typedValue: typedValue !== value ? typedValue : undefined,
+    typeAnnotation: node.type ? node.type.getText(ctx.sourceFile) : undefined,
     valueBranches,
     declarationKind,
     isExported,
