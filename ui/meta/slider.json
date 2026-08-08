@@ -135,8 +135,6 @@
     {
       "name": "percentage",
       "deps": [
-        "internalValue",
-        "controlledValue",
         "min",
         "max",
         "currentValue"
