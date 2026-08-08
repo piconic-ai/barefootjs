@@ -504,8 +504,18 @@ function visit(
     collectAmbientGlobals(node, ctx)
   }
 
-  // Module-level constants (outside component)
-  if (ts.isVariableStatement(node) && !ctx.componentNode) {
+  // Module-level constants (outside component). Ambient statements
+  // (`declare let X: T`) are type-only contracts with no runtime binding —
+  // collectAmbientGlobals above already tracks them for BF052, and
+  // re-emitting one as a runtime `let` would shadow the real global, so
+  // they must not reach collectConstant. (Previously excluded only by
+  // accident: this path required an initializer, which `declare`
+  // statements never have — the #2589 uninitialized-`let` fix removed
+  // that gate, so the exclusion is now explicit.)
+  const isDeclareStatement =
+    ts.isVariableStatement(node) &&
+    (node.modifiers?.some(m => m.kind === ts.SyntaxKind.DeclareKeyword) ?? false)
+  if (ts.isVariableStatement(node) && !ctx.componentNode && !isDeclareStatement) {
     const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
     const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
     const isModuleClientDirective = hasLeadingClientDirectiveOnStatement(node, ctx.sourceFile)

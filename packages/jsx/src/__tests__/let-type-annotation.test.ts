@@ -175,4 +175,34 @@ describe('let type annotation preservation in emitted templates (#2589)', () => 
     expect(template.content).toContain("const label = 'hello'")
     expect(template.content).not.toContain('const label: string')
   })
+
+  test('ambient `declare let` is not re-emitted as a runtime binding', () => {
+    const honoAdapter = new HonoAdapter()
+    // `declare let` is a type-only contract: it has no initializer and
+    // carries NodeFlags.Let, so after the uninitialized-`let` collection
+    // fix it would match the module-scope collector unless ambient
+    // statements are excluded. Re-emitting it as a runtime `let` would
+    // shadow the real global with `undefined` in the SSR module.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      declare let __BF_AMBIENT__: string
+
+      export function Widget() {
+        const [n, setN] = createSignal(0)
+        const status = () => (__BF_AMBIENT__ ? 'set' : 'unset')
+        return <button onClick={() => setN(n() + 1)}>{status()}{n()}</button>
+      }
+    `
+
+    const result = compileJSX(source, 'Widget.tsx', { adapter: honoAdapter })
+    expect(result.errors).toHaveLength(0)
+
+    const template = result.files.find((f) => f.type === 'markedTemplate')!
+    expect(template).toBeDefined()
+    // The reference inside `status` may survive, but no runtime `let`
+    // declaration for the ambient name may be emitted.
+    expect(template.content).not.toMatch(/^\s*let __BF_AMBIENT__/m)
+  })
 })
