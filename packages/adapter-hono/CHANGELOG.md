@@ -1,5 +1,172 @@
 # @barefootjs/hono
 
+## 0.31.2
+
+### Patch Changes
+
+- a732fd9: Fix two type-level emission defects surfaced by the `ui/` corpus type-check gate (#2573)
+
+  - **`<svg>`-rooted component props** (icons, spinner): a new `SVGSVGAttributes`
+    export (`@barefootjs/jsx`) gives components whose root is an `<svg>` a
+    properly-narrowed `ref?: (element: SVGSVGElement) => void`, instead of the
+    generic `HTMLBaseAttributes` whose `ref` targets `HTMLElement`. Spreading
+    `HTMLBaseAttributes`-typed rest-props onto an `<svg>` element failed to
+    type-check under `strictFunctionTypes` (`ref`'s param types are unrelated
+    DOM interfaces) — every `IconXxx`/`Icon`/`Spinner` component's emitted
+    `.tsx` template hit this (35 `TS2322` instances across the corpus). `ui/`'s
+    `icon` and `spinner` components now extend `SVGSVGAttributes`. Type-only —
+    no change to rendered output or runtime behavior.
+  - **Uninitialized `let`/`const` locals lost their type annotation on emit**:
+    `generateSignalInitializers` (`packages/jsx/src/adapters/jsx-adapter.ts`,
+    shared by every JSX-runtime adapter incl. Hono) re-declared a local with no
+    initializer (e.g. `let emblaApi: EmblaCarouselType | undefined`) as a bare
+    `let emblaApi`, discarding the source's type annotation and forcing
+    implicit `any` (`TS7034`/`TS7005`) wherever the local was later read. Now
+    carries `ConstantInfo.type.raw` through when `preserveTypes` is set.
+  - `ui/slider`: added an inline non-null assertion at the one genuine
+    possibly-`undefined` read (`currentValue()` in `percentage()`) — TS can't
+    see across `currentValue`'s own `isControlled() ? controlledValue() :
+internalValue()` ternary that the controlled branch is only live when
+    `props.value` (and so `controlledValue()`) is defined. Type-only.
+
+  Ratchets the `corpus-typecheck.test.ts` allowlist: `icon TS2322` (34),
+  `spinner TS2322` (1), `carousel TS7005` (2), `carousel TS7034` (1), and
+  `slider TS2532` (1) all drop to zero. `chart`/`xyflow` entries are
+  unchanged — untouched by this PR (tracked in #2573).
+
+- 23c2d84: `_p` props-object keys are now uniformly the caller-facing property name (`sourceName ?? name`)
+
+  Fixes aliased destructured props rendering empty on the CSR/hydration path
+  (#2524 CSR half). A renaming destructure (`{ n: count }`) previously
+  compiled to client JS reading `_p.count` — the LOCAL binding — while the
+  caller always passes `n`, so the local binding hydrated to `undefined`
+  and the corresponding slot rendered empty.
+
+  Every `_p` producer and consumer is now keyed by the caller-facing name:
+  the SSR `bf-p` hydration blob (Hono adapter), the generated `initXxx`
+  props-extraction, the CSR `template:` lambda, controlled-signal sync,
+  rest-spread exclude keys, and the `relocate()` prop-lift path. `sourceName
+?? name` is an identity for un-aliased props, so every existing snapshot
+  and fixture stays byte-identical — this is a rename-only fix.
+
+- 28a1e26: Fix `dangerouslySetInnerHTML` throwing on childless `<svg>`/`<head>` elements through `@barefootjs/hono/jsx` (#2557)
+
+  `String(jsx('svg', { dangerouslySetInnerHTML: { __html: '...' } }))` threw
+  `Error: Can only set one of \`children\` or \`props.dangerouslySetInnerHTML\`.`
+  even though no children were passed at all.
+
+  Root cause is in hono's own JSX runtime (`hono/dist/jsx/base.js`'s
+  `jsxFn`), not in anything BarefootJS wrote: for `<svg>` and `<head>`
+  specifically, `jsxFn` always wraps the real children in an internal
+  namespace-context node — `[new JSXFunctionNode(nameSpaceContext, ...)]` —
+  even when the caller passed zero children. That phantom wrapper makes the
+  outer `JSXNode`'s `children.length > 0`, which trips hono's own
+  `children`-vs-`dangerouslySetInnerHTML` conflict guard for every childless
+  `<svg>`/`<head>` element using `dangerouslySetInnerHTML`. Ordinary tags
+  (e.g. `<div>`) never hit this — only `svg`/`head` get the namespace
+  wrapper — which is why the bug only reproduces on those two tags.
+
+  `packages/adapter-hono/src/jsx/jsx-runtime/index.ts` (`jsx`/`jsxs`) and
+  `packages/adapter-hono/src/jsx/jsx-dev-runtime/index.ts` (`jsxDEV`) now
+  resolve `dangerouslySetInnerHTML` into real `children` themselves —
+  mirroring what hono's guard expects — before delegating to hono's
+  runtime, whenever no explicit `children` prop is present. A genuine
+  conflict (both real children AND `dangerouslySetInnerHTML` passed
+  together) is left untouched and still rejected by hono's own guard.
+
+  Any compiled template whose element carries `dangerouslySetInnerHTML`
+  previously crashed at SSR through this runtime if the element was an
+  `<svg>` or `<head>` with no other children (a common shape for inlined
+  icon markup).
+
+- a9b1a9b: Fix Hono adapter emitting invalid `.tsx` for a nested ternary chain nested in a non-reactive outer conditional's alternate (#2470)
+
+  ```tsx
+  const MODE = "b";
+  export function Chain() {
+    return (
+      <div>
+        {MODE === "a" ? (
+          <span>A</span>
+        ) : MODE === "b" ? (
+          <span>B</span>
+        ) : (
+          <span>C</span>
+        )}
+      </div>
+    );
+  }
+  ```
+
+  used to emit
+
+  ```tsx
+  {MODE === 'a' ? <span>A</span> : {MODE === 'b' ? <span>B</span> : <span>C</span>}}
+  ```
+
+  — the nested conditional got re-wrapped in its own `{…}` while sitting in
+  the ALTERNATE position of the outer ternary, where only a plain JS
+  expression is legal, so the generated `.tsx` failed to parse
+  (`Expected "}" but found "==="`) with zero diagnostics.
+
+  Only reachable when the OUTER conditional's condition is non-reactive (no
+  signal/prop/call — e.g. a module-level `const`), which takes the flat
+  `cond ? whenTrue : whenFalse` path instead of the reactive marker-wrapping
+  path (`wrapWithCondMarker`), so the existing `nested-ternary` fixture
+  (reactive outer condition) never caught it.
+
+  `renderConditional` now splits its output into `renderConditionalBody`
+  (the bare ternary text) plus the enclosing `{…}` it alone adds. A new
+  `renderBareBranch` helper renders a non-reactive conditional's branches
+  through `renderConditionalBody` directly when a branch is itself a nested
+  conditional, instead of falling through to the generic `renderNode`/
+  `emitConditional` dispatch that re-wraps it. The reactive path (marker
+  splicing via `wrapWithCondMarker`) is unchanged.
+
+  New conformance fixture: `nested-ternary-bare-branch`
+  (`packages/adapter-tests/fixtures/nested-ternary-bare-branch.ts`), modeled
+  on `nested-ternary.ts` but with a non-reactive module-const outer
+  condition — the shape the existing fixture doesn't exercise.
+
+  Other adapters (Go template, ERB, Jinja, Twig, Mojolicious, Blade, Rust
+  minijinja, Xslate) emit their own template-tag syntax (`{{ }}`, `<% %>`,
+  etc.), not raw JS `{…}` expression containers, so they aren't exposed to
+  this specific double-brace hazard — Hono is the only JSX-runtime adapter
+  in the workspace.
+
+- 2e8972e: Inlining a `Record` const into a JSX binding no longer re-exposes an
+  unnarrowed index. The IR's lookup key is type-stripped source text, so a
+  narrowing assertion written at the use site
+  (`strokePaths[name as keyof typeof strokePaths]`) was gone by the time the
+  record's cases were folded into the emitted `.tsx`, leaving the literal's
+  exact key set indexed by the binding's full union — TS7053 in any consumer
+  that type-checks its compiled templates. The inlined object literal is now
+  annotated `as Record<string, string>` for adapters that preserve types, on
+  both emit paths (element attributes and the component-prop values that get
+  collapsed to a JS expression at IR construction time). The three
+  byte-identical copies of the template-part renderer behind those paths are
+  now one module. Type-only — no emitted-JS or rendered-HTML change.
+- aa32f66: Emitted templates now preserve the source module's shape: type
+  declarations, module-scope constants, and module-scope functions are
+  emitted at module scope, once per file, in source order — exported and
+  non-exported together. Previously type declarations were re-emitted per
+  component while values were localised into each component body, a
+  structural mismatch behind a family of consumer type-check breaks: a type
+  alias querying a localised const (`keyof typeof strokePaths`) failed
+  TS2304 and silently widened to `string | number | symbol`; the same query
+  in a props annotation did the same through the synthesized hydration
+  alias; types shared by several components were redeclared per component
+  (TS2300); an exported type no component referenced was pruned from the
+  template entirely (TS2305 on the consumer's `import type`); and exported
+  consts were emitted below non-exported readers (a module-load TDZ crash).
+  Declarations flagged module-level by the analyzer but actually closing
+  over component state are demoted back into the body by the same
+  reachability fixpoint the client bundle uses. Multi-component files merge
+  their module-scope blocks with top-level-statement dedup. Across the
+  compiled `ui/` corpus this removes 286 of 447 consumer-visible type
+  diagnostics with zero new ones, and a new corpus type-check gate
+  (`corpus-typecheck.test.ts`) holds that line. Rendered HTML is unchanged.
+
 ## 0.31.1
 
 ### Patch Changes

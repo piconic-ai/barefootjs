@@ -1,5 +1,269 @@
 # @barefootjs/jsx
 
+## 0.31.2
+
+### Patch Changes
+
+- a732fd9: Fix two type-level emission defects surfaced by the `ui/` corpus type-check gate (#2573)
+
+  - **`<svg>`-rooted component props** (icons, spinner): a new `SVGSVGAttributes`
+    export (`@barefootjs/jsx`) gives components whose root is an `<svg>` a
+    properly-narrowed `ref?: (element: SVGSVGElement) => void`, instead of the
+    generic `HTMLBaseAttributes` whose `ref` targets `HTMLElement`. Spreading
+    `HTMLBaseAttributes`-typed rest-props onto an `<svg>` element failed to
+    type-check under `strictFunctionTypes` (`ref`'s param types are unrelated
+    DOM interfaces) — every `IconXxx`/`Icon`/`Spinner` component's emitted
+    `.tsx` template hit this (35 `TS2322` instances across the corpus). `ui/`'s
+    `icon` and `spinner` components now extend `SVGSVGAttributes`. Type-only —
+    no change to rendered output or runtime behavior.
+  - **Uninitialized `let`/`const` locals lost their type annotation on emit**:
+    `generateSignalInitializers` (`packages/jsx/src/adapters/jsx-adapter.ts`,
+    shared by every JSX-runtime adapter incl. Hono) re-declared a local with no
+    initializer (e.g. `let emblaApi: EmblaCarouselType | undefined`) as a bare
+    `let emblaApi`, discarding the source's type annotation and forcing
+    implicit `any` (`TS7034`/`TS7005`) wherever the local was later read. Now
+    carries `ConstantInfo.type.raw` through when `preserveTypes` is set.
+  - `ui/slider`: added an inline non-null assertion at the one genuine
+    possibly-`undefined` read (`currentValue()` in `percentage()`) — TS can't
+    see across `currentValue`'s own `isControlled() ? controlledValue() :
+internalValue()` ternary that the controlled branch is only live when
+    `props.value` (and so `controlledValue()`) is defined. Type-only.
+
+  Ratchets the `corpus-typecheck.test.ts` allowlist: `icon TS2322` (34),
+  `spinner TS2322` (1), `carousel TS7005` (2), `carousel TS7034` (1), and
+  `slider TS2532` (1) all drop to zero. `chart`/`xyflow` entries are
+  unchanged — untouched by this PR (tracked in #2573).
+
+- 23c2d84: `_p` props-object keys are now uniformly the caller-facing property name (`sourceName ?? name`)
+
+  Fixes aliased destructured props rendering empty on the CSR/hydration path
+  (#2524 CSR half). A renaming destructure (`{ n: count }`) previously
+  compiled to client JS reading `_p.count` — the LOCAL binding — while the
+  caller always passes `n`, so the local binding hydrated to `undefined`
+  and the corresponding slot rendered empty.
+
+  Every `_p` producer and consumer is now keyed by the caller-facing name:
+  the SSR `bf-p` hydration blob (Hono adapter), the generated `initXxx`
+  props-extraction, the CSR `template:` lambda, controlled-signal sync,
+  rest-spread exclude keys, and the `relocate()` prop-lift path. `sourceName
+?? name` is an identity for un-aliased props, so every existing snapshot
+  and fixture stays byte-identical — this is a rename-only fix.
+
+- 18b9be8: Fix `layer-:` CSS layer prefixing dropping classes from a referenced class
+  constant whose initializer carries TypeScript syntax (`as const`, a
+  `satisfies`/`Record<...>` annotation, …). `applyCssLayerPrefixToFile`
+  rewrote only `ConstantInfo.value`, but `preserveTypes` emitters (Hono)
+  prefer `ConstantInfo.typedValue ?? value` when emitting a module-scope
+  constant, so the type-carrying string it actually renders stayed
+  unprefixed. `typedValue` is now prefixed in lockstep with `value` wherever
+  a referenced constant is rewritten.
+- d8add61: Go adapter: replace type-string/value-text regex parsing with structural typing (#2484)
+
+  Two migrations, both scoped to keep generated Go byte-identical:
+
+  - **Type resolution** (`tsTypeStringToGo`, `type-codegen.ts`): deleted the
+    `t.endsWith('[]')` / `/^Array<(.+)>$/` regex branches. By the time a
+    `TypeInfo` reaches `tsTypeStringToGo` (via `typeInfoToGo`'s `'interface'`
+    case), `typeNodeToTypeInfo` has already normalised every array spelling
+    (`T[]`, `Array<T>`, `ReadonlyArray<T>`) to `kind: 'array'` — the regex
+    branches were dead code matching a shape that could never arrive. The
+    function is now a plain local-struct/alias lookup. The same dead-code
+    pattern was found and fixed in `resolveLoopDatumFields`
+    (`go-template-adapter.ts`), which regexed a trailing `[]` off a loop
+    item's `TypeInfo.raw` instead of reading `elementType` off an
+    array-`kind` `TypeInfo`.
+
+  - **Value-literal classification** (`numberPrimitiveGoType`,
+    `inferTypeFromValue` in `type-codegen.ts`; `convertInitialValue` in
+    `value-lowering.ts`; `parsedLiteralToGo` in `parsed-literal-to-go.ts`):
+    each now prefers a caller-supplied `preParsed?: ParsedExpr` — the SAME
+    default/initial value already parsed to structure (`SignalInfo.parsed`,
+    `ParamInfo.parsed`) — over regexing the value's source text
+    (`/^-?\d+\.\d+$/`, `value === 'true'`, quote-swapping). `ParamInfo.parsed`
+    is a new field (`packages/jsx/src/types.ts`), attached by the analyzer
+    (`packages/jsx/src/analyzer.ts`) via `tsNodeToParsedExpr` on a destructured
+    prop's own default-value AST node — mirroring the existing
+    `SignalInfo.parsed` convention, no re-parsing of already-stringified text.
+    `typeInfoToGo` grew a `preParsed` parameter threaded from every caller that
+    has a structural counterpart for its `defaultValue`/`initialValue`
+    (signal/prop struct-field typing, memo type inference, prop-type
+    overrides, boolean-memo detection).
+
+  Text-based fallbacks remain ONLY where no structural counterpart exists yet
+  (a caller passing `preParsed: undefined` because `tsNodeToParsedExpr`
+  doesn't cover that value's shape) — each is commented as a fallback and
+  names the caller relationship (`typeInfoToGo`'s two callers-with-no-parsed
+  paths, `convertInitialValue`'s per-primitive text branches).
+
+  No behavior change: Go adapter conformance and adapter-tests suites pass
+  unchanged.
+
+- 2e8972e: Inlining a `Record` const into a JSX binding no longer re-exposes an
+  unnarrowed index. The IR's lookup key is type-stripped source text, so a
+  narrowing assertion written at the use site
+  (`strokePaths[name as keyof typeof strokePaths]`) was gone by the time the
+  record's cases were folded into the emitted `.tsx`, leaving the literal's
+  exact key set indexed by the binding's full union — TS7053 in any consumer
+  that type-checks its compiled templates. The inlined object literal is now
+  annotated `as Record<string, string>` for adapters that preserve types, on
+  both emit paths (element attributes and the component-prop values that get
+  collapsed to a JS expression at IR construction time). The three
+  byte-identical copies of the template-part renderer behind those paths are
+  now one module. Type-only — no emitted-JS or rendered-HTML change.
+- 14a85ae: A `'use client'` file where a component referenced a same-file sibling
+  whose body is a multi-return JSX dispatch (`switch` / `if`-`else` chain,
+  e.g. a `NavIcon` helper dispatched over an icon name) previously compiled
+  with zero diagnostics, but the sibling produced no template — the compiler
+  silently dropped it, and the emitted `renderChild`/`initChild`/
+  `createComponent` call threw `ReferenceError: <Name> is not defined` at
+  SSR/hydrate time (#2556).
+
+  Root cause: `listComponentFunctions`'s #932 "preserve verbatim helper"
+  bypass only applies to non-`'use client'` files. In a client file the
+  multi-return sibling is instead asked to compile as a standalone
+  component, and a top-level `switch` dispatch (unlike an `if`/`else`
+  chain, which #1401 folds into a conditional template) is preserved as a
+  verbatim init statement rather than yielding a template — so
+  `compileMultipleComponents`'s Pass-1 loop silently skips it while the
+  referencing sibling's IR still points at the dropped name.
+
+  New diagnostic **BF048** detects this structurally, from the IR
+  component-reference graph, and fails the compile instead of shipping the
+  silent `ReferenceError`. Non-`'use client'` files (where #932's verbatim
+  preservation applies) and siblings whose multi-return body does compile
+  (`if`/`else` chains, #1401) are unaffected.
+
+- 664cffe: Fix controlled `<select>` losing its selection when an index-keyed
+  `.map()`-rendered `<option>` loop reorders (#2466).
+
+  `lowerFormControlValueSsr` (`jsx-to-ir.ts`) already distributed
+  `selected={(value) === 'opt'}` onto statically-valued `<option>`s (#2464);
+  a `.map()`-rendered `<option>` with an EXPRESSION value (`value={o.id}`,
+  the shape every loop row uses) was left unhandled and silently froze at
+  its SSR-time `selected` state. Reversing an index-keyed loop (`key={i}`)
+  never moves the physical `<option>` nodes — `applyItem` rewrites
+  `option.value` and its label text in place — so the previously-selected
+  DOM node kept `selected` while the item underneath it changed, and
+  `select.value` drifted from the controlled signal.
+
+  `selected` is now distributed onto a loop-row `<option>` too, compared
+  against the option's own value EXPRESSION (`(value) === (o.id)`) rather
+  than a `JSON.stringify`'d literal. That makes it an ordinary per-row
+  reactive attribute (a boolean DOM-property write, `isBooleanAttr`), so it
+  rides the loop's existing per-row reactive-attribute machinery —
+  `applyItem` (row rewritten under a stationary key) and `applyOuter` (the
+  controlled signal itself changes) both recompute it, alongside the eager
+  `mapArray` row effect for loops outside the lazy-row gate. Keyed loops
+  (`key={o.id}`) were already correct (the DOM node itself moves) and are
+  unaffected.
+
+  New coverage: a compiler unit pin (`form-control-value-ssr.test.ts`)
+  asserting `selected` rides both `applyItem` and `applyOuter` for an
+  index-keyed loop, and a new `select-loop-selected` adapter-conformance
+  fixture (SSR `expectedHtml` generated from the Hono reference, also
+  exercised by `csr-conformance.test.ts`).
+
+- 1c38212: Template-adapter SSR seeding now honors an aliased destructured prop's caller-facing key (#2524 SSR half)
+
+  A renaming destructure (`{ n: count }`) keys template variables by the LOCAL
+  binding (`count`, correctly — the template body reads `count`) but the
+  caller only ever supplies the CALLER-facing name (`n`). `extractSsrDefaults`
+  already emitted that mapping as `SsrDefault.propName`
+  (`{"count":{"propName":"n","value":null}}`), but nothing consumed it: every
+  template-string adapter's conformance harness (and 3 shipped production
+  sites) either discarded `propName` outright or keyed its seeding loop off
+  the local name, so a renamed prop's caller value was silently dropped and
+  the slot rendered its static default (`null`/`undefined`/`0`) instead.
+
+  - New shared helper `deriveStashFromDefaults` (`@barefootjs/jsx`) — the TS
+    twin of the runtime `derive_vars_from_defaults` /
+    `_derive_stash_from_defaults` family that already ships in the Ruby,
+    Python, PHP, Perl, and Rust runtime ports. For each defaults entry, prefers
+    `props[propName]` when the caller supplied a non-nullish value, else the
+    static fallback; `isRestProps` entries pass the caller's assembled rest bag
+    through; propName-less entries (signal/memo locals) always use the static
+    value.
+  - All 7 template-string adapters' conformance harnesses (blade, erb, jinja,
+    mojolicious, rust/minijinja, twig, xslate) now derive both root-level and
+    child-component seeding through this helper (or the matching PRODUCTION
+    runtime function, when the harness already drives one) instead of
+    hand-flattening `SsrDefault.value`. Child-defaults seeding now carries the
+    FULL `{value, propName?, isRestProps?}` shape into the generated render
+    script/payload and resolves it per-call against the real caller props, the
+    same way `@barefootjs/erb`'s harness already did.
+  - Rest-bag "keep" sets (which caller-supplied keys are declared params vs.
+    undeclared extras routed into `...rest`) now key off `sourceName ?? name`
+    (the caller-facing spelling) instead of the local binding.
+  - Three shipped PRODUCTION sites had the same defect class and are fixed
+    too: `@barefootjs/rust`'s runtime (`register_components_from_manifest`
+    used to flatten `ssrDefaults` with an EMPTY props document at
+    registration time, before any caller was known — resolution now happens
+    per-call, inside `render_child`, against the real caller props);
+    `@barefootjs/mojolicious`'s plugin (`before_render` hook's top-level
+    stash seeding); and `@barefootjs/cli`'s Text::Xslate scaffold
+    (`app.psgi`'s `ssr_defaults`/`render_component` helpers). All three now
+    route through the corresponding runtime's `derive_stash_from_defaults` /
+    `_derive_stash_from_defaults`.
+  - `Barefoot\BarefootJS::deriveStashFromDefaults` (`@barefootjs/php`) is now
+    `public` (was `private`) so the blade/twig conformance harnesses — and any
+    caller composing a render by hand, mirroring the Ruby port's own public
+    `derive_vars_from_defaults` — can route through the real production logic
+    instead of re-deriving it.
+
+  `sourceName ?? name` is an identity for every un-aliased prop, so the rename
+  visibility fix itself has no effect on the non-aliased corpus. The merge
+  ORDER flip that makes `propName` resolution possible (defaults-derived
+  `extra` now applies LAST, over the caller's raw props, instead of first)
+  does have two deliberate, narrower behavior changes even for non-aliased
+  props — both intentional alignments with the semantics every other runtime
+  port (`derive_vars_from_defaults` / `_derive_stash_from_defaults` /
+  `derive_stash_from_defaults`) already had, not regressions introduced here:
+
+  - A caller prop passed as explicit `null`/`undefined` now loses to the
+    static default, instead of the explicit nullish value winning. This
+    matches `deriveStashFromDefaults`'s (and every runtime port's)
+    "present and non-nullish" check on `props[propName]` — a flat
+    `{...defaults, ...callerProps}` merge can't express that distinction (any
+    own key wins, nullish or not); routing through the shared helper can.
+  - A caller prop whose name collides with a `propName`-less entry (a
+    signal/memo local, e.g. a prop happens to be named the same as an
+    internal signal getter) now loses to the signal/memo's static value
+    instead of overriding it — `propName`-less entries are, by construction,
+    never sourced from `props` in any port; a flat merge accidentally let a
+    same-named caller prop shadow one anyway.
+
+  Both changes only bite an existing caller relying on one of these two
+  narrow, previously-inconsistent-with-every-other-port behaviors; the common
+  case (a caller prop with a concrete, non-nullish value and no name
+  collision with an internal signal/memo) is unaffected. Graduates the
+  `aliased-destructured-prop` / `composite-row-child-aliased-prop`
+  render-divergence pins for all 7 adapters (erb graduates
+  `aliased-destructured-prop` only — its child-seeding path was already
+  correct). Go's `go run` exit-1 failure (#2525) is untouched by this change
+  and stays pinned.
+
+- aa32f66: Emitted templates now preserve the source module's shape: type
+  declarations, module-scope constants, and module-scope functions are
+  emitted at module scope, once per file, in source order — exported and
+  non-exported together. Previously type declarations were re-emitted per
+  component while values were localised into each component body, a
+  structural mismatch behind a family of consumer type-check breaks: a type
+  alias querying a localised const (`keyof typeof strokePaths`) failed
+  TS2304 and silently widened to `string | number | symbol`; the same query
+  in a props annotation did the same through the synthesized hydration
+  alias; types shared by several components were redeclared per component
+  (TS2300); an exported type no component referenced was pruned from the
+  template entirely (TS2305 on the consumer's `import type`); and exported
+  consts were emitted below non-exported readers (a module-load TDZ crash).
+  Declarations flagged module-level by the analyzer but actually closing
+  over component state are demoted back into the body by the same
+  reachability fixpoint the client bundle uses. Multi-component files merge
+  their module-scope blocks with top-level-statement dedup. Across the
+  compiled `ui/` corpus this removes 286 of 447 consumer-visible type
+  diagnostics with zero new ones, and a new corpus type-check gate
+  (`corpus-typecheck.test.ts`) holds that line. Rendered HTML is unchanged.
+  - @barefootjs/shared@0.31.2
+
 ## 0.31.1
 
 ### Patch Changes
