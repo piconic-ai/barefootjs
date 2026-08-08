@@ -1,7 +1,15 @@
 /**
- * Shrink-only ledger of direct uses of the SIX legacy ad-hoc
+ * Shrink-only ledger of direct uses of the legacy ad-hoc
  * "names bound by a loop callback" mechanisms #2482 replaces with the one
  * shared `BindingScope` service (`packages/jsx/src/scope/binding-scope.ts`).
+ *
+ * #2482 counts SIX such mechanisms; this ledger tracks FIVE textual
+ * patterns because two of the six have no greppable device name of their
+ * own: `csr-substitute.ts`'s `boundStack` is a function-local variable
+ * (migrated in Stage 1 by changing that one function, no ledger pattern
+ * needed), and `html-template.ts`'s `opts.loopBoundNames` shares the
+ * `loopBoundNames` spelling with the per-adapter ref-counted maps, so one
+ * pattern covers both.
  * Modeled in spirit on `map-body-no-silent-divergence.test.ts`'s known-hole
  * ledger: a known-inventory of the current reality that may only shrink as
  * Stages 1-4 migrate call sites onto `BindingScope`, never grow.

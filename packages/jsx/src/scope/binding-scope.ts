@@ -29,16 +29,21 @@
  * "just names you can't resolve against component-level state."
  */
 
-/** How a name inside a `ScopeFrame` came to be bound. */
-export type RowBindingSource = 'item' | 'index' | 'destructure' | 'preamble' | 'param'
+/**
+ * How a name inside a `ScopeFrame` came to be bound — the row shapes
+ * (`'item'`/`'index'`/`'destructure'`/`'preamble'`) for `'loop-row'` frames,
+ * `'param'` for `'callback'` frames. One shared type because both frame
+ * kinds carry the same binding metadata.
+ */
+export type ScopeBindingSource = 'item' | 'index' | 'destructure' | 'preamble' | 'param'
 
-export interface RowBinding {
-  readonly source: RowBindingSource
+export interface ScopeBinding {
+  readonly source: ScopeBindingSource
 }
 
 export interface ScopeFrame {
   readonly kind: 'loop-row' | 'callback'
-  readonly bindings: ReadonlyMap<string, RowBinding>
+  readonly bindings: ReadonlyMap<string, ScopeBinding>
 }
 
 /**
@@ -103,13 +108,13 @@ export class BindingScope {
    *   (the behavior `BindingScope` replaces), not coarse exclusion.
    */
   enterLoopRow(loop: LoopBindingSource): BindingScope {
-    const bindings = new Map<string, RowBinding>()
+    const bindings = new Map<string, ScopeBinding>()
     if (loop.paramBindings && loop.paramBindings.length > 0) {
       for (const b of loop.paramBindings) bindings.set(b.name, { source: 'destructure' })
     } else {
       bindings.set(loop.param, { source: 'item' })
     }
-    if (loop.index) bindings.set(loop.index, { source: 'index' })
+    if (loop.index != null) bindings.set(loop.index, { source: 'index' })
     for (const name of loop.preamble?.declaredNames ?? []) bindings.set(name, { source: 'preamble' })
 
     const frame: ScopeFrame = { kind: 'loop-row', bindings }
@@ -122,7 +127,7 @@ export class BindingScope {
    * parameter list) with source `'param'`. Parent is not mutated.
    */
   enterCallback(params: readonly string[]): BindingScope {
-    const bindings = new Map<string, RowBinding>()
+    const bindings = new Map<string, ScopeBinding>()
     for (const name of params) bindings.set(name, { source: 'param' })
     const frame: ScopeFrame = { kind: 'callback', bindings }
     return new BindingScope([frame, ...this.frames])
@@ -141,7 +146,7 @@ export class BindingScope {
    * means the innermost (most recently entered) frame; `null` when `name`
    * is not bound in any frame.
    */
-  lookup(name: string): { readonly depth: number; readonly frame: ScopeFrame; readonly binding: RowBinding } | null {
+  lookup(name: string): { readonly depth: number; readonly frame: ScopeFrame; readonly binding: ScopeBinding } | null {
     for (let depth = 0; depth < this.frames.length; depth++) {
       const frame = this.frames[depth]
       const binding = frame.bindings.get(name)

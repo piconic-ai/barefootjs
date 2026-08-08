@@ -216,7 +216,7 @@ export { isLowerableLoopDestructure, isLowerableObjectRestDestructure } from './
 
 // Binding scope (#2482) — shared loop-bound-name resolution service
 export { BindingScope } from './scope/binding-scope.ts'
-export type { RowBindingSource, RowBinding, ScopeFrame, LoopBindingSource } from './scope/binding-scope.ts'
+export type { ScopeBindingSource, ScopeBinding, ScopeFrame, LoopBindingSource } from './scope/binding-scope.ts'
 
 // Debug analysis
 export {
