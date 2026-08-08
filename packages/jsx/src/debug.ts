@@ -29,6 +29,7 @@ import { analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import type { WrapReason } from './ir-to-client-js/reactivity.ts'
 import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity.ts'
 import { tokenContainsIdent } from './ir-to-client-js/utils.ts'
+import { identifierCallPattern } from './identifier-pattern.ts'
 
 // =============================================================================
 // Types
@@ -1990,12 +1991,12 @@ function attrValueToString(value: AttrValue): string | null {
 function extractReactiveDeps(expr: string, signalGetters: Set<string>, memoNames: Set<string>): string[] {
   const deps: string[] = []
   for (const getter of signalGetters) {
-    if (new RegExp(`\\b${getter}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(getter).test(expr)) {
       deps.push(getter)
     }
   }
   for (const memo of memoNames) {
-    if (new RegExp(`\\b${memo}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(memo).test(expr)) {
       deps.push(memo)
     }
   }
@@ -2012,7 +2013,7 @@ function extractSetterRefs(expr: string, signalGetters: Set<string>): string[] {
   }
   // Also detect signal getter reads in handler
   for (const getter of signalGetters) {
-    if (new RegExp(`\\b${getter}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(getter).test(expr)) {
       refs.push(getter)
     }
   }

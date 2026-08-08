@@ -24,6 +24,7 @@
 
 import ts from 'typescript'
 import { PROPS_PARAM } from './utils.ts'
+import { identifierPattern } from '../identifier-pattern.ts'
 
 /**
  * Rename every value-position reference to `propsObjectName` in `code`
@@ -36,7 +37,7 @@ export function rewritePropsObjectRef(code: string, propsObjectName: string | nu
   if (srcPropsName === PROPS_PARAM) return code
 
   // Quick exit when the name doesn't appear at all.
-  if (!new RegExp(`\\b${srcPropsName}\\b`).test(code)) return code
+  if (!identifierPattern(srcPropsName).test(code)) return code
 
   const sourceFile = ts.createSourceFile(
     'init-body.ts',

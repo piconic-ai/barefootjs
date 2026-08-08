@@ -22,6 +22,7 @@ import type {
 } from './adapters/interface.ts'
 import { tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
+import { identifierPattern } from './identifier-pattern.ts'
 
 export interface RelocateEnv {
   /**
@@ -713,7 +714,7 @@ function scanRefsByName(
 ): Map<string, ts.Identifier[]> {
   const result = new Map<string, ts.Identifier[]>()
   for (const name of bindings.keys()) {
-    const re = new RegExp(`\\b${name}\\b`)
+    const re = identifierPattern(name)
     if (re.test(text)) result.set(name, [])
   }
   return result

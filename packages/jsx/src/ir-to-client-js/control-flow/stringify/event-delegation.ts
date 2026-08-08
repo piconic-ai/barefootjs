@@ -34,6 +34,7 @@
 
 import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils.ts'
 import { extractFreeIdentifiersFromText } from '../../csr-substitute.ts'
+import { identifierPattern } from '../../../identifier-pattern.ts'
 import type {
   EventDelegationPlan,
   KeyedItemLookup,
@@ -215,7 +216,7 @@ function emitKeyedLookup(
     const rawKey = nested.key ?? ''
     const innerKeyExpr = nested.paramBindings && nested.paramBindings.length > 0
       ? substituteLoopBindings(rawKey, nested.paramBindings, 'item')
-      : rawKey.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
+      : rawKey.replace(identifierPattern(nested.param, 'g'), 'item')
     const outerRef = hasBindings ? '__bfLoopItem' : param
     ls.push(`      const ${nested.param} = ${outerRef} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
   }
