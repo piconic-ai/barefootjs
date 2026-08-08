@@ -18,6 +18,7 @@ import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils.
 import { expandConstantForReactivity } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
+import { identifierCallPattern } from '../identifier-pattern.ts'
 
 /**
  * Phase 2 reactivity detection: determines if a code expression needs `createEffect`
@@ -146,13 +147,13 @@ export function needsEffectWrapper(
   freeIdentifiers?: ReadonlySet<string>,
 ): boolean {
   for (const signal of ctx.signals) {
-    if (new RegExp(`\\b${signal.getter}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(signal.getter).test(expr)) {
       return true
     }
   }
 
   for (const memo of ctx.memos) {
-    if (new RegExp(`\\b${memo.name}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(memo.name).test(expr)) {
       return true
     }
   }

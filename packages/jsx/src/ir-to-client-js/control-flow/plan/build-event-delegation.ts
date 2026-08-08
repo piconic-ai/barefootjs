@@ -11,6 +11,7 @@
 
 import type { TopLevelLoop, BranchLoop, LoopChildEvent } from '../../types.ts'
 import { buildChainedArrayExpr, varSlotId, substituteLoopBindings } from '../../utils.ts'
+import { identifierPattern } from '../../../identifier-pattern.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import type {
   EventDelegationPlan,
@@ -138,7 +139,7 @@ function buildKeyedOrIndexLookup(args: {
     // we substitute bindings with `item.<path>` directly (#951).
     const keyWithItem = hasBindings
       ? substituteLoopBindings(args.key, args.paramBindings!, 'item')
-      : args.key.replace(new RegExp(`\\b${args.param}\\b`, 'g'), 'item')
+      : args.key.replace(identifierPattern(args.param, 'g'), 'item')
     return {
       kind: 'keyed',
       arrayExpr: args.array,
