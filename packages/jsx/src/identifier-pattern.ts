@@ -30,6 +30,12 @@
  * instead, per #1267).
  */
 
+// Duplicate regex flags throw at construction ('gu' + 'u' -> SyntaxError),
+// so `u` is added only when the caller didn't already pass it.
+function withUnicodeFlag(flags: string): string {
+  return flags.includes('u') ? flags : `${flags}u`
+}
+
 /** Escape regex metacharacters in a literal identifier before interpolation. */
 export function escapeIdentifierForRegex(name: string): string {
   return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -57,7 +63,7 @@ export const ID_BOUNDARY_AFTER = '(?![\\p{ID_Continue}$])'
  */
 export function identifierPattern(name: string, flags = ''): RegExp {
   const esc = escapeIdentifierForRegex(name)
-  return new RegExp(`${ID_BOUNDARY_BEFORE}${esc}${ID_BOUNDARY_AFTER}`, `${flags}u`)
+  return new RegExp(`${ID_BOUNDARY_BEFORE}${esc}${ID_BOUNDARY_AFTER}`, withUnicodeFlag(flags))
 }
 
 /**
@@ -69,5 +75,5 @@ export function identifierPattern(name: string, flags = ''): RegExp {
  */
 export function identifierCallPattern(name: string, flags = ''): RegExp {
   const esc = escapeIdentifierForRegex(name)
-  return new RegExp(`${ID_BOUNDARY_BEFORE}${esc}\\s*\\(`, `${flags}u`)
+  return new RegExp(`${ID_BOUNDARY_BEFORE}${esc}\\s*\\(`, withUnicodeFlag(flags))
 }

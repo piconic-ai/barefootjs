@@ -158,3 +158,13 @@ describe('$-prefixed loop param compiles identically to a plain-named one (#2592
     expect(js).toContain('$item().id')
   })
 })
+
+describe('flags handling', () => {
+  test("passing flags that already include 'u' does not throw (no duplicate flag)", () => {
+    const p = identifierPattern('item', 'gu')
+    expect(p.flags).toBe('gu')
+    const c = identifierCallPattern('item', 'u')
+    expect(c.flags).toBe('u')
+    expect('a item b item'.replace(identifierPattern('item', 'gu'), 'x')).toBe('a x b x')
+  })
+})
