@@ -27,7 +27,8 @@ import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 import { checkRichTypeMethodCalls } from './rich-type-refusal.ts'
-import { ErrorCodes } from './errors.ts'
+import { ErrorCodes, createError } from './errors.ts'
+import { collectComponentNamesFromIR } from './ir-to-client-js/child-components.ts'
 
 /**
  * Extended compile options with required adapter
@@ -165,6 +166,78 @@ function compileMultipleComponents(
     decideClientOnlyElision(componentIR.root)
 
     entries.push({ componentIR, ctx })
+  }
+
+  // BF048 — refuse loudly when an emitted component template references a
+  // same-file sibling that was in `componentNames` (so `listComponentFunctions`
+  // treated it as a component to compile — the 'use client' branch of #932
+  // does exactly that for multi-return JSX dispatch shapes) but never made
+  // it into `entries` (its own `analyzeComponent`/`jsxToIR` pass produced no
+  // usable IR — most commonly a top-level `switch` dispatch, which
+  // `visitComponentBody` preserves as a verbatim init statement rather than
+  // folding into `conditionalReturns`, so `ctx.jsxReturn` stays null).
+  // Pre-fix this compiled clean and the emitted `renderChild`/`initChild`/
+  // `createComponent` call threw `ReferenceError: <Name> is not defined` at
+  // SSR/hydrate time (#2556) — the silence itself is the bug. Detection
+  // walks the IR component-reference graph (the same walk that drives
+  // `@bf-child` import markers, `collectComponentNamesFromIR`), never the
+  // emitted template text.
+  //
+  // Restricted to TOP-LEVEL declarations: `listComponentFunctions` recurses
+  // into function bodies, so `componentNames` also carries component-scope
+  // local factories (`const Inner = () => <span/>` inside a component).
+  // Those never compile to standalone templates either, but their call
+  // sites are handled by the JSX-function-inlining pass — flagging them
+  // here would fail legal programs (the ir-dynamic-tag / resolver-alias
+  // corpus shapes). Only a name declared at module top level can be the
+  // dropped-sibling shape this diagnostic exists for.
+  //
+  // Restricted to 'use client' FILES: only the 'use client' branch of #932
+  // widens `listComponentFunctions` to multi-return dispatch shapes; in a
+  // non-client file an uncompiled sibling is preserved verbatim (that is
+  // the escape hatch the message below recommends), so flagging it there
+  // would fail exactly the programs the fix tells users to write.
+  if (entries.some(e => e.componentIR.metadata.isClientComponent)) {
+    const topLevelNames = new Set<string>()
+    {
+      const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+      for (const stmt of sf.statements) {
+        if (ts.isFunctionDeclaration(stmt) && stmt.name) topLevelNames.add(stmt.name.text)
+        else if (ts.isVariableStatement(stmt)) {
+          for (const d of stmt.declarationList.declarations) {
+            if (ts.isIdentifier(d.name)) topLevelNames.add(d.name.text)
+          }
+        }
+      }
+    }
+    const compiledNames = new Set(entries.map(e => e.componentIR.metadata.componentName))
+    const uncompiledSiblings = new Set(
+      componentNames.filter(name => !compiledNames.has(name) && topLevelNames.has(name)),
+    )
+    if (uncompiledSiblings.size > 0) {
+      for (const { componentIR } of entries) {
+        const referenced = new Set<string>()
+        collectComponentNamesFromIR([componentIR.root], referenced)
+        for (const name of referenced) {
+          if (!uncompiledSiblings.has(name)) continue
+          errors.push(createError(
+            ErrorCodes.SIBLING_COMPONENT_NOT_COMPILED,
+            componentIR.root.loc,
+            {
+              message:
+                `Component '${componentIR.metadata.componentName}' references sibling ` +
+                `'<${name}>', which did not compile to a template in this 'use client' file ` +
+                `(likely a multi-return JSX dispatch — a \`switch\` or \`if\`/\`else\` chain ` +
+                `across multiple JSX-returning branches). This reference would throw ` +
+                `\`ReferenceError: ${name} is not defined\` at SSR/hydrate time. Extract '${name}' ` +
+                `to a separate non-"use client" file (where #932 preserves it verbatim), or ` +
+                `rewrite it as a single-return ternary/conditional chain so the component ` +
+                `pipeline can compile it.`,
+            },
+          ))
+        }
+      }
+    }
   }
 
   // CSS layer prefixing must be FILE-WIDE: per-IR application diverges the

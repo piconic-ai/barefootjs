@@ -43,6 +43,16 @@ export const ErrorCodes = {
   // ReferenceError at hydrate. Fail loud with workaround pointers
   // (#1414 cell 5).
   JSX_BRANCH_LOCAL_IN_CALLBACK: 'BF047',
+  // A `'use client'` file's emitted template references a same-file
+  // sibling component (`<NavIcon .../>`, a `.map()` child, …) whose own
+  // body never produced a template — most commonly a multi-return JSX
+  // dispatch (`switch` / `if`-`else` chain) that `compileMultipleComponents`
+  // silently dropped from its output. Pre-fix this compiled clean and threw
+  // `ReferenceError: <Name> is not defined` at SSR/hydrate time (#2556). The
+  // equivalent shape in a NON-"use client" file is fine — #932 preserves the
+  // helper verbatim instead of compiling it as a component — so this code
+  // fires only for the client-component compilation path.
+  SIBLING_COMPONENT_NOT_COMPILED: 'BF048',
 
   // Import errors (BF050-BF059)
   SHARED_PROGRAM_REQUIRED: 'BF050',
@@ -145,6 +155,14 @@ const errorMessages: Record<ErrorCode, string> = {
   [ErrorCodes.JSX_BRANCH_LOCAL_IN_CALLBACK]:
     "JSX-typed local declared inside an `if`-block cannot be referenced from a callback body (ref / event handler). " +
     "Render it as a child instead: `<div ref={...}>{local}</div>`.",
+
+  [ErrorCodes.SIBLING_COMPONENT_NOT_COMPILED]:
+    "Referenced component did not compile to a template, so this reference would throw " +
+    "`ReferenceError` at render time. Multi-return JSX dispatch (a `switch` or `if`/`else` " +
+    "chain across multiple JSX-returning branches) cannot compile as a component in a " +
+    "'use client' file. Extract it to a separate non-\"use client\" file (where it is preserved " +
+    "verbatim, see #932), or rewrite it as a single-return ternary/conditional chain so the " +
+    "component pipeline can compile it.",
 
   [ErrorCodes.SHARED_PROGRAM_REQUIRED]:
     'Shared ts.Program required for type-based reactivity classification. This source imports a Reactive<T>-branded library (e.g. @barefootjs/form) whose getters cannot be classified by regex alone. Pass `options.program` (built via `createProgramForCorpus`) so the analyzer can resolve the brand through the TypeChecker.',
