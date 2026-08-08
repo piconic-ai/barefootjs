@@ -504,8 +504,18 @@ function visit(
     collectAmbientGlobals(node, ctx)
   }
 
-  // Module-level constants (outside component)
-  if (ts.isVariableStatement(node) && !ctx.componentNode) {
+  // Module-level constants (outside component). Ambient statements
+  // (`declare let X: T`) are type-only contracts with no runtime binding —
+  // collectAmbientGlobals above already tracks them for BF052, and
+  // re-emitting one as a runtime `let` would shadow the real global, so
+  // they must not reach collectConstant. (Previously excluded only by
+  // accident: this path required an initializer, which `declare`
+  // statements never have — the #2589 uninitialized-`let` fix removed
+  // that gate, so the exclusion is now explicit.)
+  const isDeclareStatement =
+    ts.isVariableStatement(node) &&
+    (node.modifiers?.some(m => m.kind === ts.SyntaxKind.DeclareKeyword) ?? false)
+  if (ts.isVariableStatement(node) && !ctx.componentNode && !isDeclareStatement) {
     const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
     const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
     const isModuleClientDirective = hasLeadingClientDirectiveOnStatement(node, ctx.sourceFile)
@@ -525,9 +535,15 @@ function visit(
         }
         continue
       }
+      // An initializer is required for `const` (TS grammar enforces this),
+      // but an uninitialized module-scope `let` (e.g. `let pending: number`)
+      // is legal source and must still be collected — mirroring the
+      // component-scope path below (line ~687), which has never gated on
+      // `decl.initializer` — so its declared type carries into the emitted
+      // template instead of the declaration vanishing outright (#2589).
       if (
         ts.isIdentifier(decl.name) &&
-        decl.initializer &&
+        (decl.initializer || isLet) &&
         !isArrowComponentFunction(decl)
       ) {
         collectConstant(decl, ctx, true, isLet ? 'let' : 'const', isExported)
@@ -3203,6 +3219,7 @@ function collectConstant(
     value,
     parsed,
     typedValue: typedValue !== value ? typedValue : undefined,
+    typeAnnotation: node.type ? node.type.getText(ctx.sourceFile) : undefined,
     valueBranches,
     declarationKind,
     isExported,

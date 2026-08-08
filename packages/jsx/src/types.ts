@@ -1882,6 +1882,14 @@ export interface ConstantInfo {
   parsed?: ParsedExpr
   /** Value with TypeScript type annotations preserved, for .tsx output */
   typedValue?: string
+  /**
+   * The declaration's explicit type annotation, verbatim from source
+   * (`node.type.getText()`), when the author wrote one. Distinct from
+   * `type`, which is also populated by inference from the initializer —
+   * emitters must only print THIS field, never an inferred type, onto a
+   * declaration (#2589).
+   */
+  typeAnnotation?: string
   valueBranches?: string[]
   declarationKind: 'const' | 'let'
   isExported?: boolean
