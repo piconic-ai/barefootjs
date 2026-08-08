@@ -31,6 +31,7 @@ import {
   JsxAdapter,
   isBooleanAttr,
   rewriteImportsForTemplate,
+  rewriteDynamicImportsInSource,
   emitIRNode,
   emitAttrValue,
   buildLoopChainExpr,
@@ -195,9 +196,19 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // `generateModuleScopeDeclarations`; they join the scan text so a
     // helper referenced only from a hoisted declaration still pulls its
     // import.
-    const component = this.generateComponent(ir)
-    const types = this.generateTypes(ir)
-    const moduleConstants = this.generateModuleScopeDeclarations(ir)
+    // Re-anchor relative specifiers that ride along INSIDE emitted source
+    // text — dynamic `import('./x')` and `typeof import('./x')` — which
+    // never reach `metadata.templateImports` and so are invisible to
+    // `rewriteImportsForTemplate` below (#2588). Applied to every section
+    // that can carry verbatim source: module-scope declarations, the
+    // component body's local handlers, and type declarations.
+    const reanchor = this.rewriteRelativeImport
+    const withRewrittenDynamicImports = <T extends string | null>(text: T): T =>
+      reanchor && text ? (rewriteDynamicImportsInSource(text, reanchor) as T) : text
+
+    const component = withRewrittenDynamicImports(this.generateComponent(ir))
+    const types = withRewrittenDynamicImports(this.generateTypes(ir))
+    const moduleConstants = withRewrittenDynamicImports(this.generateModuleScopeDeclarations(ir))
     const componentCode = [moduleConstants, types, component].filter(Boolean).join('\n')
     const imports = this.generateImports(ir, componentCode)
 

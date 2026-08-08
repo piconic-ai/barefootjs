@@ -89,7 +89,7 @@ export type {
 } from './adapters/interface.ts'
 export { JsxAdapter } from './adapters/jsx-adapter.ts'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
-export { rewriteImportsForTemplate } from './adapters/template-imports.ts'
+export { rewriteImportsForTemplate, rewriteDynamicImportsInSource } from './adapters/template-imports.ts'
 export { emitParsedExpr, groupBinaryOperand, isStringTypedOperand, isStringConcatBinary } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
