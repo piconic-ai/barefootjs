@@ -840,9 +840,10 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
     localFunctions: a.localFunctions,
     imports: a.imports,
     ambientGlobals: a.ambientGlobals,
-    // `valueBoundNames()` already returns a fresh Set per call — a stable
+    // `valueBoundNames()` returns a per-instance set that is never
+    // mutated (cached on the immutable `BindingScope`) — a stable
     // snapshot even if `ctx.scope` is later reassigned by an enclosing
-    // visitor frame.
+    // visitor frame, which swaps the instance rather than mutating it.
     loopParams: boundNames,
     checker: a.checker,
   }

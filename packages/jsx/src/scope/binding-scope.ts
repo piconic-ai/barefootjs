@@ -165,12 +165,21 @@ export class BindingScope {
    * other consumer class and why the two must not be conflated.
    */
   boundNames(): ReadonlySet<string> {
+    if (this.boundNamesCache) return this.boundNamesCache
     const names = new Set<string>()
     for (const frame of this.frames) {
       for (const name of frame.bindings.keys()) names.add(name)
     }
+    this.boundNamesCache = names
     return names
   }
+
+  // Both name queries are hot (shadow guards, slot/reactivity classifiers,
+  // binding-env memo keying) and the scope is immutable, so each computes
+  // once per instance. Callers receive the cached set as ReadonlySet —
+  // never mutate it.
+  private boundNamesCache: ReadonlySet<string> | undefined
+  private valueBoundNamesCache: ReadonlySet<string> | undefined
 
   /**
    * Union of names bound via `'item'`/`'index'`/`'destructure'` sources
@@ -206,6 +215,7 @@ export class BindingScope {
    *     These call `valueBoundNames()`.
    */
   valueBoundNames(): ReadonlySet<string> {
+    if (this.valueBoundNamesCache) return this.valueBoundNamesCache
     const names = new Set<string>()
     for (const frame of this.frames) {
       for (const [name, binding] of frame.bindings) {
@@ -214,6 +224,7 @@ export class BindingScope {
         }
       }
     }
+    this.valueBoundNamesCache = names
     return names
   }
 
