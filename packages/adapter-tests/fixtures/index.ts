@@ -112,6 +112,12 @@ import { fixture as nestedElements } from './nested-elements'
 // Priority 3: Conditionals
 import { fixture as ternary } from './ternary'
 import { fixture as nestedTernary } from './nested-ternary'
+// #2470: nested ternary chain whose OUTER condition is non-reactive (module
+// const, not a signal) — the branch the reactive `nestedTernary` above
+// doesn't exercise. Hono used to double-wrap the nested ternary in `{…}`
+// while it sat in the outer ternary's bare alternate position, breaking the
+// emitted .tsx's parse.
+import { fixture as nestedTernaryBareBranch } from './nested-ternary-bare-branch'
 import { fixture as conditionPositionTernary } from './condition-position-ternary'
 import { fixture as topLevelTernary } from './top-level-ternary'
 import { fixture as logicalAnd } from './logical-and'
@@ -532,6 +538,7 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 3: Conditionals
   ternary,
   nestedTernary,
+  nestedTernaryBareBranch,
   conditionPositionTernary,
   topLevelTernary,
   logicalAnd,
