@@ -1302,12 +1302,21 @@ function transformJsxElement(
  *  - `<textarea>` with no children gains a NON-reactive expression child
  *    (the initial value as element content — updates keep flowing through
  *    the `.value` effect, deliberately not a live text slot);
- *  - `<select>` distributes `selected={(value) === 'opt'}` onto each
- *    statically-valued `<option>` (incl. under `<optgroup>`/fragments) —
- *    the exact per-option comparison shape the `select-option-selected`
- *    fixture already proves across every adapter. Options rendered by a
- *    dynamic loop can't be statically distributed and are left to the
- *    hydrate-time effect (tracked with #2466 on the #2464 thread).
+ *  - `<select>` distributes `selected={(value) === optValue}` onto each
+ *    `<option>` (incl. under `<optgroup>`/fragments, and under a `.map()`
+ *    loop body) — the exact per-option comparison shape the
+ *    `select-option-selected` fixture already proves across every adapter.
+ *    A literal `optValue` (e.g. `value="banana"`) compares by
+ *    `JSON.stringify`; an expression `optValue` (a static dynamic value, or
+ *    a loop row reading its item — e.g. `value={o.id}`) compares against
+ *    the expression text directly. For a loop row this makes `selected` an
+ *    ordinary per-item reactive attribute like any other (`o.id`, the row's
+ *    text) — it rides the SAME loop-plan machinery
+ *    (`collectLoopChildReactiveAttrs` → `emitAttrUpdate`, which special-cases
+ *    `selected` as a boolean DOM PROPERTY write, not just an HTML attribute)
+ *    that already reruns per row on item change and per outer-signal change,
+ *    so selectedness is recomputed instead of staying attached to whichever
+ *    physical `<option>` a reorder happened to rewrite in place (#2466).
  */
 function lowerFormControlValueSsr(
   tagName: string,
@@ -1342,11 +1351,28 @@ function lowerFormControlValueSsr(
     return
   }
 
-  const selectedFor = (optValue: string): AttrValue =>
+  const selectedForLiteral = (optValue: string): AttrValue =>
     AttrValueOf.expression(
       `(${expr}) === ${JSON.stringify(optValue)}`,
       templateExpr !== undefined
         ? { templateExpr: `(${templateExpr}) === ${JSON.stringify(optValue)}` }
+        : undefined,
+    )
+  // An expression-valued `option value` — the shape every `.map()` loop row
+  // uses (`value={o.id}`) since the whole point of the loop is a per-item
+  // value. Compares the controlled value directly against the option's own
+  // value EXPRESSION TEXT (never JSON-stringified — it is JS, not a string
+  // literal). Inside a loop row this expression reads both the row item
+  // (`o.id`) and the outer controlled signal (`expr`, e.g. `val()`), which
+  // is exactly the "reads both" shape `collectLoopChildReactiveAttrs` /
+  // `classifyLazyBinding` already know how to place into both `applyItem`
+  // (row changed) and `applyOuter` (controlled value changed) — no new loop
+  // machinery, just one more per-row reactive attribute (#2466).
+  const selectedForExpr = (optExpr: string, optTemplateExpr: string | undefined): AttrValue =>
+    AttrValueOf.expression(
+      `(${expr}) === (${optExpr})`,
+      templateExpr !== undefined || optTemplateExpr !== undefined
+        ? { templateExpr: `(${templateExpr ?? expr}) === (${optTemplateExpr ?? optExpr})` }
         : undefined,
     )
   const distribute = (nodes: IRNode[]): void => {
@@ -1354,9 +1380,18 @@ function lowerFormControlValueSsr(
       if (n.type === 'element' && n.tag === 'option') {
         if (n.attrs.some(a => a.name === 'selected')) continue
         const optValue = n.attrs.find(a => a.name === 'value')
-        if (!optValue || optValue.value.kind !== 'literal') continue
-        n.attrs.push({ name: 'selected', value: selectedFor(optValue.value.value), loc: n.loc })
-      } else if (n.type === 'fragment' || (n.type === 'element' && n.tag === 'optgroup')) {
+        if (!optValue) continue
+        if (optValue.value.kind === 'literal') {
+          n.attrs.push({ name: 'selected', value: selectedForLiteral(optValue.value.value), loc: n.loc })
+        } else if (optValue.value.kind === 'expression') {
+          const selected = selectedForExpr(optValue.value.expr, optValue.value.templateExpr)
+          n.attrs.push({ name: 'selected', value: selected, loc: n.loc })
+        }
+      } else if (
+        n.type === 'fragment' ||
+        n.type === 'loop' ||
+        (n.type === 'element' && n.tag === 'optgroup')
+      ) {
         distribute(n.children)
       }
     }
