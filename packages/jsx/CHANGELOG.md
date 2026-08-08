@@ -1,5 +1,14 @@
 # @barefootjs/jsx
 
+## 0.31.3
+
+### Patch Changes
+
+- 6be666e: Add `BindingScope`, the shared scoped binding-resolution service for loop-callback-bound names (#2482 stage 0). New public export only — no existing code path is migrated yet; a shrink-only ratchet test pins the current inventory of the six legacy ad-hoc scope mechanisms it will replace.
+- 2677adf: Migrate the compiler's loop-callback scope tracking onto `BindingScope` (#2482 stage 1a) and bind `.map()` preamble locals into the scope, so a preamble-declared local shadowing a same-named module/component constant is no longer const-folded into every row. Adds `BindingScope.valueBoundNames()` for reactivity/slot classifiers.
+- 35cd538: Preserve explicit `let` type annotations in emitted `.tsx` templates (function scope and module scope), fixing TS7034/TS7005/TS2339-on-`never` under strict (#2589).
+  - @barefootjs/shared@0.31.3
+
 ## 0.31.2
 
 ### Patch Changes
