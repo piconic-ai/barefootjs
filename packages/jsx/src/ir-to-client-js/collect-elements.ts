@@ -332,8 +332,8 @@ export function collectInnerLoops(
         const innerPreambleNames = preambleNamesOf(n)
         if (ctx) {
           for (const child of n.children) {
-            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, false, innerPreambleNames))
-            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, false, innerPreambleNames))
+            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, false, innerPreambleNames, n.index))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, false, innerPreambleNames, n.index))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
         }
@@ -376,6 +376,7 @@ export function collectInnerLoops(
               n.param,
               n.paramBindings,
               innerPreambleNames,
+              n.index,
             ))
           }
         }
@@ -672,7 +673,7 @@ export function collectElements(
       const childHandlers: string[] = []
       const bindings = projectionInner
         ? emptyLoopChildBindings()
-        : collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings, preambleNamesOf(l))
+        : collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings, preambleNamesOf(l), l.index)
       if (!projectionInner) {
         for (const child of l.children) {
           childHandlers.push(...collectEventHandlersFromIR(child))
@@ -1147,7 +1148,7 @@ function collectBranchLoops(
       // which caused reactive reads inside simple loop bodies to silently
       // no-op for existing items.
       const branchBindings = ctx && !projectionInner
-        ? collectLoopChildBindings(n.children, ctx, siblingOffsets, n.param, n.paramBindings, preambleNamesOf(n))
+        ? collectLoopChildBindings(n.children, ctx, siblingOffsets, n.param, n.paramBindings, preambleNamesOf(n), n.index)
         : emptyLoopChildBindings()
 
       loops.push({
@@ -1347,6 +1348,12 @@ export function collectLoopChildBindings(
    * `collectLoopChildReactiveAttrs`. Omitted for a loop with no preamble.
    */
   preambleNames?: ReadonlySet<string>,
+  /**
+   * The loop's index param name (`.map((item, i) => ...)`'s `i`), when
+   * present — folded into the shadow guard (Copilot review on #2595) so
+   * an index-shadowing const doesn't get const-folded either.
+   */
+  loopIndex?: string | null,
 ): LoopChildBindings {
   const bindings = emptyLoopChildBindings()
   for (const child of children) {
@@ -1356,10 +1363,10 @@ export function collectLoopChildBindings(
     // `collectLoopChildConditionals`, which gives each its own insert() +
     // arm-scoped attrs/texts (`LoopChildBranchSummary.reactiveAttrs` /
     // `.reactiveTexts`) — descending into them here too would double-bind.
-    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings, true, preambleNames))
-    bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, loopParam, loopParamBindings, true, preambleNames))
+    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex))
+    bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex))
     bindings.refs.push(...collectLoopChildRefs(child))
-    bindings.conditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames))
+    bindings.conditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex))
   }
   return bindings
 }
@@ -1380,9 +1387,14 @@ export function collectLoopChildConditionals(
    * value instead of wiring an `insert()`).
    */
   preambleNames?: ReadonlySet<string>,
+  /**
+   * The loop's index param name, when present — see
+   * `collectLoopChildBindings`'s doc comment (Copilot review on #2595).
+   */
+  loopIndex?: string | null,
 ): LoopChildConditional[] {
   const conditionals: LoopChildConditional[] = []
-  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames)
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
 
   // Widen the source-level "references loop param" check so destructured
   // callbacks fire too — the pattern text `[, cfg]` never word-matches on
@@ -1433,8 +1445,8 @@ export function collectLoopChildConditionals(
         condition: expanded.expr,
         whenTrueHtml,
         whenFalseHtml,
-        whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames),
-        whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames),
+        whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
+        whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
         ...(expanded.freeIds !== undefined && { conditionFreeIdentifiers: expanded.freeIds }),
       })
     },
@@ -1458,19 +1470,21 @@ function summarizeLoopChildBranch(
   loopParamBindings?: readonly import('../types.ts').LoopParamBinding[],
   /** Enclosing loop's preamble locals (#2447) — see `collectLoopChildConditionals`. */
   preambleNames?: ReadonlySet<string>,
+  /** Enclosing loop's index param name — see `collectLoopChildConditionals` (Copilot review on #2595). */
+  loopIndex?: string | null,
 ): LoopChildBranchSummary {
   const inner = collectInnerLoops([node], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
   return {
     childComponents: collectConditionalBranchChildComponents(node),
     innerLoops: inner.length > 0 ? inner : undefined,
-    conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames),
+    conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
     events: collectConditionalBranchEvents(node),
     // Loop-param-aware — reuses the flat loop-item collectors scoped to just
     // this branch's subtree. Both already stop descending into any further
     // nested reactive conditional (own insert()/arm), so calling them here
     // on the branch root yields exactly this branch's direct bindings
     // without re-collecting what a nested arm already owns (#2347).
-    reactiveAttrs: collectLoopChildReactiveAttrs(node, ctx, loopParam, loopParamBindings, true, preambleNames),
+    reactiveAttrs: collectLoopChildReactiveAttrs(node, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex),
     // Skip ONLY when the branch's entire content is a single bare
     // `expression` (no wrapping element) that MAY yield a live DOM node —
     // i.e. it contains a call anywhere (`node.hasFunctionCalls`, computed
@@ -1520,6 +1534,6 @@ function summarizeLoopChildBranch(
     // two can't disagree on shape).
     reactiveTexts: node.type === 'expression' && node.hasFunctionCalls
       ? []
-      : collectLoopChildReactiveTexts(node, ctx, loopParam, loopParamBindings, true, preambleNames),
+      : collectLoopChildReactiveTexts(node, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex),
   }
 }

@@ -22,24 +22,33 @@ import { BindingScope } from '../scope/binding-scope.ts'
 
 /**
  * Build the `BindingScope` for one loop row's own bindings — item /
- * destructured param names plus (when supplied) the `.map()` callback's
- * preamble locals (#2447) — for the `expandConstantForReactivity` shadow
- * guard (#2482 Stage 1b). `undefined` when there's no enclosing loop
+ * destructured param / index names plus (when supplied) the `.map()`
+ * callback's preamble locals (#2447) — for the `expandConstantForReactivity`
+ * shadow guard (#2482 Stage 1b). `undefined` when there's no enclosing loop
  * (`loopParam` unset), matching every caller's existing "no loop" shape.
- * Loop `index` is intentionally NOT included — none of these collectors
- * carry it separately, matching `classifyReactivity`'s own
- * `loopParam`/`loopParamBindings`-only signature (index shadowing a
- * const is comparatively rare and out of scope for this pass).
+ *
+ * `loopIndex` (Copilot review on #2595): a `.map((item, i) => ...)`
+ * callback's second param is a real row-scoped binding exactly like
+ * `item` — an `i`-shadows-a-module-const attr/text (e.g.
+ * `data-idx={/* @client *\/ i}`) const-folds to the outer value exactly
+ * like an item-param shadow does when the index name isn't in scope.
+ * Only guarded when the CALLER passes it in, though — none of the
+ * `collectLoopChild*` collectors' own callers threaded the IR loop's
+ * `index` field through before this fix (see each call site's own
+ * `undefined`/omitted-arg default), so `undefined` here still means "not
+ * guarded," not "no index param."
  */
 export function buildLoopRowScope(
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
   preambleNames?: ReadonlySet<string>,
+  loopIndex?: string | null,
 ): BindingScope | undefined {
   if (!loopParam) return undefined
   return BindingScope.EMPTY.enterLoopRow({
     param: loopParam,
     paramBindings: loopParamBindings,
+    index: loopIndex,
     preamble: preambleNames && preambleNames.size > 0 ? { declaredNames: [...preambleNames] } : undefined,
   })
 }
@@ -585,6 +594,9 @@ function traverseForComponents(
  * preamble locals (#2447), when known — folded into the `expandConstantForReactivity`
  * shadow guard via `buildLoopRowScope` so a preamble local shadowing a
  * component/module const doesn't get const-folded here.
+ *
+ * `loopIndex` (Copilot review on #2595): the loop's index param name
+ * (`.map((item, i) => ...)`'s `i`), when known — see `buildLoopRowScope`.
  */
 export function collectLoopChildReactiveTexts(
   node: IRNode,
@@ -593,9 +605,10 @@ export function collectLoopChildReactiveTexts(
   loopParamBindings?: readonly LoopParamBinding[],
   stopAtReactiveConditionals = false,
   preambleNames?: ReadonlySet<string>,
+  loopIndex?: string | null,
 ): LoopChildReactiveText[] {
   const texts: LoopChildReactiveText[] = []
-  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames)
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
   walkIR(node, false, {
     // Skip loop/async/if-statement subtrees — the original walker omitted
     // them; they have their own scopes (inner-loop reconciliation, async
@@ -653,6 +666,8 @@ export function collectLoopChildReactiveTexts(
  * `stopAtReactiveConditionals` (#2347): see `collectLoopChildReactiveTexts` —
  * same semantics. Pass true only when the caller also separately collects
  * nested reactive conditionals and gives each its own `insert()`.
+ *
+ * `loopIndex` (Copilot review on #2595): see `collectLoopChildReactiveTexts`.
  */
 /** Does any name in `names` appear in `set`? Iterates rather than
  *  spreading — this runs per attribute (Copilot review). */
@@ -668,9 +683,10 @@ export function collectLoopChildReactiveAttrs(
   loopParamBindings?: readonly LoopParamBinding[],
   stopAtReactiveConditionals = false,
   preambleNames?: ReadonlySet<string>,
+  loopIndex?: string | null,
 ): LoopChildReactiveAttr[] {
   const attrs: LoopChildReactiveAttr[] = []
-  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames)
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
   traverseElements(node, (el) => {
     if (el.slotId) {
       for (const attr of el.attrs) {
