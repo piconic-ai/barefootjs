@@ -13,6 +13,7 @@ import type { ClientJsContext } from './types.ts'
 import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { derivesScopeFromSlot } from '../adapters/child-scope.ts'
+import { BindingScope } from '../scope/binding-scope.ts'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -1572,19 +1573,26 @@ export interface TemplateOptions {
   csrEnv?: CsrEnv
   loopDepth?: number
   /**
-   * Names bound by the ENCLOSING loops' callback params (item / index /
-   * destructured binding names), accumulated by the `loop` case as the
-   * recursion descends (#2222). Inside a loop body, `csrSubstitute`
-   * receives each expression in isolation — no enclosing arrow text — so
-   * its own bound-name tracking can't see the loop binding; the `loop`
-   * case instead filters these names out of the child recursion's
-   * `csrEnv`, so an inlinable const / signal / memo whose name is
-   * shadowed by a loop param never substitutes at the shadowed
-   * occurrence. Scope-accurate per nesting level (the CURRENT level's
-   * own `transformExpr` — e.g. the loop's array-source expression —
-   * keeps the unfiltered env).
+   * `BindingScope` for the ENCLOSING loops' callback bindings (item /
+   * index / destructured names / preamble locals), threaded through the
+   * recursion one `enterLoopRow` per nesting level (#2482 Stage 1b —
+   * migrated from the ad-hoc flat loop-bound-names `ReadonlySet<string>`
+   * this field replaces). Inside a loop body, `csrSubstitute` receives each
+   * expression in isolation — no enclosing arrow text — so its own
+   * bound-name tracking can't see the loop binding; the `loop` case
+   * instead filters these names out of the child recursion's `csrEnv`
+   * (via `scope.boundNames()`, the SHADOW-GUARD query — see
+   * `BindingScope.valueBoundNames`'s doc comment for why this must stay
+   * the all-sources query, not the value-only one), so an inlinable
+   * const / signal / memo whose name is shadowed by a loop-row binding —
+   * including a `.map()` callback preamble local (#2447) — never
+   * substitutes at the shadowed occurrence. Scope-accurate per nesting
+   * level (the CURRENT level's own `transformExpr` — e.g. the loop's
+   * array-source expression — keeps the unfiltered env). `undefined` at
+   * the top of the recursion means "no enclosing loop" (treated as
+   * `BindingScope.EMPTY`).
    */
-  loopBoundNames?: ReadonlySet<string>
+  scope?: BindingScope
   /** Emit `bf-s` placeholder on scoped elements inside a jsx-children prop (#1320). */
   inHoistedChildren?: boolean
   /**
@@ -2226,7 +2234,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // the IR — emit does no string transformation of its own (#1277).
     const source = templateExpr ?? expr
     if (!source) return source
-    const { rewritten, freeIdentifiers } = csrSubstitute(source, env)
+    const { rewritten, freeIdentifiers } = csrSubstitute(source, env, opts.scope)
 
     // The CSR template runs at module scope, so any post-substitution
     // free identifier that lands in `unsafeLocalNames` (init-body-only
@@ -2458,23 +2466,21 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     }
 
     case 'loop': {
-      // Accumulate this loop's callback-bound names and filter them out
-      // of the child recursion's substitution env (#2222): an inlinable
-      // const / signal / memo whose name the callback shadows must never
-      // substitute inside the body. Destructured callbacks contribute
-      // their individual binding names; a raw pattern-text `param` (the
-      // BF025 fallback shapes, detected by the same leading-`[`/`{` check
-      // `destructureLoopParam` uses — NOT an ASCII-identifier regex, which
-      // would drop Unicode param names like `π` and re-enable the shadow
-      // bug for that body) contributes nothing — conservatively
-      // unfiltered rather than mis-filtered.
-      const boundHere = new Set(opts.loopBoundNames ?? [])
-      if (node.paramBindings && node.paramBindings.length > 0) {
-        for (const b of node.paramBindings) boundHere.add(b.name)
-      } else if (!node.param.startsWith('[') && !node.param.startsWith('{')) {
-        boundHere.add(node.param)
-      }
-      if (node.index) boundHere.add(node.index)
+      // Enter this loop's row frame and filter its bound names out of the
+      // child recursion's substitution env (#2222, #2482 Stage 1b): an
+      // inlinable const / signal / memo whose name the callback shadows —
+      // item, index, a destructured binding, OR a `.map()` callback
+      // preamble local (#2447) — must never substitute inside the body.
+      // `enterLoopRow` mirrors `jsx-to-ir.ts`'s legacy mutable loop-param
+      // set semantics exactly (see its doc comment): a raw pattern-text `param` (the
+      // BF025 fallback shapes) with no `paramBindings` still gets added,
+      // but as non-identifier pattern text it can never collide with a
+      // real const/signal/memo name, so it's a harmless no-op for this
+      // filter. `boundNames()` (not `valueBoundNames()`) is the correct
+      // query here — this is a SHADOW GUARD (every binding source must
+      // hide an outer same-named const), not a reactivity classifier.
+      const childScope = (opts.scope ?? BindingScope.EMPTY).enterLoopRow(node)
+      const boundHere = childScope.boundNames()
       const childEnv: CsrEnv = {
         ...env,
         substitutions: new Map([...env.substitutions].filter(([name]) => !boundHere.has(name))),
@@ -2483,7 +2489,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         ...opts,
         loopDepth: loopDepth + 1,
         inHoistedChildren: false,
-        loopBoundNames: boundHere,
+        scope: childScope,
         csrEnv: childEnv,
       })
       let childTemplate = node.children.map(recurseInLoopBody).join('')

@@ -92,7 +92,7 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   'packages/jsx/src/ir-to-client-js/collect-elements.ts': { loopParams: 9 },
   'packages/jsx/src/ir-to-client-js/compute-inlinability.ts': { 'localConstants.find(': 1 },
   'packages/jsx/src/ir-to-client-js/control-flow/plan/build-event-delegation.ts': { loopParams: 4 },
-  'packages/jsx/src/ir-to-client-js/html-template.ts': { loopBoundNames: 3, loopParams: 16 },
+  'packages/jsx/src/ir-to-client-js/html-template.ts': { loopParams: 16 },
   'packages/jsx/src/ir-to-client-js/prop-handling.ts': { 'localConstants.find(': 2 },
   'packages/jsx/src/ir-to-client-js/utils.ts': { loopParams: 3 },
   'packages/jsx/src/jsx-to-ir.ts': { loopParams: 1 },
