@@ -156,15 +156,75 @@ export class BindingScope {
   }
 
   /**
-   * Union of every frame's bound names, for migration interop with
-   * legacy `Set<string>`-shaped consumers (e.g. `collectLoopBoundNames`'s
-   * return type) as later stages migrate them onto `BindingScope`.
+   * Union of every frame's bound names (every `ScopeBindingSource`), for
+   * migration interop with legacy `Set<string>`-shaped consumers (e.g.
+   * `collectLoopBoundNames`'s return type) as later stages migrate them
+   * onto `BindingScope`.
+   *
+   * This is the SHADOW-GUARD query — see {@link valueBoundNames} for the
+   * other consumer class and why the two must not be conflated.
    */
   boundNames(): ReadonlySet<string> {
+    if (this.boundNamesCache) return this.boundNamesCache
     const names = new Set<string>()
     for (const frame of this.frames) {
       for (const name of frame.bindings.keys()) names.add(name)
     }
+    this.boundNamesCache = names
+    return names
+  }
+
+  // Both name queries are hot (shadow guards, slot/reactivity classifiers,
+  // binding-env memo keying) and the scope is immutable, so each computes
+  // once per instance. Callers receive the cached set as ReadonlySet —
+  // never mutate it.
+  private boundNamesCache: ReadonlySet<string> | undefined
+  private valueBoundNamesCache: ReadonlySet<string> | undefined
+
+  /**
+   * Union of names bound via `'item'`/`'index'`/`'destructure'` sources
+   * only — the loop row's own per-item identity — excluding `'preamble'`
+   * (a `.map()` callback's pre-return `const`/`let`/`function` locals,
+   * #2447) and `'param'` (an `enterCallback` frame's filter/sort/nested-
+   * arrow parameters).
+   *
+   * `BindingScope` has exactly two consumer classes, and conflating them
+   * is the #2482 Stage 1a Commit 2 regression this split exists to
+   * prevent (a `ctx.scope`-wide preamble merge flipped `tag-cloud` and
+   * `preamble-cells` conformance fixtures before this method existed):
+   *
+   *   - SHADOW GUARDS (`tryResolveTemplateSpanFromConst`,
+   *     `tryResolveIdentifierAsTemplateLiteral`, `rewriteBarePropRefs`
+   *     in `jsx-to-ir.ts`) ask "is this name resolved to SOMETHING in
+   *     this scope, so an outer const/prop of the same name must not be
+   *     substituted here at this transform position" — every source
+   *     qualifies, including a preamble local shadowing a module const.
+   *     These call `isBound` / `boundNames()`.
+   *   - REACTIVITY / SLOT-ID CLASSIFIERS (`referencesLoopParam`,
+   *     `hasReactiveAttributes`, and the `BindingEnvironment.loopParams`
+   *     feed built from `makeBindingEnv`, all in `jsx-to-ir.ts`) ask
+   *     "does this expression read a value that changes per row and so
+   *     needs its own patchable slot" — a preamble local already gets
+   *     ITS OWN dedicated slot/region-patch machinery
+   *     (`preambleRegions` / `markPreambleAttrSlots`, #2447), so folding
+   *     it into this classification double-counts it. Worse: widening a
+   *     text child's `reactive` flag this way is read by
+   *     `hasDynamicContent` to decide whether the loop ROW's own root
+   *     element needs a slot — an unrelated, narrower decision that must
+   *     not move just because a preamble local is now scope-visible.
+   *     These call `valueBoundNames()`.
+   */
+  valueBoundNames(): ReadonlySet<string> {
+    if (this.valueBoundNamesCache) return this.valueBoundNamesCache
+    const names = new Set<string>()
+    for (const frame of this.frames) {
+      for (const [name, binding] of frame.bindings) {
+        if (binding.source === 'item' || binding.source === 'index' || binding.source === 'destructure') {
+          names.add(name)
+        }
+      }
+    }
+    this.valueBoundNamesCache = names
     return names
   }
 

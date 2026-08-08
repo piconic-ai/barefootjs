@@ -14,7 +14,7 @@
  * stack, so `items.map((title) => title.a)` never turns into the
  * syntactically invalid `.map((_p.title) => _p.title.a)` when `title`
  * is also a prop. (Names bound by loop callbacks that ENCLOSE the
- * expression are the caller's job — see the `ctx.loopParams` filter in
+ * expression are the caller's job — see the `ctx.scope` filter in
  * `jsx-to-ir.ts`'s `rewriteBarePropRefs` wrapper, #2222.)
  */
 

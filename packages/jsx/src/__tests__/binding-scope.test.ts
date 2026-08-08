@@ -137,4 +137,64 @@ describe('BindingScope', () => {
       expect(shadowed(n)).toBe(scope.isBound(n))
     }
   })
+
+  describe('valueBoundNames (#2482 Stage 1a Commit 2)', () => {
+    test('excludes preamble names that boundNames() includes', () => {
+      const scope = BindingScope.EMPTY.enterLoopRow({
+        param: 'item',
+        index: 'i',
+        preamble: { declaredNames: ['label', 'out'] },
+      })
+
+      // Shadow-guard query: sees everything, including preamble locals.
+      const all = scope.boundNames()
+      expect(all.has('item')).toBe(true)
+      expect(all.has('i')).toBe(true)
+      expect(all.has('label')).toBe(true)
+      expect(all.has('out')).toBe(true)
+      expect(all.size).toBe(4)
+
+      // Reactivity/slotId query: item/index/destructure only.
+      const values = scope.valueBoundNames()
+      expect(values.has('item')).toBe(true)
+      expect(values.has('i')).toBe(true)
+      expect(values.has('label')).toBe(false)
+      expect(values.has('out')).toBe(false)
+      expect(values.size).toBe(2)
+    })
+
+    test('destructured bindings count as value bindings', () => {
+      const scope = BindingScope.EMPTY.enterLoopRow({
+        param: '{ id, name }',
+        index: null,
+        paramBindings: [{ name: 'id' }, { name: 'name' }],
+        preamble: { declaredNames: ['formatted'] },
+      })
+
+      const values = scope.valueBoundNames()
+      expect(values.has('id')).toBe(true)
+      expect(values.has('name')).toBe(true)
+      expect(values.has('formatted')).toBe(false)
+      expect(values.size).toBe(2)
+    })
+
+    test('excludes enterCallback param-sourced names too', () => {
+      // A filter/sort/nested-arrow frame's own parameters are a distinct
+      // binding shape from a loop row's item/index/destructure names
+      // (see the class doc comment) — valueBoundNames() must not surface
+      // them either, only boundNames() does.
+      const scope = BindingScope.EMPTY
+        .enterLoopRow({ param: 'item', index: null })
+        .enterCallback(['a', 'b'])
+
+      expect(scope.boundNames().has('a')).toBe(true)
+      expect(scope.valueBoundNames().has('a')).toBe(false)
+      expect(scope.valueBoundNames().has('item')).toBe(true)
+    })
+
+    test('EMPTY scope: both queries return an empty set', () => {
+      expect(BindingScope.EMPTY.boundNames().size).toBe(0)
+      expect(BindingScope.EMPTY.valueBoundNames().size).toBe(0)
+    })
+  })
 })

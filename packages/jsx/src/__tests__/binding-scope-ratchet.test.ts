@@ -95,8 +95,7 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   'packages/jsx/src/ir-to-client-js/html-template.ts': { loopBoundNames: 3, loopParams: 16 },
   'packages/jsx/src/ir-to-client-js/prop-handling.ts': { 'localConstants.find(': 2 },
   'packages/jsx/src/ir-to-client-js/utils.ts': { loopParams: 3 },
-  'packages/jsx/src/jsx-to-ir.ts': { loopParams: 33 },
-  'packages/jsx/src/prop-rewrite.ts': { loopParams: 1 },
+  'packages/jsx/src/jsx-to-ir.ts': { loopParams: 1 },
 }
 
 const SCOPE_MODULE_DIR = join(REPO_ROOT, 'packages', 'jsx', 'src', 'scope')
