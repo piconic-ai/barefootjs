@@ -18,6 +18,31 @@ import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils.
 import { expandConstantForReactivity } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
+import { BindingScope } from '../scope/binding-scope.ts'
+
+/**
+ * Build the `BindingScope` for one loop row's own bindings — item /
+ * destructured param names plus (when supplied) the `.map()` callback's
+ * preamble locals (#2447) — for the `expandConstantForReactivity` shadow
+ * guard (#2482 Stage 1b). `undefined` when there's no enclosing loop
+ * (`loopParam` unset), matching every caller's existing "no loop" shape.
+ * Loop `index` is intentionally NOT included — none of these collectors
+ * carry it separately, matching `classifyReactivity`'s own
+ * `loopParam`/`loopParamBindings`-only signature (index shadowing a
+ * const is comparatively rare and out of scope for this pass).
+ */
+export function buildLoopRowScope(
+  loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
+  preambleNames?: ReadonlySet<string>,
+): BindingScope | undefined {
+  if (!loopParam) return undefined
+  return BindingScope.EMPTY.enterLoopRow({
+    param: loopParam,
+    paramBindings: loopParamBindings,
+    preamble: preambleNames && preambleNames.size > 0 ? { declaredNames: [...preambleNames] } : undefined,
+  })
+}
 
 /**
  * Phase 2 reactivity detection: determines if a code expression needs `createEffect`
@@ -555,6 +580,11 @@ function traverseForComponents(
  * Defaults to false: some callers (e.g. a plain nested `.map()`'s own
  * per-item bindings) have no sibling conditional collector, so a slotId'd
  * conditional's inlined content is only ever reachable by descending here.
+ *
+ * `preambleNames` (#2482 Stage 1b): the enclosing loop's `.map()` callback
+ * preamble locals (#2447), when known — folded into the `expandConstantForReactivity`
+ * shadow guard via `buildLoopRowScope` so a preamble local shadowing a
+ * component/module const doesn't get const-folded here.
  */
 export function collectLoopChildReactiveTexts(
   node: IRNode,
@@ -562,8 +592,10 @@ export function collectLoopChildReactiveTexts(
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
   stopAtReactiveConditionals = false,
+  preambleNames?: ReadonlySet<string>,
 ): LoopChildReactiveText[] {
   const texts: LoopChildReactiveText[] = []
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames)
   walkIR(node, false, {
     // Skip loop/async/if-statement subtrees — the original walker omitted
     // them; they have their own scopes (inner-loop reconciliation, async
@@ -579,7 +611,7 @@ export function collectLoopChildReactiveTexts(
       // (a `joinArrayChild` region's value is raw HTML, not text).
       if (n.preambleRegion) return
       const originFreeIds = freeIdsFromRefs(n.origin?.freeRefs)
-      const expanded = expandConstantForReactivity(n.expr, ctx, originFreeIds)
+      const expanded = expandConstantForReactivity(n.expr, ctx, originFreeIds, scope)
       // Include if expression reads signals OR references the loop parameter
       // (loop param becomes a signal accessor via per-item signals). Falls
       // back to the Solid-style AST-flag wrap decision — mirroring
@@ -638,6 +670,7 @@ export function collectLoopChildReactiveAttrs(
   preambleNames?: ReadonlySet<string>,
 ): LoopChildReactiveAttr[] {
   const attrs: LoopChildReactiveAttr[] = []
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames)
   traverseElements(node, (el) => {
     if (el.slotId) {
       for (const attr of el.attrs) {
@@ -653,7 +686,7 @@ export function collectLoopChildReactiveAttrs(
         if (attr.name === 'key') continue
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
-        const expanded = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
+        const expanded = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers, scope)
         // `/* @client */` always defers via per-item createEffect
         // regardless of the reactivity classifier — matches the
         // top-level `collectElements.element` and the conditional
