@@ -221,7 +221,7 @@ export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
   body: ParsedExpr,
   signals: { getter: string; initialValue: string; type?: TypeInfo }[],
-  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string; parsed?: ParsedExpr }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   currentMemoName: string,
   resolving: ReadonlySet<string> = new Set(),
@@ -535,7 +535,7 @@ export function memoInitialFromParsedBody(
         if (hoisted) return `${hoisted.varName} ${operator} ${operand}`
         const fieldName = capitalizeFieldName(propName)
         if (param.type) {
-          const goType = typeInfoToGo(ctx, param.type, param.defaultValue)
+          const goType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
           if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
         }
         return `in.${fieldName} ${operator} ${operand}`
@@ -549,7 +549,7 @@ export function memoInitialFromParsedBody(
       if (param) {
         const fieldName = capitalizeFieldName(param.sourceName ?? varName)
         if (param.type) {
-          const goType = typeInfoToGo(ctx, param.type, param.defaultValue)
+          const goType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
           if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
         }
         return `in.${fieldName} ${operator} ${operand}`

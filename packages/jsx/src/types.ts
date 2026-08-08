@@ -93,6 +93,16 @@ export interface ParamInfo {
   type: TypeInfo
   optional: boolean
   defaultValue?: string
+  /**
+   * `defaultValue` parsed into a structured tree, mirroring `SignalInfo.parsed`
+   * (Roadmap A). Attached best-effort by the analyzer (`tsNodeToParsedExpr` on
+   * the binding element's own `initializer` node — no re-parse of the
+   * `defaultValue` text) so adapters can classify a destructure default's
+   * literal shape (`{ count = 3 }`, `{ ratio = 1.5 }`) from structure instead
+   * of regexing `defaultValue`. Absent when the shape isn't supported;
+   * consumers fall back to text-matching `defaultValue`.
+   */
+  parsed?: ParsedExpr
   /** When true, the default value contains an arrow function or function expression (computed from AST). */
   defaultContainsArrow?: boolean
   /** When true, the parameter is a rest spread (`...args`) — emit must prepend `...`. */

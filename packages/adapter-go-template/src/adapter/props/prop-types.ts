@@ -27,9 +27,9 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
     for (const propName of propNames) {
       const param = ir.metadata.propsParams.find(p => p.name === propName)
       if (!param) continue
-      const propGoType = typeInfoToGo(ctx, param.type, param.defaultValue)
+      const propGoType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
       if (propGoType.includes('interface{}')) {
-        const signalGoType = typeInfoToGo(ctx, signal.type, signal.initialValue)
+        const signalGoType = typeInfoToGo(ctx, signal.type, signal.initialValue, signal.parsed)
         if (!signalGoType.includes('interface{}')) {
           overrides.set(propName, signalGoType)
         }
@@ -50,7 +50,7 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
   for (const propName of collectToFixedPropNames(ir.root)) {
     const param = ir.metadata.propsParams.find(p => p.name === propName)
     if (!param) continue
-    const resolved = overrides.get(propName) ?? typeInfoToGo(ctx, param.type, param.defaultValue)
+    const resolved = overrides.get(propName) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
     if (resolved === 'int') {
       overrides.set(propName, 'float64')
     }
@@ -381,7 +381,8 @@ export function collectPresenceCheckedPropNames(ctx: GoEmitContext, ir: Componen
 /**
  * Resolve a prop param's Go struct-field type using the SAME logic
  * `generatePropsStruct` / `generateInputStruct` use: a `propTypeOverrides` entry
- * wins, otherwise `typeInfoToGo(param.type, param.defaultValue)`. Factored out so
+ * wins, otherwise `typeInfoToGo(param.type, param.defaultValue, param.parsed)`.
+ * Factored out so
  * the nillable-field set (`collectNillablePropNames`) can't drift from the
  * emitted field types.
  */
@@ -390,7 +391,7 @@ export function resolvePropGoType(
   param: IRMetadata['propsParams'][number],
   propTypeOverrides: Map<string, string>,
 ): string {
-  const base = propTypeOverrides.get(param.name) ?? typeInfoToGo(ctx, param.type, param.defaultValue)
+  const base = propTypeOverrides.get(param.name) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
   // An OPTIONAL prop typed as a named struct (`opts?: EmblaOptionsType`) lowers
   // to `map[string]interface{}`, not the value struct: a value struct is always
   // truthy in Go templates (so a `{{if .Opts}}`-guarded attribute could never be

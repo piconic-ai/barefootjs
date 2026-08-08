@@ -74,13 +74,18 @@ function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string |
   return `map[string]interface{}{${entries.join(', ')}}`
 }
 
-export function parsedLiteralToGo(
-  ctx: GoEmitContext,
-  expr: ParsedExpr,
-  typeInfo?: TypeInfo,
-): string | null {
-  // Leading unary minus on a numeric literal (`-1`), from the carried `raw`
-  // token.
+/**
+ * A literal number's exact Go source text, unwrapping a leading unary minus
+ * (`-1` parses as `{kind:'unary', op:'-', argument:{literalType:'number'}}`).
+ * Needs the exact source token — re-stringifying the parsed numeric VALUE
+ * could change spelling / lose precision — so this defers (`null`) rather
+ * than reconstructing one, same as every other non-literal shape here.
+ *
+ * Shared by `parsedLiteralToGo`'s own number/unary-minus cases below and
+ * `convertInitialValue`'s primitive-number branch (`value-lowering.ts`) —
+ * the SAME literal needs the SAME exact-token handling wherever it's baked.
+ */
+export function numberLiteralRawGo(expr: ParsedExpr): string | null {
   if (
     expr.kind === 'unary' &&
     expr.op === '-' &&
@@ -89,6 +94,19 @@ export function parsedLiteralToGo(
   ) {
     return expr.argument.raw !== undefined ? `-${expr.argument.raw}` : null
   }
+  if (expr.kind === 'literal' && expr.literalType === 'number') {
+    return expr.raw ?? null
+  }
+  return null
+}
+
+export function parsedLiteralToGo(
+  ctx: GoEmitContext,
+  expr: ParsedExpr,
+  typeInfo?: TypeInfo,
+): string | null {
+  const numberGo = numberLiteralRawGo(expr)
+  if (numberGo !== null) return numberGo
 
   if (expr.kind === 'literal') {
     switch (expr.literalType) {
@@ -96,9 +114,9 @@ export function parsedLiteralToGo(
         // `value` is the unquoted text; `JSON.stringify` re-quotes it for Go.
         return JSON.stringify(expr.value)
       case 'number':
-        // Need the exact source token; without it the value could change
-        // spelling / lose precision, so defer.
-        return expr.raw ?? null
+        // A number literal with no `raw` token (`numberLiteralRawGo` already
+        // returned null above) — defer.
+        return null
       case 'boolean':
         return expr.value ? 'true' : 'false'
       case 'null':
