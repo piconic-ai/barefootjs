@@ -194,7 +194,11 @@ export abstract class JsxAdapter extends BaseAdapter {
       if (moduleScopeNames.has(constant.name)) continue
       const keyword = constant.declarationKind ?? 'const'
       if (!constant.value) {
-        lines.push(`  ${keyword} ${constant.name}`)
+        // No initializer (e.g. `let emblaApi: EmblaCarouselType | undefined`)
+        // — carry the declared type annotation through so `.tsx` output
+        // doesn't fall back to implicit `any` (TS7034/TS7005, #2573).
+        const typeAnnotation = preserveTypes && constant.type ? `: ${constant.type.raw}` : ''
+        lines.push(`  ${keyword} ${constant.name}${typeAnnotation}`)
         continue
       }
       const value = constant.value.trim()

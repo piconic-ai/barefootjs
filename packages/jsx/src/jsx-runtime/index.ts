@@ -45,6 +45,7 @@ import type {
   SVGBaseAttributes,
   SVGPresentationAttributes,
   SVGMarkerReferenceAttributes,
+  SVGSVGAttributes,
 } from '../html-types.ts'
 
 // Stub function types (for type checking only - no runtime implementation)
@@ -208,13 +209,7 @@ export declare namespace JSX {
     // SVG (basic support).
     // Each entry uses `SVGBaseAttributes` so `ref` can be narrowed per-tag.
     // See `SVGBaseAttributes` JSDoc for why plain intersection doesn't work.
-    svg: SVGBaseAttributes & SVGPresentationAttributes & {
-      viewBox?: string
-      xmlns?: string
-      width?: number | string
-      height?: number | string
-      ref?: (element: SVGSVGElement) => void
-    }
+    svg: SVGSVGAttributes
     path: SVGBaseAttributes & SVGPresentationAttributes & SVGMarkerReferenceAttributes & {
       d?: string
       pathLength?: number | string

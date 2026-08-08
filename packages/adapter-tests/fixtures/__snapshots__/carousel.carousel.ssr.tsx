@@ -96,7 +96,7 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   const canScrollNext = () => false
   const setCanScrollNext = (..._args: any[]) => {}
   const orientation = () => props.orientation ?? 'horizontal'
-  let emblaApi
+  let emblaApi: EmblaCarouselType | undefined
   const scrollPrev = () => emblaApi?.scrollPrev()
   const scrollNext = () => emblaApi?.scrollNext()
 

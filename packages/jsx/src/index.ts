@@ -361,4 +361,7 @@ export type {
   ImgHTMLAttributes,
   LabelHTMLAttributes,
   OptionHTMLAttributes,
+
+  // SVG attributes (for components whose root is an `<svg>`, e.g. icons)
+  SVGSVGAttributes,
 } from './html-types.ts'

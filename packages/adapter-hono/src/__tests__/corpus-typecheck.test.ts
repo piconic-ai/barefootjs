@@ -37,16 +37,11 @@ const UI_TYPES = join(REPO, 'ui/types/index.tsx')
  * pass.
  */
 const KNOWN_DIAGNOSTICS: Record<string, number> = {
-  'carousel TS7005': 2,
-  'carousel TS7034': 1,
   'chart TS17001': 6,
   'chart TS18046': 69,
   'chart TS2307': 2,
   'chart TS2322': 2,
   'chart TS7006': 34,
-  'icon TS2322': 34,
-  'slider TS2532': 1,
-  'spinner TS2322': 1,
   'xyflow TS2304': 7,
   'xyflow TS2307': 2,
 }

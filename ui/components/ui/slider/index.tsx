@@ -104,7 +104,12 @@ function Slider(props: SliderProps) {
   // Compute percentage for positioning
   const percentage = createMemo(() => {
     if (max() <= min()) return 0
-    return Math.max(0, Math.min(100, ((currentValue() - min()) / (max() - min())) * 100))
+    // `currentValue()` is `number | undefined` in its type (mirrors
+    // `controlledValue()`), but it's only ever undefined when NOT
+    // controlled — and the uncontrolled branch (`internalValue()`) is
+    // always a `number`. TS can't see that across the two calls in
+    // `currentValue`'s own ternary, so assert what's runtime-guaranteed.
+    return Math.max(0, Math.min(100, ((currentValue()! - min()) / (max() - min())) * 100))
   })
 
   // Snap a raw value to the nearest step

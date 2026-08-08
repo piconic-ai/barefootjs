@@ -3647,21 +3647,47 @@ function inferTypeFromValue(value: string): TypeInfo {
   return { kind: 'unknown', raw: 'unknown' }
 }
 
+/**
+ * Identifiers that appear as a direct call (`name(...)`) in `code`,
+ * collected off a real TS parse — never a regex over the raw text, which
+ * false-matches inside comments and string literals (the repo-wide
+ * "no regex over JS syntax" rule). A doc comment mentioning
+ * `otherSignal()` inside a memo body must NOT become a dependency
+ * (phantom `internalValue`/`controlledValue` deps on slider's
+ * `percentage`, #2581 review). A raw token scan is not enough either:
+ * without a parser driving `reScanTemplateToken`, everything between a
+ * substitution's closing `}` and the next backtick is mis-lexed as code
+ * (and the template tail swallows real code after it), so a read
+ * following a `${...}` template — xyflow's `visibleClass` reading
+ * `animated()` after the `${BF_FLOW_EDGE_SELECTED}` line — would vanish.
+ */
+function collectCalledIdentifiers(code: string): Set<string> {
+  const called = new Set<string>()
+  const sf = ts.createSourceFile('__deps__.tsx', code, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX)
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      called.add(node.expression.text)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return called
+}
+
 function extractDependencies(code: string, ctx: AnalyzerContext): string[] {
+  const called = collectCalledIdentifiers(code)
   const deps: string[] = []
 
   // Find signal getter calls: signalName()
   for (const signal of ctx.signals) {
-    const pattern = new RegExp(`\\b${signal.getter}\\s*\\(`, 'g')
-    if (pattern.test(code)) {
+    if (called.has(signal.getter)) {
       deps.push(signal.getter)
     }
   }
 
   // Find memo calls: memoName()
   for (const memo of ctx.memos) {
-    const pattern = new RegExp(`\\b${memo.name}\\s*\\(`, 'g')
-    if (pattern.test(code)) {
+    if (called.has(memo.name)) {
       deps.push(memo.name)
     }
   }

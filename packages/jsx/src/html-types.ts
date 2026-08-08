@@ -248,6 +248,30 @@ export interface SVGPresentationAttributes {
   filter?: string
 }
 
+// ============================================================================
+// SVG Root (`<svg>`) Attributes
+// ============================================================================
+
+/**
+ * Attributes for the root `<svg>` element, narrowed to `SVGSVGElement` for
+ * `ref`. A curated subset mirroring the intrinsic `svg` entry — not the full
+ * SVG attribute surface.
+ *
+ * Public so components that render an `<svg>` as their root and accept
+ * passthrough props (icons, spinners, and similar) can type their props with
+ * this instead of `HTMLBaseAttributes` — spreading `HTMLBaseAttributes` onto
+ * an `<svg>` fails to type-check because its `ref` is `(element: HTMLElement)
+ * => void`, incompatible with the `<svg>` intrinsic's
+ * `(element: SVGSVGElement) => void` (#2573).
+ */
+export type SVGSVGAttributes = SVGBaseAttributes & SVGPresentationAttributes & {
+  viewBox?: string
+  xmlns?: string
+  width?: number | string
+  height?: number | string
+  ref?: (element: SVGSVGElement) => void
+}
+
 /**
  * Marker reference attributes shared by `<path>`, `<line>`, `<polyline>`,
  * and `<polygon>`. Accepts both camelCase and kebab-case spellings.
