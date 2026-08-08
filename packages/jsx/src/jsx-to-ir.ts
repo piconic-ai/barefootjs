@@ -63,6 +63,7 @@ import { reconstructAsSegments } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
 import { BindingScope } from './scope/binding-scope.ts'
+import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 
 // =============================================================================
 // Transform Context
@@ -681,19 +682,19 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     patterns: {
       signals: analyzer.signals.map(s => ({
         getter: s.getter,
-        pattern: new RegExp(`\\b${s.getter}\\s*\\(`),
+        pattern: identifierCallPattern(s.getter),
       })),
       memos: analyzer.memos.map(m => ({
         name: m.name,
-        pattern: new RegExp(`\\b${m.name}\\s*\\(`),
+        pattern: identifierCallPattern(m.name),
       })),
       props: analyzer.propsParams
         .filter(p => p.name !== 'children')
-        .map(p => ({ name: p.name, pattern: new RegExp(`\\b${p.name}\\b`) })),
+        .map(p => ({ name: p.name, pattern: identifierPattern(p.name) })),
       constants: analyzer.localConstants.map(c => ({
         name: c.name,
         value: c.value,
-        pattern: new RegExp(`\\b${c.name}\\b`),
+        pattern: identifierPattern(c.name),
       })),
     },
     getJS(node: ts.Node): string {
@@ -2201,7 +2202,7 @@ function transformExpressionInner(
   // (#2482 Stage 1a Commit 2).
   const scopeValueNames = ctx.scope.valueBoundNames()
   const refsLoopParam = scopeValueNames.size > 0
-    && Array.from(scopeValueNames).some(p => new RegExp(`\\b${p}\\b`).test(exprText))
+    && Array.from(scopeValueNames).some(p => identifierPattern(p).test(exprText))
 
   // Compute AST-derived flags. `callsReactive` recognises signal-getter / memo
   // calls even inside deeper expressions (e.g., `format(count())`); `hasCalls`
@@ -2267,7 +2268,11 @@ function transformJsxFunctionCall(
   const substitutedGetJS = (node: ts.Node) => {
     let text = baseGetJS(node)
     for (const [paramName, argExpr] of substitutions) {
-      text = text.replace(new RegExp(`\\b${paramName}\\b`, 'g'), argExpr)
+      // Replacer function, not the string form: `argExpr` is arbitrary
+      // caller-supplied JS text and may itself contain `$` sequences
+      // (`$&`, `$1`, …) that `String.replace`'s string-replacement form
+      // would interpret specially instead of inserting literally (#2592).
+      text = text.replace(identifierPattern(paramName, 'g'), () => argExpr)
     }
     return text
   }
@@ -2319,7 +2324,11 @@ function transformMultiReturnJsxFunctionCall(
   const substitutedGetJS = (node: ts.Node) => {
     let text = baseGetJS(node)
     for (const [paramName, argExpr] of substitutions) {
-      text = text.replace(new RegExp(`\\b${paramName}\\b`, 'g'), argExpr)
+      // Replacer function, not the string form: `argExpr` is arbitrary
+      // caller-supplied JS text and may itself contain `$` sequences
+      // (`$&`, `$1`, …) that `String.replace`'s string-replacement form
+      // would interpret specially instead of inserting literally (#2592).
+      text = text.replace(identifierPattern(paramName, 'g'), () => argExpr)
     }
     return text
   }
@@ -7104,7 +7113,7 @@ function referencesLoopParam(expr: string, ctx: TransformContext): boolean {
   const boundNames = ctx.scope.valueBoundNames()
   if (boundNames.size === 0) return false
   for (const p of boundNames) {
-    if (new RegExp(`\\b${p}\\b`).test(expr)) return true
+    if (identifierPattern(p).test(expr)) return true
   }
   return false
 }
@@ -7238,7 +7247,7 @@ function hasReactiveAttributes(attrs: IRAttribute[], ctx: TransformContext): boo
     const scopeValueNames = ctx.scope.valueBoundNames()
     if (scopeValueNames.size > 0) {
       for (const p of scopeValueNames) {
-        if (new RegExp(`\\b${p}\\b`).test(valueToCheck)) return true
+        if (identifierPattern(p).test(valueToCheck)) return true
       }
     }
   }

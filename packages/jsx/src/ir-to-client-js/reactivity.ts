@@ -19,6 +19,7 @@ import { expandConstantForReactivity } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
+import { identifierCallPattern } from '../identifier-pattern.ts'
 
 /**
  * Build the `BindingScope` for one loop row's own bindings — item /
@@ -180,13 +181,13 @@ export function needsEffectWrapper(
   freeIdentifiers?: ReadonlySet<string>,
 ): boolean {
   for (const signal of ctx.signals) {
-    if (new RegExp(`\\b${signal.getter}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(signal.getter).test(expr)) {
       return true
     }
   }
 
   for (const memo of ctx.memos) {
-    if (new RegExp(`\\b${memo.name}\\s*\\(`).test(expr)) {
+    if (identifierCallPattern(memo.name).test(expr)) {
       return true
     }
   }

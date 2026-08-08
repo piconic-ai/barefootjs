@@ -8,6 +8,7 @@ import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
+import { escapeIdentifierForRegex, ID_BOUNDARY_BEFORE, ID_BOUNDARY_AFTER } from '../identifier-pattern.ts'
 import {
   iterateJsTokens,
   isIdentifierLikeToken,
@@ -337,10 +338,6 @@ export function inferDefaultValue(type: { kind: string; primitive?: string }): s
   return 'undefined'
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 /**
  * Flatten an `OriginInfo.freeRefs` list to a plain `Set<string>` of free
  * identifier names (#1267). Skips `kind: 'reactive-brand'` entries whose
@@ -561,8 +558,12 @@ export function wrapLoopParamAsAccessor(expr: string, paramName: string, binding
   if (bindings && bindings.length > 0) {
     return rewriteLoopBindingRefs(expr, bindings, '__bfItem()')
   }
-  const re = new RegExp(`\\b${escapeRegExp(paramName)}\\b(?!\\s*\\()(?!-)`, 'g')
-  return replaceInExprContexts(expr, re, `${paramName}()`)
+  // `paramName` is a legal JS identifier and may itself start with `$`
+  // (`$1`, `$&`, …) — a plain string replacement would risk `String.replace`
+  // reading those as backreference/whole-match sequences, so use a replacer
+  // function to insert the accessor text literally (#2592).
+  const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(paramName)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
+  return replaceInExprContexts(expr, re, () => `${paramName}()`)
 }
 
 /**
@@ -588,8 +589,8 @@ function rewriteLoopBindingRefs(
   const byName = new Map<string, LoopParamBinding>()
   for (const b of bindings) byName.set(b.name, b)
   const preprocessed = expandShorthandBindings(expr, new Set(byName.keys()))
-  const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
-  const re = new RegExp(`\\b(${alt})\\b`, 'g')
+  const alt = bindings.map(b => escapeIdentifierForRegex(b.name)).join('|')
+  const re = new RegExp(`${ID_BOUNDARY_BEFORE}(${alt})${ID_BOUNDARY_AFTER}`, 'gu')
   return replaceInExprContexts(preprocessed, re, (_m: string, name: string) =>
     renderLoopBindingAccess(byName.get(name)!, accessor),
   )

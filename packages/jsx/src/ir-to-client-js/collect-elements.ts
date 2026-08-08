@@ -11,6 +11,7 @@ import { templateRootIsSvg } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
+import { identifierPattern } from '../identifier-pattern.ts'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
 const EMPTY_RENDER_EXPRS = new Set(['null', 'undefined', 'false', "''", '""', '``'])
@@ -311,7 +312,7 @@ export function collectInnerLoops(
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Check if array expression references the outer loop param
         const refsOuter = outerLoopParam
-          ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
+          ? identifierPattern(outerLoopParam).test(n.array)
           : false
         // Per-item bindings for inner loop body, collected uniformly when
         // ctx is available: reactiveTexts / reactiveAttrs / refs are each

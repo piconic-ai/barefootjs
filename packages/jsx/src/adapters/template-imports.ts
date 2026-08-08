@@ -16,6 +16,7 @@
  * Adapters are responsible for calling this themselves before emitting any
  * import block. The compiler hands them `metadata.imports` unchanged.
  */
+import ts from 'typescript'
 import type { ImportInfo, ImportSpecifier } from '../types.ts'
 
 const CLIENT_PACKAGE_SOURCES = new Set([
@@ -76,4 +77,96 @@ export function rewriteImportsForTemplate(
 
 function specKey(s: ImportSpecifier): string {
   return `${s.isDefault ? 'd' : ''}${s.isNamespace ? 'n' : ''}:${s.name}:${s.alias ?? ''}`
+}
+
+/**
+ * Re-anchor relative specifiers carried inside emitted SOURCE TEXT — the
+ * counterpart to `rewriteImportsForTemplate`, which only sees the parsed
+ * static import list (`metadata.templateImports`).
+ *
+ * Declaration bodies re-emitted verbatim into a template
+ * (`generateModuleScopeDeclarations`' consts/functions, a component body's
+ * local handlers) can carry their own module references that never appear
+ * in that list:
+ *
+ * - `import('./x')` — a dynamic import expression
+ * - `typeof import('./x')` — an import TYPE node
+ *
+ * Those specifiers are written relative to the SOURCE file, so they break
+ * once the template is emitted to a directory at a different depth — the
+ * same depth shift `rewriteImportsForTemplate` already fixes for static
+ * imports (#1453, #2588).
+ *
+ * Only literal relative paths beginning with `.` are rewritten; bare
+ * specifiers pass through, matching `remap`'s guard above. A non-literal
+ * argument (`import(someVar)`) is left alone — there is no specifier to
+ * re-anchor, and guessing would be worse than leaving the source as-is.
+ *
+ * Parsed with the TS AST and applied by span splicing rather than by
+ * matching text: a regex would false-match `import(` inside a string or a
+ * comment, which is exactly the class of bug the repo-wide "never parse JS
+ * with regex" rule exists to prevent. Splices are applied back-to-front so
+ * earlier spans keep their offsets.
+ */
+export function rewriteDynamicImportsInSource(
+  sourceText: string,
+  rewriteRelative: (importPath: string) => string,
+): string {
+  // Cheap pre-check: skip the parse entirely for the overwhelmingly common
+  // case of text with no dynamic import at all. Substring presence is not
+  // used to LOCATE anything — the AST still does that — so a false positive
+  // here costs one wasted parse and a false negative is impossible.
+  if (!sourceText.includes('import')) return sourceText
+
+  const sf = ts.createSourceFile(
+    'bf-template-fragment.tsx',
+    sourceText,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ false,
+    ts.ScriptKind.TSX,
+  )
+
+  const edits: Array<{ start: number, end: number, text: string }> = []
+
+  const visit = (node: ts.Node): void => {
+    // `import('./x')` — the argument is the first (and only) call argument.
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length > 0 &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      collect(node.arguments[0] as ts.StringLiteralLike)
+    }
+    // `typeof import('./x')` / `import('./x').Foo` — a TYPE-position node
+    // whose argument is a literal type wrapping the string.
+    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+      const literal = node.argument.literal
+      if (ts.isStringLiteralLike(literal)) collect(literal)
+    }
+    ts.forEachChild(node, visit)
+  }
+
+  const collect = (literal: ts.StringLiteralLike): void => {
+    const specifier = literal.text
+    if (!specifier.startsWith('.')) return
+    const next = rewriteRelative(specifier)
+    if (next === specifier) return
+    edits.push({
+      start: literal.getStart(sf),
+      end: literal.getEnd(),
+      // Re-quote rather than reusing the original delimiters: a rewritten
+      // POSIX-relative path never contains a quote to escape.
+      text: `'${next}'`,
+    })
+  }
+
+  ts.forEachChild(sf, visit)
+  if (edits.length === 0) return sourceText
+
+  let out = sourceText
+  for (const edit of edits.sort((a, b) => b.start - a.start)) {
+    out = out.slice(0, edit.start) + edit.text + out.slice(edit.end)
+  }
+  return out
 }

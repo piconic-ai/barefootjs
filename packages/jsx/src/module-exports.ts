@@ -6,6 +6,7 @@
  */
 
 import type { ComponentIR, ParamInfo } from './types.ts'
+import { identifierPattern } from './identifier-pattern.ts'
 
 /**
  * Emit module-level exports for local declarations and `export { ... } [from '...']`
@@ -140,7 +141,7 @@ export function findReachableNames(
   const queue: string[] = []
 
   for (const name of allNames) {
-    if (new RegExp(`\\b${name}\\b`).test(primaryRefs)) {
+    if (identifierPattern(name).test(primaryRefs)) {
       reachable.add(name)
       queue.push(name)
     }
@@ -150,7 +151,7 @@ export function findReachableNames(
     const current = queue.shift()!
     const body = bodyMap.get(current) || ''
     for (const name of allNames) {
-      if (!reachable.has(name) && new RegExp(`\\b${name}\\b`).test(body)) {
+      if (!reachable.has(name) && identifierPattern(name).test(body)) {
         reachable.add(name)
         queue.push(name)
       }

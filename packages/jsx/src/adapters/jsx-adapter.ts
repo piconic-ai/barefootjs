@@ -19,6 +19,7 @@ import type { CallbackBodyAcceptor } from './interface.ts'
 import { ENV_SIGNAL_CLIENT_FACTORY } from './env-signal.ts'
 import { formatParamWithType, findReachableNames } from '../module-exports.ts'
 import { extractFreeIdentifiersFromText } from '../ir-to-client-js/csr-substitute.ts'
+import { identifierPattern } from '../identifier-pattern.ts'
 
 export interface JsxAdapterConfig {
   /** Use typed versions (typedInitialValue, etc.) for type-safe .tsx output */
@@ -165,7 +166,7 @@ export abstract class JsxAdapter extends BaseAdapter {
 
       // Create a no-op setter for SSR — omit entirely if not referenced anywhere
       if (signal.setter) {
-        const setterUsed = new RegExp(`\\b${signal.setter}\\b`).test(setterRefText)
+        const setterUsed = identifierPattern(signal.setter).test(setterRefText)
         if (setterUsed) {
           lines.push(`  const ${signal.setter} = (..._args: any[]) => {}`)
         }
