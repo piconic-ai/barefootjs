@@ -1940,6 +1940,25 @@ export interface IRMetadata {
   isClientComponent: boolean
   typeDefinitions: TypeDefinition[]
   propsType: TypeInfo | null
+  /**
+   * The component function's own generic type parameter list, verbatim
+   * from source (each `node.getText()`, joined and wrapped in `<...>`),
+   * e.g. `<NodeType extends NodeBase = NodeBase, EdgeType extends
+   * EdgeBase = EdgeBase>`. `null` when the component isn't generic.
+   *
+   * A generic function component's props type (and often its body) keeps
+   * referencing these names verbatim in emitted output (e.g. `props:
+   * FlowComponentProps<NodeType, EdgeType>`, `createFlowStore<NodeType,
+   * EdgeType>(props)`) — without the function's own declaration also
+   * carrying the type parameters, those references are unresolved names
+   * in the emitted `.tsx` (TS2304). Emitters that print a `function
+   * <name>(...)` signature for the component must splice this verbatim
+   * between the name and the parameter list. Optional (rather than
+   * required) so the many hand-built `IRMetadata` test fixtures across
+   * the suite don't need updating for a field that is `null` for the
+   * overwhelming majority of (non-generic) components.
+   */
+  typeParameters?: string | null
   propsParams: ParamInfo[]
   /** Name of the props object parameter (e.g., 'props' in `function Component(props: Props)`) */
   propsObjectName: string | null

@@ -624,6 +624,23 @@ function compileMultipleComponents(
 // Helpers
 // =============================================================================
 
+/**
+ * Verbatim text of the component function's own generic type parameter
+ * list (`<NodeType extends NodeBase = NodeBase, EdgeType extends EdgeBase
+ * = EdgeBase>`), or `null` when the component isn't generic. Source text
+ * per parameter (`node.getText(sourceFile)`), not a re-printed AST, so
+ * constraints/defaults/comments round-trip exactly like `ConstantInfo.
+ * typeAnnotation` does for `let` (#2589) — see `IRMetadata.typeParameters`.
+ */
+function componentTypeParametersText(
+  componentNode: ts.FunctionDeclaration | ts.ArrowFunction | null,
+  sourceFile: ts.SourceFile,
+): string | null {
+  const typeParameters = componentNode?.typeParameters
+  if (!typeParameters || typeParameters.length === 0) return null
+  return `<${typeParameters.map(p => p.getText(sourceFile)).join(', ')}>`
+}
+
 export function buildMetadata(
   ctx: ReturnType<typeof analyzeComponent>,
 ): IRMetadata {
@@ -634,6 +651,7 @@ export function buildMetadata(
     isClientComponent: ctx.hasUseClientDirective,
     typeDefinitions: ctx.typeDefinitions,
     propsType: ctx.propsType,
+    typeParameters: componentTypeParametersText(ctx.componentNode, ctx.sourceFile),
     propsParams: ctx.propsParams,
     propsObjectName: ctx.propsObjectName,
     restPropsName: ctx.restPropsName,

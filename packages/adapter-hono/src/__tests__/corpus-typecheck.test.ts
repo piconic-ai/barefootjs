@@ -42,7 +42,6 @@ const KNOWN_DIAGNOSTICS: Record<string, number> = {
   'chart TS2307': 2,
   'chart TS2322': 2,
   'chart TS7006': 34,
-  'xyflow TS2304': 7,
   'xyflow TS2307': 2,
 }
 

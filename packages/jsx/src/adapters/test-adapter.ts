@@ -164,7 +164,10 @@ export class TestAdapter extends JsxAdapter {
     // Module-export keyword belongs to the adapter: it knows the target language
     // and whether the source declared the component as exported.
     const exportPrefix = ir.metadata.isExported === false ? '' : 'export '
-    lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
+    // Carry the source component's own generic type parameters, if any
+    // (mirrors `HonoAdapter` — see `IRMetadata.typeParameters`'s docstring).
+    const typeParameters = ir.metadata.typeParameters ?? ''
+    lines.push(`${exportPrefix}function ${name}${typeParameters}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
 
     // Generate scope ID
     if (hasClientInteractivity) {
