@@ -3,7 +3,7 @@
 '@barefootjs/jsx': patch
 ---
 
-\#2482 Stage 4 (final): drive the binding-scope ratchet allowlist to its documented floor.
+#2482 Stage 4 (final): drive the binding-scope ratchet allowlist to its documented floor.
 
 Go adapter: `renderLoop`'s loop-array const lookup gains a `!this.scope.isBound(arrayName)` guard — an enclosing loop's own item param shadowing a same-named module const could previously misfire a false BF101 diagnostic. Narrow, real correctness fix.
 

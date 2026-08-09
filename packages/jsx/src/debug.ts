@@ -1702,10 +1702,16 @@ function collectDomBindings(
   // reactive read. Text expressions carry `origin.freeRefs` (a `render-item`
   // kind == map-callback param); attributes carry `freeIdentifiers` (bare
   // identifier set). This matches the emitter's actual loop-param gate.
+  // Set-intersection test without spreading into an array — these run per
+  // node in the graph walk, so avoid the per-call allocation.
+  const setSomeIn = (names: ReadonlySet<string>, other: ReadonlySet<string>): boolean => {
+    for (const n of names) if (other.has(n)) return true
+    return false
+  }
   const exprReadsLoopParam = (n: IRExpression): boolean =>
     boundNames.size > 0 && (n.origin?.freeRefs?.some(r => boundNames.has(r.name)) ?? false)
   const attrReadsLoopParam = (free: ReadonlySet<string> | undefined): boolean =>
-    boundNames.size > 0 && free !== undefined && [...boundNames].some(p => free.has(p))
+    boundNames.size > 0 && free !== undefined && setSomeIn(boundNames, free)
   switch (node.type) {
     case 'element': {
       // Dynamic attribute bindings (style, class, aria-*, data-*, etc.)
@@ -1836,7 +1842,7 @@ function collectDomBindings(
         const loopReactive =
           boundNames.size > 0 &&
           node.arrayFreeIdentifiers !== undefined &&
-          [...boundNames].some(p => node.arrayFreeIdentifiers!.has(p))
+          setSomeIn(boundNames, node.arrayFreeIdentifiers)
         const isReactive = deps.length > 0 || node.callsReactiveGetters === true || loopReactive
         const isFallback = !isReactive && node.hasFunctionCalls === true
         if (isReactive || isFallback) {

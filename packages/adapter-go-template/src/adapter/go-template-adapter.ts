@@ -6403,7 +6403,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // is the position-accurate ancestor scope (see the comment above
     // `bakedElementLoop`) — same shadow-guard shape as
     // `prop-handling.ts`'s `expandDynamicPropValue`.
-    if (bakedChildLoop === null && !this.scope.isBound(arrayName) && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+    if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
       const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
       if (arrayConst && !arrayConst.isModule && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
         this.state.errors.push({
