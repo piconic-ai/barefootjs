@@ -176,7 +176,25 @@ export abstract class JsxAdapter extends BaseAdapter {
       if (signal.setter) {
         const setterUsed = identifierPattern(signal.setter).test(setterRefText)
         if (setterUsed) {
-          lines.push(`  const ${signal.setter} = (..._args: any[]) => {}`)
+          // The real `createSignal<T>` setter accepts `T | ((prev: T) =>
+          // T)` (`packages/client/src/reactive.ts`'s `Signal<T>`). The
+          // untyped `(..._args: any[]) => {}` stub gave every `setX((prev)
+          // => ...)` updater-function call site an `any[]`-typed argument
+          // position — not a function-typed one — so the arrow's own
+          // `prev` parameter had no contextual type to infer from and
+          // `tsc` flagged it implicit-any (TS7006, #2573 chart family).
+          // Mirror the real setter's signature whenever the signal's type
+          // is known, so updater-function callers keep their inference;
+          // fall back to the untyped stub only when it isn't (matches
+          // `needsTypeAssertion`'s `'unknown'` guard just above).
+          const setterType = preserveTypes && signal.type.kind !== 'unknown'
+            ? `(valueOrFn: ${signal.type.raw} | ((prev: ${signal.type.raw}) => ${signal.type.raw})) => void`
+            : null
+          lines.push(
+            setterType
+              ? `  const ${signal.setter}: ${setterType} = () => {}`
+              : `  const ${signal.setter} = (..._args: any[]) => {}`,
+          )
         }
       }
     }
