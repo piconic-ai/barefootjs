@@ -94,6 +94,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  BindingScope,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -248,17 +249,23 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    */
   private localConstants: IRMetadata['localConstants'] = []
   /**
-   * Names currently bound by an enclosing loop body — the block-param
-   * locals `renderLoop` introduces (item, index, per-binding destructure
-   * fields) — ref-counted so nested loops compose. This is load-bearing
-   * for TWO things in the ERB adapter (more than the Mojo original, which
-   * only used it to guard const-inlining): it also decides the
-   * fundamental `v[:name]` vs bare-Ruby-local rendering choice in
-   * `ErbTopLevelEmitter.identifier` — see `emit-context.ts`'s
-   * `isLoopBoundName` docstring for why ERB's two-locals model needs this
-   * where Perl's uniform `$name` sigil does not.
+   * The one canonical, position-accurate "names bound by an enclosing loop
+   * callback" service (#2482 Stage 2) — replaces the ref-counted
+   * `Map<string, number>` this adapter used to push/pop around
+   * `renderLoop`'s body. Load-bearing for TWO things in the ERB adapter
+   * (more than the Mojo original, which only used it to guard
+   * const-inlining): it also decides the fundamental `v[:name]` vs
+   * bare-Ruby-local rendering choice in `ErbTopLevelEmitter.identifier` —
+   * see `emit-context.ts`'s `isLoopBoundName` docstring for why ERB's
+   * two-locals model needs this where Perl's uniform `$name` sigil does
+   * not. Threaded via save/restore-by-reference around
+   * `renderChildren(loop.children)` in `renderLoop` (immutable — no
+   * ref-count bookkeeping), mirroring the Stage 1a/1b `ctx.scope`
+   * precedent in `jsx-to-ir.ts`. `IRLoop` already structurally satisfies
+   * `LoopBindingSource` (`param`/`index`/`paramBindings`/`preamble`), so
+   * `renderLoop` passes the loop node straight to `enterLoopRow`.
    */
-  private loopBoundNames: Map<string, number> = new Map()
+  private scope: BindingScope = BindingScope.EMPTY
   /**
    * Prop names whose value is `nil` in the template body when the caller
    * omits them — so a bare-reference attribute should be dropped rather
@@ -298,7 +305,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
-    this.loopBoundNames.clear()
+    this.scope = BindingScope.EMPTY
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -440,7 +447,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
    * would read nil.
    */
   private resolveLiteralConst(name: string): string | null {
-    if (this.loopBoundNames?.has?.(name)) return null
+    if (this.scope.isBound(name)) return null
     const c = (this.localConstants ?? []).find(lc => lc.name === name)
     if (c?.value === undefined) return null
     const v = c.value.trim()
@@ -451,8 +458,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   }
 
   private resolveStaticRecordLiteral(objectName: string, key: string): string | null {
-    if (this.loopBoundNames?.has?.(objectName)) return null
-    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
+    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants, name => this.scope.isBound(name))
     if (!hit) return null
     return hit.kind === 'number' ? hit.text : rubyStringLiteral(hit.text)
   }
@@ -460,7 +466,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   private resolveModuleStringConst(name: string): string | null {
     // A loop body introduces block-param bindings that shadow a module
     // const of the same name — never inline inside one.
-    if (this.loopBoundNames.has(name)) return null
+    if (this.scope.isBound(name)) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
     return rubyStringLiteral(value)
@@ -469,7 +475,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   /** Whether `name` currently names a loop-bound Ruby local. See
    *  `ErbEmitContext.isLoopBoundName`'s docstring. */
   private isLoopBoundName(name: string): boolean {
-    return this.loopBoundNames.has(name)
+    return this.scope.isBound(name)
   }
 
   // ===========================================================================
@@ -957,15 +963,17 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // `unsupported` object-literal path (BF101, "Expression not
     // supported"), which is what this loop-specific check now also does
     // deliberately, up front, for both shapes.
+    // Canonical, position-accurate predicate (#2482 Stage 2) — the
+    // enclosing loop scope's own membership.
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: name => this.loopBoundNames.has(name),
+      isNameShadowed: this.scope.asShadowPredicate(),
     })
     const staticArray = staticItems !== null ? staticValueToRuby(staticItems) : null
 
     if (staticArray === null && loop.arrayParsed?.kind === 'identifier') {
       const arrayName = loop.arrayParsed.name
       const isUnresolvableLocalConst =
-        !this.loopBoundNames.has(arrayName) &&
+        !this.scope.isBound(arrayName) &&
         this.resolveModuleStringConst(arrayName) === null &&
         this.resolveLiteralConst(arrayName) === null &&
         this.localConstants.some(c => c.name === arrayName && !c.isModule)
@@ -994,29 +1002,22 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     const indexVar = loop.iterationShape === 'keys'
       ? rubyLocal(param)
       : rubyLocal(loop.index ?? '_i')
-    // Names this loop binds in body scope. Guard module-const inlining (and,
-    // in ERB, the fundamental v[:name]-vs-local rendering choice) for the
-    // whole body (children + key + filter) so a same-named loop variable
-    // isn't replaced by the const literal / a vars-Hash read. Ref-counted
-    // for nested loops; released after the body lines are assembled below.
-    const loopBound = loop.objectIteration === 'entries'
-      ? [param, loop.index ?? '_k']
-      : loop.objectIteration === 'keys' || loop.objectIteration === 'values' || loop.iterationShape === 'keys'
-        ? [param]
-        : supportableDestructure
-          ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
-          : [param, loop.index ?? '_i']
-    // A `.map()` callback preamble lowers to one per-row Ruby local per
-    // declaration (#2447). The names must be loop-bound for the whole body,
-    // or `ErbTopLevelEmitter.identifier` renders each read as `v[:cls]` —
-    // a vars-Hash key nothing ever seeds, i.e. the empty attribute this
-    // fixes. Phase 1 guarantees `declarations` is present or the loop was
-    // already refused, so there is no partial-lowering case here.
+    // This loop's row scope. Guards module-const inlining (and, in ERB, the
+    // fundamental v[:name]-vs-local rendering choice) for the whole body
+    // (children + key + filter) so a same-named loop variable isn't
+    // replaced by the const literal / a vars-Hash read. `IRLoop` already
+    // structurally satisfies `LoopBindingSource`
+    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
+    // binds exactly what this renderLoop's header + preamble locals
+    // introduce (#2482 Stage 2 — replaces the ref-counted `Map` this
+    // adapter used to carry). Restored by reference (immutable — no
+    // ref-count bookkeeping) at the matching pop below, once the WHOLE
+    // body (including the filter predicate) has been rendered — except for
+    // one temporary drop-to-outer window around the hoisted sort-comparator
+    // emission below, since that runs OUTSIDE this loop.
     const preambleDecls = loop.preamble?.declarations ?? []
-    for (const d of preambleDecls) loopBound.push(d.name)
-    for (const n of loopBound) {
-      this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
-    }
+    const prevScope = this.scope
+    this.scope = prevScope.enterLoopRow(loop)
     const prevLoopKeyDepth = this.currentLoopKeyDepth
     this.currentLoopKeyDepth = loop.depth
     const renderedChildren = this.renderChildren(loop.children)
@@ -1042,18 +1043,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // fall back to the structured `bf.sort` for a comparator the
       // evaluator can't model (e.g. `localeCompare`).
       //
-      // The hoisted sort runs OUTSIDE this loop, so this loop's bound names
+      // The hoisted sort runs OUTSIDE this loop, so this loop's row scope
       // must not shadow the comparator's captured free vars while emitting
       // the env — otherwise a captured var that happens to share a
       // loop-param name is blocked from inlining its module const / from
       // reading `v[:name]` and instead resolves to the (out-of-scope) loop
-      // local. Drop this loop's bound names for the sort emit, then
-      // restore (a nested loop's outer bindings, ref-counted, stay in effect).
-      for (const n of loopBound) {
-        const c = (this.loopBoundNames.get(n) ?? 1) - 1
-        if (c <= 0) this.loopBoundNames.delete(n)
-        else this.loopBoundNames.set(n, c)
-      }
+      // local. Drop back to the outer (pre-row) scope for the sort emit,
+      // then restore the row scope below (a nested loop's own outer
+      // bindings stay in effect throughout, since `prevScope` already
+      // carries them).
+      this.scope = prevScope
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToRuby('', e)
       const sortArrow = loop.sortComparator.arrow
       let sorted: string | null = null
@@ -1074,9 +1073,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         )
         sorted = rawArray
       }
-      for (const n of loopBound) {
-        this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
-      }
+      this.scope = prevScope.enterLoopRow(loop)
       lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
     }
     if (loop.objectIteration) {
@@ -1184,12 +1181,8 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       lines.push(children)
     }
 
-    // Body fully rendered — release the loop-bound names.
-    for (const n of loopBound) {
-      const c = (this.loopBoundNames.get(n) ?? 1) - 1
-      if (c <= 0) this.loopBoundNames.delete(n)
-      else this.loopBoundNames.set(n, c)
-    }
+    // Body fully rendered — restore the outer (pre-row) scope.
+    this.scope = prevScope
 
     lines.push(`<%- end -%>`)
     lines.push(`<%= bf.comment("/loop:${loop.markerId}") %>`)
@@ -1558,11 +1551,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // function-scope (`!isModule`) consts whose value is NOT itself a
       // bare identifier (loop guard) are considered.
       //
-      // `loopBoundNames` guard (#2489): an enclosing `.map()` callback's own
-      // param can shadow this outer const's name (`.map((attrs) => <p
+      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
+      // own param can shadow this outer const's name (`.map((attrs) => <p
       // {...attrs} />)`) — without the guard this forwarded the OUTER
       // const's value at every iteration instead of the per-item value.
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.loopBoundNames.has(trimmed)) {
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
         const localConst = this.localConstants.find(
           c => c.name === trimmed && !c.isModule,
         )

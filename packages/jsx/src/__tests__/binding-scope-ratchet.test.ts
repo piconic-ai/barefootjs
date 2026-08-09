@@ -63,9 +63,7 @@ type Pattern = (typeof PATTERNS)[number]
  * means an expected count of 0.
  */
 const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
-  'packages/adapter-blade/src/adapter/blade-adapter.ts': { staticLoopSourceBoundNames: 8, loopBoundNames: 12 },
-  'packages/adapter-erb/src/adapter/erb-adapter.ts': { 'localConstants.find(': 1, loopBoundNames: 20 },
-  'packages/adapter-erb/src/adapter/expr/emitters.ts': { loopBoundNames: 1 },
+  'packages/adapter-erb/src/adapter/erb-adapter.ts': { 'localConstants.find(': 1 },
   'packages/adapter-go-template/src/adapter/expr/helper-inline.ts': { 'localConstants.find(': 1 },
   'packages/adapter-go-template/src/adapter/go-template-adapter.ts': {
     'localConstants.find(': 5,
@@ -75,15 +73,9 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   'packages/adapter-go-template/src/adapter/lib/compile-state.ts': { staticLoopSourceBoundNames: 1, loopParamStack: 1 },
   'packages/adapter-go-template/src/adapter/memo/ctor-lowering.ts': { 'localConstants.find(': 3 },
   'packages/adapter-go-template/src/adapter/memo/memo-value.ts': { 'localConstants.find(': 1 },
-  'packages/adapter-jinja/src/adapter/jinja-adapter.ts': { staticLoopSourceBoundNames: 8, loopBoundNames: 12 },
   'packages/adapter-mojolicious/src/adapter/mojo-adapter.ts': {
     'localConstants.find(': 1,
-    staticLoopSourceBoundNames: 1,
-    loopBoundNames: 23,
   },
-  'packages/adapter-rust/src/adapter/minijinja-adapter.ts': { staticLoopSourceBoundNames: 8, loopBoundNames: 12 },
-  'packages/adapter-twig/src/adapter/twig-adapter.ts': { staticLoopSourceBoundNames: 8, loopBoundNames: 12 },
-  'packages/adapter-xslate/src/adapter/xslate-adapter.ts': { staticLoopSourceBoundNames: 8, loopBoundNames: 12 },
   'packages/jsx/src/adapters/jsx-adapter.ts': { 'localConstants.find(': 1 },
   'packages/jsx/src/augment-inherited-props.ts': { 'localConstants.find(': 1 },
   'packages/jsx/src/css-layer-prefixer.ts': { 'localConstants.find(': 1 },

@@ -412,11 +412,12 @@ export function Parent() {
 // `ir.metadata.localConstants` with no notion of AST scope — it used to
 // substitute an outer const's literal value even at an occurrence that is
 // actually an enclosing loop callback's own (shadowing) parameter, so every
-// iteration rendered the same hard-coded literal. Guarded with the same
-// coarse `collectLoopBoundNames` exclusion as #2212: any name a loop binds
-// anywhere in the component never inlines, falling back to the bare
-// identifier. SSR-only tests for the same #2222 reason as the #2212
-// describe below.
+// iteration rendered the same hard-coded literal. Guarded via the threaded,
+// position-accurate `BindingScope` (#2482 Stage 2 — previously a coarse
+// whole-component exclusion, same as #2212's, that also suppressed a
+// genuinely non-shadowed occurrence outside the loop; the threaded scope
+// only shadows AT the enclosing loop's own body). SSR-only tests for the
+// same #2222 reason as the #2212 describe below.
 describe('TwigAdapter - const inlining vs loop-param shadowing (#2221)', () => {
   test('a loop param shadowing an outer literal const emits the identifier, not the const value', () => {
     const { template } = compileAndGenerate(`
@@ -455,11 +456,11 @@ function Widget({ values }: { values: number[] }) {
     expect(template).toContain('1 + 5')
   })
 
-  // The accepted coarse-exclusion trade-off (same as #2212): a name that is
-  // loop-bound ANYWHERE in the component never inlines, even at a genuinely
-  // non-shadowed occurrence outside the loop — the bare identifier is
-  // emitted instead of the value.
-  test('a const referenced outside the loop whose name is loop-bound elsewhere falls back to the identifier (accepted trade-off)', () => {
+  // Position-accurate scope (#2482 Stage 2): a name that is loop-bound
+  // elsewhere in the component but NOT at THIS occurrence still inlines
+  // here — the coarse whole-component exclusion this used to hit (and
+  // accept as a trade-off) is gone; only the loop's own body shadows.
+  test('a const referenced outside the loop whose name is loop-bound elsewhere still inlines outside, stays the identifier inside', () => {
     const { template } = compileAndGenerate(`
 function Widget({ values }: { values: number[] }) {
   const label: string = 'x'
@@ -469,7 +470,7 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).not.toContain("1 + 'x'")
+    expect(template).toContain("1 + 'x'")
     expect(template).toContain('2 + label')
   })
 })
@@ -481,9 +482,8 @@ function Widget({ values }: { values: number[] }) {
 // substitute the outer const's member value even at an occurrence that is
 // actually an enclosing loop callback's own (shadowing) parameter, so every
 // iteration rendered the same hard-coded literal instead of the per-item
-// value. Guarded with the same coarse `staticLoopSourceBoundNames`
-// exclusion as #2221: any name a loop binds anywhere in the component
-// never inlines, falling back to the bare `cfg.x` member expression.
+// value. Guarded via the threaded, position-accurate `BindingScope` (#2482
+// Stage 2), same as #2221's fix above.
 describe('TwigAdapter - record-literal member lookup vs loop-param shadowing (#2237)', () => {
   test('a loop param shadowing an outer module object const emits the member access, not the outer literal', () => {
     const { template } = compileAndGenerate(`
@@ -508,12 +508,12 @@ function Widget({ variant }: { variant: 'solid' | 'ghost' }) {
     expect(template).toContain("bf.string('bg-ghost')")
   })
 
-  // The accepted coarse-exclusion trade-off (same as #2221/#2212): an
-  // object name that is loop-bound ANYWHERE in the component never
-  // inlines its member lookups, even at a genuinely non-shadowed
-  // occurrence outside the loop — the bare member expression is emitted
-  // instead of the value.
-  test('a record member referenced outside the loop whose object name is loop-bound elsewhere falls back to the member expression (accepted trade-off)', () => {
+  // Position-accurate scope (#2482 Stage 2): an object name that is
+  // loop-bound elsewhere in the component but NOT at THIS occurrence still
+  // inlines its member lookup here — the coarse whole-component exclusion
+  // this used to hit (and accept as a trade-off) is gone; only the loop's
+  // own body shadows.
+  test('a record member referenced outside the loop whose object name is loop-bound elsewhere still inlines outside, stays the member expression inside', () => {
     const { template } = compileAndGenerate(`
 const cfg = { x: 'outer-lit' }
 function Widget({ rows }: { rows: { x: string }[] }) {
@@ -523,7 +523,7 @@ function Widget({ rows }: { rows: { x: string }[] }) {
   </div>
 }
 `)
-    expect(template).not.toContain("bf.string('outer-lit')")
+    expect(template).toContain("bf.string('outer-lit')")
     expect(template).toContain('bf.string(cfg.x)')
   })
 })

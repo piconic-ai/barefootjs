@@ -464,14 +464,26 @@ export function collectModuleStringConsts(
  * compile-time lookup (the icon registry's `strokePaths['chevron-down']`,
  * pagination's `variantClasses.ghost`; #1896 / #1897). Returns the
  * looked-up scalar, or `null` for any other shape so callers fall back
- * to their generic lowering. Shared by all three SSR template adapters;
+ * to their generic lowering. Shared by all seven template-string adapters;
  * the prop-KEYED variant of the pattern lives in `parseRecordIndexAccess`.
+ *
+ * `isShadowed` is REQUIRED (#2482 Stage 2) rather than left to caller
+ * discipline: an enclosing loop callback's own param/index/destructure/
+ * preamble binding of the same name as `objectName` (`.map((cfg) =>
+ * <li>{cfg.x}</li>)` shadowing a module `const cfg = {…}`) must resolve to
+ * the ROW value, not the outer const's member — every call site used to
+ * check this itself, against its own ad-hoc per-adapter shadow-name
+ * bookkeeping, with no static guarantee a new caller wouldn't forget it.
+ * Pass `scope.isBound` (or `scope.asShadowPredicate()`) from the caller's
+ * threaded `BindingScope`.
  */
 export function lookupStaticRecordLiteral(
   objectName: string,
   key: string,
   constants: IRMetadata['localConstants'] | undefined,
+  isShadowed: (name: string) => boolean,
 ): { kind: 'string' | 'number'; text: string } | null {
+  if (isShadowed(objectName)) return null
   const constInfo = (constants ?? []).find(c => c.name === objectName && c.isModule)
   if (constInfo?.value === undefined) return null
   const sf = ts.createSourceFile(
