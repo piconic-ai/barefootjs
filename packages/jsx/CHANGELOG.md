@@ -1,5 +1,14 @@
 # @barefootjs/jsx
 
+## 0.31.4
+
+### Patch Changes
+
+- 42ea62e: Migrate the client-JS emitter's loop-callback scope tracking onto `BindingScope` (#2482 stage 1b): `html-template.ts`'s CSR materialize template (`opts.loopBoundNames`) and `csr-substitute.ts`'s `csrSubstitute` now thread a `BindingScope` instead of an ad-hoc flat name set, so a `.map()` callback preamble local (#2447) shadowing a same-named module/component constant is no longer const-folded into the CSR-only hydrate template. Also guards `prop-handling.ts`'s `expandDynamicPropValue` / `expandConstantForReactivity` against the same class of bug for per-item reactive attribute effects (`reactivity.ts`'s loop-child collectors and `collect-elements.ts`'s loop-child conditionals) — a loop row binding (item / index / destructured / preamble) that shadows a component const no longer resolves to the outer const's value inside a per-row `createEffect`.
+- 1961421: Re-anchor relative specifiers inside dynamic `import()` and `typeof import()` when emitting SSR templates (#2588). Those specifiers ride along inside declaration source text re-emitted verbatim (module-scope consts/functions, a component body's local handlers), so they never reach `metadata.templateImports` and were left pointing at the source file's directory — an unresolvable path once the template lands at a different depth, failing the backend bundler with `Could not resolve "…"`. Adds `rewriteDynamicImportsInSource` (TS AST + span splicing) to `@barefootjs/jsx`, applied by `HonoAdapter` alongside the existing static-import rewrite.
+- 4212376: Fix `$`-containing identifiers (`$item`, `count$`, `a$b`) being silently dropped from reactivity/loop-param classification and accessor-wrapping — the compiler's `new RegExp(`\\b${name}\\b`)` identifier-reference heuristic treated an unescaped `$`as a regex anchor and, even escaped,`\b`doesn't recognize`$` as identifier-like, so a leading/trailing `$` broke the boundary match (#2592).
+  - @barefootjs/shared@0.31.4
+
 ## 0.31.3
 
 ### Patch Changes
