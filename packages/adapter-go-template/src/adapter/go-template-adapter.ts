@@ -32,6 +32,7 @@ import type {
   IRMetadata,
   TemplatePrimitiveRegistry,
   LoopBindingPathSegment,
+  LoopBindingSource,
 } from '@barefootjs/jsx'
 import {
   BaseAdapter,
@@ -74,6 +75,7 @@ import {
   resolveStaticLoopSource,
   collectLoopBoundNames,
   evaluateStaticLiteral,
+  BindingScope,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -263,7 +265,37 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * populated it, not correctness across passes.
    */
   private bakedStaticChildLoopCache = new Map<string, BakedStaticChildLoop | null>()
-  private loopParamStack: string[] = []
+  /**
+   * The one threaded, immutable scope of "names bound by an enclosing loop
+   * callback" (#2482 Stage 3 — replaces this adapter's own order-sensitive
+   * loop-param stack). Entered via `enterLoopRow(loop)` in `renderLoop` /
+   * `renderUnrolledStaticElementLoop`, bracketing preamble conversion,
+   * children rendering, AND the key-anchor (`loopItemMarker`) conversion —
+   * mirrors the Stage 1a/1b `ctx.scope` precedent in `jsx-to-ir.ts` and the
+   * Stage 2 template-string-adapter migration. `IRLoop` already structurally
+   * satisfies `LoopBindingSource` (`param`/`index`/`paramBindings`/
+   * `preamble`), so most call sites pass the loop node straight through.
+   *
+   * ONE Go-specific wrinkle `BindingScope`'s generic 'item' semantics don't
+   * know about: a `.keys()`-shape loop's callback param is the RANGE INDEX,
+   * not the range value — Go's `{{range}}` dot context there is the
+   * (discarded) value, not the key, so the key must never win the
+   * depth-0-item "resolves to `.`" fast path `isCurrentLoopItem` grants a
+   * plain `.map()` param. `renderLoop` enters such a loop's scope with an
+   * overridden EMPTY `param`, mirroring the historical empty-string push
+   * onto the old stack for the same shape — the key name stays
+   * resolvable only through `loopVarRefCount`'s existing `$name` machinery,
+   * unchanged by this migration.
+   *
+   * Destructured-binding ACCESSOR TEXT (`id` → `$__bf_item0.Id`) is Go-
+   * specific rendering payload `ScopeBinding` has no field for (by design —
+   * `BindingScope` only carries EXISTENCE/kind, not per-adapter accessor
+   * strings), so `loopBindingStack` stays as the accessor source of truth,
+   * pushed/popped in lockstep with `scope` at the same points. `scope`
+   * subsumes its EXISTENCE role (shadow-guard / dot-vs-`$name` decisions)
+   * everywhere except the accessor lookup itself.
+   */
+  private scope: BindingScope = BindingScope.EMPTY
   /**
    * Stack of `IRLoop.depth` values (innermost last), pushed/popped around
    * `renderChildren(loop.children)` in `renderLoop`. `renderAttributes`
@@ -450,6 +482,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.referencedDerivedConsts = new Set()
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
+    this.scope = BindingScope.EMPTY
     this.primeCompileState(ir)
     this.state.stringValueNames = collectStringValueNames(ir)
     // #2448: self-register this component's derived-memo dependencies, so a
@@ -3757,8 +3790,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // field that never exists. Mirrors the string-const inlining above.
     const inlinedNum = this.resolveModuleNumericConst(name)
     if (inlinedNum !== null) return inlinedNum
-    const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
-    if (currentLoopParam && name === currentLoopParam) return '.'
+    if (this.isCurrentLoopItem(name)) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
     // the Go range variable `$name` declared by that loop's `{{range … := …}}`;
     // the inner dot no longer refers to it, and it's not a root field.
@@ -3859,17 +3891,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * True when `name` is bound as the CURRENT (innermost) loop row's own
+   * plain `.map()` item param — i.e. it resolves to Go template's dot
+   * context (`.`), not a `$name` range variable or a root field. `depth 0`
+   * is `scope`'s innermost frame; `source === 'item'` excludes a
+   * destructured binding (source `'destructure'`, resolved through
+   * `loopBindingStack` instead — see `scope`'s field docstring) and a
+   * `.keys()`-shape loop's key param (never bound as `'item'` at all —
+   * `renderLoop` enters that shape's scope with an overridden empty param).
+   */
+  private isCurrentLoopItem(name: string): boolean {
+    const hit = this.scope.lookup(name)
+    return hit !== null && hit.depth === 0 && hit.binding.source === 'item'
+  }
+
+  /**
    * True when `name` is a loop value variable from an enclosing (not the
-   * current) loop — i.e. it sits on `loopParamStack` below the top. Such a
-   * reference resolves to the Go range variable `$name`, not the inner dot or
-   * the root data.
+   * current) loop — i.e. it's bound in `scope` as an OUTER frame's own
+   * plain item param (`depth > 0`, source `'item'`). Such a reference
+   * resolves to the Go range variable `$name`, not the inner dot or the
+   * root data.
    */
   private isOuterLoopParam(name: string): boolean {
-    const top = this.loopParamStack.length - 1
-    for (let i = 0; i < top; i++) {
-      if (this.loopParamStack[i] === name) return true
-    }
-    return false
+    const hit = this.scope.lookup(name)
+    return hit !== null && hit.depth > 0 && hit.binding.source === 'item'
   }
 
   /**
@@ -3880,7 +3925,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
    */
   private rootFieldRef(name: string): string {
-    const prefix = this.loopParamStack.length > 0 ? '$.' : '.'
+    const prefix = this.inLoop ? '$.' : '.'
     return `${prefix}${capitalizeFieldName(name)}`
   }
 
@@ -3922,9 +3967,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * auto-escaping.
    */
   private resolveModuleStringConst(name: string): string | null {
-    if (this.loopParamStack.length > 0 && this.loopParamStack[this.loopParamStack.length - 1] === name) {
-      return null
-    }
+    if (this.isCurrentLoopItem(name)) return null
     if (this.loopVarRefCount.has(name)) return null
     if (this.isOuterLoopParam(name)) return null
     const value = this.state.moduleStringConsts.get(name)
@@ -3940,9 +3983,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * range variable that shadows a const name still wins.
    */
   private resolveModuleNumericConst(name: string): string | null {
-    if (this.loopParamStack.length > 0 && this.loopParamStack[this.loopParamStack.length - 1] === name) {
-      return null
-    }
+    if (this.isCurrentLoopItem(name)) return null
     if (this.loopVarRefCount.has(name)) return null
     if (this.isOuterLoopParam(name)) return null
     const c = this.state.localConstants.find(
@@ -4033,7 +4074,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const slice = this.state.memoBackedLoopSlice.get(object.callee.name)
       if (slice) {
         // Root field, so reach it through `$.` inside a loop.
-        const prefix = this.loopParamStack.length > 0 ? '$.' : '.'
+        const prefix = this.inLoop ? '$.' : '.'
         return `len ${prefix}${slice}`
       }
     }
@@ -4094,8 +4135,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // template syntax, let alone a reachable field (PR #2089 review). For
     // identifier keys (snake_case included) the two functions agree, so
     // nothing previously reachable changes shape.
-    const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
-    if (object.kind === 'identifier' && currentLoopParam && object.name === currentLoopParam) {
+    if (object.kind === 'identifier' && this.isCurrentLoopItem(object.name)) {
       return `.${goFieldNameForKey(property)}`
     }
 
@@ -5466,22 +5506,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Whether `name` at the CURRENT emission position is bound by an enclosing
-   * loop callback — its item param (`loopParamStack` top), an outer loop's
-   * range variable, a hoisted loop var, or a destructured binding name
-   * (`loopBindingStack`, which is the ONLY place destructured callbacks
-   * record their names; they push `''` onto `loopParamStack`). Shared by the
+   * loop callback — its item param, an outer loop's range variable, a
+   * destructured binding name, an index var, or a preamble local. `scope`
+   * (`BindingScope`, #2482 Stage 3) covers all of those EXCEPT a
+   * `.keys()`-shape loop's own key param (never bound in `scope` at all —
+   * see `scope`'s field docstring), which stays reachable only through
+   * `loopVarRefCount` — so both are still consulted. Shared by the
    * string-keyed fast paths (#2236, #2242 Copilot review) that resolve raw
    * `jsExpr` text before `identifier()`'s own guards can see it. Mirrors the
    * checks in `resolveModuleStringConst` / `resolveModuleNumericConst`.
    */
   private isLoopShadowedName(name: string): boolean {
-    return (
-      (this.loopParamStack.length > 0 &&
-        this.loopParamStack[this.loopParamStack.length - 1] === name) ||
-      this.loopVarRefCount.has(name) ||
-      this.isOuterLoopParam(name) ||
-      this.loopBindingStack.some(bindings => bindings.has(name))
-    )
+    return this.scope.isBound(name) || this.loopVarRefCount.has(name)
   }
 
   /**
@@ -5871,8 +5907,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
           const inlined = this.resolveModuleStringConst(expr.name)
           if (inlined !== null) return plain(inlined)
-          const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
-          if (currentLoopParam && expr.name === currentLoopParam) {
+          if (this.isCurrentLoopItem(expr.name)) {
             return plain('.')
           }
           // Outer loop value variable (nested loop) → its range var `$name`.
@@ -5971,11 +6006,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           return plain(this.rootFieldRef(expr.property))
         }
 
-        {
-          const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
-          if (expr.object.kind === 'identifier' && currentLoopParam && expr.object.name === currentLoopParam) {
-            return plain(`.${capitalizeFieldName(expr.property)}`)
-          }
+        if (expr.object.kind === 'identifier' && this.isCurrentLoopItem(expr.object.name)) {
+          return plain(`.${capitalizeFieldName(expr.property)}`)
         }
 
         const obj = this.renderConditionExpr(expr.object)
@@ -6241,6 +6273,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.bakedStaticChildLoopCache.has(markerId)) {
       return this.bakedStaticChildLoopCache.get(markerId) ?? null
     }
+    // #2482 Stage 3: this method is called from TWO sites outside the live
+    // `renderLoop` tree walk (`generateNewPropsFunction`'s Input-struct
+    // field list and constructor-generation pass, per the docstring above)
+    // where there is no live `this.scope` to consult — so, unlike
+    // `renderLoop`'s own `analyzeBakeableStaticElementLoop` call, this stays
+    // on the coarse whole-component shadow-name Set `primeCompileState`
+    // populates. A genuinely-legitimate surviving use of the pre-#2482
+    // device (flagged for Stage 4 rather than migrated here).
     const result = analyzeBakeableStaticChildLoop(
       { props: childComponent.props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
       this.state.localConstants,
@@ -6337,12 +6377,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // exact (conservative) acceptance gate. `null` here means the shape
     // isn't (yet) bakeable this way; the existing gates below keep firing
     // exactly as before.
+    // #2482 Stage 3: `renderLoop` is a live tree-walk, so `this.scope` (not
+    // yet entered for THIS loop's own row — that happens further below)
+    // gives the position-accurate ancestor-shadowing answer directly, unlike
+    // `getBakedStaticChildLoop` above, which is memoized across sites that
+    // run OUTSIDE the tree walk and so must keep its coarse whole-component
+    // shadow-name Set (see that method's own comment).
     const bakedElementLoop = loop.childComponent
       ? null
       : analyzeBakeableStaticElementLoop(
           loop,
           this.state.localConstants,
-          { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name) },
+          { isNameShadowed: this.scope.asShadowPredicate() },
         )
     if (bakedElementLoop) {
       return this.renderUnrolledStaticElementLoop(loop, bakedElementLoop.items)
@@ -6423,15 +6469,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // of the row-scoped field) (#2487).
     const wasInLoopOuter = this.inLoop
     this.inLoop = true
-    // Track Go template loop variables. The range *value* variable is the dot
-    // context (`.`) and goes on `loopParamStack`; the range *index* variable
-    // needs `$name` notation and goes on `loopVarRefCount`. For `.keys()`, the
-    // user's param IS the index (the `$k, $_` position), so it needs `$name` —
-    // don't push it to loopParamStack (`.` would resolve to the value, not key);
-    // push falsy `''` so the `currentLoopParam &&` guard in `identifier()` /
-    // `renderConditionExpr` short-circuits. Ref-counting (not a flat Set) keeps
-    // nested loops with the same index var name from clobbering the outer entry
-    // on cleanup.
+    // Enter this loop's row scope (#2482 Stage 3). `IRLoop` already
+    // structurally satisfies `LoopBindingSource`, so the plain/destructured
+    // cases pass `loop` straight through — `enterLoopRow` binds
+    // `paramBindings` (destructure) OR `param` (plain item) automatically.
+    // `.keys()` is the one shape `BindingScope`'s generic 'item' semantics
+    // don't fit: the callback param there IS the index, not the row value
+    // (the dot context is the discarded value), so it must never win
+    // `isCurrentLoopItem`'s dot-shortcut — enter with an overridden empty
+    // `param`, mirroring the historical empty-string push onto the old
+    // loop-param stack for the same shape. The key stays reachable only
+    // via `loopVarRefCount`'s `$name` bookkeeping below, unchanged by this
+    // migration.
+    const scopeLoop: LoopBindingSource = loop.iterationShape === 'keys' ? { ...loop, param: '' } : loop
+    const prevScope = this.scope
+    this.scope = prevScope.enterLoopRow(scopeLoop)
+    // Track Go template loop variables. The range *index* variable needs
+    // `$name` notation and goes on `loopVarRefCount` (the range *value*
+    // variable's dot-context resolution now comes from `scope` above).
+    // Ref-counting (not a flat Set) keeps nested loops with the same index
+    // var name from clobbering the outer entry on cleanup.
     const addedLoopVars: string[] = []
     // A `.map()` callback preamble lowers to one `{{$cls := …}}` per-row
     // variable per declaration (#2447). Registering the names on
@@ -6446,23 +6503,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     let pushedBindingMap = false
     if (supportableDestructure) {
-      // Bindings resolve against the synthetic `$__bf_item` range var; don't push
-      // a loop param (the param is a pattern, not a name).
+      // Bindings resolve against the synthetic `$__bf_item` range var.
       const built = this.buildDestructureBindingMap(loop, rangeValue)
       this.loopBindingStack.push(built.bindings)
       this.loopRestExcludeStack.push(built.restExcludes)
       pushedBindingMap = true
-      this.loopParamStack.push('')
       if (rangeIndex !== '_') {
         this.loopVarRefCount.set(rangeIndex, (this.loopVarRefCount.get(rangeIndex) ?? 0) + 1)
         addedLoopVars.push(rangeIndex)
       }
     } else if (loop.iterationShape === 'keys') {
-      this.loopParamStack.push('')
       this.loopVarRefCount.set(param, (this.loopVarRefCount.get(param) ?? 0) + 1)
       addedLoopVars.push(param)
     } else {
-      this.loopParamStack.push(param)
       if (rangeIndex !== '_') {
         this.loopVarRefCount.set(rangeIndex, (this.loopVarRefCount.get(rangeIndex) ?? 0) + 1)
         addedLoopVars.push(rangeIndex)
@@ -6487,9 +6540,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
     this.loopScalarItemStack.pop()
-    // Build the per-item anchor marker while the loop param is still on the
-    // stack, so a `bodyIsItemConditional` key expression resolves against the
-    // range item (`.` context) like `data-key` does — popping first would
+    // Build the per-item anchor marker while the row scope is still active,
+    // so a `bodyIsItemConditional` key expression resolves against the
+    // range item (`.` context) like `data-key` does — restoring first would
     // rewrite `t.id` to `.T.ID` instead of `.ID`.
     const itemMarker = this.loopItemMarker(loop)
     for (const v of addedLoopVars) {
@@ -6497,7 +6550,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (rc <= 0) this.loopVarRefCount.delete(v)
       else this.loopVarRefCount.set(v, rc)
     }
-    this.loopParamStack.pop()
+    this.scope = prevScope
     if (pushedBindingMap) {
       this.loopBindingStack.pop()
       this.loopRestExcludeStack.pop()
@@ -6578,7 +6631,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.loopWrapperStack.push(false)
     this.loopKeyDepthStack.push(loop.depth)
     this.loopScalarItemStack.push(this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null)
-    this.loopParamStack.push(loop.param)
+    // The bake gate (`analyzeBakeableStaticElementLoop`) already refused a
+    // destructured or `.keys()`-shape param, so `loop` binds via `enterLoopRow`
+    // unadjusted — always a plain item (#2482 Stage 3).
+    const prevScope = this.scope
+    this.scope = prevScope.enterLoopRow(loop)
 
     let body = ''
     for (const item of items) {
@@ -6603,7 +6660,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    this.loopParamStack.pop()
+    this.scope = prevScope
     this.loopScalarItemStack.pop()
     this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
@@ -6947,8 +7004,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // (#2087), which lifted the flat-object-only restriction for the
         // destructure-residual fixtures below.
         const trimmed = value.expr.trim()
-        const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
-        if (currentLoopParam && trimmed === currentLoopParam) {
+        if (this.isCurrentLoopItem(trimmed)) {
           // The row's keys are Go-cased by the field-access contract: the
           // same lowering that makes `attrs.id` emit `{{.ID}}`
           // (`goFieldNameForKey` → `capitalizeFieldName`) requires the

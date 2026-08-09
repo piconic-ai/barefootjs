@@ -67,8 +67,13 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   'packages/adapter-go-template/src/adapter/expr/helper-inline.ts': { 'localConstants.find(': 1 },
   'packages/adapter-go-template/src/adapter/go-template-adapter.ts': {
     'localConstants.find(': 5,
-    staticLoopSourceBoundNames: 3,
-    loopParamStack: 35,
+    // #2482 Stage 3: `loopParamStack` eliminated entirely (0, down from 35)
+    // — replaced by the threaded `this.scope: BindingScope`. The remaining
+    // 2 `staticLoopSourceBoundNames` uses (down from 3) are the
+    // `getBakedStaticChildLoop` shadow guard shared with two call sites
+    // OUTSIDE the live `renderLoop` tree walk (no live `scope` to consult
+    // there) — a genuinely-legitimate surviving use, flagged for Stage 4.
+    staticLoopSourceBoundNames: 2,
   },
   'packages/adapter-go-template/src/adapter/lib/compile-state.ts': { staticLoopSourceBoundNames: 1, loopParamStack: 1 },
   'packages/adapter-go-template/src/adapter/memo/ctor-lowering.ts': { 'localConstants.find(': 3 },
