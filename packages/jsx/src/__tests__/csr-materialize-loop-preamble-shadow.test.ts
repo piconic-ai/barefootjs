@@ -69,7 +69,16 @@ describe('CSR materialize template vs .map() preamble-local shadowing a module c
 
     // The row-local `label` (the preamble's OWN computed value) must
     // drive the branch — never the outer module const's literal.
-    expect(tpl).toContain('label ? `<span>yes</span>`')
+    //
+    // The branch also carries a `bf-c="s0"` slot marker on both arms
+    // (#2596 follow-up): `label`'s initializer reads the real signal `on()`,
+    // so `markPreambleConditionalReactivity` now grants this conditional a
+    // slot id and the `reactive` flag it lacked before — the SAME
+    // observable-failure-mode class this file's docstring describes
+    // ("every row's branch condition evaluated the constant's fixed
+    // truthiness"), just for the signal dimension instead of the shadowing
+    // one. Nothing else about this fixture's shape changed.
+    expect(tpl).toContain('label ? `<span bf-c="s0">yes</span>` : `<span bf-c="s0">no</span>`')
     expect(tpl).not.toContain("('MODULE_CONST')")
     expect(tpl).not.toContain('MODULE_CONST')
   })

@@ -5021,6 +5021,13 @@ function transformMapCall(
   // the row effect re-runs the preamble ahead of the write.
   if (preamble && !isStaticArray) {
     markPreambleAttrSlots(children, new Set(preamble.declaredNames), ctx)
+    // #2596 follow-up to the two passes above — the CONDITION-position twin.
+    // See `markPreambleConditionalReactivity`'s docstring for why this one is
+    // gated on `reactiveNames` (genuinely signal-derived) rather than the
+    // blanket `declaredNames` the region/attr passes use.
+    if (preamble.reactiveNames && preamble.reactiveNames.length > 0) {
+      markPreambleConditionalReactivity(children, new Set(preamble.reactiveNames), ctx)
+    }
   }
 
   // Collect nested components for both static and dynamic arrays.
@@ -5458,6 +5465,67 @@ function markPreambleAttrSlots(
 }
 
 /**
+ * Grant the IR `reactive` flag (and a slot id) to a loop-body CONDITIONAL
+ * whose condition bare-references a preamble local that is itself reactive
+ * (#2596) — `reactiveNames`, computed by `computePreambleReactiveNames`.
+ *
+ * Root cause this closes: a plain (non-preamble) condition's `reactive` flag
+ * comes from `isReactiveExpression`/`isReactiveOrigin` run against the
+ * condition's OWN text at `transformConditional`/`transformLogicalAnd`/the
+ * if-else-chain builder — none of which know about an enclosing loop's
+ * `.map()` callback preamble (that's assembled and only becomes available
+ * on `IRLoop` after `children` is already built, same ordering constraint
+ * `collectPreambleRegions`/`markPreambleAttrSlots` work around). A condition
+ * that's just a bare reference to a preamble local (`label ? <A/> : <B/>`)
+ * therefore falls through every one of those classifiers with `reactive:
+ * false` even when `label`'s initializer reads a signal — the classifiers
+ * only ever see the token `label`, never its declaration.
+ *
+ * Deliberately narrower than `collectPreambleRegions`/`markPreambleAttrSlots`:
+ * those two mark ANY reference to `declaredNames` because their region-patch
+ * effect re-runs the WHOLE preamble unconditionally on row update, so a
+ * merely item-derived local (`const label = item.title`) still ends up
+ * correctly tracked by ordinary signal auto-tracking inside that effect —
+ * marking it reactive there costs nothing extra. A conditional is different:
+ * `reactive: true` here means Phase 2 wraps it in an `insert()` that swaps
+ * whole DOM subtrees, which is real cost and, for an item-only local, pure
+ * waste — the row already renders fresh whenever it's (re)constructed. So
+ * this only fires for `reactiveNames`, the subset PROVEN to depend on an
+ * actual external signal/memo/prop.
+ *
+ * Mirrors the sibling passes' traversal shape (conditional arms included).
+ */
+function markPreambleConditionalReactivity(
+  nodes: IRNode[],
+  reactiveNames: ReadonlySet<string>,
+  ctx: TransformContext,
+): void {
+  if (reactiveNames.size === 0) return
+  const visit = (list: IRNode[]): void => {
+    for (const node of list) {
+      switch (node.type) {
+        case 'element':
+        case 'fragment':
+          visit(node.children)
+          break
+        case 'conditional': {
+          if (!node.reactive) {
+            const refs = extractFreeIdentifiersFromText(node.condition)
+            if ([...refs].some((r) => reactiveNames.has(r))) {
+              node.reactive = true
+              if (!node.slotId) node.slotId = generateSlotId(ctx)
+            }
+          }
+          visit([node.whenTrue, ...(node.whenFalse ? [node.whenFalse] : [])])
+          break
+        }
+      }
+    }
+  }
+  visit(nodes)
+}
+
+/**
  * Expression-bearing source text of an attribute value, for the
  * free-identifier scan. Only used as a FALLBACK — an attribute normally
  * carries `freeIdentifiers` from its own AST walk, and this reconstruction
@@ -5504,6 +5572,52 @@ function collectPreambleDeclaredNames(stmt: ts.Statement, out: Set<string>): voi
 }
 
 /**
+ * Which {@link MapCallbackPreamble.declaredNames} are themselves reactive —
+ * their OWN initializer reads a signal / memo / reactive prop, directly or
+ * transitively through an earlier declaration in the same preamble (#2596).
+ *
+ * Reuses the same Phase-1 classifier (`isReactiveExpression`) already applied
+ * to every non-preamble condition/attribute — this doesn't invent a second
+ * reactivity heuristic, it runs the existing one over one more declaration
+ * list. `ctx.patterns.constants` (the component-level constant chain
+ * `isSignalOrMemoReference`/`isPropsReference` already walk) doesn't reach
+ * these names — they're scoped to the `.map()` callback body, never added to
+ * `ctx.patterns` — so without this pass a preamble local reading a signal is
+ * invisible to the classifier.
+ *
+ * Value-declaration statements only (`const`/`let x = expr`, including
+ * destructuring targets, which mark every bound name reactive together since
+ * they share one initializer). A non-declaration preamble statement
+ * (assignment, loop, side-effecting call) contributes no reactive names —
+ * consistent with `neutralPreambleDeclarations`'s all-or-nothing DSL gate
+ * treating anything past that as un-lowerable, though this walk (client/JS-
+ * runtime SSR only) doesn't require the same all-or-nothing: it simply skips
+ * what it can't classify.
+ */
+function computePreambleReactiveNames(
+  statements: readonly ts.Statement[],
+  ctx: TransformContext,
+): Set<string> {
+  const reactiveNames = new Set<string>()
+  for (const stmt of statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!decl.initializer) continue
+      const boundNames = new Set<string>()
+      collectBindingNames(decl.name, boundNames)
+      const initText = ctx.getJS(decl.initializer)
+      const initFreeRefs = extractFreeIdentifiersFromNode(decl.initializer)
+      const readsEarlierReactive = [...initFreeRefs].some((r) => reactiveNames.has(r))
+      const isReactive = readsEarlierReactive || isReactiveExpression(initText, ctx, decl.initializer)
+      if (isReactive) {
+        for (const n of boundNames) reactiveNames.add(n)
+      }
+    }
+  }
+  return reactiveNames
+}
+
+/**
  * Build a {@link MapCallbackPreamble} from value-only (JSX-free) pre-return
  * statements — the Stage-2 fold preamble and the plain block-body preamble.
  * One `js` segment per statement, semicolon-normalized and space-joined
@@ -5526,6 +5640,7 @@ function preambleFromValueStatements(
     typedParts.push(raw0.endsWith(';') ? raw0 : raw0 + ';')
     segments.push(tjs !== js ? { kind: 'js', text: js, templateText: tjs } : { kind: 'js', text: js })
   }
+  const reactiveNames = computePreambleReactiveNames(statements, ctx)
   return {
     segments: trimPreambleSegments(segments),
     ssrText: tsxSourceText(typedParts.join(' ')),
@@ -5533,6 +5648,7 @@ function preambleFromValueStatements(
     // Value-only preambles accumulate no JSX, so no child needs the array join.
     builderNames: [],
     declarations: neutralPreambleDeclarations(statements, ctx) ?? undefined,
+    reactiveNames: reactiveNames.size > 0 ? [...reactiveNames] : undefined,
   }
 }
 

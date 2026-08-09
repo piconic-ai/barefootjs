@@ -140,7 +140,7 @@ export function stringifyReactiveEffects(
   // from the attrs/texts/regions merge above (its own per-branch disposable
   // effects), so it's untouched by row-granularity consolidation.
   for (const cond of conditionals) {
-    emitOuterConditional(lines, indent, elVar, cond, pc)
+    emitOuterConditional(lines, indent, elVar, cond, pc, mapPreambleWrapped)
   }
 }
 
@@ -342,12 +342,22 @@ function emitOuterConditional(
   elVar: string,
   cond: NestedConditionalPlan,
   pc: string | undefined,
+  mapPreambleWrapped: string | undefined,
 ): void {
   const armIndent = `${indent}    `
 
   // Body-form arrows so live `Node` returns from Child-position
   // interpolations route through `__bfSlot` and survive the splice (#1213).
-  lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
+  // A condition reading a preamble local (#2596) needs the preamble re-run
+  // INSIDE the getter — `insert()` re-invokes this closure on every
+  // dependency change to decide the branch, and the local isn't otherwise in
+  // scope here (it's a plain per-row `const`, not a signal `insert()` can see
+  // through on its own). Same treatment as `readsPreamble` attrs
+  // (`emitAttrUpdate`'s callers) get ahead of their own write.
+  const conditionGetter = cond.readsPreamble && mapPreambleWrapped
+    ? `() => { ${mapPreambleWrapped}; return (${cond.wrappedCondition}) }`
+    : `() => ${cond.wrappedCondition}`
+  lines.push(`${indent}insert(${elVar}, '${cond.slotId}', ${conditionGetter}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
   stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc)

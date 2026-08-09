@@ -671,8 +671,10 @@ export function collectLoopChildReactiveTexts(
  * `loopIndex` (Copilot review on #2595): see `collectLoopChildReactiveTexts`.
  */
 /** Does any name in `names` appear in `set`? Iterates rather than
- *  spreading — this runs per attribute (Copilot review). */
-function anyNameIn(names: Iterable<string>, set: ReadonlySet<string>): boolean {
+ *  spreading — this runs per attribute (Copilot review). Exported for
+ *  `collectLoopChildConditionals`'s `readsPreamble` check (#2596), the
+ *  condition-position twin of the attr check just below this uses it for. */
+export function anyNameIn(names: Iterable<string>, set: ReadonlySet<string>): boolean {
   for (const n of names) if (set.has(n)) return true
   return false
 }

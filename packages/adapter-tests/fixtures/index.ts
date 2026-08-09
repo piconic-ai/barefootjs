@@ -397,6 +397,7 @@ import { fixture as compositeRowChildDerivedProp } from './composite-row-child-d
 import { fixture as compositeRowChildAliasedProp } from './composite-row-child-aliased-prop'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
 import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
+import { fixture as loopPreambleConditionalReactive } from './loop-preamble-conditional-reactive'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
 import { fixture as childPrimitiveProps } from './child-primitive-props'
 import { fixture as preWhitespace } from './pre-whitespace'
@@ -825,4 +826,5 @@ export const jsxFixtures: JSXFixture[] = [
   detailsOpen,
   dialogOpen,
   progressMeterValue,
+  loopPreambleConditionalReactive,
 ]

@@ -578,6 +578,19 @@ export interface LoopChildConditional {
    * constants' own `freeIdentifiers`.
    */
   conditionFreeIdentifiers?: ReadonlySet<string>
+  /**
+   * `condition` reads a `.map()` callback preamble local (#2596, twin of
+   * `LoopChildReactiveAttr.readsPreamble` #2447) — the emitter must run the
+   * preamble ahead of evaluating the condition getter passed to `insert()`,
+   * since the local is not otherwise in scope there and its value is what
+   * makes the condition reactive at all. Set only when Phase 1 already
+   * proved the local reactive (`IRLoop.preamble.reactiveNames` via
+   * `markPreambleConditionalReactivity`) — `classifyReactivity` can't
+   * itself see this: `expandConstantForReactivity`'s shadow guard leaves a
+   * preamble-bound identifier unexpanded on purpose (#2482 Stage 1b), so
+   * the raw token never string-matches a signal/memo/prop pattern.
+   */
+  readsPreamble?: boolean
 }
 
 export interface TopLevelLoop extends LoopCore {
