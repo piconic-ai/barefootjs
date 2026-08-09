@@ -16,6 +16,24 @@
  * degrades to the ALREADY-accepted residual (`+` falls back to numeric,
  * same as before #2212 for an unresolvable operand) rather than ever
  * producing silently-wrong output.
+ *
+ * #2482 (BindingScope) does NOT replace this: it answers "is NAME bound
+ * AT THIS POSITION", a live, position-accurate query built by walking
+ * INTO scopes during a render-time (or render-shaped) tree walk. This
+ * function answers a deliberately different, coarser question —
+ * "is NAME EVER a loop-bound name ANYWHERE in the component" — a single
+ * whole-component prepass run once at `generate()` entry, before any
+ * loop scope exists to thread. The two are complementary, not
+ * duplicative: swapping this for `BindingScope` would require re-deriving
+ * a position-accurate answer at every string-typed-operand call site,
+ * which is exactly the coarse-but-safe trade-off this function exists to
+ * avoid. Stays outside the `binding-scope-ratchet.test.ts` ledger for an
+ * incidental reason too — a lowercase-`l`-led spelling of this file's own
+ * export once lived as a per-adapter ref-counted-map field name (fully
+ * migrated away in an earlier #2482 stage) that the ledger's scan tracked;
+ * this function's own `collectLoopBoundNames` name is capitalized
+ * differently (a capital `L`) and so was never inside that scan's reach in
+ * the first place.
  */
 
 import type { ComponentIR, IRNode } from '../types.ts'

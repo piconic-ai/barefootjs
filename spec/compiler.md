@@ -1160,6 +1160,38 @@ const classes = `btn ${isActive() && 'on'}`  // Uses memo
 const isActive = createMemo(() => selected() === id)
 ```
 
+### `BindingScope`: loop/callback binding resolution (#2482)
+
+Every place the compiler and its adapters need to answer "is this name bound by an enclosing `.map()`/`.filter()` callback, and if so how" used to be answered by one of **six independent ad-hoc mechanisms**: `jsx-to-ir.ts`'s mutated `ctx.loopParams: Set<string>`, `ir-to-client-js/csr-substitute.ts`'s function-local `boundStack`, `adapters/loop-bound-names.ts`'s flat `collectLoopBoundNames` scan, `static-literal.ts`'s `isNameShadowed` callback, the Go adapter's own `loopParamStack`, and each template-string adapter's `staticLoopSourceBoundNames`-style Set. Each reimplemented the same item/index/destructure/preamble-local bookkeeping with its own bugs and its own blind spots. #2482 collapsed all six onto one shared, immutable service — `BindingScope` (`packages/jsx/src/scope/binding-scope.ts`) — threaded as a parameter/field everywhere a live scope answer is needed, migrated in four stages (Stage 0 shipped the service; Stages 1-3 migrated the compiler, client-JS emitter, template-string adapters, and the Go adapter in turn; Stage 4 drove the remaining direct uses to a documented floor — see `binding-scope-ratchet.test.ts`).
+
+**Immutability is the point, not a style choice.** `enterLoopRow(loop)` / `enterCallback(params)` never mutate `this` — each returns a NEW `BindingScope` whose parent frame is untouched. A caller that holds an old reference across a nested call always sees the scope as it was; there is no `.delete()` step to forget, so the restore-bugs the old mutate-in-place stacks were prone to are impossible by construction.
+
+**API surface:**
+
+| Method | Answers |
+|--------|---------|
+| `enterLoopRow(loop)` | child scope with a new `'loop-row'` frame binding `loop`'s item/index/destructure/preamble names (`loop` is a structural `LoopBindingSource` — `IRLoop` satisfies it directly, no adapter wiring needed) |
+| `enterCallback(params)` | child scope with a new `'callback'` frame binding a `.filter()`/`.sort()`/nested-arrow parameter list |
+| `isBound(name)` | is `name` bound by ANY frame, from any binding source, innermost-first |
+| `boundNames()` | the union of every frame's bound names (every source) |
+| `valueBoundNames()` | the union of names bound via `'item'`/`'index'`/`'destructure'` sources ONLY — excludes `'preamble'` and `'param'` |
+| `lookup(name)` | innermost-first resolution: `{ depth, frame, binding } \| null`, where `depth 0` is the innermost frame |
+| `asShadowPredicate()` | `(name) => this.isBound(name)`, a drop-in for callback-shaped shadow-check options (e.g. `resolveStaticLoopSource`'s `isNameShadowed`) |
+
+**The two-consumer-classes rule.** Every `BindingScope` consumer falls into exactly one of two classes, and conflating them is a real regression class (a Stage 1a bug flipped `tag-cloud` and `preamble-cells` conformance fixtures before the split existed):
+
+- **Shadow guards** ask "is this name resolved to SOMETHING in this scope, so an outer const/prop of the same name must not be substituted here?" Every binding source qualifies, including a preamble local shadowing a module const. These read `isBound()` / `boundNames()`. Examples: `tryResolveTemplateSpanFromConst`, `rewriteBarePropRefs` (`jsx-to-ir.ts`), `expandDynamicPropValue` (`prop-handling.ts`), each template-string adapter's own local-const shadow check.
+- **Reactivity / slot-ID classifiers** ask "does this expression read a value that changes per row, and so needs its own patchable slot?" A preamble local already gets its OWN dedicated slot/region-patch machinery (`preambleRegions`, #2447), so folding it into this classification double-counts it. These read `valueBoundNames()`. Examples: `referencesLoopParam`, `hasReactiveAttributes` (`jsx-to-ir.ts`), the `BindingEnvironment.loopValueBoundNames` feed `makeBindingEnv` builds for `free-refs.ts`'s free-reference resolver, `bf debug graph`'s `collectDomBindings`.
+
+**The scope-window rule for adapters.** A loop row's `BindingScope` frame must bracket exactly the preamble conversion, the children render, AND the key-anchor (loop-item marker) conversion — all three read the row's own item/index/destructure names. Filter/sort predicate emission is different: it runs in the SOURCE context (the array expression the loop iterates), one nesting level OUTSIDE the row's own frame, and stays there — entering the row's frame before emitting the filter/sort predicate would incorrectly make the row's OWN names visible to a predicate that runs before any row exists. `renderLoop` (Go adapter) and `irToHtmlTemplate`/`irToPlaceholderTemplate` (client-JS emitter) both enter via `(callerScope ?? BindingScope.EMPTY).enterLoopRow(loop)` at the point children rendering begins, not before.
+
+**Not everything `BindingScope`-adjacent is a migration target.** Two structural exceptions are permanent by design, not migration debt:
+
+- A prepass that runs OUTSIDE any render-time (or render-shaped) tree walk — e.g. the Go adapter's `getBakedStaticChildLoop`, memoized across `generateInputStruct`/`generateNewPropsFunction`, which run before any loop scope exists to thread — has no live `BindingScope` to consult and falls back to a coarser, deliberately over-inclusive whole-component Set (safe because over-exclusion only ever degrades to the pre-#2482 residual, never to silently wrong output).
+- `BindingScope` carries binding EXISTENCE/kind/depth only, never per-binding rendering payload. A Go template destructure accessor string (`id` → `$__bf_item0.Id`) or the client-JS emitter's ordered loop-param accessor-rewrite spec (`wrapExprWithLoopParams`, `ir-to-client-js/utils.ts`) is Go/client-JS-specific payload `ScopeBinding` has no field for by design — these stay as adapter-owned, `scope`-parallel structures (`loopBindingStack` in the Go adapter) pushed/popped in lockstep with `scope`, not folded into it.
+
+**Enforcement: the ratchet.** `packages/jsx/src/__tests__/binding-scope-ratchet.test.ts` scans every non-test `.ts` file under `packages/jsx/src/` and each `packages/adapter-*/src/` for direct textual uses of the mechanisms `BindingScope` replaces, and pins the EXACT count per file. A count above its pinned value fails the test — a new direct use of a legacy scope device was added, use `BindingScope` instead. A count below shrinks the pin (progress). As of #2482 Stage 4 the ledger is at its floor: every remaining entry is a permanent, justified exception (see the `ALLOWLIST`'s own doc comment for the file-by-file reasoning), not leftover debt — new code must use `BindingScope` for any "is this name bound by an enclosing loop callback" question, full stop.
+
 ---
 
 ## Staged IR (Phase / Scope / Effect)
@@ -1180,7 +1212,7 @@ The `hydrate` ↔ `init` boundary is what produced #1138.
 
 ### Scopes
 
-`Scope` names where a piece of code lives in the emitted module. Distinct from `Phase`: an init-body `createEffect` callback and a sub-init nested arrow both run at `tick` Phase but in different `Scope`s.
+`Scope` names where a piece of code lives in the emitted module. Distinct from `Phase`: an init-body `createEffect` callback and a sub-init nested arrow both run at `tick` Phase but in different `Scope`s. Also distinct from `BindingScope` (see [`BindingScope`: loop/callback binding resolution](#bindingscope-loopcallback-binding-resolution-2482) above) — `Scope` is a fixed 5-value enum naming an EMISSION TARGET; `BindingScope` is a runtime stack instance answering "which names does a `.map()`/`.filter()` callback bind at this position." The `render-item` `Scope` value below is where `BindingScope`-bound names get emitted; `BindingScope` is how the compiler knows which names those are.
 
 | Scope | Lexical container |
 |-------|-------------------|

@@ -30,6 +30,7 @@ import type { WrapReason } from './ir-to-client-js/reactivity.ts'
 import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity.ts'
 import { tokenContainsIdent } from './ir-to-client-js/utils.ts'
 import { identifierCallPattern } from './identifier-pattern.ts'
+import { BindingScope } from './scope/binding-scope.ts'
 
 // =============================================================================
 // Types
@@ -360,7 +361,7 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
 
   // Collect DOM bindings from IR tree
   const domBindings: DomBinding[] = []
-  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, new Set(), exprReadsProp)
+  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, BindingScope.EMPTY, exprReadsProp)
 
   // Build consumer lists for signals
   const signalConsumers = new Map<string, string[]>()
@@ -1676,30 +1677,41 @@ function collectDomBindings(
   signalGetters: Set<string>,
   memoNames: Set<string>,
   parentTag?: string,
-  // Loop-param names in scope (#1690, #1795 Phase 2). Inside a `map(it => …)`
+  // Loop-param names in scope (#1690, #1795 Phase 2; threaded via the shared
+  // `BindingScope` service since #2482 Stage 4). Inside a `map(it => …)`
   // body the emitter rewrites every `it.x` read into a reactive accessor and
   // wraps the binding in `createEffect`, yet `it` is neither a signal nor a
   // memo — so without this context loop-child text / attribute bindings are
   // invisible to the graph. When a binding expression references one of these
   // names it is treated as reactive (matching the emitter's gate), giving the
   // profiler a `domBinding` (slotId + loc) to resolve `<Comp>#binding:<slotId>`.
-  loopParams: Set<string> = new Set(),
+  // This is the REACTIVITY / SLOT-ID CLASSIFIER consumer class (see
+  // `BindingScope.valueBoundNames`'s docstring) — reads `valueBoundNames()`,
+  // not `boundNames()`.
+  scope: BindingScope = BindingScope.EMPTY,
   // Predicate: does an attribute expression read a component prop? Mirrors the
   // emitter's `needsEffectWrapper` prop detection so a prop-driven attribute
   // (wrapped in `createEffect` at codegen, hence emitting `#binding:<slot>`) is
   // tracked here too — otherwise its profiler id resolves to `(unresolved)`.
   readsProp: (expr: string, freeIds?: ReadonlySet<string>) => boolean = () => false,
 ): void {
+  const boundNames = scope.valueBoundNames()
   // Does a loop-child binding read a loop param (or index)? Use the analyzer's
   // lexer-resolved metadata, NOT a raw-string regex — so a param name that only
   // appears inside a string literal (index `i` vs `'i'`) is not mistaken for a
   // reactive read. Text expressions carry `origin.freeRefs` (a `render-item`
   // kind == map-callback param); attributes carry `freeIdentifiers` (bare
   // identifier set). This matches the emitter's actual loop-param gate.
+  // Set-intersection test without spreading into an array — these run per
+  // node in the graph walk, so avoid the per-call allocation.
+  const setSomeIn = (names: ReadonlySet<string>, other: ReadonlySet<string>): boolean => {
+    for (const n of names) if (other.has(n)) return true
+    return false
+  }
   const exprReadsLoopParam = (n: IRExpression): boolean =>
-    loopParams.size > 0 && (n.origin?.freeRefs?.some(r => loopParams.has(r.name)) ?? false)
+    boundNames.size > 0 && (n.origin?.freeRefs?.some(r => boundNames.has(r.name)) ?? false)
   const attrReadsLoopParam = (free: ReadonlySet<string> | undefined): boolean =>
-    loopParams.size > 0 && free !== undefined && [...loopParams].some(p => free.has(p))
+    boundNames.size > 0 && free !== undefined && setSomeIn(boundNames, free)
   switch (node.type) {
     case 'element': {
       // Dynamic attribute bindings (style, class, aria-*, data-*, etc.)
@@ -1713,7 +1725,7 @@ function collectDomBindings(
         // `key` is consumed by the loop's keyFn, never emitted as an attribute
         // effect — skip it inside loops so a `key={it.id}` read isn't mistaken
         // for a reactive binding (matches `collectLoopChildBindings`).
-        if (attr.name === 'key' && loopParams.size > 0) continue
+        if (attr.name === 'key' && boundNames.size > 0) continue
         const expr = attrValueToString(attr.value)
         if (!expr) continue
         const deps = extractReactiveDeps(expr, signalGetters, memoNames)
@@ -1756,7 +1768,7 @@ function collectDomBindings(
       }
       // Recurse — pass element tag as parent context for text bindings
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, loopParams, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, scope, readsProp)
       }
       break
     }
@@ -1794,7 +1806,7 @@ function collectDomBindings(
       // (the emitter wraps its `insert()` in a per-item effect) even though the
       // param is neither signal nor memo. Use the resolved `origin.freeRefs`.
       const loopReactive =
-        loopParams.size > 0 && (node.origin?.freeRefs?.some(r => loopParams.has(r.name)) ?? false)
+        boundNames.size > 0 && (node.origin?.freeRefs?.some(r => boundNames.has(r.name)) ?? false)
       if ((decision.wrap || loopReactive) && node.slotId) {
         const deps = extractReactiveDeps(node.condition, signalGetters, memoNames)
         bindings.push({
@@ -1813,8 +1825,8 @@ function collectDomBindings(
           jsxPreview: `{${truncateExpr(node.condition)} ? ... : ...}`,
         })
       }
-      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
-      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
+      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
+      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
       break
     }
     case 'loop': {
@@ -1828,9 +1840,9 @@ function collectDomBindings(
         // An inner loop whose array reads an outer loop param (`r.tags.map(...)`)
         // is reactive per item — use the resolved `arrayFreeIdentifiers`.
         const loopReactive =
-          loopParams.size > 0 &&
+          boundNames.size > 0 &&
           node.arrayFreeIdentifiers !== undefined &&
-          [...loopParams].some(p => node.arrayFreeIdentifiers!.has(p))
+          setSomeIn(boundNames, node.arrayFreeIdentifiers)
         const isReactive = deps.length > 0 || node.callsReactiveGetters === true || loopReactive
         const isFallback = !isReactive && node.hasFunctionCalls === true
         if (isReactive || isFallback) {
@@ -1859,12 +1871,13 @@ function collectDomBindings(
           })
         }
       }
-      // Loop-param names enter scope for the children (#1690, #1795 Phase 2).
-      const childLoopParams = new Set(loopParams)
-      for (const p of extractLoopParamNames(node.param, node)) childLoopParams.add(p)
-      if (node.index) childLoopParams.add(node.index)
+      // Loop-param names enter scope for the children (#1690, #1795 Phase 2),
+      // via the same `BindingScope.enterLoopRow` the emitter uses — `IRLoop`
+      // already satisfies `LoopBindingSource` structurally (`param`/`index`/
+      // `paramBindings`/`preamble`), so no bespoke Set bookkeeping is needed.
+      const childScope = scope.enterLoopRow(node)
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childLoopParams, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childScope, readsProp)
       }
       break
     }
@@ -1903,21 +1916,21 @@ function collectDomBindings(
         }
       }
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
       }
       break
     }
     case 'fragment':
     case 'provider': {
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
       }
       break
     }
     case 'if-statement': {
-      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
+      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
       if (node.alternate) {
-        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
+        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
       }
       break
     }

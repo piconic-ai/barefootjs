@@ -6,8 +6,12 @@
  *
  * NOT included (deliberately): cross-compile child-shape registries
  * (`childComponentShapes`, `childContextConsumers`, populated before a parent
- * compiles), the render-recursion cursor stacks (`loopParamStack`,
- * `filterExprDepth`, …), and constant config (`options`, `templatePrimitives`).
+ * compiles), the render-recursion cursor state (`scope: BindingScope`,
+ * `loopBindingStack`, `filterExprDepth`, …), and constant config (`options`,
+ * `templatePrimitives`). #2482 Stage 4: `scope` replaced the old mutable
+ * stack this comment used to name here (see the field's own docstring on
+ * `GoTemplateAdapter` for the full migration story) — this file never held
+ * that stack itself, only described where it lived.
  */
 
 import type {

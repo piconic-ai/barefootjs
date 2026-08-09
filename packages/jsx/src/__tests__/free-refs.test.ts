@@ -110,7 +110,7 @@ describe('resolveFreeRefs — kind resolution', () => {
     const env = {
       ...emptyEnv(),
       localConstants: [mkConst('item')],
-      loopParams: new Set(['item']),
+      loopValueBoundNames: new Set(['item']),
     }
     const refs = resolveFreeRefs(parseExpression('item'), env)
     expect(refs.find(r => r.name === 'item')?.kind).toBe('render-item')

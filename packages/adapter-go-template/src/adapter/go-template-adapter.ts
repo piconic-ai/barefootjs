@@ -6395,7 +6395,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     const arrayName = loop.array.trim()
-    if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+    // #2482 Stage 4: guard against an ENCLOSING loop's own item param
+    // shadowing a same-named module/component const (`items.map(items =>
+    // items.map(...))`) — without this, a bare-identifier array reference
+    // that resolves to the outer loop's per-row value could misresolve to
+    // the shadowed const below and raise a false BF101. `this.scope` here
+    // is the position-accurate ancestor scope (see the comment above
+    // `bakedElementLoop`) — same shadow-guard shape as
+    // `prop-handling.ts`'s `expandDynamicPropValue`.
+    if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
       const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
       if (arrayConst && !arrayConst.isModule && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
         this.state.errors.push({

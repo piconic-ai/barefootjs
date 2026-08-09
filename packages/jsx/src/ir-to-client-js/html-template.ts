@@ -729,6 +729,11 @@ function escapeLeafTextExpressions(ir: IRNode): IRNode {
   }
 }
 
+// `loopParams` here is the accessor-rewrite spec list `wrapExprWithLoopParams`
+// consumes, not a `BindingScope`-trackable name set — see that function's
+// docstring (`ir-to-client-js/utils.ts`) for why this stays outside #2482's
+// migration (it's the client-JS-emitter twin of the Go adapter's
+// `loopBindingStack`).
 export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, inHoistedChildren = false): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, inHoistedChildren)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)

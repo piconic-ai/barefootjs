@@ -698,6 +698,21 @@ export interface LoopParamSpec {
  * avoiding post-hoc regex replacement on full template strings.
  *
  * Accepts either a bare param name or a spec carrying destructure bindings.
+ *
+ * #2482: this `loopParams` parameter (and the same-named param on
+ * `irToHtmlTemplate` / `irToPlaceholderTemplate` in `html-template.ts`,
+ * threaded through `collect-elements.ts` / `build-event-delegation.ts`) is
+ * NOT one of the ratchet's tracked ad-hoc scope devices, even though the
+ * ledger's textual pattern happens to match its spelling. `BindingScope`
+ * answers EXISTENCE/kind/depth queries about bound names; this ordered
+ * `ReadonlyArray<string | LoopParamSpec>` instead carries the ACCESSOR-
+ * REWRITE payload for outermost-to-innermost text substitution
+ * (`item` → `__bfItem().path`) — a rendering/codegen concern `BindingScope`
+ * has no field for by design, the client-JS-emitter twin of the Go
+ * adapter's `loopBindingStack` (see that field's docstring on
+ * `GoTemplateAdapter`). Order matters here (each nesting level's wrap
+ * composes over the previous), which is exactly what a scope EXISTENCE
+ * stack does not model.
  */
 export function wrapExprWithLoopParams(expr: string, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
   if (!loopParams) return expr

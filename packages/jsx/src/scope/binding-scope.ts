@@ -201,7 +201,7 @@ export class BindingScope {
    *     qualifies, including a preamble local shadowing a module const.
    *     These call `isBound` / `boundNames()`.
    *   - REACTIVITY / SLOT-ID CLASSIFIERS (`referencesLoopParam`,
-   *     `hasReactiveAttributes`, and the `BindingEnvironment.loopParams`
+   *     `hasReactiveAttributes`, and the `BindingEnvironment.loopValueBoundNames`
    *     feed built from `makeBindingEnv`, all in `jsx-to-ir.ts`) ask
    *     "does this expression read a value that changes per row and so
    *     needs its own patchable slot" — a preamble local already gets

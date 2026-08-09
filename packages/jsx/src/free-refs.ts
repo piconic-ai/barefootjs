@@ -41,14 +41,23 @@ export interface BindingEnvironment {
   localFunctions: readonly FunctionInfo[]
   imports: readonly ImportInfo[]
   ambientGlobals: ReadonlySet<string>
-  /** Active `.map()` callback parameter names — present inside loop bodies. */
-  loopParams?: ReadonlySet<string>
+  /**
+   * Active `.map()` callback VALUE-bound names (item/index/destructure —
+   * excludes preamble locals and callback params) — present inside loop
+   * bodies. Named after, and fed from, `BindingScope.valueBoundNames()`
+   * (#2482 Stage 4 rename from `loopParams`, which predated the shared
+   * `BindingScope` service and named the mechanism, not the query). This
+   * is the REACTIVITY / SLOT-ID CLASSIFIER consumer class — see that
+   * method's docstring for why it must stay `valueBoundNames`, not
+   * `boundNames`.
+   */
+  loopValueBoundNames?: ReadonlySet<string>
   checker: ts.TypeChecker | null
 }
 
 /**
  * Per-environment cache for the binding map. `BindingEnvironment` identity
- * is stable per (analyzer, loopParams snapshot) — `jsx-to-ir.ts` memoizes
+ * is stable per (analyzer, loopValueBoundNames snapshot) — `jsx-to-ir.ts` memoizes
  * `makeBindingEnv` so the same object is reused across every
  * `resolveFreeRefs` call within a loop scope. With N expressions per
  * component and M bindings per env, this drops binding-table construction
@@ -114,8 +123,8 @@ function buildBindingMap(env: BindingEnvironment): Map<string, BindingKind> {
     map.set(m.name, 'memo-getter')
   }
   // Highest precedence — innermost scope.
-  if (env.loopParams) {
-    for (const name of env.loopParams) map.set(name, 'render-item')
+  if (env.loopValueBoundNames) {
+    for (const name of env.loopValueBoundNames) map.set(name, 'render-item')
   }
 
   _bindingMapCache.set(env, map)
