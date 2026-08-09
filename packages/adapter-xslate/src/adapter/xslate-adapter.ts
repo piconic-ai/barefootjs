@@ -920,14 +920,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // loop-child naming convention). renderedChildren above was computed with
     // the previous flag; recompute under the loop flag.
 
-    // Per-row locals for a `.map()` callback preamble (#2447), in source
-    // order so a later initializer sees an earlier local — same as the
-    // source block. Phase 1 refuses the loop outright when the preamble
-    // isn't fully declarable, so there is no partial-lowering case: either
-    // every statement is lowered here, or the build already failed.
-    const preambleLines = (loop.preamble?.declarations ?? []).map(
-      d => `: my $${d.name} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
-    )
     // This loop's row scope, for the position-accurate shadow guard
     // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
     // `IRLoop` already structurally satisfies `LoopBindingSource`
@@ -936,11 +928,35 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // the index (when present), and the `.map()` preamble's declared
     // locals, mirroring what THIS renderLoop's for-header + `indexLocalLines`
     // actually introduce. Restored by reference (immutable — no ref-count
-    // bookkeeping) so nested loops compose for free.
+    // bookkeeping) so nested loops compose for free. Entered BEFORE
+    // `preambleLines`/`bodyChildren` are converted and popped AFTER, not
+    // just around `renderChildren` — Copilot review on #2600 caught that
+    // the narrower window silently regressed the module-const shadow guard
+    // (`_resolveLiteralConst`/`_resolveStaticRecordLiteral`, now
+    // scope-driven instead of the old coarse whole-component set) for two
+    // row-context conversions that sit OUTSIDE `renderChildren`: a
+    // `.map()` preamble local's own initializer (`d.raw`, below) and the
+    // whole-item-conditional `loop-i:` key anchor (`loop.key`, in
+    // `bodyChildren` below) — both genuinely evaluate PER ROW and must see
+    // the row's own bindings. `loop.filterPredicate` deliberately stays
+    // OUTSIDE this window (further down, after the pop): per the Stage 0
+    // design a filter/sort callback's own param is a separate `callback`
+    // frame, never folded into the `.map()` row — and empirically
+    // `XslateFilterEmitter` (the filter predicate's dedicated,
+    // self-contained emitter) never consults `this.scope` at all, so its
+    // position relative to the pop is inert either way.
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
+
+    // Per-row locals for a `.map()` callback preamble (#2447), in source
+    // order so a later initializer sees an earlier local — same as the
+    // source block. Phase 1 refuses the loop outright when the preamble
+    // isn't fully declarable, so there is no partial-lowering case: either
+    // every statement is lowered here, or the build already failed.
+    const preambleLines = (loop.preamble?.declarations ?? []).map(
+      d => `: my $${d.name} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
+    )
     const childrenUnderLoop = this.renderChildren(loop.children)
-    this.scope = prevScope
     this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
     void renderedChildren
@@ -948,11 +964,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
     // anchor before each item's (possibly empty) conditional content so the
     // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
-    // anchor.
+    // anchor. Still under the row scope (see above) — `loop.key` is a
+    // per-row expression.
     const bodyChildren =
       loop.bodyIsItemConditional && loop.key
         ? `<: $bf.comment("loop-i:" ~ ${this.convertExpressionToKolon(loop.key)}) | mark_raw :>\n${childrenUnderLoop}`
         : childrenUnderLoop
+    this.scope = prevScope
 
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent

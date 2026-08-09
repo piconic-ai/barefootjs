@@ -573,6 +573,44 @@ function Widget({ rows }: { rows: { x: string }[] }) {
   })
 })
 
+// Copilot review on #2600 (#2482 Stage 2 follow-up): the position-accurate
+// `this.scope` (replacing the old coarse `staticLoopSourceBoundNames` set)
+// was only threaded around `renderChildren(loop.children)` in `renderLoop`
+// — narrower than the coarse set's always-on coverage. Two row-context
+// conversions sit OUTSIDE that window: a `.map()` preamble local's own
+// initializer, and the whole-item-conditional `loop-i:` key anchor
+// (`loop.key`). Both genuinely evaluate PER ROW and must see the row's own
+// bindings — a loop param shadowing a same-named outer const must resolve
+// to the row value there too, exactly as it already does inside the loop
+// body proper. `renderLoop` now enters the row scope before converting
+// either and pops it after, closing the gap.
+describe('XslateAdapter - row scope covers preamble/key conversions outside renderChildren (#2482 Stage 2 Copilot follow-up)', () => {
+  test('a loop param shadowing an outer const resolves to the row value inside a whole-item-conditional loop-i: key anchor', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ values }: { values: number[] }) {
+  const label: string = 'x'
+  return <ul>{values.map((label) => (label > 0 ? <li key={label}>{label}</li> : null))}</ul>
+}
+`)
+    expect(template).toContain('$bf.comment("loop-i:" ~ $label)')
+    expect(template).not.toContain('$bf.comment("loop-i:" ~ \'x\')')
+  })
+
+  test('a loop param shadowing an outer const resolves to the row value inside a .map() preamble local initializer', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ values }: { values: number[] }) {
+  const label: string = 'x'
+  return <ul>{values.map((label) => {
+    const cls = label
+    return <li key={label} class={cls}>{label}</li>
+  })}</ul>
+}
+`)
+    expect(template).toContain(': my $cls = $label;')
+    expect(template).not.toContain(": my $cls = 'x';")
+  })
+})
+
 describe('XslateAdapter - scriptAssets (Vite late-binding, PR1)', () => {
   const CLIENT_COMPONENT = `
 'use client'
