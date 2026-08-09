@@ -141,9 +141,9 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Command_${Math.random().toString(36).slice(2, 8)}`
   const search = () => ''
-  const setSearch = (..._args: any[]) => {}
+  const setSearch: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const selectedValue = () => ''
-  const setSelectedValue = (..._args: any[]) => {}
+  const setSelectedValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const filterFn = () => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())

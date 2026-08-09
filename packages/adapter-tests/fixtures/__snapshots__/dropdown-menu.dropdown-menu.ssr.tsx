@@ -357,7 +357,7 @@ export function DropdownMenuSub(__allProps: DropdownMenuSubProps & { __instanceI
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `DropdownMenuSub_${Math.random().toString(36).slice(2, 8)}`
   const subOpen = () => false
-  const setSubOpen = (..._args: any[]) => {}
+  const setSubOpen: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}

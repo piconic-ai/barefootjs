@@ -131,9 +131,9 @@ export function Select(__allProps: SelectProps & { __instanceId?: string; __bfSc
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Select_${Math.random().toString(36).slice(2, 8)}`
   const open = () => false
-  const setOpen = (..._args: any[]) => {}
+  const setOpen: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
   const internalValue = () => props.value ?? ''
-  const setInternalValue = (..._args: any[]) => {}
+  const setInternalValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const isControlled = () => props.value !== undefined
 
   // Serialize props for client hydration

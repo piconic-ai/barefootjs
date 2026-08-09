@@ -124,11 +124,11 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Combobox_${Math.random().toString(36).slice(2, 8)}`
   const open = () => false
-  const setOpen = (..._args: any[]) => {}
+  const setOpen: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
   const search = () => ''
-  const setSearch = (..._args: any[]) => {}
+  const setSearch: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const internalValue = () => props.value ?? ''
-  const setInternalValue = (..._args: any[]) => {}
+  const setInternalValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const isControlled = () => props.value !== undefined
   const filterFn = () => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
