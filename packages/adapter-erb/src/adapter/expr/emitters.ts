@@ -352,11 +352,11 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     if (name === 'undefined' || name === 'null') return 'nil'
     // A loop-bound name (this identifier resolves to a bare Ruby local
     // introduced by an enclosing loop, not a vars-Hash entry) takes
-    // priority over const inlining — mirrors the Mojo adapter's
-    // `loopBoundNames` shadow guard, but here it ALSO decides the
-    // fundamental v[:name]-vs-bare-local rendering, not just the const
-    // fast path (ERB's two-locals variable model needs this distinction;
-    // Perl's uniform `$name` sigil does not — see `ErbEmitContext`).
+    // priority over const inlining — mirrors the Mojo adapter's threaded
+    // scope shadow guard, but here it ALSO decides the fundamental
+    // v[:name]-vs-bare-local rendering, not just the const fast path
+    // (ERB's two-locals variable model needs this distinction; Perl's
+    // uniform `$name` sigil does not — see `ErbEmitContext`).
     if (this.ctx.isLoopBoundName(name)) return rubyLocal(name)
     // Module pure-string const (e.g. `const baseClasses = '...'` used in a
     // className template literal): inline the literal value rather than

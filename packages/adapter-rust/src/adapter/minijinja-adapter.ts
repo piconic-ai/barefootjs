@@ -170,8 +170,8 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
-  collectLoopBoundNames,
   derivesScopeFromSlot,
+  BindingScope,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -320,30 +320,24 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   private localConstants: IRMetadata['localConstants'] = []
 
   /**
-   * Every name a `.map()`/`.filter()` loop callback binds as its item/index
-   * parameter anywhere in the component (#2208 fable review). A static
-   * loop-SOURCE name (e.g. a function-scope `const items = [...]`) must
-   * never resolve through `resolveStaticLoopSource` at a use site where a
-   * DIFFERENT, enclosing loop's own callback param shadows it — same
-   * shadowing hazard, and same coarse-but-safe mitigation, as #2212's
-   * `collectLoopBoundNames` use in `collectStringValueNames`.
+   * The one canonical, position-accurate "names bound by an enclosing loop
+   * callback" service (#2482 Stage 2) — replaces the two ad-hoc devices
+   * this adapter used to carry side by side: a coarse whole-component
+   * shadow-name Set (built once at `generate()` entry, used only to guard
+   * static-const inlining) and a ref-counted, position-accurate live map
+   * (pushed/popped around `renderLoop`'s body, used for the boolean-prop/
+   * nullable-optional classification sites (#2488) and `emitSpread`'s
+   * local-const fallback (#2489)). Both consulted the "is this name
+   * loop-bound" question with DIFFERENT meanings — the coarse/live drift
+   * #2482 Stage 2 ends. Every shadow-guard site now reads this ONE
+   * threaded, immutable scope: `enterLoopRow`/pop-by-reference around
+   * `renderChildren(loop.children)` in `renderLoop`, mirroring the Stage
+   * 1a/1b `ctx.scope` precedent in `jsx-to-ir.ts`. `IRLoop` already
+   * structurally satisfies `LoopBindingSource`
+   * (`param`/`index`/`paramBindings`/`preamble`), so `renderLoop` passes
+   * the loop node straight to `enterLoopRow`.
    */
-  private staticLoopSourceBoundNames: Set<string> = new Set()
-
-  /**
-   * Names currently bound by an enclosing loop body — the block-param
-   * locals `renderLoop` introduces (item, index, per-binding destructure
-   * fields, `.map()` preamble declarations) — ref-counted so nested loops
-   * compose. This is the POSITION-ACCURATE twin of the coarse
-   * `staticLoopSourceBoundNames` above: that set is a whole-component
-   * union used only to guard static-const inlining (safe to over-suppress
-   * there — the fallback is just "don't inline"), whereas the boolean-prop
-   * and nullable-optional classification sites (#2488) and `emitSpread`'s
-   * local-const fallback (#2489) need to know whether a name is loop-bound
-   * AT THIS POSITION, because for those the coarse fallback would silently
-   * mis-render a genuine occurrence of the same name outside the loop too.
-   */
-  private loopBoundNames: Map<string, number> = new Map()
+  private scope: BindingScope = BindingScope.EMPTY
 
   /**
    * Optional, no-default props that are `None` when the caller omits them.
@@ -377,8 +371,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // ("True"/"False") (#1897, pagination's data-active).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
-    this.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
-    this.loopBoundNames.clear()
+    this.scope = BindingScope.EMPTY
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
@@ -878,9 +871,11 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // bare identifier expression below, same as before #2208 — which
     // still trips the pre-existing BF101 gate for an unresolvable local
     // const reference (a loud, conservative refusal, not a silent wrong
-    // value).
+    // value). Canonical, position-accurate predicate (#2482 Stage 2) — the
+    // enclosing loop scope's own membership, not a coarse whole-component
+    // union.
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: name => this.staticLoopSourceBoundNames.has(name),
+      isNameShadowed: this.scope.asShadowPredicate(),
     })
     const staticArray = staticItems !== null ? staticValueToMinijinja(staticItems) : null
 
@@ -985,6 +980,34 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // loop-child naming convention). renderedChildren above was computed with
     // the previous flag; recompute under the loop flag.
 
+    // This loop's row scope, for the position-accurate shadow guard
+    // (#2488/#2489, canonicalized on `BindingScope` in #2482 Stage 2).
+    // `IRLoop` already structurally satisfies `LoopBindingSource`
+    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
+    // binds exactly the for-header target(s), each destructure binding,
+    // the index (when present), and the `.map()` preamble's declared
+    // locals, mirroring what THIS renderLoop's for-header + `indexLocalLines`
+    // actually introduce. Restored by reference (immutable — no ref-count
+    // bookkeeping) so nested loops compose for free. Entered BEFORE
+    // `preambleLines`/`bodyChildren` are converted and popped AFTER, not
+    // just around `renderChildren` — Copilot review on #2600 caught that
+    // the narrower window silently regressed the module-const shadow guard
+    // (`_resolveLiteralConst`/`_resolveStaticRecordLiteral`, now
+    // scope-driven instead of the old coarse whole-component set) for two
+    // row-context conversions that sit OUTSIDE `renderChildren`: a
+    // `.map()` preamble local's own initializer (`d.raw`, below) and the
+    // whole-item-conditional `loop-i:` key anchor (`loop.key`, in
+    // `bodyChildren` below) — both genuinely evaluate PER ROW and must see
+    // the row's own bindings. `loop.filterPredicate` deliberately stays
+    // OUTSIDE this window (further down, after the pop): per the Stage 0
+    // design a filter/sort callback's own param is a separate `callback`
+    // frame, never folded into the `.map()` row — and empirically
+    // `JinjaFilterEmitter` (the filter predicate's dedicated,
+    // self-contained emitter) never consults `this.scope` at all, so its
+    // position relative to the pop is inert either way.
+    const prevScope = this.scope
+    this.scope = prevScope.enterLoopRow(loop)
+
     // Per-row locals for a `.map()` callback preamble (#2447), in source
     // order so a later initializer sees an earlier local — same as the
     // source block. Phase 1 refuses the loop outright when the preamble
@@ -993,42 +1016,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     const preambleLines = (loop.preamble?.declarations ?? []).map(
       d => `{% set ${minijinjaIdent(d.name)} = ${this.convertExpressionToJinja(d.raw, d.valueParsed)} %}`,
     )
-    // Names this loop binds in body scope, for the position-accurate
-    // `loopBoundNames` guard (#2488) — mirrors the ERB adapter's `loopBound`
-    // derivation, adapted to what THIS renderLoop actually binds: the
-    // for-header target(s) (`loopVar` / `objectIteration` key+value /
-    // `iterationShape === 'keys'`'s `param`), each `indexLocalLines` name
-    // (explicit index, or a destructure binding), and the `.map()`
-    // preamble's declared locals. Ref-counted so nested loops compose.
-    const loopBound: string[] = []
-    if (loop.objectIteration === 'entries') {
-      loopBound.push(loop.index ?? param, param)
-    } else if (loop.objectIteration === 'keys') {
-      // `|items` binds both slots; the unused one is a throwaway (#2488).
-      loopBound.push(param, '__bf_v')
-    } else if (loop.objectIteration === 'values') {
-      loopBound.push('__bf_k', param)
-    } else if (loop.iterationShape === 'keys') {
-      // The header still binds the throwaway loop var; `param` is only the
-      // index alias set beneath it (#2488).
-      loopBound.push('__bf_item', param)
-    } else if (supportableDestructure) {
-      loopBound.push('__bf_item', ...(loop.paramBindings ?? []).map(b => b.name))
-      if (loop.index) loopBound.push(loop.index)
-    } else {
-      loopBound.push(param)
-      if (loop.index) loopBound.push(loop.index)
-    }
-    for (const d of loop.preamble?.declarations ?? []) loopBound.push(d.name)
-    for (const n of loopBound) {
-      this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
-    }
     const childrenUnderLoop = this.renderChildren(loop.children)
-    for (const n of loopBound) {
-      const c = (this.loopBoundNames.get(n) ?? 1) - 1
-      if (c <= 0) this.loopBoundNames.delete(n)
-      else this.loopBoundNames.set(n, c)
-    }
     this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
     void renderedChildren
@@ -1036,11 +1024,13 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // Whole-item conditional: prepend an always-present `<!--bf-loop-i:KEY-->`
     // anchor before each item's (possibly empty) conditional content so the
     // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
-    // anchor.
+    // anchor. Still under the row scope (see above) — `loop.key` is a
+    // per-row expression.
     const bodyChildren =
       loop.bodyIsItemConditional && loop.key
         ? `{{ bf.comment("loop-i:" ~ bf.string(${this.convertExpressionToJinja(loop.key)})) | safe }}\n${childrenUnderLoop}`
         : childrenUnderLoop
+    this.scope = prevScope
 
     const lines: string[] = []
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
@@ -1527,13 +1517,13 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       // function-scope (`!isModule`) consts whose value is NOT itself a bare
       // identifier (loop guard) are considered.
       //
-      // `loopBoundNames` guard (#2489): an enclosing `.map()` callback's own
-      // param can shadow this outer const's name (`.map((attrs) => <p
+      // `this.scope` shadow guard (#2489): an enclosing `.map()` callback's
+      // own param can shadow this outer const's name (`.map((attrs) => <p
       // {...attrs} />)`) — without the guard this forwarded the OUTER
       // const's value at every iteration instead of the per-item value.
-      // Must be the LIVE map, not `staticLoopSourceBoundNames` — the same
-      // name spread at ROOT must still resolve the const.
-      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.loopBoundNames.has(trimmed)) {
+      // Must be the threaded, position-accurate scope — the same name
+      // spread at ROOT (no enclosing loop) must still resolve the const.
+      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
         const localConst = (this.localConstants ?? []).find(
           c => c.name === trimmed && !c.isModule,
         )
@@ -1955,9 +1945,9 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     return this.booleanTypedProps.has(bare)
   }
 
-  /** Position-accurate loop-bound-name check — see `loopBoundNames`'s docstring. */
+  /** Position-accurate loop-bound-name check — see `this.scope`'s docstring. */
   private isLoopBoundName(name: string): boolean {
-    return this.loopBoundNames.has(name)
+    return this.scope.isBound(name)
   }
 
   /**
@@ -1984,17 +1974,16 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * context, so a bare reference would resolve to Undefined.
    *
    * The lookup is a flat name match with no notion of AST scope, so a
-   * name that any loop callback binds as its item/index param never
-   * inlines (#2221) — the occurrence may be the loop's own (shadowing)
-   * binding, and substituting the outer const's value there renders every
-   * iteration with the same hard-coded literal. Coarse (a genuinely
-   * non-shadowed same-named const elsewhere in the component also stops
-   * inlining, falling back to the bare identifier) but safe — the same
-   * trade-off as #2212's `collectLoopBoundNames` use in
-   * `collectStringValueNames`.
+   * name bound by the CURRENTLY ENCLOSING loop's item/index/destructure/
+   * preamble param never inlines (#2221) — the occurrence may be the
+   * loop's own (shadowing) binding, and substituting the outer const's
+   * value there renders every iteration with the same hard-coded literal.
+   * Position-accurate via the threaded `this.scope` (#2482 Stage 2) — a
+   * same-named const elsewhere in the component, outside any loop that
+   * shadows it, still inlines.
    */
   private _resolveLiteralConst(name: string): string | null {
-    if (this.staticLoopSourceBoundNames.has(name)) return null
+    if (this.scope.isBound(name)) return null
     const c = (this.localConstants ?? []).find(lc => lc.name === name)
     if (c?.value === undefined) return null
     const v = c.value.trim()
@@ -2012,15 +2001,16 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * scope, so an enclosing loop callback's own param of the same name
    * (`.map((cfg) => <li>{cfg.x}</li>)` shadowing a module `const cfg = {…}`)
    * still resolved to the OUTER const's member value at every iteration
-   * (#2237) — the sibling hazard to #2221's `_resolveLiteralConst`. Same
-   * coarse-but-safe `staticLoopSourceBoundNames` guard: any name a loop
-   * binds anywhere in the component never inlines, falling back to the bare
-   * `cfg.x` member expression (which a minijinja `for` loop binds correctly
-   * at the shadowed occurrences).
+   * (#2237) — the sibling hazard to #2221's `_resolveLiteralConst`.
+   * Position-accurate via the threaded `this.scope` (#2482 Stage 2), passed
+   * as `lookupStaticRecordLiteral`'s required guard: a name the CURRENTLY
+   * ENCLOSING loop binds never inlines, falling back to the bare `cfg.x`
+   * member expression (which a minijinja `for` loop binds correctly at the
+   * shadowed occurrence); a same-named const elsewhere, outside any loop
+   * that shadows it, still inlines.
    */
   private _resolveStaticRecordLiteral(objectName: string, key: string): string | null {
-    if (this.staticLoopSourceBoundNames.has(objectName)) return null
-    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
+    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants, name => this.scope.isBound(name))
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text

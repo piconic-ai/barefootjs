@@ -65,6 +65,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   derivesScopeFromSlot,
+  BindingScope,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -238,14 +239,22 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private localConstants: IRMetadata['localConstants'] = []
   /**
-   * Names currently bound by an enclosing loop body — the `my $<param>` and
-   * `my $<index>` bindings `renderLoop` introduces — ref-counted so nested
-   * loops compose. `resolveModuleStringConst` consults this so a loop
+   * The one canonical, position-accurate "names bound by an enclosing loop
+   * callback" service (#2482 Stage 2) — replaces the ref-counted
+   * `Map<string, number>` this adapter used to push/pop around
+   * `renderLoop`'s body (the `my $<param>` / `my $<index>` bindings it
+   * introduces). `resolveModuleStringConst` consults this so a loop
    * variable whose name happens to match a module string const is NOT
    * inlined as the const literal (mirrors the Go adapter's loop-param /
-   * loop-var shadowing guards). (#1749 review)
+   * loop-var shadowing guards). (#1749 review) Threaded via
+   * save/restore-by-reference around `renderChildren(loop.children)` in
+   * `renderLoop` (immutable — no ref-count bookkeeping), mirroring the
+   * Stage 1a/1b `ctx.scope` precedent in `jsx-to-ir.ts`. `IRLoop` already
+   * structurally satisfies `LoopBindingSource`
+   * (`param`/`index`/`paramBindings`/`preamble`), so `renderLoop` passes
+   * the loop node straight to `enterLoopRow`.
    */
-  private loopBoundNames: Map<string, number> = new Map()
+  private scope: BindingScope = BindingScope.EMPTY
   /**
    * Prop names whose value is `undef` in the template body when the caller
    * omits them — so a bare-reference attribute should be dropped rather
@@ -293,7 +302,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
-    this.loopBoundNames.clear()
+    this.scope = BindingScope.EMPTY
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -388,7 +397,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // Inside a `.map()` callback, a param that shares a boolean prop's name
     // is the ROW binding, not the prop — route it through plain string
     // emission instead of `bf->bool_str` (#2488).
-    if (this.loopBoundNames.has(bare)) return false
+    if (this.scope.isBound(bare)) return false
     return this.booleanTypedProps.has(bare)
   }
 
@@ -423,16 +432,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * function-scope consts never reach the per-render stash, so a bare
    * `$totalPages` faults under strict mode.
    *
-   * The `loopBoundNames` guard also covers the #2221 hazard (a loop
-   * callback's own param shadowing this outer const's name): unlike the
-   * Twig-family adapters' coarse, whole-component `collectLoopBoundNames(ir)`
-   * static set, this adapter's `loopBoundNames` is a LIVE ref-counted map
-   * `renderLoop` populates/depopulates as it descends/ascends into each
-   * loop body (#1749) — so it's already scope-precise for this call site;
-   * no separate `staticLoopSourceBoundNames`-style field is needed here.
+   * The threaded scope's shadow guard also covers the #2221 hazard (a loop
+   * callback's own param shadowing this outer const's name): `this.scope`
+   * is position-accurate (#2482 Stage 2) — pushed/popped by reference as
+   * `renderLoop` descends/ascends into each loop body — so it's already
+   * scope-precise for this call site; no separate coarse whole-component
+   * field is needed here.
    */
   private resolveLiteralConst(name: string): string | null {
-    if (this.loopBoundNames?.has?.(name)) return null
+    if (this.scope.isBound(name)) return null
     const c = (this.localConstants ?? []).find(lc => lc.name === name)
     if (c?.value === undefined) return null
     const v = c.value.trim()
@@ -443,8 +451,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   private resolveStaticRecordLiteral(objectName: string, key: string): string | null {
-    if (this.loopBoundNames?.has?.(objectName)) return null
-    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
+    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants, name => this.scope.isBound(name))
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text
@@ -454,7 +461,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private resolveModuleStringConst(name: string): string | null {
     // A loop body introduces `my $<param>` / `my $<index>` bindings that
     // shadow a module const of the same name — never inline inside one.
-    if (this.loopBoundNames.has(name)) return null
+    if (this.scope.isBound(name)) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
     return `'${value.replace(/[\\']/g, m => `\\${m}`)}'`
@@ -902,10 +909,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // `Object.entries(props.tags).filter(...)`) still refuses below.
     // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
     // param shadowing this identifier (fable review) — reuses the same
-    // live `loopBoundNames` ref-counted tracking `resolveModuleStringConst`
-    // already consults for this hazard class (#1749).
+    // threaded, position-accurate `this.scope` `resolveModuleStringConst`
+    // already consults for this hazard class (#1749/#2482 Stage 2).
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
-      isNameShadowed: name => this.loopBoundNames.has(name),
+      isNameShadowed: this.scope.asShadowPredicate(),
     })
     const staticArray = staticItems !== null ? staticValueToPerl(staticItems) : null
 
@@ -951,26 +958,21 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const indexVar = loop.iterationShape === 'keys'
       ? `$${param}`
       : loop.index ? `$${loop.index}` : '$_i'
-    // Names this loop binds in body scope. Guard module-const inlining for
-    // the whole body (children + key + filter) so a same-named loop variable
-    // isn't replaced by the const literal (#1749 review). Ref-counted for
-    // nested loops; released after the body lines are assembled below.
-    const loopBound = loop.objectIteration === 'entries'
-      ? [param, loop.index ?? '_k']
-      : loop.objectIteration === 'keys' || loop.objectIteration === 'values' || loop.iterationShape === 'keys'
-        ? [param]
-        : supportableDestructure
-          ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
-          : [param, loop.index ?? '_i']
-    // A `.map()` callback preamble lowers to one per-row `my` local per
-    // declaration (#2447). Loop-binding the names keeps a same-named module
-    // const from inlining over the local the loop just declared — the same
-    // hazard class `resolveModuleStringConst` already consults this map for.
+    // This loop's row scope. Guards module-const inlining for the whole
+    // body (children + key + filter) so a same-named loop variable isn't
+    // replaced by the const literal (#1749 review). `IRLoop` already
+    // structurally satisfies `LoopBindingSource`
+    // (`param`/`index`/`paramBindings`/`preamble`) — `enterLoopRow(loop)`
+    // binds exactly what this renderLoop's header + preamble locals
+    // introduce (#2482 Stage 2 — replaces the ref-counted `Map` this
+    // adapter used to carry). Restored by reference (immutable — no
+    // ref-count bookkeeping) at the matching pop below, once the WHOLE
+    // body (including the filter predicate) has been rendered — except for
+    // one temporary drop-to-outer window around the hoisted sort-comparator
+    // emission below, since that runs OUTSIDE this loop.
     const preambleDecls = loop.preamble?.declarations ?? []
-    for (const d of preambleDecls) loopBound.push(d.name)
-    for (const n of loopBound) {
-      this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
-    }
+    const prevScope = this.scope
+    this.scope = prevScope.enterLoopRow(loop)
     const prevLoopKeyDepth = this.currentLoopKeyDepth
     this.currentLoopKeyDepth = loop.depth
     const renderedChildren = this.renderChildren(loop.children)
@@ -995,18 +997,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // `bf->sort_eval`; fall back to the structured `bf->sort` for a
       // comparator the evaluator can't model (e.g. `localeCompare`).
       //
-      // The hoisted sort runs OUTSIDE this loop, so this loop's bound names
+      // The hoisted sort runs OUTSIDE this loop, so this loop's row scope
       // must not shadow the comparator's captured free vars while emitting the
       // env — otherwise a captured var that happens to share a loop-param name
       // is blocked from inlining its module const and renders as an undefined
-      // `$name` (strict-mode fault, Copilot review #2035). Drop this loop's
-      // bound names for the sort emit, then restore (a nested loop's outer
-      // bindings, ref-counted, stay in effect).
-      for (const n of loopBound) {
-        const c = (this.loopBoundNames.get(n) ?? 1) - 1
-        if (c <= 0) this.loopBoundNames.delete(n)
-        else this.loopBoundNames.set(n, c)
-      }
+      // `$name` (strict-mode fault, Copilot review #2035). Drop back to the
+      // outer (pre-row) scope for the sort emit, then restore the row scope
+      // below (a nested loop's own outer bindings stay in effect throughout,
+      // since `prevScope` already carries them).
+      this.scope = prevScope
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPerl('', e)
       // `loop.sortComparator` is the generic `IRLoopSort` (#2018 P5): serialize
       // the arrow body for the evaluator (eval-first), recover the structured
@@ -1030,9 +1029,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         )
         sorted = rawArray
       }
-      for (const n of loopBound) {
-        this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
-      }
+      this.scope = prevScope.enterLoopRow(loop)
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
     if (loop.objectIteration) {
@@ -1121,12 +1118,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       lines.push(children)
     }
 
-    // Body fully rendered — release the loop-bound names.
-    for (const n of loopBound) {
-      const c = (this.loopBoundNames.get(n) ?? 1) - 1
-      if (c <= 0) this.loopBoundNames.delete(n)
-      else this.loopBoundNames.set(n, c)
-    }
+    // Body fully rendered — restore the outer (pre-row) scope.
+    this.scope = prevScope
 
     lines.push(`% }`)
     lines.push(`<%== bf->comment("/loop:${loop.markerId}") %>`)
@@ -1395,7 +1388,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         // Inside a `.map()` callback, a param that shadows a nullable
         // optional prop's name is the row binding, not the prop — skip the
         // spurious `defined` guard (#2488).
-        !this.loopBoundNames.has(normalizedBareId)
+        !this.scope.isBound(normalizedBareId)
       ) {
         const perl = this.convertExpressionToPerl(value.expr)
         const body =
@@ -1527,14 +1520,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // lowering. Only function-scope (`!isModule`) consts whose value is
       // NOT itself a bare identifier (loop guard) are considered.
       //
-      // `loopBoundNames` guard (#2221): an enclosing `.map()` callback's
+      // `this.scope` shadow guard (#2221): an enclosing `.map()` callback's
       // own param can shadow this outer const's name (`.map((sizeAttrs)
       // => <li {...sizeAttrs} />)`) — without the guard this forwarded
       // the OUTER const's hashref at every iteration instead of the
-      // per-item `$sizeAttrs` value. Same live ref-counted map
-      // `resolveLiteralConst` / `resolveStaticRecordLiteral` already
+      // per-item `$sizeAttrs` value. Same threaded, position-accurate
+      // scope `resolveLiteralConst` / `resolveStaticRecordLiteral` already
       // consult for this hazard class (#1749).
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.loopBoundNames.has(trimmed)) {
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.scope.isBound(trimmed)) {
         const localConst = this.localConstants.find(
           c => c.name === trimmed && !c.isModule,
         )
