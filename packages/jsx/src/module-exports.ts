@@ -5,6 +5,7 @@
  * This is a compiler-layer concern, not adapter-specific.
  */
 
+import ts from 'typescript'
 import type { ComponentIR, ParamInfo } from './types.ts'
 import { identifierPattern } from './identifier-pattern.ts'
 
@@ -159,6 +160,142 @@ export function findReachableNames(
   }
 
   return reachable
+}
+
+/**
+ * Which of `candidates` does `bodyText` ASSIGN to?
+ *
+ * Reachability above answers "is this declaration referenced?", which is
+ * the right question for pruning SSR-irrelevant code. It is the wrong
+ * question for a MUTABLE binding: a surviving `let` whose only writer got
+ * pruned is left declared-and-read but never assigned, and TypeScript's
+ * control-flow analysis then narrows it to `never` at every guarded use
+ * (#2598). `closeOverWritersOfMutableBindings` uses this to restore the
+ * missing half of that pair.
+ *
+ * Recognizes the forms that actually write a local binding:
+ *   `x = …`, `x += …` (and every other compound operator), `x++`, `--x`
+ * Destructuring assignment (`[x] = …`, `({ x } = …)`) is deliberately NOT
+ * recognized: it never appears in the ref/handler shapes this exists for,
+ * and a wrong guess here over-retains rather than fails loudly, so leaving
+ * it out keeps the retained set honest. If one shows up, it will present
+ * as this same `never` narrowing and can be added with a fixture.
+ *
+ * Parsed with the TS AST, not matched as text: `identifierPattern` (used
+ * for reference detection above) cannot tell a write from a read, and a
+ * regex for `name\s*=` would match `name == x`, a `name=` inside a string
+ * or JSX attribute, and a property write `obj.name = x` that assigns
+ * nothing of the sort.
+ */
+export function findAssignedNames(
+  bodyText: string,
+  candidates: ReadonlySet<string>,
+): Set<string> {
+  const assigned = new Set<string>()
+  if (candidates.size === 0) return assigned
+
+  const sf = ts.createSourceFile(
+    'bf-assignment-scan.tsx',
+    bodyText,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ false,
+    ts.ScriptKind.TSX,
+  )
+
+  // A bare Identifier on the left of an assignment — `obj.x = …` is a
+  // PropertyAccessExpression and writes through the binding rather than to
+  // it, so it does not count.
+  const record = (target: ts.Node): void => {
+    if (ts.isIdentifier(target) && candidates.has(target.text)) {
+      assigned.add(target.text)
+    }
+  }
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isBinaryExpression(node) && isAssignmentOperator(node.operatorToken.kind)) {
+      record(node.left)
+    } else if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken)
+    ) {
+      record(node.operand)
+    }
+    ts.forEachChild(node, visit)
+  }
+
+  ts.forEachChild(sf, visit)
+  return assigned
+}
+
+/**
+ * `findReachableNames`, plus the invariant it cannot express on its own:
+ * **a mutable binding that survives keeps the declarations that write it.**
+ *
+ * Reachability is seeded from the RENDERED JSX, which has already had the
+ * client-only attributes stripped — `ref={setRef}` leaves no `setRef`
+ * behind, and `onClick={handleClick}` is rendered as `onClick={() => {}}`.
+ * That is deliberate: code reachable only from a handler is client-only
+ * and should not be emitted into an SSR template.
+ *
+ * It goes wrong when a `let` outlives its writer. The binding survives
+ * because some OTHER surviving declaration reads it, while its only
+ * assignment lived in a pruned handler — so the emitted template declares
+ * it, reads it, and never assigns it. TypeScript's control-flow analysis
+ * concludes it is permanently `null`, narrows every guarded use to `never`,
+ * and each member access on it fails:
+ *
+ *     let highlightEl: HTMLElement | null = null      // writer was pruned
+ *     const syncScroll = () => {
+ *       if (highlightEl && textareaEl) {
+ *         highlightEl.scrollTop = textareaEl.scrollTop   // TS2339 on `never`
+ *       }
+ *     }
+ *
+ * Pulling the writers back in restores the source's shape for exactly the
+ * bindings that survived — nothing else. The retained writer is dead code
+ * at SSR (it only ever runs from a hydrated event), which is the same
+ * harmless-unused-declaration trade `generateModuleScopeDeclarations`
+ * already makes deliberately.
+ *
+ * Iterates to a fixpoint because a newly retained writer can read further
+ * declarations, and can itself write another mutable binding. Bounded by
+ * the declaration count: each round either adds a name or stops.
+ */
+export function closeOverWritersOfMutableBindings(
+  primaryRefs: string,
+  declarations: { name: string; body: string }[],
+  mutableNames: ReadonlySet<string>,
+): Set<string> {
+  let reachable = findReachableNames(primaryRefs, declarations)
+  if (mutableNames.size === 0) return reachable
+
+  let seedText = primaryRefs
+  for (let round = 0; round <= declarations.length; round++) {
+    const survivingMutables = new Set(
+      [...reachable].filter(name => mutableNames.has(name)),
+    )
+    if (survivingMutables.size === 0) return reachable
+
+    const added = declarations
+      .filter(d => !reachable.has(d.name))
+      .filter(d => findAssignedNames(d.body, survivingMutables).size > 0)
+      .map(d => d.name)
+    if (added.length === 0) return reachable
+
+    // Re-seed by NAME rather than merging sets directly, so each retained
+    // writer's own transitive dependencies come along through the same
+    // traversal instead of a second, divergent one.
+    seedText += '\n' + added.join('\n')
+    reachable = findReachableNames(seedText, declarations)
+  }
+  return reachable
+}
+
+function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
+  return (
+    kind >= ts.SyntaxKind.FirstAssignment &&
+    kind <= ts.SyntaxKind.LastAssignment
+  )
 }
 
 /**
