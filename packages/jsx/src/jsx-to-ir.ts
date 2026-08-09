@@ -845,7 +845,7 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
     // mutated (cached on the immutable `BindingScope`) — a stable
     // snapshot even if `ctx.scope` is later reassigned by an enclosing
     // visitor frame, which swaps the instance rather than mutating it.
-    loopParams: boundNames,
+    loopValueBoundNames: boundNames,
     checker: a.checker,
   }
   ctx._bindingEnv = env
