@@ -17,7 +17,7 @@ import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface.ts'
 import type { CallbackBodyAcceptor } from './interface.ts'
 import { ENV_SIGNAL_CLIENT_FACTORY } from './env-signal.ts'
-import { formatParamWithType, findReachableNames } from '../module-exports.ts'
+import { formatParamWithType, closeOverWritersOfMutableBindings } from '../module-exports.ts'
 import { extractFreeIdentifiersFromText } from '../ir-to-client-js/csr-substitute.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
 
@@ -113,7 +113,15 @@ export abstract class JsxAdapter extends BaseAdapter {
     ]
 
     // Find reachable declarations via transitive dependency analysis
-    const reachable = findReachableNames(primaryRefText, declarations)
+    const reachable = closeOverWritersOfMutableBindings(
+      primaryRefText,
+      declarations,
+      new Set(
+        ir.metadata.localConstants
+          .filter(c => (c.declarationKind ?? 'const') !== 'const')
+          .map(c => c.name),
+      ),
+    )
 
     // Also check which signal setters are referenced
     const reachableBodies = [...reachable].map(name => {
