@@ -579,16 +579,19 @@ export interface LoopChildConditional {
    */
   conditionFreeIdentifiers?: ReadonlySet<string>
   /**
-   * `condition` reads a `.map()` callback preamble local (#2596, twin of
-   * `LoopChildReactiveAttr.readsPreamble` #2447) — the emitter must run the
-   * preamble ahead of evaluating the condition getter passed to `insert()`,
-   * since the local is not otherwise in scope there and its value is what
-   * makes the condition reactive at all. Set only when Phase 1 already
-   * proved the local reactive (`IRLoop.preamble.reactiveNames` via
-   * `markPreambleConditionalReactivity`) — `classifyReactivity` can't
-   * itself see this: `expandConstantForReactivity`'s shadow guard leaves a
-   * preamble-bound identifier unexpanded on purpose (#2482 Stage 1b), so
-   * the raw token never string-matches a signal/memo/prop pattern.
+   * `condition` references a `.map()` callback preamble-declared name
+   * (#2596, twin of `LoopChildReactiveAttr.readsPreamble` #2447) — the
+   * emitter must run the preamble ahead of evaluating the condition getter
+   * passed to `insert()`, since the local is not otherwise in scope there.
+   * Set whenever the condition mentions ANY preamble-declared name
+   * (`preambleNamesOf`), regardless of why the conditional was classified
+   * reactive — the scope obligation is the same either way. Whether the
+   * conditional is wired reactive AT ALL is the separate, stricter Phase-1
+   * question (`IRLoop.preamble.reactiveNames` via
+   * `markPreambleConditionalReactivity`, plus the ordinary signal/prop
+   * classifiers); `classifyReactivity` can't answer it from the token
+   * alone because `expandConstantForReactivity`'s shadow guard leaves a
+   * preamble-bound identifier unexpanded on purpose (#2482 Stage 1b).
    */
   readsPreamble?: boolean
 }
