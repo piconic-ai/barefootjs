@@ -28,6 +28,7 @@ import ts from 'typescript'
 import { PROPS_PARAM, inferDefaultValue } from './utils.ts'
 import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
 import type { MemoInfo, SignalInfo } from '../types.ts'
+import type { BindingScope } from '../scope/binding-scope.ts'
 
 /**
  * CSR-substituted const value: the const's initializer with every
@@ -94,10 +95,21 @@ export interface CsrEnv {
  * so chained inline expansions (const A inlines to a form that mentions
  * const B's already-rewritten value) stay accurate without analytical
  * bookkeeping.
+ *
+ * `enclosingScope` (#2482 Stage 1b): an optional `BindingScope` for loop
+ * bindings ENCLOSING this expression — names bound outside the
+ * expression's own AST, which the internal `boundStack` (built purely
+ * from arrow/function scopes found while walking `value` itself) can
+ * never see on its own. Every current call site already pre-filters
+ * `env.substitutions` for loop-shadowed names before calling in (see
+ * `html-template.ts`'s `loop` case), so this is defense-in-depth, not a
+ * currently-observable behavior change: the two mechanisms should agree
+ * on what's shadowed regardless of which one runs first.
  */
 export function csrSubstitute(
   value: string,
   env: CsrEnv,
+  enclosingScope?: BindingScope,
 ): { rewritten: string; freeIdentifiers: ReadonlySet<string> } {
   if (!value || value.trim().length === 0) {
     return { rewritten: value, freeIdentifiers: new Set() }
@@ -111,7 +123,7 @@ export function csrSubstitute(
   let current = value
   let lastFreeIdentifiers: ReadonlySet<string> = new Set()
   for (let i = 0; i < maxIter; i++) {
-    const step = csrSubstituteOnce(current, env)
+    const step = csrSubstituteOnce(current, env, enclosingScope)
     lastFreeIdentifiers = step.freeIdentifiers
     if (step.rewritten === current) break
     current = step.rewritten
@@ -122,6 +134,7 @@ export function csrSubstitute(
 function csrSubstituteOnce(
   value: string,
   env: CsrEnv,
+  enclosingScope?: BindingScope,
 ): { rewritten: string; freeIdentifiers: ReadonlySet<string> } {
   if (!value || value.trim().length === 0) {
     return { rewritten: value, freeIdentifiers: new Set() }
@@ -151,12 +164,16 @@ function csrSubstituteOnce(
 
   // Track the bound names in nested arrow/function scopes so we don't
   // substitute identifiers shadowed by a parameter or local binding.
+  // `enclosingScope` seeds the OUTER frames — loop bindings introduced
+  // outside `value`'s own AST (item / index / destructure / preamble) —
+  // so a name bound there is treated identically to one bound by an
+  // arrow/function found while walking `value` itself.
   const boundStack: Array<Set<string>> = []
   const isBound = (name: string): boolean => {
     for (let i = boundStack.length - 1; i >= 0; i--) {
       if (boundStack[i].has(name)) return true
     }
-    return false
+    return enclosingScope?.isBound(name) ?? false
   }
 
   const recordSubstitution = (start: number, end: number, sub: CsrSubstitution): void => {
