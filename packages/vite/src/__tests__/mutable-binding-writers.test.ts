@@ -42,11 +42,14 @@ const APP_ROOT = join(FIXTURE_ROOT, 'app')
 const COMPONENTS_DIR = join(FIXTURE_ROOT, 'components')
 
 describe('writers of surviving mutable bindings', () => {
-  let outDir: string
+  let outDir: string | undefined
   const templatesDir = join(APP_ROOT, 'dist/components')
 
   afterAll(async () => {
-    await rm(outDir, { recursive: true, force: true })
+    // Guarded: if the test throws before `mkdtemp` returns, `outDir` is still
+    // undefined and an unguarded `rm` would throw here, replacing the real
+    // failure with a cleanup TypeError.
+    if (outDir) await rm(outDir, { recursive: true, force: true })
     await rm(join(APP_ROOT, 'dist'), { recursive: true, force: true })
   })
 
@@ -83,9 +86,9 @@ describe('writers of surviving mutable bindings', () => {
     expect(template).toContain('renderSeq++')
 
     // The symptom itself, not a proxy for it: type-check the emitted
-    // template and assert the `never` narrowing is gone. Asserting on the
-    // retained source line alone would still pass if some later change made
-    // the binding un-narrowable for a different reason.
+    // template. Asserting on the retained source line alone would still pass
+    // if some later change made the binding un-narrowable for a different
+    // reason.
     const program = ts.createProgram([templatePath], {
       strict: true,
       noEmit: true,
@@ -98,10 +101,16 @@ describe('writers of surviving mutable bindings', () => {
       allowImportingTsExtensions: true,
       skipLibCheck: true,
     })
-    const neverNarrowings = ts
+    // Asserted over the WHOLE error set, not a TS2339-only filter: this
+    // fixture's emitted template compiles completely clean today, so any
+    // error at all — a syntax break, an unresolved import, a wrong JSX
+    // setting — is a real regression, and a narrow filter would let those
+    // through while still claiming the template type-checks. TS2339 on
+    // `never` is simply the member of that set this PR is about.
+    const errors = ts
       .getPreEmitDiagnostics(program)
-      .filter((d) => d.code === 2339)
-      .map((d) => ts.flattenDiagnosticMessageText(d.messageText, ' '))
-    expect(neverNarrowings).toEqual([])
+      .filter((d) => d.category === ts.DiagnosticCategory.Error)
+      .map((d) => `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`)
+    expect(errors).toEqual([])
   }, 60_000)
 })
