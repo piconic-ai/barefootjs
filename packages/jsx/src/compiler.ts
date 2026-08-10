@@ -883,6 +883,23 @@ export function compileJSX(
   // the FileOutput entries it would have pushed rather than pushing them
   // itself, so call-site order controls push order only when the flag is
   // on (off = byte-identical to pre-investigation behavior).
+  //
+  // BUG FIX (caught by Copilot review on PR #2606, verified with a direct
+  // probe before landing): this closure must NOT collect `componentIR.errors`
+  // itself. Seven of the nine adapters (every one but Hono — grepped:
+  // go-template, erb, blade, jinja, mojolicious, minijinja, twig, xslate)
+  // append their own diagnostics to `ir.errors` INSIDE `adapter.generate()`
+  // (e.g. `go-template-adapter.ts:531-533`). In swapped mode this closure
+  // runs BEFORE `adapter.generate()`, so collecting `componentIR.errors`
+  // here would silently drop those diagnostics from the returned
+  // `CompileResult` — an artifact of the scaffolding, not evidence that the
+  // swap is diagnostic-safe. Collected exactly ONCE below, after BOTH
+  // `adapter.generate()` and this closure have run (regardless of which ran
+  // first) — mirrors how `compileMultipleComponents`'s single
+  // `errors.push(...componentIR.errors)` already sits after both calls
+  // unconditionally and was never affected by this bug (verified: probe
+  // with a multi-component BF101 fixture reproduces the diagnostic under
+  // both orders).
   const runClientJsGeneration = (): FileOutput[] => {
     const out: FileOutput[] = []
     setActiveComponentScope(singleScope)
@@ -900,7 +917,6 @@ export function compileJSX(
           adapterCaps,
           options.profile,
         )
-        errors.push(...componentIR.errors)
         if (result.code) {
           out.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
           if (result.sourceMap) {
@@ -916,7 +932,6 @@ export function compileJSX(
           adapterCaps,
           options.profile,
         )
-        errors.push(...componentIR.errors)
         if (clientJs) {
           out.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
         }
@@ -993,6 +1008,13 @@ export function compileJSX(
   for (const f of swappedClientJsFiles ?? runClientJsGeneration()) {
     files.push(f)
   }
+
+  // Collected exactly once, HERE — after both `adapter.generate()` (above,
+  // unconditionally) and `runClientJsGeneration()` (either just above, or
+  // earlier via `swappedClientJsFiles` under the investigation flag) have
+  // both run, regardless of which ran first. See `runClientJsGeneration`'s
+  // docstring for why this must not happen inside that closure.
+  errors.push(...componentIR.errors)
 
   return { files, errors }
 }

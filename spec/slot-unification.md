@@ -206,19 +206,53 @@ work.
 **Investigated (issue #2483) — corrected: a SPLIT, not a swap, and the
 runtime/adapter sides are already general enough.** The order-swap
 experiment (`BF_INVESTIGATE_SWAP_GENERATE_ORDER=1`, `compiler.ts`) showed
-`adapter.generate` and `generateClientJs` are not coupled through IR
-mutation at all — grepping every `ir-to-client-js/**` module for a write to
-an `IRNode`/`IRExpression` field found exactly one site,
-`client-only-elision.ts`'s own `markerless`/`elidedPath` assignment; no
-adapter (all nine, grepped) imports from `ir-to-client-js` or writes
+`adapter.generate` and `generateClientJs` are not coupled through
+ELISION-RELEVANT IR mutation at all — grepping every `ir-to-client-js/**`
+module for a write to an `IRNode`/`IRExpression` field found exactly one
+site, `client-only-elision.ts`'s own `markerless`/`elidedPath` assignment;
+no adapter (all nine, grepped) imports from `ir-to-client-js` or writes
 `ir.metadata`/IR-node fields; `generateClientJs`'s `collectElements` copies
 loop-node fields into its own ephemeral `ctx.loopElements` entries rather
 than mutating the IR loop node. So the literal call-order swap is not
-structurally blocked — but swapping alone buys nothing: the missing piece
-was never "which function runs first", it's a pre-pass that generalizes
-`decideClientOnlyElision` the same way it already ships, extended past the
-`clientOnly` restriction and into loop-row bodies. Evidence this is close
-to free on the runtime/adapter side:
+structurally blocked on THAT axis — but swapping alone buys nothing: the
+missing piece was never "which function runs first", it's a pre-pass that
+generalizes `decideClientOnlyElision` the same way it already ships,
+extended past the `clientOnly` restriction and into loop-row bodies.
+
+**Correction (caught by a Copilot review, verified with a direct probe)**:
+"neither pass mutates IR" was too broad — seven of the nine adapters (every
+one but Hono: go-template, erb, blade, jinja, mojolicious, minijinja, twig,
+xslate) DO mutate `ir.errors` inside `adapter.generate()`
+(`go-template-adapter.ts:531-533` et al: `ir.errors.push(...this.errors)`),
+collecting adapter-refused-shape diagnostics like BF101. That's a genuine
+IR write the earlier pass missed by grepping only for `markerless`/
+`elidedPath`/`slotId` assignment patterns, not `errors.push`. It exposed a
+real bug in the swap SCAFFOLDING itself (not in shipped `compiler.ts`
+before this investigation): the single-component `compileJSX` path's error
+collection lived inside the closure that, in swapped mode, runs BEFORE
+`adapter.generate()` — so an adapter-appended diagnostic was silently
+dropped from the returned `CompileResult` under the swap. Confirmed with a
+direct probe (a BF101-provoking fixture through `GoTemplateAdapter`:
+present under normal order, `[]` under swapped order, pre-fix) and fixed by
+collecting `componentIR.errors` exactly once, after BOTH calls have run
+regardless of order — mirroring `compileMultipleComponents`'s loop, whose
+single collection point already sat after both calls unconditionally and
+was never affected (confirmed by the same probe technique against a
+multi-component fixture). This is a scaffolding-measurement correction, not
+a change to the SPLIT-vs-swap structural conclusion above: it does not
+touch `markerless`/`elidedPath`, and a real elision pre-pass wouldn't touch
+error collection either. It IS a caution for whoever restructures
+`compiler.ts`'s pass sequencing for real: two conceptually different
+IR-mutation axes (elision decisions vs. diagnostics) both flow through the
+same mutable `componentIR`, and auditing one is not auditing both.
+`generate-order-independence.test.ts` now pins both — diagnostic equality
+across orders, not just template/clientJs byte equality — and includes the
+go-template BF101 case specifically because every other case in that file
+uses `HonoAdapter`, which never had this bug (Hono is the one adapter that
+doesn't append to `ir.errors` during `generate()`).
+
+Evidence the runtime/adapter side is close to free for the ACTUAL elision
+axis (`markerless`/`elidedPath`), unaffected by the correction above:
 
 - `claimMarkerlessText` (`packages/client/src/runtime/claim-slots.ts`)
   ALREADY implements general adopt-existing-or-create-at-index semantics,
