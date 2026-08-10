@@ -50,33 +50,55 @@ if (!fw || !RENDER_SERVER_MODULE[fw]) {
 }
 const mod = (await import(RENDER_SERVER_MODULE[fw])) as { renderPage: (rows: unknown) => Promise<string> }
 
-async function block(n: number): Promise<number[]> {
+// Every render goes through here so `callsMade` can't drift out of sync with
+// the reported "after N calls" labels — the measured blocks themselves are
+// renders too, and counting only the warmup loops (the obvious mistake) makes
+// the printed series unreproducible.
+let callsMade = 0
+
+async function warm(n: number): Promise<void> {
+  for (let i = 0; i < n; i++) {
+    await mod.renderPage(rows)
+    callsMade++
+  }
+}
+
+async function block(n: number): Promise<{ iters: number[]; startedAfter: number }> {
+  const startedAfter = callsMade
   const iters: number[] = []
   for (let i = 0; i < n; i++) {
     const t0 = performance.now()
     await mod.renderPage(rows)
+    callsMade++
     iters.push(performance.now() - t0)
   }
-  return iters
+  return { iters, startedAfter }
 }
 
-for (let i = 0; i < 5; i++) await mod.renderPage(rows)
+await warm(5)
 const b1 = await block(20)
 
-for (let i = 0; i < 100; i++) await mod.renderPage(rows)
+await warm(100)
 const b2 = await block(20)
 
-for (let i = 0; i < 200; i++) await mod.renderPage(rows)
+await warm(200)
 const b3 = await block(20)
 
-for (let i = 0; i < 500; i++) await mod.renderPage(rows)
+await warm(500)
 const b4 = await block(30)
 
+const report = (label: string, b: { iters: number[]; startedAfter: number }) =>
+  console.log(
+    `${label} (after ${b.startedAfter} calls, n=${b.iters.length}):`,
+    median(b.iters).toFixed(3),
+    'ms',
+  )
+
 console.log(`=== ${fw} ===`)
-console.log('block1 (after 5 warmup — bench-ssr.ts\'s former contract):', median(b1).toFixed(3), 'ms')
-console.log('block2 (after 105 total calls):', median(b2).toFixed(3), 'ms')
-console.log('block3 (after 305 total calls):', median(b3).toFixed(3), 'ms')
-console.log('block4 (after 805 total calls):', median(b4).toFixed(3), 'ms')
+report("block1 — bench-ssr.ts's former WARMUP=5 contract", b1)
+report('block2', b2)
+report('block3', b3)
+report('block4 — steady-state reference', b4)
 console.log()
-console.log('block1 raw:', b1.map((x) => x.toFixed(2)).join(', '))
-console.log('block4 raw:', b4.map((x) => x.toFixed(2)).join(', '))
+console.log('block1 raw:', b1.iters.map((x) => x.toFixed(2)).join(', '))
+console.log('block4 raw:', b4.iters.map((x) => x.toFixed(2)).join(', '))
