@@ -1418,11 +1418,11 @@
       }
     },
     "call": {
-      "total": 202,
+      "total": 203,
       "cells": {
         "hono": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1433,8 +1433,8 @@
           ]
         },
         "blade": {
-          "pass": 187,
-          "total": 202,
+          "pass": 188,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1509,8 +1509,8 @@
           ]
         },
         "erb": {
-          "pass": 188,
-          "total": 202,
+          "pass": 189,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1579,8 +1579,8 @@
           ]
         },
         "go-template": {
-          "pass": 187,
-          "total": 202,
+          "pass": 188,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1655,8 +1655,8 @@
           ]
         },
         "jinja": {
-          "pass": 187,
-          "total": 202,
+          "pass": 188,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1731,8 +1731,8 @@
           ]
         },
         "minijinja": {
-          "pass": 187,
-          "total": 202,
+          "pass": 188,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1807,8 +1807,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 188,
-          "total": 202,
+          "pass": 189,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1877,8 +1877,8 @@
           ]
         },
         "twig": {
-          "pass": 187,
-          "total": 202,
+          "pass": 188,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1953,8 +1953,8 @@
           ]
         },
         "xslate": {
-          "pass": 187,
-          "total": 202,
+          "pass": 188,
+          "total": 203,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2174,11 +2174,11 @@
       }
     },
     "identifier": {
-      "total": 291,
+      "total": 292,
       "cells": {
         "hono": {
-          "pass": 290,
-          "total": 291,
+          "pass": 291,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2189,8 +2189,8 @@
           ]
         },
         "blade": {
-          "pass": 274,
-          "total": 291,
+          "pass": 275,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2273,8 +2273,8 @@
           ]
         },
         "erb": {
-          "pass": 275,
-          "total": 291,
+          "pass": 276,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2351,8 +2351,8 @@
           ]
         },
         "go-template": {
-          "pass": 274,
-          "total": 291,
+          "pass": 275,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2435,8 +2435,8 @@
           ]
         },
         "jinja": {
-          "pass": 274,
-          "total": 291,
+          "pass": 275,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2519,8 +2519,8 @@
           ]
         },
         "minijinja": {
-          "pass": 274,
-          "total": 291,
+          "pass": 275,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2603,8 +2603,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 275,
-          "total": 291,
+          "pass": 276,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2681,8 +2681,8 @@
           ]
         },
         "twig": {
-          "pass": 274,
-          "total": 291,
+          "pass": 275,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2765,8 +2765,8 @@
           ]
         },
         "xslate": {
-          "pass": 274,
-          "total": 291,
+          "pass": 275,
+          "total": 292,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3350,15 +3350,15 @@
       }
     },
     "logical": {
-      "total": 43,
+      "total": 44,
       "cells": {
         "hono": {
-          "pass": 43,
-          "total": 43
+          "pass": 44,
+          "total": 44
         },
         "blade": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3373,8 +3373,8 @@
           ]
         },
         "erb": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3389,8 +3389,8 @@
           ]
         },
         "go-template": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3405,8 +3405,8 @@
           ]
         },
         "jinja": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3421,8 +3421,8 @@
           ]
         },
         "minijinja": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3437,8 +3437,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3453,8 +3453,8 @@
           ]
         },
         "twig": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3469,8 +3469,8 @@
           ]
         },
         "xslate": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -3491,18 +3491,18 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
       },
       "example": {
-        "fixture": "logical-and-chain",
-        "description": "Chained a() && b() && <element/> conditional",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts",
-        "code": "ready() && visible()"
+        "fixture": "loop-preamble-conditional-reactive",
+        "description": "Loop row preamble computes a conditional-condition value from item + prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-conditional-reactive.ts",
+        "code": "row.done || props.highlight"
       }
     },
     "member": {
-      "total": 155,
+      "total": 156,
       "cells": {
         "hono": {
-          "pass": 154,
-          "total": 155,
+          "pass": 155,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3513,8 +3513,8 @@
           ]
         },
         "blade": {
-          "pass": 138,
-          "total": 155,
+          "pass": 139,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3597,8 +3597,8 @@
           ]
         },
         "erb": {
-          "pass": 139,
-          "total": 155,
+          "pass": 140,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3675,8 +3675,8 @@
           ]
         },
         "go-template": {
-          "pass": 138,
-          "total": 155,
+          "pass": 139,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3759,8 +3759,8 @@
           ]
         },
         "jinja": {
-          "pass": 138,
-          "total": 155,
+          "pass": 139,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3843,8 +3843,8 @@
           ]
         },
         "minijinja": {
-          "pass": 138,
-          "total": 155,
+          "pass": 139,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3927,8 +3927,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 139,
-          "total": 155,
+          "pass": 140,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4005,8 +4005,8 @@
           ]
         },
         "twig": {
-          "pass": 138,
-          "total": 155,
+          "pass": 139,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4089,8 +4089,8 @@
           ]
         },
         "xslate": {
-          "pass": 138,
-          "total": 155,
+          "pass": 139,
+          "total": 156,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -8203,43 +8203,43 @@
       }
     },
     "logical:||": {
-      "total": 13,
+      "total": 14,
       "cells": {
         "hono": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "blade": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "erb": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "go-template": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "jinja": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "minijinja": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "twig": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         },
         "xslate": {
-          "pass": 13,
-          "total": 13
+          "pass": 14,
+          "total": 14
         }
       },
       "source": {
@@ -8248,10 +8248,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
       },
       "example": {
-        "fixture": "array-sort-multikey",
-        "description": ".sort((a,b) => a.price - b.price || a.name.localeCompare(b.name)) sorts by price, then name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-multikey.ts",
-        "code": "a.price - b.price || a.name.localeCompare(b.name)"
+        "fixture": "loop-preamble-conditional-reactive",
+        "description": "Loop row preamble computes a conditional-condition value from item + prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-conditional-reactive.ts",
+        "code": "row.done || props.highlight"
       }
     },
     "member:computed": {

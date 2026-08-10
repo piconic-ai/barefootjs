@@ -112,6 +112,7 @@ export function buildReactiveEffectsPlan(
         whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
         whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, profileComponentName),
         whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, profileComponentName),
+        ...(cond.readsPreamble && { readsPreamble: true }),
       })
     }
   }

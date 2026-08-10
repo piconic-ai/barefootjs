@@ -62,6 +62,13 @@ export interface NestedConditionalPlan {
   whenFalseTemplateHtml: string
   whenTrueArm: LoopChildArmPlan
   whenFalseArm: LoopChildArmPlan
+  /**
+   * `wrappedCondition` reads a `.map()` callback preamble local (#2596,
+   * twin of `ReactiveAttrEffect.readsPreamble`) — the stringifier must run
+   * the row's preamble ahead of evaluating the condition getter passed to
+   * `insert()`; the local isn't otherwise in scope there.
+   */
+  readsPreamble?: boolean
 }
 
 export interface ReactiveEffectsPlan {

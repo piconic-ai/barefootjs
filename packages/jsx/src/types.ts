@@ -901,6 +901,28 @@ export interface MapCallbackPreamble {
    * keeps the plain interpolation it always had.
    */
   builderNames: string[]
+  /**
+   * The subset of {@link declaredNames} whose OWN initializer is itself
+   * reactive — reads a signal / memo / reactive prop, directly or
+   * transitively through an earlier preamble declaration (#2596). `undefined`
+   * (never an empty array) when the preamble contributes no such name, or
+   * when it isn't a value-only declaration sequence this analysis covers
+   * (see `preambleFromValueStatements`'s caller — a JSX-building preamble
+   * doesn't compute this and leaves it unset).
+   *
+   * Used to decide whether a loop-body CONDITIONAL whose condition
+   * bare-references a preamble local should carry the IR `reactive` flag
+   * (`markPreambleConditionalReactivity`, jsx-to-ir.ts). Deliberately NOT the
+   * same test `collectPreambleRegions`/`markPreambleAttrSlots` use for
+   * text/attr positions — those mark ANY reference to `declaredNames`
+   * reactive because their region-patch effect re-runs the whole preamble
+   * unconditionally on row update, and ordinary signal auto-tracking inside
+   * that effect picks up genuine dependencies regardless of the IR flag. A
+   * conditional instead swaps whole DOM subtrees via `insert()`, so it stays
+   * unwrapped unless the local it reads is proven to depend on an actual
+   * external signal — a bare `item.title`-derived local needs no such wrap.
+   */
+  reactiveNames?: string[]
 }
 
 /**

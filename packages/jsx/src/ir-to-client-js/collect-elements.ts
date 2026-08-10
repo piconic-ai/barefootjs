@@ -5,10 +5,11 @@
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
-import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope } from './reactivity.ts'
+import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { templateRootIsSvg } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
+import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
@@ -1428,9 +1429,22 @@ export function collectLoopChildConditionals(
       // paying for constant expansion — matches the legacy short-circuit.
       if (!n.reactive && !refsLoopParamInSource) return
       const expanded = expandConstantForReactivity(n.condition, ctx, sourceFreeIds, scope)
+      // A `.map()` callback preamble local (#2596, twin of
+      // `collectLoopChildReactiveAttrs`'s `readsPreamble` #2447). Phase 1
+      // already proved this condition reactive when it's set (`n.reactive`
+      // came from `markPreambleConditionalReactivity`, gated on the local's
+      // OWN initializer reading a signal) — `classifyReactivity` below
+      // cannot independently confirm that: `expandConstantForReactivity`
+      // leaves a preamble-bound identifier like `label` unexpanded on
+      // purpose (the #2482 Stage 1b shadow guard, `scope.isBound`), so the
+      // raw token never string-matches a signal/memo/prop pattern.
+      const readsPreamble =
+        preambleNames !== undefined &&
+        preambleNames.size > 0 &&
+        anyNameIn(expanded.freeIds ?? extractFreeIdentifiersFromText(expanded.expr), preambleNames)
       // Loop-param conditionals are reactive via per-item signal accessors;
       // classifyReactivity sees both paths (signal/memo/prop + loop-param).
-      if (classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
+      if (!readsPreamble && classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
 
       const loopParamsForCond = loopParam
         ? [{ param: loopParam, bindings: loopParamBindings }]
@@ -1449,6 +1463,7 @@ export function collectLoopChildConditionals(
         whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
         whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
         ...(expanded.freeIds !== undefined && { conditionFreeIdentifiers: expanded.freeIds }),
+        ...(readsPreamble && { readsPreamble: true }),
       })
     },
   })
