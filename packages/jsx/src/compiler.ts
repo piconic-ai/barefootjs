@@ -39,6 +39,26 @@ export interface CompileOptionsWithAdapter extends CompileOptions {
 }
 
 /**
+ * INVESTIGATION SCAFFOLDING — issue #2483 / `spec/slot-unification.md` §5a,
+ * §8's marker-elision follow-up. NOT API surface: this flag exists to make
+ * the `generateClientJs`-before-`adapter.generate` order observable for the
+ * order-dependency catalogue and is expected to be deleted (or replaced by
+ * a real split/pre-pass) once the investigation lands. Do not build on it.
+ *
+ * When set, both compile paths below run `generateClientJs` /
+ * `generateClientJsWithSourceMap` BEFORE `adapter.generate` for the same
+ * component, instead of after. This is throwaway-quality: it only reorders
+ * the two calls (and the minimal state-setup each needs, e.g.
+ * `setActiveComponentScope`) and leaves every other line — file pushes,
+ * dedup, ssr-defaults extraction — in its original relative position, since
+ * none of that reads `adapterOutput` or `clientJs` before both are
+ * available.
+ */
+function investigationSwapGenerateOrder(): boolean {
+  return process.env.BF_INVESTIGATE_SWAP_GENERATE_ORDER === '1'
+}
+
+/**
  * Merge the import lines of a multi-component template file into a single,
  * conflict-free block.
  *
@@ -361,6 +381,30 @@ function compileMultipleComponents(
     const scriptBaseName =
       options.scriptBaseName ??
       (!componentIR.metadata.hasDefaultExport && defaultExportName ? defaultExportName : undefined)
+
+    // INVESTIGATION SCAFFOLDING (issue #2483) — see
+    // `investigationSwapGenerateOrder`'s docstring. `generateClientJs`
+    // doesn't read `adapterOutput`, so hoisting the call is a pure
+    // reordering; off (the default) this is byte-identical to computing it
+    // inline in the `allOutputs.push` call below.
+    const runClientJs = () =>
+      generateClientJs(
+        componentIR,
+        componentNames,
+        options.localImportPrefixes,
+        undefined,
+        multiAdapterCaps,
+        options.profile,
+      ) || undefined
+    // Sentinel-wrapped (not a bare `?? runClientJs()` fallback below) so a
+    // legitimately-`undefined` client JS result under the swapped order
+    // doesn't cause a SECOND `generateClientJs` call — that would double-run
+    // the pass and double-append its warnings to `componentIR.errors`,
+    // fabricating a "failure" that is a scaffolding bug, not a real
+    // order-dependency finding.
+    const swapOrder = investigationSwapGenerateOrder()
+    const swappedClientJs = swapOrder ? runClientJs() : undefined
+
     const adapterOutput = adapter.generate(componentIR, {
       scriptBaseName,
       siblingTemplatesRegistered: options.siblingTemplatesRegistered,
@@ -389,14 +433,7 @@ function compileMultipleComponents(
       types,
       moduleExports: moduleExports || '',
       component,
-      clientJs: generateClientJs(
-        componentIR,
-        componentNames,
-        options.localImportPrefixes,
-        undefined,
-        multiAdapterCaps,
-        options.profile,
-      ) || undefined,
+      clientJs: swapOrder ? swappedClientJs : runClientJs(),
       adapterTypes: adapterOutput.types || undefined,
     })
     errors.push(...componentIR.errors)
@@ -820,6 +857,81 @@ export function compileJSX(
   }
 
   const adapter = options.adapter
+
+  const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
+  // Single-component file: only the component itself can collide. Scope it
+  // when it's non-exported so a private helper can't be overwritten by an
+  // identically-named exported component in another file.
+  const singleScope = {
+    fileScope: computeFileScope(filePath),
+    nonExportedSiblings: componentIR.metadata.isExported
+      ? new Set<string>()
+      : new Set([componentIR.metadata.componentName]),
+  }
+  // Adapter capabilities thread through to relocate's inline-safety
+  // check so a registered template primitive escapes the bridged-arg /
+  // zero-arg rejection (#1187 phase 3).
+  const adapterCaps = {
+    templatePrimitives: options.adapter.templatePrimitives,
+    acceptsTemplateCall: options.adapter.acceptsTemplateCall,
+  }
+
+  // INVESTIGATION SCAFFOLDING (issue #2483) — see
+  // `investigationSwapGenerateOrder`'s docstring. Extracted to a closure
+  // purely so the SAME client-js-generation code can run either before or
+  // after `adapter.generate` without duplicating it; the closure returns
+  // the FileOutput entries it would have pushed rather than pushing them
+  // itself, so call-site order controls push order only when the flag is
+  // on (off = byte-identical to pre-investigation behavior).
+  const runClientJsGeneration = (): FileOutput[] => {
+    const out: FileOutput[] = []
+    setActiveComponentScope(singleScope)
+    try {
+      if (options.sourceMaps) {
+        const result = generateClientJsWithSourceMap(
+          componentIR,
+          undefined,
+          options.localImportPrefixes,
+          {
+            sourceMaps: true,
+            generatedFileName: clientJsPath.split('/').pop(),
+          },
+          undefined,
+          adapterCaps,
+          options.profile,
+        )
+        errors.push(...componentIR.errors)
+        if (result.code) {
+          out.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
+          if (result.sourceMap) {
+            out.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+          }
+        }
+      } else {
+        const clientJs = generateClientJs(
+          componentIR,
+          undefined,
+          options.localImportPrefixes,
+          undefined,
+          adapterCaps,
+          options.profile,
+        )
+        errors.push(...componentIR.errors)
+        if (clientJs) {
+          out.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
+        }
+      }
+    } finally {
+      setActiveComponentScope(null)
+    }
+    return out
+  }
+
+  let swappedClientJsFiles: FileOutput[] | null = null
+  if (investigationSwapGenerateOrder()) {
+    swappedClientJsFiles = runClientJsGeneration()
+  }
+
   const adapterOutput = adapter.generate(componentIR, {
     scriptBaseName: options.scriptBaseName,
     siblingTemplatesRegistered: options.siblingTemplatesRegistered,
@@ -878,61 +990,8 @@ export function compileJSX(
     })
   }
 
-  const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
-  // Single-component file: only the component itself can collide. Scope it
-  // when it's non-exported so a private helper can't be overwritten by an
-  // identically-named exported component in another file.
-  const singleScope = {
-    fileScope: computeFileScope(filePath),
-    nonExportedSiblings: componentIR.metadata.isExported
-      ? new Set<string>()
-      : new Set([componentIR.metadata.componentName]),
-  }
-  setActiveComponentScope(singleScope)
-  // Adapter capabilities thread through to relocate's inline-safety
-  // check so a registered template primitive escapes the bridged-arg /
-  // zero-arg rejection (#1187 phase 3).
-  const adapterCaps = {
-    templatePrimitives: options.adapter.templatePrimitives,
-    acceptsTemplateCall: options.adapter.acceptsTemplateCall,
-  }
-  try {
-    if (options.sourceMaps) {
-      const result = generateClientJsWithSourceMap(
-        componentIR,
-        undefined,
-        options.localImportPrefixes,
-        {
-          sourceMaps: true,
-          generatedFileName: clientJsPath.split('/').pop(),
-        },
-        undefined,
-        adapterCaps,
-        options.profile,
-      )
-      errors.push(...componentIR.errors)
-      if (result.code) {
-        files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
-        if (result.sourceMap) {
-          files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
-        }
-      }
-    } else {
-      const clientJs = generateClientJs(
-        componentIR,
-        undefined,
-        options.localImportPrefixes,
-        undefined,
-        adapterCaps,
-        options.profile,
-      )
-      errors.push(...componentIR.errors)
-      if (clientJs) {
-        files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
-      }
-    }
-  } finally {
-    setActiveComponentScope(null)
+  for (const f of swappedClientJsFiles ?? runClientJsGeneration()) {
+    files.push(f)
   }
 
   return { files, errors }

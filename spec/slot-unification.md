@@ -203,6 +203,76 @@ calls `adapter.generate` BEFORE `generateClientJs`; reordering those has not
 been re-verified against the loop-row planner's invariants. Real follow-up
 work.
 
+**Investigated (issue #2483) — corrected: a SPLIT, not a swap, and the
+runtime/adapter sides are already general enough.** The order-swap
+experiment (`BF_INVESTIGATE_SWAP_GENERATE_ORDER=1`, `compiler.ts`) showed
+`adapter.generate` and `generateClientJs` are not coupled through IR
+mutation at all — grepping every `ir-to-client-js/**` module for a write to
+an `IRNode`/`IRExpression` field found exactly one site,
+`client-only-elision.ts`'s own `markerless`/`elidedPath` assignment; no
+adapter (all nine, grepped) imports from `ir-to-client-js` or writes
+`ir.metadata`/IR-node fields; `generateClientJs`'s `collectElements` copies
+loop-node fields into its own ephemeral `ctx.loopElements` entries rather
+than mutating the IR loop node. So the literal call-order swap is not
+structurally blocked — but swapping alone buys nothing: the missing piece
+was never "which function runs first", it's a pre-pass that generalizes
+`decideClientOnlyElision` the same way it already ships, extended past the
+`clientOnly` restriction and into loop-row bodies. Evidence this is close
+to free on the runtime/adapter side:
+
+- `claimMarkerlessText` (`packages/client/src/runtime/claim-slots.ts`)
+  ALREADY implements general adopt-existing-or-create-at-index semantics,
+  not just the "always empty" case `/* @client */` needs — its own
+  docstring states both branches. No runtime change needed to generalize
+  past `clientOnly`.
+- `packages/adapter-tests/src/claim-plan-conformance.ts` already verifies
+  ANY markerless slot's path resolves correctly in rendered HTML, not just
+  client-only ones — no test-infra change needed for the top-level
+  (non-loop) case.
+- `computeSkeletonSlotPaths` (`html-template.ts`) — the function that would
+  compute a loop row's elided paths — is already a pure function of
+  `(IRNode, LoopSkeletonSafeSlots)`, decoupled from `ClientJsContext`, so
+  it can be called from a pre-pass exactly like `decideClientOnlyElision`
+  already is.
+- The CSR emitter's `expression` case (`html-template.ts`'s
+  `irToHtmlTemplate`) checks `node.markerless` UNCONDITIONALLY, ahead of
+  the `slotId`-marker branch — already correct for a non-`clientOnly`
+  markerless slot with no change needed.
+
+The SSR side is NOT already fully general, though — every one of the nine
+adapters' `renderExpression` nests its `if (expr.markerless) return ''`
+check INSIDE `if (expr.clientOnly && expr.slotId) { … }` (verified in
+`hono-adapter.ts`, `go-template-adapter.ts`, `erb-adapter.ts`; the other six
+carry the identical shape per their matching "elidedPath alone is enough"
+comment). The general `if (expr.slotId) { return marker-wrapped }` branch
+below it never consults `markerless` at all. So a markerless flag on a
+non-`clientOnly` expression would be silently ignored by all nine backends
+today, still emitting the marker pair — a real, mechanical, but NOT free
+coupling: hoisting that one check out of the `clientOnly` branch is
+required in all nine adapters (a small, symmetric, low-risk change, not a
+design blocker) before the CSR-side generalization above does anything
+observable in SSR output.
+
+The genuine hard case is adopted rows, confirmed unconditional today:
+`control-flow/stringify/lazy-row.ts` states outright that "Adopted (SSR)
+rows never use these [row-relative fresh-clone paths] — `__lzc_<mid>`
+claims with `path: []`, the sanctioned marker-scan case." Removing the
+marker removes the only thing that scan finds. Because `claimMarkerlessText`
+is already general, this is not a missing runtime primitive; it is
+`build-lazy-row.ts`/`stringify/lazy-row.ts`'s adopted-row claim-plan
+construction hard-wiring `path: []` for every text slot regardless of
+elision eligibility, and it needs real (understood, scoped) planner work to
+accept a computed row-relative path for the elided subset instead. The
+top-level (non-loop) generalization and the fresh-clone-row case do not
+share this blocker — top-level paths are already root-relative
+(`IRExpression.elidedPath`'s existing contract) and fresh-clone rows
+already get row-relative paths via the hoisted-skeleton fast path
+(`__lzp_<mid>`); only the *adopted* claim-plan shape needs to change.
+See the issue for the full order-dependency map, breakage catalogue, and
+the measured size prize (raw-byte win is real; wire/gzip win is negligible
+— confirms this section's own "argue (b) from memory and parse, never
+transfer size" framing empirically, not just by assertion).
+
 ## 6. Constraints and risks
 
 - **Byte parity**: Step A left SSR bytes unchanged (except the dead
