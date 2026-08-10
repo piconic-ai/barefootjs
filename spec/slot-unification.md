@@ -204,8 +204,10 @@ been re-verified against the loop-row planner's invariants. Real follow-up
 work.
 
 **Investigated (issue #2483) — corrected: a SPLIT, not a swap, and the
-runtime/adapter sides are already general enough.** The order-swap
-experiment (`BF_INVESTIGATE_SWAP_GENERATE_ORDER=1`, `compiler.ts`) showed
+runtime/adapter sides are already general enough.** A throwaway order-swap
+experiment (temporary `compiler.ts` scaffolding, deliberately not kept —
+the map below is the artifact, and dead scaffolding for an unscheduled
+feature only invites callers) showed
 `adapter.generate` and `generateClientJs` are not coupled through
 ELISION-RELEVANT IR mutation at all — grepping every `ir-to-client-js/**`
 module for a write to an `IRNode`/`IRExpression` field found exactly one
@@ -245,11 +247,11 @@ error collection either. It IS a caution for whoever restructures
 `compiler.ts`'s pass sequencing for real: two conceptually different
 IR-mutation axes (elision decisions vs. diagnostics) both flow through the
 same mutable `componentIR`, and auditing one is not auditing both.
-`generate-order-independence.test.ts` now pins both — diagnostic equality
-across orders, not just template/clientJs byte equality — and includes the
-go-template BF101 case specifically because every other case in that file
-uses `HonoAdapter`, which never had this bug (Hono is the one adapter that
-doesn't append to `ir.errors` during `generate()`).
+Whoever does that restructuring should assert diagnostic equality (code /
+severity / message) across orders, not just template/clientJs byte
+equality, and should exercise a non-Hono adapter — Hono is the one adapter
+that does NOT append to `ir.errors` during `generate()`, so a Hono-only
+check cannot see this class at all.
 
 Evidence the runtime/adapter side is close to free for the ACTUAL elision
 axis (`markerless`/`elidedPath`), unaffected by the correction above:
