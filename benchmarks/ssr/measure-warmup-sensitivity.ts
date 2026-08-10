@@ -7,10 +7,13 @@
  *
  * Method: within a single process, call each framework's real renderPage()
  * repeatedly and measure a 20-call block after 5 warmup calls (exactly
- * bench-ssr.ts's former contract), then keep calling and re-measure after
- * 105, 305, and 805 total calls. A framework that's still cooling down
- * shows a declining median across blocks; a framework already at steady
- * state by block 1 shows a flat series.
+ * bench-ssr.ts's former contract), then keep calling and re-measure three
+ * more times (after 125, 345 and 865 calls; the last block is 30 calls).
+ * A framework that's still cooling down shows a declining median across
+ * blocks; a framework already at steady state by block 1 shows a flat
+ * series. Each block prints the call count it actually started at, taken
+ * from a live counter rather than restated here — the measured blocks are
+ * themselves renders, so hand-summing only the warmup loops undercounts.
  *
  * Usage: bun benchmarks/ssr/measure-warmup-sensitivity.ts <react|solid|barefoot>
  *
