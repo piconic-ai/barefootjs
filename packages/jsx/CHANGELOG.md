@@ -1,5 +1,40 @@
 # @barefootjs/jsx
 
+## 0.31.5
+
+### Patch Changes
+
+- 59cce78: Migrate the seven template-string adapters (Twig, Jinja, Blade, Xslate, Rust/minijinja, ERB, Mojolicious) onto `BindingScope` for loop-callback shadow guards (#2482 stage 2). Each adapter's ad-hoc device pair — a coarse whole-component shadow-name `Set` plus a ref-counted, position-accurate `Map<string, number>` (or, for ERB/Mojolicious, a single already-live map) — collapses into one threaded, immutable `this.scope: BindingScope`, entered/exited by reference around `renderLoop`'s body exactly like the Stage 1a/1b `ctx.scope` precedent in `jsx-to-ir.ts`. `IRLoop` already structurally satisfies `LoopBindingSource`, so `renderLoop` passes the loop node straight to `enterLoopRow`.
+
+  This ends a real coarse/live drift: `resolveStaticLoopSource`'s `isNameShadowed` callback previously received the coarse whole-component set from five adapters (twig/jinja/blade/xslate/rust) but the live, position-accurate map from ERB/Mojolicious — same shared function, two different meanings depending on caller. All seven adapters now feed the same canonical, position-accurate predicate (`scope.asShadowPredicate()`). The five Twig-family adapters' `_resolveLiteralConst`/`_resolveStaticRecordLiteral` module-const-inlining guards are also canonicalized from a coarse whole-component exclusion to the position-accurate scope, matching ERB/Mojolicious's existing (already-correct) behavior: a same-named const outside any shadowing loop now inlines even when a same-named loop param exists elsewhere in the component — previously an accepted-but-imprecise trade-off, now fixed.
+
+  `@barefootjs/jsx`: `lookupStaticRecordLiteral` (`augment-inherited-props.ts`) gains a required `isShadowed` guard parameter instead of leaving the shadow check to caller discipline — every one of the seven call sites now passes its threaded scope's `isBound` predicate.
+
+- c8b0e95: #2482 Stage 4 (final): drive the binding-scope ratchet allowlist to its documented floor.
+
+  Go adapter: `renderLoop`'s loop-array const lookup gains a `!this.scope.isBound(arrayName)` guard — an enclosing loop's own item param shadowing a same-named module const could previously misfire a false BF101 diagnostic. Narrow, real correctness fix.
+
+  `@barefootjs/jsx`: internal only — `bf debug graph`'s `collectDomBindings` migrates its private loop-param Set onto `BindingScope` (18 occurrences, zero output change), and the internal `BindingEnvironment.loopParams` field (not part of the public surface) is renamed to `loopValueBoundNames` to say what it has actually carried since Stage 1a. Every remaining ratchet allowlist entry now carries a written FLOOR justification (no-live-scope prepasses, unrelated-domain `.find(` matches, accessor-payload structures), and the convention is documented in `spec/compiler.md` and `CLAUDE.md`.
+
+- 54f130e: Keep the declarations that WRITE a mutable binding when that binding survives into an emitted SSR template (#2598). Reachability is seeded from the rendered JSX, which has already had client-only attributes stripped, so a handler reachable only through `ref={setRef}` (or `onClick={handleClick}`) is pruned — deliberate, since it is client-only. The hole was a `let` that outlives its writer: it survives because another surviving declaration reads it, leaving the template to declare and read a binding it never assigns, which TypeScript narrows to `never` at every guarded use (TS2339). `findReachableNames` now closes over writers of surviving mutable bindings, detected via the TS AST so a read, a comparison, or a property write through the binding does not count.
+- b5cf855: Fix a `.map()` loop-body conditional whose condition bare-references a preamble-declared local (a pre-return `const` in the callback body) never re-evaluating when that local reads a signal/memo/reactive prop. Phase 1 now derives the condition's reactivity from the preamble local's own dependency set (`computePreambleReactiveNames`, transitive through earlier preamble declarations) and grants it the same `reactive` flag + slot id ordinary conditions get; Phase 2's `collectLoopChildConditionals`/`emitOuterConditional` got the `readsPreamble` bypass + preamble-re-run-in-getter treatment reactive attributes already had (#2447), the condition-position twin. A conditional whose preamble local is purely item-derived (no signal/memo/prop read) stays non-reactive, as before.
+
+  Closes #2596
+
+- a823e49: Fix a type-level emission defect surfaced by the `ui/` corpus type-check gate (#2573): the SSR no-op signal setter stub was declared as `(..._args: any[]) => {}`. Calling it with an updater function (`setBars((prev) => [...prev, bar])`) put that arrow in a rest-`any[]` argument position rather than a function-typed one, so `tsc` had no contextual signature to infer the arrow's own parameter from and flagged it implicit-any (`TS7006`).
+
+  The stub now mirrors the real `createSignal<T>` setter's signature (`T | ((prev: T) => T)`, from `packages/client/src/reactive.ts`'s `Signal<T>`) whenever the signal's type is known — the same `SignalInfo.type` field the getter's own type assertion already reads — so updater-function call sites infer correctly. Falls back to the untyped rest-args stub when the type can't be resolved. Type-only — no change to rendered output or runtime behavior. Shared by every `JsxAdapter` subclass (Hono, the internal `TestAdapter`), so both benefit uniformly.
+
+  Ratchets the `corpus-typecheck.test.ts` allowlist: `chart TS7006` drops from 34 to 16 (the remaining 16 stem from a distinct, deeper mechanism — SSR context values typed `unknown` — tracked separately in #2573).
+
+- 05c00ab: Fix a type-level emission defect surfaced by the `ui/` corpus type-check gate (#2573): a generic component function's own type parameters (`function Flow<NodeType, EdgeType>(...)`) were dropped from the emitted `.tsx` SSR template. The function came out as `function Flow(...)` even though its props type annotation — and often its body — kept referencing the type parameter names verbatim (`props: FlowComponentProps<NodeType, EdgeType>`, `createFlowStore<NodeType, EdgeType>(props)`), so `tsc` reported `TS2304` ("Cannot find name 'NodeType'") at every such reference.
+
+  `IRMetadata.typeParameters` now carries the source's type parameter list verbatim (per-parameter `node.getText()`, mirroring `ConstantInfo.typeAnnotation`'s #2589 precedent), and `HonoAdapter`/`TestAdapter` splice it between the function name and the parameter list. Type-only — no change to rendered output or runtime behavior. Non-generic components (the overwhelming majority) are unaffected.
+
+  Ratchets the `corpus-typecheck.test.ts` allowlist: `xyflow TS2304` (7) drops to zero.
+
+  - @barefootjs/shared@0.31.5
+
 ## 0.31.4
 
 ### Patch Changes
