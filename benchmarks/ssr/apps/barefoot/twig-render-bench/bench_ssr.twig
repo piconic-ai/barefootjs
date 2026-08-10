@@ -1,0 +1,7 @@
+{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}
+{% set _bf_reg1 = bf.register_script('/static/components/BenchSsr.client.js') %}
+<table class="table" bf-s="{{ bf.scope_attr() }}" {{ bf.hydration_attrs() | raw }} {{ bf.props_attr() | raw }} {{ bf.data_key_attr() | raw }}><tbody id="tbody" bf="s4">{{ bf.comment("loop:l0") | raw }}
+{% for row in initialRows %}
+<tr data-key="{{ bf.string(row.id) }}" class="{{ (bf.eq(selected, row.id) ? 'danger' : '') }}" bf="s3"><td class="col-md-1">{{ bf.text_start("s0") | raw }}{{ bf.string(row.id) }}{{ bf.text_end() | raw }}</td><td class="col-md-4"><a class="lbl" bf="s2">{{ bf.text_start("s1") | raw }}{{ bf.string(row.label) }}{{ bf.text_end() | raw }}</a></td><td class="col-md-1"><a class="remove">x</a></td><td class="col-md-6"></td></tr>
+{% endfor %}
+{{ bf.comment("/loop:l0") | raw }}</tbody></table>

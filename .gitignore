@@ -115,3 +115,17 @@ Gemfile.lock
 benchmarks/results/
 benchmarks/**/.babel-out*/
 benchmarks/ssr/apps/*/.build-temp/
+
+# SSR render-gap investigation cross-adapter benches: per-run output
+# (timings.json / one.html / cpu.prof), the Go bench binary, and the
+# CPU-profile dumps profile-hono-render.ts produces — all regenerable,
+# some multi-MB.
+benchmarks/ssr/apps/barefoot/*.cpuprofile*
+benchmarks/ssr/apps/barefoot/hono-timings.json
+benchmarks/ssr/apps/barefoot/one.html
+benchmarks/ssr/apps/barefoot/go-render-bench/ssr-bench-go
+benchmarks/ssr/apps/barefoot/go-render-bench/timings.json
+benchmarks/ssr/apps/barefoot/go-render-bench/one.html
+benchmarks/ssr/apps/barefoot/go-render-bench/cpu.prof
+benchmarks/ssr/apps/barefoot/twig-render-bench/timings.json
+benchmarks/ssr/apps/barefoot/twig-render-bench/one.html
