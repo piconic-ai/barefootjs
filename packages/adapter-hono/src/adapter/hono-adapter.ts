@@ -556,7 +556,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Module-export keyword belongs to the adapter: it knows the target language
     // and whether the source declared the component as exported.
     const exportPrefix = ir.metadata.isExported === false ? '' : 'export '
-    lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
+    // A generic component's props type (and often its body) keeps
+    // referencing the source's type parameter names verbatim — the
+    // function's own declaration must carry them too, or those references
+    // are unresolved names in the emitted `.tsx` (TS2304, xyflow's `Flow`).
+    const typeParameters = ir.metadata.typeParameters ?? ''
+    lines.push(`${exportPrefix}function ${name}${typeParameters}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
 
     // Vite-pipeline script registration (see `scriptAssets`'s field
     // docstring): register this call's resolved URLs against the request

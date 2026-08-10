@@ -92,9 +92,9 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Carousel_${Math.random().toString(36).slice(2, 8)}`
   const canScrollPrev = () => false
-  const setCanScrollPrev = (..._args: any[]) => {}
+  const setCanScrollPrev: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
   const canScrollNext = () => false
-  const setCanScrollNext = (..._args: any[]) => {}
+  const setCanScrollNext: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
   const orientation = () => props.orientation ?? 'horizontal'
   let emblaApi: EmblaCarouselType | undefined
   const scrollPrev = () => emblaApi?.scrollPrev()

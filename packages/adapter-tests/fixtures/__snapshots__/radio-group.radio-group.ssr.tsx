@@ -49,9 +49,9 @@ export function RadioGroup(__allProps: RadioGroupProps & { __instanceId?: string
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `RadioGroup_${Math.random().toString(36).slice(2, 8)}`
   const internalValue = () => props.defaultValue ?? ''
-  const setInternalValue = (..._args: any[]) => {}
+  const setInternalValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const controlledValue = () => props.value as string | undefined
-  const setControlledValue = (..._args: any[]) => {}
+  const setControlledValue: (valueOrFn: string | undefined | ((prev: string | undefined) => string | undefined)) => void = () => {}
   const isControlled = () => props.value !== undefined
   const currentValue = () => isControlled() ? (controlledValue() ?? '') : internalValue()
 
