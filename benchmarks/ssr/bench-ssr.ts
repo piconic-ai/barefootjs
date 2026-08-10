@@ -80,7 +80,19 @@ async function measureServerRender(framework: Framework): Promise<{ iterations: 
     renderPage: (rows: unknown) => Promise<string>
   }
 
-  const WARMUP = 5
+  // WARMUP=5 (former value) is NOT enough to reach JIT steady state for
+  // solid and barefoot's render paths — measured directly (see
+  // benchmarks/ssr/measure-warmup-sensitivity.ts, kept as a reproducible
+  // artifact): with only 5 warmup calls, solid's median was ~2.5-2.7x its
+  // ~100-call-plateau value and barefoot's was ~1.6-1.8x its plateau
+  // value, while react was already within ~10% of its plateau at 5
+  // warmup calls. Both effects are real and reproducible across many
+  // repeated trials, not a one-off fluke — see the SSR render-gap
+  // investigation writeup for the full iteration-block series. 50 warmup
+  // calls lands within measurement noise of each framework's plateau for
+  // all three; the added cost is <1s of extra bench runtime even at
+  // react's ~20ms per call.
+  const WARMUP = 50
   const MEASURE = 20
 
   let html = ''
