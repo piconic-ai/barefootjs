@@ -757,676 +757,6 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div><button bf="s0"
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L142 — ✅ Nested \`.filter()\` / \`.map()\` now compiles everywhere 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name))}<!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L149 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = items().filter(x => x.tags.some(t => t.active)).map(t => t.name)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.some(t => t.active)).map(t => t.name))}<!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L152 — ✅ Add /* @client */ to evaluate on the client 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
-  createEffect(() => {
-    __bfw_s0('s0', items().filter(x => x.tags.some(t => t.active)).map(t => t.name))
-  }) }
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L159 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = items().reduce((sum, x) => sum + x.price, 0)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).reduce((sum, x) => sum + x.price, 0))}<!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L162 — ✅ Use /* @client */ 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
-  createEffect(() => {
-    __bfw_s0('s0', items().reduce((sum, x) => sum + x.price, 0))
-  }) }
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L179 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = items().filter(function(x) { return x.done })
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(function(x) { return x.done }))}<!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L182 — ✅ Use arrow functions for adapter portability 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = items().filter(x => x.done)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.done))}<!--/--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L195 — ✅ Value-producing block bodies normalize (let-inline) and lower everywhere 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const [_s1] = $(__scope, 's1')
-
-  mapArray(() => items().toSorted((a, b) => a.name > b.name ? 1 : -1), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
-    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
-  }, 'l0')
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.name > b.name ? 1 : -1).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L205 — ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const [_s1] = $(__scope, 's1')
-
-  mapArray(() => items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
-    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
-  }, 'l0')
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L210 — ✅ Use /* @client */ 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const [_s1] = $(__scope, 's1')
-
-  mapArray(() => items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
-    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
-  }, 'l0')
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L222 — ❌ BF021 on Go/Mojo — \`byPrice\` is imported, not declared in this file 1`] = `
-"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
-import { byPrice } from './comparators'
-
-
-export function initSortedList(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const items = _p.items
-
-  const [_s1] = $(__scope, 's1')
-
-  const __tpl_l0 = document.createElement('template')
-  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
-  mapArray(() => items.sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
-    createEffect(() => { __bfw_s0('s0', String(item().name)) })
-    return __el
-  }, 'l0')
-
-}
-
-hydrate('SortedList__b3c36eee', { init: initSortedList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.sort(byPrice).map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul>\`, name: 'SortedList' })
-export function SortedList(_p, __bfKey) { return createComponent('SortedList__b3c36eee', _p, __bfKey) }"
-`;
-
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L228 — ✅ Use /* @client */, or inline / re-declare the comparator locally 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
-
-export function initTodoItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.todo)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
-export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
-export function initItem(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
-  createEffect(() => {
-    const __val = String(_p.item)
-    __bfw_s0('s0', escapeTextOrNode(__val))
-  })
-
-}
-
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
-export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
-function initDashboard() {}
-
-hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
-export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
-export function initExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-  const [count, setCount] = createSignal(0)
-  const [isLoggedIn] = createSignal(false)
-  const [todos] = createSignal([])
-  const [items] = createSignal([])
-  const [filter] = createSignal('all')
-  const [accepted] = createSignal(false)
-  const [text, setText] = createSignal('')
-
-  const [_s1] = $(__scope, 's1')
-
-  mapArray(() => items().sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
-    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
-  }, 'l0')
-
-}
-
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort(byPrice).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
-export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
-`;
-
 exports[`docs/core/rendering/client-directive.md doc-examples L76 — Nested higher-order methods 1`] = `
 "import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
@@ -5497,4 +4827,774 @@ export function initCounter(__scope, _p = {}) {
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeText((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L143 — ✅ Nested \`.filter()\` / \`.map()\` now compiles everywhere 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L150 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = items().filter(x => x.tags.some(t => t.active)).map(t => t.name)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.some(t => t.active)).map(t => t.name))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L153 — ✅ Add /* @client */ to evaluate on the client 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
+  createEffect(() => {
+    __bfw_s0('s0', items().filter(x => x.tags.some(t => t.active)).map(t => t.name))
+  }) }
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L160 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = items().reduce((sum, x) => sum + x.price, 0)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).reduce((sum, x) => sum + x.price, 0))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L163 — ✅ Use /* @client */ 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
+  createEffect(() => {
+    __bfw_s0('s0', items().reduce((sum, x) => sum + x.price, 0))
+  }) }
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L180 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = items().filter(function(x) { return x.done })
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(function(x) { return x.done }))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L183 — ✅ Use arrow functions for adapter portability 1`] = `
+"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = items().filter(x => x.done)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.done))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L192 — ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja; works on Hono 1`] = `
+"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+
+export function initReactionBar(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const entries = Object.entries(_p.reactions).filter(([, users]) => users.length > 0)
+
+  const [_s2] = $(__scope, 's2')
+
+  // Reactive texts / CSR materialize in static array children
+  if (_s2) {
+    entries.forEach(([emoji, users], __idx) => {
+      let __iterEl = _s2.children[__idx]
+      if (!__iterEl) {
+        const __tpl = document.createElement('template')
+        __tpl.innerHTML = \`<span data-key="\${escapeAttr(emoji)}"><!--bf:s0-->\${escapeText(emoji)}<!--/-->: <!--bf:s1-->\${escapeText(String(users.length))}<!--/--></span>\`
+        const __cloned = __tpl.content.firstElementChild
+        if (__cloned) {
+          const __anchor = _s2.children[__idx] ?? null
+          _s2.insertBefore(__cloned, __anchor)
+          __iterEl = __cloned
+        }
+      }
+      if (__iterEl) {
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }, { id: 's1', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('s0', String(emoji)) })
+        createEffect(() => { __bfw_s0('s1', String(String(users.length))) })
+      }
+    })
+  }
+
+}
+
+hydrate('ReactionBar__b3c36eee', { init: initReactionBar, template: (_p) => \`<div bf="s2"><!--bf-loop:l0-->\${[].map(([emoji, users]) => \`<span data-key="\${escapeAttr(emoji)}"><!--bf:s0-->\${escapeText(emoji)}<!--/-->: <!--bf:s1-->\${escapeText(String(users.length))}<!--/--></span>\`).join('')}<!--bf-/loop:l0--></div>\`, name: 'ReactionBar' })
+export function ReactionBar(_p, __bfKey) { return createComponent('ReactionBar__b3c36eee', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L201 — ✅ Best: precompute the array in the parent/route handler and pass it as a prop 1`] = `
+"import { $, createComponent, escapeAttr, escapeText, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+
+
+export function initReactionBarByProp(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const entries = _p.entries ?? []
+
+  const [_s2] = $(__scope, 's2')
+
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<span data-key=""><!--bf:s0--><!--/-->: <!--bf:s1--><!--/--></span>\`
+  const __lzp_l0 = [[0], [3]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }, { id: 's1', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }, { id: 's1', kind: 'text', path: __lzp_l0[1] }]
+  mapArrayLazy(() => entries, _s2, ([emoji, users]) => String(emoji), {
+    createRow: (__e, __idx) => {
+      const __bfItem = () => __e.item
+      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
+      const __l = __e.last = []
+      { const __x = __bfItem()[0]
+      __r[0]('s0', textOrNode(__x))
+      __l[0] = __x }
+      { const __x = String(__bfItem()[1].length)
+      __r[0]('s1', textOrNode(__x))
+      __l[1] = __x }
+      return __el
+    },
+    applyItem: (__e) => {
+      const __bfItem = () => __e.item
+      const __r = __e.refs ?? (__e.refs = [])
+      const __l = __e.last ?? (__e.last = [])
+      const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
+      { const __x = __bfItem()[0]
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __d('s0', textOrNode(__x))
+      __l[0] = __x }
+      { const __x = String(__bfItem()[1].length)
+      if (!(1 in __l) || !Object.is(__l[1], __x)) __d('s1', textOrNode(__x))
+      __l[1] = __x }
+    },
+  }, 'l0')
+
+}
+
+hydrate('ReactionBarByProp__b3c36eee', { init: initReactionBarByProp, template: (_p) => \`<div bf="s2"><!--bf-loop:l0-->\${_p.entries.map(([emoji, users]) => \`<span data-key="\${escapeAttr(emoji)}"><!--bf:s0-->\${escapeText(emoji)}<!--/-->: <!--bf:s1-->\${escapeText(String(users.length))}<!--/--></span>\`).join('')}<!--bf-/loop:l0--></div>\`, name: 'ReactionBarByProp' })
+export function ReactionBarByProp(_p, __bfKey) { return createComponent('ReactionBarByProp__b3c36eee', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L209 — ✅ Or defer to the client with /* @client */ 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L229 — ✅ Value-producing block bodies normalize (let-inline) and lower everywhere 1`] = `
+"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s1] = $(__scope, 's1')
+
+  mapArray(() => items().toSorted((a, b) => a.name > b.name ? 1 : -1), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
+    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
+  }, 'l0')
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.name > b.name ? 1 : -1).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L239 — ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator 1`] = `
+"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s1] = $(__scope, 's1')
+
+  mapArray(() => items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
+    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
+  }, 'l0')
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L244 — ✅ Use /* @client */ 1`] = `
+"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s1] = $(__scope, 's1')
+
+  mapArray(() => items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
+    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
+  }, 'l0')
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L256 — ❌ BF021 on Go/Mojo — \`byPrice\` is imported, not declared in this file 1`] = `
+"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
+import { byPrice } from './comparators'
+
+
+export function initSortedList(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const items = _p.items
+
+  const [_s1] = $(__scope, 's1')
+
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
+  mapArray(() => items.sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item().name)) })
+    return __el
+  }, 'l0')
+
+}
+
+hydrate('SortedList__b3c36eee', { init: initSortedList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.sort(byPrice).map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul>\`, name: 'SortedList' })
+export function SortedList(_p, __bfKey) { return createComponent('SortedList__b3c36eee', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L262 — ✅ Use /* @client */, or inline / re-declare the comparator locally 1`] = `
+"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = String(_p.item)
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\`, name: 'Dashboard' })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s1] = $(__scope, 's1')
+
+  mapArray(() => items().sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
+    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
+  }, 'l0')
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort(byPrice).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
