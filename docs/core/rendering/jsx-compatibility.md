@@ -125,6 +125,7 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 | JSX-returning `.flatMap()` with a statement body (early `return`, `const` before the projection) | works (runs as JS) | **BF021** |
 | Nested `.filter()` / `.map()` in a filter predicate (`x => x.tags.filter(...).length > 0`) | works | works |
 | Nested `.some()` / `.find()` / `.reduce()` in a filter predicate | works | **BF101** |
+| `.map()` loop array bound to a component-scope `const` with a computed initializer (e.g. `Object.entries(props.x).filter(...)`) | works | **BF101** |
 | Sort comparator that's a multi-statement block body or `localeCompare(b, locale, opts)` | works (runs as JS) | **BF021** |
 | Sort comparator that's a function reference to an imported/prop identifier, or an alias chain (`const c2 = c1`) | works (runs as JS) | **BF021** |
 | `typeof` in a filter predicate | works (runs as JS) | **BF021** |
@@ -181,6 +182,39 @@ A nested `.some()` / `.find()` / `.reduce()` still has no faithful Go/Mojo lower
 // ✅ Use arrow functions for adapter portability
 {items().filter(x => x.done)}
 ```
+
+**Computed loop array (`const` with a runtime initializer):**
+
+A `.map()` loop whose array is a bare identifier works when that identifier is a prop or a signal read, but not when it's a component-scope `const` computed from one at render time (`Object.entries(...)`, `.filter(...)`, …) — no template adapter has a binding for an arbitrary computed local, only for a prop/param it can pass straight through:
+
+```tsx
+// ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja; works on Hono
+type Props = { reactions: Record<string, string[]> }
+function ReactionBar(props: Props) {
+  const entries = Object.entries(props.reactions).filter(([, users]) => users.length > 0)
+  return <div>{entries.map(([emoji, users]) => (
+    <span key={emoji}>{emoji}: {String(users.length)}</span>
+  ))}</div>
+}
+
+// ✅ Best: precompute the array in the parent/route handler and pass it as a prop
+type Entry = [string, string[]]
+function ReactionBarByProp({ entries }: { entries: Entry[] }) {
+  return <div>{entries.map(([emoji, users]) => (
+    <span key={emoji}>{emoji}: {String(users.length)}</span>
+  ))}</div>
+}
+
+// ✅ Or defer to the client with /* @client */
+function ReactionBarClientOnly(props: Props) {
+  const entries = Object.entries(props.reactions).filter(([, users]) => users.length > 0)
+  return <div>{/* @client */ entries.map(([emoji, users]) => (
+    <span key={emoji}>{emoji}: {String(users.length)}</span>
+  ))}</div>
+}
+```
+
+The prop-passing form is the better fix — it keeps full SSR output, since the template adapters bind a plain prop array directly. `/* @client */` compiles clean too, but renders **nothing** for that region at SSR — no content until hydration/mount runs the loop client-side.
 
 ### Sort comparators that error on Go / Mojo
 

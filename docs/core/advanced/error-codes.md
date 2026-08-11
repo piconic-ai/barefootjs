@@ -219,6 +219,47 @@ backend cannot compute, and dies at render time the same way.
 
 ---
 
+## Template Adapter Errors (BF101)
+
+### BF101 — No Template-Language Lowering
+
+**Trigger:** An expression that a JS-runtime adapter (Hono, CSR) executes verbatim has no lowering on a non-JS template adapter (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja). Two shapes are permanent known limitations rather than subset widenings:
+
+**A nested `.some()` / `.find()` inside a filter predicate** ([#2320](https://github.com/piconic-ai/barefootjs/issues/2320)) — `find`-family methods return an element, not a boolean, so degrading them to their receiver would silently change predicate semantics:
+
+```tsx
+// ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja
+{items().filter(t => picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.name}</li>)}
+```
+
+**A `.map()` loop array bound to a component-scope `const` with a computed initializer** ([#2321](https://github.com/piconic-ai/barefootjs/issues/2321)) — no template adapter binds an arbitrary computed local, only a prop/param it passes straight through:
+
+```tsx
+// ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja
+function ReactionBar(props: { reactions: Record<string, string[]> }) {
+  const entries = Object.entries(props.reactions).filter(([, users]) => users.length > 0)
+  return <div>{entries.map(([emoji, users]) => <span key={emoji}>{emoji}</span>)}</div>
+}
+```
+
+**Fix:** For the loop-source shape, prefer precomputing the array where it's already computable and passing the **result** as a prop — this keeps full SSR output. Both shapes fall back to `/* @client */`, which compiles clean everywhere but renders nothing for that region at SSR (client-only, materialised at hydration/mount).
+
+```tsx
+// ✅ Best for the loop-source shape: pass the computed array as a prop
+function ReactionBar({ entries }: { entries: [string, string[]][] }) {
+  return <div>{entries.map(([emoji, users]) => <span key={emoji}>{emoji}</span>)}</div>
+}
+
+// ✅ Either shape: defer to the client
+{/* @client */ items().filter(t => picked().some(p => p.id === t.id)).map(t => (
+  <li key={t.id}>{t.name}</li>
+))}
+```
+
+See [JSX Compatibility](../rendering/jsx-compatibility.md) for the full worked examples.
+
+---
+
 ## Component Errors (BF043–BF044)
 
 ### BF043 — Props Destructuring (Warning)

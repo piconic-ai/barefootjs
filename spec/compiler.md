@@ -841,6 +841,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF023 | Missing `key` attribute in `.map()` loop — root JSX element has no `key` prop |
 | BF024 | Missing `key` attribute in nested `.map()` loop — inner loop root JSX element has no `key` prop |
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
+| BF101 | An adapter has no template-language lowering for the expression (an off-catalogue array/string method, a nested higher-order callback, or a loop array bound to a computed component-scope local) — raised only by non-JS template adapters (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja); a JS-runtime adapter (Hono, CSR) executes the expression verbatim instead. See "Unsupported Expressions (BF101)" below. |
 | BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
 | BF048 | `'use client'` file references a same-file sibling component that produced no template — typically a multi-return JSX `switch`/`if`-`else` dispatch, which only #932's non-client verbatim-preservation path can compile (#2556) |
@@ -980,6 +981,26 @@ The refusal is deliberately conservative — it only fires when the receiver's t
 - **`/* @client */`** — the expression already opts out of SSR lowering, exactly as for the filter/sort BF021 shapes above.
 - **A registered lowering plugin claims the call** — `checkRichTypeMethodCalls` checks the same `matchLoweringCall` seam every adapter's call lowering goes through (`lowering-registry.ts`, #2057). Cataloguing a rich-type API (e.g. a `Date.toISOString()` → ISO-string lowering) is a plugin, not a change to this module — see #2274.
 - **An in-file type declaration shadows the host name** (`interface Date { … }` in the same file) — the local declaration wins; only a same-file shadow is recognized, not an imported type that happens to reuse the name.
+
+### Unsupported Expressions (BF101)
+
+**BF101** is the sibling of BF021 for the non-JS template adapters (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja): it fires when one of those adapters has no template-language lowering for an expression that a JS-runtime adapter (Hono, CSR) executes verbatim and compiles clean. Two shapes tracked as permanent known limitations (rather than subset widenings) illustrate the two BF101 sources — a per-method reason string vs. an adapter-specific structural check — and both name `/* @client */` in their `suggestion`:
+
+**A nested higher-order callback with no scalar template form** ([#2320](https://github.com/piconic-ai/barefootjs/issues/2320), successor to #2038) — `items().filter(t => picked().some(p => …))` / `.find(...)`. `some`/`every`/`filter` nested one level DO lower on adapters with an inline scalar form (e.g. Mojo's `grep`); `find`/`findIndex`/`findLast`/`findLastIndex` never do (they return an element, not a boolean) — degrading them to their receiver would silently change predicate semantics, so every such adapter refuses loudly instead:
+
+```
+error[BF101]: Filter predicate contains a nested '.some(...)' callback, which has no Kolon scalar form
+  = help: Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).
+```
+
+**A `.map()` loop array bound to a computed component-scope `const`** ([#2321](https://github.com/piconic-ai/barefootjs/issues/2321)) — `const entries = Object.entries(props.x).filter(...); … entries.map(...)`. Every template adapter can bind a loop to a prop/param it passes straight through, but none has a general binding for an arbitrary computed local (only a string-derived local resolves to a generated field). The message leads with the better fix — precompute the value where it's already computable (the parent / route handler) and pass the **result** as a prop, which keeps full SSR output — before the `/* @client */` fallback, which drops SSR output for that region entirely:
+
+```
+error[BF101]: Loop array `entries` is a local computed value (`Object.entries(props.reactions ?? {}).filter(([, users]) => users.length > 0)`) that the Go template adapter cannot bind as a template variable — only a string-derived local resolves to a generated struct field.
+  = help: Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.
+```
+
+See "Computed loop array" and "Nested higher-order methods" in [`jsx-compatibility.md`](../docs/core/rendering/jsx-compatibility.md) for the full worked examples, including what SSR output looks like for each escape (a plain-prop array still server-renders; `/* @client */` does not).
 
 ### Known limitations — methods that don't lower to the template adapters
 

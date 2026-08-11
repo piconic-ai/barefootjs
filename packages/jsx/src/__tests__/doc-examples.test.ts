@@ -460,6 +460,7 @@ const ERROR_CODES_DOC_TOO_MINIMAL: Record<string, string> = {
   BF021: 'BF021 has multiple ❌ snippets in placeholder form (`.map(...)`) — covered concretely by `jsx-compatibility.md` tests; the doc-form snippets here remain placeholder',
   BF043: 'BF043 fires only for STATEFUL components (signals/memos/effects). The doc snippet `function Child({ count }: Props)` has no reactivity, so the check is correctly silent — doc snippet needs enrichment to be testable as-is',
   BF044: 'BF044 fires only when a real signal getter is bound. The doc snippet `<Child count={count} />` references an undeclared `count`, so the check is silent — doc snippet needs enrichment',
+  BF101: 'BF101 is raised by the non-JS template adapters\' own per-adapter checks (Go/Mojo/Xslate/… `renderLoop` / callback lowering), not by the shared `isSupported` gate every adapter shares — `TestAdapter` here is JS-runtime-style like Hono and executes both doc snippets verbatim, so the check is correctly silent. Covered concretely (compiled against the real 8 template adapters, with verbatim diagnostic text) by `jsx-compatibility.md`\'s doc-examples coverage and the `filter-nested-callback-predicate` / `filter-nested-find-predicate` / `static-array-from-props` adapter-conformance fixtures.',
 }
 
 // BFxxx codes that `errors.ts` defines but no production code in
