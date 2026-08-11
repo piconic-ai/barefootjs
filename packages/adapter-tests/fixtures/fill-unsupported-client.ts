@@ -9,12 +9,12 @@ import { createFixture } from '../src/types'
  * exercised `.fill()` directly until this fixture. That specific claim IS
  * false, though not for a `.fill()`-specific reason.
  *
- * NOT declared as `fill-unsupported`'s `escapes` twin — same
- * `generateCsrTemplateWithOpts` markerless bug as `every-typeof-predicate-
- * client` (see that fixture's docstring for the full explanation; every
- * sibling `*-typeof-*` fixture hits the identical bug, so this is a
- * method-agnostic compiler gap, not something specific to `.fill()`).
- * CSR-skipped (`csr-skip-set.ts`) pending the compiler fix.
+ * #2617 fixed the `generateCsrTemplateWithOpts` markerless bug (see
+ * `every-typeof-predicate-client`'s docstring for the full explanation;
+ * every sibling `*-typeof-*` fixture hit the identical bug, so it was a
+ * method-agnostic compiler gap, not something specific to `.fill()`). This
+ * twin now passes real `csr-conformance.test.ts` execution and is declared
+ * as `fill-unsupported`'s `escapes` twin.
  */
 export const fixture = createFixture({
   id: 'fill-unsupported-client',

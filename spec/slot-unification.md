@@ -270,10 +270,36 @@ axis (`markerless`/`elidedPath`), unaffected by the correction above:
   `(IRNode, LoopSkeletonSafeSlots)`, decoupled from `ClientJsContext`, so
   it can be called from a pre-pass exactly like `decideClientOnlyElision`
   already is.
-- The CSR emitter's `expression` case (`html-template.ts`'s
-  `irToHtmlTemplate`) checks `node.markerless` UNCONDITIONALLY, ahead of
-  the `slotId`-marker branch — already correct for a non-`clientOnly`
-  markerless slot with no change needed.
+- **Corrected by #2617** (this investigation originally checked only one of
+  the two top-level CSR emitters and missed that there is a second): the CSR
+  side has TWO `expression`-case emitters in `html-template.ts`, not one —
+  `irToHtmlTemplate` (used for conditional/loop-nested templates) and
+  `generateCsrTemplateWithOpts` (the whole-component CSR template, used for
+  `registerTemplate()`'s CSR fallback). `irToHtmlTemplate` checks
+  `node.markerless` UNCONDITIONALLY, ahead of the `slotId`-marker branch —
+  already correct for a non-`clientOnly` markerless slot with no change
+  needed. Note this readiness is narrower than it looks: no such slot exists
+  today (`markElided` is called only under `clientOnly && slotId`), and that
+  branch is currently unreachable anyway, since elision never descends into
+  loop/conditional subtrees and `irToHtmlTemplate` only ever runs on them.
+  A generalization that widens elision INTO those subtrees would therefore
+  make it reachable for `clientOnly` nodes too, where evaluating eagerly is
+  wrong — so it must gain a `clientOnly` deferral check at that point rather
+  than being carried over as-is. `generateCsrTemplateWithOpts`, however, nests its
+  `clientOnly && slotId` marker-pair emission the same way the nine SSR adapters do (see
+  below) but — until #2617 — never consulted `markerless` inside that
+  branch at all, so it kept embedding the marker pair for every
+  `/* @client */` bare (non-loop) text expression regardless of elision
+  eligibility: a real SSR/CSR divergence for the one case that WAS already
+  supposed to be free, not merely an unimplemented generalization. #2617
+  fixed `generateCsrTemplateWithOpts` to nest the same `if (node.markerless)
+  return ''` check the SSR adapters use (not `irToHtmlTemplate`'s bare
+  `${expr}` shape — that would wrongly evaluate a deferred `/* @client */`
+  expression at template-build time; see that function's own comment for
+  why the two checks stayed separate rather than collapsing into one
+  helper). Both CSR emitters are now correct for the shipped `clientOnly`
+  case; only the CSR side's GENERALIZATION past `clientOnly` (§2483) remains
+  unimplemented, same as before this correction.
 
 The SSR side is NOT already fully general, though — every one of the nine
 adapters' `renderExpression` nests its `if (expr.markerless) return ''`

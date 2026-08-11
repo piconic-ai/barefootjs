@@ -810,6 +810,36 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // no-slotId branch below already uses — `elidedPath` (not this
       // string) is what the claim plan resolves against, so no marker
       // anchor is needed here at all.
+      //
+      // This branch evaluates `node.expr` eagerly, while the sibling
+      // top-level emitter (`generateCsrTemplateWithOpts`) emits NOTHING
+      // for its `markerless` case. That difference is safe only because
+      // this branch is UNREACHABLE today, which rests on three facts —
+      // all three must hold, so check them before widening either one:
+      //
+      //   1. `markerless` is only ever set by `markElided`, which
+      //      `client-only-elision.ts` calls exclusively under
+      //      `child.clientOnly && child.slotId`. So today
+      //      `markerless === true` IMPLIES `clientOnly && slotId` — it is
+      //      never some other, eagerly-renderable kind of markerless slot.
+      //   2. That walk never descends into a loop or conditional: its
+      //      `default:` case freezes the level and returns without
+      //      recursing (only `element` recurses).
+      //   3. This function only ever runs ON loop bodies and conditional
+      //      branches (every caller passes `l.children[0]`, a `renderLeaf`,
+      //      or `whenTrue`/`whenFalse`), and by its own docstring "does not
+      //      honour `clientOnly`".
+      //
+      // (2) + (3) mean no marked node reaches here; (1) means that if one
+      // ever did, eager evaluation would be WRONG — it would render a
+      // deferred `/* @client */` read at template time instead of leaving
+      // it to init's createEffect. So if #2483 widens elision to cover
+      // loop/conditional subtrees, this branch stops being dead code and
+      // must gain the same `clientOnly` deferral check the sibling emitter
+      // has; it cannot simply keep evaluating. The two checks were left
+      // separate rather than collapsed into a shared helper precisely
+      // because their `clientOnly` semantics differ — see that function's
+      // own comment (#2617).
       if (node.markerless) {
         const bare = wrapInterpolation(wrapExpr(node.expr))
         return `\${${bare}}`
@@ -2363,6 +2393,22 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // the SSR adapters' `renderExpression` byte-for-byte (byte parity):
         // empty at CSR mount too, since the expression is evaluated only
         // once init's createEffect runs, same as the SSR case.
+        //
+        // Slot unification Step B (`markerless`, decided once by
+        // `client-only-elision.ts` before this CSR pass runs; mirrors the
+        // nested `if (expr.markerless) return ''` shape all nine SSR
+        // adapters' `renderExpression` use inside their own identical
+        // `clientOnly && slotId` branch — see `spec/slot-unification.md`
+        // §5a): when the marker pair itself was ALSO elided, drop it and
+        // emit nothing. The claim plan resolves the elided slot via
+        // `elidedPath` (a precomputed child-index path), not a marker
+        // scan, so no anchor comment is needed here at all — matches SSR's
+        // fully-empty output for this case byte-for-byte (#2617; this is
+        // the second of the two top-level CSR emitters `irToHtmlTemplate`
+        // and `generateCsrTemplateWithOpts` that must each consult
+        // `markerless` — see that function's own check at this file's
+        // `case 'expression'` for why the two aren't collapsed into one).
+        if (node.markerless) return ''
         return `<!--bf:${node.slotId}--><!--/-->`
       }
       {

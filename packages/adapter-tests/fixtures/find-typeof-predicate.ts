@@ -28,7 +28,7 @@ export function FindTypeofPredicate() {
   expectedHtml: `
     <div bf-s="test" bf="s1"><!--bf:s0--><!--/--></div>
   `,
-  // NOT declaring `escapes` here (#2613) — see `every-typeof-predicate`'s
-  // identical note; `find-typeof-predicate-client` hits the same CSR
-  // divergence.
+  // `find-typeof-predicate-client` (#2617): graduated — see
+  // `every-typeof-predicate`'s identical note.
+  escapes: [{ kind: 'client-directive', fixture: 'find-typeof-predicate-client' }],
 })
