@@ -17,7 +17,17 @@
 //      `renderDivergences`, not CSR-skipped — the structural proxy for
 //      "renders correctly," not re-checked behaviourally here); or
 //   2. the adapter's OWN error pin for this fixture carries
-//      `unescapable: { issue }` (`ConformancePin`, `@barefootjs/jsx`).
+//      `unescapable: { issue }` (`ConformancePin`, `@barefootjs/jsx`); or
+//   3. the fixture declares `escapeNotOwed: { reason }` — an explicit,
+//      required-non-empty prose declaration that NO escape is owed here,
+//      by design (not merely "not authored yet") — see `EscapeNotOwed` in
+//      `packages/adapter-tests/src/types.ts`. Distinct from (2):
+//      `unescapable` means "an escape is owed but not authored yet";
+//      `escapeNotOwed` means "will never happen", so a by-design refusal
+//      doesn't sit forever as per-adapter debt that can never legitimately
+//      reach zero. Mutually exclusive with (2) for the same pair (enforced
+//      below). The reason is folded into the TEST NAME so it is visible in
+//      ordinary `bun test` output, not hidden behind a boolean.
 //
 // COST ORDERING — read this before reaching for either fast path:
 // shipping a refusal with NO working escape and NO `unescapable`
@@ -126,7 +136,16 @@ describe('escape coverage — every adapter refusal is escapable or self-declare
       }
 
       for (const fixtureId of domainFixtureIds) {
-        test(`[${fixtureId}] escapable or self-declared unescapable`, () => {
+        // `escapeNotOwed` is deliberately costly-by-visibility (#2613):
+        // its reason string is folded into the TEST NAME itself, so it
+        // shows up in every `bun test` run's output — a reviewer scanning
+        // CI output sees the justification, not just a pass/fail dot.
+        const notOwedReason = jsxFixtures.find(f => f.id === fixtureId)?.escapeNotOwed?.reason
+        const testName = notOwedReason
+          ? `[${fixtureId}] escape not owed: ${notOwedReason}`
+          : `[${fixtureId}] escapable or self-declared unescapable`
+
+        test(testName, () => {
           const outcome = evaluateFixtureEscapeCoverage(adapter, fixtureId, jsxFixtures)
           if (!outcome.ok) {
             throw new Error(outcome.message)

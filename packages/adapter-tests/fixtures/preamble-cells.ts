@@ -30,6 +30,23 @@ export const spec: SharedFixtureSpec = {
   sourceRoot: 'fixture',
   description:
     'keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen',
+  // #2613 escapeNotOwed: this fixture is the real-browser regression pin
+  // for #2389 (patch-on-update) — its interactions assert that a same-key
+  // `toggle()` PATCHES an already-SSR-adopted preamble region in place. A
+  // `/* @client */` twin would SSR nothing for that region, so there would
+  // be no adopted DOM node left to patch: the test would degrade into
+  // "does client-only mounting work", which `client-only-loop` already
+  // covers, contributing zero new coverage. Separately, per this
+  // component's own file-placement docstring, the component lives outside
+  // `integrations/shared/components/` specifically because every
+  // integration app's `bf build` compiles that directory wholesale, and an
+  // un-escaped copy there would break every DSL integration build — so an
+  // escaped copy would also need to live there to be reachable by a DSL
+  // build at all, defeating the reason it's kept fixture-only.
+  escapeNotOwed: {
+    reason:
+      "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either.",
+  },
   interactions: [
     // Initial SSR/hydration state.
     { type: 'expectText', selector: stateCell(1), text: 'open' },

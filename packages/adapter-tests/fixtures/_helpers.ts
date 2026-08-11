@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import {
   createFixture,
+  type EscapeNotOwed,
   type InteractionStep,
   type JSXFixture,
 } from '../src/types'
@@ -143,6 +144,12 @@ export interface SharedFixtureSpec {
    * layout to measure. See `JSXFixture.hostStyles`.
    */
   hostStyles?: string
+  /**
+   * Declares this fixture's DSL refusal owes no escape, by design. Passed
+   * straight through to `JSXFixture.escapeNotOwed` — see
+   * {@link EscapeNotOwed} for the bar a reason must clear.
+   */
+  escapeNotOwed?: EscapeNotOwed
 }
 
 export function sourceFileBasename(spec: SharedFixtureSpec): string {
@@ -454,6 +461,7 @@ function defineFixture(spec: SharedFixtureSpec): JSXFixture {
     interactions: spec.interactions,
     externalImports: spec.externalImports,
     hostStyles: spec.hostStyles,
+    escapeNotOwed: spec.escapeNotOwed,
   })
 }
 

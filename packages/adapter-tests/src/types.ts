@@ -128,6 +128,38 @@ export interface JSXDataPoint {
 export type EscapeKind = 'client-directive' | 'prop-precompute' | 'rewrite'
 
 /**
+ * Declares that a refused fixture owes NO escape, by design — not merely
+ * "not authored yet" (#2613's increment-1 seed-run comment, "Two
+ * refinements this issue should absorb", refinement 1).
+ *
+ * The mechanical boundary in `escape-coverage.test.ts` treats every
+ * `(adapter, fixture)` pair where the reference adapter succeeds as owing
+ * an escape — correct for the overwhelming majority, but wrong for a
+ * fixture that exists specifically to pin JS-runtime-only behavior (e.g.
+ * an SSR-adopting-hydration regression test): for those, a `/* @client *\/`
+ * twin would defeat the fixture's own purpose (SSR renders nothing left to
+ * adopt) and, per the fixture's own docstring, would break every DSL
+ * integration app's `bf build` if the escaped variant were ever placed in
+ * the shared component corpus. Declaring a fixture like that `unescapable`
+ * on every refusing adapter's pin (`ConformancePin`, `@barefootjs/jsx`)
+ * conflates "todo" with "will never happen", which means that per-adapter
+ * debt can never legitimately reach zero.
+ *
+ * Deliberately NOT a bare boolean: exemption mechanisms get reached for
+ * more than they should, so this is costly-by-visibility — a required
+ * non-empty prose `reason`, asserted and surfaced in the floor test's own
+ * output (the test name embeds it), not a silent flag a reviewer can wave
+ * through without reading. `escapeNotOwed` (fixture-level) and
+ * `unescapable` (per-adapter pin-level) are mutually exclusive for the
+ * same (adapter, fixture) pair — declaring both is a floor-test failure,
+ * not a redundancy to shrug off.
+ */
+export interface EscapeNotOwed {
+  /** Non-empty prose explaining why this refusal owes no escape by design. */
+  reason: string
+}
+
+/**
  * A JSX fixture defines a component source and optional props for rendering.
  * Used by the JSX conformance runner to compile and render across adapters.
  *
@@ -253,6 +285,13 @@ export interface JSXFixture {
    * "Where an escape is owed" for why per-code classification rots).
    */
   escapes?: ReadonlyArray<{ kind: EscapeKind; fixture: string }>
+  /**
+   * Declares that this fixture's refusal owes NO escape, by design — the
+   * `escapeNotOwed` exemption (#2613's increment-1 seed comment). See
+   * {@link EscapeNotOwed} for what justifies using this over either
+   * authoring an `escapes` twin or ledgering in `KNOWN_UNESCAPABLE`.
+   */
+  escapeNotOwed?: EscapeNotOwed
 }
 
 /**
@@ -365,6 +404,7 @@ export function createFixture(input: {
   externalImports?: Record<string, string>
   hostStyles?: string
   escapes?: ReadonlyArray<{ kind: EscapeKind; fixture: string }>
+  escapeNotOwed?: EscapeNotOwed
 }): JSXFixture {
   const trimmedComponents = input.components
     ? Object.fromEntries(
