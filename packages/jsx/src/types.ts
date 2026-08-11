@@ -2211,6 +2211,30 @@ export interface ConformancePin {
   severity: 'error' | 'warning'
   /** Tracking issue URL (known-limitation label) for this refusal, when one exists. */
   issue?: string
+  /**
+   * Present when THIS adapter has no verified escape yet for this
+   * refusal — the per-adapter half of #2613's "loud-or-escapable" floor
+   * (`packages/compat/src/__tests__/escape-coverage.test.ts`). `issue` is
+   * the tracking pointer for closing the gap (fall back to
+   * https://github.com/piconic-ai/barefootjs/issues/2613 itself when no
+   * more specific issue exists yet).
+   *
+   * Declared here, next to the refusal it qualifies, so an adapter's own
+   * package is the sole place that states what it knows about its own
+   * refusal — no central cross-adapter ledger to keep in sync (that was
+   * the architectural defect increment 1 shipped with: a `packages/compat`
+   * test hardcoding every adapter's id, which made adapters non-additive).
+   *
+   * Absent means the adapter believes an escape is owed here — either
+   * already satisfied (the refused fixture's `escapes` twin compiles
+   * clean, unpinned, non-divergent, and not CSR-skipped on THIS adapter)
+   * or a pending gap the floor test won't let merge silently.
+   *
+   * Shrink-only, same discipline `KNOWN_HOLES` established: once a
+   * working twin exists here, a lingering `unescapable` becomes a STALE
+   * declaration and the floor test fails loudly on it, naming this pin.
+   */
+  unescapable?: { issue: string }
 }
 /** Keyed by shared-fixture id (`JSXFixture.id`). */
 export type ConformancePins = Record<string, ReadonlyArray<ConformancePin>>
