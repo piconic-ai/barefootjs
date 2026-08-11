@@ -6,8 +6,8 @@
  * outputs. Every consumer (all nine SSR adapters' `renderExpression`, and
  * both top-level CSR emitters in `html-template.ts` —
  * `irToHtmlTemplate`'s `case 'expression'` and `generateCsrTemplateWithOpts`'s
- * own, fixed by #2617 after it shipped without this check for one CSR
- * release cycle — reads the single `IRExpression.markerless` flag this pass
+ * own, the latter added by #2617 after the flag shipped with only the
+ * former wired up — reads the single `IRExpression.markerless` flag this pass
  * writes — nobody re-derives the decision, per CLAUDE.md's "Never add
  * compiler options/hooks for tool-specific output rewriting" spirit: one
  * door in, everyone reads it.

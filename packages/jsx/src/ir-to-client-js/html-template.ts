@@ -811,23 +811,35 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // string) is what the claim plan resolves against, so no marker
       // anchor is needed here at all.
       //
-      // This branch evaluates `node.expr` (rather than emitting empty
-      // content the way `generateCsrTemplateWithOpts`'s own `markerless`
-      // check does, below/`case 'component'`'s sibling top-level emitter)
-      // because it is NOT the `clientOnly`-specific case: this function
-      // "does not honour `clientOnly`" at all (see the docstring above the
-      // `element` case) since it only ever runs on conditional/loop-nested
-      // subtrees, and `client-only-elision.ts`'s own scope restriction
-      // excludes anything inside a loop or conditional branch — so a node
-      // reached here with `markerless === true` is, by construction, never
-      // today's sole eligible case (`clientOnly && slotId`); it is only
-      // ever the forward-looking general-case shape #2483 would produce
-      // (a markerless slot whose value SHOULD still render immediately,
-      // unlike a deferred `/* @client */` read). #2617 fixed the sibling
-      // top-level emitter (`generateCsrTemplateWithOpts`) to ALSO consult
-      // this flag — its `clientOnly`-branch semantics differ from this
-      // one's on purpose, so the two checks were not collapsed into one
-      // shared helper; see that function's own comment for the reasoning.
+      // This branch evaluates `node.expr` eagerly, while the sibling
+      // top-level emitter (`generateCsrTemplateWithOpts`) emits NOTHING
+      // for its `markerless` case. That difference is safe only because
+      // this branch is UNREACHABLE today, which rests on three facts —
+      // all three must hold, so check them before widening either one:
+      //
+      //   1. `markerless` is only ever set by `markElided`, which
+      //      `client-only-elision.ts` calls exclusively under
+      //      `child.clientOnly && child.slotId`. So today
+      //      `markerless === true` IMPLIES `clientOnly && slotId` — it is
+      //      never some other, eagerly-renderable kind of markerless slot.
+      //   2. That walk never descends into a loop or conditional: its
+      //      `default:` case freezes the level and returns without
+      //      recursing (only `element` recurses).
+      //   3. This function only ever runs ON loop bodies and conditional
+      //      branches (every caller passes `l.children[0]`, a `renderLeaf`,
+      //      or `whenTrue`/`whenFalse`), and by its own docstring "does not
+      //      honour `clientOnly`".
+      //
+      // (2) + (3) mean no marked node reaches here; (1) means that if one
+      // ever did, eager evaluation would be WRONG — it would render a
+      // deferred `/* @client */` read at template time instead of leaving
+      // it to init's createEffect. So if #2483 widens elision to cover
+      // loop/conditional subtrees, this branch stops being dead code and
+      // must gain the same `clientOnly` deferral check the sibling emitter
+      // has; it cannot simply keep evaluating. The two checks were left
+      // separate rather than collapsed into a shared helper precisely
+      // because their `clientOnly` semantics differ — see that function's
+      // own comment (#2617).
       if (node.markerless) {
         const bare = wrapInterpolation(wrapExpr(node.expr))
         return `\${${bare}}`

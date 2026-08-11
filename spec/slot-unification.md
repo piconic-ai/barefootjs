@@ -278,7 +278,14 @@ axis (`markerless`/`elidedPath`), unaffected by the correction above:
   `registerTemplate()`'s CSR fallback). `irToHtmlTemplate` checks
   `node.markerless` UNCONDITIONALLY, ahead of the `slotId`-marker branch —
   already correct for a non-`clientOnly` markerless slot with no change
-  needed. `generateCsrTemplateWithOpts`, however, nests its `clientOnly &&
+  needed. Note this readiness is narrower than it looks: no such slot exists
+  today (`markElided` is called only under `clientOnly && slotId`), and that
+  branch is currently unreachable anyway, since elision never descends into
+  loop/conditional subtrees and `irToHtmlTemplate` only ever runs on them.
+  A generalization that widens elision INTO those subtrees would therefore
+  make it reachable for `clientOnly` nodes too, where evaluating eagerly is
+  wrong — so it must gain a `clientOnly` deferral check at that point rather
+  than being carried over as-is. `generateCsrTemplateWithOpts`, however, nests its `clientOnly &&
   slotId` marker-pair emission the same way the nine SSR adapters do (see
   below) but — until #2617 — never consulted `markerless` inside that
   branch at all, so it kept embedding the marker pair for every
