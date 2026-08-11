@@ -171,14 +171,7 @@ export const conformancePins: ConformancePins = {
   // NOT pinned: Mojo lowers it to a real inline Perl `grep` and must
   // render to Hono parity instead.
   // Faithful lowering tracked: https://github.com/piconic-ai/barefootjs/issues/2320 (successor to #2038)
-  'filter-nested-find-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2320',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
-    },
-  ],
+  'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' }],
   // #1467 demo-corpus context providers (`radio-group`, `accordion`,
   // `dialog`, `popover`, `select`, `dropdown-menu`, `combobox`,
   // `command`) are no longer pinned — an object-literal provider value

@@ -186,14 +186,7 @@ export const conformancePins: ConformancePins = {
   'filter-nested-callback-predicate': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
-  'filter-nested-find-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2320',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
-    },
-  ],
+  'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' }],
   // NB: TOP-LEVEL `.find` / `.findIndex` / `.findLast` / `.findLastIndex`
   // (text position) are NOT pinned here — like xslate (unlike mojo, which
   // refuses them), Jinja lowers them to `bf.find_eval` / `find_index_eval`

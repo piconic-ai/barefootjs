@@ -170,14 +170,7 @@ export const conformancePins: ConformancePins = {
   'filter-nested-callback-predicate': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
-  'filter-nested-find-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2320',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
-    },
-  ],
+  'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' }],
   // #1310 / #2087: rest destructure in .map() callback. `isLowerableLoopDestructure`
   // now admits every shape this fixture family exercises — each fixed/rest
   // binding resolves via `buildSegmentAccessor`/`buildDestructureBindingMap`
