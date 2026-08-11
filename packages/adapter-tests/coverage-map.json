@@ -1937,6 +1937,25 @@
         "text"
       ]
     },
+    "every-typeof-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "falsy-text-values": {
       "kinds": [
         "literal"
@@ -1950,6 +1969,24 @@
       ]
     },
     "fill-unsupported": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "fill-unsupported-client": {
       "kinds": [
         "array-literal",
         "array-method",
@@ -2008,6 +2045,24 @@
       ]
     },
     "filter-nested-find-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-nested-find-predicate-client": {
       "kinds": [
         "array-literal",
         "arrow",
@@ -2164,6 +2219,25 @@
         "text"
       ]
     },
+    "find-typeof-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "flatmap-expression-body": {
       "kinds": [
         "identifier",
@@ -2178,6 +2252,28 @@
       ]
     },
     "flatmap-typeof-projection": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "flatmap-typeof-projection-client": {
       "kinds": [
         "array-literal",
         "array-method",
@@ -3662,6 +3758,22 @@
         "text"
       ]
     },
+    "reduce-right-typeof-body-client": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "reduce-sum-field": {
       "kinds": [
         "arrow",
@@ -3697,6 +3809,22 @@
       ]
     },
     "reduce-typeof-body": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-typeof-body-client": {
       "kinds": [
         "array-literal",
         "call",
@@ -4138,6 +4266,25 @@
       ]
     },
     "some-typeof-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "some-typeof-predicate-client": {
       "kinds": [
         "array-literal",
         "arrow",
@@ -5009,21 +5156,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 71,
-    "array-method": 67,
-    "arrow": 64,
-    "binary": 84,
-    "call": 203,
-    "conditional": 24,
-    "identifier": 292,
+    "array-literal": 79,
+    "array-method": 69,
+    "arrow": 69,
+    "binary": 89,
+    "call": 211,
+    "conditional": 25,
+    "identifier": 300,
     "index-access": 14,
-    "literal": 241,
+    "literal": 248,
     "logical": 44,
-    "member": 156,
+    "member": 164,
     "object-literal": 56,
     "template-literal": 30,
     "unary": 23,
-    "unsupported": 31
+    "unsupported": 37
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -5032,7 +5179,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 39,
+    "array-method:join": 41,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -5057,13 +5204,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 44,
+    "binary:===": 49,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 49,
     "literal:null": 23,
-    "literal:number": 101,
-    "literal:string": 171,
+    "literal:number": 104,
+    "literal:string": 176,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 14,
