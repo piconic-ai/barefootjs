@@ -15,25 +15,79 @@ export const conformancePins: ConformancePins = {
   // JS-runtime target runs it, a DSL adapter surfaces BF021 + `/* @client */`.
   // See spec/callback-fidelity.md.
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
-  'map-array-builder-body': [{ code: 'BF021', severity: 'error' }],
-  'map-array-builder-escaping': [{ code: 'BF021', severity: 'error' }],
+  'map-array-builder-body': [
+    {
+      code: 'BF021',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
+  'map-array-builder-escaping': [
+    {
+      code: 'BF021',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
   // `.fill(value)` mutates the receiver in place — no template lowering
   // on any DSL adapter; a JS-runtime target runs it, a DSL adapter
   // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
-  'fill-unsupported': [{ code: 'BF101', severity: 'error' }],
+  'fill-unsupported': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
   // Off-subset `.find()` / `.some()` / `.every()` predicate (`typeof`) the
   // compiler can't lower; a JS-runtime target runs it, a DSL adapter
   // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
-  'find-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
-  'some-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
-  'every-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
+  'find-typeof-predicate': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
+  'some-typeof-predicate': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
+  'every-typeof-predicate': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
   // Off-subset `.reduce()` / `.reduceRight()` body / `.flatMap()`
   // projection (`typeof`) the compiler can't lower; a JS-runtime target
   // runs it, a DSL adapter surfaces BF101 + `/* @client */`.
   // See spec/callback-fidelity.md.
-  'reduce-typeof-body': [{ code: 'BF101', severity: 'error' }],
-  'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error' }],
-  'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error' }],
+  'reduce-typeof-body': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
+  'reduce-right-typeof-body': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
+  'flatmap-typeof-projection': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
   // JSX-returning `.flatMap()` body carried as structured segments — i.e.
   // one with STATEMENTS (early returns, consts): a JS runtime executes it
   // verbatim; a DSL template runtime can't, so it refuses with BF021 +
@@ -42,13 +96,25 @@ export const conformancePins: ConformancePins = {
   // e.g. the `flatmap-expression-body` fixture) is NOT pinned: it lowers to
   // neutral nested-loop IR this adapter templatizes natively.
   // See spec/callback-fidelity.md.
-  'tag-cloud': [{ code: 'BF021', severity: 'error' }],
+  'tag-cloud': [
+    {
+      code: 'BF021',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
   // A keyed `.map()` row body whose preamble builds a JSX leaf from item
   // state (`cells.push(<td>{stateLabel}</td>)`) embedded as `{cells}` — the
   // Stage 3 array-builder carrier, jsRuntime-only: a JS runtime runs it
   // verbatim (and patches the region on same-key updates, #2389), a DSL
   // adapter refuses with BF021 + `/* @client */`. See spec/callback-fidelity.md.
-  'preamble-cells': [{ code: 'BF021', severity: 'error' }],
+  'preamble-cells': [
+    {
+      code: 'BF021',
+      severity: 'error',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
+    },
+  ],
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the
@@ -82,13 +148,23 @@ export const conformancePins: ConformancePins = {
   // source) is out of scope for #2087; tracked as a follow-up at
   // https://github.com/piconic-ai/barefootjs/issues/2321.
   'static-array-from-props': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+    {
+      code: 'BF101',
+      severity: 'error',
+      issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+    },
   ],
   // BF101 (unresolvable computed loop array, see above) fires; BF103
   // (imported child in the loop body) no longer does now that the
   // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
   'static-array-from-props-with-component': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+    {
+      code: 'BF101',
+      severity: 'error',
+      issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+    },
   ],
   // Rest-destructure / structured-path `.map()` callbacks (#2087 Phase B):
   // `isLowerableLoopDestructure` now admits fixed bindings at any
@@ -123,7 +199,12 @@ export const conformancePins: ConformancePins = {
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   'filter-nested-find-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
+    {
+      code: 'BF101',
+      severity: 'error',
+      issue: 'https://github.com/piconic-ai/barefootjs/issues/2320',
+      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
+    },
   ],
   // NB: TOP-LEVEL `.find` / `.findIndex` / `.findLast` / `.findLastIndex`
   // (text position) are NOT pinned here — like xslate (unlike mojo, which

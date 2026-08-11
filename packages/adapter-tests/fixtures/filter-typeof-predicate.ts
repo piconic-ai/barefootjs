@@ -31,4 +31,5 @@ export function TypeofPredicate() {
   expectedHtml: `
     <ul bf-s="test" bf="s1"></ul>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'filter-typeof-predicate-client' }],
 })
