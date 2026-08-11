@@ -90,7 +90,21 @@ export function evaluateFixtureEscapeCoverage(
     }
   }
 
-  const errorPins = adapter.pins[fixtureId].filter(p => p.severity === 'error')
+  // The test path always derives `fixtureId` from `adapter.pins` (see
+  // `computeDomainFixtureIds`), so this is unreachable there — but this
+  // function is exported for standalone use against synthetic adapters,
+  // where a caller can pass any id. Returning an outcome rather than
+  // dereferencing `undefined` keeps the "no throw" promise above true
+  // for every caller, not just the in-repo one.
+  const pinsForFixture = adapter.pins[fixtureId]
+  if (!pinsForFixture) {
+    return {
+      ok: false,
+      message: `adapter '${adapter.id}' declares no pins for fixture '${fixtureId}' — evaluateFixtureEscapeCoverage expects a fixture this adapter actually pins (domain ids come from computeDomainFixtureIds)`,
+    }
+  }
+
+  const errorPins = pinsForFixture.filter(p => p.severity === 'error')
   const unescapablePin = errorPins.find(p => p.unescapable)
 
   const declaredEscapes = fixture.escapes ?? []

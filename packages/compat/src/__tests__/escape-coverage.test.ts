@@ -97,10 +97,40 @@ import {
   findUnescapableMissingIssue,
 } from '../escape-coverage'
 
-const { loaded } = await loadCompatAdapters()
+const { loaded, skipped } = await loadCompatAdapters()
 const honoErrorPinnedFixtures = computeHonoErrorPinnedFixtures(loaded)
 
+// The domain below is defined by SUBTRACTION against the reference
+// adapter: a fixture hono itself error-pins is a compiler-wide refusal,
+// so no adapter owes an escape for it (#2613's boundary). If hono fails
+// to import — or its class stops reporting `.name === 'hono'` —
+// `computeHonoErrorPinnedFixtures` returns an empty set and that
+// subtraction silently becomes a no-op, pulling every compiler-wide
+// refusal into the domain. The suite would then fail in bulk for a
+// reason that has nothing to do with the escapes being checked.
+//
+// `compat-pins.test.ts` already asserts `skipped` is empty package-wide,
+// so this is not a general load guard — it is specifically about the one
+// adapter whose absence changes what this file MEANS rather than merely
+// reducing its coverage. Skip reasons are surfaced here anyway, because
+// they are the actual diagnosis and reading them in a sibling file's
+// output is a detour.
+const referenceAdapterProblem = loaded.some(adapter => adapter.id === 'hono')
+  ? ''
+  : `reference adapter 'hono' is not loaded, so the compiler-wide-refusal subtraction is a no-op and the ` +
+    `domain below is too WIDE — any failure naming a fixture the reference itself refuses (today: ` +
+    `date-method-uncatalogued) is spurious and will disappear once this is fixed. Failures on other ` +
+    `fixtures are still real. ` +
+    (skipped.length > 0
+      ? `Skipped adapters: ${skipped.map(s => `${s.pkg} (${s.reason})`).join('; ')}`
+      : `No adapter was skipped, so @barefootjs/hono loaded but its adapter class no longer reports ` +
+        `\`.name === 'hono'\` — loaded ids: ${loaded.map(a => a.id).join(', ')}`)
+
 describe('escape coverage — every adapter refusal is escapable or self-declared unescapable', () => {
+  test('reference adapter is loaded (the domain boundary is defined against it)', () => {
+    expect(referenceAdapterProblem).toBe('')
+  })
+
   for (const adapter of loaded) {
     describe(adapter.id, () => {
       // Sanity pass over EVERY pin this adapter declares (not just the

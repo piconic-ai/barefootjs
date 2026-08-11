@@ -54,7 +54,13 @@ describe('escape-coverage floor names no adapter (additivity backstop, #2613)', 
     for (const fileUrl of CHECKED_FILES) {
       const source = await Bun.file(fileUrl).text()
       for (const id of adapterIds) {
-        if (source.includes(`'${id}/`) || source.includes(`"${id}/`)) {
+        // All three JS string-literal openers. Backticks matter as much
+        // as the quotes: the ledger key this backstops is a composed
+        // `adapterId/fixtureId`, and a template literal
+        // (`` `go-template/${fixtureId}` ``) is the most natural way to
+        // reintroduce one — checking only ' and " would let exactly the
+        // likeliest regression through.
+        if (source.includes(`'${id}/`) || source.includes(`"${id}/`) || source.includes(`\`${id}/`)) {
           offenders.push(`${id} (in ${fileUrl.pathname.split('/').slice(-2).join('/')})`)
         }
       }
