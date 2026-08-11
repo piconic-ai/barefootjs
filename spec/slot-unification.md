@@ -285,8 +285,8 @@ axis (`markerless`/`elidedPath`), unaffected by the correction above:
   A generalization that widens elision INTO those subtrees would therefore
   make it reachable for `clientOnly` nodes too, where evaluating eagerly is
   wrong — so it must gain a `clientOnly` deferral check at that point rather
-  than being carried over as-is. `generateCsrTemplateWithOpts`, however, nests its `clientOnly &&
-  slotId` marker-pair emission the same way the nine SSR adapters do (see
+  than being carried over as-is. `generateCsrTemplateWithOpts`, however, nests its
+  `clientOnly && slotId` marker-pair emission the same way the nine SSR adapters do (see
   below) but — until #2617 — never consulted `markerless` inside that
   branch at all, so it kept embedding the marker pair for every
   `/* @client */` bare (non-loop) text expression regardless of elision
