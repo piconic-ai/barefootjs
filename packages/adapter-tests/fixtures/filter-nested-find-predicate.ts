@@ -11,7 +11,11 @@ import { createFixture } from '../src/types'
  *   - Hono / CSR evaluate JS natively and render the chain faithfully.
  *   - Go template / Mojo / Xslate surface a loud BF101 (declared via each
  *     adapter's `expectedDiagnostics`) instead of a silent lossy rewrite.
- * Faithful SSR lowering for the nested callback is tracked in #2320.
+ * Faithful SSR lowering for the nested callback is tracked in #2320. The
+ * `/* @client *\/` twin (`filter-nested-find-predicate-client`) has no pin —
+ * it must render clean on every adapter, asserting the suppression contract
+ * (#2613, the `.find()` sibling of `filter-nested-callback-predicate`'s
+ * `.some()` twin).
  */
 export const fixture = createFixture({
   id: 'filter-nested-find-predicate',
@@ -29,4 +33,5 @@ export function NestedFindPredicate() {
   expectedHtml: `
     <ul bf-s="test" bf="s1"></ul>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'filter-nested-find-predicate-client' }],
 })

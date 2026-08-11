@@ -29,4 +29,7 @@ export function ReduceTypeofBody() {
   expectedHtml: `
     <div bf-s="test" bf="s1"><!--bf:s0-->0<!--/--></div>
   `,
+  // NOT declaring `escapes` here (#2613) — see `every-typeof-predicate`'s
+  // identical note; `reduce-typeof-body-client` hits the same CSR
+  // divergence.
 })

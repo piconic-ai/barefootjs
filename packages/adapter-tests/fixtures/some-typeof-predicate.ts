@@ -29,4 +29,7 @@ export function SomeTypeofPredicate() {
   expectedHtml: `
     <div bf-s="test" bf="s1"><!--bf:s0-->false<!--/--></div>
   `,
+  // NOT declaring `escapes` here (#2613) — see `every-typeof-predicate`'s
+  // identical note; `some-typeof-predicate-client` hits the same CSR
+  // divergence.
 })

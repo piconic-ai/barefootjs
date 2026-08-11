@@ -29,4 +29,9 @@ export function EveryTypeofPredicate() {
   expectedHtml: `
     <div bf-s="test" bf="s1"><!--bf:s0-->true<!--/--></div>
   `,
+  // NOT declaring `escapes` here (#2613): a `client-directive` twin
+  // (`every-typeof-predicate-client`) was authored and DOES compile clean
+  // on every DSL adapter, but real `csr-conformance.test.ts` execution
+  // shows it is not actually a working escape — see that fixture's own
+  // docstring for the specific SSR/CSR divergence this uncovered.
 })

@@ -32,6 +32,20 @@ export const spec: SharedFixtureSpec = {
   sourceRoot: 'fixture',
   description:
     'flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove',
+  // #2613 escapeNotOwed: interaction (1) explicitly asserts hydration
+  // ADOPTS pre-existing SSR leaves ("pre-fix: leaves vanished on load —
+  // reconciled against the UN-flattened source with index keys"). A
+  // `/* @client */` twin would SSR no leaves at all, so there would be
+  // nothing to adopt — the fixture's core regression coverage (SSR-adopted
+  // leaves surviving hydration + patching) would be lost, degrading to the
+  // client-only-loop case. Same file-placement reasoning as
+  // `preamble-cells`: kept out of `integrations/shared/components/`
+  // because every DSL integration app's `bf build` compiles that
+  // directory wholesale, per this file's own docstring.
+  escapeNotOwed: {
+    reason:
+      "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either.",
+  },
   props: {
     items: [
       { id: 1, label: 'write <b>docs</b>', tags: ['a & b', 'q "c"'] },

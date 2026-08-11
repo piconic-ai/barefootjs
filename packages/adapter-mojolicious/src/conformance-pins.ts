@@ -94,25 +94,13 @@ export const conformancePins: ConformancePins = {
   // e.g. the `flatmap-expression-body` fixture) is NOT pinned: it lowers to
   // neutral nested-loop IR this adapter templatizes natively.
   // See spec/callback-fidelity.md.
-  'tag-cloud': [
-    {
-      code: 'BF021',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
+  'tag-cloud': [{ code: 'BF021', severity: 'error' }],
   // A keyed `.map()` row body whose preamble builds a JSX leaf from item
   // state (`cells.push(<td>{stateLabel}</td>)`) embedded as `{cells}` — the
   // Stage 3 array-builder carrier, jsRuntime-only: a JS runtime runs it
   // verbatim (and patches the region on same-key updates, #2389), a DSL
   // adapter refuses with BF021 + `/* @client */`. See spec/callback-fidelity.md.
-  'preamble-cells': [
-    {
-      code: 'BF021',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
+  'preamble-cells': [{ code: 'BF021', severity: 'error' }],
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the
@@ -183,14 +171,7 @@ export const conformancePins: ConformancePins = {
   // NOT pinned: Mojo lowers it to a real inline Perl `grep` and must
   // render to Hono parity instead.
   // Faithful lowering tracked: https://github.com/piconic-ai/barefootjs/issues/2320 (successor to #2038)
-  'filter-nested-find-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2320',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
-    },
-  ],
+  'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' }],
   // #1467 demo-corpus context providers (`radio-group`, `accordion`,
   // `dialog`, `popover`, `select`, `dropdown-menu`, `combobox`,
   // `command`) are no longer pinned — an object-literal provider value

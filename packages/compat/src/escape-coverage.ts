@@ -73,9 +73,10 @@ export interface EscapeCoverageOutcome {
 }
 
 /**
- * The single check every domain pair must pass: a verified `escapes`
- * twin, or the adapter's own error pin declaring `unescapable`. Pure
- * function (no `expect`/`throw`) so it can run outside `bun:test`.
+ * The single check every domain pair must pass: `escapeNotOwed` on the
+ * fixture (no escape owed, by design), a verified `escapes` twin, or the
+ * adapter's own error pin declaring `unescapable`. Pure function (no
+ * `expect`/`throw`) so it can run outside `bun:test`.
  */
 export function evaluateFixtureEscapeCoverage(
   adapter: LoadedCompatAdapter,
@@ -106,6 +107,27 @@ export function evaluateFixtureEscapeCoverage(
 
   const errorPins = pinsForFixture.filter(p => p.severity === 'error')
   const unescapablePin = errorPins.find(p => p.unescapable)
+
+  if (fixture.escapeNotOwed) {
+    if (!fixture.escapeNotOwed.reason || fixture.escapeNotOwed.reason.trim().length === 0) {
+      return {
+        ok: false,
+        message: `[${fixtureId}] declares 'escapeNotOwed' with an empty reason — a non-empty prose justification is required (EscapeNotOwed, packages/adapter-tests/src/types.ts).`,
+      }
+    }
+    if (unescapablePin) {
+      return {
+        ok: false,
+        message:
+          `[${adapter.id}/${fixtureId}] is declared BOTH 'escapeNotOwed' on the fixture AND 'unescapable' ` +
+          `on the '${unescapablePin.code}' pin in ${adapter.pkg}'s own conformance-pins.ts — pick one. ` +
+          `'escapeNotOwed' means "no escape is owed, by design"; 'unescapable' means "an escape is owed ` +
+          `but not authored yet". They are mutually exclusive.`,
+      }
+    }
+    // Escape genuinely not owed, by design, with a reviewed reason: satisfied.
+    return { ok: true }
+  }
 
   const declaredEscapes = fixture.escapes ?? []
   let workingTwinId: string | undefined

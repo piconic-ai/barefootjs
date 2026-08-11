@@ -132,13 +132,21 @@ import { fixture as filterNestedCallbackPredicateClient } from './filter-nested-
 import { fixture as filterTypeofPredicate } from './filter-typeof-predicate'
 import { fixture as filterTypeofPredicateClient } from './filter-typeof-predicate-client'
 import { fixture as filterNestedFindPredicate } from './filter-nested-find-predicate'
+import { fixture as filterNestedFindPredicateClient } from './filter-nested-find-predicate-client'
 import { fixture as fillUnsupported } from './fill-unsupported'
+import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
 import { fixture as findTypeofPredicate } from './find-typeof-predicate'
+import { fixture as findTypeofPredicateClient } from './find-typeof-predicate-client'
 import { fixture as someTypeofPredicate } from './some-typeof-predicate'
+import { fixture as someTypeofPredicateClient } from './some-typeof-predicate-client'
 import { fixture as everyTypeofPredicate } from './every-typeof-predicate'
+import { fixture as everyTypeofPredicateClient } from './every-typeof-predicate-client'
 import { fixture as reduceTypeofBody } from './reduce-typeof-body'
+import { fixture as reduceTypeofBodyClient } from './reduce-typeof-body-client'
 import { fixture as reduceRightTypeofBody } from './reduce-right-typeof-body'
+import { fixture as reduceRightTypeofBodyClient } from './reduce-right-typeof-body-client'
 import { fixture as flatMapTypeofProjection } from './flatmap-typeof-projection'
+import { fixture as flatMapTypeofProjectionClient } from './flatmap-typeof-projection-client'
 import { fixture as flatMapExpressionBody } from './flatmap-expression-body'
 import { fixture as mapIfChainBody } from './map-if-chain-body'
 import { fixture as mapSwitchFallthroughBody } from './map-switch-fallthrough-body'
@@ -559,13 +567,21 @@ export const jsxFixtures: JSXFixture[] = [
   filterTypeofPredicate,
   filterTypeofPredicateClient,
   filterNestedFindPredicate,
+  filterNestedFindPredicateClient,
   fillUnsupported,
+  fillUnsupportedClient,
   findTypeofPredicate,
+  findTypeofPredicateClient,
   someTypeofPredicate,
+  someTypeofPredicateClient,
   everyTypeofPredicate,
+  everyTypeofPredicateClient,
   reduceTypeofBody,
+  reduceTypeofBodyClient,
   reduceRightTypeofBody,
+  reduceRightTypeofBodyClient,
   flatMapTypeofProjection,
+  flatMapTypeofProjectionClient,
   flatMapExpressionBody,
   mapIfChainBody,
   mapSwitchFallthroughBody,
