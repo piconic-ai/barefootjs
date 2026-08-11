@@ -4,10 +4,13 @@
  * (SSR) or `generateClientJs` (CSR) run, which `/* @client *\/` text slots
  * can drop their `<!--bf:sN-->…<!--/-->` marker pair entirely from both
  * outputs. Every consumer (all nine SSR adapters' `renderExpression`, and
- * the CSR emitters in `html-template.ts`) reads the single
- * `IRExpression.markerless` flag this pass writes — nobody re-derives the
- * decision, per CLAUDE.md's "Never add compiler options/hooks for
- * tool-specific output rewriting" spirit: one door in, everyone reads it.
+ * both top-level CSR emitters in `html-template.ts` —
+ * `irToHtmlTemplate`'s `case 'expression'` and `generateCsrTemplateWithOpts`'s
+ * own, fixed by #2617 after it shipped without this check for one CSR
+ * release cycle — reads the single `IRExpression.markerless` flag this pass
+ * writes — nobody re-derives the decision, per CLAUDE.md's "Never add
+ * compiler options/hooks for tool-specific output rewriting" spirit: one
+ * door in, everyone reads it.
  *
  * Scope — deliberately the NARROWEST slice of §3(b)'s elision rule that is
  * fully sound today, not the general case:

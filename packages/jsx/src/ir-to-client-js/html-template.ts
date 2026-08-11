@@ -810,6 +810,24 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // no-slotId branch below already uses — `elidedPath` (not this
       // string) is what the claim plan resolves against, so no marker
       // anchor is needed here at all.
+      //
+      // This branch evaluates `node.expr` (rather than emitting empty
+      // content the way `generateCsrTemplateWithOpts`'s own `markerless`
+      // check does, below/`case 'component'`'s sibling top-level emitter)
+      // because it is NOT the `clientOnly`-specific case: this function
+      // "does not honour `clientOnly`" at all (see the docstring above the
+      // `element` case) since it only ever runs on conditional/loop-nested
+      // subtrees, and `client-only-elision.ts`'s own scope restriction
+      // excludes anything inside a loop or conditional branch — so a node
+      // reached here with `markerless === true` is, by construction, never
+      // today's sole eligible case (`clientOnly && slotId`); it is only
+      // ever the forward-looking general-case shape #2483 would produce
+      // (a markerless slot whose value SHOULD still render immediately,
+      // unlike a deferred `/* @client */` read). #2617 fixed the sibling
+      // top-level emitter (`generateCsrTemplateWithOpts`) to ALSO consult
+      // this flag — its `clientOnly`-branch semantics differ from this
+      // one's on purpose, so the two checks were not collapsed into one
+      // shared helper; see that function's own comment for the reasoning.
       if (node.markerless) {
         const bare = wrapInterpolation(wrapExpr(node.expr))
         return `\${${bare}}`
@@ -2363,6 +2381,22 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // the SSR adapters' `renderExpression` byte-for-byte (byte parity):
         // empty at CSR mount too, since the expression is evaluated only
         // once init's createEffect runs, same as the SSR case.
+        //
+        // Slot unification Step B (`markerless`, decided once by
+        // `client-only-elision.ts` before this CSR pass runs; mirrors the
+        // nested `if (expr.markerless) return ''` shape all nine SSR
+        // adapters' `renderExpression` use inside their own identical
+        // `clientOnly && slotId` branch — see `spec/slot-unification.md`
+        // §5a): when the marker pair itself was ALSO elided, drop it and
+        // emit nothing. The claim plan resolves the elided slot via
+        // `elidedPath` (a precomputed child-index path), not a marker
+        // scan, so no anchor comment is needed here at all — matches SSR's
+        // fully-empty output for this case byte-for-byte (#2617; this is
+        // the second of the two top-level CSR emitters `irToHtmlTemplate`
+        // and `generateCsrTemplateWithOpts` that must each consult
+        // `markerless` — see that function's own check at this file's
+        // `case 'expression'` for why the two aren't collapsed into one).
+        if (node.markerless) return ''
         return `<!--bf:${node.slotId}--><!--/-->`
       }
       {

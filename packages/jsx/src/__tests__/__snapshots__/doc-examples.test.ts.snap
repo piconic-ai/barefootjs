@@ -927,7 +927,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1043,7 +1043,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1581,7 +1581,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1639,7 +1639,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1697,7 +1697,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div><strong bf="s1"><!--bf:s0--><!--/--></strong></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div><strong bf="s1"></strong></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
