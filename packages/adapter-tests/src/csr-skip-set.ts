@@ -249,29 +249,5 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // above (#968). Graduates to a full pass if that ordering is ever
   // unified.
   'signal-early-return',
-  // #2613: a genuine compiler bug the new `*-typeof-*` / `fill-unsupported`
-  // `/* @client */` escape twins uncovered. `generateCsrTemplateWithOpts`
-  // (`html-template.ts`'s `case 'expression'`) does not consult
-  // `IRExpression.markerless` before emitting `<!--bf:sN-->...<!--/-->` —
-  // unlike `client-only-elision.ts`'s docstring claims ("every CSR
-  // emitter... reads the single markerless flag"), this ONE emitter still
-  // always marks a `clientOnly && slotId` expression. So the standalone
-  // CSR template (fresh mount, no SSR to adopt) embeds marker comments
-  // that SSR correctly elides for a bare (non-loop) `/* @client */` TEXT
-  // expression, diverging from `expectedHtml`. Each entry's own fixture
-  // docstring has the full trace. The pre-existing LOOP-shaped
-  // `/* @client */` twins (`filter-typeof-predicate-client`,
-  // `filter-nested-callback-predicate-client`,
-  // `filter-nested-find-predicate-client`) are UNAFFECTED — elision only
-  // applies to bare expression children, and a loop's own container
-  // element is the mount anchor either way, so there is no separate
-  // markerless slot in play for those shapes.
-  'every-typeof-predicate-client',
-  'find-typeof-predicate-client',
-  'some-typeof-predicate-client',
-  'reduce-typeof-body-client',
-  'reduce-right-typeof-body-client',
-  'flatmap-typeof-projection-client',
-  'fill-unsupported-client',
 ])
 

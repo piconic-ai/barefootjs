@@ -32,62 +32,20 @@ export const conformancePins: ConformancePins = {
   // `.fill(value)` mutates the receiver in place — no template lowering
   // on any DSL adapter; a JS-runtime target runs it, a DSL adapter
   // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
-  'fill-unsupported': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
+  'fill-unsupported': [{ code: 'BF101', severity: 'error' }],
   // Off-subset `.find()` / `.some()` / `.every()` predicate (`typeof`) the
   // compiler can't lower; a JS-runtime target runs it, a DSL adapter
   // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
-  'find-typeof-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
-  'some-typeof-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
-  'every-typeof-predicate': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
+  'find-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
+  'some-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
+  'every-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
   // Off-subset `.reduce()` / `.reduceRight()` body / `.flatMap()`
   // projection (`typeof`) the compiler can't lower; a JS-runtime target
   // runs it, a DSL adapter surfaces BF101 + `/* @client */`.
   // See spec/callback-fidelity.md.
-  'reduce-typeof-body': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
-  'reduce-right-typeof-body': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
-  'flatmap-typeof-projection': [
-    {
-      code: 'BF101',
-      severity: 'error',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2613' },
-    },
-  ],
+  'reduce-typeof-body': [{ code: 'BF101', severity: 'error' }],
+  'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error' }],
+  'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error' }],
   // JSX-returning `.flatMap()` body carried as structured segments — i.e.
   // one with STATEMENTS (early returns, consts): a JS runtime executes it
   // verbatim; a DSL template runtime can't, so it refuses with BF021 +

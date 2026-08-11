@@ -6,10 +6,10 @@ import { createFixture } from '../src/types'
  * client-only evaluation. No conformance pin: compiles clean, unpinned,
  * non-divergent on every DSL adapter.
  *
- * NOT declared as `flatmap-typeof-projection`'s `escapes` twin — same
- * `generateCsrTemplateWithOpts` markerless bug as `every-typeof-predicate-
- * client` (see that fixture's docstring for the full explanation).
- * CSR-skipped (`csr-skip-set.ts`) pending the compiler fix.
+ * #2617 fixed the `generateCsrTemplateWithOpts` markerless bug (see
+ * `every-typeof-predicate-client`'s docstring for the full explanation);
+ * this twin now passes real `csr-conformance.test.ts` execution and is
+ * declared as `flatmap-typeof-projection`'s `escapes` twin.
  */
 export const fixture = createFixture({
   id: 'flatmap-typeof-projection-client',

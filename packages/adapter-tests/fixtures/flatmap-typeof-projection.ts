@@ -29,7 +29,7 @@ export function FlatMapTypeofProjection() {
   expectedHtml: `
     <div bf-s="test" bf="s1"><!--bf:s0--><!--/--></div>
   `,
-  // NOT declaring `escapes` here (#2613) — see `every-typeof-predicate`'s
-  // identical note; `flatmap-typeof-projection-client` hits the same CSR
-  // divergence.
+  // `flatmap-typeof-projection-client` (#2617): graduated — see
+  // `every-typeof-predicate`'s identical note.
+  escapes: [{ kind: 'client-directive', fixture: 'flatmap-typeof-projection-client' }],
 })
