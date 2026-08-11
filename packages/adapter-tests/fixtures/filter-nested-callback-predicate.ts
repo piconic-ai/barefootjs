@@ -34,4 +34,5 @@ export function NestedCallbackPredicate() {
   expectedHtml: `
     <ul bf-s="test" bf="s1"></ul>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'filter-nested-callback-predicate-client' }],
 })

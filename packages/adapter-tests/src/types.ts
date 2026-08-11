@@ -110,6 +110,24 @@ export interface JSXDataPoint {
 }
 
 /**
+ * The kind of escape a fixture's `escapes` twin demonstrates (#2613).
+ *
+ * Each kind carries a fixed, typed SSR cost — not asserted by this type
+ * itself, but the contract every twin of that kind must honor:
+ *   - `'client-directive'` — `/* @client *\/` defers the refused expression
+ *     to client-only evaluation. `ssrCost: 'client-render'` — the region is
+ *     EMPTY in server HTML until hydration. That emptiness is not a bug to
+ *     hide: the twin's own committed `expectedHtml` is the honest pin of it.
+ *   - `'prop-precompute'` — the refused computation moves to a prop passed
+ *     in already-computed, so the adapter never needs to lower the
+ *     expression itself. `ssrCost: 'none'` — full SSR, the rendered result
+ *     is visible in server HTML.
+ *   - `'rewrite'` — the user restructures the source into an equivalent,
+ *     in-subset shape (no runtime cost trade at all).
+ */
+export type EscapeKind = 'client-directive' | 'prop-precompute' | 'rewrite'
+
+/**
  * A JSX fixture defines a component source and optional props for rendering.
  * Used by the JSX conformance runner to compile and render across adapters.
  *
@@ -214,6 +232,27 @@ export interface JSXFixture {
    * component — the corpus is deliberately unstyled.
    */
   hostStyles?: string
+  /**
+   * Escape twins this (refused) fixture declares (#2613). Each entry names
+   * another fixture id in this corpus that demonstrates a working way out
+   * of the refusal this fixture triggers on some adapter(s) — e.g.
+   * `filter-nested-callback-predicate` names
+   * `filter-nested-callback-predicate-client` as its `client-directive`
+   * escape. Several refused fixtures may share one twin when they exercise
+   * the same site; sameness is a reviewer judgment call, not mechanized.
+   *
+   * Verified by `packages/compat/src/__tests__/escape-coverage.test.ts`
+   * (the "loud-or-escapable" floor): every named twin must exist in
+   * `jsxFixtures` (stale-twin defence), compile clean on the refusing
+   * adapter (tier 1), and be a first-class, unpinned, non-divergent,
+   * non-CSR-skipped corpus fixture there (tier 2 — the structural proxy for
+   * "renders correctly," not re-checked behaviourally by that test).
+   *
+   * This field is declared on the REFUSED fixture, pointing at its escape
+   * — not the other way around, and not a per-code registry (see #2613's
+   * "Where an escape is owed" for why per-code classification rots).
+   */
+  escapes?: ReadonlyArray<{ kind: EscapeKind; fixture: string }>
 }
 
 /**
@@ -325,6 +364,7 @@ export function createFixture(input: {
   interactions?: ReadonlyArray<InteractionStep>
   externalImports?: Record<string, string>
   hostStyles?: string
+  escapes?: ReadonlyArray<{ kind: EscapeKind; fixture: string }>
 }): JSXFixture {
   const trimmedComponents = input.components
     ? Object.fromEntries(

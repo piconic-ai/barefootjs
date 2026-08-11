@@ -11,7 +11,14 @@ on:
       - 'packages/client/**'
       - 'packages/cli/**'
       - 'packages/compat/**'
-      - 'packages/adapter-tests/coverage-map.json'
+      # Widened from the narrower 'coverage-map.json' entry (#2613): this
+      # job is the only one that runs `bun test packages/compat`, home to
+      # `escape-coverage.test.ts`, which reads `jsxFixtures` (every fixture
+      # under fixtures/**, including each `escapes` declaration) and
+      # `csr-skip-set.ts` directly — a fixtures-only or csr-skip-set-only
+      # change must re-run this job or the floor test's guarantees weaken
+      # silently for that PR.
+      - 'packages/adapter-tests/**'
       - 'packages/adapter-erb/**'
       - 'packages/adapter-go-template/**'
       - 'packages/adapter-hono/**'
@@ -30,7 +37,8 @@ on:
       - 'packages/client/**'
       - 'packages/cli/**'
       - 'packages/compat/**'
-      - 'packages/adapter-tests/coverage-map.json'
+      # See the push-trigger comment above.
+      - 'packages/adapter-tests/**'
       - 'packages/adapter-erb/**'
       - 'packages/adapter-go-template/**'
       - 'packages/adapter-hono/**'
