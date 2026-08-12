@@ -1,6 +1,34 @@
 import { createFixture } from '../src/types'
 
 /**
+ * WHY THIS TWIN IS NOT A BYTE-FOR-BYTE COPY OF ITS BASE, unlike
+ * `filter-typeof-predicate-client` / `find-typeof-predicate-client`
+ * (which are exact copies of theirs plus the comment) — read this before
+ * "simplifying" it back:
+ *
+ * The base (`map-array-builder-body`) sources its array from a PROP. The
+ * CSR conformance harness evaluates a fixture's `template:` lambda with
+ * NO props, so a prop-sourced array throws there
+ * (`undefined is not an object (evaluating '_p.rows.map')`) — and a twin
+ * that has to be CSR-skipped fails tier 2 and cannot count as a verified
+ * escape at all. Hence the `'use client'` + signal-backed array here: it
+ * is a harness requirement, not a claim that escaping needs a rewrite.
+ * The bases whose twins ARE exact copies were already `'use client'` +
+ * signal themselves, so the question never arose for them.
+ *
+ * That drift matters because `twinWorksOnAdapter` only checks that the
+ * twin compiles clean — it cannot detect a twin that wandered away from
+ * its base, so a sufficiently different twin would "verify" an escape
+ * nobody can actually use. The claim `escapes` makes here is the narrow
+ * one — add one comment to the code you already have — and it was checked
+ * directly rather than inferred: the base source VERBATIM with only
+ * `/* @client *​/` inserted before `.map()` compiles with zero
+ * error-severity diagnostics on all nine adapters (blade, erb,
+ * go-template, hono, jinja, mojolicious, minijinja, twig, xslate). Only
+ * the CSR-render step, which needs props the harness doesn't supply,
+ * forced the signal form below. If that harness ever passes props, this
+ * fixture should collapse back to an exact copy of its base.
+ *
  * `/* @client *​/` twin of `map-array-builder-body` (#2613). Marking the
  * `.map()` call client-only defers the WHOLE loop — the imperative
  * `const out = []; for (...) out.push(<td>{c}</td>); return <tr>{out}</tr>`
