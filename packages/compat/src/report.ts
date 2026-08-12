@@ -72,15 +72,15 @@ export interface FixtureDivergenceCell {
 }
 
 export const FIXTURE_DIVERGENCES_NOTE =
-  'Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered ' +
-  'through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed ' +
-  'here diverge on at least one adapter — either refused loudly at build time (conformancePins) or ' +
-  'rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance ' +
-  'suite until fixed). Fixtures absent from this table render to reference parity on every adapter. ' +
-  'A build-time refusal is not automatically a dead end: some refusals carry a VERIFIED working escape ' +
-  '(most often a `/* @client */` twin) — a supported, tested path, not tracked debt — marked `escapable` ' +
-  'below; others are declared `not-owed` (no escape will ever be authored, by design) rather than left to ' +
-  'look identical to genuine, still-open `debt`.'
+  'Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered ' +
+  'through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per ' +
+  'fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works ' +
+  'either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — ' +
+  'most refusals have one). Fixtures absent from the table below work on every adapter — most as written, ' +
+  'some via that documented escape; the headline says how many of each. ' +
+  'Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, ' +
+  'a code marked ‡ owes no escape at all (by design), and ≠ means the fixture compiles clean but its ' +
+  'rendered output diverges from the reference.'
 
 /** A fixture-corpus row's human-readable description + link to its source file. */
 export interface FixtureDoc {
@@ -247,14 +247,17 @@ export function formatCompatJson(report: CompatReport): string {
 }
 
 /**
- * The two markers that make a refusal's escape state legible directly on
- * the diagnostic code, in a wide GFM table, without a 10th adapter column
- * or a per-occurrence footnote (#2613's "escape visibility" — see
- * `site/core/pages/compat-matrix.tsx` for the fuller rationale, mirrored
- * here so the CLI's own `--md` / `--render` output — the CI job-summary
- * path — reads the same way as the docs page). A `'debt'` cell is
- * deliberately unmarked: it's the pre-#2613 default rendering, so a bare
- * `BF101` still means exactly what it always meant.
+ * The two markers that make a refusal's escape state legible in a wide
+ * GFM table, without a 10th adapter column or a per-occurrence footnote
+ * (#2613's "escape visibility", re-worked so the check mark answers "does
+ * it work?" first — see `site/core/pages/compat-matrix.tsx` for the fuller
+ * rationale, mirrored here so the CLI's own `--md` / `--render` output —
+ * the CI job-summary path — reads the same way as the docs page).
+ * `ESCAPABLE_MARKER` decorates the WORKS checkmark (`✓†`) — the fixture
+ * works, given a `/* @client *\/` comment — not the diagnostic code, which
+ * moves out of the cell entirely once a working escape exists. A `'debt'`
+ * cell is deliberately unmarked: a bare `BF101` means refused, no escape
+ * yet.
  */
 export const ESCAPABLE_MARKER = '†'
 export const NOT_OWED_MARKER = '‡'
@@ -265,6 +268,39 @@ export function escapeMarker(escape: FixtureEscapeState | undefined): string {
   if (escape.state === 'escapable') return ESCAPABLE_MARKER
   if (escape.state === 'not-owed') return NOT_OWED_MARKER
   return ''
+}
+
+/**
+ * One fixture-divergence cell rendered for the table: `✓` for a clean
+ * (absent) cell, `≠` for a render divergence, `✓${ESCAPABLE_MARKER}` for a
+ * refusal with a verified working escape (the fixture WORKS, with a
+ * `/* @client *\/` comment — no diagnostic code shown, since nothing is
+ * actually broken here; the code it suppresses lives in the per-fixture
+ * detail list instead), and the diagnostic code (plus `${NOT_OWED_MARKER}`
+ * when the escape is declared not owed) for every other refusal. Shared
+ * shape between the CLI's `--md`/`--render` output and the docs page (the
+ * latter reimplements this rather than importing it — `site/core` has no
+ * dependency on `@barefootjs/compat`, see `compat-matrix.tsx`'s header).
+ */
+export function fixtureCellText(cell: FixtureDivergenceCell | undefined): string {
+  if (!cell) return '✓'
+  if (cell.kind === 'render') return '≠'
+  if (cell.escape?.state === 'escapable') return `✓${ESCAPABLE_MARKER}`
+  return `${(cell.codes ?? []).join(', ')}${escapeMarker(cell.escape)}`
+}
+
+/**
+ * True when every adapter cell present on this fixture's row is a refusal
+ * with a verified working escape — the fixture works on every adapter,
+ * either as written or with a documented `/* @client *\/` comment, so it
+ * doesn't belong in the "needs attention" table. A `'render'`-kind cell, a
+ * `'debt'`/`'not-owed'` refusal, or a refusal outside the escape-coverage
+ * domain (no `escape` field at all — e.g. the compiler-wide `BF021`
+ * refusal on `date-method-uncatalogued`, which even the Hono reference
+ * can't escape) all count as "needs attention".
+ */
+export function rowWorksEverywhere(row: Record<string, FixtureDivergenceCell>): boolean {
+  return Object.values(row).every(cell => cell.kind === 'refusal' && cell.escape?.state === 'escapable')
 }
 
 /**
@@ -311,36 +347,44 @@ export function formatCompatMarkdown(report: CompatReport): string {
     lines.push(`- \`${code}\`: ${urls.length > 0 ? urls.join(', ') : report.knownLimitationLabel}`)
   }
 
-  // Fixture-level divergences (render honesty section). Rendered only
-  // when the report carries entries — the section is keyed by fixture,
-  // with each adapter's refusal codes or a `≠` render-divergence marker.
-  const fixtureIds = Object.keys(report.fixtureDivergences?.fixtures ?? {})
-  if (fixtureIds.length > 0) {
+  // Fixture-level render conformance. Rendered only when the report
+  // carries entries — the table lists only fixtures that NEED ATTENTION
+  // (at least one adapter with no working path); a fixture refused
+  // everywhere it's refused but with a verified escape on every one of
+  // those adapters WORKS everywhere and is folded into the headline count
+  // instead (`rowWorksEverywhere`), not shown as a row.
+  const allFixtureIds = Object.keys(report.fixtureDivergences?.fixtures ?? {})
+  if (allFixtureIds.length > 0) {
     const fd = report.fixtureDivergences
+    const fullyEscapableIds = allFixtureIds.filter(id => rowWorksEverywhere(fd.fixtures[id]))
+    const needsAttentionIds = allFixtureIds.filter(id => !rowWorksEverywhere(fd.fixtures[id])).sort()
+    const cleanCount = fd.totalFixtures - allFixtureIds.length
+    const worksEverywhereCount = cleanCount + fullyEscapableIds.length
+
     lines.push('')
-    lines.push('Fixture divergences (conformance corpus):')
+    lines.push('Fixture render conformance (conformance corpus):')
     lines.push('')
     lines.push(fd.note)
     lines.push('')
-    lines.push(`${fixtureIds.length} of ${fd.totalFixtures} fixtures diverge on at least one adapter.`)
+    lines.push(
+      `${worksEverywhereCount} of ${fd.totalFixtures} fixtures work on every adapter ` +
+        `(${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). ` +
+        `${needsAttentionIds.length} need attention:`,
+    )
     lines.push('')
     lines.push(`| fixture | ${report.adapters.join(' | ')} |`)
     lines.push(`| --- | ${report.adapters.map(() => '---').join(' | ')} |`)
-    for (const fixtureId of fixtureIds.sort()) {
+    for (const fixtureId of needsAttentionIds) {
       const row = fd.fixtures[fixtureId]
-      const cellText = report.adapters.map(id => {
-        const cell = row[id]
-        if (!cell) return '✓'
-        return cell.kind === 'refusal' ? `${(cell.codes ?? []).join(', ')}${escapeMarker(cell.escape)}` : '≠'
-      })
+      const cellText = report.adapters.map(id => fixtureCellText(row[id]))
       lines.push(`| ${fixtureId} | ${cellText.join(' | ')} |`)
     }
     lines.push('')
-    lines.push('`≠` = compiles clean but the rendered output diverges from the Hono reference')
-    lines.push('(see each adapter package’s `render-divergences.ts` for the per-fixture rationale). A bare')
-    lines.push('diagnostic code = refused, no escape yet (tracked debt) · `†` = refused, but a VERIFIED')
-    lines.push('working escape exists — a supported path, not a dead end · `‡` = refused, no escape owed,')
-    lines.push('by design.')
+    lines.push('`✓` works as written · `✓†` works, but needs a `/* @client */` comment (a verified escape')
+    lines.push('twin compiles clean on that adapter) · `≠` compiles clean but the rendered output diverges')
+    lines.push('from the Hono reference (see each adapter package’s `render-divergences.ts` for the')
+    lines.push('per-fixture rationale) · a bare diagnostic code means refused, no escape yet (tracked debt) ·')
+    lines.push('`‡` after a code means refused, no escape owed, by design.')
   }
 
   return lines.join('\n') + '\n'
