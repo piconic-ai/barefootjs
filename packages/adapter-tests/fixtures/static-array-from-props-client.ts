@@ -5,9 +5,9 @@ import { createFixture } from '../src/types'
  * refuses with BF101 on every DSL adapter because `entries` is a
  * function-scope local `const` with a computed initializer
  * (`Object.entries(props.reactions ?? {}).filter(...)`) — no DSL
- * template adapter can bind that as a template variable (see the
- * `renderLoop` comment this fixture's own `unescapable` pin points at
- * in each adapter's `conformance-pins.ts`). Marking the `.map()` call
+ * template adapter can bind that as a template variable (see the BF101
+ * pin for this fixture in each adapter's `conformance-pins.ts`, and
+ * #2321 for the underlying gap). Marking the `.map()` call
  * client-only defers the WHOLE loop — including the `entries`
  * computation the loop consumes — to the browser, where a JS runtime
  * (always present client-side) runs the exact same verbatim body.
@@ -19,13 +19,23 @@ import { createFixture } from '../src/types'
  * CSR conformance harness's compiled TEMPLATE function referenced the
  * prop directly. Here the entire loop — `entries`'s computation
  * included — is deferred into `init`, so the compiled template function
- * never touches `props.reactions` at all: verified by rendering this
- * exact source (with AND without the base's `props`) through
- * `renderCsrComponent` and getting the identical deferred-loop markup
- * either way. If a future change ever makes the compiler hoist part of
- * that computation back into the template function, this fixture's own
- * CSR conformance test run (not just tier 1 compile-clean) will catch
- * the regression.
+ * never touches `props.reactions` at all. Verified by INSPECTING the
+ * emitted client JS: the template's loop array is substituted with an
+ * empty literal (`${[].map(([emoji, users]) => ...)}`), and the string
+ * `reactions` does not appear in the `template:` line at all — it
+ * appears only inside `init`, which is exactly where a deferred loop
+ * belongs.
+ *
+ * That inspection is deliberate rather than a render comparison.
+ * `renderCsrComponent` swallows init exceptions
+ * (`try { init(...) } catch {}`, `src/csr-render.ts`), so "renders the
+ * same markup with and without props" would NOT distinguish "init never
+ * touched the prop" from "init threw and the throw was ignored". Reading
+ * the emitted template is not subject to that confound.
+ *
+ * If a future change ever hoists part of that computation back into the
+ * template function, this fixture's own CSR conformance run (not just
+ * tier 1 compile-clean) will catch the regression.
  *
  * SSR renders the loop host EMPTY on every backend (Hono included —
  * `isClientOnly` short-circuits the same way a signal-gated

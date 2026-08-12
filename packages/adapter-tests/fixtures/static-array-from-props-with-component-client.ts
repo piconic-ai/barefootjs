@@ -18,9 +18,14 @@ import { createFixture } from '../src/types'
  * insertion, for the same reason `static-array-from-props-client` is:
  * the whole loop (the `entries` computation included) is deferred into
  * `init`, so the compiled CSR template function never touches
- * `props.tags` — checked directly by rendering this exact source (with
- * AND without the base's `props`) through `renderCsrComponent` and
- * getting the identical deferred-loop markup either way. No
+ * `props.tags` — verified by INSPECTING the emitted client JS: the
+ * template's loop array is substituted with an empty literal
+ * (`${[].map(([id, t]) => ...)}`) and the string `tags` never appears in
+ * the `template:` line, only inside `init`. Not verified by comparing
+ * renders with and without props: `renderCsrComponent` swallows init
+ * exceptions (`try { init(...) } catch {}`, `src/csr-render.ts`), so
+ * identical markup would not distinguish "init never read the prop" from
+ * "init threw and was ignored". No
  * `map-array-builder-body-client`-style divergence was needed.
  *
  * SSR renders the `<ul>` EMPTY on every backend (Hono included —
