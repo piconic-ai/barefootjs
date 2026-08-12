@@ -282,14 +282,21 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(fd.fixtures['tag-cloud']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['tag-cloud']!)).toBe(false)
 
-    // And the fixtures that just graduated (#2321's escape-twin work) are
-    // now on the working side too — pinning that graduation as observable
-    // through this renderer, same as the #2623 pin for
-    // `map-array-builder-body` below.
+    // #2321's escape-twin work graduated ONE of its two fixtures fully.
     expect(fd.fixtures['static-array-from-props']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['static-array-from-props']!)).toBe(true)
+
+    // Its sibling did NOT, and the difference is the point rather than an
+    // oversight: the twin compiles clean on go-template but the generated
+    // Go does not build (a `Record<string, T>` prop is emitted as a slice
+    // field — #2627), so that adapter is pinned in its own
+    // `render-divergences.ts` and keeps its `unescapable` declaration.
+    // Seven adapters escape this fixture; go-template does not, so the row
+    // does not work everywhere. Asserting `true` here would have been the
+    // easy way to keep the suite green while claiming an escape nobody can
+    // use on Go.
     expect(fd.fixtures['static-array-from-props-with-component']).toBeDefined()
-    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props-with-component']!)).toBe(true)
+    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props-with-component']!)).toBe(false)
 
     expect(fd.fixtures['map-array-builder-body']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['map-array-builder-body']!)).toBe(true)

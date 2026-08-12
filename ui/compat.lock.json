@@ -3129,8 +3129,7 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "escapable",
-            "twin": "static-array-from-props-with-component-client"
+            "state": "debt"
           }
         },
         "jinja": {
@@ -3197,6 +3196,12 @@
             "state": "escapable",
             "twin": "static-array-from-props-with-component-client"
           }
+        }
+      },
+      "static-array-from-props-with-component-client": {
+        "go-template": {
+          "kind": "render",
+          "reason": "generated Go fails `go run` (exit 1): a Record<string, T> prop is emitted as a slice field, so the map-shaped caller literal will not assign — https://github.com/piconic-ai/barefootjs/issues/2627"
         }
       },
       "tag-cloud": {
@@ -3347,6 +3352,10 @@
         "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
       },
+      "static-array-from-props-with-component-client": {
+        "description": "/* @client */ twin of static-array-from-props-with-component — DSL BF101 (computed-const loop…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-client.ts"
+      },
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
@@ -3398,10 +3407,6 @@
       "static-array-from-props-client": {
         "description": "/* @client */ twin of static-array-from-props — DSL BF101 (computed-const loop array) suppressed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-client.ts"
-      },
-      "static-array-from-props-with-component-client": {
-        "description": "/* @client */ twin of static-array-from-props-with-component — DSL BF101 (computed-const loop…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-client.ts"
       }
     }
   },
