@@ -70,6 +70,18 @@ export function computeDomainFixtureIds(adapter: LoadedCompatAdapter, honoErrorP
 export interface EscapeCoverageOutcome {
   ok: boolean
   message?: string
+  /**
+   * Which declared `escapes` twin was proven to work on this adapter, when
+   * one was. Reported rather than recomputed because `twinWorksOnAdapter`
+   * runs a real `compileForCompat` per candidate: `classifyFixtureEscapeState`
+   * needs the same answer for rendering, and re-deriving it there doubled
+   * the compiles for every escapable cell during lock generation (78 of
+   * them today).
+   *
+   * Absent when no twin was tried (`escapeNotOwed` returns before the scan)
+   * or none worked.
+   */
+  workingTwinId?: string
 }
 
 /**
@@ -173,7 +185,92 @@ export function evaluateFixtureEscapeCoverage(
     }
   }
 
-  return { ok: true }
+  return { ok: true, workingTwinId }
+}
+
+/**
+ * The three states a refused fixture's escape story can be in on ONE
+ * adapter (#2613's "escape visibility" follow-up) — the rendering-side
+ * counterpart of the `escapable or self-declared unescapable` floor test
+ * above, not a new judgement:
+ *
+ *   - `'escapable'` — the fixture names an `escapes` twin and it actually
+ *     works HERE (`twinWorksOnAdapter`, same tier-1/tier-2 check the floor
+ *     test itself uses). `twin` is which declared twin fixture it was, so
+ *     a renderer can link straight to the demonstration.
+ *   - `'debt'` — refused, no working escape, and the adapter's own pin
+ *     says so (`unescapable: { issue }`) — tracked, not silent.
+ *   - `'not-owed'` — the fixture itself declares `escapeNotOwed`: no
+ *     escape will ever be authored here, by design. `reason` is the
+ *     fixture's own prose justification, carried through so a renderer
+ *     doesn't have to re-derive or truncate it.
+ */
+export type FixtureEscapeState =
+  | { state: 'escapable'; twin: string }
+  | { state: 'debt' }
+  | { state: 'not-owed'; reason: string }
+
+/**
+ * Classify ONE `(adapter, fixtureId)` refusal cell for rendering. Callers
+ * MUST only invoke this for a pair already confirmed in-domain (an
+ * error-severity pin on `adapter`, and `fixtureId` not in
+ * `computeHonoErrorPinnedFixtures(...)`'s result) — see
+ * `buildFixtureDivergences` in `./report.ts`, the sole caller. Outside
+ * that domain `evaluateFixtureEscapeCoverage` may legitimately report
+ * `ok: false` for reasons that have nothing to do with THIS adapter (e.g.
+ * a compiler-wide refusal nobody bothers to annotate), which would make
+ * the throw below fire spuriously.
+ *
+ * Deliberately re-derives nothing `evaluateFixtureEscapeCoverage` already
+ * decided — it's called first, and a non-ok outcome throws rather than
+ * guessing a state, because reaching that branch on a landed pin means
+ * the "loud-or-escapable" floor test (`escape-coverage.test.ts`) would
+ * itself be RED: the lock is being regenerated against broken/uncommitted
+ * pin state, and a docs page silently rendering a stale guess would hide
+ * that. The classification below only picks which of the three already-
+ * proven-consistent branches applies, using the exact same declarative
+ * fields (`escapeNotOwed`, `unescapable`, `escapes` + `twinWorksOnAdapter`)
+ * the floor test itself reads — never a parallel judgement.
+ */
+export function classifyFixtureEscapeState(
+  adapter: LoadedCompatAdapter,
+  fixtureId: string,
+  fixtures: readonly JSXFixture[],
+): FixtureEscapeState {
+  const outcome = evaluateFixtureEscapeCoverage(adapter, fixtureId, fixtures)
+  if (!outcome.ok) {
+    throw new Error(
+      `compat-matrix render: escape-coverage floor test would fail for [${adapter.id}/${fixtureId}] — fix ` +
+        `the pin/twin declaration and re-run 'bun test packages/compat/src/__tests__/escape-coverage.test.ts' ` +
+        `before regenerating the lock:\n${outcome.message}`,
+    )
+  }
+
+  const fixture = fixtures.find(f => f.id === fixtureId)!
+  if (fixture.escapeNotOwed) {
+    return { state: 'not-owed', reason: fixture.escapeNotOwed.reason }
+  }
+
+  const pinsForFixture = adapter.pins[fixtureId] ?? []
+  if (pinsForFixture.some(p => p.severity === 'error' && p.unescapable)) {
+    return { state: 'debt' }
+  }
+
+  // `evaluateFixtureEscapeCoverage` above already compiled each candidate
+  // twin to decide this; it reports the winner rather than making us run
+  // `twinWorksOnAdapter` (and therefore `compileForCompat`) a second time
+  // per escapable cell.
+  if (outcome.workingTwinId) {
+    return { state: 'escapable', twin: outcome.workingTwinId }
+  }
+
+  // `evaluateFixtureEscapeCoverage` only returns `ok: true` via one of the
+  // three branches above (escapeNotOwed / unescapable / a working twin), so
+  // this is structurally unreachable given the guard already passed — kept
+  // as a defensive `'debt'` rather than a non-null assertion so a future
+  // change to that function's branches fails safe (a docs page rendering
+  // "no escape yet" for a really-fine case) rather than throwing.
+  return { state: 'debt' }
 }
 
 /**

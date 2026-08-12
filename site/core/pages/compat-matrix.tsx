@@ -33,11 +33,25 @@ interface CompatCell {
   diagnostics?: CompatDiagnostic[]
 }
 
+/**
+ * A refusal cell's escape state (#2613) — distinguishes a refusal with a
+ * VERIFIED working escape (`'escapable'`, e.g. a `/* @client *\/` twin
+ * that actually compiles clean on this adapter) from one that's still
+ * tracked debt (`'debt'`, an adapter-declared `unescapable` pin) or that
+ * owes no escape at all, by design (`'not-owed'`). Mirrors
+ * `FixtureEscapeState` in `packages/compat/src/escape-coverage.ts`. Set
+ * only on `'refusal'`-kind cells that are in the "loud-or-escapable"
+ * floor's domain (an error-severity pin, on a fixture the reference
+ * adapter doesn't itself refuse) — absent otherwise.
+ */
+type FixtureEscapeState = { state: 'escapable'; twin: string } | { state: 'debt' } | { state: 'not-owed'; reason: string }
+
 interface FixtureDivergenceCell {
   kind: 'refusal' | 'render'
   codes?: string[]
   issues?: string[]
   reason?: string
+  escape?: FixtureEscapeState
 }
 
 interface FixtureDoc {
@@ -118,6 +132,42 @@ const supportMatrix = supportMatrixLock as SupportMatrixLock
 
 function escapeCell(text: string): string {
   return text.replace(/\|/g, '\\|')
+}
+
+/**
+ * Neutralize Markdown emphasis/code metacharacters in free-form prose that
+ * gets interpolated into a generated Markdown line — today only
+ * `escapeNotOwed.reason`, which fixture authors write as ordinary English.
+ *
+ * Today's reasons happen to survive unescaped: they contain `/* @client *\/`,
+ * whose asterisks sit next to whitespace and so are neither left- nor
+ * right-flanking, so CommonMark won't open emphasis on them. That safety is
+ * accidental and narrow — verified with the site's own `marked`, TWO such
+ * occurrences in one paragraph DO pair up (`'/* @client <em>/' … '/</em> @client *\/'`),
+ * and any future reason containing `*emphasis*` or a backtick renders as
+ * markup rather than text. `reason` is prose owned by whoever writes the
+ * fixture, so the renderer should not depend on what they happen to type.
+ */
+function escapeMarkdownProse(text: string): string {
+  return text.replace(/([*_`[\]\\])/g, '\\$1')
+}
+
+/**
+ * The two escape-state markers appended directly to a refusal cell's
+ * diagnostic code(s) — same characters `packages/compat/src/report.ts`
+ * uses for the CLI's own `--md` / `--render` output, so the docs page and
+ * the CI job-summary table read identically. `'debt'` is deliberately
+ * unmarked: it's the pre-#2613 rendering, so a bare `BF101` still means
+ * exactly what it always meant — still-open, no verified escape.
+ */
+const ESCAPABLE_MARKER = '†'
+const NOT_OWED_MARKER = '‡'
+
+function escapeMarker(escape: FixtureEscapeState | undefined): string {
+  if (!escape) return ''
+  if (escape.state === 'escapable') return ESCAPABLE_MARKER
+  if (escape.state === 'not-owed') return NOT_OWED_MARKER
+  return ''
 }
 
 /**
@@ -235,9 +285,34 @@ function fixtureCellMarkdown(cell: FixtureDivergenceCell | undefined): string {
     const codes = cell.codes ?? []
     const firstIssue = cell.issues?.[0]
     const label = codes.join(', ') || 'refused'
-    return firstIssue ? `[${label}](${firstIssue})` : label
+    const linked = firstIssue ? `[${label}](${firstIssue})` : label
+    return `${linked}${escapeMarker(cell.escape)}`
   }
   return '≠'
+}
+
+/**
+ * The escape-state clause appended to a refusal's detail-list line — the
+ * prose counterpart of the table cell's `†`/`‡` marker. Links the escape
+ * twin to its own source when `fd.docs` happens to carry it (the CLI
+ * attaches docs for every escape twin referenced by an `'escapable'` cell,
+ * not just the divergent fixtures themselves).
+ */
+function escapeDetailClause(escape: FixtureEscapeState | undefined, fd: FixtureDivergences): string {
+  // Deliberately NOT `escapeCell`-escaped here — the composed `text` this
+  // feeds into is escaped exactly once, at the point `buildFixtureDetails`
+  // joins it into a Markdown line, same as every other fragment there.
+  // Escaping twice would double-escape a literal `|` (`\|` → `\\|`).
+  if (!escape) return ''
+  if (escape.state === 'escapable') {
+    const twinDoc = fd.docs?.[escape.twin]
+    const twinLabel = twinDoc?.url ? `[\`${escape.twin}\`](${twinDoc.url})` : `\`${escape.twin}\``
+    return ` — **verified escape** (${ESCAPABLE_MARKER}): ${twinLabel} compiles clean here`
+  }
+  if (escape.state === 'not-owed') {
+    return ` — **no escape owed** (${NOT_OWED_MARKER}): ${escapeMarkdownProse(escape.reason)}`
+  }
+  return ''
 }
 
 /**
@@ -254,7 +329,7 @@ function buildFixtureDetails(fd: FixtureDivergences): string {
       const cell = row[adapterId]
       const text =
         cell.kind === 'refusal'
-          ? `refused at build time with ${(cell.codes ?? []).map((c) => `\`${c}\``).join(', ')}`
+          ? `refused at build time with ${(cell.codes ?? []).map((c) => `\`${c}\``).join(', ')}${escapeDetailClause(cell.escape, fd)}`
           : (cell.reason ?? 'rendered output diverges from the Hono reference')
       const adapters = byText.get(text) ?? []
       adapters.push(adapterId)
@@ -294,11 +369,13 @@ function buildFixtureSection(): string {
 
 The component matrix above is **compile-time only**. This section reports the **render-level** state honestly: the shared conformance corpus (\`packages/adapter-tests\`) is rendered through every adapter's real backend (Go, Ruby, Perl, PHP, Python, Rust) and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (\`conformancePins\`) or rendering differently from the reference (\`renderDivergences\`, skipped in that adapter's conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.
 
+A build-time refusal is not automatically a dead end. Some refusals carry a **verified working escape** — most often a \`/* @client */\` twin that compiles clean on that specific adapter — a supported, tested path around the refusal, not tracked debt; those are marked \`${ESCAPABLE_MARKER}\`. Others are declared **not owed** (no escape will ever be authored there, by design, because authoring one would defeat the fixture's own purpose) and marked \`${NOT_OWED_MARKER}\`. A bare diagnostic code with neither marker is the remaining case: refused, and still genuinely open. Escape verification is per adapter, so the same fixture can show \`${ESCAPABLE_MARKER}\` on one column and a bare code on another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
+
 **${cleanCount} / ${fd.totalFixtures} fixtures render to reference parity on every adapter.** The ${fixtureIds.length} below diverge on at least one:
 
 ${[header, divider, ...rows].join('\n')}
 
-\`✓\` renders to reference parity · \`≠\` compiles clean but the rendered output diverges (skipped in that adapter's conformance suite until fixed) · a diagnostic code means the adapter refuses the shape loudly at build time.
+\`✓\` renders to reference parity · \`≠\` compiles clean but the rendered output diverges (skipped in that adapter's conformance suite until fixed) · a bare diagnostic code means the adapter refuses the shape loudly at build time with no escape yet (tracked debt) · \`${ESCAPABLE_MARKER}\` after a code means a verified working escape exists on that adapter · \`${NOT_OWED_MARKER}\` after a code means no escape is owed there, by design.
 
 ### Divergence details
 

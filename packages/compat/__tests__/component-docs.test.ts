@@ -12,11 +12,19 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { computeComponentDocs, computeFixtureDocs } from '../src/component-docs'
 
+interface FixtureDivergenceCell {
+  kind: 'refusal' | 'render'
+  escape?: { state: 'escapable' | 'debt' | 'not-owed'; twin?: string }
+}
+
 const LOCK_PATH = resolve(import.meta.dir, '../../../ui/compat.lock.json')
 const lock = JSON.parse(readFileSync(LOCK_PATH, 'utf8')) as {
   components: Record<string, unknown>
   componentDocs?: Record<string, { title: string; description: string; url: string; uiUrl?: string }>
-  fixtureDivergences: { fixtures: Record<string, unknown>; docs?: Record<string, { description: string; url: string }> }
+  fixtureDivergences: {
+    fixtures: Record<string, Record<string, FixtureDivergenceCell>>
+    docs?: Record<string, { description: string; url: string }>
+  }
 }
 
 const BLOB_PREFIX = 'https://github.com/piconic-ai/barefootjs/blob/main/'
@@ -63,7 +71,21 @@ describe('computeComponentDocs', () => {
 })
 
 describe('computeFixtureDocs', () => {
-  const ids = Object.keys(lock.fixtureDivergences.fixtures)
+  // (#2613) The lock's `fixtureDivergences.docs` covers the divergent
+  // fixtures themselves PLUS every `'escapable'` cell's escape-twin id —
+  // `cli.ts` widens the id set the same way before calling
+  // `computeFixtureDocs`, so the docs page can link straight to the twin
+  // that demonstrates the escape. Mirrored here rather than re-imported
+  // from `cli.ts` (a script entry point, not a library export) so this
+  // "regen freshness" check recomputes independently, same as the
+  // `computeComponentDocs` describe block above.
+  const escapeTwinIds = new Set<string>()
+  for (const row of Object.values(lock.fixtureDivergences.fixtures)) {
+    for (const cell of Object.values(row)) {
+      if (cell.escape?.state === 'escapable' && cell.escape.twin) escapeTwinIds.add(cell.escape.twin)
+    }
+  }
+  const ids = [...new Set([...Object.keys(lock.fixtureDivergences.fixtures), ...escapeTwinIds])]
   const docs = computeFixtureDocs(ids)
 
   test('every divergent fixture has a description and a source link', () => {

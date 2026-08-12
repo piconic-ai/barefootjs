@@ -227,9 +227,12 @@ async function main(): Promise<void> {
   // compatibility-matrix page reports render-level gaps instead of
   // showing only the all-green compile story. `jsxFixtures` is imported
   // relatively (same precedent as `compat-pins.test.ts` — it isn't part
-  // of adapter-tests' public export map) purely for the corpus total.
+  // of adapter-tests' public export map): the corpus total AND (#2613) the
+  // full fixture list, so `buildFixtureDivergences` can read each refused
+  // fixture's `escapeNotOwed` / `escapes` declarations and verify escape
+  // twins against every adapter's real backend.
   const { jsxFixtures } = await import('../../adapter-tests/fixtures')
-  const fixtureDivergences = buildFixtureDivergences(loaded, jsxFixtures.length)
+  const fixtureDivergences = buildFixtureDivergences(loaded, jsxFixtures.length, jsxFixtures)
 
   const report = buildCompatReport(cells, fixtureDivergences)
 
@@ -242,7 +245,19 @@ async function main(): Promise<void> {
   // component sources, and the fixture corpus off disk. Committed into
   // the lock and drift-checked in CI like the rest of it.
   report.componentDocs = computeComponentDocs(Object.keys(report.components))
-  report.fixtureDivergences.docs = computeFixtureDocs(Object.keys(report.fixtureDivergences.fixtures))
+  // (#2613) Also cover every `'escapable'` cell's escape-twin id, not just
+  // the divergent fixtures themselves — the docs page links straight to
+  // the twin that demonstrates the escape, so it needs that fixture's
+  // description + source link too, even though the twin itself compiles
+  // clean everywhere and never appears as a row in this table.
+  const escapeTwinIds = new Set<string>()
+  for (const row of Object.values(fixtureDivergences.fixtures)) {
+    for (const cell of Object.values(row)) {
+      if (cell.escape?.state === 'escapable') escapeTwinIds.add(cell.escape.twin)
+    }
+  }
+  const docFixtureIds = new Set([...Object.keys(report.fixtureDivergences.fixtures), ...escapeTwinIds])
+  report.fixtureDivergences.docs = computeFixtureDocs([...docFixtureIds])
 
   const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report)
 
