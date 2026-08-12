@@ -13,10 +13,14 @@ import { createFixture } from '../src/types'
  * Adapter-gated, like the const-preamble branch body and the off-subset
  * filter/sort predicates:
  *   - Hono / CSR run it; the reference `expectedHtml` renders the cells.
- *   - DSL adapters (Go, Perl, Ruby, PHP, Rust, Python) surface BF021 with the
- *     `/* @client *\/` escape (declared via each adapter's `conformancePins`);
- *     marking the map client-only defers the whole loop to the browser, which
- *     runs the same verbatim body.
+ *   - DSL adapters (Go, Perl, Ruby, PHP, Rust, Python) surface BF021; marking
+ *     the map client-only (`/* @client *\/`) defers the whole loop to the
+ *     browser, which runs the same verbatim body. Verified, not merely
+ *     asserted (#2613): `map-array-builder-body-client` is declared below as
+ *     the `escapes` twin and passes real execution — `csr-conformance.test.ts`
+ *     (CSR template renders the empty host) and every DSL adapter's own
+ *     conformance suite (compiles clean, zero diagnostics) — so all 8 DSL
+ *     adapters' `unescapable` pins for this fixture have been removed.
  */
 export const fixture = createFixture({
   id: 'map-array-builder-body',
@@ -41,4 +45,5 @@ export { TableBuilder }
   expectedHtml: `
     <table bf-s="test"><tbody bf="s1"><tr data-key="1"><!--bf:s0--><td>a</td><td>b</td><!--/--></tr><tr data-key="2"><!--bf:s0--><td>c</td><td>d</td><!--/--></tr></tbody></table>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'map-array-builder-body-client' }],
 })

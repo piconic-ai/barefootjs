@@ -1813,8 +1813,8 @@
     }
   },
   "fixtureDivergences": {
-    "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter. A build-time refusal is not automatically a dead end: some refusals carry a VERIFIED working escape (most often a `/* @client */` twin) — a supported, tested path, not tracked debt — marked `escapable` below; others are declared `not-owed` (no escape will ever be authored, by design) rather than left to look identical to genuine, still-open `debt`.",
-    "totalFixtures": 319,
+    "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
+    "totalFixtures": 320,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -1904,81 +1904,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "every-typeof-predicate-client"
-          }
+          ]
         }
       },
       "fill-unsupported": {
@@ -1986,81 +1954,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "fill-unsupported-client"
-          }
+          ]
         }
       },
       "filter-nested-callback-predicate": {
@@ -2071,11 +2007,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-callback-predicate-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
@@ -2084,11 +2016,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-callback-predicate-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
@@ -2097,11 +2025,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-callback-predicate-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
@@ -2110,11 +2034,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-callback-predicate-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
@@ -2123,11 +2043,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-callback-predicate-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
@@ -2136,11 +2052,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-callback-predicate-client"
-          }
+          ]
         }
       },
       "filter-nested-find-predicate": {
@@ -2151,11 +2063,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
@@ -2164,11 +2072,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
@@ -2177,11 +2081,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
@@ -2190,11 +2090,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
@@ -2203,11 +2099,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
@@ -2216,11 +2108,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
@@ -2229,11 +2117,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
@@ -2242,11 +2126,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2320"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-nested-find-predicate-client"
-          }
+          ]
         }
       },
       "filter-typeof-predicate": {
@@ -2254,81 +2134,49 @@
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "filter-typeof-predicate-client"
-          }
+          ]
         }
       },
       "find-typeof-predicate": {
@@ -2336,81 +2184,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "find-typeof-predicate-client"
-          }
+          ]
         }
       },
       "flatmap-typeof-projection": {
@@ -2418,81 +2234,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "flatmap-typeof-projection-client"
-          }
+          ]
         }
       },
       "map-array-builder-body": {
@@ -2500,73 +2284,49 @@
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         }
       },
       "map-array-builder-escaping": {
@@ -2574,73 +2334,49 @@
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         }
       },
       "preamble-cells": {
@@ -2648,81 +2384,49 @@
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         }
       },
       "reduce-right-typeof-body": {
@@ -2730,81 +2434,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-right-typeof-body-client"
-          }
+          ]
         }
       },
       "reduce-typeof-body": {
@@ -2812,81 +2484,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "reduce-typeof-body-client"
-          }
+          ]
         }
       },
       "some-typeof-predicate": {
@@ -2894,81 +2534,49 @@
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "some-typeof-predicate-client"
-          }
+          ]
         }
       },
       "static-array-from-props": {
@@ -2979,10 +2587,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
@@ -2991,10 +2596,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
@@ -3003,10 +2605,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
@@ -3015,10 +2614,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
@@ -3027,10 +2623,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
@@ -3039,10 +2632,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
@@ -3051,10 +2641,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
@@ -3063,10 +2650,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         }
       },
       "static-array-from-props-with-component": {
@@ -3077,10 +2661,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
@@ -3089,10 +2670,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
@@ -3101,10 +2679,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
@@ -3113,10 +2688,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
@@ -3125,10 +2697,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
@@ -3137,10 +2706,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
@@ -3149,10 +2715,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
@@ -3161,10 +2724,7 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
-          ],
-          "escape": {
-            "state": "debt"
-          }
+          ]
         }
       },
       "tag-cloud": {
@@ -3172,81 +2732,49 @@
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
-          ],
-          "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
-          }
+          ]
         }
       }
     },
@@ -3318,46 +2846,6 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
-      },
-      "every-typeof-predicate-client": {
-        "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate-client.ts"
-      },
-      "fill-unsupported-client": {
-        "description": "Off-subset array method `.fill()` deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fill-unsupported-client.ts"
-      },
-      "filter-nested-callback-predicate-client": {
-        "description": "Nested-callback filter predicate + /* @client */ suppresses BF101 (#2038)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate-client.ts"
-      },
-      "filter-nested-find-predicate-client": {
-        "description": "Nested-callback (.find()) filter predicate + /* @client */ suppresses BF101 (#2038)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate-client.ts"
-      },
-      "filter-typeof-predicate-client": {
-        "description": "Off-subset filter predicate deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-typeof-predicate-client.ts"
-      },
-      "find-typeof-predicate-client": {
-        "description": "Off-subset `.find()` predicate deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/find-typeof-predicate-client.ts"
-      },
-      "flatmap-typeof-projection-client": {
-        "description": "Off-subset `.flatMap()` projection deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection-client.ts"
-      },
-      "reduce-right-typeof-body-client": {
-        "description": "Off-subset `.reduceRight()` body deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-right-typeof-body-client.ts"
-      },
-      "reduce-typeof-body-client": {
-        "description": "Off-subset `.reduce()` body deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body-client.ts"
-      },
-      "some-typeof-predicate-client": {
-        "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate-client.ts"
       }
     }
   },
