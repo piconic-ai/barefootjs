@@ -89,7 +89,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // BF103 (imported child in the loop body) no longer fires now that the
@@ -99,7 +98,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // #2087 Phase B: `isLowerableLoopDestructure` now admits every fixed-

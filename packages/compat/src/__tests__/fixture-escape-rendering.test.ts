@@ -161,7 +161,16 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(loaded.length).toBeGreaterThan(0)
   })
 
-  test('the render-conformance table exercises all three escape states', () => {
+  // 'debt' has no live corpus example right now: #2321's escape-twin work
+  // (`static-array-from-props-client` /
+  // `static-array-from-props-with-component-client`) removed the last two
+  // `unescapable` pins anywhere in the corpus, so the render-conformance
+  // ledger is at zero. Its rendering (bare, unmarked code) stays covered by
+  // the synthetic `escapeMarker` / `fixtureCellText` tests above, which need
+  // no real fixture — deliberately, so that reaching zero debt costs this
+  // file no coverage and creates no pressure to keep a debt entry alive
+  // just to keep a test meaningful.
+  test('the render-conformance table exercises the escapable and not-owed states on real fixtures', () => {
     const states = new Set<string>()
     for (const row of Object.values(fd.fixtures)) {
       for (const cell of Object.values(row)) {
@@ -169,7 +178,40 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
       }
     }
 
-    expect(states).toEqual(new Set(['escapable', 'debt', 'not-owed']))
+    // Containment, not equality. Equality would additionally assert that
+    // NO cell is in 'debt' — see the note below on why that must not be a
+    // hard gate. These two are what this renderer's markers are for, so
+    // they must be exercised by real corpus data, not only synthetically.
+    expect(states).toContain('escapable')
+    expect(states).toContain('not-owed')
+  })
+
+  // NOT asserted here: that the debt ledger stays at zero.
+  //
+  // It is at zero today, and that is worth celebrating, but forbidding it
+  // from ever being non-zero would invert #2613's incentive design. Read
+  // `escape-coverage.test.ts`'s header: declaring `unescapable: { issue }`
+  // on a pin is deliberately the CHEAP path for landing a new refusal
+  // without a verified escape — "authoring a real twin is the ratchet, never
+  // the toll booth blocking a pin from landing". A test that goes red the
+  // moment anyone uses that path turns the fast path into exactly the toll
+  // booth the design rules out, and the pressure would land on whoever adds
+  // the 9th adapter (#2101-#2103) — the person least able to pay it.
+  //
+  // The real guarantee is the FLOOR in `escape-coverage.test.ts`: every
+  // adapter refusal must be escapable, `escapeNotOwed`, or self-declared
+  // `unescapable` with a tracking issue. Debt is visible and accounted for
+  // there by construction. Zero is a milestone, not an invariant.
+  test('any debt that does exist is rendered as tracked debt, not silently as something else', () => {
+    const debtCells = Object.values(fd.fixtures).flatMap(row =>
+      Object.values(row).filter(cell => cell.escape?.state === 'debt'),
+    )
+    // Vacuously true at zero debt — that is the point: this test does not
+    // care how many there are, only that each renders honestly.
+    for (const cell of debtCells) {
+      expect(escapeMarker(cell.escape)).toBe('')
+      expect(fixtureCellText(cell)).toBe((cell.codes ?? []).join(', '))
+    }
   })
 
   // Named example 1: a refused fixture whose declared escape twin is
@@ -181,22 +223,6 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(found!.cell.kind).toBe('refusal')
     expect(found!.cell.escape).toEqual({ state: 'escapable', twin: 'every-typeof-predicate-client' })
     expect(escapeMarker(found!.cell.escape)).toBe(ESCAPABLE_MARKER)
-  })
-
-  // Named example 2: refused, no working escape, and the adapter's own
-  // pin says so with `unescapable` — tracked debt, rendered unmarked
-  // (bare code) exactly as every refusal rendered before #2613.
-  //
-  // `static-array-from-props` (#2321), not `map-array-builder-body`: the
-  // latter graduated to 'escapable' once `map-array-builder-body-client`
-  // was verified against the real suites (#2613's array-builder twin
-  // task) and every DSL adapter's `unescapable` pin for it was removed.
-  test('static-array-from-props is tracked debt (adapter declares unescapable) on at least one adapter', () => {
-    const found = findColumnInState('static-array-from-props', 'debt')
-    expect(found).toBeDefined()
-    expect(found!.cell.kind).toBe('refusal')
-    expect(found!.cell.escape).toEqual({ state: 'debt' })
-    expect(escapeMarker(found!.cell.escape)).toBe('')
   })
 
   // Named example 3: refused on every DSL adapter, and the fixture itself
@@ -212,47 +238,66 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(escapeMarker(found!.cell.escape)).toBe(NOT_OWED_MARKER)
   })
 
-  test('an escapable cell reads as WORKING (✓†) and carries no diagnostic code — a debt cell keeps its code', () => {
+  test('an escapable cell reads as WORKING (✓†) and carries no diagnostic code — a not-owed cell keeps its code', () => {
     // The whole point of the inverted rendering (maintainer feedback,
     // #2613 follow-up): a genuinely working construct must not read as a
-    // failure by leading with an error code, and the code that DOES still
-    // fail must stay visibly distinct from it.
+    // failure by leading with an error code, and a refusal that owes no
+    // escape by design must stay visibly distinct from it.
     //
-    // Debt example is `static-array-from-props` (#2321), not
-    // `map-array-builder-body`: #2623 graduated the latter to escapable,
-    // so naming it here would assert the opposite of what it now is.
-    const debt = findColumnInState('static-array-from-props', 'debt')
+    // Not-owed example is `tag-cloud`, not a live 'debt' example: #2321's
+    // escape-twin work removed the last two `unescapable` pins in the
+    // corpus, so there is no real fixture left in 'debt' state today (see
+    // the zero-debt test above) — the 'debt' rendering itself stays
+    // covered by the synthetic `fixtureCellText` tests further up this
+    // file, which don't need a live corpus example.
+    const notOwed = findColumnInState('tag-cloud', 'not-owed')
     const escapable = findColumnInState('every-typeof-predicate', 'escapable')
-    expect(debt).toBeDefined()
+    expect(notOwed).toBeDefined()
     expect(escapable).toBeDefined()
 
-    const debtText = fixtureCellText(debt!.cell)
+    const notOwedText = fixtureCellText(notOwed!.cell)
     const escapableText = fixtureCellText(escapable!.cell)
-    expect(debtText).toBe((debt!.cell.codes ?? []).join(', '))
+    expect(notOwedText).toBe(`${(notOwed!.cell.codes ?? []).join(', ')}${NOT_OWED_MARKER}`)
     expect(escapableText).toBe(`✓${ESCAPABLE_MARKER}`)
-    expect(escapableText).not.toContain(debtText)
-    expect(debtText).not.toBe(escapableText)
+    expect(escapableText).not.toContain(notOwedText)
+    expect(notOwedText).not.toBe(escapableText)
   })
 
   // Named example 4: every-typeof-predicate is refused on some adapters
   // (with a verified escape) and compiles clean on the rest — it works on
   // EVERY adapter, so `rowWorksEverywhere` must say so and it must not
   // appear in the "needs attention" table.
-  // The negative case is `static-array-from-props` (#2321), NOT
-  // `map-array-builder-body`: #2623 gave the latter a verified escape on
-  // all eight DSL adapters, so it now works everywhere and asserting
-  // `false` for it would be asserting the opposite of the truth. Picking a
-  // still-genuinely-broken fixture keeps this test meaningful rather than
-  // merely green.
-  test('every-typeof-predicate works everywhere (rowWorksEverywhere), static-array-from-props does not', () => {
+  // The negative case is `tag-cloud`, NOT `static-array-from-props`
+  // (#2321): that fixture's own escape-twin work made it (and
+  // `static-array-from-props-with-component`) fully escapable on all
+  // eight DSL adapters, so asserting `false` for it would now assert the
+  // opposite of the truth. `tag-cloud` stays genuinely "needs attention"
+  // by design (`escapeNotOwed` — a `/* @client */` twin would defeat its
+  // own hydration-adoption regression coverage), which keeps this test
+  // meaningful rather than merely green.
+  test('every-typeof-predicate works everywhere (rowWorksEverywhere), tag-cloud does not (not-owed by design)', () => {
     expect(fd.fixtures['every-typeof-predicate']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['every-typeof-predicate']!)).toBe(true)
 
-    expect(fd.fixtures['static-array-from-props']).toBeDefined()
-    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props']!)).toBe(false)
+    expect(fd.fixtures['tag-cloud']).toBeDefined()
+    expect(rowWorksEverywhere(fd.fixtures['tag-cloud']!)).toBe(false)
 
-    // And the fixture that just graduated is now on the working side —
-    // pinning the #2623 graduation as observable through this renderer.
+    // #2321's escape-twin work graduated ONE of its two fixtures fully.
+    expect(fd.fixtures['static-array-from-props']).toBeDefined()
+    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props']!)).toBe(true)
+
+    // Its sibling did NOT, and the difference is the point rather than an
+    // oversight: the twin compiles clean on go-template but the generated
+    // Go does not build (a `Record<string, T>` prop is emitted as a slice
+    // field — #2627), so that adapter is pinned in its own
+    // `render-divergences.ts` and keeps its `unescapable` declaration.
+    // Seven adapters escape this fixture; go-template does not, so the row
+    // does not work everywhere. Asserting `true` here would have been the
+    // easy way to keep the suite green while claiming an escape nobody can
+    // use on Go.
+    expect(fd.fixtures['static-array-from-props-with-component']).toBeDefined()
+    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props-with-component']!)).toBe(false)
+
     expect(fd.fixtures['map-array-builder-body']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['map-array-builder-body']!)).toBe(true)
   })

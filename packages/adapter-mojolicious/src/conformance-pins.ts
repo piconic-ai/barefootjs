@@ -77,7 +77,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // The BF101 above fires; BF104 no longer does (see above), and BF103
@@ -89,7 +88,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // #1310 / #2087: rest destructure in .map() callback. All four shapes

@@ -4370,7 +4370,44 @@
         "text"
       ]
     },
+    "static-array-from-props-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "logical",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "static-array-from-props-with-component": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-array-from-props-with-component-client": {
       "kinds": [
         "binary",
         "call",
@@ -5173,18 +5210,18 @@
     "array-literal": 80,
     "array-method": 69,
     "arrow": 69,
-    "binary": 89,
-    "call": 212,
+    "binary": 90,
+    "call": 214,
     "conditional": 25,
-    "identifier": 301,
+    "identifier": 303,
     "index-access": 14,
-    "literal": 248,
-    "logical": 44,
-    "member": 165,
-    "object-literal": 56,
+    "literal": 249,
+    "logical": 45,
+    "member": 167,
+    "object-literal": 57,
     "template-literal": 30,
     "unary": 23,
-    "unsupported": 37
+    "unsupported": 39
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -5214,7 +5251,7 @@
     "binary:!=": 2,
     "binary:!==": 9,
     "binary:*": 10,
-    "binary:+": 19,
+    "binary:+": 20,
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
@@ -5224,9 +5261,9 @@
     "literal:boolean": 49,
     "literal:null": 23,
     "literal:number": 104,
-    "literal:string": 176,
+    "literal:string": 177,
     "logical:&&": 7,
-    "logical:??": 38,
+    "logical:??": 39,
     "logical:||": 14,
     "member:computed": 8,
     "member:optional": 1,
