@@ -117,8 +117,13 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
   // Named example 2: refused, no working escape, and the adapter's own
   // pin says so with `unescapable` — tracked debt, rendered unmarked
   // (bare code) exactly as every refusal rendered before #2613.
-  test('map-array-builder-body is tracked debt (adapter declares unescapable) on at least one adapter', () => {
-    const found = findColumnInState('map-array-builder-body', 'debt')
+  //
+  // `static-array-from-props` (#2321), not `map-array-builder-body`: the
+  // latter graduated to 'escapable' once `map-array-builder-body-client`
+  // was verified against the real suites (#2613's array-builder twin
+  // task) and every DSL adapter's `unescapable` pin for it was removed.
+  test('static-array-from-props is tracked debt (adapter declares unescapable) on at least one adapter', () => {
+    const found = findColumnInState('static-array-from-props', 'debt')
     expect(found).toBeDefined()
     expect(found!.cell.kind).toBe('refusal')
     expect(found!.cell.escape).toEqual({ state: 'debt' })
@@ -144,7 +149,7 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     const cellToText = (cell: FixtureDivergenceCell | undefined): string =>
       cell && cell.kind === 'refusal' ? `${(cell.codes ?? []).join(', ')}${escapeMarker(cell.escape)}` : ''
 
-    const debt = findColumnInState('map-array-builder-body', 'debt')
+    const debt = findColumnInState('static-array-from-props', 'debt')
     const escapable = findColumnInState('every-typeof-predicate', 'escapable')
     expect(debt).toBeDefined()
     expect(escapable).toBeDefined()
