@@ -70,6 +70,18 @@ export function computeDomainFixtureIds(adapter: LoadedCompatAdapter, honoErrorP
 export interface EscapeCoverageOutcome {
   ok: boolean
   message?: string
+  /**
+   * Which declared `escapes` twin was proven to work on this adapter, when
+   * one was. Reported rather than recomputed because `twinWorksOnAdapter`
+   * runs a real `compileForCompat` per candidate: `classifyFixtureEscapeState`
+   * needs the same answer for rendering, and re-deriving it there doubled
+   * the compiles for every escapable cell during lock generation (78 of
+   * them today).
+   *
+   * Absent when no twin was tried (`escapeNotOwed` returns before the scan)
+   * or none worked.
+   */
+  workingTwinId?: string
 }
 
 /**
@@ -173,7 +185,7 @@ export function evaluateFixtureEscapeCoverage(
     }
   }
 
-  return { ok: true }
+  return { ok: true, workingTwinId }
 }
 
 /**
@@ -244,11 +256,12 @@ export function classifyFixtureEscapeState(
     return { state: 'debt' }
   }
 
-  for (const escape of fixture.escapes ?? []) {
-    const twin = fixtures.find(f => f.id === escape.fixture)
-    if (twin && twinWorksOnAdapter(twin, adapter)) {
-      return { state: 'escapable', twin: twin.id }
-    }
+  // `evaluateFixtureEscapeCoverage` above already compiled each candidate
+  // twin to decide this; it reports the winner rather than making us run
+  // `twinWorksOnAdapter` (and therefore `compileForCompat`) a second time
+  // per escapable cell.
+  if (outcome.workingTwinId) {
+    return { state: 'escapable', twin: outcome.workingTwinId }
   }
 
   // `evaluateFixtureEscapeCoverage` only returns `ok: true` via one of the

@@ -135,6 +135,24 @@ function escapeCell(text: string): string {
 }
 
 /**
+ * Neutralize Markdown emphasis/code metacharacters in free-form prose that
+ * gets interpolated into a generated Markdown line — today only
+ * `escapeNotOwed.reason`, which fixture authors write as ordinary English.
+ *
+ * Today's reasons happen to survive unescaped: they contain `/* @client *\/`,
+ * whose asterisks sit next to whitespace and so are neither left- nor
+ * right-flanking, so CommonMark won't open emphasis on them. That safety is
+ * accidental and narrow — verified with the site's own `marked`, TWO such
+ * occurrences in one paragraph DO pair up (`'/* @client <em>/' … '/</em> @client *\/'`),
+ * and any future reason containing `*emphasis*` or a backtick renders as
+ * markup rather than text. `reason` is prose owned by whoever writes the
+ * fixture, so the renderer should not depend on what they happen to type.
+ */
+function escapeMarkdownProse(text: string): string {
+  return text.replace(/([*_`[\]\\])/g, '\\$1')
+}
+
+/**
  * The two escape-state markers appended directly to a refusal cell's
  * diagnostic code(s) — same characters `packages/compat/src/report.ts`
  * uses for the CLI's own `--md` / `--render` output, so the docs page and
@@ -292,7 +310,7 @@ function escapeDetailClause(escape: FixtureEscapeState | undefined, fd: FixtureD
     return ` — **verified escape** (${ESCAPABLE_MARKER}): ${twinLabel} compiles clean here`
   }
   if (escape.state === 'not-owed') {
-    return ` — **no escape owed** (${NOT_OWED_MARKER}): ${escape.reason}`
+    return ` — **no escape owed** (${NOT_OWED_MARKER}): ${escapeMarkdownProse(escape.reason)}`
   }
   return ''
 }
