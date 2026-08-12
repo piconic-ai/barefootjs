@@ -161,18 +161,16 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(loaded.length).toBeGreaterThan(0)
   })
 
-  // 'debt' is intentionally absent from this real-corpus set: #2321's
-  // escape-twin work (`static-array-from-props-client` /
+  // 'debt' has no live corpus example right now: #2321's escape-twin work
+  // (`static-array-from-props-client` /
   // `static-array-from-props-with-component-client`) removed the last two
-  // `unescapable` pins anywhere in the corpus — the render-conformance
-  // ledger is at zero. See the dedicated zero-debt test below. If a
-  // future adapter pin ever declares `unescapable` again, this assertion
-  // goes red as a deliberate prompt to either name a live debt example
-  // here or accept the state returning; it never silently passes either
-  // way. The 'debt' state's own rendering (bare, unmarked code) stays
-  // covered by the synthetic `escapeMarker` / `fixtureCellText` tests
-  // above, which don't need a real corpus fixture.
-  test('the render-conformance table exercises both live escape states (debt ledger is at zero)', () => {
+  // `unescapable` pins anywhere in the corpus, so the render-conformance
+  // ledger is at zero. Its rendering (bare, unmarked code) stays covered by
+  // the synthetic `escapeMarker` / `fixtureCellText` tests above, which need
+  // no real fixture — deliberately, so that reaching zero debt costs this
+  // file no coverage and creates no pressure to keep a debt entry alive
+  // just to keep a test meaningful.
+  test('the render-conformance table exercises the escapable and not-owed states on real fixtures', () => {
     const states = new Set<string>()
     for (const row of Object.values(fd.fixtures)) {
       for (const cell of Object.values(row)) {
@@ -180,21 +178,40 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
       }
     }
 
-    expect(states).toEqual(new Set(['escapable', 'not-owed']))
+    // Containment, not equality. Equality would additionally assert that
+    // NO cell is in 'debt' — see the note below on why that must not be a
+    // hard gate. These two are what this renderer's markers are for, so
+    // they must be exercised by real corpus data, not only synthetically.
+    expect(states).toContain('escapable')
+    expect(states).toContain('not-owed')
   })
 
-  // Companion to the test above, asserted directly rather than only
-  // implied by set membership: no `(fixture, adapter)` cell anywhere in
-  // the real corpus is in 'debt' state today. `escape-coverage.test.ts`
-  // is the FLOOR that keeps it that way going forward (every adapter
-  // refusal must be escapable, `escapeNotOwed`, or self-declared
-  // `unescapable`); this is the rendering-side confirmation that the
-  // floor currently has nothing sitting on it.
-  test('no fixture cell is in tracked "debt" state anywhere in the real corpus (#2321 ledger at zero)', () => {
-    const anyDebt = Object.values(fd.fixtures).some(row =>
-      Object.values(row).some(cell => cell.escape?.state === 'debt'),
+  // NOT asserted here: that the debt ledger stays at zero.
+  //
+  // It is at zero today, and that is worth celebrating, but forbidding it
+  // from ever being non-zero would invert #2613's incentive design. Read
+  // `escape-coverage.test.ts`'s header: declaring `unescapable: { issue }`
+  // on a pin is deliberately the CHEAP path for landing a new refusal
+  // without a verified escape — "authoring a real twin is the ratchet, never
+  // the toll booth blocking a pin from landing". A test that goes red the
+  // moment anyone uses that path turns the fast path into exactly the toll
+  // booth the design rules out, and the pressure would land on whoever adds
+  // the 9th adapter (#2101-#2103) — the person least able to pay it.
+  //
+  // The real guarantee is the FLOOR in `escape-coverage.test.ts`: every
+  // adapter refusal must be escapable, `escapeNotOwed`, or self-declared
+  // `unescapable` with a tracking issue. Debt is visible and accounted for
+  // there by construction. Zero is a milestone, not an invariant.
+  test('any debt that does exist is rendered as tracked debt, not silently as something else', () => {
+    const debtCells = Object.values(fd.fixtures).flatMap(row =>
+      Object.values(row).filter(cell => cell.escape?.state === 'debt'),
     )
-    expect(anyDebt).toBe(false)
+    // Vacuously true at zero debt — that is the point: this test does not
+    // care how many there are, only that each renders honestly.
+    for (const cell of debtCells) {
+      expect(escapeMarker(cell.escape)).toBe('')
+      expect(fixtureCellText(cell)).toBe((cell.codes ?? []).join(', '))
+    }
   })
 
   // Named example 1: a refused fixture whose declared escape twin is
