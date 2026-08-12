@@ -75,7 +75,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // BF101 (computed local-const loop array, as above) fires; BF103
@@ -86,7 +85,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // #2087 Phase B: every `.map()` destructure shape in the shared corpus

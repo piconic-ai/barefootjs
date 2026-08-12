@@ -27,11 +27,18 @@ import { createFixture } from '../src/types'
  * declare the matching diagnostics via `expectedDiagnostics` on
  * their own test file (#1266).
  * The remaining template-adapter refusal (computed component-scope const as
- * the loop source) is tracked in #2321.
+ * the loop source) is tracked in #2321. It has a verified `/* @client *\/`
+ * escape — `static-array-from-props-with-component-client` — that defers
+ * the whole loop (the `entries` computation and the `Tag` child body
+ * included) to the browser; SSR renders the `<ul>` empty on every DSL
+ * adapter. That escape does NOT fix #2321: template adapters still cannot
+ * lower a props-derived computed const at SSR time, so #2321 stays open
+ * as an SSR capability gap.
  */
 export const fixture = createFixture({
   id: 'static-array-from-props-with-component',
   description: 'Static-array loop with childComponent body materialises rendered children on CSR (#1268)',
+  escapes: [{ kind: 'client-directive', fixture: 'static-array-from-props-with-component-client' }],
   source: `
 'use client'
 import { Tag } from './tag'

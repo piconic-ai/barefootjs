@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code marked ‡ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 320,
+    "totalFixtures": 322,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2997,7 +2997,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "erb": {
@@ -3009,7 +3010,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "go-template": {
@@ -3021,7 +3023,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "jinja": {
@@ -3033,7 +3036,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "minijinja": {
@@ -3045,7 +3049,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "mojolicious": {
@@ -3057,7 +3062,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "twig": {
@@ -3069,7 +3075,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         },
         "xslate": {
@@ -3081,7 +3088,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-client"
           }
         }
       },
@@ -3095,7 +3103,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "erb": {
@@ -3107,7 +3116,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "go-template": {
@@ -3119,7 +3129,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "jinja": {
@@ -3131,7 +3142,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "minijinja": {
@@ -3143,7 +3155,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "mojolicious": {
@@ -3155,7 +3168,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "twig": {
@@ -3167,7 +3181,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         },
         "xslate": {
@@ -3179,7 +3194,8 @@
             "https://github.com/piconic-ai/barefootjs/issues/2321"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-client"
           }
         }
       },
@@ -3378,6 +3394,14 @@
       "some-typeof-predicate-client": {
         "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate-client.ts"
+      },
+      "static-array-from-props-client": {
+        "description": "/* @client */ twin of static-array-from-props — DSL BF101 (computed-const loop array) suppressed…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-client.ts"
+      },
+      "static-array-from-props-with-component-client": {
+        "description": "/* @client */ twin of static-array-from-props-with-component — DSL BF101 (computed-const loop…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-client.ts"
       }
     }
   },

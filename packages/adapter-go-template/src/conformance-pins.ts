@@ -87,7 +87,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // Same computed-const array as above — the destructure param itself no
@@ -99,7 +98,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // (`style-3-signals` graduated alongside `style-object-dynamic` — see note

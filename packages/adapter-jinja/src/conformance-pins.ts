@@ -89,7 +89,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // BF101 (unresolvable computed loop array, see above) fires; BF103
@@ -100,7 +99,6 @@ export const conformancePins: ConformancePins = {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
     },
   ],
   // Rest-destructure / structured-path `.map()` callbacks (#2087 Phase B):
