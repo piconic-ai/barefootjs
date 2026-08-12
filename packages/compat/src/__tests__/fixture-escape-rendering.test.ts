@@ -1,14 +1,19 @@
 // Rendering-side counterpart to `escape-coverage.test.ts` (#2613's
-// "escape visibility" follow-up). That file is the FLOOR — every refusal
-// is escapable-or-declared. This file asserts the render-conformance
-// table actually SHOWS the difference: a refusal with a verified escape
-// (`'escapable'`), one that's still open (`'debt'`), and one that owes no
-// escape at all by design (`'not-owed'`) must render as three visually
-// distinct things, not one flat diagnostic code.
+// "escape visibility" follow-up, inverted per maintainer feedback so the
+// check mark answers "does it work?" FIRST — issue info moves to the
+// per-fixture detail list, not the cell). That file is the FLOOR — every
+// refusal is escapable-or-declared. This file asserts the render-
+// conformance table actually SHOWS the difference: a refusal with a
+// verified escape WORKS (`✓†`, no diagnostic code in the cell), one
+// that's still open (`'debt'`) or owed by design (`'not-owed'`) does NOT
+// work and keeps its bare/marked code, and a render divergence (`≠`) is
+// its own third thing — three visually distinct outcomes, not one flat
+// diagnostic code.
 //
 // Two layers:
-//   - `escapeMarker` is a pure function over a `FixtureDivergenceCell`'s
-//     `escape` field — fast, synthetic input, no compiling.
+//   - `escapeMarker` / `fixtureCellText` / `rowWorksEverywhere` are pure
+//     functions over a `FixtureDivergenceCell` (or a row of them) — fast,
+//     synthetic input, no compiling.
 //   - `buildFixtureDivergences` is exercised ONCE, at module scope, against
 //     the REAL corpus and REAL adapters (same precedent as
 //     `escape-coverage.test.ts` itself — that file's header comment
@@ -40,7 +45,9 @@ import {
   buildFixtureDivergences,
   ESCAPABLE_MARKER,
   escapeMarker,
+  fixtureCellText,
   NOT_OWED_MARKER,
+  rowWorksEverywhere,
   type FixtureDivergenceCell,
 } from '../report'
 
@@ -68,6 +75,68 @@ describe('escapeMarker — the three escape states render as three distinct thin
       escapeMarker({ state: 'debt' }),
     ])
     expect(renderings.size).toBe(3)
+  })
+})
+
+describe('fixtureCellText — the check mark answers "does it work?" first', () => {
+  test('a clean (absent) cell renders the plain checkmark', () => {
+    expect(fixtureCellText(undefined)).toBe('✓')
+  })
+
+  test('a render divergence renders the divergence marker, not a checkmark', () => {
+    expect(fixtureCellText({ kind: 'render', reason: 'whitespace differs' })).toBe('≠')
+  })
+
+  test('an escapable refusal renders WORKS (✓†) — no diagnostic code in the cell', () => {
+    const text = fixtureCellText({
+      kind: 'refusal',
+      codes: ['BF101'],
+      escape: { state: 'escapable', twin: 'some-fixture-client' },
+    })
+    expect(text).toBe(`✓${ESCAPABLE_MARKER}`)
+    expect(text).not.toContain('BF101')
+  })
+
+  test('a debt refusal keeps its bare diagnostic code, unmarked', () => {
+    expect(fixtureCellText({ kind: 'refusal', codes: ['BF101'], escape: { state: 'debt' } })).toBe('BF101')
+  })
+
+  test('a not-owed refusal keeps its diagnostic code, marked with the double dagger', () => {
+    expect(
+      fixtureCellText({ kind: 'refusal', codes: ['BF021'], escape: { state: 'not-owed', reason: 'because' } }),
+    ).toBe(`BF021${NOT_OWED_MARKER}`)
+  })
+
+  test('an out-of-domain refusal (no escape field) keeps its bare code, same as debt', () => {
+    expect(fixtureCellText({ kind: 'refusal', codes: ['BF021'] })).toBe('BF021')
+  })
+})
+
+describe('rowWorksEverywhere — decides which fixtures need a row in the "needs attention" table', () => {
+  test('a row where every cell is escapable works everywhere', () => {
+    expect(
+      rowWorksEverywhere({
+        hono: { kind: 'refusal', codes: ['BF101'], escape: { state: 'escapable', twin: 'x' } },
+        blade: { kind: 'refusal', codes: ['BF101'], escape: { state: 'escapable', twin: 'x' } },
+      }),
+    ).toBe(true)
+  })
+
+  test('a row with one debt cell needs attention, even if every other cell is escapable', () => {
+    expect(
+      rowWorksEverywhere({
+        hono: { kind: 'refusal', codes: ['BF101'], escape: { state: 'escapable', twin: 'x' } },
+        blade: { kind: 'refusal', codes: ['BF101'], escape: { state: 'debt' } },
+      }),
+    ).toBe(false)
+  })
+
+  test('a row with a render divergence needs attention', () => {
+    expect(
+      rowWorksEverywhere({
+        blade: { kind: 'render', reason: 'diverges' },
+      }),
+    ).toBe(false)
   })
 })
 
@@ -138,23 +207,33 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(escapeMarker(found!.cell.escape)).toBe(NOT_OWED_MARKER)
   })
 
-  test('a bare unmarked code and a marked one are textually different table cells', () => {
-    // The whole point of the feature: two refusals must not render
-    // identically when their escape stories differ.
-    const cellToText = (cell: FixtureDivergenceCell | undefined): string =>
-      cell && cell.kind === 'refusal' ? `${(cell.codes ?? []).join(', ')}${escapeMarker(cell.escape)}` : ''
-
+  test('an escapable cell reads as WORKING (✓†) and carries no diagnostic code — a debt cell keeps its code', () => {
+    // The whole point of the inverted rendering (maintainer feedback,
+    // #2613 follow-up): a genuinely working construct must not read as a
+    // failure by leading with an error code, and the code that DOES still
+    // fail must stay visibly distinct from it.
     const debt = findColumnInState('map-array-builder-body', 'debt')
     const escapable = findColumnInState('every-typeof-predicate', 'escapable')
     expect(debt).toBeDefined()
     expect(escapable).toBeDefined()
 
-    const debtText = cellToText(debt!.cell)
-    const escapableText = cellToText(escapable!.cell)
-    expect(debtText).not.toBe('')
-    expect(escapableText).not.toBe('')
+    const debtText = fixtureCellText(debt!.cell)
+    const escapableText = fixtureCellText(escapable!.cell)
+    expect(debtText).toBe((debt!.cell.codes ?? []).join(', '))
+    expect(escapableText).toBe(`✓${ESCAPABLE_MARKER}`)
+    expect(escapableText).not.toContain(debtText)
     expect(debtText).not.toBe(escapableText)
-    expect(escapableText.endsWith(ESCAPABLE_MARKER)).toBe(true)
-    expect(debtText.endsWith(ESCAPABLE_MARKER)).toBe(false)
+  })
+
+  // Named example 4: every-typeof-predicate is refused on some adapters
+  // (with a verified escape) and compiles clean on the rest — it works on
+  // EVERY adapter, so `rowWorksEverywhere` must say so and it must not
+  // appear in the "needs attention" table.
+  test('every-typeof-predicate works everywhere (rowWorksEverywhere), map-array-builder-body does not', () => {
+    expect(fd.fixtures['every-typeof-predicate']).toBeDefined()
+    expect(rowWorksEverywhere(fd.fixtures['every-typeof-predicate']!)).toBe(true)
+
+    expect(fd.fixtures['map-array-builder-body']).toBeDefined()
+    expect(rowWorksEverywhere(fd.fixtures['map-array-builder-body']!)).toBe(false)
   })
 })
