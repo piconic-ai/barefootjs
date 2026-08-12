@@ -59,7 +59,7 @@ export const fixture = createFixture({
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'
-export function TableBuilderClient() {
+function TableBuilderClient() {
   const [rows, setRows] = createSignal<{ id: string; cells: string[] }[]>([])
   return (
     <table>
