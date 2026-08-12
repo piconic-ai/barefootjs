@@ -10,7 +10,14 @@ import { createFixture } from '../src/types'
  * divergence. Cells here carry `<`, `&`, and quotes to pin byte parity.
  *
  * DSL adapters refuse the array-builder shape itself (BF021, pinned via
- * `map-array-builder-body`); this fixture rides the same gate.
+ * `map-array-builder-body`); this fixture rides the same gate, so it
+ * declares `map-array-builder-body`'s own `escapes` twin
+ * (`map-array-builder-body-client`) rather than a dedicated one — the
+ * gate being suppressed is the only claim either fixture's `escapes`
+ * needs to verify; the escaping props (special characters in cell text)
+ * are an SSR-only concern this client-only twin never reaches (SSR
+ * renders nothing once deferred). Verified against real suites, not
+ * merely asserted (#2613): see `map-array-builder-body`'s docstring.
  */
 export const fixture = createFixture({
   id: 'map-array-builder-escaping',
@@ -40,4 +47,5 @@ export { EscapeTable }
   expectedHtml: `
     <table bf-s="test"><tbody bf="s1"><tr data-key="1"><!--bf:s0--><td>&lt;b&gt;bold&lt;/b&gt;</td><td>a &amp; b</td><!--/--></tr><tr data-key="2"><!--bf:s0--><td>&quot;quoted&quot;</td><td>it&#39;s</td><!--/--></tr></tbody></table>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'map-array-builder-body-client' }],
 })

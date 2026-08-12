@@ -76,7 +76,8 @@ export const FIXTURE_DIVERGENCES_NOTE =
   'through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per ' +
   'fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works ' +
   'either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — ' +
-  'most refusals have one). Fixtures absent from the table below work on every adapter, no escape needed. ' +
+  'most refusals have one). Fixtures absent from the table below work on every adapter — most as written, ' +
+  'some via that documented escape; the headline says how many of each. ' +
   'Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, ' +
   'a code marked ‡ owes no escape at all (by design), and ≠ means the fixture compiles clean but its ' +
   'rendered output diverges from the reference.'

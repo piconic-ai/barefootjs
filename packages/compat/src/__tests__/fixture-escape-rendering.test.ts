@@ -186,8 +186,13 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
   // Named example 2: refused, no working escape, and the adapter's own
   // pin says so with `unescapable` — tracked debt, rendered unmarked
   // (bare code) exactly as every refusal rendered before #2613.
-  test('map-array-builder-body is tracked debt (adapter declares unescapable) on at least one adapter', () => {
-    const found = findColumnInState('map-array-builder-body', 'debt')
+  //
+  // `static-array-from-props` (#2321), not `map-array-builder-body`: the
+  // latter graduated to 'escapable' once `map-array-builder-body-client`
+  // was verified against the real suites (#2613's array-builder twin
+  // task) and every DSL adapter's `unescapable` pin for it was removed.
+  test('static-array-from-props is tracked debt (adapter declares unescapable) on at least one adapter', () => {
+    const found = findColumnInState('static-array-from-props', 'debt')
     expect(found).toBeDefined()
     expect(found!.cell.kind).toBe('refusal')
     expect(found!.cell.escape).toEqual({ state: 'debt' })
@@ -212,7 +217,11 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     // #2613 follow-up): a genuinely working construct must not read as a
     // failure by leading with an error code, and the code that DOES still
     // fail must stay visibly distinct from it.
-    const debt = findColumnInState('map-array-builder-body', 'debt')
+    //
+    // Debt example is `static-array-from-props` (#2321), not
+    // `map-array-builder-body`: #2623 graduated the latter to escapable,
+    // so naming it here would assert the opposite of what it now is.
+    const debt = findColumnInState('static-array-from-props', 'debt')
     const escapable = findColumnInState('every-typeof-predicate', 'escapable')
     expect(debt).toBeDefined()
     expect(escapable).toBeDefined()
@@ -229,11 +238,22 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
   // (with a verified escape) and compiles clean on the rest — it works on
   // EVERY adapter, so `rowWorksEverywhere` must say so and it must not
   // appear in the "needs attention" table.
-  test('every-typeof-predicate works everywhere (rowWorksEverywhere), map-array-builder-body does not', () => {
+  // The negative case is `static-array-from-props` (#2321), NOT
+  // `map-array-builder-body`: #2623 gave the latter a verified escape on
+  // all eight DSL adapters, so it now works everywhere and asserting
+  // `false` for it would be asserting the opposite of the truth. Picking a
+  // still-genuinely-broken fixture keeps this test meaningful rather than
+  // merely green.
+  test('every-typeof-predicate works everywhere (rowWorksEverywhere), static-array-from-props does not', () => {
     expect(fd.fixtures['every-typeof-predicate']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['every-typeof-predicate']!)).toBe(true)
 
+    expect(fd.fixtures['static-array-from-props']).toBeDefined()
+    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props']!)).toBe(false)
+
+    // And the fixture that just graduated is now on the working side —
+    // pinning the #2623 graduation as observable through this renderer.
     expect(fd.fixtures['map-array-builder-body']).toBeDefined()
-    expect(rowWorksEverywhere(fd.fixtures['map-array-builder-body']!)).toBe(false)
+    expect(rowWorksEverywhere(fd.fixtures['map-array-builder-body']!)).toBe(true)
   })
 })
