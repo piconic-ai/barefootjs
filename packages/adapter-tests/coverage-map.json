@@ -2948,6 +2948,20 @@
         "text"
       ]
     },
+    "map-array-builder-body-client": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "map-array-builder-escaping": {
       "kinds": [
         "identifier",
@@ -5156,17 +5170,17 @@
     }
   },
   "kindCounts": {
-    "array-literal": 79,
+    "array-literal": 80,
     "array-method": 69,
     "arrow": 69,
     "binary": 89,
-    "call": 211,
+    "call": 212,
     "conditional": 25,
-    "identifier": 300,
+    "identifier": 301,
     "index-access": 14,
     "literal": 248,
     "logical": 44,
-    "member": 164,
+    "member": 165,
     "object-literal": 56,
     "template-literal": 30,
     "unary": 23,

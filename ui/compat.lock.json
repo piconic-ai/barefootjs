@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter. A build-time refusal is not automatically a dead end: some refusals carry a VERIFIED working escape (most often a `/* @client */` twin) — a supported, tested path, not tracked debt — marked `escapable` below; others are declared `not-owed` (no escape will ever be authored, by design) rather than left to look identical to genuine, still-open `debt`.",
-    "totalFixtures": 319,
+    "totalFixtures": 320,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2502,7 +2502,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "erb": {
@@ -2511,7 +2512,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "go-template": {
@@ -2520,7 +2522,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "jinja": {
@@ -2529,7 +2532,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "minijinja": {
@@ -2538,7 +2542,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "mojolicious": {
@@ -2547,7 +2552,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "twig": {
@@ -2556,7 +2562,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "xslate": {
@@ -2565,7 +2572,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         }
       },
@@ -2576,7 +2584,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "erb": {
@@ -2585,7 +2594,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "go-template": {
@@ -2594,7 +2604,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "jinja": {
@@ -2603,7 +2614,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "minijinja": {
@@ -2612,7 +2624,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "mojolicious": {
@@ -2621,7 +2634,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "twig": {
@@ -2630,7 +2644,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         },
         "xslate": {
@@ -2639,7 +2654,8 @@
             "BF021"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
           }
         }
       },
@@ -3346,6 +3362,10 @@
       "flatmap-typeof-projection-client": {
         "description": "Off-subset `.flatMap()` projection deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection-client.ts"
+      },
+      "map-array-builder-body-client": {
+        "description": "Array-builder .map() body deferred to the client via /* @client */ — DSL BF021 suppressed",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body-client.ts"
       },
       "reduce-right-typeof-body-client": {
         "description": "Off-subset `.reduceRight()` body deferred to the client via /* @client */",
