@@ -93,22 +93,18 @@ export const conformancePins: ConformancePins = {
   // longer contributes a diagnostic, and BF103 (sibling-imported child
   // component in the loop body) no longer fires either now that the
   // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
-  // `unescapable` stays HERE, unlike on the other seven adapters, and
-  // unlike this fixture's sibling `static-array-from-props` (whose twin
-  // does work here). The `/* @client */` twin compiles clean on Go but the
-  // generated program does not BUILD: a `Record<string, T>` prop is
-  // emitted as a slice field, so the map-shaped caller literal will not
-  // assign (#2627). That twin is therefore pinned in this package's
-  // `render-divergences.ts`, which makes `twinWorksOnAdapter` false here —
-  // so this adapter genuinely has no verified escape for this fixture and
-  // must say so. Graduating #2627 deletes the divergence entry and this
-  // `unescapable` line together.
+  // #2627 graduated: the `/* @client */` twin
+  // (`static-array-from-props-with-component-client`) now renders clean on
+  // real Go (its clientOnly nested `<Tag>` loop is excluded from the
+  // Input/Props/NewProps codegen instead of colliding with the `tags` prop's
+  // own field — see `GoTemplateAdapter.isOrphanedClientOnlyNested`), so this
+  // adapter has a verified escape for this fixture like every other one —
+  // no more `unescapable` line.
   'static-array-from-props-with-component': [
     {
       code: 'BF101',
       severity: 'error',
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
-      unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2627' },
     },
   ],
   // (`style-3-signals` graduated alongside `style-object-dynamic` — see note

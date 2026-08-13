@@ -13,9 +13,15 @@
  * the docs compatibility-matrix page. Graduating an entry means fixing
  * the adapter (or the shared compiler layer) and deleting the line.
  *
- * Empty — the file's last live entry (`aliased-destructured-prop`, #2525)
- * graduated: the Input struct field is now keyed by `sourceName ?? name`
- * (caller-facing), so the caller-side composite literal `go run`s clean.
+ * Empty — the file's last live entry (`static-array-from-props-with-
+ * component-client`, #2627) graduated: a clientOnly child-component loop
+ * whose array is neither a signal/memo nor a direct prop reference (e.g.
+ * `Object.entries(props.tags).filter(...)` feeding a `<Tag>` loop) is now
+ * excluded entirely from the Input/Props/NewProps codegen instead of
+ * colliding with the driving prop's own field — see
+ * `GoTemplateAdapter.isOrphanedClientOnlyNested`. The caller-side composite
+ * literal for the `tags` prop now type-checks against its own `interface{}`
+ * field and `go run`s clean.
  * Keep the file (and this header) when the set is empty — the next
  * divergence lands here, not in a re-created file.
  */
@@ -35,28 +41,4 @@ export const renderDivergences: RenderDivergences = {
   // production). `buildDynamicChildLoopSeeding` (this package's
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
-
-  // exit 1 — generated Go does not compile (#2627):
-  //   ./main.go:54:9: cannot use map[string]any{…} (value of type
-  //   map[string]any) as []TagInput value in struct literal
-  // The `tags` prop is a `Record<string, T>`; this adapter emits a SLICE
-  // field (`[]TagInput`) for it, so the caller-side composite literal —
-  // correctly a map, since the component calls `Object.entries(props.tags)`
-  // — cannot be assigned. Squarely the "should eventually become a loud
-  // BF101 refusal instead of broken codegen" class this file's header
-  // describes.
-  //
-  // Pre-existing, not caused by the twin: the BASE fixture
-  // (`static-array-from-props-with-component`) is BF101-refused here
-  // (#2321), so Go codegen was never reached and the bad type sat behind
-  // that refusal. #2626's `/* @client */` twin suppresses BF101, reaches
-  // the Go backend for the first time, and exposes it.
-  //
-  // Consequence for the escape ledger, stated plainly: this entry makes
-  // `twinWorksOnAdapter` false here, so the base fixture KEEPS its
-  // `unescapable` pin on this adapter. The escape is verified on the other
-  // adapters, not on go-template. Graduating #2627 deletes this entry and
-  // that pin together.
-  'static-array-from-props-with-component-client':
-    'generated Go fails `go run` (exit 1): a Record<string, T> prop is emitted as a slice field, so the map-shaped caller literal will not assign — https://github.com/piconic-ai/barefootjs/issues/2627',
 }

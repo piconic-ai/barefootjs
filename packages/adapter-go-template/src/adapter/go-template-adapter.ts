@@ -961,6 +961,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * caller-facing while Props/NewProps key local, so a one-sided check lets
    * the structs disagree on whether the field exists (a duplicate json tag,
    * or a dead Input field whose caller writes are silently ignored).
+   *
+   * `nestedArrayFields` (built by each call site) is ALREADY restricted to
+   * prop-derived loops (#2627) — a same-name coincidence with a loop that
+   * merely transforms a differently-shaped prop (`Object.entries(props.tags)
+   * .filter(...)` feeding a `<Tag>` loop, whose plural `Tags` happens to
+   * match a `tags: Record<...>` prop) must NOT shadow the prop's own field;
+   * the two are different Go types and the prop has no other field to land
+   * in. See the call sites' `nestedArrayFields` construction.
    */
   private isNestedArrayShadowed(
     param: { name: string; sourceName?: string },
@@ -970,6 +978,61 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       nestedArrayFields.has(capitalizeFieldName(param.name)) ||
       nestedArrayFields.has(capitalizeFieldName(param.sourceName ?? param.name))
     )
+  }
+
+  /**
+   * True when `nested` is a `/* @client *\/` child-component loop (#2627)
+   * whose array is neither a real signal/memo (`isDynamic`) nor a direct
+   * prop reference (`isPropDerived`) — e.g. `Object.entries(props.tags)
+   * .filter(...)` feeding a `<Tag>` loop. `renderLoop`'s clientOnly branch
+   * (its very first check) renders such a loop as bare start/end comment
+   * markers on every backend — the SSR template NEVER references this
+   * nested component's Go field — and for a non-clientOnly loop with this
+   * same array shape, `renderLoop`'s own later BF101 gate (`arrayName` /
+   * `isBound` check) refuses to bind a function-scope computed local as a
+   * template variable at all. So there is no Go value anywhere to seed an
+   * Input field from or range over in `NewXxxProps` — treating `nested` as
+   * a normal static/prop-derived child loop emits a field/range/wrapper var
+   * for data nothing ever populates, and when its plural name happens to
+   * collide with the ACTUAL driving prop (`tags` -> `Tags`, `Tag` ->
+   * `Tags`), that dead field is worse than dead: either a duplicate Go
+   * field name (compile error) or — via `isNestedArrayShadowed` — silent
+   * loss of the prop's own field, the one channel the client actually
+   * reads hydration data from.
+   *
+   * `nested.isDynamic` is excluded from this check on purpose: a genuinely
+   * signal-backed clientOnly loop keeps its existing (tested, harmless)
+   * `json:"-"` Props field — only the "looks static but is actually an
+   * unbindable local" shape needs full exclusion.
+   */
+  private isOrphanedClientOnlyNested(nested: NestedComponentInfo): boolean {
+    return !!nested.clientOnly && !nested.isDynamic && !nested.isPropDerived
+  }
+
+  /**
+   * The auto-pluralized Go field names (`Row` -> `Rows`) that genuinely
+   * SUBSUME a same-named props param, so that param must not also get its
+   * own field. Four sites consume this — `generateInputStruct`,
+   * `generatePropsStruct`, `emitPropsAuxFields` and `recordRepropsSpec` —
+   * and they must agree exactly: a one-sided answer lets Input and
+   * Props/NewProps disagree about whether a field exists, producing a
+   * duplicate json tag or a dead Input field whose caller writes are
+   * silently ignored. Extracted to one function so that agreement is
+   * structural rather than four copies kept in step by hand (#2628 review).
+   *
+   * Only `isPropDerived` loops qualify (#2627). Such a loop ranges directly
+   * over `props.X` (or a destructured binding of it), so the array field and
+   * the prop are the same data, merely re-shaped into typed rows. A mere
+   * NAME coincidence is not subsumption: `Object.entries(props.tags)
+   * .filter(...)` feeding a `<Tag>` loop pluralizes to `Tags` and collides
+   * with a `tags` prop, but the prop is a `Record` while the loop array is a
+   * derived slice of tuples — dropping the prop's field there leaves it with
+   * no Go field at all to receive the caller's value. Note the check is
+   * purely name-based, so this is not specific to `Record`: any prop whose
+   * capitalized name matches a child's plural hits the same path.
+   */
+  private propDerivedNestedArrayFields(nestedComponents: readonly NestedComponentInfo[]): Set<string> {
+    return new Set(nestedComponents.filter(n => n.isPropDerived).map(n => `${n.name}s`))
   }
 
   /**
@@ -1088,10 +1151,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     if (!this.childDerivedFieldDeps.has(componentName)) return
 
-    // Must mirror `generateInputStruct`'s exclusion/collision checks exactly —
-    // both walk the Input struct's actual (caller-keyed) field names, or the
-    // reprops switch references fields the struct doesn't have.
-    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
     const params = (ir.metadata.propsParams ?? []).filter(
       p => !this.isNestedArrayShadowed(p, nestedArrayFields),
     )
@@ -1407,10 +1467,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // Static + prop-derived nested components are in Input; signal-backed
-    // dynamic ones are template-only.
-    const inputNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
+    // dynamic ones are template-only. An orphaned clientOnly nested loop
+    // (#2627 — see `isOrphanedClientOnlyNested`) has no Go value to seed an
+    // Input field from at all, so it's excluded from both buckets.
+    const inputNested = nestedComponents.filter(
+      n => (!n.isDynamic || n.isPropDerived) && !this.isOrphanedClientOnlyNested(n),
+    )
 
-    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
     for (const param of ir.metadata.propsParams) {
       // #2525: caller-facing name, not the local destructure binding — a
@@ -1648,8 +1712,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t}')
     lines.push('')
 
-    // Static + prop-derived nested components auto-populate from input.
-    const staticNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
+    // Static + prop-derived nested components auto-populate from input. An
+    // orphaned clientOnly nested loop (#2627 — see `isOrphanedClientOnlyNested`)
+    // has no Input field to range over (excluded above in `generateInputStruct`),
+    // so it's excluded here too.
+    const staticNested = nestedComponents.filter(
+      n => (!n.isDynamic || n.isPropDerived) && !this.isOrphanedClientOnlyNested(n),
+    )
 
     // Wrapper vars emitted (by either the static-with-body or dynamic-with-body
     // path), so the return struct only includes the ones that were built.
@@ -1786,7 +1855,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push('\t\tSearchParams: in.SearchParams,')
     }
 
-    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
     // Props params (field names tracked to skip duplicate signal assignments).
     // A JSX-declared default (`variant = 'default'`) or signal-side fallback
@@ -2511,9 +2580,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propTypeOverrides: Map<string, string>,
     takenJsonTags: Set<string>,
   ): void {
-    // Nested-component array fields are emitted as typed arrays below, not as
-    // their raw prop; track them (and emitted names) to skip duplicates.
-    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
     const propFieldNames = new Set<string>()
 
     for (const param of ir.metadata.propsParams) {
@@ -2636,6 +2703,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     for (const nested of nestedComponents) {
+      // An orphaned clientOnly nested loop (#2627 — see
+      // `isOrphanedClientOnlyNested`) gets NO Props field at all, not even
+      // the dead `json:"-"` one the signal-backed dynamic branch below gets:
+      // its Go field name (`${nested.name}s`) can collide with the ACTUAL
+      // driving prop's own field (e.g. `tags` -> `Tags` colliding with
+      // `Tag` -> `Tags`), which `emitPropsDataFields` already emitted for
+      // real — a second same-named field here is a Go compile error
+      // ("redeclared"), not just dead code.
+      if (this.isOrphanedClientOnlyNested(nested)) continue
       // Loop body with JSX children → use the wrapper struct type.
       const elemType = nested.bodyChildren?.length
         ? this.loopBodyWrapperName(componentName, nested)
