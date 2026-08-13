@@ -30,6 +30,21 @@ export type GoRenderCtx = {
 export interface NestedComponentInfo extends IRLoopChildComponent {
   isDynamic: boolean
   isPropDerived: boolean
+  /**
+   * True when the enclosing loop carries a `/* @client *\/` directive
+   * (`loop.clientOnly`, #2627). `renderLoop`'s FIRST branch short-circuits a
+   * clientOnly loop to bare start/end comment markers — the SSR template
+   * never references this nested component's Go field, no matter how
+   * `isDynamic`/`isPropDerived` classify its array. Combined with
+   * `!isDynamic && !isPropDerived` (a clientOnly loop whose array is
+   * neither a real signal/memo NOR a direct prop reference — e.g.
+   * `Object.entries(props.tags).filter(...)`), there is no Go value to
+   * seed an Input/Props field FROM at all: the array is a function-scope
+   * computed local that `renderLoop`'s own BF101 gate refuses to bind as a
+   * template variable for a non-clientOnly loop. See
+   * `GoTemplateAdapter.isOrphanedClientOnlyNested`.
+   */
+  clientOnly?: boolean
   /** The enclosing loop's `key` expression (e.g. `item.label`) and map param
    *  name (`item`), so the loop-child init can stamp `data-key` per item. */
   loopKey?: string

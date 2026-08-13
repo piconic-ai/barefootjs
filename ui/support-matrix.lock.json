@@ -1123,7 +1123,7 @@
           ]
         },
         "go-template": {
-          "pass": 80,
+          "pass": 81,
           "total": 90,
           "gaps": [
             {
@@ -1167,10 +1167,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             }
           ]
         },
@@ -1583,7 +1579,7 @@
           ]
         },
         "go-template": {
-          "pass": 198,
+          "pass": 199,
           "total": 214,
           "gaps": [
             {
@@ -1651,10 +1647,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -2359,7 +2351,7 @@
           ]
         },
         "go-template": {
-          "pass": 285,
+          "pass": 286,
           "total": 303,
           "gaps": [
             {
@@ -2435,10 +2427,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -3037,7 +3025,7 @@
           ]
         },
         "go-template": {
-          "pass": 237,
+          "pass": 238,
           "total": 249,
           "gaps": [
             {
@@ -3081,10 +3069,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -3691,7 +3675,7 @@
           ]
         },
         "go-template": {
-          "pass": 149,
+          "pass": 150,
           "total": 167,
           "gaps": [
             {
@@ -3767,10 +3751,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -4715,7 +4695,7 @@
           ]
         },
         "go-template": {
-          "pass": 27,
+          "pass": 28,
           "total": 39,
           "gaps": [
             {
@@ -4761,10 +4741,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -6619,7 +6595,7 @@
           ]
         },
         "go-template": {
-          "pass": 18,
+          "pass": 19,
           "total": 20,
           "gaps": [
             {
@@ -6627,10 +6603,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             }
           ]
         },
@@ -7778,7 +7750,7 @@
           ]
         },
         "go-template": {
-          "pass": 168,
+          "pass": 169,
           "total": 177,
           "gaps": [
             {
@@ -7814,10 +7786,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-client",
-              "issues": []
             }
           ]
         },

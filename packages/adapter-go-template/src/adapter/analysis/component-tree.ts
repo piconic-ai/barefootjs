@@ -127,6 +127,7 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): v
           ...loop.childComponent,
           isDynamic: !loop.isStaticArray,
           isPropDerived: !!loop.isPropDerivedArray,
+          clientOnly: loop.clientOnly,
           loopKey: loop.key ?? undefined,
           loopParam: loop.param ?? undefined,
           bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,

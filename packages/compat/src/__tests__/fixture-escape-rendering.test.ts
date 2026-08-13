@@ -165,11 +165,15 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
   // (`static-array-from-props-client` /
   // `static-array-from-props-with-component-client`) removed the last two
   // `unescapable` pins anywhere in the corpus, so the render-conformance
-  // ledger is at zero. Its rendering (bare, unmarked code) stays covered by
-  // the synthetic `escapeMarker` / `fixtureCellText` tests above, which need
-  // no real fixture — deliberately, so that reaching zero debt costs this
-  // file no coverage and creates no pressure to keep a debt entry alive
-  // just to keep a test meaningful.
+  // ledger was at zero — briefly reopened to one when #2626's go-template
+  // twin exposed #2627 (a `Record<string, T>` prop misrendered as a slice
+  // field), pinned `unescapable` on go-template in the interim. #2627's fix
+  // graduated that pin, so the ledger is back at zero. Its rendering (bare,
+  // unmarked code) stays covered by the synthetic `escapeMarker` /
+  // `fixtureCellText` tests above, which need no real fixture —
+  // deliberately, so that reaching zero debt costs this file no coverage
+  // and creates no pressure to keep a debt entry alive just to keep a test
+  // meaningful.
   test('the render-conformance table exercises the escapable and not-owed states on real fixtures', () => {
     const states = new Set<string>()
     for (const row of Object.values(fd.fixtures)) {
@@ -282,21 +286,22 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
     expect(fd.fixtures['tag-cloud']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['tag-cloud']!)).toBe(false)
 
-    // #2321's escape-twin work graduated ONE of its two fixtures fully.
+    // #2321's escape-twin work graduated BOTH of its fixtures fully.
     expect(fd.fixtures['static-array-from-props']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['static-array-from-props']!)).toBe(true)
 
-    // Its sibling did NOT, and the difference is the point rather than an
-    // oversight: the twin compiles clean on go-template but the generated
-    // Go does not build (a `Record<string, T>` prop is emitted as a slice
-    // field — #2627), so that adapter is pinned in its own
-    // `render-divergences.ts` and keeps its `unescapable` declaration.
-    // Seven adapters escape this fixture; go-template does not, so the row
-    // does not work everywhere. Asserting `true` here would have been the
-    // easy way to keep the suite green while claiming an escape nobody can
-    // use on Go.
+    // Its sibling initially did NOT graduate on go-template: the twin
+    // compiled clean but the generated Go didn't build (a `Record<string,
+    // T>` prop was emitted as a slice field — #2627). #2627 fixed that (a
+    // clientOnly child-component loop whose array isn't a signal/memo or a
+    // direct prop reference is now excluded from the Input/Props/NewProps
+    // codegen entirely, instead of colliding with the driving prop's own
+    // field — see `GoTemplateAdapter.isOrphanedClientOnlyNested`), so
+    // go-template's `render-divergences.ts` entry and this fixture's
+    // `unescapable` pin were deleted together. All eight adapters escape
+    // this fixture now, so the row works everywhere.
     expect(fd.fixtures['static-array-from-props-with-component']).toBeDefined()
-    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props-with-component']!)).toBe(false)
+    expect(rowWorksEverywhere(fd.fixtures['static-array-from-props-with-component']!)).toBe(true)
 
     expect(fd.fixtures['map-array-builder-body']).toBeDefined()
     expect(rowWorksEverywhere(fd.fixtures['map-array-builder-body']!)).toBe(true)
