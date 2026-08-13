@@ -19,6 +19,19 @@ import { createFixture } from '../src/types'
  * server. Same refusal, two escapes, two different `ssrCost` values
  * (`ESCAPE_SSR_COST`, `packages/jsx/src/types.ts`).
  *
+ * KNOWN DIVERGENCE — go-template renders the `<ul>` EMPTY here (#2630),
+ * pinned in that adapter's `renderDivergences`. It compiles clean and
+ * `go run`s clean; the child rows simply never materialize. The sibling
+ * `static-array-from-props-precomputed` — same shape with an inline
+ * element body instead of a `<Tag>` child — renders correctly
+ * everywhere, so what this fixture pins is specifically a
+ * child-component body over a prop-backed array.
+ *
+ * That means this twin proves `prop-precompute` on eight adapters, NOT
+ * nine. The `expectedHtml` below is the reference output (correct), not
+ * what go-template currently produces, so deleting the divergence entry
+ * once #2630 is fixed turns this fixture into that fix's regression test.
+ *
  * Shape note: like its sibling, the precomputed array holds OBJECTS
  * rather than the base's `[id, t]` pairs — an array-destructured loop
  * param is itself a refusal shape on several DSL adapters (#1266), so
