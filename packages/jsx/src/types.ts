@@ -2192,9 +2192,62 @@ export interface CompilerError {
   suggestion?: ErrorSuggestion
 }
 
+/**
+ * The kind of escape available from a refusal — the way a user gets their
+ * legitimate, in-subset JSX to compile on an adapter that cannot host it
+ * (#2613).
+ *
+ * Lives here, next to `ErrorSuggestion`, because both halves of the
+ * "loud-or-escapable" contract must speak the SAME enum: the diagnostic
+ * CLAIMS kinds (`ErrorSuggestion.escape`) and a conformance fixture
+ * DEMONSTRATES them (`JSXFixture.escapes`, which re-exports this type —
+ * `@barefootjs/adapter-tests` depends on this package, not the reverse).
+ * `escape-coverage.test.ts` then checks claims are a subset of what the
+ * twins prove, which is only meaningful while the two share one union.
+ */
+export type EscapeKind = 'client-directive' | 'prop-precompute' | 'rewrite'
+
+/**
+ * What an escape costs at SSR. `'none'` — full server render, the result
+ * is present in the server HTML. `'client-render'` — the region is EMPTY
+ * in server HTML until hydration.
+ *
+ * Output-equivalence is explicitly NOT the bar for an escape (#2613): a
+ * `/* @client *\/` region is definitionally not equivalent, and that is a
+ * legitimate trade the user chooses. Making the cost typed and visible is
+ * the honest substitute for pretending it doesn't exist — every renderer
+ * that surfaces an escape surfaces its cost from THIS map, so the trade
+ * can never be quietly dropped on the way to a user.
+ */
+export type EscapeSsrCost = 'none' | 'client-render'
+
+export const ESCAPE_SSR_COST: Record<EscapeKind, EscapeSsrCost> = {
+  // `/* @client */` — compiles and hydrates correctly, renders nothing at SSR.
+  'client-directive': 'client-render',
+  // The refused computation moves to an already-computed prop.
+  'prop-precompute': 'none',
+  // The source is restructured into an equivalent in-subset shape.
+  rewrite: 'none',
+}
+
 export interface ErrorSuggestion {
   message: string
   replacement?: string
+  /**
+   * The escape kinds this diagnostic CLAIMS are available, structured
+   * (#2613 increment 3). Additive and one-way: `message` stays
+   * authoritative for humans — several sites have genuinely good
+   * site-specific prose no enum should flatten — while this field is
+   * authoritative for machines (`bf compat`'s legend, the docs matrix,
+   * claim verification). New and edited refusal sites populate it; older
+   * sites migrate opportunistically, so ABSENT means "not yet declared",
+   * never "no escape exists".
+   *
+   * Order carries the recommendation: list a `ssrCost: 'none'` escape
+   * before a `'client-render'` one, matching the prose rule that a
+   * full-SSR way out is offered first.
+   */
+  escape?: ReadonlyArray<{ kind: EscapeKind }>
 }
 
 /**

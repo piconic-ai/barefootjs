@@ -26,6 +26,47 @@ interface CompatDiagnostic {
   code: string
   severity: 'error' | 'warning'
   issues?: string[]
+  escapes?: string[]
+}
+
+/**
+ * Canonical, enum-generated wording for each escape kind, with its SSR
+ * cost (#2614 increment 2). Rendered in the LEGEND, never in a cell: a
+ * cell aggregates adapters whose prose for the same code differs, and
+ * surfacing that variance would export an internal inconsistency — by the
+ * time an escape reaches this page it is one wording from one place.
+ *
+ * Mirrors `EscapeKind` / `ESCAPE_SSR_COST` (`packages/jsx/src/types.ts`).
+ * The page deliberately re-declares rather than imports — `@barefootjs/jsx`
+ * is not a runtime dependency of the site Worker, and every other compat
+ * type here is mirrored the same way — so
+ * `escape-legend-parity.test.ts` pins this map against the compiler's
+ * union: a new kind there fails the test here rather than silently
+ * rendering as a bare slug.
+ */
+export const ESCAPE_LABELS: Record<string, string> = {
+  'prop-precompute': 'pass the computed result as a prop (full SSR)',
+  'client-directive': '`/* @client */` (client-render; no SSR content until hydration)',
+  rewrite: 'rewrite into an in-subset shape (full SSR)',
+}
+
+/**
+ * Render a diagnostic's claimed escapes for the legend. Order is the
+ * lock's (sorted) order re-sorted by SSR cost — a full-SSR way out is
+ * listed before a client-render one, matching the prose rule that the
+ * escape which keeps server content is offered first. Unknown kinds are
+ * dropped rather than rendered raw; the parity test is what makes that
+ * safe to do silently.
+ */
+function formatEscapes(escapes: string[] | undefined): string {
+  if (!escapes?.length) return ''
+  const known = escapes.filter((kind) => kind in ESCAPE_LABELS)
+  if (known.length === 0) return ''
+  const ssrFirst = [...known].sort((a, b) => {
+    const cost = (kind: string) => (kind === 'client-directive' ? 1 : 0)
+    return cost(a) - cost(b) || a.localeCompare(b)
+  })
+  return `escapes: ${ssrFirst.map((kind) => ESCAPE_LABELS[kind]).join(', ')}`
 }
 
 interface CompatCell {
@@ -241,15 +282,16 @@ function buildTable(componentNames: string[]): string {
   return [header, divider, ...rows].join('\n')
 }
 
-/** Collect every distinct diagnostic code across all cells, with its deduped issue URLs. */
-function collectLegend(): { code: string; severity: CompatDiagnostic['severity']; issues: string[] }[] {
-  const byCode = new Map<string, { severity: CompatDiagnostic['severity']; issues: Set<string> }>()
+/** Collect every distinct diagnostic code across all cells, with its deduped issue URLs and escape claims. */
+function collectLegend(): { code: string; severity: CompatDiagnostic['severity']; issues: string[]; escapes: string[] }[] {
+  const byCode = new Map<string, { severity: CompatDiagnostic['severity']; issues: Set<string>; escapes: Set<string> }>()
 
   for (const adapterMap of Object.values(compat.components)) {
     for (const cell of Object.values(adapterMap)) {
       for (const d of cell.diagnostics ?? []) {
-        const entry = byCode.get(d.code) ?? { severity: d.severity, issues: new Set<string>() }
+        const entry = byCode.get(d.code) ?? { severity: d.severity, issues: new Set<string>(), escapes: new Set<string>() }
         for (const issue of d.issues ?? []) entry.issues.add(issue)
+        for (const kind of d.escapes ?? []) entry.escapes.add(kind)
         byCode.set(d.code, entry)
       }
     }
@@ -257,7 +299,21 @@ function collectLegend(): { code: string; severity: CompatDiagnostic['severity']
 
   return [...byCode.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([code, { severity, issues }]) => ({ code, severity, issues: [...issues] }))
+    .map(([code, { severity, issues, escapes }]) => ({ code, severity, issues: [...issues], escapes: [...escapes] }))
+}
+
+/**
+ * The error-codes reference entry for a diagnostic code (#2614 increment
+ * 1). Generated from the code alone — `docs/core/advanced/error-codes.md`
+ * carries an explicit `<a id="bf101">`-style anchor above each `### BFNNN`
+ * heading precisely so this stays a computation rather than a committed
+ * code→anchor map that could drift. The anchors are also independent of
+ * the heading wording, so rewording a section cannot break these links.
+ * `error-codes-anchors.test.ts` fails if a code reachable from the lock
+ * has no anchor in the doc.
+ */
+export function errorCodeDocLink(code: string): string {
+  return `/docs/advanced/error-codes#${code.toLowerCase()}`
 }
 
 function buildLegend(): string {
@@ -267,9 +323,13 @@ function buildLegend(): string {
   }
 
   return entries
-    .map(({ code, severity, issues }) => {
+    .map(({ code, severity, issues, escapes }) => {
       const label = severity === 'warning' ? `⚠ \`${code}\`` : `\`${code}\``
-      return `- ${label} — ${formatIssueLinks(issues, compat.knownLimitationLabel)}`
+      const linked = `[${label}](${errorCodeDocLink(code)})`
+      const parts = [formatIssueLinks(issues, compat.knownLimitationLabel)]
+      const escapeText = formatEscapes(escapes)
+      if (escapeText) parts.push(escapeText)
+      return `- ${linked} — ${parts.join(' · ')}`
     })
     .join('\n')
 }
@@ -326,7 +386,12 @@ function refusalDetailText(cell: FixtureDivergenceCell, fd: FixtureDivergences):
   // returns is escaped exactly once, at the point `buildFixtureDetails`
   // joins it into a Markdown line, same as every other fragment there.
   // Escaping twice would double-escape a literal `|` (`\|` → `\\|`).
-  const codes = (cell.codes ?? []).map((c) => `\`${c}\``).join(', ')
+  // Codes link to the error-codes reference (#2614): the detail list is
+  // where a reader actually MEETS a refusal — the component legend below
+  // is empty whenever every `ui/` component compiles clean, which is the
+  // normal state — so a code shown here without a way to the guidance is
+  // the exact gap this linking closes.
+  const codes = (cell.codes ?? []).map((c) => `[\`${c}\`](${errorCodeDocLink(c)})`).join(', ')
   const escape = cell.escape
   if (escape?.state === 'escapable') {
     const twinDoc = fd.docs?.[escape.twin]

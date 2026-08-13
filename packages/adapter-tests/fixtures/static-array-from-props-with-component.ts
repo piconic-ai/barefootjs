@@ -38,7 +38,10 @@ import { createFixture } from '../src/types'
 export const fixture = createFixture({
   id: 'static-array-from-props-with-component',
   description: 'Static-array loop with childComponent body materialises rendered children on CSR (#1268)',
-  escapes: [{ kind: 'client-directive', fixture: 'static-array-from-props-with-component-client' }],
+  escapes: [
+    { kind: 'prop-precompute', fixture: 'static-array-from-props-with-component-precomputed' },
+    { kind: 'client-directive', fixture: 'static-array-from-props-with-component-client' },
+  ],
   source: `
 'use client'
 import { Tag } from './tag'

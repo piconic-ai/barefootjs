@@ -1,7 +1,7 @@
 // @barefootjs/compat — pure compile+reduce logic. No console output here;
 // the command layer (src/cli.ts) owns all user-facing text.
 
-import type { CompilerError, ConformancePins, TemplateAdapter } from '@barefootjs/jsx'
+import type { CompilerError, ConformancePins, EscapeKind, TemplateAdapter } from '@barefootjs/jsx'
 import { compileJSX } from '@barefootjs/jsx'
 
 export type CompatMode = 'build' | 'conformance'
@@ -11,6 +11,19 @@ export interface CompatDiagnostic {
   severity: 'error' | 'warning'
   /** Known-limitation issue URLs pulled from the adapter's `conformancePins`, sorted + deduped. */
   issues: string[]
+  /**
+   * Escape kinds the diagnostics behind this cell CLAIM, deduped and
+   * sorted (#2614). Sourced from `ErrorSuggestion.escape` — the structured
+   * half of the suggestion, never its prose: a cell aggregates adapters
+   * whose wording for the same code differs, so carrying per-adapter text
+   * into the lock would export an internal inconsistency to users and
+   * churn the committed lock on every wording edit. The enum survives both
+   * problems, and renderers turn it back into one canonical wording.
+   *
+   * Absent when no contributing diagnostic declared one — which means "not
+   * declared", not "no escape exists", since population is opportunistic.
+   */
+  escapes?: EscapeKind[]
 }
 
 export interface CompatCell {
@@ -121,11 +134,33 @@ export function buildCompatCell(errors: CompilerError[], pins: ConformancePins):
     }
   }
 
-  const diagnostics: CompatDiagnostic[] = sorted.map(({ code, severity }) => ({
-    code,
-    severity,
-    issues: [...(issuesByCode.get(code) ?? [])].sort(),
-  }))
+  // Union the structured escape claims per (code, severity), so a cell that
+  // aggregates several refusals reports every way out any of them offers.
+  // Sorted for a deterministic lock: the committed `compat.lock.json` is
+  // drift-checked, so unordered set iteration would churn it spuriously.
+  const escapesByKey = new Map<string, Set<EscapeKind>>()
+  for (const e of errors) {
+    if (e.severity === 'info') continue
+    const claimed = e.suggestion?.escape
+    if (!claimed?.length) continue
+    const key = `${e.code} ${e.severity}`
+    let set = escapesByKey.get(key)
+    if (!set) {
+      set = new Set<EscapeKind>()
+      escapesByKey.set(key, set)
+    }
+    for (const { kind } of claimed) set.add(kind)
+  }
+
+  const diagnostics: CompatDiagnostic[] = sorted.map(({ code, severity }) => {
+    const escapes = escapesByKey.get(`${code} ${severity}`)
+    return {
+      code,
+      severity,
+      issues: [...(issuesByCode.get(code) ?? [])].sort(),
+      ...(escapes?.size ? { escapes: [...escapes].sort() } : {}),
+    }
+  })
 
   return {
     ok: !diagnostics.some(d => d.severity === 'error'),

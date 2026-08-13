@@ -57,6 +57,9 @@ export type {
   TypeDefinition,
   SourceLocation,
   CompilerError,
+  ErrorSuggestion,
+  EscapeKind,
+  EscapeSsrCost,
   ConformancePin,
   ConformancePins,
   RenderDivergences,
@@ -185,6 +188,9 @@ export interface BarefootPaths {
 
 // AttrValue constructors
 export { AttrValueOf } from './types.ts'
+
+// Per-escape-kind SSR cost — the one place every renderer reads the trade from (#2613)
+export { ESCAPE_SSR_COST } from './types.ts'
 
 // CSS Layer Prefixer
 export { applyCssLayerPrefix } from './css-layer-prefixer.ts'
