@@ -1010,6 +1010,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * The auto-pluralized Go field names (`Row` -> `Rows`) that genuinely
+   * SUBSUME a same-named props param, so that param must not also get its
+   * own field. Four sites consume this — `generateInputStruct`,
+   * `generatePropsStruct`, `emitPropsAuxFields` and `recordRepropsSpec` —
+   * and they must agree exactly: a one-sided answer lets Input and
+   * Props/NewProps disagree about whether a field exists, producing a
+   * duplicate json tag or a dead Input field whose caller writes are
+   * silently ignored. Extracted to one function so that agreement is
+   * structural rather than four copies kept in step by hand (#2628 review).
+   *
+   * Only `isPropDerived` loops qualify (#2627). Such a loop ranges directly
+   * over `props.X` (or a destructured binding of it), so the array field and
+   * the prop are the same data, merely re-shaped into typed rows. A mere
+   * NAME coincidence is not subsumption: `Object.entries(props.tags)
+   * .filter(...)` feeding a `<Tag>` loop pluralizes to `Tags` and collides
+   * with a `tags` prop, but the prop is a `Record` while the loop array is a
+   * derived slice of tuples — dropping the prop's field there leaves it with
+   * no Go field at all to receive the caller's value. Note the check is
+   * purely name-based, so this is not specific to `Record`: any prop whose
+   * capitalized name matches a child's plural hits the same path.
+   */
+  private propDerivedNestedArrayFields(nestedComponents: readonly NestedComponentInfo[]): Set<string> {
+    return new Set(nestedComponents.filter(n => n.isPropDerived).map(n => `${n.name}s`))
+  }
+
+  /**
    * Every Go field name these props params could claim — LOCAL and
    * caller-facing. A context-consumer field must exist in ALL of
    * Input/Props/NewProps or none, and the three key prop fields under
@@ -1125,21 +1151,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     if (!this.childDerivedFieldDeps.has(componentName)) return
 
-    // Must mirror `generateInputStruct`'s exclusion/collision checks exactly —
-    // both walk the Input struct's actual (caller-keyed) field names, or the
-    // reprops switch references fields the struct doesn't have.
-    // Only a PROP-DERIVED nested loop (`isPropDerived` — the loop ranges
-    // directly over `props.X` / a destructured binding of it, #2627) actually
-    // subsumes a same-named prop: the array field and the prop are then the
-    // same data, just re-shaped into typed rows. A same-name coincidence with
-    // a NON-prop-derived loop (e.g. `Object.entries(props.tags).filter(...)`
-    // feeding a `<Tag>` loop, whose plural `Tags` happens to match a `tags`
-    // prop) is not a subsumption — the prop is a `Record`, the loop array is
-    // a derived slice of tuples, and dropping the prop's own field there
-    // orphans it with no Go field to receive the caller's actual value.
-    const nestedArrayFields = new Set(
-      nestedComponents.filter(n => n.isPropDerived).map(n => `${n.name}s`),
-    )
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
     const params = (ir.metadata.propsParams ?? []).filter(
       p => !this.isNestedArrayShadowed(p, nestedArrayFields),
     )
@@ -1462,18 +1474,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       n => (!n.isDynamic || n.isPropDerived) && !this.isOrphanedClientOnlyNested(n),
     )
 
-    // Only a PROP-DERIVED nested loop (`isPropDerived` — the loop ranges
-    // directly over `props.X` / a destructured binding of it, #2627) actually
-    // subsumes a same-named prop: the array field and the prop are then the
-    // same data, just re-shaped into typed rows. A same-name coincidence with
-    // a NON-prop-derived loop (e.g. `Object.entries(props.tags).filter(...)`
-    // feeding a `<Tag>` loop, whose plural `Tags` happens to match a `tags`
-    // prop) is not a subsumption — the prop is a `Record`, the loop array is
-    // a derived slice of tuples, and dropping the prop's own field there
-    // orphans it with no Go field to receive the caller's actual value.
-    const nestedArrayFields = new Set(
-      nestedComponents.filter(n => n.isPropDerived).map(n => `${n.name}s`),
-    )
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
     for (const param of ir.metadata.propsParams) {
       // #2525: caller-facing name, not the local destructure binding — a
@@ -1854,18 +1855,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push('\t\tSearchParams: in.SearchParams,')
     }
 
-    // Only a PROP-DERIVED nested loop (`isPropDerived` — the loop ranges
-    // directly over `props.X` / a destructured binding of it, #2627) actually
-    // subsumes a same-named prop: the array field and the prop are then the
-    // same data, just re-shaped into typed rows. A same-name coincidence with
-    // a NON-prop-derived loop (e.g. `Object.entries(props.tags).filter(...)`
-    // feeding a `<Tag>` loop, whose plural `Tags` happens to match a `tags`
-    // prop) is not a subsumption — the prop is a `Record`, the loop array is
-    // a derived slice of tuples, and dropping the prop's own field there
-    // orphans it with no Go field to receive the caller's actual value.
-    const nestedArrayFields = new Set(
-      nestedComponents.filter(n => n.isPropDerived).map(n => `${n.name}s`),
-    )
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
     // Props params (field names tracked to skip duplicate signal assignments).
     // A JSX-declared default (`variant = 'default'`) or signal-side fallback
@@ -2590,20 +2580,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propTypeOverrides: Map<string, string>,
     takenJsonTags: Set<string>,
   ): void {
-    // Nested-component array fields are emitted as typed arrays below, not as
-    // their raw prop; track them (and emitted names) to skip duplicates.
-    // Only a PROP-DERIVED nested loop (`isPropDerived` — the loop ranges
-    // directly over `props.X` / a destructured binding of it, #2627) actually
-    // subsumes a same-named prop: the array field and the prop are then the
-    // same data, just re-shaped into typed rows. A same-name coincidence with
-    // a NON-prop-derived loop (e.g. `Object.entries(props.tags).filter(...)`
-    // feeding a `<Tag>` loop, whose plural `Tags` happens to match a `tags`
-    // prop) is not a subsumption — the prop is a `Record`, the loop array is
-    // a derived slice of tuples, and dropping the prop's own field there
-    // orphans it with no Go field to receive the caller's actual value.
-    const nestedArrayFields = new Set(
-      nestedComponents.filter(n => n.isPropDerived).map(n => `${n.name}s`),
-    )
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
     const propFieldNames = new Set<string>()
 
     for (const param of ir.metadata.propsParams) {
