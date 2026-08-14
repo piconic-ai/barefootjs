@@ -24,6 +24,8 @@ error[BF001]: 'use client' directive required for components with createSignal
 
 ## Directive Errors (BF001–BF003)
 
+<a id="bf001"></a>
+
 ### BF001 — Missing `"use client"` Directive
 
 **Trigger:** Reactive APIs used without `"use client"`.
@@ -46,6 +48,8 @@ import { createSignal } from '@barefootjs/client'
 export function Counter() { ... }
 ```
 
+<a id="bf003"></a>
+
 ### BF003 — Client Component Importing Server Component
 
 **Trigger:** Client component imports from a file without `"use client"`.
@@ -55,6 +59,8 @@ export function Counter() { ... }
 ---
 
 ## Signal Errors (BF011)
+
+<a id="bf011"></a>
 
 ### BF011 — Module-Level Reactive Declaration
 
@@ -99,6 +105,8 @@ export function Counter() {
 ---
 
 ## JSX Errors (BF021–BF023)
+
+<a id="bf021"></a>
 
 ### BF021 — Unsupported JSX Pattern
 
@@ -201,6 +209,8 @@ that a component-body local (`const iso = createdAt.toISOString()`) is NOT a
 workaround: it lowers to a template variable whose value the template
 backend cannot compute, and dies at render time the same way.
 
+<a id="bf023"></a>
+
 ### BF023 — Missing Key in List
 
 **Trigger:** `.map()` loop without `key` prop.
@@ -220,6 +230,8 @@ backend cannot compute, and dies at render time the same way.
 ---
 
 ## Template Adapter Errors (BF101)
+
+<a id="bf101"></a>
 
 ### BF101 — No Template-Language Lowering
 
@@ -242,7 +254,10 @@ function ReactionBar(props: { reactions: Record<string, string[]> }) {
 }
 ```
 
-**Fix:** For the loop-source shape, prefer precomputing the array where it's already computable and passing the **result** as a prop — this keeps full SSR output. Both shapes fall back to `/* @client */`, which compiles clean everywhere but renders nothing for that region at SSR (client-only, materialised at hydration/mount).
+**Escapes** — each verified by a conformance twin that compiles clean on the refusing adapter, listed best-SSR-first:
+
+- **Pass the computed result as a prop** (`prop-precompute`) — available for the loop-source shape, wherever the array is already computable server-side. **Full server render**: the rendered result is present in the server HTML.
+- **`/* @client */`** (`client-directive`) — available for both shapes, and compiles clean on every adapter. **Client-render**: the region is *empty in server HTML until hydration*. That trade is the cost of the escape, not a bug — the twin fixtures pin the empty region in their own committed `expectedHtml`.
 
 ```tsx
 // ✅ Best for the loop-source shape: pass the computed array as a prop
@@ -261,6 +276,8 @@ See [JSX Compatibility](../rendering/jsx-compatibility.md) for the full worked e
 ---
 
 ## Component Errors (BF043–BF044)
+
+<a id="bf043"></a>
 
 ### BF043 — Props Destructuring (Warning)
 
@@ -298,6 +315,8 @@ function Child({ initialCount }: Props) {
 }
 ```
 
+<a id="bf044"></a>
+
 ### BF044 — Signal/Memo Getter Not Called
 
 **Trigger:** Signal/memo getter passed without calling it.
@@ -313,6 +332,8 @@ function Child({ initialCount }: Props) {
 // ✅ Fixed
 <Child count={count()} />
 ```
+
+<a id="bf054"></a>
 
 ### BF054 — Built-in `<Async>` / `<Region>` Used Without Import
 

@@ -994,6 +994,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
           suggestion: {
             message:
               'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+            escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
           },
         })
       }

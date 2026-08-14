@@ -112,20 +112,15 @@ export interface JSXDataPoint {
 /**
  * The kind of escape a fixture's `escapes` twin demonstrates (#2613).
  *
- * Each kind carries a fixed, typed SSR cost — not asserted by this type
- * itself, but the contract every twin of that kind must honor:
- *   - `'client-directive'` — `/* @client *\/` defers the refused expression
- *     to client-only evaluation. `ssrCost: 'client-render'` — the region is
- *     EMPTY in server HTML until hydration. That emptiness is not a bug to
- *     hide: the twin's own committed `expectedHtml` is the honest pin of it.
- *   - `'prop-precompute'` — the refused computation moves to a prop passed
- *     in already-computed, so the adapter never needs to lower the
- *     expression itself. `ssrCost: 'none'` — full SSR, the rendered result
- *     is visible in server HTML.
- *   - `'rewrite'` — the user restructures the source into an equivalent,
- *     in-subset shape (no runtime cost trade at all).
+ * Re-exported from `@barefootjs/jsx` rather than declared here: the
+ * diagnostic that CLAIMS an escape (`ErrorSuggestion.escape`) and the
+ * fixture that DEMONSTRATES one must speak the same union, or claim
+ * verification compares two independently-drifting vocabularies. The
+ * per-kind SSR cost each twin must honor lives with it, in
+ * `ESCAPE_SSR_COST`.
  */
-export type EscapeKind = 'client-directive' | 'prop-precompute' | 'rewrite'
+import type { EscapeKind } from '@barefootjs/jsx'
+export type { EscapeKind }
 
 /**
  * Declares that a refused fixture owes NO escape, by design — not merely

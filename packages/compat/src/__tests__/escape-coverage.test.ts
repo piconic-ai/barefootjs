@@ -105,6 +105,7 @@ import {
   evaluateFixtureEscapeCoverage,
   findMisappliedUnescapable,
   findUnescapableMissingIssue,
+  findUnprovenEscapeClaims,
 } from '../escape-coverage'
 
 const { loaded, skipped } = await loadCompatAdapters()
@@ -179,6 +180,29 @@ describe('escape coverage — every adapter refusal is escapable or self-declare
           const outcome = evaluateFixtureEscapeCoverage(adapter, fixtureId, jsxFixtures)
           if (!outcome.ok) {
             throw new Error(outcome.message)
+          }
+        })
+
+        // Claim verification (#2613 increment 3). Separate test from the
+        // coverage assertion above because the two fail for opposite
+        // reasons and want opposite fixes: that one means "no verified way
+        // out exists" (author a twin, or ledger it); this one means "the
+        // message offers a way out nothing proves" (drop the claim from
+        // `escape`, or author the twin that backs it). Collapsing them
+        // would report the second as the first and send the reader to the
+        // wrong remedy.
+        test(`[${fixtureId}] every structured escape claim is backed by a twin`, () => {
+          const fixture = jsxFixtures.find(f => f.id === fixtureId)
+          if (!fixture) return
+          const { claimed, demonstrated, unproven } = findUnprovenEscapeClaims(adapter, fixture)
+          if (unproven.length > 0) {
+            throw new Error(
+              `${adapter.id}/${fixtureId}: diagnostic claims escape kind(s) [${unproven.join(', ')}] that no twin ` +
+                `demonstrates. Claimed: [${claimed.join(', ')}]; demonstrated by this fixture's \`escapes\`: ` +
+                `[${demonstrated.join(', ')} ]. Either author a twin of that kind and declare it in \`escapes\`, or ` +
+                `remove the kind from the diagnostic's \`suggestion.escape\` (the prose may still mention it — only ` +
+                `the structured field is checked).`,
+            )
           }
         })
       }

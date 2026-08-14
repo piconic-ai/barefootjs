@@ -291,3 +291,40 @@ export function findUnescapableMissingIssue(adapter: LoadedCompatAdapter): strin
     pins.filter(p => p.unescapable && !p.unescapable.issue).map(p => `${fixtureId} (${p.code})`),
   )
 }
+
+/**
+ * Claim verification (#2613 increment 3, #2614's prerequisite): the
+ * escape kinds a DIAGNOSTIC claims, minus the kinds this fixture's twins
+ * actually DEMONSTRATE.
+ *
+ * This is the half that closes the loop literally. `evaluateFixtureEscape-
+ * Coverage` above proves a twin exists and works; this proves the message
+ * a user actually reads is not promising a *different* way out than the
+ * one that was verified. Before the structured `escape` field the two were
+ * connected only by a docstring — a suggestion could offer "pre-compute
+ * and pass as a prop" with nothing anywhere proving that shape compiles,
+ * which is exactly the "refuse loudly with no working way out" failure
+ * #2613 exists to prevent, relocated from the refusal to its wording.
+ *
+ * Prose is deliberately NOT checked: `message` may legitimately offer more
+ * than the structured field (ERB's numbered list opens with an
+ * inline-rewrite option no twin proves). Prose stays authoritative for
+ * humans, `escape` for machines — so a claim reaching a machine consumer
+ * (`bf compat`'s lock, the matrix legend) is one a twin stands behind.
+ */
+export function findUnprovenEscapeClaims(
+  adapter: LoadedCompatAdapter,
+  fixture: JSXFixture,
+): { claimed: string[]; demonstrated: string[]; unproven: string[] } {
+  const errors = compileForCompat(fixture.source, `${fixture.id}.tsx`, adapter.factory(), 'conformance', fixture.components)
+  const claimed = new Set<string>()
+  for (const error of errors) {
+    for (const { kind } of error.suggestion?.escape ?? []) claimed.add(kind)
+  }
+  const demonstrated = new Set((fixture.escapes ?? []).map(e => e.kind))
+  return {
+    claimed: [...claimed].sort(),
+    demonstrated: [...demonstrated].sort(),
+    unproven: [...claimed].filter(kind => !demonstrated.has(kind)).sort(),
+  }
+}

@@ -4388,6 +4388,19 @@
         "text"
       ]
     },
+    "static-array-from-props-precomputed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "static-array-from-props-with-component": {
       "kinds": [
         "binary",
@@ -4415,6 +4428,23 @@
         "literal",
         "member",
         "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-array-from-props-with-component-precomputed": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
       ],
       "axes": [
         "binary:+",
@@ -5210,14 +5240,14 @@
     "array-literal": 80,
     "array-method": 69,
     "arrow": 69,
-    "binary": 90,
-    "call": 214,
+    "binary": 91,
+    "call": 215,
     "conditional": 25,
-    "identifier": 303,
+    "identifier": 305,
     "index-access": 14,
-    "literal": 249,
+    "literal": 250,
     "logical": 45,
-    "member": 167,
+    "member": 169,
     "object-literal": 57,
     "template-literal": 30,
     "unary": 23,
@@ -5251,7 +5281,7 @@
     "binary:!=": 2,
     "binary:!==": 9,
     "binary:*": 10,
-    "binary:+": 20,
+    "binary:+": 21,
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
@@ -5261,7 +5291,7 @@
     "literal:boolean": 49,
     "literal:null": 23,
     "literal:number": 104,
-    "literal:string": 177,
+    "literal:string": 178,
     "logical:&&": 7,
     "logical:??": 39,
     "logical:||": 14,

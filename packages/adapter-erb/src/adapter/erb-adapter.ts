@@ -97,7 +97,7 @@ import {
   BindingScope,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
-import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
+import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
@@ -981,6 +981,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         this._recordExprBF101(
           `Loop array \`${arrayName}\` is a component-scope const computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
           `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
+          [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
         )
       }
     }
@@ -1961,7 +1962,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     return this.stringValueNames.has(name)
   }
 
-  private _recordExprBF101(message: string, reason?: string): void {
+  /**
+   * `escape` is the structured claim (#2613) — populate it only with kinds
+   * a conformance twin actually demonstrates for this shape, since
+   * `escape-coverage.test.ts` checks claims against the twins. The prose
+   * in `reason` may legitimately offer more than the structured field
+   * (ERB's numbered list opens with an inline-rewrite option that no twin
+   * proves); prose stays authoritative for humans, this field for
+   * machines.
+   */
+  private _recordExprBF101(message: string, reason?: string, escape?: ReadonlyArray<{ kind: EscapeKind }>): void {
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -1971,6 +1981,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         message: reason
           ? `${reason}\n\nOptions:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Ruby`
           : 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Ruby',
+        ...(escape ? { escape } : {}),
       },
     })
   }

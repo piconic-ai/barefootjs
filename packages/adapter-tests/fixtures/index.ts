@@ -210,8 +210,10 @@ import { fixture as staticArrayChildren } from './static-array-children'
 import { fixture as staticArrayOfObjectsElementBody } from './static-array-of-objects-element-body'
 import { fixture as staticArrayFromProps } from './static-array-from-props'
 import { fixture as staticArrayFromPropsClient } from './static-array-from-props-client'
+import { fixture as staticArrayFromPropsPrecomputed } from './static-array-from-props-precomputed'
 import { fixture as staticArrayFromPropsWithComponent } from './static-array-from-props-with-component'
 import { fixture as staticArrayFromPropsWithComponentClient } from './static-array-from-props-with-component-client'
+import { fixture as staticArrayFromPropsWithComponentPrecomputed } from './static-array-from-props-with-component-precomputed'
 // Priority 8: CSR conformance
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
@@ -642,8 +644,10 @@ export const jsxFixtures: JSXFixture[] = [
   staticArrayOfObjectsElementBody,
   staticArrayFromProps,
   staticArrayFromPropsClient,
+  staticArrayFromPropsPrecomputed,
   staticArrayFromPropsWithComponent,
   staticArrayFromPropsWithComponentClient,
+  staticArrayFromPropsWithComponentPrecomputed,
   // Priority 8: CSR conformance
   booleanDynamicAttr,
   childComponentInit,
