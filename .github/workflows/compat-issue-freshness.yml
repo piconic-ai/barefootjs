@@ -14,8 +14,22 @@ name: Compat — issue-link freshness
 
 on:
   schedule:
-    # Weekly, Monday 00:17 UTC (off the hour to dodge the scheduler surge).
-    - cron: '17 0 * * 1'
+    # Daily, 00:17 UTC (off the hour to dodge the scheduler surge).
+    #
+    # Was weekly, which made the detection window up to 7 days wide — and
+    # that window was hit: #2321 was auto-closed by #2626's merge two days
+    # after the last Monday run, so the published matrix linked a live
+    # limitation to a completed ticket for five days before the next run
+    # would have caught it. Daily bounds that at one day.
+    #
+    # The run is cheap enough that the frequency isn't a trade: the checker
+    # reads the two committed lock files and makes one API call per DISTINCT
+    # referenced issue (4 today), with no workspace build — well inside the
+    # GITHUB_TOKEN rate limit, and every run so far has finished in 10-65s.
+    # It is also quiet by construction: the alert issue is opened
+    # or updated only when something is stale, and closes itself when
+    # nothing is, so a daily cadence adds no notification noise.
+    - cron: '17 0 * * *'
   workflow_dispatch:
 
 permissions:
