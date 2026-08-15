@@ -410,13 +410,22 @@ function refusalDetailText(cell: FixtureDivergenceCell, fd: FixtureDivergences):
 }
 
 /**
- * Per-fixture detail list: adapters sharing an identical reason string are
- * grouped onto one line, so the common "same divergence everywhere" case
- * reads as a single sentence instead of nine copies.
+ * Per-fixture detail list for the fixtures the table actually shows:
+ * adapters sharing an identical reason string are grouped onto one line, so
+ * the common "same divergence everywhere" case reads as a single sentence
+ * instead of nine copies.
+ *
+ * `fixtureIds` is the table's own row list, NOT every key in `fd.fixtures`.
+ * The two are very different sizes — the table is filtered to fixtures
+ * needing attention (4 of 18 today), and detailing the other 14 spent most
+ * of the page explaining cells the reader was never shown, immediately
+ * after the text told them those fixtures work. Their one useful fact
+ * (which diagnostic the `/* @client *\/` comment silences) is kept, one
+ * line each, by `buildEscapableSummary` below.
  */
-function buildFixtureDetails(fd: FixtureDivergences): string {
+function buildFixtureDetails(fd: FixtureDivergences, fixtureIds: string[]): string {
   const blocks: string[] = []
-  for (const fixtureId of Object.keys(fd.fixtures).sort()) {
+  for (const fixtureId of [...fixtureIds].sort()) {
     const row = fd.fixtures[fixtureId]
     const byText = new Map<string, string[]>()
     for (const adapterId of Object.keys(row).sort()) {
@@ -435,6 +444,41 @@ function buildFixtureDetails(fd: FixtureDivergences): string {
     blocks.push(`- ${heading}${summary}\n${lines.join('\n')}`)
   }
   return blocks.join('\n')
+}
+
+/**
+ * The folded-away half of the corpus, one line per fixture behind a
+ * disclosure: fixtures that work on EVERY adapter, some only with a
+ * `/* @client *\/` comment. They have no row in the table (nothing needs
+ * attention), so per-adapter prose about them is detail for a cell the
+ * reader never saw. What they DO raise — the headline says "14 of those
+ * need a comment", and the reader wants to know which — is answered here:
+ * the fixture, how many adapters need the comment there, and what it
+ * silences. Collapsed rather than dropped so the answer stays on the page
+ * without costing the four fixtures that need attention their prominence.
+ */
+function buildEscapableSummary(fd: FixtureDivergences, fixtureIds: string[]): string {
+  if (fixtureIds.length === 0) return ''
+  const lines = [...fixtureIds].sort().map((id) => {
+    const row = fd.fixtures[id]
+    // Only refusing adapters have a cell at all — a clean adapter is absent
+    // — so the row's own size IS "how many adapters need the comment".
+    const adapterIds = Object.keys(row)
+    const codes = [...new Set(adapterIds.flatMap((a) => row[a].codes ?? []))].sort()
+    const doc = fd.docs?.[id]
+    const label = doc?.url ? `[\`${escapeCell(id)}\`](${doc.url})` : `\`${escapeCell(id)}\``
+    const codeLinks = codes.map((c) => `[\`${c}\`](${errorCodeDocLink(c)})`).join(', ')
+    const adapterCount = `${adapterIds.length} adapter${adapterIds.length === 1 ? '' : 's'}`
+    return `- ${label} — ${adapterCount}, suppressing ${codeLinks}`
+  })
+  return `
+<details>
+<summary>The ${fixtureIds.length} fixtures that need a <code>/* @client */</code> comment — which diagnostic each silences</summary>
+
+${lines.join('\n')}
+
+</details>
+`
 }
 
 /**
@@ -513,10 +557,12 @@ ${[header, divider, ...rows].join('\n')}
 **${NOT_OWED_MARKER} Doesn't work** — by design, not a gap
 
 - \`${NOT_OWED_MARKER}${notOwedExample}\` — a code led by \`${NOT_OWED_MARKER}\`: refused on purpose, no escape will ever be offered (why: in the details below)
-
+${buildEscapableSummary(fd, fullyEscapableIds)}
 ### Divergence details
 
-${buildFixtureDetails(fd)}
+Per adapter, for the ${needsAttentionIds.length} fixtures in the table above.
+
+${buildFixtureDetails(fd, needsAttentionIds)}
 `
 }
 
