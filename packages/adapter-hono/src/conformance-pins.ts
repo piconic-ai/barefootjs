@@ -9,6 +9,13 @@
  * of `adapter.generate()` — even Hono's native JS evaluation never sees
  * the call (#2273). Consumed by this package's own conformance test (as
  * `expectedDiagnostics`) and by `bf compat` (issue-URL attribution).
+ *
+ * `date-method-uncatalogued`'s pin here is not "Hono copies DSL caution" —
+ * a Hono-specific carve-out was evaluated and rejected on independently
+ * verified grounds (hydrate-init re-evaluates the expression against a
+ * JSON-de-riched receiver; see the fixture's own docstring and the #2356
+ * decision comment). This is the one BF021 fixture kept pinned on every
+ * adapter including this one, deliberately.
  */
 
 import type { ConformancePins } from '@barefootjs/jsx'
