@@ -458,13 +458,14 @@ function buildFixtureSection(): string {
 
 The component matrix above is **compile-time only**. This section answers the question that actually matters: **does the construct work**, on each adapter's real backend (Go, Ruby, Perl, PHP, Python, Rust), byte-compared against the Hono reference — not just whether it compiles. A construct works either **as written** (\`✓\`) or with a documented \`/* @client */\` comment (\`✓${ESCAPABLE_MARKER}\`, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each.
 
-The table lists only fixtures that need attention: at least one adapter where nothing works today. A bare diagnostic code means the adapter refuses the construct with no escape yet (tracked debt, linked to its known-limitation issue). A code marked \`${NOT_OWED_MARKER}\` means no escape is owed there, by design — authoring one would defeat the fixture's own purpose (see its detail below). A \`≠\` means the fixture compiles clean but renders differently from the Hono reference. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` on one column and a code needing attention on another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
+The table lists only fixtures that need attention: at least one adapter where nothing works today. Each cell's meaning is in the legend below it; diagnostic codes link to their known-limitation issue, and the reason behind a \`${NOT_OWED_MARKER}\` is in that fixture's detail entry. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` in one column and a code needing attention in another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
 
 **${worksEverywhereCount} / ${fd.totalFixtures} fixtures work on every adapter** (${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). The ${needsAttentionIds.length} below need attention:
 
 ${[header, divider, ...rows].join('\n')}
 
-\`✓\` works as written · \`✓${ESCAPABLE_MARKER}\` works, but needs a \`/* @client */\` comment (a verified escape twin compiles clean here — see the detail list below for which diagnostic it suppresses) · \`≠\` compiles clean but the rendered output diverges (skipped in that adapter's conformance suite until fixed) · a bare diagnostic code means the adapter refuses the shape loudly at build time with no escape yet (tracked debt) · \`${NOT_OWED_MARKER}\` after a code means no escape is owed there, by design.
+- **Works** — \`✓\` as written · \`✓${ESCAPABLE_MARKER}\` with a \`/* @client */\` comment (which diagnostic that silences is in the details below)
+- **Doesn't work** — \`≠\` builds, but renders differently from the Hono reference · a diagnostic code: build error, fix tracked · a code with \`${NOT_OWED_MARKER}\`: build error, by design — no escape planned
 
 ### Divergence details
 
