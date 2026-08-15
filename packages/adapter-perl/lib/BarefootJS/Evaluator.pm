@@ -1,5 +1,5 @@
 package BarefootJS::Evaluator;
-our $VERSION = "0.31.5";
+our $VERSION = "0.31.6";
 use strict;
 use warnings;
 use utf8;
