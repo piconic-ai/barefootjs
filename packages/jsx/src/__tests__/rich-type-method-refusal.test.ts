@@ -182,6 +182,31 @@ describe('rich-type method-call refusal — fires (BF021)', () => {
     expect(errors[0].severity).toBe('error')
     expect(errors[0].suggestion?.message).toContain('@client')
   })
+
+  // Zero-arg toLocaleDateString() is BF021's one case where the refusal is
+  // deliberately ADAPTER-UNIFORM rather than a DSL-adapter-only gap (unlike
+  // BF101's "JS-runtime executes verbatim" carve-out): `TestAdapter extends
+  // JsxAdapter` (adapter-hono's own base class) here, and it still refuses.
+  // See #2356's decision comment and `date-method-uncatalogued.ts`'s
+  // docstring — a JS-runtime adapter's hydrate leg re-evaluates a
+  // prop-derived expression against a JSON-de-riched receiver (a `Date`
+  // prop arrives as its ISO string), so "the SSR runtime can evaluate the
+  // call" does not make the compiled artifact sound; the compiler doesn't
+  // special-case this adapter class here on purpose.
+  test('zero-arg toLocaleDateString() refuses even on a JsxAdapter (#2356 — adapter-uniform by design)', () => {
+    const errors = bf021(`
+      export function Foo({ createdAt }: { createdAt: Date }) {
+        return <div>{createdAt.toLocaleDateString()}</div>
+      }
+    `)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toContain("'.toLocaleDateString()'")
+    expect(errors[0].message).toContain("'createdAt'")
+    // The suggestion for this specific method+type points at the
+    // literal-locale/timeZone escape (#2324) ahead of the generic
+    // @client-or-precompute fallback every other BF021 carries.
+    expect(errors[0].suggestion?.message).toContain('literal locale')
+  })
 })
 
 describe('rich-type method-call refusal — silent (no BF021)', () => {
