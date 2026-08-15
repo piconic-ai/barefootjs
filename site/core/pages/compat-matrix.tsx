@@ -432,6 +432,35 @@ function buildFixtureDetails(fd: FixtureDivergences): string {
   return blocks.join('\n')
 }
 
+/**
+ * A representative diagnostic code for the legend's examples, read out of
+ * the table's OWN cells rather than hardcoded. The legend leads each line
+ * with the literal thing a reader sees in a cell (`BF021`, `BF021${NOT_OWED_MARKER}`) — a
+ * hardcoded example goes stale silently the moment the pinned code moves,
+ * naming a code that appears nowhere above it. Falls back to the bare
+ * shape when no cell is in that state, which is the honest answer: the
+ * state exists, nothing in this table is currently in it.
+ */
+function exampleRefusalCode(
+  fd: FixtureDivergences,
+  fixtureIds: string[],
+  adapters: string[],
+  want: 'debt' | 'not-owed',
+): string {
+  for (const id of fixtureIds) {
+    for (const adapter of adapters) {
+      const cell = fd.fixtures[id]?.[adapter]
+      if (!cell || cell.kind !== 'refusal') continue
+      // An absent escape state is debt by the same reading `fixtureCellMarkdown`
+      // gives it — a refusal with no verified escape and no declared reason.
+      if ((cell.escape?.state ?? 'debt') !== want) continue
+      const code = cell.codes?.[0]
+      if (code) return code
+    }
+  }
+  return 'BF…'
+}
+
 /** The render-conformance section: fixture × adapter table (needing-attention rows only) + detail list. */
 function buildFixtureSection(): string {
   const fd = compat.fixtureDivergences
@@ -443,6 +472,8 @@ function buildFixtureSection(): string {
   const adapters = compat.adapters
   const cleanCount = fd.totalFixtures - allFixtureIds.length
   const worksEverywhereCount = cleanCount + fullyEscapableIds.length
+  const debtExample = exampleRefusalCode(fd, needsAttentionIds, adapters, 'debt')
+  const notOwedExample = exampleRefusalCode(fd, needsAttentionIds, adapters, 'not-owed')
 
   const header = `| Fixture | ${adapters.join(' | ')} |`
   const divider = `| --- | ${adapters.map(() => '---').join(' | ')} |`
@@ -466,14 +497,17 @@ ${[header, divider, ...rows].join('\n')}
 
 **Works**
 
-- \`✓\` as written
-- \`✓${ESCAPABLE_MARKER}\` with a \`/* @client */\` comment (the details below say which diagnostic it silences)
+- \`✓\` — as written
+- \`✓${ESCAPABLE_MARKER}\` — with a \`/* @client */\` comment (the details below say which diagnostic it silences)
+
+**TODO** (tracked, fix planned)
+
+- \`≠\` — compiles, but renders differently from the Hono reference
+- \`${debtExample}\` — a diagnostic code: build error, no escape yet (the code links to its tracking issue)
 
 **Doesn't work**
 
-- \`≠\` builds, but renders differently from the Hono reference
-- a diagnostic code — build error, fix tracked
-- a code with \`${NOT_OWED_MARKER}\` — build error, by design (no escape planned)
+- \`${notOwedExample}${NOT_OWED_MARKER}\` — a code with \`${NOT_OWED_MARKER}\`: refused by design, no escape will be offered (why: in the details below)
 
 ### Divergence details
 
