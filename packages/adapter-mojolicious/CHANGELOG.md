@@ -1,5 +1,41 @@
 # @barefootjs/mojolicious
 
+## 0.31.6
+
+### Patch Changes
+
+- 6469e4c: `ConformancePin` gains an optional `unescapable?: { issue: string }` field, and every adapter's own `conformance-pins.ts` now declares it where a refusal has no verified escape yet (#2613).
+
+  This is the declaration an adapter uses to say "I refuse this fixture and there is no working `/* @client */` (or other) escape for it yet, tracked here." It matters for adapter authors: the escape-coverage floor test derives its entire domain from `loadCompatAdapters()`, so **a new adapter package declares its own escape debt in its own `conformance-pins.ts` and needs no change to `@barefootjs/compat`**. Previously the equivalent ledger was a set of hardcoded `"adapterId/fixtureId"` strings inside a core test, which would have required editing core to land a community adapter.
+
+  No runtime or emission behavior changes; this is a declaration surface only.
+
+- 2004fc3: Fix a real SSR/CSR divergence in the compiled client JS for a bare (non-loop) `/* @client */` text expression: the standalone CSR template — `generateCsrTemplateWithOpts` in `packages/jsx/src/ir-to-client-js/html-template.ts`, used for `registerTemplate()`'s CSR fallback — never consulted `IRExpression.markerless` before emitting the `<!--bf:sN-->…<!--/-->` marker pair, so it kept the markers even where `client-only-elision.ts` had already decided (before either SSR or CSR generation runs) that the whole marker pair could be dropped. SSR already elided the marker pair correctly for this shape; a fresh (non-hydrating) CSR mount did not, and a hydrating mount claiming via `elidedPath` also embedded the extra dead marker comments. `generateCsrTemplateWithOpts` now emits nothing for a markerless `clientOnly && slotId` expression, matching SSR byte-for-byte and matching what `irToHtmlTemplate`'s own `markerless` check already did for its (different) domain (#2617).
+
+  **Emitted-output effect**: any bare, non-loop `/* @client */` text expression compiled today loses two marker comments from its compiled client JS template (e.g. `<strong bf="s1"><!--bf:s0--><!--/--></strong>` becomes `<strong bf="s1"></strong>`). This is strictly a byte-size/parity fix — no behavioral change for hydration or fresh-mount rendering, since the claim plan already resolves this position via a precomputed child-index path (`elidedPath`), not a marker scan.
+
+  `@barefootjs/jsx`'s escape-coverage-adjacent adapter packages (`blade`, `erb`, `go-template`, `jinja`, `mojolicious`, `rust`, `twig`, `xslate`) each drop `unescapable: { issue: '.../2613' }` from seven `conformance-pins.ts` entries (`fill-unsupported`, `find-typeof-predicate`, `some-typeof-predicate`, `every-typeof-predicate`, `reduce-typeof-body`, `reduce-right-typeof-body`, `flatmap-typeof-projection`) now that each fixture's `/* @client */` escape twin is a verified, CSR-conformant escape — declaration-only, no runtime behavior change on these packages themselves (their own SSR output was never affected by this bug).
+
+- a2e5540: `ErrorSuggestion` gains an optional `escape?: ReadonlyArray<{ kind: EscapeKind }>` — the structured half of a refusal's suggestion (#2613, #2614). `EscapeKind` and `ESCAPE_SSR_COST` are exported from `@barefootjs/jsx` alongside it.
+
+  This is what lets a tool answer "how does the user get out of this refusal?" without parsing prose. `suggestion.message` stays authoritative for humans — several sites have site-specific wording no enum should flatten — while `escape` is authoritative for machines, and `ESCAPE_SSR_COST` is the one place the trade each kind makes is defined (`'client-directive'` renders nothing at SSR until hydration; `'prop-precompute'` and `'rewrite'` keep full server output). Consumers surfacing an escape should surface its cost from that map rather than restating it, so the trade cannot be quietly dropped on the way to a user.
+
+  The field is additive and one-way: it is populated at the BF101 refusal sites behind #2320/#2321 in every DSL adapter, and absent elsewhere. **Absent means "not declared yet", never "no escape exists"** — do not infer unescapability from its absence.
+
+  Adapter authors: what you claim here is checked. `escape-coverage.test.ts` verifies that every kind a diagnostic claims is demonstrated by a conformance twin that actually compiles clean on the refusing adapter, so a claim can no longer outrun its proof.
+
+  No emission or runtime behavior changes.
+
+- 93f83cc: Removes the `unescapable` declaration from each adapter's `map-array-builder-body` / `map-array-builder-escaping` conformance pins (#2613). These two fixtures still refuse the imperative array-builder `.map()` body with BF021 on every DSL adapter, but the `/* @client */` escape is now verified with an executable twin (`map-array-builder-body-client`) rather than merely asserted in a docstring: it compiles clean and produces zero diagnostics on all 8 DSL adapters, and its CSR template renders the empty host correctly.
+
+  No runtime or emission behavior changes — the BF021 refusal is unchanged; only the escape-coverage declaration is corrected from "owed but unverified" to "verified."
+
+- 5ad9418: Removes the `unescapable` declaration from each adapter's `static-array-from-props` / `static-array-from-props-with-component` conformance pins (#2321). These two fixtures still refuse the props-derived, function-scope computed-const loop array with BF101 on every DSL adapter — no DSL template adapter can bind `Object.entries(props.x ?? {}).filter(...)` as a template variable, and that SSR capability gap is unchanged. The `/* @client */` escape is now verified with executable twins (`static-array-from-props-client`, `static-array-from-props-with-component-client`) rather than merely asserted: both are byte-for-byte copies of their bases (plus the one `/* @client */` insertion) that compile clean with zero diagnostics on all 8 DSL adapters, and their CSR templates render the empty host correctly with the loop deferred to the browser.
+
+  No runtime or emission behavior changes — the BF101 refusal is unchanged; only the escape-coverage declaration is corrected from "owed but unverified" to "verified." #2321 stays open as the underlying SSR capability gap.
+
+  - @barefootjs/shared@0.31.6
+
 ## 0.31.5
 
 ### Patch Changes
