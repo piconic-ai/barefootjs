@@ -79,7 +79,7 @@ export const FIXTURE_DIVERGENCES_NOTE =
   'most refusals have one). Fixtures absent from the table below work on every adapter — most as written, ' +
   'some via that documented escape; the headline says how many of each. ' +
   'Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, ' +
-  'a code marked ‡ owes no escape at all (by design), and ≠ means the fixture compiles clean but its ' +
+  'a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its ' +
   'rendered output diverges from the reference.'
 
 /** A fixture-corpus row's human-readable description + link to its source file. */
@@ -260,9 +260,17 @@ export function formatCompatJson(report: CompatReport): string {
  * yet.
  */
 export const ESCAPABLE_MARKER = '†'
-export const NOT_OWED_MARKER = '‡'
+export const NOT_OWED_MARKER = '✗'
 
-/** The marker suffix for one refusal cell's escape state (`''` when absent or `'debt'`). */
+/**
+ * The marker character for one refusal cell's escape state (`''` when
+ * absent or `'debt'`). Position differs by state and is applied by the
+ * caller: `ESCAPABLE_MARKER` TRAILS the works-checkmark (`✓†`), while
+ * `NOT_OWED_MARKER` LEADS its code (`✗BF021`) — the by-design/tracked-debt
+ * distinction is the sharpest one in the table, and a trailing mark put it
+ * one small glyph away from the code it negated, where a scanning reader
+ * meets it last.
+ */
 export function escapeMarker(escape: FixtureEscapeState | undefined): string {
   if (!escape) return ''
   if (escape.state === 'escapable') return ESCAPABLE_MARKER
@@ -276,7 +284,7 @@ export function escapeMarker(escape: FixtureEscapeState | undefined): string {
  * refusal with a verified working escape (the fixture WORKS, with a
  * `/* @client *\/` comment — no diagnostic code shown, since nothing is
  * actually broken here; the code it suppresses lives in the per-fixture
- * detail list instead), and the diagnostic code (plus `${NOT_OWED_MARKER}`
+ * detail list instead), and the diagnostic code (led by `${NOT_OWED_MARKER}`
  * when the escape is declared not owed) for every other refusal. Shared
  * shape between the CLI's `--md`/`--render` output and the docs page (the
  * latter reimplements this rather than importing it — `site/core` has no
@@ -286,7 +294,9 @@ export function fixtureCellText(cell: FixtureDivergenceCell | undefined): string
   if (!cell) return '✓'
   if (cell.kind === 'render') return '≠'
   if (cell.escape?.state === 'escapable') return `✓${ESCAPABLE_MARKER}`
-  return `${(cell.codes ?? []).join(', ')}${escapeMarker(cell.escape)}`
+  // Escapable returned above, and `'debt'` marks nothing — so the only
+  // marker that can reach here is `NOT_OWED_MARKER`, which leads its code.
+  return `${escapeMarker(cell.escape)}${(cell.codes ?? []).join(', ')}`
 }
 
 /**
@@ -379,12 +389,23 @@ export function formatCompatMarkdown(report: CompatReport): string {
       const cellText = report.adapters.map(id => fixtureCellText(row[id]))
       lines.push(`| ${fixtureId} | ${cellText.join(' | ')} |`)
     }
+    // Grouped by the question a reader arrives with — does this work? —
+    // with the tracked half split out from the permanent one, and each
+    // line led by the literal cell contents. Kept in step with the docs
+    // page's legend (`site/core/pages/compat-matrix.tsx`), which this
+    // table is meant to read identically to.
     lines.push('')
-    lines.push('`✓` works as written · `✓†` works, but needs a `/* @client */` comment (a verified escape')
-    lines.push('twin compiles clean on that adapter) · `≠` compiles clean but the rendered output diverges')
-    lines.push('from the Hono reference (see each adapter package’s `render-divergences.ts` for the')
-    lines.push('per-fixture rationale) · a bare diagnostic code means refused, no escape yet (tracked debt) ·')
-    lines.push('`‡` after a code means refused, no escape owed, by design.')
+    lines.push(`**✓ Works** — \`✓\` as written · \`✓${ESCAPABLE_MARKER}\` with a \`/* @client */\` comment`)
+    lines.push('(a verified escape twin compiles clean on that adapter).')
+    lines.push('')
+    lines.push('**☐ TODO** (fix planned, issue linked) — `≠` compiles clean but the rendered output')
+    lines.push('diverges from the Hono reference (see each adapter package’s `render-divergences.ts`')
+    lines.push('for the per-fixture rationale) · a bare diagnostic code means refused, no escape yet.')
+    lines.push('')
+    lines.push(
+      `**${NOT_OWED_MARKER} Doesn't work** (by design, not a gap) — a code led by ` +
+        `\`${NOT_OWED_MARKER}\` (e.g. \`${NOT_OWED_MARKER}BF021\`) is refused on purpose, no escape owed.`,
+    )
   }
 
   return lines.join('\n') + '\n'

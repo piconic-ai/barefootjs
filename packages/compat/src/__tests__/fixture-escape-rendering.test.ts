@@ -56,7 +56,7 @@ describe('escapeMarker — the three escape states render as three distinct thin
     expect(escapeMarker({ state: 'escapable', twin: 'some-fixture-client' })).toBe(ESCAPABLE_MARKER)
   })
 
-  test('not-owed renders the double-dagger marker', () => {
+  test('not-owed renders the by-design marker', () => {
     expect(escapeMarker({ state: 'not-owed', reason: 'because' })).toBe(NOT_OWED_MARKER)
   })
 
@@ -101,10 +101,29 @@ describe('fixtureCellText — the check mark answers "does it work?" first', () 
     expect(fixtureCellText({ kind: 'refusal', codes: ['BF101'], escape: { state: 'debt' } })).toBe('BF101')
   })
 
-  test('a not-owed refusal keeps its diagnostic code, marked with the double dagger', () => {
-    expect(
-      fixtureCellText({ kind: 'refusal', codes: ['BF021'], escape: { state: 'not-owed', reason: 'because' } }),
-    ).toBe(`BF021${NOT_OWED_MARKER}`)
+  // The marker LEADS the code rather than trailing it: "tracked debt" vs
+  // "refused by design" is the sharpest distinction in the table, and it
+  // has to be visible at the cell's first character — a trailing mark left
+  // `BF021` and `BF021‡` one small glyph apart, differing only where a
+  // scanning reader looks last.
+  test('a not-owed refusal keeps its diagnostic code, led by the by-design marker', () => {
+    const text = fixtureCellText({
+      kind: 'refusal',
+      codes: ['BF021'],
+      escape: { state: 'not-owed', reason: 'because' },
+    })
+    expect(text).toBe(`${NOT_OWED_MARKER}BF021`)
+    expect(text.startsWith(NOT_OWED_MARKER)).toBe(true)
+  })
+
+  test('a debt cell and a not-owed cell on the same code differ at their FIRST character', () => {
+    const debt = fixtureCellText({ kind: 'refusal', codes: ['BF021'], escape: { state: 'debt' } })
+    const notOwed = fixtureCellText({
+      kind: 'refusal',
+      codes: ['BF021'],
+      escape: { state: 'not-owed', reason: 'because' },
+    })
+    expect(debt[0]).not.toBe(notOwed[0])
   })
 
   test('an out-of-domain refusal (no escape field) keeps its bare code, same as debt', () => {
@@ -261,7 +280,7 @@ describe('buildFixtureDivergences — real corpus, real adapters (#2613)', () =>
 
     const notOwedText = fixtureCellText(notOwed!.cell)
     const escapableText = fixtureCellText(escapable!.cell)
-    expect(notOwedText).toBe(`${(notOwed!.cell.codes ?? []).join(', ')}${NOT_OWED_MARKER}`)
+    expect(notOwedText).toBe(`${NOT_OWED_MARKER}${(notOwed!.cell.codes ?? []).join(', ')}`)
     expect(escapableText).toBe(`✓${ESCAPABLE_MARKER}`)
     expect(escapableText).not.toContain(notOwedText)
     expect(notOwedText).not.toBe(escapableText)
