@@ -201,15 +201,20 @@ function escapeMarkdownProse(text: string): string {
  * exists the fixture works, so the code moves out of the cell into the
  * detail list below. `'debt'` is deliberately unmarked: a bare `BF101`
  * means refused, no escape yet.
+ *
+ * `NOT_OWED_MARKER` leads its code (`✗BF021`) rather than trailing it. The
+ * distinction it carries is the sharpest one on the page — a bare code is
+ * tracked work with a fix planned, a marked one is a permanent, deliberate
+ * refusal — and as a trailing `‡` it sat one small glyph away from the
+ * code it negated, at the end, where a scanning reader meets it last. A
+ * leading `✗` separates the two at the first character instead.
  */
 const ESCAPABLE_MARKER = '†'
-const NOT_OWED_MARKER = '‡'
+const NOT_OWED_MARKER = '✗'
 
-function escapeMarker(escape: FixtureEscapeState | undefined): string {
-  if (!escape) return ''
-  if (escape.state === 'escapable') return ESCAPABLE_MARKER
-  if (escape.state === 'not-owed') return NOT_OWED_MARKER
-  return ''
+/** The marker LEADING a not-owed refusal's code (`''` for every other state). */
+function notOwedPrefix(escape: FixtureEscapeState | undefined): string {
+  return escape?.state === 'not-owed' ? NOT_OWED_MARKER : ''
 }
 
 /**
@@ -340,7 +345,7 @@ function buildLegend(): string {
  * verified working escape (it WORKS, given a `/* @client *\/` comment — no
  * diagnostic code shown; the suppressed code lives in the detail list
  * below), `≠` for a render divergence, and the diagnostic code (linked to
- * its tracking issue, plus \`${NOT_OWED_MARKER}\` when declared not owed)
+ * its tracking issue, led by \`${NOT_OWED_MARKER}\` when declared not owed)
  * for every other refusal — the two states that still mean "does not
  * work".
  */
@@ -352,7 +357,7 @@ function fixtureCellMarkdown(cell: FixtureDivergenceCell | undefined): string {
   const firstIssue = cell.issues?.[0]
   const label = codes.join(', ') || 'refused'
   const linked = firstIssue ? `[${label}](${firstIssue})` : label
-  return `${linked}${escapeMarker(cell.escape)}`
+  return `${notOwedPrefix(cell.escape)}${linked}`
 }
 
 /**
@@ -489,25 +494,25 @@ function buildFixtureSection(): string {
 
 The component matrix above is **compile-time only**. This section answers the question that actually matters: **does the construct work**, on each adapter's real backend (Go, Ruby, Perl, PHP, Python, Rust), byte-compared against the Hono reference — not just whether it compiles. A construct works either **as written** (\`✓\`) or with a documented \`/* @client */\` comment (\`✓${ESCAPABLE_MARKER}\`, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each.
 
-The table lists only fixtures that need attention: at least one adapter where nothing works today. Each cell's meaning is in the legend below it; diagnostic codes link to their known-limitation issue, and the reason behind a \`${NOT_OWED_MARKER}\` is in that fixture's detail entry. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` in one column and a code needing attention in another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
+The table lists only fixtures that need attention: at least one adapter where nothing works today. Each cell's meaning is in the legend below it; diagnostic codes link to their known-limitation issue, and the reason a code is led by \`${NOT_OWED_MARKER}\` is in that fixture's detail entry. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` in one column and a code needing attention in another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
 
 **${worksEverywhereCount} / ${fd.totalFixtures} fixtures work on every adapter** (${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). The ${needsAttentionIds.length} below need attention:
 
 ${[header, divider, ...rows].join('\n')}
 
-**Works**
+**✓ Works**
 
 - \`✓\` — as written
 - \`✓${ESCAPABLE_MARKER}\` — with a \`/* @client */\` comment (the details below say which diagnostic it silences)
 
-**TODO** (tracked, fix planned)
+**☐ TODO** — fix planned, issue linked
 
 - \`≠\` — compiles, but renders differently from the Hono reference
-- \`${debtExample}\` — a diagnostic code: build error, no escape yet (the code links to its tracking issue)
+- \`${debtExample}\` — a bare diagnostic code: build error, no escape yet
 
-**Doesn't work**
+**${NOT_OWED_MARKER} Doesn't work** — by design, not a gap
 
-- \`${notOwedExample}${NOT_OWED_MARKER}\` — a code with \`${NOT_OWED_MARKER}\`: refused by design, no escape will be offered (why: in the details below)
+- \`${NOT_OWED_MARKER}${notOwedExample}\` — a code led by \`${NOT_OWED_MARKER}\`: refused on purpose, no escape will ever be offered (why: in the details below)
 
 ### Divergence details
 
