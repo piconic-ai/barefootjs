@@ -464,8 +464,16 @@ The table lists only fixtures that need attention: at least one adapter where no
 
 ${[header, divider, ...rows].join('\n')}
 
-- **Works** — \`✓\` as written · \`✓${ESCAPABLE_MARKER}\` with a \`/* @client */\` comment (which diagnostic that silences is in the details below)
-- **Doesn't work** — \`≠\` builds, but renders differently from the Hono reference · a diagnostic code: build error, fix tracked · a code with \`${NOT_OWED_MARKER}\`: build error, by design — no escape planned
+**Works**
+
+- \`✓\` as written
+- \`✓${ESCAPABLE_MARKER}\` with a \`/* @client */\` comment (the details below say which diagnostic it silences)
+
+**Doesn't work**
+
+- \`≠\` builds, but renders differently from the Hono reference
+- a diagnostic code — build error, fix tracked
+- a code with \`${NOT_OWED_MARKER}\` — build error, by design (no escape planned)
 
 ### Divergence details
 
