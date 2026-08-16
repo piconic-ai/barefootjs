@@ -71,6 +71,30 @@ export const HOST_RICH_TYPE_NAMES: ReadonlySet<string> = new Set([
  * wrapping the receiver in `new T(...)` — `{/* @client *\/ new
  * Date(createdAt).getUTCFullYear()}` — is a genuine, hydrate-safe escape
  * for this subset only.
+ *
+ * A GENERAL typed-prop revival mechanism across the rest of
+ * `HOST_RICH_TYPE_NAMES` — a `bf-p` wire envelope reviving `Map`/`Set`/
+ * `URLSearchParams`/`RegExp`/`BigInt` the way `Date`/`URL` revive via their
+ * own constructor — was evaluated and DEFERRED (#2642), not rejected on
+ * technical grounds. Two decisions worth recording here so a future
+ * contributor doesn't re-litigate them from scratch:
+ *   - A value-shaped sentinel envelope (`{ $map: [[k,v],...] }`, detected
+ *     by `parseProps`) was rejected: the type signal lives in the VALUE, so
+ *     a user prop that happens to share the sentinel's shape would be
+ *     silently misrevived on every adapter, not just ones that emit
+ *     envelopes — the only sound fix is a user-data escaping rule
+ *     implemented in all 9 adapters' serializers, which is the actual
+ *     protocol cost, paid by every payload, not just rich-typed ones.
+ *   - If ever built, the sanctioned shape is TYPE-DIRECTED USE-SITE
+ *     REVIVAL — the generalization of `date()` (`packages/client/src/
+ *     runtime/date.ts`): plain-JSON canonical wire shapes per type, with
+ *     the compiler (which already resolves prop types here) emitting a
+ *     revival call at each prop's client-JS extraction site, not a
+ *     value-sniffing `parseProps` reviver.
+ * `WeakMap` / `WeakSet` / `Promise` / `Symbol` / `Function` are excluded
+ * from that future scope permanently, independent of mechanism — they are
+ * structurally impossible to serialize (non-enumerable by spec, not data,
+ * or identity-is-the-semantics), not merely unrevived today.
  */
 export const JSON_REVIVABLE_RICH_TYPE_NAMES: ReadonlySet<string> = new Set(['Date', 'URL'])
 

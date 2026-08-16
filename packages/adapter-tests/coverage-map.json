@@ -1614,6 +1614,40 @@
         "text"
       ]
     },
+    "date-catalogued-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "date-client-attr-catalogued": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "date-client-catalogued": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-client-revival": {
       "kinds": [
         "call",
@@ -5252,13 +5286,13 @@
     "array-method": 69,
     "arrow": 69,
     "binary": 91,
-    "call": 216,
+    "call": 219,
     "conditional": 25,
-    "identifier": 305,
+    "identifier": 308,
     "index-access": 14,
     "literal": 250,
     "logical": 45,
-    "member": 170,
+    "member": 173,
     "object-literal": 57,
     "template-literal": 30,
     "unary": 23,

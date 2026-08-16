@@ -282,10 +282,28 @@ function lowerDateCallsInReactiveExpr(expr: string, matcher: LoweringMatcher | n
   return restore(result)
 }
 
+/**
+ * Bind both catalogued-lowering rewrites (#2292 Date accessors, #2324
+ * literal-locale `toLocaleDateString`) once per emit pass, composed into a
+ * single `(expr) => expr` function — identity when this context carries no
+ * Date evidence (`ctx.propsType` unset). Shared by every reactive-emission
+ * site so a catalogued method call re-evaluated at hydrate routes through
+ * the same runtime helper the static template lowering uses, instead of
+ * splicing the raw call verbatim against a JSON-de-riched receiver
+ * (#2640/#2641 — the `/* @client *\/`-expression and reactive-attribute
+ * sites used to skip this; `emitDynamicTextUpdates` below is the original,
+ * always-correct site this generalizes).
+ */
+function makeCataloguedCallLowerer(ctx: ClientJsContext): (expr: string) => string {
+  const dateMatcher = getReactiveDateLoweringMatcher(ctx)
+  const toLocaleMatcher = getReactiveToLocaleMatcher(ctx)
+  if (!dateMatcher && !toLocaleMatcher) return (expr) => expr
+  return (expr) => lowerToLocaleCallsInReactiveExpr(lowerDateCallsInReactiveExpr(expr, dateMatcher), toLocaleMatcher)
+}
+
 /** Emit createEffect blocks that update text nodes for reactive expressions. */
 export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): void {
-  const dateLoweringMatcher = getReactiveDateLoweringMatcher(ctx)
-  const toLocaleMatcher = getReactiveToLocaleMatcher(ctx)
+  const lower = makeCataloguedCallLowerer(ctx)
   // Group elements by expression to consolidate effects with same dependencies
   const byExpression = new Map<string, typeof ctx.dynamicElements>()
   for (const elem of ctx.dynamicElements) {
@@ -297,10 +315,7 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
   }
 
   for (const [rawExpr, elems] of byExpression) {
-    const expr = lowerToLocaleCallsInReactiveExpr(
-      lowerDateCallsInReactiveExpr(rawExpr, dateLoweringMatcher),
-      toLocaleMatcher,
-    )
+    const expr = lower(rawExpr)
     // Separate conditional vs non-conditional elements
     const conditionalElems = elems.filter(e => e.insideConditional)
     const normalElems = elems.filter(e => !e.insideConditional)
@@ -380,6 +395,7 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
  * already known, so there's nothing to disambiguate from other content).
  */
 export function emitClientOnlyExpressions(lines: string[], ctx: ClientJsContext): void {
+  const lower = makeCataloguedCallLowerer(ctx)
   for (const elem of ctx.clientOnlyElements) {
     // Slot unification Step B: `elem.elidedPath`, when present, was proven
     // safe by `client-only-elision.ts` before this pass ran — use the real
@@ -391,7 +407,7 @@ export function emitClientOnlyExpressions(lines: string[], ctx: ClientJsContext)
     lines.push(`  // @client: ${elem.slotId}`)
     lines.push(`  { const ${writer} = lazySlots(__scope, ${claimPlanLiteral(slots)})`)
     lines.push(`  createEffect(() => {`)
-    lines.push(`    ${writer}('${elem.slotId}', ${elem.expression})`)
+    lines.push(`    ${writer}('${elem.slotId}', ${lower(elem.expression)})`)
     lines.push(`  }${bindingIdArg(ctx, elem.slotId)}) }`)
     lines.push('')
   }
@@ -400,6 +416,7 @@ export function emitClientOnlyExpressions(lines: string[], ctx: ClientJsContext)
 /** Emit createEffect blocks that sync reactive attribute values (class, value, checked, etc.). */
 export function emitReactiveAttributeUpdates(lines: string[], ctx: ClientJsContext): void {
   if (ctx.reactiveAttrs.length > 0) {
+    const lower = makeCataloguedCallLowerer(ctx)
     const attrsBySlot = new Map<string, typeof ctx.reactiveAttrs>()
     for (const attr of ctx.reactiveAttrs) {
       if (!attrsBySlot.has(attr.slotId)) {
@@ -413,7 +430,11 @@ export function emitReactiveAttributeUpdates(lines: string[], ctx: ClientJsConte
       lines.push(`  createEffect(() => {`)
       lines.push(`    if (_${v}) {`)
       for (const attr of attrs) {
-        const expression = rewriteDestructuredPropsInExpr(attr.expression, ctx)
+        // Catalogued-lowering MUST run before the bare-prop-name rewrite:
+        // the matcher needs the source-form receiver (a bare identifier or
+        // `props.x`), the exact two shapes `resolveReceiverType` supports —
+        // same ordering `jsx-to-ir.ts`'s static-template path documents.
+        const expression = rewriteDestructuredPropsInExpr(lower(attr.expression), ctx)
         for (const stmt of emitAttrUpdate(`_${v}`, attr.attrName, expression, attr)) {
           lines.push(`      ${stmt}`)
         }

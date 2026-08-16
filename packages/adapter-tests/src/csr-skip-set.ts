@@ -249,5 +249,19 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // above (#968). Graduates to a full pass if that ordering is ever
   // unified.
   'signal-early-return',
+  // #2645: `canGenerateStaticTemplate`'s `'expression'` case never checks
+  // `node.clientOnly` — a `/* @client */` expression on a bare destructured
+  // prop (`isSimplePropExpression` treats `createdAt.toISOString()` as
+  // "simple") routes to `irToComponentTemplate`, which has no `clientOnly`
+  // awareness and inlines the value directly, instead of `generateCsrTemplate`
+  // (which correctly elides it to match SSR's empty `@client` region). A REAL
+  // divergence, not a harness artifact — SSR renders empty, CSR renders
+  // populated. Orthogonal to #2640/#2641 (which fixed the separate REACTIVE-
+  // effect emission this fixture's own hydrate-execution test,
+  // `packages/client/__tests__/runtime/date-lowering-hydration.test.ts`,
+  // already proves is sound); this is a static-template-eligibility bug in a
+  // different function. `expectedHtml` stays correct (matches SSR); only the
+  // CSR-template-eval leg is skipped here.
+  'date-client-catalogued',
 ])
 
