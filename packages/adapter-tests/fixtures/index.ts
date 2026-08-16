@@ -465,6 +465,9 @@ import { fixture as loopParamShadowsBoolProp } from './loop-param-shadows-bool-p
 import { fixture as loopParamShadowsSpreadConst } from './loop-param-shadows-spread-const'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateClientRevival } from './date-client-revival'
+import { fixture as dateClientCatalogued } from './date-client-catalogued'
+import { fixture as dateClientAttrCatalogued } from './date-client-attr-catalogued'
+import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
 import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as formatDate } from './format-date'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
@@ -833,6 +836,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsSpreadConst,
   dateMethodUncatalogued,
   dateClientRevival,
+  dateClientCatalogued,
+  dateClientAttrCatalogued,
+  dateCataloguedAttr,
   dateCatalogued,
   formatDate,
   dateToLocaleLiteral,
