@@ -129,6 +129,23 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     }
   }
 
+  // No identifiers.ts precedent — `clientOnlyElements` (Slot unification
+  // Step B) postdates the file this phase mirrors. A `/* @client */`
+  // expression's Phase 3 IR-walk visitor below deliberately adds no edge
+  // at all (never mind which context) so a referenced name isn't
+  // misclassified as template-reachable; without a substitute edge here,
+  // a prop used ONLY inside such an expression never reaches
+  // `neededProps` (`analyzeClientNeeds`/`init-declarations.ts`), so
+  // `emitPropsExtraction` never binds it and the emitted `createEffect`
+  // reads an unbound identifier — a real `ReferenceError` at hydrate,
+  // not a hypothetical (#2634). `'init-body'` is the same context an
+  // event handler's identifiers use (few lines up) — correct here for
+  // the same reason: the expression runs in `initX`'s scope, never the
+  // template closure.
+  for (const elem of ctx.clientOnlyElements) {
+    addExprEdges(ROOT_SOURCE, elem.expression, 'init-body')
+  }
+
   // identifiers.ts L107-135
   for (const elem of ctx.loopElements) {
     addExprEdges(ROOT_SOURCE, elem.array, 'template-closure')
