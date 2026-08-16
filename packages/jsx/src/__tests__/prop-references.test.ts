@@ -311,6 +311,78 @@ describe('ClientJS generation with semantic prop refs', () => {
   })
 })
 
+// Issue #2634 regression test: a prop used ONLY inside a `/* @client */`
+// expression was never extracted from `_p` — the identifier reached
+// `createEffect`'s body unbound, throwing `ReferenceError` at hydrate.
+// `buildReferencesGraph` (build-references.ts) deliberately skips adding a
+// `template-closure` edge for a clientOnly expression (it isn't template-
+// reachable), but was never wired to `ctx.clientOnlyElements` either, so no
+// edge of ANY kind reached `neededProps` and `emitPropsExtraction` had no
+// evidence the prop was used at all.
+describe('Issue #2634 regression', () => {
+  test('a destructured prop used only inside /* @client */ is extracted from _p', () => {
+    const source = `
+      interface Props {
+        label: string
+      }
+
+      export function LabelClientOnly({ label }: Props) {
+        return <div>{/* @client */ label.toUpperCase()}</div>
+      }
+    `
+
+    const result = compileJSX(source, 'LabelClientOnly.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    // The prop must be bound before the createEffect body reads it.
+    expect(clientJs?.content).toContain('const label = _p.label')
+    // A bare `label` reference with no preceding binding is exactly the
+    // unbound-identifier shape that threw ReferenceError at hydrate.
+    expect(clientJs?.content).toMatch(/const label = _p\.label[\s\S]*label\.toUpperCase\(\)/)
+  })
+
+  test('a props-object member used only inside /* @client */ needs no extraction (already _p.x)', () => {
+    const source = `
+      interface Props {
+        label: string
+      }
+
+      export function LabelClientOnly(props: Props) {
+        return <div>{/* @client */ props.label.toUpperCase()}</div>
+      }
+    `
+
+    const result = compileJSX(source, 'LabelClientOnly.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    expect(clientJs?.content).toContain('_p.label.toUpperCase()')
+  })
+
+  test('a prop used both in a normal reactive position AND inside /* @client */ is still extracted once', () => {
+    const source = `
+      interface Props {
+        label: string
+      }
+
+      export function LabelBoth({ label }: Props) {
+        return <div><span>{label}</span><span>{/* @client */ label.toUpperCase()}</span></div>
+      }
+    `
+
+    const result = compileJSX(source, 'LabelBoth.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const matches = clientJs?.content.match(/const label = _p\.label/g) ?? []
+    expect(matches).toHaveLength(1)
+  })
+})
+
 // Issue #257 regression test: Double props prefix in template literals
 describe('Issue #257 regression', () => {
   test('does NOT double-wrap props.xxx when already prefixed', () => {
