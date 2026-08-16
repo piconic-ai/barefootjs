@@ -193,13 +193,13 @@ where `d` is a signal) has no evidence and is not flagged.
 #### Workaround
 
 ```tsx
-// ✅ Defer to the client
-{/* @client */ createdAt.toISOString()}
-
-// ✅ Or format in the backend and pass a string prop
+// ✅ Format in the backend and pass a string prop
 function Post({ createdAt }: { createdAt: string }) {
   return <div>{createdAt}</div>
 }
+
+// ✅ Or defer to the client — but revive the receiver first
+{/* @client */ new Date(createdAt).toISOString()}
 ```
 
 The string-prop variant moves the formatting to where full language power
@@ -208,6 +208,16 @@ Rails controller, …) formats the `Date` and passes the finished string. Note
 that a component-body local (`const iso = createdAt.toISOString()`) is NOT a
 workaround: it lowers to a template variable whose value the template
 backend cannot compute, and dies at render time the same way.
+
+The `/* @client */` block must wrap the receiver in `new Date(...)` — a
+BARE `{/* @client */ createdAt.toISOString()}` compiles clean but crashes
+at real hydrate with a `TypeError`. Props cross the hydration boundary as
+JSON with no type-aware revival, so `createdAt` arrives at hydrate as its
+`toJSON()` ISO string, not a `Date` instance; wrapping it in `new Date(...)`
+revives it first, since `Date`'s `toJSON()` output round-trips through its
+own constructor (#2636). This revival trick only works for `Date` and
+`URL` — every other host rich type (`Map`, `Set`, …) has no safe
+`/* @client */` escape at all; pre-compute server-side instead.
 
 <a id="bf023"></a>
 

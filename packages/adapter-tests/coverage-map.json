@@ -1614,6 +1614,17 @@
         "text"
       ]
     },
+    "date-client-revival": {
+      "kinds": [
+        "call",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-method-uncatalogued": {
       "kinds": [
         "call",
@@ -5241,17 +5252,17 @@
     "array-method": 69,
     "arrow": 69,
     "binary": 91,
-    "call": 215,
+    "call": 216,
     "conditional": 25,
     "identifier": 305,
     "index-access": 14,
     "literal": 250,
     "logical": 45,
-    "member": 169,
+    "member": 170,
     "object-literal": 57,
     "template-literal": 30,
     "unary": 23,
-    "unsupported": 39
+    "unsupported": 40
   },
   "axisCounts": {
     "array-method:at": 2,

@@ -49,6 +49,32 @@ export const HOST_RICH_TYPE_NAMES: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * The subset of `HOST_RICH_TYPE_NAMES` whose `toJSON()` output is accepted
+ * by the type's own one-argument constructor, so a value that crossed the
+ * `bf-p` hydration boundary as JSON can be revived with `new T(jsonValue)`
+ * (#2636). `Date.prototype.toJSON()` returns an ISO string `new Date()`
+ * re-parses; `URL.prototype.toJSON()` returns an `href` string `new URL()`
+ * re-parses. Every other host rich type fails this test:
+ *   - `Map` / `Set` / `WeakMap` / `WeakSet` — `JSON.stringify` drops all
+ *     entries, serializing to `{}`; there is no envelope to revive FROM.
+ *   - `URLSearchParams` / `RegExp` / `Promise` / `Error` — likewise
+ *     serialize to `{}` (or, for `Error`, an empty-looking object missing
+ *     `message`/`stack` under most engines' own `toJSON`-less default).
+ *   - `Symbol` / `Function` — dropped entirely by `JSON.stringify` (become
+ *     `undefined` in an object, elided in an array).
+ *   - `BigInt` — `JSON.stringify` throws `TypeError` before a hydrate-time
+ *     revival could ever run.
+ *
+ * Used only to decide which escape suggestion `rich-type-refusal.ts`'s
+ * `pushDiagnostic` may offer: a bare `/* @client *\/` recommendation is
+ * unsound for every host rich type here (see that module's docstring), but
+ * wrapping the receiver in `new T(...)` — `{/* @client *\/ new
+ * Date(createdAt).getUTCFullYear()}` — is a genuine, hydrate-safe escape
+ * for this subset only.
+ */
+export const JSON_REVIVABLE_RICH_TYPE_NAMES: ReadonlySet<string> = new Set(['Date', 'URL'])
+
+/**
  * Strip generic type arguments from a `TypeInfo.raw` string (`Map<string,
  * string>` → `Map`) so a parametrized host type still matches the bare-name
  * catalogue above. `raw` is source-verbatim (`typeNodeToTypeInfo`), so this

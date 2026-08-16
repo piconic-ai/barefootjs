@@ -173,14 +173,36 @@ describe('rich-type method-call refusal — fires (BF021)', () => {
     expect(errors[0].message).toContain("'Map'")
   })
 
-  test('diagnostic carries the @client suggestion', () => {
+  // #2636: bare /* @client */ crashes at hydrate for every rich-type
+  // receiver here (the prop arrives de-riched over the JSON bf-p boundary),
+  // so the suggestion must never recommend it bare. Date/URL (JSON-revivable
+  // via their own one-arg constructor) get an explicit-revival @client form
+  // instead; every other host rich type gets pre-compute only.
+  test('Date generic method: pre-compute lead + explicit-revival @client escape, never a bare @client', () => {
     const errors = bf021(`
       export function Foo({ createdAt }: { createdAt: Date }) {
         return <div>{createdAt.toISOString()}</div>
       }
     `)
     expect(errors[0].severity).toBe('error')
-    expect(errors[0].suggestion?.message).toContain('@client')
+    const message = errors[0].suggestion?.message ?? ''
+    expect(message).toContain('Pre-compute')
+    expect(message).toContain('new Date(createdAt)')
+    expect(message).not.toMatch(/Add \/\* @client \*\//)
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'prop-precompute' }, { kind: 'client-directive' }])
+  })
+
+  test('Map method: pre-compute only, explicit no-safe-@client-escape warning', () => {
+    const errors = bf021(`
+      export function Foo({ m }: { m: Map<string, string> }) {
+        return <div>{m.get('x')}</div>
+      }
+    `)
+    const message = errors[0].suggestion?.message ?? ''
+    expect(message).toContain('Pre-compute')
+    expect(message).toContain('NOT a safe escape')
+    expect(message).not.toContain('new Map(')
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'prop-precompute' }])
   })
 
   // Zero-arg toLocaleDateString() is BF021's one case where the refusal is
@@ -204,8 +226,25 @@ describe('rich-type method-call refusal — fires (BF021)', () => {
     expect(errors[0].message).toContain("'createdAt'")
     // The suggestion for this specific method+type points at the
     // literal-locale/timeZone escape (#2324) ahead of the generic
-    // @client-or-precompute fallback every other BF021 carries.
-    expect(errors[0].suggestion?.message).toContain('literal locale')
+    // pre-compute-or-revival fallback every other BF021 carries.
+    const message = errors[0].suggestion?.message ?? ''
+    expect(message).toContain('literal locale')
+    // #2636: even this branch's @client escape must be the explicit-revival
+    // form, never a bare /* @client */.
+    expect(message).toContain('new Date(createdAt)')
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'rewrite' }, { kind: 'prop-precompute' }, { kind: 'client-directive' }])
+  })
+
+  test('URL generic method: revivable tier applies past Date (#2636)', () => {
+    const errors = bf021(`
+      export function Foo({ href }: { href: URL }) {
+        return <div>{href.toString()}</div>
+      }
+    `)
+    expect(errors).toHaveLength(1)
+    const message = errors[0].suggestion?.message ?? ''
+    expect(message).toContain('new URL(href)')
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'prop-precompute' }, { kind: 'client-directive' }])
   })
 })
 
@@ -214,6 +253,19 @@ describe('rich-type method-call refusal — silent (no BF021)', () => {
     const errors = bf021(`
       export function Foo({ createdAt }: { createdAt: Date }) {
         return <div>{/* @client */ createdAt.toISOString()}</div>
+      }
+    `)
+    expect(errors).toHaveLength(0)
+  })
+
+  // Pins the premise the revivable-tier suggestion (#2636) depends on: a
+  // /* @client */ block that wraps the receiver in `new Date(...)` first is
+  // itself a call-result receiver (resolveReceiverType → null), so it never
+  // fires BF021 — the same reason a bare @client call never fires above.
+  test('/* @client */ with explicit new Date(...) revival wrapper', () => {
+    const errors = bf021(`
+      export function Foo({ createdAt }: { createdAt: Date }) {
+        return <div>{/* @client */ new Date(createdAt).getUTCFullYear()}</div>
       }
     `)
     expect(errors).toHaveLength(0)

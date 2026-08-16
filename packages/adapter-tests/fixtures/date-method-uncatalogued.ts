@@ -46,6 +46,11 @@ import { createFixture } from '../src/types'
  * uniform because the SAME defect (an ambient-locale read with no faithful
  * cross-environment lowering) recurs on Hono's own hydrate leg, not only on
  * the 8 DSL adapters' template leg.
+ *
+ * `escapes` twin: `date-client-revival`. BF021's suggestion for this refusal
+ * no longer recommends a bare `/* @client *\/` (#2636 — unsound for the same
+ * hydrate-time-JSON reason laid out above); the twin demonstrates the
+ * genuinely hydrate-safe form, `new Date(createdAt)...`.
  */
 export const fixture = createFixture({
   id: 'date-method-uncatalogued',
@@ -56,4 +61,5 @@ export function DateMethodUncatalogued({ createdAt }: { createdAt: Date }) {
 }
 `,
   props: { createdAt: '2024-01-01T00:00:00.000Z' },
+  escapes: [{ kind: 'client-directive', fixture: 'date-client-revival' }],
 })
