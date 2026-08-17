@@ -270,9 +270,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   private generateImports(ir: ComponentIR, componentCode: string): string {
     const lines: string[] = []
 
-    // Only import bfComment/bfText/bfTextEnd utilities that are actually used
+    // Only import bfComment/bfText/bfTextEnd/serializeHydrationProps utilities
+    // that are actually used
     const utilImports: string[] = []
-    for (const util of ['bfComment', 'bfText', 'bfTextEnd']) {
+    for (const util of ['bfComment', 'bfText', 'bfTextEnd', 'serializeHydrationProps']) {
       if (new RegExp(`\\b${util}\\b`).test(componentCode)) {
         utilImports.push(util)
       }
@@ -618,7 +619,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
         const callerKey = p.sourceName ?? p.name
         lines.push(`  if (typeof ${propAccess} !== 'function' && !(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
       }
-      lines.push(`  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)`)
+      lines.push(`  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, '${name}')`)
     } else if (hasClientInteractivity && isRootComponent) {
       // No own props, but root is a component — pass through parent's props
       lines.push('')

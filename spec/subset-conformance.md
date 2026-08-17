@@ -183,6 +183,21 @@ with no lowering" shape is closed. Cataloguing individual methods (the
 follow-up work (#2274): closing the passthrough and cataloguing methods are
 separate, independently-landable steps.
 
+BF021 only covers the "method call" shape, though — a rich-typed prop that
+client code merely *reads* and passes through untouched (no method call) was
+still a silent hole: SSR renders fine, but the `bf-p` JSON hydration
+boundary can't carry a `Map`/`Set`/`BigInt`/… value at all, so the client
+either throws (`BigInt`) or silently de-serializes to `{}`/`null` (`Map`,
+`Set`, …) with no diagnostic anywhere. **Landed** (#2643): `checkRichTypeMethodCalls`
+gained a sibling, `checkRichTypePropSerialization`
+(`packages/jsx/src/rich-type-refusal.ts`), which refuses at compile time
+(BF049) any prop provably typed as a JSON-unsafe host rich type that the
+component's own client code reads — closing the "untouched passthrough"
+shape the same way #2273 closed the "method call" shape. A narrower runtime
+backstop (`serializeHydrationProps`, Hono adapter only) also throws for the
+cases the compile-time check can't statically prove (e.g. a loosely-typed
+prop that happens to be a `Map`/`BigInt` at runtime).
+
 Target design:
 
 - **Close the passthrough first**: a method call on a prop whose type has no

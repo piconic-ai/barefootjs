@@ -53,6 +53,15 @@ export const ErrorCodes = {
   // helper verbatim instead of compiling it as a component — so this code
   // fires only for the client-component compilation path.
   SIBLING_COMPONENT_NOT_COMPILED: 'BF048',
+  // A prop typed as a host rich type whose `JSON.stringify` output is not
+  // revivable (`Map`, `Set`, `BigInt`, …) is read by this component's own
+  // client code (a handler, an effect) but is never passed through a method
+  // call — so `checkRichTypeMethodCalls`'s BF021 never fires on it, yet the
+  // prop still crosses the `bf-p` hydration boundary as JSON and arrives
+  // de-riched (or, for `BigInt`, fails to serialize at all, throwing at SSR
+  // render). Sibling of BF021 for the "untouched passthrough" shape rather
+  // than the "method call" shape (#2643).
+  RICH_TYPE_PROP_NOT_HYDRATABLE: 'BF049',
 
   // Import errors (BF050-BF059)
   SHARED_PROGRAM_REQUIRED: 'BF050',
@@ -163,6 +172,9 @@ const errorMessages: Record<ErrorCode, string> = {
     "'use client' file. Extract it to a separate non-\"use client\" file (where it is preserved " +
     "verbatim, see #932), or rewrite it as a single-return ternary/conditional chain so the " +
     "component pipeline can compile it.",
+
+  [ErrorCodes.RICH_TYPE_PROP_NOT_HYDRATABLE]:
+    'Rich-typed prop cannot cross the bf-p hydration boundary as JSON.',
 
   [ErrorCodes.SHARED_PROGRAM_REQUIRED]:
     'Shared ts.Program required for type-based reactivity classification. This source imports a Reactive<T>-branded library (e.g. @barefootjs/form) whose getters cannot be classified by regex alone. Pass `options.program` (built via `createProgramForCorpus`) so the analyzer can resolve the brand through the TypeChecker.',

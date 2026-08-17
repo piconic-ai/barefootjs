@@ -99,6 +99,20 @@ export const HOST_RICH_TYPE_NAMES: ReadonlySet<string> = new Set([
 export const JSON_REVIVABLE_RICH_TYPE_NAMES: ReadonlySet<string> = new Set(['Date', 'URL'])
 
 /**
+ * The complement of `JSON_REVIVABLE_RICH_TYPE_NAMES` within `HOST_RICH_TYPE_NAMES`
+ * — every host rich type whose `JSON.stringify` output is NOT revivable via its
+ * own constructor. Used by `checkRichTypePropSerialization`
+ * (`rich-type-refusal.ts`, #2643) to flag a rich-typed prop that a client
+ * reads but that will cross the `bf-p` hydration boundary de-riched or
+ * (for `BigInt`) fail to serialize at all — a distinct failure from the
+ * method-call refusal above: no method call is even required to trigger it,
+ * just an untouched prop a client handler/effect reads.
+ */
+export const JSON_UNSAFE_RICH_TYPE_NAMES: ReadonlySet<string> = new Set(
+  [...HOST_RICH_TYPE_NAMES].filter((n) => !JSON_REVIVABLE_RICH_TYPE_NAMES.has(n)),
+)
+
+/**
  * Strip generic type arguments from a `TypeInfo.raw` string (`Map<string,
  * string>` → `Map`) so a parametrized host type still matches the bare-name
  * catalogue above. `raw` is source-verbatim (`typeNodeToTypeInfo`), so this
@@ -163,6 +177,44 @@ function lookupProperty(objType: TypeInfo | null, propName: string, meta: Eviden
   const deref = derefNamedType(stripped, meta)
   const prop = deref.properties?.find((p: PropertyInfo) => p.name === propName)
   return prop ? stripUnion(prop.type) : null
+}
+
+/**
+ * Resolve a prop's declared type straight off `propsType` by its SOURCE
+ * name (`lookupProperty`'s public face for `checkRichTypePropSerialization`,
+ * which has no receiver expression to walk — only a `propsParams` entry).
+ */
+export function resolvePropDeclaredType(propName: string, meta: EvidenceMetadata): TypeInfo | null {
+  return lookupProperty(meta.propsType, propName, meta)
+}
+
+/**
+ * The JSON-unsafe type name a declared prop type resolves to, or `null` if
+ * it isn't one. Recognizes:
+ *   - an interface-kind type whose `baseTypeName` is in
+ *     `JSON_UNSAFE_RICH_TYPE_NAMES` (caller must still apply the in-file
+ *     `typeDefinitions` shadow guard — this function has no `meta` to check
+ *     it against, mirroring `checkRichTypeMethodCalls`'s own split between
+ *     type resolution and shadow-checking);
+ *   - the KEYWORD spellings `bigint` / `symbol`, which `typeNodeToTypeInfo`
+ *     lowers to `{ kind: 'unknown', raw: '<keyword>' }` (only the object-form
+ *     `BigInt` / `Symbol` type references reach `kind: 'interface'` and match
+ *     the catalogue above) — an exact-equality check on the AST-derived raw
+ *     text, the same class of raw use as `baseTypeName`, not a type-syntax
+ *     parse. Closes this module's own documented conservative miss, but only
+ *     for THIS check — `HOST_RICH_TYPE_NAMES`/method-call refusal still miss
+ *     the keyword spellings, unchanged.
+ */
+export function jsonUnsafeTypeName(type: TypeInfo | null): string | null {
+  if (!type) return null
+  if (type.kind === 'interface') {
+    const name = baseTypeName(type.raw)
+    return JSON_UNSAFE_RICH_TYPE_NAMES.has(name) ? name : null
+  }
+  if (type.kind === 'unknown' && (type.raw === 'bigint' || type.raw === 'symbol')) {
+    return type.raw
+  }
+  return null
 }
 
 /**

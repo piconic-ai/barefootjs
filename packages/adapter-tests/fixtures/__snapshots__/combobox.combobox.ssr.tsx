@@ -1,9 +1,9 @@
 /** @jsxImportSource hono/jsx */
+import { serializeHydrationProps, bfText, bfTextEnd, bfComment } from '@barefootjs/hono/utils'
 import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
-import { bfText, bfTextEnd, bfComment } from '@barefootjs/hono/utils'
 
 interface ComboboxContextValue {
   open: () => boolean
@@ -140,7 +140,7 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
   if (typeof props.filter !== 'function' && !(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Combobox')
 
   return (
     <>{provideContextSSR(ComboboxContext, {
@@ -169,7 +169,7 @@ export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceI
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxTrigger')
 
   return (
     <button data-slot="combobox-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
@@ -183,7 +183,7 @@ export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.placeholder !== 'function' && !(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxValue')
 
   return (
     <span data-slot="combobox-value" id={props.id} className="pointer-events-none truncate" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{bfText("s0")}{props.placeholder ?? ''}{bfTextEnd()}</span>
@@ -198,7 +198,7 @@ export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceI
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
   if (typeof props.align !== 'function' && !(typeof props.align === 'object' && props.align !== null && 'isEscaped' in props.align)) __hydrateProps['align'] = props.align
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxContent')
 
   return (
     <div data-slot="combobox-content" data-state="closed" role="listbox" id={props.id} tabindex={-1} className={`${contentBaseClasses} ${contentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
@@ -213,7 +213,7 @@ export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: 
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.placeholder !== 'function' && !(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
   if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxInput')
 
   return (
     <div data-slot="combobox-input-wrapper" className={`flex items-center border-b px-3`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s2"><SearchIcon className="mr-2 size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><input data-slot="combobox-input" id={props.id} type="text" placeholder={props.placeholder} disabled={(props.disabled ?? false) || undefined} className={`${inputClasses} ${props.className ?? ''}`} autocomplete="off" bf="s1" /></div>
@@ -227,7 +227,7 @@ export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxEmpty')
 
   return (
     <div data-slot="combobox-empty" id={props.id} hidden className={`${emptyClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
@@ -245,7 +245,7 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
   if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
   if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxItem')
 
   return (
     <div data-slot="combobox-item" data-value={props.value} data-state="unchecked" data-selected="false" role="option" id={props.id} aria-selected="false" aria-disabled={(isDisabled()) || undefined} tabindex={-1} className={`${itemBaseClasses} ${stateClasses()} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span data-slot="combobox-item-indicator" className={`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`} style="display:none"><CheckIcon className="size-4" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></span>{props.children}</div>
@@ -260,7 +260,7 @@ export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: 
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.heading !== 'function' && !(typeof props.heading === 'object' && props.heading !== null && 'isEscaped' in props.heading)) __hydrateProps['heading'] = props.heading
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxGroup')
 
   return (
     <div data-slot="combobox-group" id={props.id} role="group" className={`${groupClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s3">{props.heading ? <div bf-c="s0" data-slot="combobox-group-heading" aria-hidden="true" bf="s2">{bfText("s1")}{props.heading}{bfTextEnd()}</div> : <>{bfComment("cond-start:s0")}{bfComment("cond-end:s0")}</>}{props.children}</div>
@@ -273,7 +273,7 @@ export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bf
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxSeparator')
 
   return (
     <div data-slot="combobox-separator" role="separator" className={`${separatorClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" />

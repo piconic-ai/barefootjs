@@ -285,7 +285,7 @@ See [JSX Compatibility](../rendering/jsx-compatibility.md) for the full worked e
 
 ---
 
-## Component Errors (BF043–BF044)
+## Component Errors (BF043–BF049)
 
 <a id="bf043"></a>
 
@@ -342,6 +342,52 @@ function Child({ initialCount }: Props) {
 // ✅ Fixed
 <Child count={count()} />
 ```
+
+<a id="bf049"></a>
+
+### BF049 — Rich-Typed Prop Not Hydratable
+
+**Trigger:** A prop typed as a JSON-unsafe host rich type — `Map`, `Set`,
+`WeakMap`, `WeakSet`, `URLSearchParams`, `RegExp`, `Promise`, `Error`,
+`Symbol`, `BigInt`, `Function` — is read by this component's own client code
+(an event handler, an effect), with no method call involved. This is the
+sibling of [BF021](#bf021)'s host-rich-type refusal for a different shape:
+BF021 fires when a METHOD is called on the receiver; BF049 fires when the
+prop is merely read, untouched, which BF021 never sees. Either way the prop
+crosses the `bf-p` hydration boundary as JSON, where a `Map`/`Set` arrives
+de-riched (`{}`, every entry silently dropped) and a `BigInt` fails to
+serialize at all (`TypeError` at SSR render, failing the whole page).
+
+```tsx
+// ❌ BF049 — a Map prop read by client code cannot survive hydration
+'use client'
+export function Foo({ data }: { data: Map<string, number> }) {
+  return <button onClick={() => console.log(data.get('x'))}>go</button>
+}
+```
+
+**Fix:** Pre-compute a JSON-serializable value server-side and rebuild the
+rich value client-side where it's actually needed.
+
+```tsx
+// ✅ Fixed
+'use client'
+export function Foo({ entries }: { entries: [string, number][] }) {
+  return <button onClick={() => console.log(new Map(entries).get('x'))}>go</button>
+}
+```
+
+> `Date` and `URL` props are exempt — their `toJSON()` output round-trips
+> through their own constructor, so they're not JSON-unsafe (see BF021's
+> host-rich-type section above).
+>
+> This is a compile-time check: it only fires when the prop's type is
+> provable from the component's own props type (same evidence
+> `checkRichTypeMethodCalls` uses). An imported/aliased type alias, or a
+> prop typed too loosely to resolve statically, isn't caught here — on the
+> Hono adapter, an unsound value reaching hydration serialization throws a
+> clear runtime error naming the prop and this code instead of failing
+> silently or with an opaque `JSON.stringify` error.
 
 <a id="bf054"></a>
 
@@ -406,4 +452,5 @@ function Component({ checked }: Props) {
 | BF023 | Error | Missing key in list |
 | BF043 | Warning | Props destructuring breaks reactivity |
 | BF044 | Error | Signal/memo getter passed without calling it |
+| BF049 | Error | Rich-typed prop read by client code cannot survive hydration |
 | BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |

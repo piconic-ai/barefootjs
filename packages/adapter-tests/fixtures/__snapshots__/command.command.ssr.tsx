@@ -1,10 +1,10 @@
 /** @jsxImportSource hono/jsx */
+import { serializeHydrationProps, bfComment, bfText, bfTextEnd } from '@barefootjs/hono/utils'
 import { createContext, useContext, createSignal, createMemo, createEffect, provideContextSSR } from '@barefootjs/hono/client-shim'
 import { Dialog, DialogOverlay, DialogContent } from '../dialog'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { SearchIcon } from '../icon'
-import { bfComment, bfText, bfTextEnd } from '@barefootjs/hono/utils'
 
 interface CommandContextValue {
   search: () => string
@@ -154,7 +154,7 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.filter !== 'function' && !(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Command')
 
   return (
     <>{provideContextSSR(CommandContext, {
@@ -180,7 +180,7 @@ export function CommandInput(__allProps: CommandInputProps & { __instanceId?: st
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.placeholder !== 'function' && !(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
   if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandInput')
 
   return (
     <div data-slot="command-input-wrapper" className={`flex items-center border-b px-3`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s2"><SearchIcon className="mr-2 size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><input data-slot="command-input" id={props.id} type="text" placeholder={props.placeholder} disabled={(props.disabled ?? false) || undefined} className={`${commandInputClasses} ${props.className ?? ''}`} autocomplete="off" bf="s1" /></div>
@@ -194,7 +194,7 @@ export function CommandList({ className = '', children, __instanceId, __bfScope:
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandList')
 
   return (
     <div data-slot="command-list" role="listbox" className={`${commandListClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</div>
@@ -208,7 +208,7 @@ export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: st
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandEmpty')
 
   return (
     <div data-slot="command-empty" id={props.id} hidden className={`${commandEmptyClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
@@ -223,7 +223,7 @@ export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: st
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.heading !== 'function' && !(typeof props.heading === 'object' && props.heading !== null && 'isEscaped' in props.heading)) __hydrateProps['heading'] = props.heading
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandGroup')
 
   return (
     <div data-slot="command-group" id={props.id} role="group" className={`${commandGroupClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s3">{props.heading ? <div bf-c="s0" data-slot="command-group-heading" aria-hidden="true" bf="s2">{bfText("s1")}{props.heading}{bfTextEnd()}</div> : <>{bfComment("cond-start:s0")}{bfComment("cond-end:s0")}</>}{props.children}</div>
@@ -241,7 +241,7 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
   if (typeof props.keywords !== 'function' && !(typeof props.keywords === 'object' && props.keywords !== null && 'isEscaped' in props.keywords)) __hydrateProps['keywords'] = props.keywords
   if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandItem')
 
   return (
     <div data-slot="command-item" id={props.id} role="option" data-disabled={(isDisabled()) || undefined} data-selected="false" className={`${commandItemClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
@@ -254,7 +254,7 @@ export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfS
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandSeparator')
 
   return (
     <div data-slot="command-separator" role="separator" className={`${commandSeparatorClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" />
@@ -268,7 +268,7 @@ export function CommandShortcut({ className = '', children, __instanceId, __bfSc
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandShortcut')
 
   return (
     <span data-slot="command-shortcut" className={`${commandShortcutClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</span>
@@ -284,7 +284,7 @@ export function CommandDialog(__allProps: CommandDialogProps & { __instanceId?: 
   if (typeof props.open !== 'function' && !(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
   if (typeof props.filter !== 'function' && !(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandDialog')
 
   return (
     <>{bfComment(`scope:${__scopeId}${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}${__bfPropsJson ? `|${__bfPropsJson}` : ""}`)}<Dialog open={props.open ?? false} onOpenChange={props.onOpenChange ?? (() => {})} __instanceId={`${__scopeId}_s3`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s3'} bf-s={__scopeId}><DialogOverlay __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><DialogContent className={`${commandDialogContentClasses} max-w-lg p-0`} __instanceId={`${__scopeId}_s2`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s2'}><Command id={props.id} filter={props.filter} className={`[&_[data-slot=command-input-wrapper]]:h-12`} __instanceId={`${__scopeId}_s1`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s1'}>{props.children}</Command></DialogContent></Dialog>{bfComment(`/scope:${__scopeId}`)}</>

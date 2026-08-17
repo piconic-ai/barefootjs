@@ -1,5 +1,5 @@
 /** @jsxImportSource hono/jsx */
-import { bfComment } from '@barefootjs/hono/utils'
+import { bfComment, serializeHydrationProps } from '@barefootjs/hono/utils'
 import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
 import { createSignal, createMemo } from '@barefootjs/hono/client-shim'
 import { CheckIcon } from '../icon'
@@ -55,7 +55,7 @@ export function Checkbox(__allProps: CheckboxProps & { __instanceId?: string; __
   if (typeof props.defaultChecked !== 'function' && !(typeof props.defaultChecked === 'object' && props.defaultChecked !== null && 'isEscaped' in props.defaultChecked)) __hydrateProps['defaultChecked'] = props.defaultChecked
   if (typeof props.checked !== 'function' && !(typeof props.checked === 'object' && props.checked !== null && 'isEscaped' in props.checked)) __hydrateProps['checked'] = props.checked
   if (typeof props.error !== 'function' && !(typeof props.error === 'object' && props.error !== null && 'isEscaped' in props.error)) __hydrateProps['error'] = props.error
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Checkbox')
 
   return (
     <button data-slot="checkbox" data-state={`${isChecked() ? 'checked' : 'unchecked'}`} role="checkbox" id={props.id} aria-checked={isChecked()} aria-invalid={(props.error) || undefined} disabled={(props.disabled ?? false) || undefined} className={classes()} onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s2">{isChecked() ? <>{bfComment("cond-start:s0")}<CheckIcon data-slot="checkbox-indicator" className="size-3.5 text-current" __instanceId={`${__scopeId}_s1`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s1'} />{bfComment("cond-end:s0")}</> : <>{bfComment("cond-start:s0")}{bfComment("cond-end:s0")}</>}</button>

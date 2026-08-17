@@ -469,6 +469,8 @@ import { fixture as dateClientCatalogued } from './date-client-catalogued'
 import { fixture as dateClientAttrCatalogued } from './date-client-attr-catalogued'
 import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
 import { fixture as dateCatalogued } from './date-catalogued'
+import { fixture as richPropClientRead } from './rich-prop-client-read'
+import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
@@ -840,6 +842,8 @@ export const jsxFixtures: JSXFixture[] = [
   dateClientAttrCatalogued,
   dateCataloguedAttr,
   dateCatalogued,
+  richPropClientRead,
+  richPropPrecompute,
   formatDate,
   dateToLocaleLiteral,
   dateToLocaleUnion,
