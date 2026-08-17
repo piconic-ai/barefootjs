@@ -2906,7 +2906,79 @@
         }
       },
       "rich-prop-client-read": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
         "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF049"
