@@ -50,17 +50,6 @@ export const conformancePins: ConformancePins = {
   // verbatim (and patches the region on same-key updates, #2389), a DSL
   // adapter refuses with BF021 + `/* @client */`. See spec/callback-fidelity.md.
   'preamble-cells': [{ code: 'BF021', severity: 'error' }],
-  // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
-  // harness now passes `siblingTemplatesRegistered: true` for fixtures with
-  // sibling `components`, matching `bf build`'s real semantics, so the
-  // BF103 loop-body cross-template check no longer fires spuriously. (Both
-  // fixtures are still skipped on this adapter via `render-divergences.ts`
-  // — #2209 — for an unrelated signal-seeding gap.)
-  // `static-array-children` no longer pinned (#2208) — `items`'s
-  // array-literal initializer is now recognized as fully-static
-  // (`resolveStaticLoopSource`) and inlined as a native Kolon array/hash
-  // literal in the `for EXPR -> $item` header, the same way a module-scope
-  // const's value is already seeded.
   // `([emoji, users]) => ...` / `([id, t]) => ...` are plain array-index
   // (tuple) destructures, no rest — #2087 Phase B's `segments`-walking
   // accessor lowers both to `$__bf_item[0]` / `$__bf_item[1]` `: my` locals
@@ -90,50 +79,6 @@ export const conformancePins: ConformancePins = {
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
     },
   ],
-  // #1310 / #2087: rest destructure in .map() callback. All four shapes now
-  // lower via #2087 Phase B's `segments`-walking accessor:
-  //   - object-rest read via member access (`rest-destructure-object-in-map`):
-  //     `$bf.omit($__bf_item, [...exclude keys...])`, `$rest.flag` reads the
-  //     residual hashref.
-  //   - object-rest spread onto the root element
-  //     (`rest-destructure-object-spread-in-map`): same `$bf.omit(...)`
-  //     residual, forwarded via the existing `$bf.spread_attrs($rest)` path.
-  //   - array-rest (`rest-destructure-array-in-map`): `$bf.slice($__bf_item,
-  //     N, nil)` — the same runtime helper `.slice()` JS-method calls use.
-  //   - nested rest inside an object pattern (`rest-destructure-nested-in-map`):
-  //     the parent-prefix accessor (`$__bf_item.cells`) feeds the same
-  //     `$bf.slice(...)` call.
-  // None of these are pinned here anymore.
-  // (button/kbd graduated: the site/ui Button/Kbd `<Slot>` `{...props}` /
-  // `{...children.props}` component-spread now lowers via Kolon's builtin
-  // `.merge(...)` method chain — see `xslate-adapter.ts`'s
-  // `renderComponent` — instead of refusing with BF101, so these two no
-  // longer need a pin here.)
-  // #1467 demo-corpus context providers (`radio-group`, `select`,
-  // `dropdown-menu`, `combobox`, `command`) are no longer pinned — an
-  // object-literal provider value (`{ value: currentValue,
-  // onValueChange: (v) => {…} }`) lowers to a Kolon hashref via
-  // `parseProviderObjectLiteral` (#1897): getter members snapshot
-  // their body's SSR value, handler / function-shaped members lower
-  // to `nil`. The command demo's `ref={(el) => {…}}` function prop on
-  // an imported component is skipped at SSR like `on*` handlers.
-  //
-  // #1467 Phase 2e: `data-table` is no longer pinned here — it
-  // compiles clean now (`selected()[index]` → `index-access`,
-  // `.toFixed(2)` → `$bf.to_fixed`, `/* @client */` memo SSR-folded)
-  // and renders to Hono parity on real Text::Xslate. The keyed-loop
-  // scope-ID divergence (#1896) was fixed by the body-children
-  // `inLoop` reset (loop-item children get `_bf_slot`); data-table is
-  // off `skipJsx` entirely and only kept in `skipMarkerConformance`
-  // below for the shared `/* @client */` keyed-map slot-id elision
-  // contract (same as `todo-app`), not a render or BF101 gap.
-  // `style-3-signals` / `style-object-dynamic` no longer pinned — a
-  // `style={{ … }}` object literal now lowers to a CSS string with dynamic
-  // values interpolated (`background-color:<: $color :>;padding:8px`) via
-  // `tryLowerStyleObject` (#1322).
-  // (`tagged-template-classname` graduated by #2092 — the tag resolves
-  // through the interleave-tag catalogue and desugars to an untagged
-  // template literal, so it lowers like any other className template.)
   // #2038: a filter predicate whose body contains a NESTED callback call
   // (`t => !picked().some(p => …)` / `t => picked().find(p => …)`). Kolon
   // has no inline `grep` form, so `XslateFilterEmitter.callbackMethod` used
@@ -154,23 +99,13 @@ export const conformancePins: ConformancePins = {
   // `find_last_index` via the same Kolon-lambda mechanism as `.filter` /
   // `.every` / `.some`, so they render. Only the NESTED-in-a-predicate form
   // above is refused (#2038).
-  // `array-map-function-reference` no longer pinned — a bare-identifier
-  // `.map(format)` callback now resolves one hop to its declaration
-  // (`resolveCallbackMethodFunctionReferences`, #2206), the same mechanism
-  // #2090 established for `.sort(fnref)`.
-  // `dangerous-inner-html` no longer pinned — a compile-time string-literal
-  // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
-  // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
-  // A dynamic/signal-derived value now lowers through Kolon's `mark_raw`
-  // filter (#2319) — `dangerous-inner-html-dynamic` is no longer pinned and
-  // renders to Hono parity, same as the static case.
   // #2273: a method call on a prop typed as a built-in host rich type
   // (Date, Map, …) has no catalogued lowering in any adapter — this is a
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of
   // `adapter.generate()`), not an adapter-specific gap, so it is pinned
   // identically across every adapter package including Hono.
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
-  // #2643: a Map-typed prop used by this component's own client code (a
+  // #2648: a Map-typed prop used by this component's own client code (a
   // handler, an effect) cannot survive the bf-p JSON boundary intact --
   // BF021 only walks template-lowered expression positions, so a handler
   // body's `data.get(...)` is just as invisible to it as a bare read; this
@@ -179,5 +114,5 @@ export const conformancePins: ConformancePins = {
   // date-method-uncatalogued is: a hydration-transport gap, not a
   // template-lowering gap, so it recurs on Hono's JS-runtime hydrate leg
   // exactly as much as on a DSL adapter's.
-  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2643' }],
+  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2648' }],
 }

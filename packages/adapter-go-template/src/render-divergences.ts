@@ -13,16 +13,7 @@
  * the docs compatibility-matrix page. Graduating an entry means fixing
  * the adapter (or the shared compiler layer) and deleting the line.
  *
- * Empty — the file's last live entry (`static-array-from-props-with-
- * component-client`, #2627) graduated: a clientOnly child-component loop
- * whose array is neither a signal/memo nor a direct prop reference (e.g.
- * `Object.entries(props.tags).filter(...)` feeding a `<Tag>` loop) is now
- * excluded entirely from the Input/Props/NewProps codegen instead of
- * colliding with the driving prop's own field — see
- * `GoTemplateAdapter.isOrphanedClientOnlyNested`. The caller-side composite
- * literal for the `tags` prop now type-checks against its own `interface{}`
- * field and `go run`s clean.
- * Keep the file (and this header) when the set is empty — the next
+ * Keep the file (and this header) even when the set is empty — the next
  * divergence lands here, not in a re-created file.
  */
 

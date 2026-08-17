@@ -2912,7 +2912,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "erb": {
@@ -2921,7 +2921,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "go-template": {
@@ -2930,7 +2930,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "hono": {
@@ -2939,7 +2939,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "jinja": {
@@ -2948,7 +2948,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "minijinja": {
@@ -2957,7 +2957,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "mojolicious": {
@@ -2966,7 +2966,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "twig": {
@@ -2975,7 +2975,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
         "xslate": {
@@ -2984,7 +2984,7 @@
             "BF049"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2643"
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         }
       },

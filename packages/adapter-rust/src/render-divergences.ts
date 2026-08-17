@@ -17,9 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  // `todo-app` / `todo-app-ssr` no longer diverge (#2209) — the shared
-  // `evaluateSignalInit` (`@barefootjs/jsx`, sandboxed real-JS evaluation
-  // instead of a fixed regex-shape catalogue) now correctly seeds `todos`
-  // from `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))`.
-
+  // Keep the file (and this header) even when the set is empty — the
+  // next divergence lands here, not in a re-created file.
 }

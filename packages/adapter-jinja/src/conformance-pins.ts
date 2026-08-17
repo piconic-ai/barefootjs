@@ -52,17 +52,6 @@ export const conformancePins: ConformancePins = {
   // verbatim (and patches the region on same-key updates, #2389), a DSL
   // adapter refuses with BF021 + `/* @client */`. See spec/callback-fidelity.md.
   'preamble-cells': [{ code: 'BF021', severity: 'error' }],
-  // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
-  // harness now passes `siblingTemplatesRegistered: true` for fixtures with
-  // sibling `components`, matching `bf build`'s real semantics, so the
-  // BF103 loop-body cross-template check no longer fires spuriously. (Both
-  // fixtures are still skipped on this adapter via `render-divergences.ts`
-  // — #2209 — for an unrelated signal-seeding gap.)
-  // `static-array-children` no longer pinned (#2208) — `items`'s
-  // array-literal initializer is now recognized as fully-static
-  // (`resolveStaticLoopSource`) and inlined as a native Jinja list/dict
-  // literal in the `{% for %}` header, the same way a module-scope const's
-  // value is already seeded.
   // #2087 Phase A/B widened the destructure gate (`isLowerableLoopDestructure`)
   // to admit array-index / nested-path fixed bindings, so the
   // `([emoji, users]) => ...` / `([id, t]) => ...` params in these two
@@ -101,25 +90,6 @@ export const conformancePins: ConformancePins = {
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
     },
   ],
-  // Rest-destructure / structured-path `.map()` callbacks (#2087 Phase B):
-  // `isLowerableLoopDestructure` now admits fixed bindings at any
-  // field/index depth, array-rest (`bf.slice`), and object-rest whose uses
-  // are member reads or a `{...rest}` spread onto an intrinsic element
-  // (`bf.omit` builds the TRUE residual dict). Each binding becomes a
-  // native `{% set %}` local off the per-item var — see
-  // `renderLoop`/`jinjaAccessorFromSegments` in `jinja-adapter.ts`. So
-  // `rest-destructure-object-in-map`, `rest-destructure-object-spread-in-map`,
-  // `rest-destructure-array-in-map`, `rest-destructure-nested-in-map`,
-  // `destructure-array-index-in-map`, and `destructure-nested-object-in-map`
-  // all render clean now — none of them are pinned here.
-  // (button/kbd graduated: the site/ui Button/Kbd `<Slot>` `{...props}` /
-  // `{...children.props}` component-spread now lowers via nested
-  // `dict(base, **top)` calls — see `jinja-adapter.ts`'s `renderComponent`
-  // — instead of refusing with BF101, so these two no longer need a pin
-  // here.)
-  // (`tagged-template-classname` graduated by #2092 — the tag resolves
-  // through the interleave-tag catalogue and desugars to an untagged
-  // template literal, so it lowers like any other className template.)
   // #2038: a filter predicate whose body contains a NESTED callback call
   // (`t => !picked().some(p => …)` / `t => picked().find(p => …)`). Jinja
   // has no inline comprehension-with-nested-callback form usable from the
@@ -140,23 +110,13 @@ export const conformancePins: ConformancePins = {
   // / etc. via the same evaluator-JSON mechanism as `.filter` / `.every` /
   // `.some`, so they render. Only the NESTED-in-a-predicate form above is
   // refused (#2038).
-  // `array-map-function-reference` no longer pinned — a bare-identifier
-  // `.map(format)` callback now resolves one hop to its declaration
-  // (`resolveCallbackMethodFunctionReferences`, #2206), the same mechanism
-  // #2090 established for `.sort(fnref)`.
-  // `dangerous-inner-html` no longer pinned — a compile-time string-literal
-  // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
-  // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
-  // A dynamic/signal-derived value now lowers through Jinja's `| safe` filter
-  // (#2319) — `dangerous-inner-html-dynamic` is no longer pinned and renders
-  // to Hono parity, same as the static case.
   // #2273: a method call on a prop typed as a built-in host rich type
   // (Date, Map, …) has no catalogued lowering in any adapter — this is a
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of
   // `adapter.generate()`), not an adapter-specific gap, so it is pinned
   // identically across every adapter package including Hono.
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
-  // #2643: a Map-typed prop used by this component's own client code (a
+  // #2648: a Map-typed prop used by this component's own client code (a
   // handler, an effect) cannot survive the bf-p JSON boundary intact --
   // BF021 only walks template-lowered expression positions, so a handler
   // body's `data.get(...)` is just as invisible to it as a bare read; this
@@ -165,5 +125,5 @@ export const conformancePins: ConformancePins = {
   // date-method-uncatalogued is: a hydration-transport gap, not a
   // template-lowering gap, so it recurs on Hono's JS-runtime hydrate leg
   // exactly as much as on a DSL adapter's.
-  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2643' }],
+  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2648' }],
 }

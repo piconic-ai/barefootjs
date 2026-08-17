@@ -78,22 +78,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // follow-up to the harness rather than blocking this fix.
   'jsx-spread-rest-prop',
   'jsx-spread-props-object',
-  // #1467 Phase 2a: the shared-component corpus (#1466) is now
-  // exercised in CSR mode — the harness honours `props.__instanceId`
-  // for the root `bf-s` (and child scope ids), so the captured
-  // `<Name>_test` root canonicalises to `<Name>_*` on both sides.
-  // `counter-shared`, `conditional-return-{button,link}`, `form`,
-  // `portal`, `todo-app-ssr`, and `ai-chat` all pass now.
-  //
-  // The entries below stay skipped for reasons UNRELATED to the
-  // scope-id fix — each hits a pre-existing CSR template-eval limit:
-  //
-  //   - `toggle-shared` / `reactive-props` /
-  //     `props-reactivity-comparison`: the CSR template lambda closes
-  //     over a file-scope/local binding (`toggleItems`, `value`) that
-  //     only init wires up; template-eval raises a ReferenceError.
-  //     Same class as `static-array-children` above ("Local array
-  //     variable is not available at CSR template module scope").
+  // `toggle-shared` / `reactive-props` / `props-reactivity-comparison`:
+  // the CSR template lambda closes over a file-scope/local binding
+  // (`toggleItems`, `value`) that only init wires up; template-eval
+  // raises a ReferenceError. Same class as `static-array-children`
+  // above ("Local array variable is not available at CSR template
+  // module scope").
   'toggle-shared',
   'reactive-props',
   'props-reactivity-comparison',
@@ -203,16 +193,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Hono + client pipeline itself, surfaced by the new fixtures. Each
   // entry is a REAL divergence (not a harness artifact) — the skip
   // documents it until the compiler/runtime reconciles the two paths:
-  //   (`falsy-text-values` graduated — #2171 folds the render-nothing
-  //   literals in Phase 1, so SSR and CSR now agree by construction.)
-  //   (`html-entity-text` graduated — Phase 1 decodes JSX character
-  //   references, and the CSR template builder re-escapes static text
-  //   for its innerHTML context, so SSR and CSR agree by construction.)
-  //   (`boolean-attr-literals` graduated — #2172 normalizes intrinsic
-  //   attribute names in Phase 1, so `readOnly` reaches both SSR and
-  //   CSR as the BOOLEAN_ATTRS member `readonly`.)
-  //   (`static-attr-escape` graduated — the CSR template builder now
-  //   HTML-escapes static attribute values like the SSR side.)
   //   - `object-entries-map` / `nested-loop-outer-binding`: nested/
   //     tuple-destructure loops emit `data-key`/`data-key-1` depth
   //     suffixes differently between the SSR snapshot and template-eval.
@@ -235,19 +215,19 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   //     parent's scope id (`test_s0`) in CSR instead of deriving
   //     `test_s0_s0` as SSR does. #2444 fixed the sibling
   //     `composite-row-child-component` case but this one stays a known
-  //     limitation — deriving it via `renderChild`'s `_parentScopeId`
-  //     push collided with `comment: true` wrapper self-lookup
-  //     (`$cSingle`'s short-suffix fallback in `query.ts`), breaking
-  //     hydration for a `renderNode`-style callback prop whose inner
-  //     component's own first slot id coincides with the wrapper's slot
-  //     number (see `site/ui`'s xyflow Highlight-Depth demo regression).
+  //     limitation (#2649) — deriving it via `renderChild`'s
+  //     `_parentScopeId` push collided with `comment: true` wrapper
+  //     self-lookup (`$cSingle`'s short-suffix fallback in `query.ts`),
+  //     breaking hydration for a `renderNode`-style callback prop whose
+  //     inner component's own first slot id coincides with the
+  //     wrapper's slot number (see `site/ui`'s xyflow Highlight-Depth
+  //     demo regression).
   'grandchild-composition',
-  // #2463 FIXED: the fixture now lowers to the root-ternary plan and
-  // its template evaluates cleanly — but the synthetic scope wrapper
-  // has style="display:contents" before bf-s, the same CSR/SSR
-  // attribute-ordering divergence that skips `top-level-ternary`
-  // above (#968). Graduates to a full pass if that ordering is ever
-  // unified.
+  // `signal-early-return`: lowers to the root-ternary plan and evaluates
+  // cleanly, but the synthetic scope wrapper has style="display:contents"
+  // before bf-s — the same CSR/SSR attribute-ordering divergence that
+  // skips `top-level-ternary` above (#968). Graduates to a full pass if
+  // that ordering is ever unified.
   'signal-early-return',
 ])
 
