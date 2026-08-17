@@ -1,4 +1,5 @@
 /** @jsxImportSource hono/jsx */
+import { serializeHydrationProps } from '@barefootjs/hono/utils'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../types'
 
@@ -159,7 +160,7 @@ export function Table({ children, className = '', __instanceId, __bfScope: _bfSc
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Table')
 
   return (
     <div data-slot="table-container" className={`relative w-full overflow-x-auto`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><table data-slot="table" className={`${tableClasses} ${className}`} {...props} bf="s0">{children}</table></div>
@@ -173,7 +174,7 @@ export function TableHeader({ children, className = '', __instanceId, __bfScope:
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHeader')
 
   return (
     <thead data-slot="table-header" className={`${tableHeaderClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</thead>
@@ -187,7 +188,7 @@ export function TableBody({ children, className = '', __instanceId, __bfScope: _
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableBody')
 
   return (
     <tbody data-slot="table-body" className={`${tableBodyClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tbody>
@@ -201,7 +202,7 @@ export function TableFooter({ children, className = '', __instanceId, __bfScope:
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableFooter')
 
   return (
     <tfoot data-slot="table-footer" className={`${tableFooterClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tfoot>
@@ -215,7 +216,7 @@ export function TableRow({ children, className = '', __instanceId, __bfScope: _b
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableRow')
 
   return (
     <tr data-slot="table-row" className={`${tableRowClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tr>
@@ -229,7 +230,7 @@ export function TableHead({ children, className = '', __instanceId, __bfScope: _
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHead')
 
   return (
     <th data-slot="table-head" className={`${tableHeadClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</th>
@@ -243,7 +244,7 @@ export function TableCell({ children, className = '', __instanceId, __bfScope: _
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCell')
 
   return (
     <td data-slot="table-cell" className={`${tableCellClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</td>
@@ -257,7 +258,7 @@ export function TableCaption({ children, className = '', __instanceId, __bfScope
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCaption')
 
   return (
     <caption data-slot="table-caption" className={`${tableCaptionClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</caption>

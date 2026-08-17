@@ -4048,6 +4048,16 @@
         "text"
       ]
     },
+    "rich-prop-client-read": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "rich-prop-precompute": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
     "search-params": {
       "kinds": [
         "call",

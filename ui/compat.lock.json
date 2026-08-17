@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 328,
+    "totalFixtures": 330,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2905,6 +2905,89 @@
           }
         }
       },
+      "rich-prop-client-read": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2643"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -3340,6 +3423,10 @@
       "reduce-typeof-body": {
         "description": "Off-subset `.reduce()` body (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body.ts"
+      },
+      "rich-prop-client-read": {
+        "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",

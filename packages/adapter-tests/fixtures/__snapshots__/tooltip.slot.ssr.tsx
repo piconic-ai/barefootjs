@@ -1,4 +1,5 @@
 /** @jsxImportSource hono/jsx */
+import { serializeHydrationProps } from '@barefootjs/hono/utils'
 import type { Child } from '../../../types'
 
 interface SlotProps {
@@ -32,7 +33,7 @@ export function Slot({ children, className, __instanceId, __bfScope: _bfScope, _
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Slot')
 
   if (children && isValidElement(children)) {
     const Tag = children.tag as any

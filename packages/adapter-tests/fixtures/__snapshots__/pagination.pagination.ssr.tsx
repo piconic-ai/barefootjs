@@ -1,4 +1,5 @@
 /** @jsxImportSource hono/jsx */
+import { serializeHydrationProps } from '@barefootjs/hono/utils'
 import type { AnchorHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import { createMemo } from '@barefootjs/hono/client-shim'
 import type { Child } from '../../../types'
@@ -110,7 +111,7 @@ export function Pagination({ className = '', children, __instanceId, __bfScope: 
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Pagination')
 
   return (
     <nav role="navigation" aria-label="pagination" data-slot="pagination" className={`mx-auto flex w-full justify-center ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</nav>
@@ -124,7 +125,7 @@ export function PaginationContent({ className = '', children, __instanceId, __bf
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationContent')
 
   return (
     <ul data-slot="pagination-content" className={`flex flex-row items-center gap-1 ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</ul>
@@ -138,7 +139,7 @@ export function PaginationItem({ className = '', children, __instanceId, __bfSco
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationItem')
 
   return (
     <li data-slot="pagination-item" className={className} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</li>
@@ -155,7 +156,7 @@ export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?
   if (typeof props.isActive !== 'function' && !(typeof props.isActive === 'object' && props.isActive !== null && 'isEscaped' in props.isActive)) __hydrateProps['isActive'] = props.isActive
   if (typeof props.size !== 'function' && !(typeof props.size === 'object' && props.size !== null && 'isEscaped' in props.size)) __hydrateProps['size'] = props.size
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationLink')
 
   return (
     <a aria-current={props.isActive ? 'page' : undefined} data-slot="pagination-link" data-active={props.isActive} id={props.id} className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${props.isActive ? variantClasses.outline : variantClasses.ghost} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "icon": "size-9"} as Record<string, string>)[size()]} ${props.className ?? ''}`} href={props.href} onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</a>
@@ -168,7 +169,7 @@ export function PaginationPrevious({ className = '', children, __instanceId, __b
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationPrevious')
 
   return (
     <a aria-label="Go to previous page" data-slot="pagination-link" className={`${buttonBaseClasses} ${variantClasses.ghost} ${sizeClasses.default} gap-1 px-2.5 sm:pl-2.5 ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><ChevronLeftIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><span className="hidden sm:block">Previous</span></a>
@@ -181,7 +182,7 @@ export function PaginationNext({ className = '', children, __instanceId, __bfSco
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationNext')
 
   return (
     <a aria-label="Go to next page" data-slot="pagination-link" className={`${buttonBaseClasses} ${variantClasses.ghost} ${sizeClasses.default} gap-1 px-2.5 sm:pr-2.5 ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span className="hidden sm:block">Next</span><ChevronRightIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></a>
@@ -194,7 +195,7 @@ export function PaginationEllipsis({ className = '', __instanceId, __bfScope: _b
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationEllipsis')
 
   return (
     <span aria-hidden data-slot="pagination-ellipsis" className={`flex size-9 items-center justify-center ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><EllipsisIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><span className="sr-only">More pages</span></span>

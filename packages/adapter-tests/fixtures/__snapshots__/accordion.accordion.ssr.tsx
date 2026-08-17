@@ -1,4 +1,5 @@
 /** @jsxImportSource hono/jsx */
+import { serializeHydrationProps } from '@barefootjs/hono/utils'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import { createContext, useContext, createMemo, createEffect, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { Child } from '../../../types'
@@ -78,7 +79,7 @@ export function Accordion({ children, className = '', __instanceId, __bfScope: _
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
   if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Accordion')
 
   return (
     <div data-slot="accordion" className={`${accordionClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</div>
@@ -95,7 +96,7 @@ export function AccordionItem(__allProps: AccordionItemProps & { __instanceId?: 
   if (typeof props.open !== 'function' && !(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
   if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionItem')
 
   return (
     <>{provideContextSSR(AccordionItemContext, {
@@ -115,7 +116,7 @@ export function AccordionTrigger(__allProps: AccordionTriggerProps & { __instanc
   if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
   if (typeof props.asChild !== 'function' && !(typeof props.asChild === 'object' && props.asChild !== null && 'isEscaped' in props.asChild)) __hydrateProps['asChild'] = props.asChild
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionTrigger')
 
   if (props.asChild) {
     return (
@@ -135,7 +136,7 @@ export function AccordionContent(__allProps: AccordionContentProps & { __instanc
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
   if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)
+  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionContent')
 
   return (
     <div data-slot="accordion-content" id={props.id} role="region" data-state="closed" className={`${accordionContentBaseClasses} ${accordionContentClosedClasses}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><div className={`overflow-hidden text-sm`}><div className={`pt-0 pb-4 ${className()}`} bf="s0">{props.children}</div></div></div>

@@ -1,16 +1,30 @@
 /**
- * Rich-type method-call refusal (#2273).
+ * Rich-type refusals: two sibling checks over a prop typed as a built-in
+ * "host rich type" (`Date`, `Map`, …), for the two distinct ways such a
+ * value breaks that have nothing to do with each other structurally.
  *
- * A method call on a prop typed as a built-in "host rich type" (`Date`,
- * `Map`, …) has no catalogued lowering — no adapter can emit `.toISOString()`
- * into a template. Left unchecked, such a call transliterates into the
- * target template's own dot-call syntax and dies at request time (a Go
- * template `.CreatedAt.ToISOString` panic, a Jinja `AttributeError`, …),
- * once per adapter, only once someone renders the page. This module makes
- * that gap loud at compile time instead: `checkRichTypeMethodCalls` walks
- * every expression position the compiler already treats as template-lowered
- * and pushes BF021 for any call this build has no evidence a lowering plugin
+ * `checkRichTypeMethodCalls` (#2273, BF021): a METHOD CALL on the receiver
+ * has no catalogued lowering — no adapter can emit `.toISOString()` into a
+ * template. Left unchecked, such a call transliterates into the target
+ * template's own dot-call syntax and dies at request time (a Go template
+ * `.CreatedAt.ToISOString` panic, a Jinja `AttributeError`, …), once per
+ * adapter, only once someone renders the page. This module makes that gap
+ * loud at compile time instead: `checkRichTypeMethodCalls` walks every
+ * expression position the compiler already treats as template-lowered and
+ * pushes BF021 for any call this build has no evidence a lowering plugin
  * (or `/* @client *\/`) will handle.
+ *
+ * `checkRichTypePropSerialization` (#2643, BF049): a rich-typed prop is used
+ * anywhere in this component's own CLIENT code (a handler, an effect) —
+ * regardless of whether a method is ever called on it. `checkRichTypeMethodCalls`
+ * only walks expression positions reachable through template lowering (JSX
+ * text/attribute positions rendered at SSR); a handler or effect body is a
+ * different code path it never analyzes, so even a method call there (e.g.
+ * `data.get(...)` inside an `onClick`) is just as invisible to it as a bare
+ * read. Either way the prop still crosses the `bf-p` hydration boundary as
+ * JSON: it arrives de-riched (`Map`/`Set` → `{}`) or fails to serialize
+ * (`BigInt` throws at SSR render). See that function's own doc for
+ * why this is metadata-driven rather than an IR walk.
  *
  * Deliberately conservative in both directions:
  *   - `resolveReceiverType` (rich-type-evidence.ts) returns `null` — no
@@ -51,7 +65,14 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { parseExpression } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 import { ErrorCodes } from './errors.ts'
-import { resolveReceiverType, baseTypeName, HOST_RICH_TYPE_NAMES, JSON_REVIVABLE_RICH_TYPE_NAMES } from './rich-type-evidence.ts'
+import {
+  resolveReceiverType,
+  baseTypeName,
+  HOST_RICH_TYPE_NAMES,
+  JSON_REVIVABLE_RICH_TYPE_NAMES,
+  resolvePropDeclaredType,
+  jsonUnsafeTypeName,
+} from './rich-type-evidence.ts'
 
 type Bindings = ReadonlyMap<string, TypeInfo | null>
 const EMPTY_BINDINGS: Bindings = new Map()
@@ -71,6 +92,72 @@ export function checkRichTypeMethodCalls(root: IRNode, metadata: IRMetadata, err
   const matchers = prepareLoweringMatchers(metadata)
   const seen = new Set<string>()
   walkNode(root, metadata, EMPTY_BINDINGS, matchers, errors, seen)
+}
+
+/**
+ * BF049 (#2643): flag a prop typed as a JSON-unsafe host rich type
+ * (`Map`, `Set`, `BigInt`, …) that this component's own client code reads —
+ * regardless of whether a method is ever called on it, since
+ * `checkRichTypeMethodCalls` only walks template-lowered expression
+ * positions and never sees a handler/effect body either way. The prop still
+ * crosses the `bf-p` hydration boundary as JSON: it arrives de-riched
+ * (`Map`/`Set` → `{}`, every entry silently
+ * dropped) or fails to serialize at all (`BigInt` throws `TypeError` at SSR
+ * render, killing the whole page).
+ *
+ * Metadata-driven, not an IR walk — the fire condition is "this prop WILL BE
+ * SERIALIZED into bf-p", which is exactly what `ir.metadata.clientAnalysis`
+ * (`analyzeClientNeeds`) already decided, and what every adapter's own
+ * prop-serialization step (e.g. Hono's `propsToSerialize` filter in
+ * `hono-adapter.ts`) reads off the SAME metadata. Mirroring that filter here
+ * — rather than re-walking JSX attribute positions — means this check fires
+ * in lockstep with what actually gets serialized, on every adapter, without
+ * duplicating per-adapter serialization logic into the compiler.
+ */
+export function checkRichTypePropSerialization(root: IRNode, metadata: IRMetadata, errors: CompilerError[], declLoc?: SourceLocation): void {
+  if (!metadata.propsType || !metadata.clientAnalysis?.needsInit) return
+  const usedProps = new Set(metadata.clientAnalysis.usedProps)
+  const loc = declLoc ?? root.loc
+  for (const param of metadata.propsParams) {
+    if (param.isRest || param.name.startsWith('on') || param.name.startsWith('__')) continue
+    if (!usedProps.has(param.name)) continue
+    const declared = resolvePropDeclaredType(param.sourceName ?? param.name, metadata)
+    const typeName = jsonUnsafeTypeName(declared)
+    if (!typeName) continue
+    // In-file shadow guard, mirroring `checkExpr`'s identical check for the
+    // method-call refusal — a local `interface Map { … }` wins.
+    if (metadata.typeDefinitions.some((d) => d.name === typeName)) continue
+    pushPropSerializationDiagnostic(errors, loc, param.name, typeName, declared!.raw)
+  }
+}
+
+function pushPropSerializationDiagnostic(
+  errors: CompilerError[],
+  loc: SourceLocation,
+  propName: string,
+  typeName: string,
+  declaredRaw: string,
+): void {
+  const consequence =
+    typeName === 'bigint' || typeName === 'BigInt'
+      ? "JSON.stringify throws at SSR render ('Do not know how to serialize a BigInt'), failing the whole page"
+      : typeName === 'symbol' || typeName === 'Symbol' || typeName === 'Function'
+        ? 'JSON.stringify drops the value entirely, so the client reads undefined at hydrate'
+        : 'it serializes de-riched (e.g. a Map or Set becomes {} with every entry silently dropped), so the client hydrates against corrupt data'
+  errors.push({
+    code: ErrorCodes.RICH_TYPE_PROP_NOT_HYDRATABLE,
+    severity: 'error',
+    message: `Prop '${propName}' is typed '${declaredRaw}' and is read by this component's own client code, so it must cross the bf-p hydration boundary as JSON — and ${typeName} cannot: ${consequence}.`,
+    loc,
+    suggestion: {
+      message:
+        'Pre-compute a JSON-serializable value server-side — a string, number, boolean, array, or plain object ' +
+        '(e.g. pass [...map.entries()] and rebuild the Map client-side where needed) — and pass that as the prop ' +
+        'instead. /* @client */ is NOT an escape here: the prop still crosses the bf-p boundary as JSON and arrives ' +
+        'de-riched (#2636).',
+      escape: [{ kind: 'prop-precompute' }],
+    },
+  })
 }
 
 function isLoweringClaimed(matchers: readonly LoweringMatcher[], callee: ParsedExpr, args: readonly ParsedExpr[]): boolean {
