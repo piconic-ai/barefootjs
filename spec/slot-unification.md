@@ -300,6 +300,23 @@ axis (`markerless`/`elidedPath`), unaffected by the correction above:
   helper). Both CSR emitters are now correct for the shipped `clientOnly`
   case; only the CSR side's GENERALIZATION past `clientOnly` (§2483) remains
   unimplemented, same as before this correction.
+- **Corrected again by #2645** — the #2617 census above missed a THIRD
+  `expression`-case emitter with the same shape: `irToComponentTemplateWithOpts`
+  (`html-template.ts`), the STATIC whole-component template builder used
+  when `canGenerateStaticTemplate` judges a component simple enough (a
+  bare-destructured-prop receiver like `createdAt.toISOString()` qualifies
+  via `isSimplePropExpression`, regardless of `clientOnly`). Unlike
+  `irToHtmlTemplate`'s narrow gap above, this one WAS reachable today: a
+  `/* @client */` text expression on a bare prop routed straight into this
+  builder, which had no `clientOnly` check at all in its `'expression'`
+  case and inlined the (possibly lowered) value unconditionally — a real
+  SSR/CSR byte-parity violation exercised by an ordinary top-level
+  `/* @client */` expression, not a generalization edge case. Fixed the
+  same way #2617 fixed `generateCsrTemplateWithOpts`: nest
+  `if (node.clientOnly && node.slotId) { if (node.markerless) return '';
+  return marker-pair }` ahead of the eager-evaluation fallback. All three
+  `expression`-case emitters are now correct for the shipped `clientOnly`
+  case.
 
 The SSR side is NOT already fully general, though — every one of the nine
 adapters' `renderExpression` nests its `if (expr.markerless) return ''`
