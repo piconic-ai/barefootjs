@@ -1,10 +1,7 @@
 /**
- * The CSR-conformance skip set (#2613): fixtures excluded from
- * `csr-conformance.test.ts`, each entry documenting why the fixture
- * cannot be tested in CSR mode. Extracted to its own module so a second
- * consumer — `packages/compat/src/__tests__/escape-coverage.test.ts`'s
- * tier-2 "not CSR-skipped" check — can read the same set without
- * duplicating it (and without the two silently drifting apart).
+ * Fixtures excluded from `csr-conformance.test.ts` (#2613). Extracted to
+ * its own module so `packages/compat`'s escape-coverage tier-2 check reads
+ * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Stateless components: no client JS emitted (fully server-rendered)
@@ -17,103 +14,53 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Local array variable (items) is not available at CSR template module scope.
   // CSR templates only have access to props and signals, not file-scope constants.
   'static-array-children',
-  // #2073 follow-up: the `.map(format)` function-reference callback closes
-  // over the module-scope `format` const, which — same class as
-  // `static-array-children` above — isn't reachable from the CSR template
-  // lambda (only props/signals are). Real-JS-runtime coverage (Hono) lives
-  // in the shared fixture's render conformance.
+  // #2073: `.map(format)` closes over a module-scope const — same
+  // CSR-template-scope class as `static-array-children`; Hono render
+  // conformance covers the real-JS runtime.
   'array-map-function-reference',
-  // #1247: prop-derived static-array loops materialize their children at init
-  // time (via the clone-and-insert fallback in the static-loop emitter), not
-  // at template-eval time. This test harness runs only the `template:`
-  // lambda, so the post-init DOM shape is verified by the runtime regression
-  // in `packages/client/__tests__/runtime/static-loop-csr-materialize.test.ts`.
+  // #1247: prop-derived static loops materialize children at init time, not
+  // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',
-  // Same reason as `static-array-from-props` — both `fruits` and
-  // `veggies` are direct prop arrays, materialized at init time via the
-  // clone-and-insert fallback, not available at template-eval scope.
+  // Same init-time materialization as `static-array-from-props`.
   'sibling-loops-key-isolation',
-  // #1268: same reason as `static-array-from-props` — the childComponent
-  // variant also materialises children at init time via the clone-and-
-  // insert fallback, not at template-eval time. CSR coverage lives in
-  // `packages/client/__tests__/runtime/static-loop-csr-materialize.test.ts`.
+  // #1268: same init-time materialization, childComponent variant.
   'static-array-from-props-with-component',
-  // Static style object is converted at compile time — no runtime needed.
-  // Attribute ordering differs between SSR (style first) and CSR injection (bf-s first).
+  // Attribute-order divergence only: SSR emits style first, CSR injection bf-s first.
   'style-object-static',
   // Synthetic scope wrapper has style="display:contents" before bf-s (#968).
   // Same attribute-ordering divergence as style-object-static/-dynamic.
   'top-level-ternary',
-  // Same synthetic-wrapper attribute-order divergence as top-level-ternary
-  // (#971 PR 5 uses the identical wrapper for non-JSX-direct returns).
+  // Same synthetic-wrapper attribute-order divergence as `top-level-ternary` (#971).
   'return-logical-and',
   'return-logical-or',
   'return-nullish-coalescing',
   'return-map',
-  // #1244 catalog: `{...rest}` spread back onto the root of a
-  // destructured loop param when there is no non-`key` explicit attr.
-  // The collision-safe merge emit (#1244) only triggers when a
-  // non-`key` explicit attr coexists with the spread (so JSX
-  // rightmost-wins is at risk); a lone `<li key={id} {...rest}>` keeps
-  // the legacy inline form to preserve the unconditional
-  // `data-key="${value}"` debug contract (`spreadAttrs` would otherwise
-  // skip `key={undefined}`). That leaves Hono SSR emitting the
-  // residual-object attributes before `data-key` (the synthesized
-  // hydrationAttr is appended at end) and CSR emitting `data-key`
-  // before the spread (source order). Both forms parse to identical
-  // DOM — no JSX-semantics violation, only attribute-order divergence.
-  // The collision shape that DOES violate semantics is locked in by
-  // `compiler-stress-1244.test.ts` (Layer 1).
+  // #1244: attribute-order-only divergence. A lone `<li key={id} {...rest}>`
+  // keeps the legacy inline emit (the collision-safe merge needs a non-`key`
+  // explicit attr) to preserve the unconditional `data-key` debug contract, so
+  // SSR and CSR order `data-key` vs the spread differently — identical DOM
+  // after parsing. The semantics-violating collision shape is locked by
+  // `compiler-stress-1244.test.ts`.
   'rest-destructure-object-spread-in-map',
-  // #1407 follow-up: the destructured-rest / SolidJS-style spread
-  // fixtures pin the Go (and Mojo) SSR-side bag-plumbing contract,
-  // which is where the original onboarding regression manifested.
-  // The CSR runtime path for the same shapes is a separate concern
-  // — `applyRestAttrs(_v, _p, exclude)` needs the JS-runtime spread
-  // bag to be present in `_p`, but the test harness's single `props`
-  // object can't simultaneously carry the flat shape JS expects and
-  // the typed shape Go's Input struct requires. Per-adapter
-  // expectedHtml on the Go side covers the SSR contract; the CSR
-  // runtime parity for open-ended bag shapes is tracked as a
-  // follow-up to the harness rather than blocking this fix.
+  // #1407: `applyRestAttrs` needs the JS spread bag in `_p`, but the harness's
+  // single `props` object can't carry both the flat shape JS expects and the
+  // typed shape Go's Input struct requires. Go-side expectedHtml pins the SSR
+  // contract; CSR runtime parity is a tracked harness follow-up.
   'jsx-spread-rest-prop',
   'jsx-spread-props-object',
-  // #1467 Phase 2a: the shared-component corpus (#1466) is now
-  // exercised in CSR mode — the harness honours `props.__instanceId`
-  // for the root `bf-s` (and child scope ids), so the captured
-  // `<Name>_test` root canonicalises to `<Name>_*` on both sides.
-  // `counter-shared`, `conditional-return-{button,link}`, `form`,
-  // `portal`, `todo-app-ssr`, and `ai-chat` all pass now.
-  //
-  // The entries below stay skipped for reasons UNRELATED to the
-  // scope-id fix — each hits a pre-existing CSR template-eval limit:
-  //
-  //   - `toggle-shared` / `reactive-props` /
-  //     `props-reactivity-comparison`: the CSR template lambda closes
-  //     over a file-scope/local binding (`toggleItems`, `value`) that
-  //     only init wires up; template-eval raises a ReferenceError.
-  //     Same class as `static-array-children` above ("Local array
-  //     variable is not available at CSR template module scope").
+  // Template lambda closes over an init-wired local (`toggleItems`, `value`)
+  // — same class as `static-array-children`.
   'toggle-shared',
   'reactive-props',
   'props-reactivity-comparison',
-  //   - `search-params-derived-memo`: the memo's template-eval reads the
-  //     env-signal getter (`sp()`), a binding only init/hydration wires up
-  //     (the per-request reader) — same init-wired-binding class as
-  //     `toggle-shared` above. The client-side env-signal behavior is
-  //     covered by the runtime `env-signal` tests; SSR coverage lives in
-  //     the per-adapter render conformance (#2075).
+  // Memo reads the env-signal getter `sp()`, wired only at init — same class
+  // as `toggle-shared`; runtime `env-signal` tests + per-adapter render
+  // conformance (#2075) cover it.
   'search-params-derived-memo',
-  //   - `search-params-derived-memo-bare`: same reason — the bare-getter
-  //     sibling of `search-params-derived-memo` above (no `??` default).
-  //     The CSR harness's stubbed getter yields the JS literal `null`
-  //     (real text), while `expectedHtml`'s empty comparison target
-  //     reflects the per-adapter render contract (#2075).
+  // Bare-getter sibling: the stubbed getter yields literal `null` text where
+  // expectedHtml pins the empty per-adapter contract (#2075).
   'search-params-derived-memo-bare',
-  //   - `todo-app`: its keyed `.map(...)` of `TodoItem` children is
-  //     materialised at init time, so the SSR snapshot captures the
-  //     empty `<ul>` while the CSR template lambda renders the full
-  //     list — same divergence as `static-array-from-props` above.
+  // Keyed child-component loop materializes at init — same as `static-array-from-props`.
   'todo-app',
   // #1448 Tier B — iteration shape fixtures are SSR-only prop-based
   // components. The CSR template path can't resolve bare prop refs
@@ -121,133 +68,66 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'array-entries',
   'array-keys',
   'array-values',
-  // #1467 Phase 2b: `kbd/index.tsx` exports two components (`Kbd` then
-  // `KbdGroup`). The CSR harness evaluates `__lastComponent` — the last
-  // `hydrate()` registration — which is `KbdGroup`, so it renders the
-  // wrong sibling (`data-slot="kbd-group"` vs the pinned `Kbd`'s
-  // `data-slot="kbd"`). Same multi-export-source harness limitation that
-  // CSR-skips `reactive-props` / `props-reactivity-comparison`; the
-  // SSR-side pin (`componentName: 'Kbd'`) keeps Hono conformance correct,
-  // and `kbd` ships no interactions so the fixture-hydrate layer skips it
-  // regardless.
+  // #1467: multi-export source — the harness's `__lastComponent` renders
+  // `KbdGroup`, not the pinned `Kbd`; SSR `componentName` pin keeps Hono
+  // honest, and `kbd` ships no interactions anyway.
   'kbd',
-  // #1467 Phase 2b: `input/index.tsx` renders its `placeholder` (and any
-  // other native attr) through the `{...props}` spread → `applyRestAttrs`
-  // at init time, not as an explicit template attribute. The CSR harness
-  // stubs `applyRestAttrs` as a noop (it only evaluates the template
-  // lambda), so the spread-applied `placeholder` is absent from CSR output
-  // while present in the SSR HTML. Same `applyRestAttrs`-not-modeled
-  // limitation that CSR-skips `jsx-spread-rest-prop` / `jsx-spread-props-
-  // object`; the real-browser fixture-hydrate layer exercises the spread
-  // for real (and the typed value survives hydration there).
+  // #1467: `placeholder` flows through `{...props}` → `applyRestAttrs` at
+  // init, which the harness stubs as a noop — same class as
+  // `jsx-spread-rest-prop`; the fixture-hydrate layer exercises it for real.
   'input',
-  // #2131: same `applyRestAttrs`-not-modeled limitation as `input` /
-  // `jsx-spread-rest-prop` above — the child renders `placeholder` /
-  // `value` through its `{...props}` spread at init time, which the CSR
-  // template-eval harness stubs as a noop. The fixture's contract (the
-  // parent's call site routes non-param attrs into the child's rest bag
-  // and SSR renders them) is pinned by the per-adapter render
-  // conformance, where real Go compiles + executes the emitted structs.
+  // #2131: same `applyRestAttrs`-not-modeled class as `input`; per-adapter
+  // render conformance pins the SSR contract.
   'rest-spread-child-attrs',
-  // #1467 demo corpus: `radio-group-demo.tsx` exports three sibling
-  // demos and the CSR harness evaluates `__lastComponent` — the last
-  // `hydrate()` registration (`RadioGroupCardDemo`) — rather than the
-  // pinned `RadioGroupBasicDemo`. Same multi-export-source harness
-  // limitation that CSR-skips `kbd` / `reactive-props`; Hono SSR
-  // conformance keeps the pinned export honest (`componentName`), and
-  // the fixture-hydrate layer drives the real composed hydration.
+  // #1467: same multi-export limitation as `kbd` — `__lastComponent` renders
+  // the last demo export instead of the pinned basic demo (radio-group,
+  // accordion, tabs, dialog, popover, tooltip, select, dropdown-menu,
+  // combobox, command; data-table also hits the default-prop gap below).
   'radio-group',
-  // #1467 Phase 2c: same multi-export demo-source limitation as
-  // `radio-group` above — the CSR harness's `__lastComponent` renders
-  // `AccordionMultipleOpenDemo` / `TabsDisabledDemo` instead of the
-  // pinned first demo.
   'accordion',
   'tabs',
-  // #1467 Phase 2c overlay: same multi-export demo-source limitation —
-  // `__lastComponent` renders `DialogLongContentDemo` /
-  // `PopoverFormDemo` / `TooltipIconDemo` instead of the pinned basic
-  // demos.
   'dialog',
   'popover',
   'tooltip',
-  // #1467 Phase 2d: same multi-export demo-source limitation —
-  // `__lastComponent` renders the last demo export instead of the
-  // pinned basic demo.
   'select',
   'dropdown-menu',
   'combobox',
   'command',
-  // #1467 Phase 2e:
-  //   - `data-table`: multi-export again (`__lastComponent` renders
-  //     `DataTableSelectionDemo`'s checkbox table), compounded by the
-  //     template-eval default-prop gap below.
-  //   - `pagination`: the pinned export IS the last one, but the
-  //     table/pagination primitives' `{ className = '', ...props }`
-  //     destructure defaults aren't applied at template-eval time, so
-  //     CSR emits literal `undefined` class tokens the SSR HTML
-  //     doesn't carry — same class as the `renderToTest`
-  //     default-prop limitation documented in CLAUDE.md.
+  // `pagination`: the pinned export IS last, but `{ className = '', ...props }`
+  // destructure defaults aren't applied at template-eval, so CSR emits literal
+  // `undefined` class tokens — the `renderToTest` default-prop limitation
+  // (CLAUDE.md).
   'pagination',
   'data-table',
-  // `bf-region` is an SSR hydration boundary marker emitted by the
-  // adapters' `renderElement` (the load-bearing path: it tags the
-  // server-rendered document the client router matches regions on).
-  // The CSR template-eval path constructs the `<Region>` wrapper div
-  // without the marker — emitting it on the client-built DOM is part of
-  // the deferred runtime region work (dispose/rehydrate, spec/router.md),
-  // not this lowering spike. The four-adapter SSR emit is pinned by the
-  // `region-boundary` JSX conformance test; only the CSR parity is
-  // out of scope here. Same SSR-only-marker divergence as the entries above.
+  // `bf-region` is emitted by the adapters' SSR `renderElement`; the CSR
+  // template path deliberately omits it — client-built-DOM markers belong to
+  // the deferred runtime region work (spec/router.md), not this lowering
+  // spike. SSR emit is pinned by the `region-boundary` JSX conformance test.
   'region-boundary',
-  // Priority-12 edge-case sweep: SSR/CSR divergences inside the
-  // Hono + client pipeline itself, surfaced by the new fixtures. Each
-  // entry is a REAL divergence (not a harness artifact) — the skip
-  // documents it until the compiler/runtime reconciles the two paths:
-  //   (`falsy-text-values` graduated — #2171 folds the render-nothing
-  //   literals in Phase 1, so SSR and CSR now agree by construction.)
-  //   (`html-entity-text` graduated — Phase 1 decodes JSX character
-  //   references, and the CSR template builder re-escapes static text
-  //   for its innerHTML context, so SSR and CSR agree by construction.)
-  //   (`boolean-attr-literals` graduated — #2172 normalizes intrinsic
-  //   attribute names in Phase 1, so `readOnly` reaches both SSR and
-  //   CSR as the BOOLEAN_ATTRS member `readonly`.)
-  //   (`static-attr-escape` graduated — the CSR template builder now
-  //   HTML-escapes static attribute values like the SSR side.)
-  //   - `object-entries-map` / `nested-loop-outer-binding`: nested/
-  //     tuple-destructure loops emit `data-key`/`data-key-1` depth
-  //     suffixes differently between the SSR snapshot and template-eval.
+  // Priority-12 sweep: REAL SSR/CSR divergences (not harness artifacts),
+  // skipped until the pipeline reconciles the two paths.
+  // `object-entries-map` / `nested-loop-outer-binding`: nested/tuple loops
+  // disagree on `data-key` depth suffixes between SSR and template-eval.
   'object-entries-map',
   'nested-loop-outer-binding',
-  // Same class as `nested-loop-outer-binding` above, one level deeper —
-  // the SSR snapshot and template-eval disagree on nested data-key
-  // depth suffixes the same way.
+  // Same data-key depth-suffix disagreement, one level deeper.
   'nested-loop-triple-depth',
-  //   - `jsx-element-prop`: a JSX element passed as a NON-children prop
-  //     reaches the CSR insert as an escaped STRING (with the
-  //     `__BF_PARENT_SCOPE__` placeholder still embedded) instead of
-  //     real markup.
+  // `jsx-element-prop`: a non-children JSX prop reaches the CSR insert as an
+  // escaped string (`__BF_PARENT_SCOPE__` still embedded), not markup.
   'jsx-element-prop',
-  //   - `nested-fragments`: a multi-root fragment attaches `bf-s` to its
-  //     first element in CSR, while SSR carries the scope on a
-  //     `<!--bf-scope:...-->` comment the normalizer strips.
+  // `nested-fragments`: a multi-root fragment attaches `bf-s` to its
+  // first element in CSR, while SSR carries the scope on a
+  // `<!--bf-scope:...-->` comment the normalizer strips.
   'nested-fragments',
-  //   - `grandchild-composition`: the third composition level reuses the
-  //     parent's scope id (`test_s0`) in CSR instead of deriving
-  //     `test_s0_s0` as SSR does. #2444 fixed the sibling
-  //     `composite-row-child-component` case but this one stays a known
-  //     limitation — deriving it via `renderChild`'s `_parentScopeId`
-  //     push collided with `comment: true` wrapper self-lookup
-  //     (`$cSingle`'s short-suffix fallback in `query.ts`), breaking
-  //     hydration for a `renderNode`-style callback prop whose inner
-  //     component's own first slot id coincides with the wrapper's slot
-  //     number (see `site/ui`'s xyflow Highlight-Depth demo regression).
+  // `grandchild-composition`: third level reuses the parent scope id
+  // (`test_s0`) in CSR instead of deriving `test_s0_s0` as SSR does. #2444
+  // fixed the sibling case, but deriving here via `renderChild`'s
+  // `_parentScopeId` push collided with `comment: true` wrapper self-lookup
+  // (`$cSingle`'s short-suffix fallback in `query.ts`), breaking hydration
+  // when an inner component's first slot id coincides with the wrapper's slot
+  // number (site/ui xyflow Highlight-Depth regression) — known limitation #2649.
   'grandchild-composition',
-  // #2463 FIXED: the fixture now lowers to the root-ternary plan and
-  // its template evaluates cleanly — but the synthetic scope wrapper
-  // has style="display:contents" before bf-s, the same CSR/SSR
-  // attribute-ordering divergence that skips `top-level-ternary`
-  // above (#968). Graduates to a full pass if that ordering is ever
-  // unified.
+  // Lowers to the root-ternary plan cleanly; skipped only for the same #968
+  // wrapper attribute-ordering divergence as `top-level-ternary`.
   'signal-early-return',
 ])
-
