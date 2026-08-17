@@ -1810,6 +1810,19 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
 
     case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
+      // `/* @client */` defers the expression to hydrate — init's
+      // clientOnlyElements effect owns the value (#2645). Mirror
+      // `generateCsrTemplateWithOpts`'s identical branch byte-for-byte:
+      // empty marker pair for SSR parity, or nothing at all when the
+      // elision pass dropped the markers (`markerless` — the claim plan
+      // resolves via `elidedPath`, slot unification Step B). Without this,
+      // this builder inlined the (possibly lowered) expression value
+      // directly into the static template, breaking SSR/CSR byte parity —
+      // SSR renders the region empty, this builder rendered it populated.
+      if (node.clientOnly && node.slotId) {
+        if (node.markerless) return ''
+        return `<!--bf:${node.slotId}--><!--/-->`
+      }
       const wrapped = transformExpr(node.expr, node.templateExpr)
       // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
       const value = node.joinArrayChild
@@ -2404,10 +2417,15 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // `elidedPath` (a precomputed child-index path), not a marker
         // scan, so no anchor comment is needed here at all — matches SSR's
         // fully-empty output for this case byte-for-byte (#2617; this is
-        // the second of the two top-level CSR emitters `irToHtmlTemplate`
-        // and `generateCsrTemplateWithOpts` that must each consult
-        // `markerless` — see that function's own check at this file's
-        // `case 'expression'` for why the two aren't collapsed into one).
+        // one of three whole-component/CSR-path emitters — alongside
+        // `irToHtmlTemplate` (loop/conditional bodies) and
+        // `irToComponentTemplateWithOpts` (the static whole-component
+        // template — #2645 added its own identical branch after this
+        // exact gap let a `/* @client */` text expression inline its
+        // value into the static template, breaking SSR/CSR byte parity)
+        // — that must each consult `markerless` — see those functions'
+        // own checks at this file's `case 'expression'` for why the
+        // three aren't collapsed into one).
         if (node.markerless) return ''
         return `<!--bf:${node.slotId}--><!--/-->`
       }

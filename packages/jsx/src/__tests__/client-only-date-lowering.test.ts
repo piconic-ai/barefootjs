@@ -152,3 +152,31 @@ describe('#2641 — reactive attribute bindings route catalogued calls through t
     expect(clientJs).not.toContain('date(')
   })
 })
+
+describe('#2645 — /* @client */ text expressions elide in the static/CSR template like SSR', () => {
+  // `irToComponentTemplateWithOpts`'s 'expression' case never checked
+  // `node.clientOnly` — a bare-destructured-prop receiver (`isSimplePropExpression`
+  // treats `createdAt.toISOString()` as "simple") routed to this static
+  // template builder, which had no clientOnly awareness and inlined the
+  // (possibly lowered) value directly, breaking SSR/CSR byte parity: SSR
+  // renders the @client region empty, this builder rendered it populated.
+  test('markerless: the region is fully empty, matching SSR', () => {
+    const { clientJs, bf021 } = compile(`
+      export function Foo({ createdAt }: { createdAt: Date }) {
+        return <div>{/* @client */ createdAt.toISOString()}</div>
+      }
+    `)
+    expect(bf021).toHaveLength(0)
+    expect(clientJs).toContain('template: (_p) => `<div bf="s1"></div>`')
+  })
+
+  test('marker pair (adjacent static text defeats markerless elision): empty marker pair, no inlined value', () => {
+    const { clientJs, bf021 } = compile(`
+      export function Foo({ createdAt }: { createdAt: Date }) {
+        return <div>ISO: {/* @client */ createdAt.toISOString()}</div>
+      }
+    `)
+    expect(bf021).toHaveLength(0)
+    expect(clientJs).toContain('template: (_p) => `<div bf="s1">ISO: <!--bf:s0--><!--/--></div>`')
+  })
+})

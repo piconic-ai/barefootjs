@@ -26,13 +26,15 @@ import { createFixture } from '../src/types'
  * (packages/client) proves it doesn't throw against a real, JSON-round-
  * tripped prop.
  *
- * CSR-skipped (`csr-skip-set.ts`): this fixture's bare-destructured-prop
- * method-call shape trips a SEPARATE, pre-existing bug (#2645,
- * `canGenerateStaticTemplate`'s `'expression'` case never checks
- * `node.clientOnly`) that inlines the `@client` value into the CSR/static
- * template instead of eliding it like SSR does — orthogonal to this
- * fixture's own #2640 fix, which the hydrate-execution test above already
- * proves sound independent of that gap.
+ * This fixture's bare-destructured-prop method-call shape also caught a
+ * SEPARATE, pre-existing bug (#2645): `irToComponentTemplateWithOpts`'s
+ * `'expression'` case never checked `node.clientOnly`, so it inlined the
+ * `@client` value into the CSR/static template instead of eliding it like
+ * SSR does (a real SSR/CSR byte-parity violation, not a harness artifact).
+ * Fixed by adding the same `clientOnly && slotId` / `markerless` branch
+ * `generateCsrTemplateWithOpts` already had — this fixture (previously
+ * `CSR_SKIP_FIXTURES`-pinned) is now that fix's CSR-conformance regression
+ * pin, alongside the #2640 hydrate-execution coverage above.
  */
 export const fixture = createFixture({
   id: 'date-client-catalogued',
