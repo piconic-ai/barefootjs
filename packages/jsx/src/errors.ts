@@ -54,13 +54,14 @@ export const ErrorCodes = {
   // fires only for the client-component compilation path.
   SIBLING_COMPONENT_NOT_COMPILED: 'BF048',
   // A prop typed as a host rich type whose `JSON.stringify` output is not
-  // revivable (`Map`, `Set`, `BigInt`, …) is read by this component's own
-  // client code (a handler, an effect) but is never passed through a method
-  // call — so `checkRichTypeMethodCalls`'s BF021 never fires on it, yet the
-  // prop still crosses the `bf-p` hydration boundary as JSON and arrives
-  // de-riched (or, for `BigInt`, fails to serialize at all, throwing at SSR
-  // render). Sibling of BF021 for the "untouched passthrough" shape rather
-  // than the "method call" shape (#2643).
+  // revivable (`Map`, `Set`, `BigInt`, …) is used by this component's own
+  // client code (a handler, an effect) — regardless of whether a method is
+  // called on it, since `checkRichTypeMethodCalls`'s BF021 only walks
+  // template-lowered expression positions and never sees a handler/effect
+  // body either way. The prop still crosses the `bf-p` hydration boundary as
+  // JSON and arrives de-riched (or, for `BigInt`, fails to serialize at all,
+  // throwing at SSR render). Sibling of BF021 for the "client-side use"
+  // shape, which BF021's template-only walk can never reach (#2643).
   RICH_TYPE_PROP_NOT_HYDRATABLE: 'BF049',
 
   // Import errors (BF050-BF059)

@@ -3425,7 +3425,7 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body.ts"
       },
       "rich-prop-client-read": {
-        "description": "A Map-typed prop read (not method-called) by client code refuses with BF049 — the prop cannot…",
+        "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
       },
       "some-typeof-predicate": {

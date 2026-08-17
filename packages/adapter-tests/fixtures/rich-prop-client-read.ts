@@ -28,7 +28,7 @@ import { createFixture } from '../src/types'
  */
 export const fixture = createFixture({
   id: 'rich-prop-client-read',
-  description: 'A Map-typed prop read (not method-called) by client code refuses with BF049 — the prop cannot survive the bf-p JSON boundary',
+  description: 'A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler body) refuses with BF049 — the prop cannot survive the bf-p JSON boundary',
   source: `
 'use client'
 export function RichPropClientRead({ data }: { data: Map<string, number> }) {

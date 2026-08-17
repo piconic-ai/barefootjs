@@ -43,11 +43,15 @@ export function bfTextEnd() {
  * component's own design accounts for that). Widening this to a deep walk
  * would turn that accepted degradation into a new SSR 500.
  *
- * The throw set is narrower than BF049's flag set for the same reason:
- * `RegExp` / `Error` / `URLSearchParams` degrade to SOMETHING (`{}` — no
- * different from any other type-erased plain object) rather than either
- * throwing or losing structurally-required data, so they stay diagnosable
- * at compile time only, not a runtime hard-stop.
+ * The throw set is narrower than BF049's flag set, but NOT because
+ * `RegExp` / `Error` / `URLSearchParams` preserve more data than a `Map` or
+ * `Set` — `JSON.stringify` degrades `RegExp` and `Error` to `{}` exactly
+ * like a `Map`/`Set` (only `URLSearchParams` happens to round-trip its
+ * key/value pairs as a plain object). They're excluded from the runtime
+ * throw purely to avoid a breaking behavior change: `site/ui`'s InputOTP
+ * demo already ships a live `RegExp` `pattern` prop that degrades to `{}`
+ * today, and the component's own design tolerates that. They stay
+ * diagnosable at compile time (BF049) only, not a runtime hard-stop.
  */
 export function serializeHydrationProps(props: Record<string, unknown>, componentName: string): string | undefined {
   const keys = Object.keys(props)
@@ -71,7 +75,14 @@ export function serializeHydrationProps(props: Record<string, unknown>, componen
                     ? 'Promise'
                     : null
     if (offender !== null) {
-      const consequence = offender === 'BigInt' ? '' : ' (its contents would be silently dropped)'
+      const consequence =
+        offender === 'BigInt'
+          ? ''
+          : offender === 'Symbol'
+            ? ' (the prop would be silently omitted from the payload entirely)'
+            : offender === 'Promise'
+              ? " (its eventual value would be silently unreachable — JSON.stringify can't wait for a promise to settle)"
+              : ' (its entries would be silently dropped, serializing to {})'
       throw new TypeError(
         `[barefootjs] Cannot serialize prop '${key}' of <${componentName}> for hydration: a ${offender} does not ` +
           `survive the bf-p JSON boundary${consequence}. Pre-compute a JSON-safe value (string/number/array/plain ` +

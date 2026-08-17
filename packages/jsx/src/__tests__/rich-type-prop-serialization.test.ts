@@ -2,12 +2,15 @@
  * Rich-type prop serialization refusal (BF049, #2643).
  *
  * Sibling of BF021 (`rich-type-method-refusal.test.ts`) for a DIFFERENT
- * failure shape: no method call is involved at all. A rich-typed prop
- * (`Map`, `Set`, `BigInt`, …) is simply READ by this component's own client
- * code (a handler, an effect) and passed through untouched — legitimate in
- * general, but the prop still crosses the `bf-p` hydration boundary as JSON,
- * where it either arrives de-riched (`Map`/`Set` → `{}`, entries silently
- * dropped) or fails to serialize at all (`BigInt` throws at SSR render).
+ * failure shape: whether or not a method is called is irrelevant here. A
+ * rich-typed prop (`Map`, `Set`, `BigInt`, …) used anywhere in this
+ * component's own client code (a handler, an effect) — merely read, or even
+ * method-called (`data.get(...)`, `tags.has(...)`, below) — is invisible to
+ * BF021 either way, since BF021 only walks template-lowered expression
+ * positions and never analyzes a handler/effect body. But the prop still
+ * crosses the `bf-p` hydration boundary as JSON, where it either arrives
+ * de-riched (`Map`/`Set` → `{}`, entries silently dropped) or fails to
+ * serialize at all (`BigInt` throws at SSR render).
  *
  * `checkRichTypePropSerialization` is metadata-driven (mirrors the adapter's
  * own `propsToSerialize` filter), not a lowering-plugin-aware IR walk, so

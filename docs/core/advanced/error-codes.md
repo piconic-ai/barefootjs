@@ -349,17 +349,20 @@ function Child({ initialCount }: Props) {
 
 **Trigger:** A prop typed as a JSON-unsafe host rich type — `Map`, `Set`,
 `WeakMap`, `WeakSet`, `URLSearchParams`, `RegExp`, `Promise`, `Error`,
-`Symbol`, `BigInt`, `Function` — is read by this component's own client code
-(an event handler, an effect), with no method call involved. This is the
-sibling of [BF021](#bf021)'s host-rich-type refusal for a different shape:
-BF021 fires when a METHOD is called on the receiver; BF049 fires when the
-prop is merely read, untouched, which BF021 never sees. Either way the prop
-crosses the `bf-p` hydration boundary as JSON, where a `Map`/`Set` arrives
-de-riched (`{}`, every entry silently dropped) and a `BigInt` fails to
-serialize at all (`TypeError` at SSR render, failing the whole page).
+`Symbol`, `BigInt`, `Function` — is used anywhere in this component's own
+client code (an event handler, an effect), regardless of whether a method is
+called on it. This is the sibling of [BF021](#bf021)'s host-rich-type
+refusal for a different shape: BF021 only walks expression positions
+reachable through template lowering (JSX text/attribute positions rendered
+at SSR); a handler or effect body is a different code path BF021 never
+analyzes, so even a method call there (like `data.get(...)` below) is just
+as invisible to it as a bare read. Either way the prop crosses the `bf-p`
+hydration boundary as JSON, where a `Map`/`Set` arrives de-riched (`{}`,
+every entry silently dropped) and a `BigInt` fails to serialize at all
+(`TypeError` at SSR render, failing the whole page).
 
 ```tsx
-// ❌ BF049 — a Map prop read by client code cannot survive hydration
+// ❌ BF049 — a Map prop used by client code cannot survive hydration
 'use client'
 export function Foo({ data }: { data: Map<string, number> }) {
   return <button onClick={() => console.log(data.get('x'))}>go</button>

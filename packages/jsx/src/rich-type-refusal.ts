@@ -14,12 +14,16 @@
  * pushes BF021 for any call this build has no evidence a lowering plugin
  * (or `/* @client *\/`) will handle.
  *
- * `checkRichTypePropSerialization` (#2643, BF049): NO method call is
- * involved at all — a rich-typed prop is merely read by this component's own
- * client code (a handler, an effect) and passed through untouched. BF021
- * never fires on this shape, but the prop still crosses the `bf-p` hydration
- * boundary as JSON: it arrives de-riched (`Map`/`Set` → `{}`) or fails to
- * serialize (`BigInt` throws at SSR render). See that function's own doc for
+ * `checkRichTypePropSerialization` (#2643, BF049): a rich-typed prop is used
+ * anywhere in this component's own CLIENT code (a handler, an effect) —
+ * regardless of whether a method is ever called on it. `checkRichTypeMethodCalls`
+ * only walks expression positions reachable through template lowering (JSX
+ * text/attribute positions rendered at SSR); a handler or effect body is a
+ * different code path it never analyzes, so even a method call there (e.g.
+ * `data.get(...)` inside an `onClick`) is just as invisible to it as a bare
+ * read. Either way the prop still crosses the `bf-p` hydration boundary as
+ * JSON: it arrives de-riched (`Map`/`Set` → `{}`) or fails to serialize
+ * (`BigInt` throws at SSR render). See that function's own doc for
  * why this is metadata-driven rather than an IR walk.
  *
  * Deliberately conservative in both directions:
@@ -93,9 +97,11 @@ export function checkRichTypeMethodCalls(root: IRNode, metadata: IRMetadata, err
 /**
  * BF049 (#2643): flag a prop typed as a JSON-unsafe host rich type
  * (`Map`, `Set`, `BigInt`, …) that this component's own client code reads —
- * even though NO method is ever called on it, so `checkRichTypeMethodCalls`
- * never sees it. The prop still crosses the `bf-p` hydration boundary as
- * JSON: it arrives de-riched (`Map`/`Set` → `{}`, every entry silently
+ * regardless of whether a method is ever called on it, since
+ * `checkRichTypeMethodCalls` only walks template-lowered expression
+ * positions and never sees a handler/effect body either way. The prop still
+ * crosses the `bf-p` hydration boundary as JSON: it arrives de-riched
+ * (`Map`/`Set` → `{}`, every entry silently
  * dropped) or fails to serialize at all (`BigInt` throws `TypeError` at SSR
  * render, killing the whole page).
  *

@@ -22,12 +22,14 @@ import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
-  // #2643: a Map-typed prop READ (not method-called) by this component's
-  // own client code cannot survive the bf-p JSON boundary intact -- BF021
-  // never sees this shape (no method call), so this is a distinct compiler-
-  // level refusal (checkRichTypePropSerialization), pinned identically on
-  // every adapter for the same reason date-method-uncatalogued is: a
-  // hydration-transport gap, not a template-lowering gap, so it recurs on
-  // Hono's JS-runtime hydrate leg exactly as much as on a DSL adapter's.
+  // #2643: a Map-typed prop used by this component's own client code (a
+  // handler, an effect) cannot survive the bf-p JSON boundary intact --
+  // BF021 only walks template-lowered expression positions, so a handler
+  // body's `data.get(...)` is just as invisible to it as a bare read; this
+  // is a distinct compiler-level refusal (checkRichTypePropSerialization),
+  // pinned identically on every adapter for the same reason
+  // date-method-uncatalogued is: a hydration-transport gap, not a
+  // template-lowering gap, so it recurs on Hono's JS-runtime hydrate leg
+  // exactly as much as on a DSL adapter's.
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2643' }],
 }

@@ -105,8 +105,10 @@ export const JSON_REVIVABLE_RICH_TYPE_NAMES: ReadonlySet<string> = new Set(['Dat
  * (`rich-type-refusal.ts`, #2643) to flag a rich-typed prop that a client
  * reads but that will cross the `bf-p` hydration boundary de-riched or
  * (for `BigInt`) fail to serialize at all — a distinct failure from the
- * method-call refusal above: no method call is even required to trigger it,
- * just an untouched prop a client handler/effect reads.
+ * method-call refusal above: whether or not client code goes on to call a
+ * method on the value is irrelevant here, since the method-call refusal
+ * only walks template-lowered expression positions and never sees a
+ * handler/effect body regardless.
  */
 export const JSON_UNSAFE_RICH_TYPE_NAMES: ReadonlySet<string> = new Set(
   [...HOST_RICH_TYPE_NAMES].filter((n) => !JSON_REVIVABLE_RICH_TYPE_NAMES.has(n)),
