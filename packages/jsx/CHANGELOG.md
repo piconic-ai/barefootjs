@@ -1,5 +1,16 @@
 # @barefootjs/jsx
 
+## 0.31.7
+
+### Patch Changes
+
+- 3745c4f: BF021's diagnostic no longer recommends a bare `/* @client */` as an escape for a method call on a host rich-typed prop (`Date`, `Map`, …) — following it compiled clean but crashed at hydrate with a `TypeError`, since the prop crosses the `bf-p` boundary as JSON with no type-aware revival. The suggestion now leads with pre-computing the value server-side, and for `Date`/`URL` (the two types whose `toJSON()` output round-trips through their own constructor) offers a genuinely hydrate-safe `/* @client */` form that explicitly revives the receiver first, e.g. `new Date(createdAt).toISOString()`.
+- bbfe9a6: New diagnostic BF049: refuse at compile time when a prop provably typed as a JSON-unsafe host rich type (`Map`, `Set`, `BigInt`, `RegExp`, …) is used anywhere in the component's own client code (a handler, an effect), regardless of whether a method is called on it. Before this, only a _method call_ on such a prop in a template-lowered position was caught (BF021, #2273) — BF021 never analyzes handler/effect bodies at all, so a prop merely read there, or even method-called there (e.g. `data.get(...)` inside an `onClick`), still silently crossed the `bf-p` hydration boundary, where it either threw (`BigInt`) or de-serialized to `{}`/`null` with no diagnostic. `checkRichTypePropSerialization` (`packages/jsx/src/rich-type-refusal.ts`) is BF021's sibling for this "client-side use" shape.
+- 345840a: Fix a `TypeError` at hydrate when a catalogued rich-type method call (e.g. `Date.prototype.toISOString`, or an explicit-locale `toLocaleDateString(...)`) appears inside a `/* @client */` expression or a reactive attribute binding. These sites used to splice the call's source text verbatim into the emitted client JS instead of routing it through the same `date`/`formatDate` runtime helper the static template and non-`@client` reactive text already use, so the receiver — which crosses the `bf-p` hydration boundary as a JSON-de-riched value — threw when the raw method was called on it.
+- b893f99: Fix a SSR/CSR byte-parity violation where a `/* @client */` text expression on a bare destructured prop (e.g. `{/* @client */ createdAt.toISOString()}`) had its value inlined directly into the static/CSR client-JS template instead of being elided to an empty region like SSR. `irToComponentTemplateWithOpts`'s `'expression'` case now nests the same `clientOnly && slotId` / `markerless` elision branch `generateCsrTemplateWithOpts` already had.
+- 77b0e3f: Fix a `ReferenceError` at hydrate when a destructured prop's only use in a component is inside a `/* @client */`-marked expression. The prop is now correctly extracted from `_p` before the client-side `createEffect` reads it.
+  - @barefootjs/shared@0.31.7
+
 ## 0.31.6
 
 ### Patch Changes
