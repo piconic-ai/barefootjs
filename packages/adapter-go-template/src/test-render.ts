@@ -706,16 +706,29 @@ function buildDynamicChildLoopSeeding(
     }
     if (!datumField) continue
 
+    // All-or-nothing (Copilot review on #2630's PR): a prop that is
+    // legitimately SSR-irrelevant (event handler, `key`, dashed debug
+    // attrs) is exempt, but any OTHER prop this resolver can't express as
+    // an `item` read means the seeded `<Name>Input{...}` would carry Go
+    // zero values for it — silently wrong SSR instead of the loudly-empty
+    // host the unseeded path produces. Bail on the whole component in
+    // that case rather than seed an incomplete slice.
     const inputFields: string[] = []
+    let unresolvableProp = false
     for (const prop of nested.props) {
       if (prop.isEventHandler) continue
       if (prop.name === 'key' || prop.name.includes('-')) continue
-      if (prop.value.kind !== 'expression' || !prop.value.parsed) continue
-      const itemExpr = goItemExprForLoopProp(prop.value.parsed, nested.loopParam)
-      if (itemExpr === null) continue
+      const itemExpr =
+        prop.value.kind === 'expression' && prop.value.parsed
+          ? goItemExprForLoopProp(prop.value.parsed, nested.loopParam)
+          : null
+      if (itemExpr === null) {
+        unresolvableProp = true
+        break
+      }
       inputFields.push(`${capitalizeFieldName(prop.name)}: ${itemExpr}`)
     }
-    if (inputFields.length === 0) continue
+    if (unresolvableProp || inputFields.length === 0) continue
 
     lines.push(`\tprops.${nested.name}s = make([]${nested.name}Props, len(props.${capitalizeFieldName(datumField)}))`)
     lines.push(`\tfor i, item := range props.${capitalizeFieldName(datumField)} {`)
