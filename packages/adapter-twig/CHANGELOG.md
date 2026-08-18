@@ -1,5 +1,11 @@
 # @barefootjs/twig
 
+## 0.31.8
+
+### Patch Changes
+
+- @barefootjs/shared@0.31.8
+
 ## 0.31.7
 
 ### Patch Changes

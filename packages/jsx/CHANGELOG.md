@@ -1,5 +1,12 @@
 # @barefootjs/jsx
 
+## 0.31.8
+
+### Patch Changes
+
+- b95ecdf: CSR `template:` lambdas now declare the env-signal getters (`createSearchParams()`) they reference, fixing a `ReferenceError` at template evaluation.
+  - @barefootjs/shared@0.31.8
+
 ## 0.31.7
 
 ### Patch Changes
