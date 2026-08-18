@@ -2552,7 +2552,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private emitPropsStructHeader(lines: string[], ir: ComponentIR, propsTypeName: string, componentName: string): void {
     lines.push(`// ${propsTypeName} is the props type for the ${componentName} component.`)
     lines.push(`type ${propsTypeName} struct {`)
-    lines.push('\tScopeID string `json:"scopeID"`')
+    // Internal scope id: used by the Go template (`{{.ScopeID}}`) to render bf-s
+    // markers, but no client runtime consumer ever reads it back out of the
+    // hydration bf-p JSON (audited: the only bf-p parser is
+    // packages/client/src/runtime/hydrate.ts's parseProps/runInit, and nothing
+    // downstream of it reads scopeID). Excluded from Marshal via `json:"-"` — Go's
+    // json tag only affects (un)marshalling, not template field access, so
+    // `{{.ScopeID}}` keeps working unchanged.
+    lines.push('\tScopeID string `json:"-"`')
     lines.push('\tBfIsRoot bool `json:"-"`')
     lines.push('\tBfIsChild bool `json:"-"`')
     // Slot identity for child scopes: host scope id + slot id. Emitted as bf-h /

@@ -35,7 +35,7 @@ type AIChatInteractiveInput struct {
 
 // AIChatInteractiveProps is the props type for the AIChatInteractive component.
 type AIChatInteractiveProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -58,7 +58,7 @@ type ConditionalReturnInput struct {
 
 // ConditionalReturnProps is the props type for the ConditionalReturn component.
 type ConditionalReturnProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -79,7 +79,7 @@ type CounterInput struct {
 
 // CounterProps is the props type for the Counter component.
 type CounterProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -100,7 +100,7 @@ type FormInput struct {
 
 // FormProps is the props type for the Form component.
 type FormProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -127,7 +127,7 @@ type NestedCondToggleListInput struct {
 
 // NestedCondToggleListProps is the props type for the NestedCondToggleList component.
 type NestedCondToggleListProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -146,7 +146,7 @@ type PortalExampleInput struct {
 
 // PortalExampleProps is the props type for the PortalExample component.
 type PortalExampleProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -168,7 +168,7 @@ type ReactiveChildInput struct {
 
 // ReactiveChildProps is the props type for the ReactiveChild component.
 type ReactiveChildProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -189,7 +189,7 @@ type ReactivePropsInput struct {
 
 // ReactivePropsProps is the props type for the ReactiveProps component.
 type ReactivePropsProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -213,7 +213,7 @@ type PropsStyleChildInput struct {
 
 // PropsStyleChildProps is the props type for the PropsStyleChild component.
 type PropsStyleChildProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -236,7 +236,7 @@ type DestructuredStyleChildInput struct {
 
 // DestructuredStyleChildProps is the props type for the DestructuredStyleChild component.
 type DestructuredStyleChildProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -257,7 +257,7 @@ type PropsReactivityComparisonInput struct {
 
 // PropsReactivityComparisonProps is the props type for the PropsReactivityComparison component.
 type PropsReactivityComparisonProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -279,7 +279,7 @@ type TextEscapeInput struct {
 
 // TextEscapeProps is the props type for the TextEscape component.
 type TextEscapeProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -311,7 +311,7 @@ type TodoAppInput struct {
 
 // TodoAppProps is the props type for the TodoApp component.
 type TodoAppProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -335,7 +335,7 @@ type TodoAppSSRInput struct {
 
 // TodoAppSSRProps is the props type for the TodoAppSSR component.
 type TodoAppSSRProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -363,7 +363,7 @@ type TodoItemInput struct {
 
 // TodoItemProps is the props type for the TodoItem component.
 type TodoItemProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -388,7 +388,7 @@ type ToggleItemInput struct {
 
 // ToggleItemProps is the props type for the ToggleItem component.
 type ToggleItemProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -410,7 +410,7 @@ type ToggleInput struct {
 
 // ToggleProps is the props type for the Toggle component.
 type ToggleProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -429,7 +429,7 @@ type LikeButtonInput struct {
 
 // LikeButtonProps is the props type for the LikeButton component.
 type LikeButtonProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -448,7 +448,7 @@ type NowPlayingInput struct {
 
 // NowPlayingProps is the props type for the NowPlaying component.
 type NowPlayingProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -469,7 +469,7 @@ type PageShellInput struct {
 
 // PageShellProps is the props type for the PageShell component.
 type PageShellProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -501,7 +501,7 @@ type PostArticleInput struct {
 
 // PostArticleProps is the props type for the PostArticle component.
 type PostArticleProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -550,7 +550,7 @@ type PostListInput struct {
 
 // PostListProps is the props type for the PostList component.
 type PostListProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -580,7 +580,7 @@ type PostListItemInput struct {
 
 // PostListItemProps is the props type for the PostListItem component.
 type PostListItemProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -603,7 +603,7 @@ type ReaderToolbarInput struct {
 
 // ReaderToolbarProps is the props type for the ReaderToolbar component.
 type ReaderToolbarProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -622,7 +622,7 @@ type ReadingTimerInput struct {
 
 // ReadingTimerProps is the props type for the ReadingTimer component.
 type ReadingTimerProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -641,7 +641,7 @@ type SidebarInput struct {
 
 // SidebarProps is the props type for the Sidebar component.
 type SidebarProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
@@ -660,7 +660,7 @@ type ThemeToggleInput struct {
 
 // ThemeToggleProps is the props type for the ThemeToggle component.
 type ThemeToggleProps struct {
-	ScopeID string `json:"scopeID"`
+	ScopeID string `json:"-"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`

@@ -612,11 +612,24 @@ class BarefootJS:
         props = self._props()
         if not props:
             return ""
+        # Exclude the internal `scope_id` key from the client hydration
+        # payload: it is a server-side render detail (already carried by
+        # `_scope_id` for bf-s/bf-h/bf-m emission) with zero client runtime
+        # consumers -- the only bf-p parser
+        # (packages/client/src/runtime/hydrate.ts's parseProps -> runInit)
+        # never reads it back out. Filtered here, the single marshal
+        # boundary for bf-p, so it's excluded no matter how a `scope_id`
+        # key ends up in the props dict (found via the bf-p semantic-
+        # comparison audit against the Hono reference adapter, which never
+        # emits it).
+        client_props = {k: v for k, v in props.items() if str(k) != "scope_id"}
+        if not client_props:
+            return ""
         # The JSON must be attribute-escaped: a raw `'` inside a string value
         # (e.g. a blog paragraph) terminates the single-quoted attribute and
         # truncates the hydration payload. The browser entity-decodes the
         # attribute value, so the client's JSON.parse sees the original text.
-        j = _html_escape(self.backend.encode_json(props))
+        j = _html_escape(self.backend.encode_json(client_props))
         return f" bf-p='{j}'"
 
     # -----------------------------------------------------------------
