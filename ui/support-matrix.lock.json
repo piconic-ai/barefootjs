@@ -1123,7 +1123,7 @@
           ]
         },
         "go-template": {
-          "pass": 81,
+          "pass": 82,
           "total": 91,
           "gaps": [
             {
@@ -1167,10 +1167,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-precomputed",
-              "issues": []
             }
           ]
         },
@@ -2355,7 +2351,7 @@
           ]
         },
         "go-template": {
-          "pass": 290,
+          "pass": 291,
           "total": 308,
           "gaps": [
             {
@@ -2431,10 +2427,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-precomputed",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -3033,7 +3025,7 @@
           ]
         },
         "go-template": {
-          "pass": 238,
+          "pass": 239,
           "total": 250,
           "gaps": [
             {
@@ -3077,10 +3069,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-precomputed",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -3687,7 +3675,7 @@
           ]
         },
         "go-template": {
-          "pass": 155,
+          "pass": 156,
           "total": 173,
           "gaps": [
             {
@@ -3763,10 +3751,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-precomputed",
-              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -6611,7 +6595,7 @@
           ]
         },
         "go-template": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
             {
@@ -6619,10 +6603,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-precomputed",
-              "issues": []
             }
           ]
         },
@@ -7770,7 +7750,7 @@
           ]
         },
         "go-template": {
-          "pass": 169,
+          "pass": 170,
           "total": 178,
           "gaps": [
             {
@@ -7806,10 +7786,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component-precomputed",
-              "issues": []
             }
           ]
         },

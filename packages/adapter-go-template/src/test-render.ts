@@ -587,55 +587,133 @@ function findBaseSignalGetter(expr: ParsedExpr | undefined, signalGetters: Reado
 }
 
 /**
- * (#2209 part 2) Replicate, in the generated `main.go`, the documented
- * "the route handler populates the loop-body child-component slice at
- * request time" contract for a signal-backed dynamic loop —
- * `generateNewPropsFunction`'s doc comment on `<Name>s []<Name>Props`
- * in `adapter/go-template-adapter.ts`. The constructor only ever seeds
- * the loop's DATUM slice (e.g. `.Todos`, straight from the caller's
- * Input); the child-component Props slice the template actually
- * ranges over (`.TodoItems`) has no server-side population path in
- * this harness — the Hono reference materializes it by literally
- * executing the component, so this closes the gap the same way:
- * derive each item's child Props from the datum slice, exactly as a
- * real route handler is documented to.
+ * (#2630) Resolve a `isPropDerived` loop's `arrayParsed` to the JS-level
+ * prop name it reads. `isArrayExprDirectPropRef` (`jsx-to-ir.ts`) is what
+ * sets `isPropDerivedArray` in the first place, and it only recognizes two
+ * shapes — a bare destructured-prop identifier (`entries.map(...)` inside
+ * `function({ entries })`) or a direct `props.<name>` member access — so
+ * unlike `findBaseSignalGetter` there is no `call`/chain walking to do; the
+ * compiler already restricted the shape. Returns the prop's LOCAL binding
+ * name; the caller resolves it to the CALLER-FACING field
+ * (`sourceName ?? name`) via `propsParams`, matching how
+ * `generateInputStruct`/`generateNewPropsFunction` key the Go field and how
+ * `buildGoPropsInit` keys the harness's own prop initializer (both by the
+ * JS `props` object's key, not the local destructure binding).
+ */
+function findLoopPropField(expr: ParsedExpr | undefined): string | null {
+  if (!expr) return null
+  if (expr.kind === 'identifier') return expr.name
+  if (expr.kind === 'member' && expr.object.kind === 'identifier') return expr.property
+  return null
+}
+
+/**
+ * Resolve a loop-body child prop's VALUE expression to the Go expression
+ * that reads it off the per-row `item` local: a bare pass-through of the
+ * loop param (`todo={todo}` → `item`) or a member access on it
+ * (`variant={entry.variant}` → `item.Variant`, #2630 — the
+ * `static-array-from-props-with-component-precomputed` fixture's `<Tag
+ * id={entry.id} variant={entry.variant} />`). `null` for anything else (a
+ * prop that doesn't derive from the loop row at all).
+ */
+function goItemExprForLoopProp(parsed: ParsedExpr, loopParam: string): string | null {
+  if (parsed.kind === 'identifier' && parsed.name === loopParam) return 'item'
+  if (
+    parsed.kind === 'member' &&
+    !parsed.computed &&
+    parsed.object.kind === 'identifier' &&
+    parsed.object.name === loopParam
+  ) {
+    return `item.${capitalizeFieldName(parsed.property)}`
+  }
+  return null
+}
+
+/**
+ * (#2209 part 2, extended by #2630) Replicate, in the generated `main.go`,
+ * the documented "the route handler populates the loop-body child-component
+ * slice at request time" contract from `generateNewPropsFunction`'s doc
+ * comment on `<Name>s []<Name>Props` in `adapter/go-template-adapter.ts`.
+ * Covers TWO loop shapes that both leave `.<Name>s` unpopulated in this
+ * harness, for different reasons:
+ *
+ *  - **Signal-backed dynamic** (`isDynamic && !isPropDerived`, e.g.
+ *    `todos().map(...)`): the constructor only ever seeds the loop's DATUM
+ *    slice (`.Todos`, straight from the caller's Input) — the child Props
+ *    slice the template ranges over (`.TodoItems`) is documented as
+ *    handler-populated and never touched by `NewXxxProps` at all.
+ *  - **Prop-backed static** (`isPropDerived`, e.g. `props.entries.map(...)`,
+ *    #2630): `NewXxxProps` DOES try to build `.Tags` from `in.Tags` — but
+ *    `in.Tags` is a SEPARATE Input field from the driving prop (`Entries`)
+ *    whenever the child's plural name doesn't literally coincide with the
+ *    prop's own name (`propDerivedNestedArrayFields`/`isNestedArrayShadowed`
+ *    in the real adapter), and this harness's `buildGoPropsInit` only ever
+ *    populates fields from the JS `props` object's own keys — `tags` isn't
+ *    one. `in.Tags` stays a nil slice, so the constructor's own range over
+ *    it produces zero rows. Both shapes are closed the same way: derive
+ *    each item's child Props from the resolved datum slice AFTER
+ *    construction, overwriting whatever (empty, for the prop-backed case)
+ *    slice the constructor built — exactly as a real route handler is
+ *    documented to.
+ *
+ * The Hono reference needs none of this because it materializes children by
+ * literally executing the component.
  *
  * Deliberately narrow: only fires for a loop whose (a) array source
- * resolves, through `call`/`member` chains, to a component signal
- * getter, (b) generated Go TEMPLATE text actually ranges over
+ * resolves to a signal getter (dynamic) or a direct prop reference
+ * (prop-derived) — never a `call`/member chain beyond what each shape's own
+ * resolver recognizes, (b) generated Go TEMPLATE text actually ranges over
  * `.<Name>s` (a plain substring check on GENERATED GO OUTPUT — not JS
- * parsing — so a `/* @client *\/`-marked loop, whose SSR template has
- * no such range, is untouched by construction), and (c) at least one
- * child prop is a bare pass-through of the loop item (`todo={todo}`).
- * Returns the Go statements to splice into `main()` plus whether `fmt`
- * needs importing.
+ * parsing — so a `/* @client *\/`-marked loop, whose SSR template has no
+ * such range, is untouched by construction), and (c) every resolved child
+ * prop is either a bare pass-through of the loop item (`todo={todo}`) or a
+ * member access on it (`variant={entry.variant}`). Returns the Go
+ * statements to splice into `main()` plus whether `fmt` needs importing.
  */
 function buildDynamicChildLoopSeeding(
   ir: ComponentIR,
   template: string,
 ): { lines: string[]; needsFmt: boolean } {
   const signalGetters = new Set(ir.metadata.signals.map(s => s.getter))
+  const propsParams = ir.metadata.propsParams
   const lines: string[] = []
   let needsFmt = false
   for (const nested of findNestedComponents(ir.root) as NestedComponentInfo[]) {
-    if (!nested.isDynamic || nested.isPropDerived) continue
     if (nested.bodyChildren && nested.bodyChildren.length > 0) continue
     if (!nested.loopParam) continue
     if (!template.includes(`:= .${nested.name}s}}`)) continue
-    const datumField = findBaseSignalGetter(nested.loopArrayParsed, signalGetters)
+
+    let datumField: string | null
+    if (nested.isPropDerived) {
+      const localName = findLoopPropField(nested.loopArrayParsed)
+      const param = localName ? propsParams.find(p => p.name === localName) : undefined
+      datumField = param ? (param.sourceName ?? param.name) : null
+      // (#2627/#2628 shadowing) When the driving prop's Go field name
+      // coincides with the child's own plural (`tags` prop → `Tag`
+      // component), the REAL adapter's `isNestedArrayShadowed` drops the
+      // prop's separate field entirely — `props.Tags` IS the only field,
+      // pre-shaped `TagInput` rows and all, already populated straight from
+      // the harness's own `buildGoPropsInit` (which types the literal
+      // against the Input struct's declared `[]TagInput` field). Seeding
+      // here would `range` the very slice it just emptied with `make` on
+      // the line above it — skip so that already-correct path stays
+      // untouched.
+      if (datumField && capitalizeFieldName(datumField) === capitalizeFieldName(`${nested.name}s`)) continue
+    } else if (nested.isDynamic) {
+      datumField = findBaseSignalGetter(nested.loopArrayParsed, signalGetters)
+    } else {
+      continue
+    }
     if (!datumField) continue
 
     const inputFields: string[] = []
     for (const prop of nested.props) {
       if (prop.isEventHandler) continue
       if (prop.name === 'key' || prop.name.includes('-')) continue
-      if (
-        prop.value.kind === 'expression' &&
-        prop.value.parsed?.kind === 'identifier' &&
-        prop.value.parsed.name === nested.loopParam
-      ) {
-        inputFields.push(`${capitalizeFieldName(prop.name)}: item`)
-      }
+      if (prop.value.kind !== 'expression' || !prop.value.parsed) continue
+      const itemExpr = goItemExprForLoopProp(prop.value.parsed, nested.loopParam)
+      if (itemExpr === null) continue
+      inputFields.push(`${capitalizeFieldName(prop.name)}: ${itemExpr}`)
     }
     if (inputFields.length === 0) continue
 
