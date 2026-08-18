@@ -55,10 +55,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'props-reactivity-comparison',
   // Memo reads the env-signal getter `sp()`, wired only at init — same class
   // as `toggle-shared`; runtime `env-signal` tests + per-adapter render
-  // conformance (#2075) cover it.
+  // conformance cover it — known limitation #2654.
   'search-params-derived-memo',
   // Bare-getter sibling: the stubbed getter yields literal `null` text where
-  // expectedHtml pins the empty per-adapter contract (#2075).
+  // expectedHtml pins the empty per-adapter contract — #2654.
   'search-params-derived-memo-bare',
   // Keyed child-component loop materializes at init — same as `static-array-from-props`.
   'todo-app',
@@ -107,17 +107,19 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Priority-12 sweep: REAL SSR/CSR divergences (not harness artifacts),
   // skipped until the pipeline reconciles the two paths.
   // `object-entries-map` / `nested-loop-outer-binding`: nested/tuple loops
-  // disagree on `data-key` depth suffixes between SSR and template-eval.
+  // disagree on `data-key` depth suffixes between SSR and template-eval —
+  // known limitation #2652.
   'object-entries-map',
   'nested-loop-outer-binding',
-  // Same data-key depth-suffix disagreement, one level deeper.
+  // Same data-key depth-suffix disagreement, one level deeper — #2652.
   'nested-loop-triple-depth',
   // `jsx-element-prop`: a non-children JSX prop reaches the CSR insert as an
-  // escaped string (`__BF_PARENT_SCOPE__` still embedded), not markup.
+  // escaped string (`__BF_PARENT_SCOPE__` still embedded), not markup —
+  // known limitation #2651.
   'jsx-element-prop',
   // `nested-fragments`: a multi-root fragment attaches `bf-s` to its
   // first element in CSR, while SSR carries the scope on a
-  // `<!--bf-scope:...-->` comment the normalizer strips.
+  // `<!--bf-scope:...-->` comment the normalizer strips — known limitation #2653.
   'nested-fragments',
   // `grandchild-composition`: third level reuses the parent scope id
   // (`test_s0`) in CSR instead of deriving `test_s0_s0` as SSR does. #2444
