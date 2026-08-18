@@ -318,8 +318,14 @@ const escapeText = (value) => value == null ? '' : escapeAttr(value)
 // it raw instead of escaping it. A plain string key (not a Symbol) — see
 // the production docstring for why.
 const bfMarkup = (html) => ({ __bfMarkup: html })
-const isBfMarkup = (value) =>
-  typeof value === 'object' && value !== null && typeof value.__bfMarkup === 'string'
+const isBfMarkup = (value) => {
+  if (typeof value !== 'object' || value === null) return false
+  // Plain carrier objects only — mirrors production's prototype check so a
+  // host object with a \`__bfMarkup\` expando never false-positives.
+  const proto = Object.getPrototypeOf(value)
+  if (proto !== Object.prototype && proto !== null) return false
+  return typeof value.__bfMarkup === 'string'
+}
 // Mirror @barefootjs/client/runtime escapeTextOrMarkup (#2651): the STATIC/
 // initial-render counterpart of escapeTextOrNode below — a claim-plan
 // 'markup' slot's escape at template-build time. Branded values pass

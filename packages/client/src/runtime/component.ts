@@ -656,11 +656,15 @@ export function bfMarkup(html: string): BfMarkup {
 
 /** Type guard for the `bfMarkup()` brand (#2651). Compiler-emitted code only — see `bfMarkup`'s docstring. */
 export function isBfMarkup(value: unknown): value is BfMarkup {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as Record<string, unknown>)[BF_MARKUP_BRAND] === 'string'
-  )
+  if (typeof value !== 'object' || value === null) return false
+  // Plain carrier objects only (Copilot review on #2651's PR): without the
+  // prototype check, a DOM Node (or any host object) carrying a string
+  // `__bfMarkup` expando would satisfy the shape test and be unwrapped as
+  // raw HTML — the brand must stay mutually exclusive with the Node branch
+  // of `escapeTextOrNode` by construction, not by property-name luck.
+  const proto = Object.getPrototypeOf(value)
+  if (proto !== Object.prototype && proto !== null) return false
+  return typeof (value as Record<string, unknown>)[BF_MARKUP_BRAND] === 'string'
 }
 
 /**

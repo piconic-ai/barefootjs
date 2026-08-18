@@ -91,3 +91,26 @@ describe('escapeTextOrNode (reactive-write escape)', () => {
     expect(escapeTextOrNode(undefined)).toBe('')
   })
 })
+
+// Copilot review on the #2651 PR: the brand must be a PLAIN carrier object.
+// A DOM Node (or any non-plain host object) carrying a string `__bfMarkup`
+// expando must NOT be unwrapped as raw HTML — Node identity wins.
+describe('isBfMarkup plain-object guard', () => {
+  test('a Node with a __bfMarkup expando is not treated as branded', () => {
+    const el = document.createElement('div')
+    ;(el as unknown as Record<string, unknown>).__bfMarkup = '<b>forged</b>'
+    expect(isBfMarkup(el)).toBe(false)
+    expect(escapeTextOrNode(el)).toBe(el)
+  })
+  test('a class instance with __bfMarkup is not treated as branded', () => {
+    class Carrier { __bfMarkup = '<b>x</b>' }
+    const v = new Carrier()
+    expect(isBfMarkup(v)).toBe(false)
+    expect(escapeTextOrMarkup(v)).not.toBe('<b>x</b>')
+  })
+  test('a null-prototype object with __bfMarkup IS accepted', () => {
+    const v = Object.assign(Object.create(null), { __bfMarkup: '<b>ok</b>' })
+    expect(isBfMarkup(v)).toBe(true)
+    expect(escapeTextOrMarkup(v)).toBe('<b>ok</b>')
+  })
+})
