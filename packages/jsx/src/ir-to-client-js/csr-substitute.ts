@@ -452,8 +452,9 @@ export function buildSignalMemoEnv(
   for (const s of signals) {
     // Env signals (#2057) have no static initial value to bake — their getter
     // is a live request-scoped read (`searchParams().get(k)`). Leave it in the
-    // CSR template as a real call, exactly as the pre-#2057 bare `searchParams()`
-    // import was (it was never a substitutable signal).
+    // CSR template as a real call; `emitRegistrationAndHydration`'s
+    // `buildTemplateDefPart` (#2654) gives the template lambda its own
+    // `const [<getter>] = <envFactory>()` prelude so the call resolves.
     if (s.envReader) continue
     substitutions.set(s.getter, {
       kind: 'call',
