@@ -557,6 +557,8 @@ A second label tiers each `known-limitation` entry by intent, with the compatibi
 - `+ enhancement` — a **capability gap**: current behavior is a loud, `/* @client */`-escapable compile-time refusal working as designed; the issue tracks adding a faithful lowering later.
 - bare `known-limitation` — an **accepted design position**: permanent, pinned in the conformance declarations, and documented (e.g. ambient-locale-dependent formatting, JSON-boundary-unrevivable rich props).
 
+Orthogonal to the tiers, `+ blocked` marks an entry whose resolution waits on an external dependency (e.g. #1920 waits on a bun fix). It records state, not intent: it composes with any tier, and comes off when the dependency clears — a `bug + blocked` entry is still a defect, just one that cannot be fixed from this repository yet.
+
 ### What NOT to test here
 
 - **Rendered-output parity** — a `✓` cell means the component compiled cleanly against that adapter, nothing about the HTML it produces. Render identity is owned by Layer 3 (Adapter Conformance) and the eval vector corpus.
