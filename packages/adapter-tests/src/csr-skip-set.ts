@@ -19,25 +19,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // contract; CSR runtime parity is a tracked harness follow-up.
   'jsx-spread-props-object',
   'reactive-props',
-  // Memo reads the env-signal getter `sp()`, wired only at init; runtime
-  // `env-signal` tests + per-adapter render conformance cover it —
-  // known limitation #2654.
-  'search-params-derived-memo',
-  // Bare-getter sibling: same init-only `searchParams` binding, referenced
-  // by the template lambda at module scope (ReferenceError) — #2654.
-  'search-params-derived-memo-bare',
-  // https://github.com/piconic-ai/barefootjs/issues/2654: the template
-  // lambda reads the `createSearchParams()`-destructured getter directly,
-  // but that getter is only bound inside `init...` — the template itself
-  // carries no import or re-binding of its own, so evaluating it standalone
-  // (as this harness does) throws a ReferenceError. Previously masked by
-  // the harness's bare module-scope `searchParams` stub, which happened to
-  // match this fixture's getter name.
-  'search-params',
-  // Same #2654 ReferenceError as `search-params`, one layer down: the
-  // `visible` memo's template read closes over `searchParams()`, itself
-  // only bound at init time. https://github.com/piconic-ai/barefootjs/issues/2654
-  'search-params-derived-filter',
   // Keyed child-component loop materializes at init — same as `static-array-from-props`.
   'todo-app',
   // #1467: multi-export source — the harness's `__lastComponent` renders

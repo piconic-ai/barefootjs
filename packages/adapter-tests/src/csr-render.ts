@@ -270,9 +270,9 @@ const createMemo = (fn) => fn
 // Deliberately NOT also providing a bare module-scope \`searchParams\`
 // binding: generated client JS destructures the getter out of
 // \`createSearchParams()\` inside \`init...\` only — the template lambda
-// references that destructured name directly, with no import or
-// re-binding of its own (#2654, a compiler bug: the template lambda
-// should carry its own env-signal prelude but doesn't yet). A bare
+// references that destructured name directly. Emitted templates now
+// carry their own env-signal prelude (\`const [sp] = createSearchParams()\`,
+// the #2654 fix), which resolves against this stub. A bare
 // \`searchParams\` stub here would silently paper over that
 // ReferenceError instead of reproducing it, which is exactly how the
 // bug stayed hidden until a fixture aliased the getter to \`sp\`.

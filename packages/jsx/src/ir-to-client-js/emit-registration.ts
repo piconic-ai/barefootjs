@@ -4,7 +4,7 @@
  * and the final hydrate() call emission.
  */
 
-import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types.ts'
+import type { ComponentIR, IRFragment, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
@@ -115,6 +115,54 @@ export function csrInlinableConstantsFromCtx(ctx: ClientJsContext): Map<string, 
   return out
 }
 
+/**
+ * Build the `template:` ComponentDef entry text for a generated
+ * `templateHtml` string.
+ *
+ * When the component holds one or more env signals (`createSearchParams()`,
+ * #2057), the template lambda destructures its own copy of each getter in
+ * a block-body prelude before returning the template literal:
+ *
+ *     template: (_p) => { const [sp] = createSearchParams(); return `...` }
+ *
+ * instead of the plain expression-body form:
+ *
+ *     template: (_p) => `...`
+ *
+ * The template lambda runs at module scope (`render()` / `renderChild()`),
+ * but an env-signal getter is otherwise only ever destructured inside
+ * `init...` — so a template that calls the getter directly (`sp()`,
+ * `searchParams()`) ReferenceErrors the moment it runs (#2654). Before
+ * #2057, `searchParams` was a bare module-scope import and the same
+ * template-body call worked by accident; #2057 moved it behind
+ * `const [sp] = createSearchParams()` without updating template emission.
+ *
+ * The prelude is emitted whenever the component HAS an env signal —
+ * never gated on whether `templateHtml` textually mentions the getter.
+ * Scanning already-emitted template HTML for a getter name would be a
+ * string/regex parse of emitted JS, which CLAUDE.md's parse rule forbids.
+ * Unconditional emission is safe because `createSearchParams()`
+ * (`packages/client/src/reactive.ts`) only returns the shared
+ * `searchParamsTuple` module singleton — no side effect — so declaring it
+ * in a prelude the template body doesn't end up using costs nothing.
+ *
+ * `envFactory` is expected to always be set alongside `envReader` (the
+ * analyzer sets both together, #2057) — the `undefined` branch is a
+ * defensive fallback: if it's ever missing, skip that signal's prelude
+ * line entirely rather than guessing a canonical factory name, leaving
+ * that one signal's template reference exactly as unsound as before this
+ * fix (never worse).
+ */
+function buildTemplateDefPart(ctx: ClientJsContext, templateHtml: string): string {
+  const envDecls = ctx.signals
+    .filter((s): s is SignalInfo & { envFactory: string } => Boolean(s.envReader) && Boolean(s.envFactory))
+    .map((s) => `const [${s.getter}] = ${s.envFactory}()`)
+  if (envDecls.length === 0) {
+    return `template: (${PROPS_PARAM}) => \`${templateHtml}\``
+  }
+  return `template: (${PROPS_PARAM}) => { ${envDecls.join('; ')}; return \`${templateHtml}\` }`
+}
+
 /** Emit hydrate() call that registers component, template, and hydrates. */
 /**
  * Generate the closing brace for the init function and the hydrate() call.
@@ -157,7 +205,7 @@ export function emitRegistrationAndHydration(
   if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
     if (templateHtml) {
-      defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
+      defParts.push(buildTemplateDefPart(ctx, templateHtml))
     }
   } else {
     // CSR fallback: emit for all components that can't generate static templates.
@@ -173,7 +221,7 @@ export function emitRegistrationAndHydration(
       _ir.root, csrInlinableConstants, ctx, restSpreadNames, ctx.propsObjectName, unsafeLocalNames, ctx.deferredChildSlots
     )
     if (templateHtml) {
-      defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
+      defParts.push(buildTemplateDefPart(ctx, templateHtml))
     }
   }
   // No else: top-level-only components skip template entirely (save bytes)
