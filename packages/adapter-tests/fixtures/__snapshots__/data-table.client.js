@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -2911,7 +2911,7 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
   initChild('ArrowUpDownIcon', _s5, { size: "sm" })
 }
 
-hydrate('DataTableColumnHeader', { init: initDataTableColumnHeader, template: (_p) => `<button data-slot="data-table-column-header" type="button" ${(`${('inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none')} ${_p.className}`) + '"' : ''} bf="s6"><!--bf:s0-->${escapeText(_p.title)}<!--/-->${_p.sorted === 'asc' ? `<!--bf-cond-start:s1-->${renderChild('ChevronUpIcon', {size: "sm"}, undefined, 's2')}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${_p.sorted === 'desc' ? `<!--bf-cond-start:s3-->${renderChild('ChevronDownIcon', {size: "sm"}, undefined, 's4')}<!--bf-cond-end:s3-->` : `<!--bf-cond-start:s3-->${renderChild('ArrowUpDownIcon', {size: "sm"}, undefined, 's5')}<!--bf-cond-end:s3-->`}<!--bf-cond-end:s1-->`}</button>` })
+hydrate('DataTableColumnHeader', { init: initDataTableColumnHeader, template: (_p) => `<button data-slot="data-table-column-header" type="button" ${(`${('inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none')} ${_p.className}`) + '"' : ''} bf="s6"><!--bf:s0-->${escapeTextOrMarkup(_p.title)}<!--/-->${_p.sorted === 'asc' ? `<!--bf-cond-start:s1-->${renderChild('ChevronUpIcon', {size: "sm"}, undefined, 's2')}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${_p.sorted === 'desc' ? `<!--bf-cond-start:s3-->${renderChild('ChevronDownIcon', {size: "sm"}, undefined, 's4')}<!--bf-cond-end:s3-->` : `<!--bf-cond-start:s3-->${renderChild('ArrowUpDownIcon', {size: "sm"}, undefined, 's5')}<!--bf-cond-end:s3-->`}<!--bf-cond-end:s1-->`}</button>` })
 export function DataTableColumnHeader(_p, __bfKey) { return createComponent('DataTableColumnHeader', _p, __bfKey) }
 export function initDataTablePagination(__scope, _p = {}) {
   if (!__scope) return
@@ -3325,7 +3325,7 @@ hydrate('DataTableUsageDemo', { init: initDataTableUsageDemo, template: (_p) => 
       const bStr = String(bVal)
       return dir === 'asc' ? (aStr < bStr ? -1 : aStr > bStr ? 1 : 0) : (aStr > bStr ? -1 : aStr < bStr ? 1 : 0)
     })
-  })()).length / (3)))) - 1, children: ` Page <!--bf:^s19-->${escapeText((0) + 1)}<!--/--> of <!--bf:^s20-->${escapeText((Math.max(1, Math.ceil(((() => {
+  })()).length / (3)))) - 1, children: ` Page <!--bf:^s19-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s20-->${escapeTextOrMarkup((Math.max(1, Math.ceil(((() => {
     const key = (null)
     if (!key) return ([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
@@ -3488,7 +3488,7 @@ hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: 
   { id: 'PAY012', amount: 210, status: 'pending', email: 'emma.d@example.com' },
 ]).filter(row =>
       row.email.toLowerCase().includes(('').toLowerCase())
-    )).length / (5)))) - 1, children: ` Page <!--bf:^s18-->${escapeText((0) + 1)}<!--/--> of <!--bf:^s19-->${escapeText((Math.max(1, Math.ceil((/* @client */ ([
+    )).length / (5)))) - 1, children: ` Page <!--bf:^s18-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s19-->${escapeTextOrMarkup((Math.max(1, Math.ceil((/* @client */ ([
   ...([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
@@ -3694,7 +3694,7 @@ hydrate('DataTableSelectionDemo', { init: initDataTableSelectionDemo, template: 
   { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
   { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
   { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map(() => false))[index], "aria-label": `Select ${payment.id}`}, undefined, 's8')}`}, undefined, 's9')}${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s10-->${escapeText(payment.id)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.status)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {children: `<!--bf:^s14-->${escapeText(payment.email)}<!--/-->`}, undefined, 's15')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s16-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's17')}`}, payment.id)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's19')}`}, undefined, 's20')}<div class="py-4 text-sm text-muted-foreground" bf="s22"><!--bf:s21-->${escapeText(((([
+]).map(() => false))[index], "aria-label": `Select ${payment.id}`}, undefined, 's8')}`}, undefined, 's9')}${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s10-->${escapeText(payment.id)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.status)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {children: `<!--bf:^s14-->${escapeText(payment.email)}<!--/-->`}, undefined, 's15')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s16-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's17')}`}, payment.id)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's19')}`}, undefined, 's20')}<div class="py-4 text-sm text-muted-foreground" bf="s22"><!--bf:s21-->${escapeTextOrMarkup(((([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
   { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
