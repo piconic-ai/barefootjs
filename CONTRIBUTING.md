@@ -41,6 +41,9 @@ a specific issue), the rest of this guide is for you.
   [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation)
   label. Each issue documents the shape, affected fixtures, available
   workaround, and fix direction — a good place to understand current edges.
+  A second label tiers each entry: `bug` = silent divergence to fix,
+  `enhancement` = capability gap behind a loud, escapable refusal, no second
+  label = accepted permanent design position.
 
 ## Project overview
 
