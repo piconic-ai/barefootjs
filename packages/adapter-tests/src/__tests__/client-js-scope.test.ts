@@ -41,24 +41,24 @@ interface KnownHole {
 }
 
 const KNOWN_UNDECLARED: Record<string, KnownHole> = {
-  // #2075: the env-signal getter (`searchParams` / `sp`) is a
-  // per-request binding wired at init/hydration; the template lambda
-  // references it at module scope.
+  // #2654 (open successor to the closed #2075): the env-signal getter
+  // (`searchParams` / `sp`) is a per-request binding wired at
+  // init/hydration; the template lambda references it at module scope.
   'search-params': {
     names: ['searchParams'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2075',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2654',
   },
   'search-params-derived-filter': {
     names: ['searchParams'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2075',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2654',
   },
   'search-params-derived-memo': {
     names: ['sp'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2075',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2654',
   },
   'search-params-derived-memo-bare': {
     names: ['searchParams'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2075',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2654',
   },
   // #2463 (signal-conditioned early return) is FIXED — the statement
   // form now lowers to the root-ternary insert() plan, so its template
