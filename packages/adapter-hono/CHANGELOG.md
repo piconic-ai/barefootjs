@@ -1,5 +1,7 @@
 # @barefootjs/hono
 
+## 0.31.8
+
 ## 0.31.7
 
 ### Patch Changes
