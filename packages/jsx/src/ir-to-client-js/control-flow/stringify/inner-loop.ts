@@ -33,7 +33,7 @@
 import { keyAttrName, profileBindingId, varSlotId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
-import { emitMultiRootTemplateCloneLines, templateRootIsSvg } from './template-parse.ts'
+import { emitMultiRootTemplateCloneLines, namespaceWrapForTemplate } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
@@ -83,15 +83,15 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
     lines.push(`${innerIndent}  __innerEl${uid}.__bfExtras = __innerExtras${uid}`)
     lines.push(`${indent}  }`)
   } else {
-    // SVG-rooted item templates must parse inside a synthetic `<svg>` wrap
-    // (#2219): `template.innerHTML` parses in the HTML namespace, so a bare
-    // `<line>`/`<circle>` root clones as an HTMLUnknownElement and the SVG
-    // renderer silently draws nothing. Mirrors `templateRootIsSvg` handling
-    // on the top-level (#135/#1088) and branch-arm paths; HTML-rooted
-    // templates keep byte-identical output.
-    const isSvg = templateRootIsSvg(emit.wrappedTemplate)
-    const innerHtml = isSvg ? `<svg>${emit.wrappedTemplate}</svg>` : emit.wrappedTemplate
-    const childPath = isSvg ? '.firstElementChild.firstElementChild' : '.firstElementChild'
+    // SVG/MathML-rooted item templates must parse inside a synthetic
+    // namespace wrap (#2219, #1096): `template.innerHTML` parses in the
+    // HTML namespace, so a bare `<line>`/`<circle>`/`<mrow>` root clones as
+    // an HTMLUnknownElement and the SVG/MathML renderer silently draws
+    // nothing. Mirrors `namespaceWrapForTemplate` handling on the top-level
+    // (#135/#1088) and branch-arm paths; HTML-rooted templates keep
+    // byte-identical output.
+    const { wrapTag, childPath } = namespaceWrapForTemplate(emit.wrappedTemplate)
+    const innerHtml = wrapTag ? `<${wrapTag}>${emit.wrappedTemplate}</${wrapTag}>` : emit.wrappedTemplate
     lines.push(`${indent}  let __innerEl${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${innerHtml}\`; return __t.content${childPath}.cloneNode(true) })()`)
   }
   if (emit.wrappedKey) {

@@ -7,7 +7,7 @@ import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranc
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
-import { templateRootIsSvg } from './control-flow/stringify/template-parse.ts'
+import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
@@ -761,10 +761,11 @@ export function collectElements(
           }
           skeletonTemplate = buildLoopSkeletonTemplate(l.children[0], skeletonSafeSlots) ?? undefined
           // Direct child-index paths (perf, #2143): only attempted when the
-          // skeleton itself hoisted, and skipped for SVG roots for now (the
-          // `<svg>`-wrap namespace fix-up is orthogonal and untested against
-          // this path model — safe fallback to qsa/$t for those loops).
-          if (skeletonTemplate && !templateRootIsSvg(skeletonTemplate)) {
+          // skeleton itself hoisted, and skipped for SVG/MathML roots for
+          // now (the `<svg>`/`<math>`-wrap namespace fix-up is orthogonal
+          // and untested against this path model — safe fallback to
+          // qsa/$t for those loops).
+          if (skeletonTemplate && !detectRootNamespaceWrapTag(skeletonTemplate)) {
             skeletonPaths = computeSkeletonSlotPaths(l.children[0], skeletonSafeSlots) ?? undefined
           }
         }

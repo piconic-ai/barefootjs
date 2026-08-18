@@ -638,26 +638,37 @@ export function escapeTextOrNode(value: unknown): string | Node {
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
+const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
+
+/** Synthetic wrap tag for a parent's namespace, or null when it's plain HTML. */
+function namespaceWrapTagFor(parent: Element | null | undefined): 'svg' | 'math' | null {
+  if (!parent) return null
+  if (parent.namespaceURI === SVG_NS) return 'svg'
+  if (parent.namespaceURI === MATHML_NS) return 'math'
+  return null
+}
 
 /**
  * Parse an HTML string into a DocumentFragment, safely escaping ">" in
  * attribute values. All code that sets innerHTML on dynamic HTML should
  * use this instead of raw innerHTML assignment.
  *
- * When `parent` is provided and lives in the SVG namespace, the markup
- * is parsed under SVG foreign-content context by wrapping it in
- * `<svg>...</svg>`; the wrapper's children are moved into the returned
- * fragment so callers see the same shape as the HTML path. Without
- * this, dynamically-inserted SVG elements (e.g., a `<path>` in a
- * conditional drag preview) end up as `HTMLUnknownElement` in the
- * xhtml namespace and the SVG renderer ignores them. Surfaced by the
- * Graph/DAG Editor block (#135).
+ * When `parent` is provided and lives in the SVG or MathML namespace, the
+ * markup is parsed under the matching foreign-content context by wrapping
+ * it in `<svg>...</svg>` / `<math>...</math>`; the wrapper's children are
+ * moved into the returned fragment so callers see the same shape as the
+ * HTML path. Without this, dynamically-inserted SVG/MathML elements (e.g.,
+ * a `<path>` in a conditional drag preview, or an `<mrow>` in a dynamic
+ * equation) end up as `HTMLUnknownElement` in the xhtml namespace and the
+ * SVG/MathML renderer ignores them. Surfaced by the Graph/DAG Editor block
+ * (#135); ported to MathML in #1096.
  */
 export function parseHTML(html: string, parent?: Element | null): DocumentFragment {
   const tpl = document.createElement('template')
   const escaped = escapeAttrGt(html)
-  if (parent && parent.namespaceURI === SVG_NS) {
-    tpl.innerHTML = `<svg>${escaped}</svg>`
+  const wrapTag = namespaceWrapTagFor(parent)
+  if (wrapTag) {
+    tpl.innerHTML = `<${wrapTag}>${escaped}</${wrapTag}>`
     const wrapper = tpl.content.firstElementChild
     const frag = document.createDocumentFragment()
     if (wrapper) {
