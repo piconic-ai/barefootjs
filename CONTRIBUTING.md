@@ -43,7 +43,8 @@ a specific issue), the rest of this guide is for you.
   workaround, and fix direction — a good place to understand current edges.
   A second label tiers each entry: `bug` = silent divergence to fix,
   `enhancement` = capability gap behind a loud, escapable refusal, no second
-  label = accepted permanent design position.
+  label = accepted permanent design position. `blocked` composes with any
+  tier: resolution waits on an external dependency.
 
 ## Project overview
 
