@@ -40,8 +40,10 @@ describe('#2654 — env-signal getter self-declared in the template lambda', () 
     )
     // The getter call inside the template body is untouched (still a
     // real call — csr-substitute.ts deliberately leaves env-signal
-    // getters as live calls, not baked initial values).
-    expect(clientJs).toMatch(/\$\{escapeText\(searchParams\(\)\.get\('sort'\) \?\? 'none'\)\}/)
+    // getters as live calls, not baked initial values). `escapeTextOrMarkup`,
+    // not bare `escapeText` — this slot is claim-plan `kind: 'markup'`
+    // (#2651), unrelated to this test's #2654 prelude concern.
+    expect(clientJs).toMatch(/\$\{escapeTextOrMarkup\(searchParams\(\)\.get\('sort'\) \?\? 'none'\)\}/)
     // `init` keeps its own independent destructure — unaffected by the
     // template-lambda prelude.
     expect(clientJs).toMatch(/export function initSortLabel[\s\S]*const \[searchParams\] = createSearchParams\(\)/)

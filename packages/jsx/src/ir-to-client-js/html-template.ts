@@ -321,9 +321,22 @@ function escapeAttrValueExpr(valExpr: string): string {
  * escaped, so this is applied only at the four text-marker emit sites.
  * Hono escapes text content with the same set as attribute values
  * (`& " ' < >`), so `escapeText` delegates to the same operation.
+ *
+ * `isMarkup` (#2651) switches to `escapeTextOrMarkup` — `escapeText`'s
+ * strict superset that additionally unwraps a `bfMarkup()`-branded value
+ * raw instead of escaping it. Two of the four text-marker call sites
+ * (`irToComponentTemplateWithOpts`, `generateCsrTemplateWithOpts`) pass
+ * `true` for a slot `ctx.dynamicElements` also claims — the same
+ * membership `emit-reactive.ts` uses to pick the 'markup' writer kind for
+ * this slot's REACTIVE update, so the initial-render escape and the
+ * reactive-update escape agree on whether the slot may carry raw markup.
+ * The other two (`irToHtmlTemplate`, `irToPlaceholderTemplate`) build
+ * loop-item / conditional-branch HTML, which the reactive side always
+ * treats as plain text (`__bfText`) regardless — they never pass `true`,
+ * so they keep calling `escapeText` byte-for-byte as before.
  */
-function escapeTextSlotExpr(innerExpr: string): string {
-  return `escapeText(${innerExpr})`
+function escapeTextSlotExpr(innerExpr: string, isMarkup = false): string {
+  return `${isMarkup ? 'escapeTextOrMarkup' : 'escapeText'}(${innerExpr})`
 }
 
 /**
@@ -901,7 +914,20 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
             case 'jsx-children': {
               const hoistedRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, true)
               const childHtml = p.value.children.map(c => hoistedRecurse(c)).join('')
-              return `${quotePropName(p.name)}: \`${childHtml}\``
+              // Brand the assembled HTML (#2651) — every text segment inside
+              // `childHtml` was already escaped node-by-node during
+              // `hoistedRecurse`'s own build, so the concatenated result is
+              // safe to splice raw; the child's own template evaluates this
+              // prop through `escapeTextOrMarkup`/`escapeTextOrNode`, which
+              // trust the brand and skip re-escaping it. EXCEPT an explicit
+              // `children={<jsx/>}` prop (out of scope, unchanged): the
+              // child's `{children}` interpolation is the bare-passthrough
+              // door (`escapeTextSlotExpr`'s own docstring), never routed
+              // through an escape/unwrap call, so a branded object here
+              // would stringify to `[object Object]` instead of unwrapping.
+              return p.name === 'children'
+                ? `${quotePropName(p.name)}: \`${childHtml}\``
+                : `${quotePropName(p.name)}: bfMarkup(\`${childHtml}\`)`
             }
             case 'literal':
               return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`
@@ -1478,6 +1504,25 @@ export function irChildrenToJsExpr(children: IRNode[]): string {
   return `[${exprs.join(', ')}]`
 }
 
+/**
+ * Narrow gate for branding a nested `jsx-children` getter's value with
+ * `bfMarkup()` (#2651) — the `irNodeToJsExprs` counterpart of
+ * `collect-elements.ts`'s `isSingleElementJsxChildren` (duplicated rather
+ * than imported: `collect-elements.ts` already imports FROM this file, so
+ * the reverse import would cycle). Same shape, same reasoning: a
+ * `jsx-children` prop's value is always a single stored node
+ * (`AttrValueOf.jsxChildren([...])`); only when that node is a lone
+ * `'element'` does `irChildrenToJsExpr` reduce it to ONE HTML-string
+ * template literal — the shape `bfMarkup` + `escapeTextOrNode` /
+ * `escapeTextOrMarkup` have a proven contract for. A `'fragment'` (multiple
+ * children) or `'conditional'` node reduces to an array literal or a
+ * nested ternary instead — left unbranded here for the same reason as the
+ * `collect-elements.ts` twin.
+ */
+function isSingleElementJsxChildren(nodes: IRNode[]): boolean {
+  return nodes.length === 1 && nodes[0].type === 'element'
+}
+
 function irNodeToJsExprs(node: IRNode): string[] {
   switch (node.type) {
     case 'component': {
@@ -1488,8 +1533,19 @@ function irNodeToJsExprs(node: IRNode): string[] {
             return `${quotePropName(p.name)}: ${attrValueToString(p.value) ?? 'undefined'}`
           }
           switch (p.value.kind) {
-            case 'jsx-children':
-              return `get ${quotePropName(p.name)}() { return ${irChildrenToJsExpr(p.value.children)} }`
+            case 'jsx-children': {
+              // Brand (#2651) only the lone-'element' shape, and never an
+              // explicit `children={<jsx/>}` prop — see
+              // `isSingleElementJsxChildren` (this file) for the shape
+              // argument and the `collect-elements.ts` twin for the
+              // `children`-exclusion argument (bare-passthrough consumer,
+              // no unwrap call).
+              const jsxExpr = irChildrenToJsExpr(p.value.children)
+              const wrapped = (p.name !== 'children' && isSingleElementJsxChildren(p.value.children))
+                ? `bfMarkup(${jsxExpr})`
+                : jsxExpr
+              return `get ${quotePropName(p.name)}() { return ${wrapped} }`
+            }
             case 'literal':
               return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value.value)} }`
             case 'boolean-shorthand':
@@ -1644,6 +1700,20 @@ export interface TemplateOptions {
    * the template phase agree on which children defer (dropped-prop fix).
    */
   deferredChildSlots?: ReadonlySet<string>
+  /**
+   * Slot ids of top-level, non-conditional dynamic expressions
+   * (`ctx.dynamicElements`, populated by `collectElements` — the exact set
+   * `emit-reactive.ts`'s `emitDynamicTextUpdates` claims `kind: 'markup'`
+   * for on the REACTIVE side, #2651). When a text-marker expression's
+   * `slotId` is a member, `escapeTextSlotExpr` emits `escapeTextOrMarkup`
+   * instead of `escapeText` so a `bfMarkup()`-branded prop value (a JSX
+   * element passed at a non-`children` component prop position) reaches
+   * the initial-render template raw, matching what the reactive writer
+   * already does via `escapeTextOrNode`. Computed once per component from
+   * `ctx.dynamicElements` by `irToComponentTemplate` / `generateCsrTemplate`
+   * — never re-derived here.
+   */
+  markupSlotIds?: ReadonlySet<string>
 }
 
 /**
@@ -1659,9 +1729,10 @@ export function irToComponentTemplate(
   node: IRNode,
   inlinableConstants?: Map<string, string>,
   restSpreadNames?: Set<string>,
-  propsObjectName?: string | null
+  propsObjectName?: string | null,
+  markupSlotIds?: ReadonlySet<string>
 ): string {
-  return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1 })
+  return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds })
 }
 
 function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
@@ -1829,7 +1900,8 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
         ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
         : wrapped
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
+        const isMarkup = opts.markupSlotIds?.has(node.slotId) ?? false
+        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped, isMarkup)}}<!--/-->`
       }
       return `\${${value}}`
     }
@@ -1873,7 +1945,12 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
             case 'jsx-children': {
               const hoistedRecurse = (n: IRNode): string => irToComponentTemplateWithOpts(n, { ...opts, inHoistedChildren: true })
               const childHtml = p.value.children.map(c => hoistedRecurse(c)).join('')
-              return `${quotePropName(p.name)}: \`${childHtml}\``
+              // Brand the assembled HTML (#2651), except an explicit
+              // `children={<jsx/>}` prop — see the identical
+              // `irToHtmlTemplate` case above for both arguments.
+              return p.name === 'children'
+                ? `${quotePropName(p.name)}: \`${childHtml}\``
+                : `${quotePropName(p.name)}: bfMarkup(\`${childHtml}\`)`
             }
             case 'literal':
               return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`
@@ -2075,7 +2152,14 @@ export function generateCsrTemplate(
     }
   }
   const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1 })
+  // `ctx.dynamicElements` (populated by `collectElements`, before any
+  // template-string build runs) IS the claim-plan-'markup' membership
+  // `emit-reactive.ts` claims for these same slot ids on the reactive
+  // side (#2651) — every entry is already non-conditional / non-`@client`
+  // by construction (`collectElements`'s `expression` visitor only pushes
+  // here). Reused as-is, not re-derived.
+  const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds })
 }
 
 /**
@@ -2440,7 +2524,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           ? `Array.isArray(${expr}) ? ${expr}.join('') : (${expr} ?? '')`
           : expr
         if (node.slotId) {
-          return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr)}}<!--/-->`
+          const isMarkup = opts.markupSlotIds?.has(node.slotId) ?? false
+          return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr, isMarkup)}}<!--/-->`
         }
         return `\${${value}}`
       }
@@ -2499,7 +2584,13 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
             case 'jsx-children': {
               const hoistedRecurse = (n: IRNode): string => generateCsrTemplateWithOpts(n, { ...opts, inHoistedChildren: true })
               const childHtml = p.value.children.map(c => hoistedRecurse(c)).join('')
-              return `${quotePropName(p.name)}: \`${childHtml}\``
+              // Brand the assembled HTML (#2651), except an explicit
+              // `children={<jsx/>}` prop — see the identical
+              // `irToHtmlTemplate` case (top of this file) for both
+              // arguments.
+              return p.name === 'children'
+                ? `${quotePropName(p.name)}: \`${childHtml}\``
+                : `${quotePropName(p.name)}: bfMarkup(\`${childHtml}\`)`
             }
             case 'literal':
               return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`

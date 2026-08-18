@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, insert, lazySlots, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, insert, lazySlots, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -38,7 +38,7 @@ export function initTodoItem(__scope, _p = {}) {
   if (_s4) _s4.addEventListener('keydown', (e) => { e.key === 'Enter' && !e.isComposing && _p.onFinishEdit(e.target.value) })
 }
 
-hydrate('TodoItem', { init: initTodoItem, template: (_p) => `<li ${(_p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')) != null ? 'class="' + escapeAttr(_p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')) + '"' : ''} bf="s5"><div class="view"><input class="toggle" type="checkbox" ${_p.todo.done ? 'checked' : ''} bf="s0" /><label bf="s2"><!--bf:s1-->${escapeText(_p.todo.text)}<!--/--></label><button class="destroy" bf="s3"></button></div><input class="edit" ${(_p.todo.text) != null ? 'value="' + escapeAttr(_p.todo.text) + '"' : ''} autofocus bf="s4" /></li>` })
+hydrate('TodoItem', { init: initTodoItem, template: (_p) => `<li ${(_p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')) != null ? 'class="' + escapeAttr(_p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')) + '"' : ''} bf="s5"><div class="view"><input class="toggle" type="checkbox" ${_p.todo.done ? 'checked' : ''} bf="s0" /><label bf="s2"><!--bf:s1-->${escapeTextOrMarkup(_p.todo.text)}<!--/--></label><button class="destroy" bf="s3"></button></div><input class="edit" ${(_p.todo.text) != null ? 'value="' + escapeAttr(_p.todo.text) + '"' : ''} autofocus bf="s4" /></li>` })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem', _p, __bfKey) }
 export function initTodoApp(__scope, _p = {}) {
   if (!__scope) return

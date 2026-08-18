@@ -20,6 +20,10 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
+  // JSX-element-as-non-children-prop markup brand (#2651) — `bfMarkup` wraps
+  // the compiler-built HTML at the producer (renderChild / initChild props);
+  // `escapeTextOrMarkup` unwraps it at the claim-plan-'markup' template slot.
+  'bfMarkup', 'escapeTextOrMarkup',
   'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
   // — the "one claim mechanism" that replaced `patchSlotRange` and

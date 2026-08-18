@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L15 — Ternary 1`] = `
-"import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
+"import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -15,7 +15,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -29,7 +29,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -69,7 +69,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L18 — Logical AND 1`] = `
-"import { $, $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, insert, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $, $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, insert, lazySlots, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -83,7 +83,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -97,7 +97,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -139,7 +139,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L31 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -153,7 +153,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -167,7 +167,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -198,7 +198,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L40 — ✅ Simple predicate 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -212,7 +212,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -226,7 +226,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -257,7 +257,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L45 — ✅ Block body with simple statements — also works 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -271,7 +271,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -285,7 +285,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -326,7 +326,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L59 — ✅ Projection — works on every adapter 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArray, patchLeaf } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArray, patchLeaf } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -340,7 +340,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -354,7 +354,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -392,7 +392,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L64 — ✅ Statement body — JS-runtime adapters; /* @client */ on Go/Mojo etc. 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArray, patchLeaf } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArray, patchLeaf } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -406,7 +406,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -420,7 +420,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -464,7 +464,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L74 — ✅ Sort then render 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -478,7 +478,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -492,7 +492,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -523,7 +523,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L79 — ✅ Filter, sort, then render 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -537,7 +537,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -551,7 +551,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -582,7 +582,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L84 — ✅ Multi-key: sort by price, break ties by name 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -596,7 +596,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -610,7 +610,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -641,7 +641,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L89 — ✅ Relational ternary 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -655,7 +655,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -669,7 +669,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -700,7 +700,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L100 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -714,7 +714,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -728,7 +728,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -758,7 +758,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L143 — ✅ Nested \`.filter()\` / \`.map()\` now compiles everywhere 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -772,7 +772,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -786,7 +786,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -811,12 +811,12 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name))}<!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(([]).filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name))}<!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L150 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -830,7 +830,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -844,7 +844,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -869,12 +869,12 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.some(t => t.active)).map(t => t.name))}<!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(([]).filter(x => x.tags.some(t => t.active)).map(t => t.name))}<!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L153 — ✅ Add /* @client */ to evaluate on the client 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -888,7 +888,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -902,7 +902,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -932,7 +932,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L160 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -946,7 +946,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -960,7 +960,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -985,12 +985,12 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).reduce((sum, x) => sum + x.price, 0))}<!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(([]).reduce((sum, x) => sum + x.price, 0))}<!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L163 — ✅ Use /* @client */ 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1004,7 +1004,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1018,7 +1018,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1048,7 +1048,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L180 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1062,7 +1062,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1076,7 +1076,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1101,12 +1101,12 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(function(x) { return x.done }))}<!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(([]).filter(function(x) { return x.done }))}<!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L183 — ✅ Use arrow functions for adapter portability 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1120,7 +1120,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1134,7 +1134,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1159,7 +1159,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.done))}<!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(([]).filter(x => x.done))}<!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1264,7 +1264,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L229 — ✅ Value-producing block bodies normalize (let-inline) and lower everywhere 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1278,7 +1278,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1292,7 +1292,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1323,7 +1323,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L239 — ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1337,7 +1337,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1351,7 +1351,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1382,7 +1382,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L244 — ✅ Use /* @client */ 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1396,7 +1396,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1410,7 +1410,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1469,7 +1469,7 @@ export function SortedList(_p, __bfKey) { return createComponent('SortedList__b3
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L262 — ✅ Use /* @client */, or inline / re-declare the comparator locally 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1483,7 +1483,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1497,7 +1497,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1528,7 +1528,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L76 — Nested higher-order methods 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1542,7 +1542,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1556,7 +1556,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1586,7 +1586,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L79 — Unsupported array methods 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1600,7 +1600,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1614,7 +1614,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1644,7 +1644,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L91 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1658,7 +1658,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1672,7 +1672,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1702,7 +1702,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/fragment.md doc-examples L11 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1716,7 +1716,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1730,7 +1730,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1754,7 +1754,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/fragment.md doc-examples L23 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1768,7 +1768,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1782,7 +1782,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -1963,7 +1963,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-signal.md doc-examples L95 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -1983,7 +1983,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeText((0))}<!--/--></p><button bf="s2">+1</button></div>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></p><button bf="s2">+1</button></div>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -2151,7 +2151,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-effect.md doc-examples L115 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2165,7 +2165,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2179,7 +2179,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -2279,7 +2279,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-memo.md doc-examples L60 — No memo needed 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2293,7 +2293,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2307,7 +2307,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -2332,7 +2332,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeText((0) * 2)}<!--/--></p></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((0) * 2)}<!--/--></p></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -2578,7 +2578,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L82 — Parent 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Child */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2593,7 +2593,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2607,7 +2607,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -2653,7 +2653,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L85 — Compiled props object 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2667,7 +2667,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2681,7 +2681,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -2707,7 +2707,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L16 — (no label) 1`] = `
-"import { createComponent, createEffect, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -2724,12 +2724,12 @@ export function initGreeting(__scope, _p = {}) {
 
 }
 
-hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s1">Hello, <!--bf:s0-->\${escapeText(_p.name)}<!--/--></h1>\` })
+hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s1">Hello, <!--bf:s0-->\${escapeTextOrMarkup(_p.name)}<!--/--></h1>\` })
 export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L29 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -2749,7 +2749,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeText((0))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -2835,7 +2835,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L14 — (no label) 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2850,7 +2850,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2864,7 +2864,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -2911,7 +2911,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L68 — Input 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Slot */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2926,7 +2926,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2940,7 +2940,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -2969,7 +2969,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L73 — Output 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2983,7 +2983,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2997,7 +2997,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3024,7 +3024,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L86 — (no label) 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Button */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -3039,7 +3039,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3053,7 +3053,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3082,7 +3082,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L93 — (no label) 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Button */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -3097,7 +3097,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3111,7 +3111,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3140,7 +3140,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L109 — Dialog trigger as a custom element 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:DialogTrigger */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -3155,7 +3155,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3169,7 +3169,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3198,7 +3198,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L118 — (no label) 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Dialog */'
 import '/* @bf-child:DialogTrigger */'
 import '/* @bf-child:DialogOverlay */'
@@ -3222,7 +3222,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3236,7 +3236,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3282,7 +3282,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L140 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3296,7 +3296,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3310,7 +3310,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3350,7 +3350,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L40 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots, provideContext } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, provideContext } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3364,7 +3364,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3378,7 +3378,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3457,7 +3457,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L94 — Usage 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ThemeProvider */'
 import '/* @bf-child:ThemedButton */'
 
@@ -3473,7 +3473,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3487,7 +3487,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3604,7 +3604,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L170 — (no label) 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Accordion */'
 import '/* @bf-child:AccordionTrigger */'
 import '/* @bf-child:AccordionContent */'
@@ -3621,7 +3621,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3635,7 +3635,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3668,7 +3668,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L190 — Provider passes signal getter 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots, provideContext } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, provideContext } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3682,7 +3682,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3696,7 +3696,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -3779,7 +3779,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/portals.md doc-examples L53 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createPortal, createSignal, escapeText, escapeTextOrNode, hydrate, isSSRPortal, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createPortal, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, isSSRPortal, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initTooltip(__scope, _p = {}) {
@@ -3812,7 +3812,7 @@ export function initTooltip(__scope, _p = {}) {
   if (_s2) (handleMount)(_s2)
 }
 
-hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\${_p.children}</span><div class="tooltip" bf="s2"><!--bf:s1-->\${escapeText(_p.text)}<!--/--></div></div>\` })
+hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\${_p.children}</span><div class="tooltip" bf="s2"><!--bf:s1-->\${escapeTextOrMarkup(_p.text)}<!--/--></div></div>\` })
 export function Tooltip(_p, __bfKey) { return createComponent('Tooltip', _p, __bfKey) }"
 `;
 
@@ -3883,7 +3883,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L16 — (no label) 1`] = `
-"import { createComponent, createEffect, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -3904,7 +3904,7 @@ export function initGreeting(__scope, _p = {}) {
 
 }
 
-hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s2"><!--bf:s0-->\${escapeText(_p.greeting ?? 'Hello')}<!--/-->, <!--bf:s1-->\${escapeText(_p.name)}<!--/--></h1>\` })
+hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s2"><!--bf:s0-->\${escapeTextOrMarkup(_p.greeting ?? 'Hello')}<!--/-->, <!--bf:s1-->\${escapeTextOrMarkup(_p.name)}<!--/--></h1>\` })
 export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, __bfKey) }"
 `;
 
@@ -3945,7 +3945,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L89 — (no label) 1`] = `
-"import { $c, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -3960,7 +3960,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3974,7 +3974,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4021,7 +4021,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/how-it-works.mdx doc-examples L33 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4041,7 +4041,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeText((0))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -4068,7 +4068,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/mpa-style.md doc-examples L23 — (no label) 1`] = `
-"import { $, $c, createComponent, createEffect, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+"import { $, $c, createComponent, createEffect, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ReviewStars */'
 import '/* @bf-child:AddToCart */'
 
@@ -4118,12 +4118,12 @@ export function initProductPage(__scope, _p = {}) {
   initChild('AddToCart', _s6, { get productId() { return product.id } })
 }
 
-hydrate('ProductPage', { init: initProductPage, template: (_p) => \`<div><h1 bf="s1"><!--bf:s0-->\${escapeText(_p.product.name)}<!--/--></h1><p bf="s3"><!--bf:s2-->\${escapeText(_p.product.description)}<!--/--></p><img \${(_p.product.image) != null ? 'src="' + escapeAttr(_p.product.image) + '"' : ''} bf="s4" />\${renderChild('ReviewStars', {rating: _p.product.rating}, undefined, 's5')}\${renderChild('AddToCart', {productId: _p.product.id}, undefined, 's6')}</div>\` })
+hydrate('ProductPage', { init: initProductPage, template: (_p) => \`<div><h1 bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(_p.product.name)}<!--/--></h1><p bf="s3"><!--bf:s2-->\${escapeTextOrMarkup(_p.product.description)}<!--/--></p><img \${(_p.product.image) != null ? 'src="' + escapeAttr(_p.product.image) + '"' : ''} bf="s4" />\${renderChild('ReviewStars', {rating: _p.product.rating}, undefined, 's5')}\${renderChild('AddToCart', {productId: _p.product.id}, undefined, 's6')}</div>\` })
 export function ProductPage(_p, __bfKey) { return createComponent('ProductPage', _p, __bfKey) }"
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L55 — (no label) 1`] = `
-"import { createComponent, createEffect, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -4138,12 +4138,12 @@ export function initGreeting(__scope, _p = {}) {
 
 }
 
-hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s1">Hello, <!--bf:s0-->\${escapeText(_p.name)}<!--/-->!</h1>\` })
+hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s1">Hello, <!--bf:s0-->\${escapeTextOrMarkup(_p.name)}<!--/-->!</h1>\` })
 export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, __bfKey) }"
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L82 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4167,7 +4167,7 @@ export function initCounter(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">Count: <!--bf:s0-->\${escapeText((_p.initial ?? 0))}<!--/--></span><button bf="s2">+1</button></div>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((_p.initial ?? 0))}<!--/--></span><button bf="s2">+1</button></div>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
@@ -4192,7 +4192,7 @@ export function Layout(_p, __bfKey) { return createComponent('Layout', _p, __bfK
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L167 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4206,7 +4206,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4220,7 +4220,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4256,7 +4256,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L171 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4270,7 +4270,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4284,7 +4284,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4320,7 +4320,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L177 — (no label) 1`] = `
-"import { $, __bfSlot, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
+"import { $, __bfSlot, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4334,7 +4334,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4348,7 +4348,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4384,7 +4384,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L190 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4398,7 +4398,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4412,7 +4412,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4465,7 +4465,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L71 — (no label) 1`] = `
-"import { createComponent, createEffect, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -4480,12 +4480,12 @@ export function initGreeting(__scope, _p = {}) {
 
 }
 
-hydrate('Greeting', { init: initGreeting, template: (_p) => \`<p bf="s1">Hello, <!--bf:s0-->\${escapeText(_p.name)}<!--/-->!</p>\` })
+hydrate('Greeting', { init: initGreeting, template: (_p) => \`<p bf="s1">Hello, <!--bf:s0-->\${escapeTextOrMarkup(_p.name)}<!--/-->!</p>\` })
 export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, __bfKey) }"
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L95 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4509,12 +4509,12 @@ export function initCounter(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">Count: <!--bf:s0-->\${escapeText((_p.initial ?? 0))}<!--/--></span><button bf="s2">+1</button></div>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">Count: <!--bf:s0-->\${escapeTextOrMarkup((_p.initial ?? 0))}<!--/--></span><button bf="s2">+1</button></div>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L168 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4528,7 +4528,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4542,7 +4542,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4595,7 +4595,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L180 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4609,7 +4609,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4623,7 +4623,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4676,7 +4676,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L194 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4690,7 +4690,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4704,7 +4704,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4765,7 +4765,7 @@ export function TodoList(_p, __bfKey) { return createComponent('TodoList', _p, _
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L260 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4779,7 +4779,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4793,7 +4793,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4829,7 +4829,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L169 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4843,7 +4843,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4857,7 +4857,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4881,7 +4881,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L174 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4895,7 +4895,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4909,7 +4909,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4933,7 +4933,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L195 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4947,7 +4947,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4961,7 +4961,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -4998,7 +4998,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L200 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5012,7 +5012,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5026,7 +5026,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -5063,7 +5063,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5077,7 +5077,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5091,7 +5091,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -5206,7 +5206,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L67 — ✅ Stable key — DOM nodes reused when list changes 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5220,7 +5220,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5234,7 +5234,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -5287,7 +5287,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L70 — ❌ Index key — DOM nodes recreated on reorder 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5301,7 +5301,7 @@ export function initTodoItem(__scope, _p = {}) {
 
 }
 
-hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.todo))}<!--/--></li>\`, name: 'TodoItem' })
 export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
 export function initItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5315,7 +5315,7 @@ export function initItem(__scope, _p = {}) {
 
 }
 
-hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\`, name: 'Item' })
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(String(_p.item))}<!--/--></li>\`, name: 'Item' })
 export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
 function initDashboard() {}
 
@@ -5575,7 +5575,7 @@ export function TimelineBar(_p, __bfKey) { return createComponent('TimelineBar',
 `;
 
 exports[`docs/core/introduction.mdx doc-examples L15 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -5595,6 +5595,6 @@ export function initCounter(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeText((0))}<!--/--></button>\` })
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;

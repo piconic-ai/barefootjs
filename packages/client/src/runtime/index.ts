@@ -105,6 +105,14 @@ export {
   escapeAttr,
   escapeText,
   escapeTextOrNode,
+  // JSX-element-as-prop markup brand (#2651) — compiler-emitted code only.
+  // NOT re-exported from the public `@barefootjs/client` top-level entry;
+  // see `bfMarkup`'s docstring in `component.ts` for why calling it
+  // directly from userland is unsafe.
+  bfMarkup,
+  isBfMarkup,
+  escapeTextOrMarkup,
+  type BfMarkup,
 } from './component.ts'
 
 // Spread props helpers
