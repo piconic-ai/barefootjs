@@ -276,7 +276,11 @@ const createMemo = (fn) => fn
 // \`searchParams\` stub here would silently paper over that
 // ReferenceError instead of reproducing it, which is exactly how the
 // bug stayed hidden until a fixture aliased the getter to \`sp\`.
-const createSearchParams = () => [() => new URLSearchParams(), () => {}]
+// Shared tuple constant, not a fresh pair per call: production's
+// \`createSearchParams()\` returns the stable request/document-scoped
+// \`searchParamsTuple\` singleton, so per-call identity must match too.
+const __searchParamsTuple = [() => new URLSearchParams(), () => {}]
+const createSearchParams = () => __searchParamsTuple
 const onMount = () => {}
 const onCleanup = () => {}
 const insert = () => {}
