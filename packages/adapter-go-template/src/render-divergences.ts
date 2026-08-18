@@ -5,14 +5,16 @@
  * one object, so the skip list and the declaration can't drift. Keep the
  * file even when the set is empty — the next divergence lands here, not in
  * a re-created file.
+ *
+ * Empty — #2630's `static-array-from-props-with-component-precomputed`
+ * divergence graduated once the harness (`test-render.ts`'s
+ * `buildDynamicChildLoopSeeding`, despite the name — see its doc comment)
+ * learned to seed a prop-backed static child-component loop's Props slice
+ * the same way it already seeded a signal-backed dynamic one: the adapter's
+ * own `emission` was never the bug, only this harness's route-handler
+ * stand-in was missing the prop-derived case.
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {
-  // #2630: the exact shape BF101's pass-as-prop suggestion (#2321) steers
-  // go-template users into — compiles clean, runs clean, silently renders the
-  // loop host empty. Full analysis in the issue.
-  'static-array-from-props-with-component-precomputed':
-    'prop-backed child-component loop renders the loop host empty at SSR (https://github.com/piconic-ai/barefootjs/issues/2630)',
-}
+export const renderDivergences: RenderDivergences = {}

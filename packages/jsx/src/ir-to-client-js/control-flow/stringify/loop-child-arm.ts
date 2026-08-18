@@ -14,7 +14,7 @@
 import { varSlotId, DATA_BF_PH, keyAttrName, profileBindingId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
-import { templateRootIsSvg } from './template-parse.ts'
+import { namespaceWrapForTemplate } from './template-parse.ts'
 import { emitListenerLine } from './event-listener.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
@@ -139,9 +139,8 @@ export function stringifyBranchInnerLoops(
       lines.push(`${indent}  ${inner.paramUnwrap}`)
     }
     {
-      const isSvg = templateRootIsSvg(inner.wrappedTemplate)
-      const innerHtml = isSvg ? `<svg>${inner.wrappedTemplate}</svg>` : inner.wrappedTemplate
-      const childPath = isSvg ? '.firstElementChild.firstElementChild' : '.firstElementChild'
+      const { wrapTag, childPath } = namespaceWrapForTemplate(inner.wrappedTemplate)
+      const innerHtml = wrapTag ? `<${wrapTag}>${inner.wrappedTemplate}</${wrapTag}>` : inner.wrappedTemplate
       lines.push(`${indent}  let __bel${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${innerHtml}\`; return __t.content${childPath}.cloneNode(true) })()`)
     }
     if (inner.wrappedKey) {
