@@ -174,11 +174,18 @@ function buildCsrEvalModule(clientJs: string, props: Record<string, unknown>): s
 const __rootScope = ${JSON.stringify(rootScope)}
 const __templates = new Map()
 const __inits = new Map()
+// Mirrors production's \`ComponentDef.comment\` (@barefootjs/client/runtime,
+// component.ts): \`comment: true\` marks a synthesized inline-JSX-callback
+// wrapper (#1211) whose render is transparent — the wrapper's own \`bf-s\` is
+// never stamped because the parsed firstChild IS the inner component's root.
+// Recorded here so the root bf-s injection below can skip it the same way.
+const __comments = new Map()
 let __lastComponent = null
 
 function hydrate(name, def) {
   if (def.template) __templates.set(name, def.template)
   if (def.init) __inits.set(name, def.init)
+  __comments.set(name, !!def.comment)
   __lastComponent = name
 }
 
@@ -197,10 +204,7 @@ function __runInit(name, props) {
 
 // Tracks the scope id a nested renderChild() call should derive from —
 // mirrors production's \`_parentScopeId\` (@barefootjs/client/runtime,
-// component.ts). Starts at \`__rootScope\` (the fixture root) and is
-// pushed/restored around each template() eval so a GRANDCHILD rendered by
-// a nested renderChild() call derives from its immediate parent's scope,
-// not the top-level root (#2444 grandchild-composition).
+// component.ts). Starts at \`__rootScope\` (the fixture root).
 let __parentScope = __rootScope
 
 function renderChild(name, props, key, suffix) {
@@ -216,25 +220,23 @@ function renderChild(name, props, key, suffix) {
   // output asserts the same shape SSR emits.
   const slotAttrs = suffix ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
   if (!template) return '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
-  // Push this child's own scope while its template evaluates, so a nested
-  // renderChild() call (a grandchild) derives from THIS scope rather than
-  // reusing the caller's — mirrors production's push/restore around
-  // \`templateFn(props)\`.
-  const __prevParentScope = __parentScope
-  __parentScope = scopeId
-  let __rawHtml
-  try {
-    __rawHtml = template(props)
-  } finally {
-    __parentScope = __prevParentScope
-  }
+  // NOTE: does NOT push \`__parentScope\` to this child's own derived
+  // scope while \`template\` evaluates — mirrors production's renderChild
+  // (@barefootjs/client/runtime, component.ts, the NOTE above its
+  // \`templateFn(props)\` call). Pushing was tried there to fix a third
+  // composition level collapsing onto the second (\`grandchild-composition\`)
+  // but it collides with \`comment: true\` wrapper transparency's $cSingle
+  // short-suffix self-match, so production intentionally leaves
+  // grandchild-composition a known limitation (#2649) rather than pushing.
+  // This mock must reproduce that bug, not silently cure it.
+  const __rawHtml = template(props)
   // #1320: substitute the hoisted-children placeholder with the CALLER's
-  // scope (not this child's own scope pushed above). Mirrors the
-  // production renderChild in @barefootjs/client/runtime. Anchored to the
-  // exact attribute shape so user text containing the sentinel is left
-  // alone.
+  // scope (\`__parentScope\`, unchanged since renderChild doesn't push).
+  // Mirrors the production renderChild in @barefootjs/client/runtime.
+  // Anchored to the exact attribute shape so user text containing the
+  // sentinel is left alone.
   const html = __rawHtml.trim()
-    .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __prevParentScope + '"')
+    .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __parentScope + '"')
   const bfsAttr = ' bf-s="' + scopeId + '"'
   const extraAttrs = slotAttrs + keyAttr
   // Dedupe bf-s only when the child template already carries one
@@ -259,10 +261,22 @@ const $c = (...args) => new Array(args.length - 1).fill(null)
 const createSignal = (v) => [() => v, () => {}]
 const createEffect = () => {}
 const createMemo = (fn) => fn
-// Env signal (router v0.5): the template reads \`searchParams().get(k)\`; the
-// harness has no real request, so it resolves to an empty query (matching the
-// SSR conformance default).
-const searchParams = () => new URLSearchParams()
+// Env signal (router v0.5): mirrors @barefootjs/client's \`createSearchParams\`
+// import surface — production returns a \`createSignal\`-shaped
+// \`[getter, setter]\` tuple (reactive.ts's \`searchParamsTuple\`), so the mock
+// matches that shape. The harness has no real request, so the getter
+// resolves to an empty query (matching the SSR conformance default).
+//
+// Deliberately NOT also providing a bare module-scope \`searchParams\`
+// binding: generated client JS destructures the getter out of
+// \`createSearchParams()\` inside \`init...\` only — the template lambda
+// references that destructured name directly, with no import or
+// re-binding of its own (#2654, a compiler bug: the template lambda
+// should carry its own env-signal prelude but doesn't yet). A bare
+// \`searchParams\` stub here would silently paper over that
+// ReferenceError instead of reproducing it, which is exactly how the
+// bug stayed hidden until a fixture aliased the getter to \`sp\`.
+const createSearchParams = () => [() => new URLSearchParams(), () => {}]
 const onMount = () => {}
 const onCleanup = () => {}
 const insert = () => {}
@@ -410,8 +424,12 @@ __html = __html.replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __rootSco
 // Inject bf-s="\${__rootScope}" on the root element to match SSR scope
 // ID convention — appended AFTER user-defined attributes, mirroring
 // Hono renderElement (#1295). Skip when the root already carries
-// bf-s from a nested renderChild call (#1320 dedup).
-if (!/^<\\w+[^>]*\\sbf-s="/.test(__html)) {
+// bf-s from a nested renderChild call (#1320 dedup), AND skip when the
+// main component itself is a \`comment: true\` transparent wrapper —
+// mirrors production's \`createComponent\` (component.ts), which leaves
+// \`scopeId === null\` for such wrappers rather than stamping their own
+// bf-s over the inner component's root (#2653).
+if (!__comments.get(__lastComponent) && !/^<\\w+[^>]*\\sbf-s="/.test(__html)) {
 if (__html.match(/^<\\w+[^>]* bf="/)) {
   __html = __html.replace(/ bf="/, ' bf-s="' + __rootScope + '" bf="')
 } else if (__html.match(/^<\\w+\\s[^>]*>/)) {

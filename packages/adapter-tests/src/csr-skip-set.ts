@@ -60,6 +60,18 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Bare-getter sibling: the stubbed getter yields literal `null` text where
   // expectedHtml pins the empty per-adapter contract — #2654.
   'search-params-derived-memo-bare',
+  // https://github.com/piconic-ai/barefootjs/issues/2654: the template
+  // lambda reads the `createSearchParams()`-destructured getter directly,
+  // but that getter is only bound inside `init...` — the template itself
+  // carries no import or re-binding of its own, so evaluating it standalone
+  // (as this harness does) throws a ReferenceError. Previously masked by
+  // the harness's bare module-scope `searchParams` stub, which happened to
+  // match this fixture's getter name.
+  'search-params',
+  // Same #2654 ReferenceError as `search-params`, one layer down: the
+  // `visible` memo's template read closes over `searchParams()`, itself
+  // only bound at init time. https://github.com/piconic-ai/barefootjs/issues/2654
+  'search-params-derived-filter',
   // Keyed child-component loop materializes at init — same as `static-array-from-props`.
   'todo-app',
   // #1448 Tier B — iteration shape fixtures are SSR-only prop-based
@@ -117,10 +129,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // escaped string (`__BF_PARENT_SCOPE__` still embedded), not markup —
   // known limitation #2651.
   'jsx-element-prop',
-  // `nested-fragments`: a multi-root fragment attaches `bf-s` to its
-  // first element in CSR, while SSR carries the scope on a
-  // `<!--bf-scope:...-->` comment the normalizer strips — known limitation #2653.
-  'nested-fragments',
   // `grandchild-composition`: third level reuses the parent scope id
   // (`test_s0`) in CSR instead of deriving `test_s0_s0` as SSR does. #2444
   // fixed the sibling case, but deriving here via `renderChild`'s
