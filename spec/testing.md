@@ -551,6 +551,12 @@ Each of the 8 adapter packages exports a `conformancePins` module (`ConformanceP
 
 Tracked limitations carry the [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label; that label is the source of truth for issue URLs referenced in the lockfile and matrix output.
 
+A second label tiers each `known-limitation` entry by intent, with the compatibility policy as the classifier — silent wrong output is a defect, loud-or-escapable is not:
+
+- `+ bug` — a **silent divergence** to fix: rendered or emitted output silently differs from the contract (e.g. a loop host rendering empty, a scope id reused, a sentinel leaking into text).
+- `+ enhancement` — a **capability gap**: current behavior is a loud, `/* @client */`-escapable compile-time refusal working as designed; the issue tracks adding a faithful lowering later.
+- bare `known-limitation` — an **accepted design position**: permanent, pinned in the conformance declarations, and documented (e.g. ambient-locale-dependent formatting, JSON-boundary-unrevivable rich props).
+
 ### What NOT to test here
 
 - **Rendered-output parity** — a `✓` cell means the component compiled cleanly against that adapter, nothing about the HTML it produces. Render identity is owned by Layer 3 (Adapter Conformance) and the eval vector corpus.
