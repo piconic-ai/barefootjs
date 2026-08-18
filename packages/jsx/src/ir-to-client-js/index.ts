@@ -259,7 +259,12 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   let templateHtml: string | undefined
 
   if (canGenerateStaticTemplate(ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
-    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
+    // `ctx.dynamicElements` is always empty on this template-only path
+    // (`needsClientJs(ctx)` gates it) — passed through anyway so this
+    // matches `emitRegistrationAndHydration`'s derivation byte-for-byte
+    // rather than special-casing "no markup slots here" (#2651).
+    const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
+    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds)
   }
 
   // CSR fallback: when static template generation fails (e.g., components with

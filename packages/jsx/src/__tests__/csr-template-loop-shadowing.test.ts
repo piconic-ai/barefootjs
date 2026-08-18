@@ -111,8 +111,11 @@ describe('hydrate template: loop param shadowing an outer name (#2222 bug 2)', (
       }
     `))
 
-    // Outside the loop: the prop rewrite applies.
-    expect(tpl).toContain('escapeText(_p.label)')
+    // Outside the loop: the prop rewrite applies. `escapeTextOrMarkup`, not
+    // bare `escapeText` — this top-level slot is claim-plan `kind: 'markup'`
+    // (#2651); the loop-body slot below stays plain-text (loops never
+    // reach `ctx.dynamicElements`), so only this one call name changed.
+    expect(tpl).toContain('escapeTextOrMarkup(_p.label)')
     // Inside the loop: the shadowing param must survive untouched.
     expect(tpl).toContain('escapeText(1 + label)')
     expect(tpl).not.toContain('1 + _p.label')

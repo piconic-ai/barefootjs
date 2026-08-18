@@ -613,6 +613,76 @@ export function escapeText(value: unknown): string {
 }
 
 /**
+ * Brand carried by `bfMarkup()` — see that function's docstring. A string
+ * key (not a `Symbol`) because the brand must survive `structuredClone`
+ * (props cloned across an SSR seed / island-serialization boundary): a
+ * symbol-keyed property is silently dropped by the structured-clone
+ * algorithm, which would un-brand the value in transit.
+ */
+const BF_MARKUP_BRAND = '__bfMarkup'
+
+/**
+ * Shape produced by `bfMarkup()` (#2651). Compiler-emitted code only —
+ * never construct one by hand from userland; doing so is exactly as unsafe
+ * as writing raw `innerHTML` yourself, since `escapeTextOrMarkup` /
+ * `escapeTextOrNode` (below) trust `__bfMarkup`'s contents to already be
+ * safe-to-splice HTML and skip escaping it.
+ */
+export interface BfMarkup {
+  readonly [BF_MARKUP_BRAND]: string
+}
+
+/**
+ * Brand a compiler-built HTML string as pre-escaped markup safe to splice
+ * raw into a template (#2651). The compiler emits this ONLY around HTML it
+ * itself assembled from a JSX element passed at a non-`children` component
+ * prop position (`header={<strong>Title</strong>}`) — every text segment
+ * inside that assembly was already escaped node-by-node during the
+ * assembly (the same `escapeHtml` / `escapeTextSlotExpr` calls
+ * `html-template.ts` uses for ordinary element children), so the
+ * concatenated result is exactly as safe as any other compiler-emitted
+ * template fragment.
+ *
+ * Not exported from the public `@barefootjs/client` surface: this is
+ * compiler-emitted-code only, exported solely from
+ * `@barefootjs/client/runtime`. Calling it directly from userland to wrap
+ * an arbitrary string is exactly as unsafe as assigning that string to
+ * `innerHTML` yourself — the value is trusted verbatim by every consumer
+ * below.
+ */
+export function bfMarkup(html: string): BfMarkup {
+  return { [BF_MARKUP_BRAND]: html }
+}
+
+/** Type guard for the `bfMarkup()` brand (#2651). Compiler-emitted code only — see `bfMarkup`'s docstring. */
+export function isBfMarkup(value: unknown): value is BfMarkup {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Record<string, unknown>)[BF_MARKUP_BRAND] === 'string'
+  )
+}
+
+/**
+ * `escapeText`'s counterpart for a claim-plan slot the compiler has
+ * classified `kind: 'markup'` at STATIC/initial-render time
+ * (`html-template.ts`'s `escapeTextSlotExpr`, gated on the same
+ * `ctx.dynamicElements` membership `emit-reactive.ts` reads to pick the
+ * writer kind for the REACTIVE side, below) — #2651. A `bfMarkup()`-branded
+ * value is compiler-built HTML the compiler already escaped piecewise
+ * while assembling it, and must reach the template raw, unescaped a second
+ * time; anything else (plain string, number, nullish) gets the ordinary
+ * `escapeText` treatment — this function is a strict superset of
+ * `escapeText`'s behaviour for every non-branded value, so switching a
+ * call site from one to the other never changes output unless the value
+ * is actually branded.
+ */
+export function escapeTextOrMarkup(value: unknown): string {
+  if (isBfMarkup(value)) return value[BF_MARKUP_BRAND]
+  return escapeText(value)
+}
+
+/**
  * `escapeText`'s counterpart for a claimed 'markup' slot's REACTIVE write
  * (slot unification A3 follow-up), where the value is a plain-JS expression
  * that may resolve to either a string or a live `Node` (e.g. `{cond &&
@@ -631,8 +701,17 @@ export function escapeText(value: unknown): string {
  * before handing it to a 'markup' writer — NOT the preamble-region case
  * (`stringify/loop.ts`), whose value is already-built HTML from a nested
  * compiled render and must stay unescaped.
+ *
+ * A `bfMarkup()`-branded value (#2651) — a component prop re-read on every
+ * reactive re-run, e.g. `initChild`'s `get header() { return bfMarkup(...) }`
+ * getter — is unwrapped to its raw string for the same reason a `Node` is
+ * passed through untouched: the compiler already escaped its contents once
+ * during assembly, so re-escaping it (or, worse, `String()`-stringifying
+ * the wrapper object into `"[object Object]"`) would corrupt it. Checked
+ * before the `Node` branch since the two shapes are mutually exclusive.
  */
 export function escapeTextOrNode(value: unknown): string | Node {
+  if (isBfMarkup(value)) return value[BF_MARKUP_BRAND]
   if (typeof Node !== 'undefined' && value instanceof Node) return value
   return escapeText(value)
 }

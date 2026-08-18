@@ -63,10 +63,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'region-boundary',
   // Priority-12 sweep: REAL SSR/CSR divergences (not harness artifacts),
   // skipped until the pipeline reconciles the two paths.
-  // `jsx-element-prop`: a non-children JSX prop reaches the CSR insert as an
-  // escaped string (`__BF_PARENT_SCOPE__` still embedded), not markup —
-  // known limitation #2651.
-  'jsx-element-prop',
+  // `jsx-element-prop` graduated (#2651 fixed): a non-children JSX prop now
+  // reaches the CSR insert as `bfMarkup()`-branded HTML, matching the
+  // claim-plan 'markup' classification instead of the stray `escapeText`
+  // path that mangled the `__BF_PARENT_SCOPE__` sentinel.
   // `grandchild-composition`: third level reuses the parent scope id
   // (`test_s0`) in CSR instead of deriving `test_s0_s0` as SSR does. #2444
   // fixed the sibling case, but deriving here via `renderChild`'s

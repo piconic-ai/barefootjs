@@ -311,13 +311,30 @@ const escapeAttr = (value) =>
 // value renders as empty text (JSX/Solid semantics; #2137) — otherwise a
 // bare \`{props.x}\` on an absent prop would surface literal "undefined".
 const escapeText = (value) => value == null ? '' : escapeAttr(value)
+// Mirror @barefootjs/client/runtime bfMarkup/isBfMarkup (#2651): the
+// JSX-element-as-non-children-prop markup brand. The compiler wraps an
+// assembled HTML string in \`bfMarkup(...)\` at the producer (renderChild /
+// initChild props); \`escapeTextOrMarkup\`/\`escapeTextOrNode\` below unwrap
+// it raw instead of escaping it. A plain string key (not a Symbol) — see
+// the production docstring for why.
+const bfMarkup = (html) => ({ __bfMarkup: html })
+const isBfMarkup = (value) =>
+  typeof value === 'object' && value !== null && typeof value.__bfMarkup === 'string'
+// Mirror @barefootjs/client/runtime escapeTextOrMarkup (#2651): the STATIC/
+// initial-render counterpart of escapeTextOrNode below — a claim-plan
+// 'markup' slot's escape at template-build time. Branded values pass
+// through raw; everything else gets the ordinary escapeText treatment.
+const escapeTextOrMarkup = (value) => isBfMarkup(value) ? value.__bfMarkup : escapeText(value)
 // Mirror @barefootjs/client/runtime escapeTextOrNode: a claimed 'markup'
-// writer's value may be a live Node (spliced by identity) or a plain value
-// (escaped like escapeText, above) — generated code calls this wrapper so
-// a string never reaches \`writeMarkup\`'s \`innerHTML =\` unescaped. The
-// harness never constructs a real Node, but must still mirror the branch
-// so a template evaluating this call doesn't throw on a string value.
+// writer's value may be a live Node (spliced by identity), a bfMarkup()-
+// branded value (#2651, unwrapped raw — same reasoning as
+// escapeTextOrMarkup above), or a plain value (escaped like escapeText,
+// above) — generated code calls this wrapper so a string never reaches
+// \`writeMarkup\`'s \`innerHTML =\` unescaped. The harness never constructs a
+// real Node, but must still mirror the branch so a template evaluating
+// this call doesn't throw on a string value.
 const escapeTextOrNode = (value) =>
+  isBfMarkup(value) ? value.__bfMarkup :
   (typeof Node !== 'undefined' && value instanceof Node) ? value : escapeText(value)
 // Mirror @barefootjs/client/runtime/spread-attrs.ts: format a record of
 // attributes as an HTML attribute string for use inside template literals.

@@ -43,7 +43,10 @@ describe('aliased destructured props reach client JS under the caller-facing key
     expect(clientJs!.content).not.toContain('_p.count')
     // The CSR `template:` lambda (module-scope SSR fallback) reads the
     // same caller-facing key.
-    expect(clientJs!.content).toContain('escapeText(_p.n)')
+    // `escapeTextOrMarkup`, not bare `escapeText` — this slot is
+    // claim-plan `kind: 'markup'` (#2651), unrelated to the #2524 aliasing
+    // concern this test pins; only the escape call's name changed.
+    expect(clientJs!.content).toContain('escapeTextOrMarkup(_p.n)')
   })
 
   test('{ text, n } — un-aliased: byte-identical to the pre-fix `_p.n` extraction', () => {
@@ -66,7 +69,10 @@ describe('aliased destructured props reach client JS under the caller-facing key
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     expect(clientJs!.content).toContain('const n = _p.n')
-    expect(clientJs!.content).toContain('escapeText(_p.n)')
+    // `escapeTextOrMarkup`, not bare `escapeText` — this slot is
+    // claim-plan `kind: 'markup'` (#2651), unrelated to the #2524 aliasing
+    // concern this test pins; only the escape call's name changed.
+    expect(clientJs!.content).toContain('escapeTextOrMarkup(_p.n)')
   })
 
   test('aliased controlled-signal prop — the accessor reads the caller-facing key', () => {

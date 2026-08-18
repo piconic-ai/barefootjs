@@ -203,7 +203,11 @@ export function emitRegistrationAndHydration(
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
   if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
-    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
+    // `ctx.dynamicElements` is the claim-plan-'markup' membership
+    // (#2651) — see `generateCsrTemplate`'s identical derivation below
+    // for why this is reused as-is rather than re-derived.
+    const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
+    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds)
     if (templateHtml) {
       defParts.push(buildTemplateDefPart(ctx, templateHtml))
     }
