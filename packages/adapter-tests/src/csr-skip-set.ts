@@ -18,6 +18,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // typed shape Go's Input struct requires. Go-side expectedHtml pins the SSR
   // contract; CSR runtime parity is a tracked harness follow-up.
   'jsx-spread-props-object',
+  // #1467 multi-export class (NOT #1407): the shared source compiles several
+  // components and the harness's `__lastComponent` renders
+  // `PropsReactivityComparison`, not the pinned `ReactiveProps` — verified by
+  // the rendered output's `props-reactivity-comparison` container class.
   'reactive-props',
   // Memo reads the env-signal getter `sp()`, wired only at init; runtime
   // `env-signal` tests + per-adapter render conformance cover it —
