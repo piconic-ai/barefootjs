@@ -173,7 +173,7 @@ export function multiRootNamespaceWrapForTemplate(template: string): { wrapTag: 
 }
 
 /** Wrap `html` in the namespace's synthetic root tag, or return it as-is. */
-function wrapHtmlForNamespace(html: string, wrapTag: NamespaceWrapTag | null): string {
+export function wrapHtmlForNamespace(html: string, wrapTag: NamespaceWrapTag | null): string {
   return wrapTag ? `<${wrapTag}>${html}</${wrapTag}>` : html
 }
 
