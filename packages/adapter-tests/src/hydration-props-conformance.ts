@@ -66,7 +66,19 @@ export function decodeHtmlEntities(input: string): string {
       const isHex = match[2] === 'x' || match[2] === 'X'
       const numPart = isHex ? match.slice(3, -1) : match.slice(2, -1)
       const codePoint = Number.parseInt(numPart, isHex ? 16 : 10)
-      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : match
+      // Reject the values `String.fromCodePoint` throws on — above the
+      // Unicode max, or a lone UTF-16 surrogate (only valid as an encoding
+      // detail, never a standalone codepoint). A malformed reference passes
+      // through as matched instead of crashing the comparator (same
+      // contract as `render.contract.ts`'s decoder).
+      if (
+        !Number.isFinite(codePoint) ||
+        codePoint > 0x10ffff ||
+        (codePoint >= 0xd800 && codePoint <= 0xdfff)
+      ) {
+        return match
+      }
+      return String.fromCodePoint(codePoint)
     }
     switch (match) {
       case '&quot;':

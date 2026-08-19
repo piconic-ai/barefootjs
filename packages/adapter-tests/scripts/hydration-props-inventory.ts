@@ -83,7 +83,7 @@ interface AdapterUnderTest {
     componentName?: string
   }) => Promise<string>
   /** Error classes this adapter's own render function throws when its runtime isn't installed on this host. */
-  notAvailableErrors: Array<new (...args: never[]) => Error>
+  notAvailableErrors: Array<new (...args: any[]) => Error>
 }
 
 const ADAPTERS: AdapterUnderTest[] = [

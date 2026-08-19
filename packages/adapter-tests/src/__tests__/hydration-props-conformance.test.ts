@@ -21,6 +21,14 @@ describe('decodeHtmlEntities', () => {
     expect(decodeHtmlEntities('&#X22;')).toBe('"')
   })
 
+  test('passes malformed numeric references through instead of throwing', () => {
+    // `String.fromCodePoint` throws RangeError on both of these — above
+    // the Unicode max, and a lone UTF-16 surrogate.
+    expect(decodeHtmlEntities('&#x110000;')).toBe('&#x110000;')
+    expect(decodeHtmlEntities('&#xD800;')).toBe('&#xD800;')
+    expect(decodeHtmlEntities('&#9999999999;')).toBe('&#9999999999;')
+  })
+
   test('does not double-decode a literal &amp;lt; into <', () => {
     // Two independent entities in the source: `&amp;` followed by the
     // literal text `lt;`. A naive chained .replace(/&amp;/).replace(/&lt;/)
