@@ -20,7 +20,7 @@
 //   bun scripts/changeset-publish.ts
 
 import { resolve } from 'node:path'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { appendFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { $ } from 'bun'
 
@@ -106,9 +106,6 @@ try {
       continue
     }
 
-    // Create a local git tag so changesets/action can detect the publish.
-    // The action parses stdout for "New tag: <name>@<version>" lines to set
-    // its `published` output and to create GitHub Releases.
     const tag = `${pkg.name}@${pkg.version}`
     const t = await $`git tag ${tag}`.cwd(repoRoot).quiet().nothrow()
     const tagAlreadyExists = t.exitCode !== 0 && t.stderr.toString().includes('already exists')
@@ -117,7 +114,17 @@ try {
       errors.push(`${tag} (tag)`)
       continue
     }
-    console.log(`New tag: ${tag}`)
+    // Not stdout: changesets/action v2 reads only this file, and a publish it
+    // cannot see is one it never tags, releases, or gates downstream jobs on.
+    // Unset outside the action.
+    const outputFile = process.env.CHANGESETS_OUTPUT
+    if (outputFile) {
+      appendFileSync(
+        outputFile,
+        `${JSON.stringify({ type: 'git-tag', tag, packageName: pkg.name })}\n`,
+      )
+    }
+    console.log(`  tagged  ${tag}`)
 
     published++
   }
