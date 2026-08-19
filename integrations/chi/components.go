@@ -290,6 +290,13 @@ type TextEscapeProps struct {
 	Count int `json:"count"`
 }
 
+// TodoAppInitialTodosItem is a synthesised type for an anonymous object type (#2674).
+type TodoAppInitialTodosItem struct {
+	ID int `json:"id"`
+	Text string `json:"text"`
+	Done bool `json:"done"`
+}
+
 // Todo represents a todo.
 type Todo struct {
 	ID int `json:"id"`
@@ -323,6 +330,13 @@ type TodoAppProps struct {
 	NewText string `json:"newText"`
 	Filter Filter `json:"filter"`
 	TodoItems []TodoItemProps `json:"-"`
+}
+
+// TodoAppSSRInitialTodosItem is a synthesised type for an anonymous object type (#2674).
+type TodoAppSSRInitialTodosItem struct {
+	ID int `json:"id"`
+	Text string `json:"text"`
+	Done bool `json:"done"`
 }
 
 // TodoAppSSRInput is the user-facing input type.

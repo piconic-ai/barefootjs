@@ -141,8 +141,25 @@ export function typeInfoToGo(
         return `[]${typeInfoToGo(ctx, typeInfo.elementType)}`
       }
       return '[]interface{}'
-    case 'object':
-      return 'map[string]interface{}'
+    case 'object': {
+      // #2674 Plan A: an ANONYMOUS object type — an inline array-element
+      // type (`items: { id: number }[]`) or a nested anonymous property
+      // inside a named type (`Row.user`) — synthesizes a deterministically-
+      // named, json-tagged struct in `emitSynthPropStructs`, registered here
+      // by the exact `TypeInfo` object's IDENTITY (not name/shape — two
+      // anonymous types at different structural positions get different
+      // synthesized names even when shaped identically). That pre-pass runs
+      // before this function is ever consulted for the current compile (see
+      // `generateTypes()`'s ordering), so a hit here means a real struct was
+      // emitted; a miss (no pre-pass ran, or the pre-pass skipped this exact
+      // type on a synthesized-name collision) falls back to the historical
+      // `map[string]interface{}` — the same PascalCase-baked map
+      // `bakeInlineObjectAsGoMap` (`parsed-literal-to-go.ts`) still targets,
+      // so SSR stays correct and only the hydration-payload leak the
+      // synthesis closes remains open for that one skipped type.
+      const synthName = ctx.state.synthObjectStructNames.get(typeInfo)
+      return synthName ?? 'map[string]interface{}'
+    }
     case 'interface':
       // Gate on an ACTUAL backing (a generated struct — `localStructFields` —
       // or a string-union alias — `localTypeAliases`, which emits `type X =

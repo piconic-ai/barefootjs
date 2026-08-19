@@ -14,8 +14,31 @@ import { typeInfoToGo } from '../type/type-codegen.ts'
 /**
  * Build a map from prop name to a better Go type inferred from signals. When a
  * signal is initialized from a prop (`createSignal(props.initial ?? 0)`), the
- * signal's type annotation may be more specific than the prop's `TypeInfo`. Only
- * generic prop types (containing `interface{}`) are overridden.
+ * signal's type annotation may be more specific than the prop's `TypeInfo`.
+ *
+ * Two trigger conditions, mirroring `emitPropsDataFields`'s identical
+ * signal-vs-prop reconciliation for the PROPS struct field (`generate - Go
+ * struct types` — "Let a specific signal type override a less-specific prop
+ * type in either direction"), so the Input/Props field type this override
+ * feeds (via `resolvePropGoType`) and the constructor's baked VALUE
+ * (`convertInitialValue`'s `extractPropNameFromInitialValue` prop-passthrough
+ * shortcut) never disagree about which type is authoritative:
+ *
+ *   1. A generic prop type (containing `interface{}`) — the historical case.
+ *   2. #2674: BOTH sides resolve to a CONCRETE type that DISAGREES — e.g. an
+ *      inline array-element prop type (`initialTodos: Array<{ id, text,
+ *      done }>`) now independently synthesizes its OWN named struct
+ *      (`TodoAppInitialTodosItem`) rather than falling to `interface{}`, but
+ *      a signal seeded from it via a shape-widening transform
+ *      (`createSignal<Todo[]>((props.initialTodos ?? []).map(t => ({...t,
+ *      editing: false})))`, `Todo` carrying an EXTRA `editing` field) still
+ *      wants the signal's own `Todo` element type. Before #2674 this case
+ *      was unreachable — every inline object/array prop type WAS
+ *      `interface{}`-containing, so case 1 always fired — leaving the
+ *      passthrough shortcut safe by accident (prop and signal Go types were
+ *      always forced equal). Widening to case 2 restores that same
+ *      equality now that a prop's own type can independently resolve to
+ *      something concrete but narrower.
  */
 export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map<string, string> {
   const overrides = new Map<string, string>()
@@ -28,11 +51,10 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
       const param = ir.metadata.propsParams.find(p => p.name === propName)
       if (!param) continue
       const propGoType = typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
-      if (propGoType.includes('interface{}')) {
-        const signalGoType = typeInfoToGo(ctx, signal.type, signal.initialValue, signal.parsed)
-        if (!signalGoType.includes('interface{}')) {
-          overrides.set(propName, signalGoType)
-        }
+      const signalGoType = typeInfoToGo(ctx, signal.type, signal.initialValue, signal.parsed)
+      if (signalGoType.includes('interface{}')) continue // never widen TO something less resolved
+      if (propGoType.includes('interface{}') || signalGoType !== propGoType) {
+        overrides.set(propName, signalGoType)
       }
     }
   }
