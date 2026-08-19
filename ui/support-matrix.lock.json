@@ -1123,7 +1123,7 @@
           ]
         },
         "go-template": {
-          "pass": 83,
+          "pass": 82,
           "total": 92,
           "gaps": [
             {
@@ -1156,6 +1156,10 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -1579,7 +1583,7 @@
           ]
         },
         "go-template": {
-          "pass": 205,
+          "pass": 204,
           "total": 220,
           "gaps": [
             {
@@ -1630,6 +1634,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -2351,7 +2359,7 @@
           ]
         },
         "go-template": {
-          "pass": 292,
+          "pass": 291,
           "total": 309,
           "gaps": [
             {
@@ -2410,6 +2418,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -3025,7 +3037,7 @@
           ]
         },
         "go-template": {
-          "pass": 240,
+          "pass": 239,
           "total": 251,
           "gaps": [
             {
@@ -3058,6 +3070,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -3389,9 +3405,13 @@
           ]
         },
         "go-template": {
-          "pass": 44,
+          "pass": 43,
           "total": 46,
           "gaps": [
+            {
+              "fixture": "signal-prop-same-name-derived",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3675,7 +3695,7 @@
           ]
         },
         "go-template": {
-          "pass": 157,
+          "pass": 156,
           "total": 174,
           "gaps": [
             {
@@ -3734,6 +3754,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -6527,8 +6551,14 @@
           "total": 11
         },
         "go-template": {
-          "pass": 11,
-          "total": 11
+          "pass": 10,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "signal-prop-same-name-derived",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 11,
@@ -7494,7 +7524,7 @@
           ]
         },
         "go-template": {
-          "pass": 100,
+          "pass": 99,
           "total": 105,
           "gaps": [
             {
@@ -7511,6 +7541,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -8094,9 +8128,13 @@
           ]
         },
         "go-template": {
-          "pass": 38,
+          "pass": 37,
           "total": 40,
           "gaps": [
+            {
+              "fixture": "signal-prop-same-name-derived",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
