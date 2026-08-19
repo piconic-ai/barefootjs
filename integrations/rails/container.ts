@@ -12,9 +12,9 @@ type Env = {
 export class RailsContainer extends Container<Env> {
   defaultPort = 8080
   // Billing runs for every second the instance is up, idle included, so this
-  // window is the cost knob. Short enough that one crawler hit does not keep
-  // the instance warm for the rest of the hour, long enough that a visitor
-  // reading a page still lands on a warm container for the next click.
+  // window is the cost knob. Held at 2m where the other examples use 1m:
+  // Puma has to boot railties and every initializer, so a cold start is felt.
+  // A visitor reading one page should still get a warm container next click.
   sleepAfter = '2m'
 }
 
