@@ -12,3 +12,13 @@ updates:
       actions:
         patterns:
           - '*'
+    ignore:
+      # changesets/action v2 requires Changesets CLI v3; we run CLI ^2.31.0.
+      # Taking the action major on its own breaks every release run with
+      # "This version of the Changesets action is designed to work with
+      # Changesets CLI v3". Lift this together with the CLI v3 migration
+      # (ESM-only CLI, Node ^22.11 || ^24 || >=26, `changeset tag` renamed to
+      # `git-tag`, private packages no longer versioned by default,
+      # `changeset version` exiting 1 when there are no changesets).
+      - dependency-name: changesets/action
+        update-types: [version-update:semver-major]
