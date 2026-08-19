@@ -25,7 +25,8 @@
  *
  * Kept deliberately separate from `normalizeHTML` / the main
  * `runJSXConformanceTests` suite: this is today an inventory tool
- * (see `scripts/hydration-props-inventory.ts`), not a wired-in
+ * (see `src/hydration-props-inventory.ts`, driven per-adapter from each
+ * adapter package's own `scripts/hydration-props-inventory.ts`), not a wired-in
  * per-fixture assertion. Wiring it into `run-adapter-conformance.ts`
  * is the follow-up once the inventory this module produces has been
  * triaged into `known-limitation` issues + pins.
