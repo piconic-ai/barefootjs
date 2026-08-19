@@ -242,6 +242,22 @@ export class CompileState {
    */
   synthStructTypes: Map<string, TypeInfo> = new Map()
 
+  /**
+   * #2674 Plan A: ANONYMOUS (`kind: 'object'`) `TypeInfo` instance → the
+   * deterministically-named json-tagged struct `emitSynthPropStructs`
+   * synthesized for it, populated during generateTypes. Keyed by object
+   * IDENTITY, not name/shape: two anonymous object types at different
+   * structural positions (an inline array-element type vs. a nested
+   * property inside a named type) get different synthesized names even
+   * when shaped identically, so a content/shape key would wrongly unify
+   * them. `typeInfoToGo`'s `'object'` case consults this before falling
+   * back to `map[string]interface{}` — the map fallback stays reachable
+   * for the ONE case this pass declines: a synthesized name colliding with
+   * an existing local type (graceful, not a regression — see
+   * `emitSynthPropStructs`'s docstring).
+   */
+  synthObjectStructNames: Map<TypeInfo, string> = new Map()
+
   /** Set when a constructor-context lowering emits a `strings.` call, so
    *  `strings` is added to the generated types file's import block. */
   needsStringsImport = false

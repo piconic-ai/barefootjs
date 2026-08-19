@@ -1092,15 +1092,18 @@ export function Rows() {
       expect(types).toContain('Rows: []Row{Row{DataID: "a"}},')
     })
 
-    test('bakes a non-Go-identifier key inside a nested INLINE object with the same sanitizer as the accessor side (#2089 review)', () => {
-      // A nested inline-object property (`meta: { 'data-x': string }` — no
-      // named Go struct, lowered to map[string]interface{}) bakes as a Go map
-      // literal. The map KEY must be produced by `goFieldNameForKey` — the
-      // same function `buildSegmentAccessor`/`structFieldsFor` use — so the
-      // emitted accessor (`.Meta.DataX`, an exact-string MapIndex on maps)
-      // actually finds the value. `capitalizeFieldName` alone would bake
-      // `"Data-x"`, a key no emitted accessor can reach, silently rendering
-      // empty (flagged by Copilot on PR #2089).
+    test('bakes a non-Go-identifier key inside a nested INLINE object via the sanitizer-named synthesized struct (#2089 review, superseded by #2674)', () => {
+      // A nested inline-object property (`meta: { 'data-x': string }`) used
+      // to have no named Go struct and lower to `map[string]interface{}`,
+      // baked as a Go map literal with a `goFieldNameForKey`-sanitized key
+      // (`"DataX"`, not the invalid-accessor `"Data-x"` — #2089). #2674's
+      // struct-synthesis pre-pass now gives it a real struct (`RowMeta`)
+      // instead — the FIELD name still comes from the same sanitizer
+      // (`goFieldNameForKey`), so the accessor (`.Meta.DataX`) and the json
+      // tag (the ORIGINAL unsanitized source key, `"data-x"` — the struct
+      // field's json tag, not the map-baking convention's capitalized key)
+      // both still resolve correctly; only the container changed from a map
+      // to a struct.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -1113,8 +1116,11 @@ export function Rows() {
 }
 `)
       const types = adapter.generate(ir).types!
-      expect(types).toContain('map[string]interface{}{"DataX": "v"}')
+      expect(types).toContain('type RowMeta struct {')
+      expect(types).toContain('DataX string `json:"data-x"`')
       expect(types).not.toContain('"Data-x"')
+      expect(types).toContain('Row{ID: "r1", Meta: RowMeta{DataX: "v"}}')
+      expect(types).not.toContain('map[string]interface{}')
     })
 
     test('snake_case keys keep their underscore in the generated field name (#2089 review)', () => {
@@ -5910,5 +5916,159 @@ export function Counter() {
       preloadAssets: ['/assets/index-pre1.js'],
     })
     expect(template).not.toContain('<link')
+  })
+})
+
+describe('GoTemplateAdapter - #2674 anonymous object types synthesize named structs', () => {
+  // Plan A: a type with no name — an inline array-element type or a nested
+  // anonymous property inside a named type — used to lower to
+  // `map[string]interface{}` with DELIBERATELY PascalCased keys
+  // (`bakeInlineObjectAsGoMap`, #2087/#1487: `html/template`'s dot access on
+  // a map does an exact-string `MapIndex`). SSR rendered fine off that
+  // convention, but `BfPropsAttr`'s `json.Marshal` ships the SAME map, so
+  // the hydration payload leaked Go casing (`{"Name":"Ada"}` instead of
+  // `{"name":"Ada"}`). `emitSynthPropStructs` now synthesizes a
+  // deterministically-named, json-tagged struct for these types instead, so
+  // the SAME value bakes as a typed struct literal and `json.Marshal`
+  // produces the correct camelCase payload without changing SSR at all.
+
+  test('inline array-element type synthesizes a named json-tagged struct (case i)', () => {
+    // `items: { id: number; tags: string[] }[]` has no backing
+    // `TypeDefinition` at all — only `ir.metadata.propsParams`' own
+    // `TypeInfo` tree carries its shape.
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  return <ul>{props.items.map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+export { TaggedList }
+`)
+    const types = adapter.generateTypes(ir)!
+    expect(types).toContain('type TaggedListItemsItem struct {')
+    expect(types).toContain('Title string `json:"title"`')
+    expect(types).toContain('Tags []string `json:"tags"`')
+    // The Input/Props field is a typed struct slice, not the old
+    // `[]map[string]interface{}` fallback.
+    expect(types).toMatch(/Items \[\]TaggedListItemsItem/)
+    expect(types).not.toContain('map[string]interface{}')
+  })
+
+  test('nested anonymous property inside a NAMED type synthesizes a named struct (case ii, Row.user)', () => {
+    // `Row` is a real `TypeDefinition`; its `user` property has no name of
+    // its own — only `ir.metadata.typeDefinitions` carries `Row`'s property
+    // list (a `{kind:'interface', raw:'Row'}` prop reference does not).
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Row = { id: string; user: { name: string } }
+export function NestedNames() {
+  const [rows, setRows] = createSignal<Row[]>([
+    { id: "r1", user: { name: "Ada" } },
+    { id: "r2", user: { name: "Grace" } },
+  ])
+  return (
+    <ul onClick={() => setRows((r) => r)}>
+      {rows().map(({ id, user: { name } }) => (
+        <li key={id}>{name}</li>
+      ))}
+    </ul>
+  )
+}
+`)
+    const types = adapter.generateTypes(ir)!
+    expect(types).toContain('type RowUser struct {')
+    expect(types).toContain('Name string `json:"name"`')
+    expect(types).toContain('User RowUser `json:"user"`')
+    // The signal's inline initial value bakes through the STRUCT literal
+    // path, not `bakeInlineObjectAsGoMap`'s capitalized-key map convention.
+    expect(types).toContain('Row{ID: "r1", User: RowUser{Name: "Ada"}}')
+    expect(types).not.toContain('map[string]interface{}')
+  })
+
+  test('a synthesized-name collision gracefully falls back to the pre-#2674 map convention, not a regression', () => {
+    // `synthesizeStructFromSignal`'s existing collision precedent
+    // (#1680, `keeps nil when the synthesised name collides with a user
+    // type`), mirrored for `emitSynthPropStructs`: when the deterministic
+    // name (`Row><Prop>`) is already taken by a real user type, synthesis
+    // is declined for that ONE type and it keeps the historical map
+    // fallback — SSR stays correct (`bakeInlineObjectAsGoMap` still bakes
+    // it), only the hydration-payload casing fix doesn't apply to it.
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type RowUser = { handle: string }
+type Row = { id: string; user: { name: string } }
+export function NestedNames() {
+  const [rows] = createSignal<Row[]>([{ id: "r1", user: { name: "Ada" } }])
+  return <ul>{rows().map(({ id, user: { name } }) => <li key={id}>{name}</li>)}</ul>
+}
+`)
+    const types = adapter.generateTypes(ir)!
+    // The user's own `RowUser` struct is emitted, untouched...
+    expect(types).toContain('type RowUser struct {')
+    expect(types).toContain('Handle string `json:"handle"`')
+    // ...and `Row.user` — whose synthesized name collides with it — falls
+    // back to the map convention rather than being silently mistyped as
+    // the unrelated user type.
+    expect(types).toMatch(/User map\[string\]interface\{\}/)
+    expect(types).toContain('map[string]interface{}{"Name": "Ada"}')
+  })
+
+  test('real go-run render: bf-p carries camelCase keys for an inline array-element prop (case i)', async () => {
+    const source = `
+function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  return <ul>{props.items.map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+export { TaggedList }
+`
+    let html: string
+    try {
+      html = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { items: [{ title: 'Alpha', tags: ['a', 'b'] }] },
+      })
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) return // Go toolchain not installed on this host
+      throw err
+    }
+    const bfPMatch = html.match(/bf-p="([^"]*)"/)
+    expect(bfPMatch).not.toBeNull()
+    const decoded = bfPMatch![1]
+      .replace(/&#34;/g, '"')
+      .replace(/&quot;/g, '"')
+    const payload = JSON.parse(decoded)
+    expect(payload).toEqual({ items: [{ title: 'Alpha', tags: ['a', 'b'] }] })
+  })
+
+  test('real go-run render: bf-p carries camelCase keys for a nested anonymous object inside a named type (case ii)', async () => {
+    const source = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Row = { id: string; user: { name: string } }
+export function NestedNames() {
+  const [rows] = createSignal<Row[]>([{ id: "r1", user: { name: "Ada" } }])
+  return <ul>{rows().map(({ id, user: { name } }) => <li key={id}>{name}</li>)}</ul>
+}
+`
+    let html: string
+    try {
+      html = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter() })
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) return // Go toolchain not installed on this host
+      throw err
+    }
+    const bfPMatch = html.match(/bf-p="([^"]*)"/)
+    expect(bfPMatch).not.toBeNull()
+    const decoded = bfPMatch![1]
+      .replace(/&#34;/g, '"')
+      .replace(/&quot;/g, '"')
+    const payload = JSON.parse(decoded)
+    expect(payload).toEqual({ rows: [{ id: 'r1', user: { name: 'Ada' } }] })
   })
 })

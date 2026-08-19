@@ -831,27 +831,37 @@ function buildGoPropsInit(
       let sliceLiteral: string
       if (elemType && elemType.startsWith('map[')) {
         // An untyped object-array Input field (an inline prop object type
-        // that didn't synthesize a named struct, e.g. `items: { title:
-        // string; tags: string[] }[]` — `typeInfoToGo`'s 'object' case,
-        // type-codegen.ts) resolves to `[]map[string]interface{}`, not a
-        // named struct. `goTypedSliceLiteralFromArray`'s `goStructLiteral`
-        // emits bare `Field: value` entries, which is struct-literal syntax
-        // and doesn't compile as a map literal's keys — route these through
+        // that didn't synthesize a named struct — a synthesized-name
+        // collision, #2674's graceful fallback) resolves to
+        // `[]map[string]interface{}`, not a named struct.
+        // `goTypedSliceLiteralFromArray`'s `goStructLiteral` emits bare
+        // `Field: value` entries, which is struct-literal syntax and
+        // doesn't compile as a map literal's keys — route these through
         // the map-literal builder instead (#2075, search-params-derived-filter).
         sliceLiteral = goTypedMapSliceLiteralFromArray(value, elemType)
       } else if (elemType) {
-        sliceLiteral = goTypedSliceLiteralFromArray(value, elemType)
+        sliceLiteral = goTypedSliceLiteralFromArray(value, elemType, goTypes)
       } else {
         sliceLiteral = goArrayLiteralFromArray(value)
       }
       lines.push(`\t\t${goField}: ${sliceLiteral},`)
     } else if (value && typeof value === 'object') {
-      // Plain object → Go `map[string]any` literal (#1407 follow-up).
-      // Used by `jsx-spread-rest-prop` to populate the input-bag
-      // Spread_<N> field that carries the destructured-rest payload.
-      // The same harness change is needed when any future fixture
-      // passes a `Record<string, unknown>`-shaped prop through.
-      lines.push(`\t\t${goField}: ${goMapLiteralFromObject(value as Record<string, unknown>)},`)
+      // Plain object → Go `map[string]any` literal (#1407 follow-up), UNLESS
+      // the Input field is itself a synthesized named struct (#2674 — an
+      // inline object-typed prop, e.g. `cfg: { id: number; label?: string
+      // }`, now resolves its OWN concrete struct instead of falling to
+      // `map[string]interface{}`) — a `map[string]any{…}` literal doesn't
+      // compile against a concretely-typed struct field.
+      const fieldGoType = parseGoStructFields(goTypes, `${componentName}Input`)?.get(goField)
+      if (fieldGoType && fieldGoType !== 'interface{}' && fieldGoType !== 'any' && !fieldGoType.startsWith('map[')) {
+        lines.push(`\t\t${goField}: ${goStructLiteral(value as Record<string, unknown>, fieldGoType, goTypes)},`)
+      } else {
+        // Used by `jsx-spread-rest-prop` to populate the input-bag
+        // Spread_<N> field that carries the destructured-rest payload.
+        // The same harness change is needed when any future fixture
+        // passes a `Record<string, unknown>`-shaped prop through.
+        lines.push(`\t\t${goField}: ${goMapLiteralFromObject(value as Record<string, unknown>)},`)
+      }
     }
   }
   // Emit the collected rest-bag entries as the open-ended bag field. Skip
@@ -896,12 +906,20 @@ function goSliceElemType(
  * Emit a typed Go slice literal (`[]Elem{Elem{…}, …}`). Object elements become
  * keyed struct literals with PascalCase field names; scalar elements (for an
  * `[]string` / `[]int` field) are emitted bare. (#1297, toggle-shared)
+ *
+ * `goTypes` (when supplied) threads through to `goStructLiteral` so it can
+ * look up each of ITS OWN fields' declared Go types — needed since #2674:
+ * `elemType` may now be a synthesized struct (`TaggedListItemsItem`) with a
+ * concretely-typed slice/nested-struct field (`Tags []string`), and a blind
+ * `[]any{…}`/`map[string]interface{}{…}` for that field no longer compiles
+ * against it the way it always did against the old `map[string]interface{}`
+ * element type.
  */
-function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string): string {
+function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string, goTypes?: string): string {
   const entries = arr.map(v => {
     if (v instanceof Date) return goStringLit(v.toISOString())
     if (v && typeof v === 'object' && !Array.isArray(v)) {
-      return goStructLiteral(v as Record<string, unknown>, elemType)
+      return goStructLiteral(v as Record<string, unknown>, elemType, goTypes)
     }
     if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
     if (typeof v === 'number' || typeof v === 'boolean') return String(v)
@@ -937,11 +955,6 @@ function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): stri
 }
 
 /**
- * Emit a keyed Go struct literal (`Elem{Field: val, …}`) with PascalCase field
- * names. Only the keys the caller supplied are set, so an omitted optional prop
- * (e.g. `defaultOn` on the third toggle item) takes the Go zero value. (#1297)
- */
-/**
  * Emit a JS string as a Go interpreted string literal. JSON string
  * escaping is a subset of Go's (`\"`, `\\`, `\n`, `\uXXXX` are all valid
  * Go escapes), so `JSON.stringify` is a correct emitter — unlike the
@@ -955,7 +968,71 @@ function goStringLit(v: string): string {
   return JSON.stringify(v)
 }
 
-function goStructLiteral(obj: Record<string, unknown>, typeName: string): string {
+/**
+ * #2674: parse a named Go struct's OWN field → declared-type map out of
+ * `goTypes` (the generated `types.go` text), by struct name — the SAME
+ * text-scrape strategy `goSliceElemType` uses for `<Component>Input`,
+ * generalized to ANY struct name (a synthesized element type, `Row`, a
+ * loop-body wrapper, …) so `goStructLiteral` can bake each of ITS fields
+ * against what the struct ACTUALLY declares instead of guessing generically.
+ * Returns `null` when `goTypes` is absent or the struct isn't found — callers
+ * degrade to the pre-#2674 generic (`[]any` / `map[string]interface{}`)
+ * baking for every field, same as before this existed.
+ */
+function parseGoStructFields(goTypes: string | undefined, typeName: string): Map<string, string> | null {
+  if (!goTypes) return null
+  const struct = goTypes.match(new RegExp(`type ${typeName} struct \\{([\\s\\S]*?)\\n\\}`))
+  if (!struct) return null
+  const fields = new Map<string, string>()
+  // Field lines are always `\t<GoName> <GoType>[ \`json:"..."\`][ // comment]`
+  // — GoType is one whitespace-free token in every shape this harness bakes
+  // (`string`, `[]string`, `map[string]interface{}`, `[]TaggedListItemsItem`,
+  // `interface{}`); a pointer-typed framework field (`*bf.ScriptCollector`)
+  // doesn't match this class and is skipped — this harness never bakes a
+  // VALUE for one of those.
+  const fieldRe = /\n[ \t]*(\w+)[ \t]+([\w.[\]{}]+)/g
+  let m: RegExpExecArray | null
+  while ((m = fieldRe.exec(struct[1])) !== null) {
+    fields.set(m[1], m[2])
+  }
+  return fields
+}
+
+/**
+ * Emit a typed Go scalar slice literal (`[]string{"a", "b"}`) for a struct
+ * field whose declared element type is a Go scalar (#2674 — `Tags []string`
+ * on a synthesized element struct). Falls back to `nil` for a shape that
+ * shouldn't reach a scalar-typed field (an object/array value) — dead in
+ * practice since the caller only routes here for an `Array.isArray(v)` prop
+ * value.
+ */
+function goScalarSliceLiteral(arr: unknown[], elemGoType: string): string {
+  const entries = arr.map(v => {
+    if (typeof v === 'string') return goStringLit(v)
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+    if (v === null) return 'nil'
+    if (v instanceof Date) return goStringLit(v.toISOString())
+    return 'nil'
+  })
+  return `[]${elemGoType}{${entries.join(', ')}}`
+}
+
+/**
+ * Emit a keyed Go struct literal (`Elem{Field: val, …}`) with PascalCase field
+ * names. Only the keys the caller supplied are set, so an omitted optional prop
+ * (e.g. `defaultOn` on the third toggle item) takes the Go zero value. (#1297)
+ *
+ * #2674: when `goTypes` is supplied, each field's VALUE bakes against what
+ * `typeName` ACTUALLY declares for that field (via `parseGoStructFields`) —
+ * a synthesized element struct can now carry a concretely-typed nested slice
+ * (`Tags []string`) or nested struct (`RowUser`), not just scalars, and a
+ * blind `[]any{…}` / `map[string]interface{}{…}` (this function's pre-#2674
+ * behavior, still the fallback when `goTypes` is absent or the field is
+ * unresolved/genuinely `interface{}`/`map[string]interface{}`-typed) no
+ * longer compiles against those.
+ */
+function goStructLiteral(obj: Record<string, unknown>, typeName: string, goTypes?: string): string {
+  const fieldTypes = parseGoStructFields(goTypes, typeName)
   const fields: string[] = []
   for (const [k, v] of Object.entries(obj)) {
     // `goFieldNameForKey`, not the bare `capitalizeFieldName` — a data-driven
@@ -963,12 +1040,42 @@ function goStructLiteral(obj: Record<string, unknown>, typeName: string): string
     // adapter's own struct-literal baking (`parsed-literal-to-go.ts`)
     // sanitizes those to `DataX`, not `Data-x` (Copilot review, #2202).
     const goField = goFieldNameForKey(k)
+    const fieldGoType = fieldTypes?.get(goField)
     if (typeof v === 'string') fields.push(`${goField}: ${goStringLit(v)}`)
     else if (typeof v === 'number' || typeof v === 'boolean') fields.push(`${goField}: ${v}`)
     else if (v === null) fields.push(`${goField}: nil`)
     else if (v instanceof Date) fields.push(`${goField}: ${goStringLit(v.toISOString())}`)
-    else if (Array.isArray(v)) fields.push(`${goField}: ${goArrayLiteralFromArray(v)}`)
-    else if (v && typeof v === 'object') fields.push(`${goField}: ${goMapLiteralFromObject(v as Record<string, unknown>, true)}`)
+    else if (Array.isArray(v)) {
+      const elemGoType = fieldGoType?.startsWith('[]') ? fieldGoType.slice(2) : null
+      if (elemGoType === 'interface{}' || elemGoType === 'any') {
+        fields.push(`${goField}: ${goArrayLiteralFromArray(v)}`)
+      } else if (elemGoType?.startsWith('map[')) {
+        fields.push(`${goField}: ${goTypedMapSliceLiteralFromArray(v, elemGoType)}`)
+      } else if (elemGoType && (v.length === 0 || typeof v[0] !== 'object')) {
+        // A scalar-element slice field (`Tags []string`) — bake a typed
+        // scalar literal, not the generic `[]any` `goArrayLiteralFromArray`
+        // would emit (doesn't compile against a concrete `[]string` field).
+        fields.push(`${goField}: ${goScalarSliceLiteral(v, elemGoType)}`)
+      } else if (elemGoType) {
+        // A struct-element slice field — recurse with the SAME `goTypes` so
+        // nesting keeps resolving (a synthesized type nested inside another
+        // synthesized type, #2674's `RowUserAddress`-style chaining).
+        fields.push(`${goField}: ${goTypedSliceLiteralFromArray(v, elemGoType, goTypes)}`)
+      } else {
+        fields.push(`${goField}: ${goArrayLiteralFromArray(v)}`)
+      }
+    }
+    else if (v && typeof v === 'object') {
+      if (fieldGoType && fieldGoType !== 'interface{}' && !fieldGoType.startsWith('map[')) {
+        // A nested named-struct field (#2674 — `RowUser`, `Row.user`'s
+        // synthesized type): recurse as a struct literal, not a map — a
+        // `map[string]interface{}{…}` literal doesn't compile against a
+        // concretely-typed struct field.
+        fields.push(`${goField}: ${goStructLiteral(v as Record<string, unknown>, fieldGoType, goTypes)}`)
+      } else {
+        fields.push(`${goField}: ${goMapLiteralFromObject(v as Record<string, unknown>, true)}`)
+      }
+    }
   }
   return `${typeName}{${fields.join(', ')}}`
 }

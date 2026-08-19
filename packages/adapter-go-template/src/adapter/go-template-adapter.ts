@@ -18,6 +18,7 @@ import type {
   IRProp,
   TypeInfo,
   TypeDefinition,
+  PropertyInfo,
   CompilerError,
   SourceLocation,
   ParsedExpr,
@@ -141,6 +142,20 @@ import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, co
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
+
+/**
+ * Placeholder `SourceLocation` for a `TypeDefinition` `emitSynthPropStructs`
+ * (#2674) pushes onto `ctx.state.currentTypeDefinitions` for a synthesized
+ * anonymous-object struct. Never rendered or used for diagnostics — the
+ * synthesized entry exists only so `parsed-literal-to-go.ts`'s
+ * `structPropertyType` can look its properties up BY NAME the same way it
+ * looks up a real user type.
+ */
+const SYNTH_TYPE_LOC: SourceLocation = {
+  file: '<synthesized>',
+  start: { line: 0, column: 0 },
+  end: { line: 0, column: 0 },
+}
 
 /**
  * Local re-materialisation of the (removed) `higher-order` ParsedExpr variant
@@ -1076,6 +1091,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.buildLocalTypeTables(ir, componentName)
 
+    // #2674 Plan A: synthesize named structs for anonymous object types
+    // BEFORE emitting named-type structs — a nested anonymous property
+    // inside a named type (`Row.user`) needs its synthesized name registered
+    // before `emitLocalTypeStructs` computes `Row`'s own struct fields.
+    this.emitSynthPropStructs(lines, ir, componentName)
+
     this.emitLocalTypeStructs(lines, ir, componentName)
 
     this.emitSynthStructs(lines, ir, componentName)
@@ -1295,8 +1316,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * needs a real field to bake into, or the whole literal defers to nil); a
    * dedup guard drops a later key that sanitizes to a Go name already taken
    * (rare, but two fields can't share one Go identifier).
+   *
+   * Accepts anything carrying a `PropertyInfo[]` — a `TypeDefinition` (a
+   * user-named type) OR a bare `TypeInfo` of `kind: 'object'` (an anonymous
+   * type `emitSynthPropStructs` is synthesizing a struct for, #2674) — so
+   * both the named-type struct emitter and the anonymous-type synthesis
+   * pre-pass share one field-derivation path.
    */
-  private structFieldsFor(td: TypeDefinition): Array<{ tsName: string; goName: string; goType: string }> {
+  private structFieldsFor(td: { properties?: PropertyInfo[] }): Array<{ tsName: string; goName: string; goType: string }> {
     const fields: Array<{ tsName: string; goName: string; goType: string }> = []
     const seenGoNames = new Set<string>()
     for (const prop of td.properties ?? []) {
@@ -2447,6 +2474,142 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
         }
       }
+    }
+  }
+
+  /**
+   * #2674 Plan A: synthesize a deterministically-named, json-tagged struct
+   * for every ANONYMOUS (`kind: 'object'`) type reachable from the
+   * component's type surface, so `typeInfoToGo`'s `'object'` case (consulted
+   * by `emitLocalTypeStructs`/`generateInputStruct` right after this runs)
+   * resolves a real struct instead of falling to `map[string]interface{}` —
+   * the map `bakeInlineObjectAsGoMap` (`parsed-literal-to-go.ts`) bakes with
+   * DELIBERATELY PascalCased keys for `html/template`'s exact-case
+   * `MapIndex` (#2087/#1487), which `BfPropsAttr`'s `json.Marshal` then
+   * ships verbatim — the source of the hydration-payload Go-casing leak
+   * this pass closes.
+   *
+   * Two independent walk roots, because a NAMED type reference
+   * (`{kind:'interface', raw:'Row'}`) carries no inline `properties` — only
+   * `ir.metadata.typeDefinitions` has `Row`'s own property list:
+   *
+   *   1. Every user `TypeDefinition`'s properties (closes a nested anonymous
+   *      property inside a named type — `type Row = { id: string; user: {
+   *      name: string } }` → `Row.user`). MUST run before
+   *      `emitLocalTypeStructs`: `Row`'s own struct-field computation
+   *      (`typeDefinitionToGo` → `structFieldsFor` → `typeInfoToGo`) needs
+   *      the synthesized name for its `user` field already registered.
+   *   2. Every props param's own `TypeInfo` tree (closes an inline
+   *      array-element type with no backing `TypeDefinition` at all —
+   *      `items: { id: number; tags: string[] }[]`).
+   *
+   * Naming is deterministic on STRUCTURAL POSITION (matching
+   * `synthesizeStructFromSignal`'s `<component><Getter>Item` convention, not
+   * shape/content — two anonymous types shaped identically at different
+   * positions get different names, and the same position always yields the
+   * same name run-to-run): an array-element object gets
+   * `<parent><Prop>Item`; a direct nested object property gets
+   * `<parent><Prop>`. `<parent>` is the enclosing struct's OWN Go name for a
+   * walk-root-1 type (or the newly-synthesized name of an enclosing
+   * anonymous type, for a doubly-nested object — `RowUserAddress`), or
+   * `componentName` for a walk-root-2 (top-level props) type — threaded
+   * through the recursion so nesting chains correctly regardless of which
+   * root reached it.
+   *
+   * A synthesized name colliding with an EXISTING local type (rare: two
+   * structurally-unrelated anonymous types resolving to the same
+   * deterministic name) skips synthesis for that ONE type — and its own
+   * subtree, since there is no struct to attach nested field names to —
+   * gracefully, not as a regression: `typeInfoToGo` keeps returning the
+   * pre-#2674 map fallback for exactly that type, so the corpus never
+   * breaks, it just doesn't graduate for that one shape (see the
+   * `synthObjectStructNames` docstring on `CompileState`).
+   *
+   * A synthesized struct is ALSO pushed onto `ctx.state.currentTypeDefinitions`
+   * as a `TypeDefinition` (empty `definition`, a dummy `loc` — never
+   * rendered or used for diagnostics, only looked up by name) so
+   * `parsed-literal-to-go.ts`'s `structPropertyType` — which resolves a
+   * struct literal's nested-property TYPE by struct name against that same
+   * list — finds a synthesized parent's properties exactly like it finds a
+   * real named type's, with no separate lookup path to keep in sync.
+   */
+  private emitSynthPropStructs(lines: string[], ir: ComponentIR, componentName: string): void {
+    this.state.synthObjectStructNames = new Map<TypeInfo, string>()
+    // `primeCompileState` assigns `currentTypeDefinitions` the SAME array
+    // reference as `ir.metadata.typeDefinitions` (no clone) — copy before
+    // pushing synthesized entries onto it below, so this per-compile
+    // scratch state never mutates the IR's own metadata (which could be
+    // compiled again, or read by another consumer sharing the same IR).
+    this.state.currentTypeDefinitions = [...this.state.currentTypeDefinitions]
+
+    const visitObject = (typeInfo: TypeInfo, desiredName: string): void => {
+      // Identity guard: the exact same anonymous TypeInfo object reached via
+      // both walk roots (defensive — not expected given how the analyzer
+      // builds distinct TypeInfo instances per source occurrence).
+      if (this.state.synthObjectStructNames.has(typeInfo)) return
+      // Name-collision guard: graceful fallback to the map convention for
+      // just this type (see docstring above).
+      if (this.state.localTypeNames.has(desiredName)) return
+      this.state.localTypeNames.add(desiredName)
+      this.state.synthObjectStructNames.set(typeInfo, desiredName)
+      // Register nested children FIRST (depth-first) so this struct's OWN
+      // field-type resolution below (`structFieldsFor` → `typeInfoToGo`)
+      // sees synthesized names for any of ITS OWN nested object /
+      // array-of-object properties instead of racing ahead of them.
+      for (const prop of typeInfo.properties ?? []) {
+        visit(prop.type, desiredName, prop.name)
+      }
+      const fields = this.structFieldsFor(typeInfo)
+      this.state.localStructFields.set(desiredName, new Map(fields.map(f => [f.tsName, f.goName])))
+      this.state.currentTypeDefinitions.push({
+        kind: 'type',
+        name: desiredName,
+        definition: '',
+        properties: typeInfo.properties ?? [],
+        loc: SYNTH_TYPE_LOC,
+      })
+      const goFields = fields.map(
+        f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``,
+      )
+      lines.push(`// ${desiredName} is a synthesised type for an anonymous object type (#2674).`)
+      lines.push(`type ${desiredName} struct {\n${goFields.join('\n')}\n}`)
+      lines.push('')
+    }
+
+    const visitArrayElem = (elemType: TypeInfo | undefined, parentName: string, propName: string): void => {
+      if (!elemType) return
+      if (elemType.kind === 'array') {
+        // Array-of-array (`matrix: {id:number}[][]`): keep the same
+        // parent/prop naming context at every depth — rare shape, not one
+        // the two documented #2674 cases exercise, so this just needs to
+        // stay deterministic and non-colliding, not maximally descriptive.
+        visitArrayElem(elemType.elementType, parentName, propName)
+      } else if (elemType.kind === 'object') {
+        visitObject(elemType, `${parentName}${goFieldNameForKey(propName)}Item`)
+      }
+    }
+
+    const visit = (typeInfo: TypeInfo, parentName: string, propName: string): void => {
+      if (typeInfo.kind === 'array') {
+        visitArrayElem(typeInfo.elementType, parentName, propName)
+      } else if (typeInfo.kind === 'object') {
+        visitObject(typeInfo, `${parentName}${goFieldNameForKey(propName)}`)
+      }
+    }
+
+    // Walk root 1: named types' own properties (closes `Row.user`).
+    for (const td of ir.metadata.typeDefinitions) {
+      if (td.name === 'Props' || td.name === `${componentName}Props`) continue
+      if (td.name.endsWith('Props')) continue
+      for (const prop of td.properties ?? []) {
+        visit(prop.type, td.name, prop.name)
+      }
+    }
+
+    // Walk root 2: inline prop types with no backing TypeDefinition (closes
+    // `items: { id: number; tags: string[] }[]`).
+    for (const param of ir.metadata.propsParams) {
+      visit(param.type, componentName, param.name)
     }
   }
 
