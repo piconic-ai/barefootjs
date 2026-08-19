@@ -15,7 +15,11 @@ type Env = {
 
 export class ChiContainer extends Container<Env> {
   defaultPort = 8082
-  sleepAfter = '10m'
+  // Billing runs for every second the instance is up, idle included, so this
+  // window is the cost knob. This stack starts fast enough that a cold start
+  // is barely visible, so the tail is kept at the floor. The slower-booting
+  // examples (rails, laravel, django) hold 2m instead.
+  sleepAfter = '1m'
 }
 
 export default {

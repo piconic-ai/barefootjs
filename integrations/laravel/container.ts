@@ -11,7 +11,11 @@ type Env = {
 
 export class LaravelContainer extends Container<Env> {
   defaultPort = 8080
-  sleepAfter = '10m'
+  // Billing runs for every second the instance is up, idle included, so this
+  // window is the cost knob. Held at 2m where the other examples use 1m:
+  // `artisan serve` boots the framework kernel first, so a cold start is felt.
+  // A visitor reading one page should still get a warm container next click.
+  sleepAfter = '2m'
 }
 
 export default {
