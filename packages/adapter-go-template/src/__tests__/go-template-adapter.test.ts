@@ -5029,11 +5029,14 @@ export function TodoItem(props: Props) {
     // field Done in type TodoItemProps`) or — since `bf_sort_eval`-style
     // evaluators are untouched by this fix, only the html/template dot-path
     // is — renders wrong. Post-fix: only the not-done todo (id 2) survives
-    // the 'active' filter.
-    expect(html).not.toContain('Eat breakfast')
-    expect(html).toContain('Write tests')
-    expect(html).toContain('data-key="2"')
-    expect(html).not.toContain('data-key="1"')
+    // the 'active' filter. The bf-p hydration payload legitimately carries
+    // the full unfiltered `initialTodos` (both quote styles, mirroring
+    // `normalizeHTML`), so the assertions target the rendered list only.
+    const rendered = html.replace(/\s*bf-p=(?:"[^"]*"|'[^']*')/g, '')
+    expect(rendered).not.toContain('Eat breakfast')
+    expect(rendered).toContain('Write tests')
+    expect(rendered).toContain('data-key="2"')
+    expect(rendered).not.toContain('data-key="1"')
   })
 })
 

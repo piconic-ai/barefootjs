@@ -264,8 +264,13 @@ export async function renderErbComponent(options: RenderOptions): Promise<string
     // value domain is JSON-shaped symbol-keyed Hashes throughout, so
     // `JSON.parse(..., symbolize_names: true)` on the Ruby side is the
     // whole marshalling story; no hand-built Ruby literals.
-    const { obj: rootProps, needsSearchParams } = buildRubyProps(props, ir)
+    const { obj: rootProps, needsSearchParams, userProps } = buildRubyProps(props, ir)
     await Bun.write(resolve(tempDir, 'props.json'), JSON.stringify(rootProps))
+    // Separate from `props.json`: the caller-facing subset only (no
+    // scope_id / signal / memo bookkeeping) — what `bf._props(...)` below
+    // feeds `props_attr`'s bf-p payload, matching what a production
+    // Sinatra route handler passes, not this harness's internal vars hash.
+    await Bun.write(resolve(tempDir, 'user_props.json'), JSON.stringify(userProps))
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -310,6 +315,16 @@ bf = BarefootJS::Context.new(backend)
 bf._scope_id(${rootScopeId})
 
 props = JSON.parse(File.read(File.join(__dir__, 'props.json')), symbolize_names: true)
+# Mirrors production's \`props_attr\` contract (see barefoot_js.rb and
+# props_attr_test.rb): the caller is expected to seed \`_props\` before
+# rendering the root component, so this harness must call it explicitly.
+#
+# \`user_props.json\` — NOT \`props\` above — is what \`_props\` gets: \`props\`
+# is this harness's internal vars hash (scope_id, signal/memo seed
+# values), which a real Sinatra route handler never has and never passes.
+# Production's bf-p carries neither scope_id nor signal state, only the
+# caller-facing props.
+bf._props(JSON.parse(File.read(File.join(__dir__, 'user_props.json')), symbolize_names: true))
 ${needsSearchParams ? "# (#1922) Request-scoped searchParams() env signal: bind the reserved\n# `search_params` vars key to an empty-query reader. Only when the\n# component imports `searchParams`.\nprops[:search_params] = bf.search_params('')\n" : ''}
 ${childRenderers}
 html = backend.render_named(${rubyStringLiteral(toSnakeCase(componentName))}, bf, props)
@@ -491,12 +506,20 @@ function toSnakeCase(name: string): string {
 
 /**
  * Build the root props object (later JSON-serialised) + whether the
- * component imports `searchParams`.
+ * component imports `searchParams`, PLUS `userProps` — the exact raw
+ * fixture props (no defaults, no null-fill, no signal/memo seeding),
+ * mirroring production's route-handler call `bf._props(props)` verbatim.
+ * `obj` stays the full internal vars hash the compiled template renders
+ * against (local-var-keyed, defaulted, signal/memo-seeded); `userProps`
+ * is for `bf._props(...)` (bf-p hydration payload) only — these must NOT
+ * be the same object, and `userProps` must NOT be derived from `obj` or
+ * from the defaulted stash: production's own bf-p carries only what the
+ * caller actually passed in, unmodified.
  */
 function buildRubyProps(
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
-): { obj: Record<string, unknown>; needsSearchParams: boolean } {
+): { obj: Record<string, unknown>; needsSearchParams: boolean; userProps: Record<string, unknown> } {
   const obj: Record<string, unknown> = {}
 
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
@@ -509,6 +532,10 @@ function buildRubyProps(
   // (`propName`, e.g. `n` for `{ n: count }`) is honoured, not just the
   // local template var name (#2524 SSR half). `props` is keyed by the
   // caller-facing name, exactly what `propName` resolves against.
+  //
+  // This defaulted/derived stash feeds ONLY `obj` (the template-rendering
+  // vars hash) below — never `userProps` (the bf-p payload), which is
+  // built separately, straight off the raw `props` argument.
   const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
   const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
   for (const param of ir.metadata.propsParams) {
@@ -558,6 +585,21 @@ function buildRubyProps(
     }
   }
 
+  // `bf._props(...)` payload (bf-p hydration): mirrors production's
+  // route-handler call `bf._props(props)` verbatim — the caller's raw
+  // props dict, unmodified. No default-filling, no signal/memo seeding,
+  // no rest-bag nesting: a real Sinatra/Rack handler never rearranges
+  // the dict it received before handing it to `_props`. Excludes
+  // internal harness-only keys (`__instanceId` etc.), which are never a
+  // real caller-facing prop.
+  const userProps: Record<string, unknown> = {}
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      userProps[key] = value
+    }
+  }
+
   // Signal values evaluated from props (after user props).
   for (const signal of ir.metadata.signals) {
     // Env signals (#2057 / #1922) are bound below via `search_params('')`,
@@ -577,6 +619,6 @@ function buildRubyProps(
 
   const needsSearchParams = importsSearchParams(ir.metadata)
 
-  return { obj, needsSearchParams }
+  return { obj, needsSearchParams, userProps }
 }
 

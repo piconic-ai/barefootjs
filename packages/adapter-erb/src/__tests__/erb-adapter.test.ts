@@ -479,11 +479,15 @@ export function TodoList(props: { initialTodos?: Todo[] }) {
     // as a thrown "ruby render failed" error, so a `NoMethodError` string
     // anywhere in a caught error would fail this test outright rather than
     // reaching these assertions. Post-fix: only the not-done todo (id 2)
-    // survives the 'active' filter.
-    expect(html).not.toContain('Eat breakfast')
-    expect(html).toContain('Write tests')
-    expect(html).toContain('data-key="2"')
-    expect(html).not.toContain('data-key="1"')
+    // survives the 'active' filter. The bf-p hydration payload legitimately
+    // carries the full unfiltered `initialTodos` (both quote styles,
+    // mirroring `normalizeHTML`), so the assertions target the rendered
+    // list only.
+    const rendered = html.replace(/\s*bf-p=(?:"[^"]*"|'[^']*')/g, '')
+    expect(rendered).not.toContain('Eat breakfast')
+    expect(rendered).toContain('Write tests')
+    expect(rendered).toContain('data-key="2"')
+    expect(rendered).not.toContain('data-key="1"')
   })
 })
 

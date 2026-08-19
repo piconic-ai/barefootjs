@@ -229,7 +229,7 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
     // bare `$var` aborts under Mojo::Template's strict vars.
     augmentInheritedPropAccesses(ir)
     // Build props hash for Perl
-    const propsPerl = buildPerlProps(componentName, props, ir)
+    const { propsPerl, userPropsPerl } = buildPerlProps(componentName, props, ir)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -281,6 +281,18 @@ my $bf = BarefootJS->new($c, {});
 # (which pin <ComponentName>_test scope ids for cross-adapter normalisation)
 # match what Hono renderHonoComponent emits. Default to 'test' otherwise.
 $bf->_scope_id('${rootScopeId}');
+# Mirrors production's \`props_attr\` contract (BarefootJS.pm's \`_props\`
+# accessor): the caller is expected to seed it before rendering the root
+# component, so this harness must call it explicitly.
+#
+# \$user_props — NOT \$props above — is what \`_props\` gets: \$props is
+# this harness's internal vars hash (scope_id, inherited-attribute \`undef\`
+# placeholders, signal/memo seed values, and — when the component imports
+# searchParams — a SearchParams reader object), none of which a real
+# Mojolicious route handler has or passes. Production's bf-p carries none
+# of those, only the caller-facing props.
+my $user_props = ${userPropsPerl};
+$bf->_props($user_props);
 
 ${childRenderers}
 
@@ -515,11 +527,22 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
   return `{${entries.join(', ')}}`
 }
 
+/**
+ * Returns the full internal vars-hash Perl literal (`props`, what the
+ * inline `Mojo::Template` renders against) AND `userPropsPerl` — the
+ * exact raw fixture props (no defaults, no null-fill, no signal/memo
+ * seeding, no rest-bag nesting), mirroring production's route-handler
+ * call `$bf->_props($props)` verbatim. `userPropsPerl` is for
+ * `$bf->_props(...)` (bf-p hydration payload) only — these must NOT be
+ * the same value, and `userPropsPerl` must NOT be derived from
+ * `entries` or the defaulted stash: production's own bf-p carries only
+ * what the caller actually passed in, unmodified.
+ */
 function buildPerlProps(
   _componentName: string,
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
-): string {
+): { propsPerl: string; userPropsPerl: string } {
   const entries: string[] = []
 
   // Add scope_id — honour an explicit `__instanceId` from props so
@@ -552,7 +575,8 @@ function buildPerlProps(
     // emits a literal `$label` reference where the BF101 path used
     // to emit `''`, exposing this latent test-harness gap.
     const value = derivedProps[param.name]
-    entries.push(`${param.name} => ${value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'}`)
+    const literal = value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'
+    entries.push(`${param.name} => ${literal}`)
   }
 
   // (#checkbox) SolidJS props-object pattern: `function Checkbox(props:
@@ -623,8 +647,12 @@ function buildPerlProps(
   const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
     for (const [key, value] of Object.entries(props)) {
+      // Internal hydration markers (`__instanceId` etc.) are routed by
+      // the framework, never a real caller-facing prop.
+      if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
       if (localParamNames.has(key)) continue
+      let literal: string | null = null
       if (value === null) {
         // An explicit-null prop must still DECLARE the template var —
         // `typeof null === 'object'` fails every branch below, so the key
@@ -632,15 +660,15 @@ function buildPerlProps(
         // `my $user`, tripping Perl's strict-mode "Global symbol requires
         // explicit package name" before the `//` fallback could apply
         // (data-point conformance, optional-chaining-prop:null-user).
-        entries.push(`${key} => undef`)
+        literal = 'undef'
       } else if (typeof value === 'string') {
-        entries.push(`${key} => '${value.replace(/'/g, "\\'")}'`)
+        literal = `'${value.replace(/'/g, "\\'")}'`
       } else if (typeof value === 'number') {
-        entries.push(`${key} => ${value}`)
+        literal = `${value}`
       } else if (typeof value === 'boolean') {
         // Mojo::JSON sentinels so BarefootJS helpers can detect
         // booleans via ref() (see toPerlLiteral / spread_attrs).
-        entries.push(`${key} => ${value ? 'Mojo::JSON::true' : 'Mojo::JSON::false'}`)
+        literal = value ? 'Mojo::JSON::true' : 'Mojo::JSON::false'
       } else if (Array.isArray(value)) {
         // Array → Perl arrayref literal. Fixtures that exercise
         // array-receiver methods (`items.every(...)`, `items.some(...)`,
@@ -651,17 +679,38 @@ function buildPerlProps(
         // declares `my $items` (the key is absent from the vars
         // hash) and the template trips Perl's strict-mode "Global
         // symbol $items requires explicit package name" check.
-        entries.push(`${key} => ${toPerlLiteral(value)}`)
+        literal = toPerlLiteral(value)
       } else if (value && typeof value === 'object') {
         // Plain object → Perl hashref literal (#1407 follow-up).
         // Used by the destructured-rest / propsObject fixtures
         // (`jsx-spread-rest-prop`, `jsx-spread-props-object`) so
         // the test harness can pass through bag-shaped props that
         // weren't enumerated by the analyzer.
-        entries.push(`${key} => ${toPerlLiteral(value)}`)
+        literal = toPerlLiteral(value)
+      }
+      if (literal !== null) {
+        entries.push(`${key} => ${literal}`)
       }
     }
   }
+
+  // `$bf->_props(...)` payload (bf-p hydration): mirrors production's
+  // route-handler call `$bf->_props($props)` verbatim — the caller's raw
+  // props hash, unmodified. No default-filling, no signal/memo seeding,
+  // no rest-bag nesting: a real Mojolicious route handler never
+  // rearranges the hash it received before handing it to `_props`.
+  // Excludes internal harness-only keys (`__instanceId` etc.), which are
+  // never a real caller-facing prop. Bareword key relies on Perl's
+  // fat-comma auto-quoting, matching this function's other hash-literal
+  // construction above.
+  const userEntries: string[] = []
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      userEntries.push(`${key} => ${toPerlLiteral(value)}`)
+    }
+  }
+  const userPropsPerl = `{${userEntries.join(', ')}}`
 
   // Add signal values evaluated from props (must come after user props).
   // Seed `undef` for a null / unevaluable initial (e.g. a
@@ -697,7 +746,7 @@ function buildPerlProps(
     entries.push(`searchParams => BarefootJS->search_params('')`)
   }
 
-  return `{${entries.join(', ')}}`
+  return { propsPerl: `{${entries.join(', ')}}`, userPropsPerl }
 }
 
 /**

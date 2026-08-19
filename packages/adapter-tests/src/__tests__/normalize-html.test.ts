@@ -105,6 +105,28 @@ describe('normalizeHTML — boolean-attribute canonicalisation (#1466)', () => {
   })
 })
 
+describe('normalizeHTML — bf-p attribute removal, both quote styles', () => {
+  test('strips a double-quoted bf-p (Hono / Go style)', () => {
+    const html = `<div bf-p="{&quot;a&quot;:1}" class="x">hello</div>`
+    expect(normalizeHTML(html)).toBe('<div class="x">hello</div>')
+  })
+
+  test('strips a single-quoted bf-p (ERB / Jinja / Perl / Rust style) entirely, not leaving its delimiter quotes as &#39; (regression)', () => {
+    // Before the bf-p regex learned the single-quote form, this stray
+    // `bf-p='...'` survived untouched and its delimiter quotes were
+    // then rewritten by the later raw-apostrophe canonicalisation step,
+    // corrupting the tag instead of removing the attribute.
+    const html = `<div bf-p='{"a":1}' class="x">hello</div>`
+    expect(normalizeHTML(html)).toBe('<div class="x">hello</div>')
+    expect(normalizeHTML(html)).not.toContain('&#39;')
+  })
+
+  test('strips a single-quoted bf-p with no other attributes', () => {
+    const html = `<div bf-p='{"n":7}'>hello</div>`
+    expect(normalizeHTML(html)).toBe('<div>hello</div>')
+  })
+})
+
 describe('normalizeHTML — `&#43;` (`+`) canonicalisation (#2158)', () => {
   // Go's html/template emits `+` in text nodes as the numeric reference
   // `&#43;`; every other adapter emits the literal. `+` never needs

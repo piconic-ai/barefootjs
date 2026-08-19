@@ -382,6 +382,12 @@ func main() {
 		ScopeID: ${JSON.stringify(rootScopeId)},
 ${propsInit}
 	})
+	// Mirrors production's Renderer.renderComponentInto (bf.go), which marks
+	// the top-level component so BfPropsAttr emits bf-p: this harness calls
+	// tmpl.ExecuteTemplate directly instead of going through Renderer, so
+	// nothing else sets this flag. Without it every fixture's bf-p attribute
+	// is silently absent regardless of what the adapter itself does.
+	props.BfIsRoot = true
 ${dynamicSeedingLines.length > 0 ? dynamicSeedingLines.join('\n') + '\n' : ''}	if err := tmpl.ExecuteTemplate(os.Stdout, "${componentName}", props); err != nil {
 		os.Stderr.WriteString("template error: " + err.Error() + "\\n")
 		os.Exit(1)
