@@ -1546,6 +1546,30 @@
       }
     }
   ],
+  "signal-prop-same-name-derived": [
+    {
+      "name": "gen:count:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    }
+  ],
   "signal-with-fallback": [
     {
       "name": "gen:initial:absent",

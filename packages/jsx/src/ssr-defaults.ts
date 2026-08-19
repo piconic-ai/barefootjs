@@ -52,6 +52,16 @@ export interface SsrDefault {
    * (`{ variant = 'default' }`) where the template variable maps 1:1
    * to a caller-supplied prop. Omitted for signal / memo entries that
    * are internal to the component.
+   *
+   * Invariant (#2669): a signal / memo entry carries `propName` IF AND
+   * ONLY IF it's a self-derivation collision — the signal/memo's own
+   * template variable shares a name with the prop its initializer
+   * derives from (`const [label] = createSignal(props.label ?? 'x')`).
+   * Every OTHER signal/memo entry is `propName`-less. Consumers (e.g.
+   * every template-stash adapter's conformance harness, `test-render.ts`)
+   * rely on this to know a signal/memo's stash seed must defer to the
+   * already-derived prop value rather than re-seeding from its own
+   * evaluated initial — see `extractSsrDefaults`'s signal/memo loops.
    */
   propName?: string
   /**
@@ -225,14 +235,73 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // baked initial value.
     if (sig.envReader) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
-    out[sig.getter] = { value: resultToJsonable(value) }
+    // Self-derivation collision (#2669): a signal whose getter shares its
+    // name with the prop its OWN initializer derives from
+    // (`const [label] = createSignal(props.label ?? 'Default')`) gets a
+    // template-stash variable that the emitted template both READS (as the
+    // raw caller prop) and OVERWRITES (with the derived signal value) under
+    // that SAME name — see the Mojo/Jinja/etc. emitter's `{% set label =
+    // (label if label is defined else 'Default') %}`. Seeding the stash
+    // with the DERIVED value here would either permanently lock out a
+    // caller-supplied prop (idempotent derivations like `?? 'Default'` hide
+    // this — a caller's real value can never win) or double-apply a
+    // non-idempotent derivation (`(props.count ?? 1) * 2` seeded with the
+    // evaluated `2` re-derives to `2 * 2 = 4`). The correct seed is the RAW
+    // prop, so the entry must be a PROP entry (`propName` set, `value:
+    // null`) instead of a plain signal-value entry — the template's own
+    // `?? <default>` / `is not none` guard performs the real derivation,
+    // exactly like the bare-props safety net below.
+    //
+    // NOT self-derived (the initializer references a DIFFERENT prop, or no
+    // prop at all) keeps today's behavior: the signal's evaluated value
+    // wins the entry outright. This also correctly leaves alone the
+    // separate (out-of-scope) case where the signal's OWN initializer does
+    // NOT reference the same-named prop but the JSX body separately reads
+    // both `label()` and `props.label` — that's a template-variable-
+    // aliasing defect, not this one, and must render byte-identically.
+    //
+    // Invariant this establishes (relied on by every template-stash
+    // conformance harness's seeding loops — see `test-render.ts`): a
+    // signal/memo entry carries `propName` IF AND ONLY IF it went through
+    // this collision path. An ordinary signal/memo entry never has
+    // `propName` — that's exclusively how a harness (or a production
+    // manifest consumer) can tell "this local's stash seed must come from
+    // the caller-facing prop, not the local's own evaluated value" apart
+    // from "this is an internal signal/memo the caller cannot override".
+    if (metadata.propsObjectName !== null && referencesOwnProp(sig.initialValue, metadata.propsObjectName, sig.getter)) {
+      // Pass 1 above already wrote the prop entry when the prop is
+      // *declared* on the props type — leave it as-is. An undeclared
+      // (untyped / inline-typed) prop has no pass-1 entry yet; create it
+      // here so the collision is still resolved for that shape.
+      if (!(sig.getter in out)) {
+        out[sig.getter] = { propName: sig.getter, value: null }
+      }
+    } else {
+      out[sig.getter] = { value: resultToJsonable(value) }
+    }
+    // `bindings` always gets the EVALUATED value regardless of which stash
+    // seed the entry above ended up with — a later memo referencing this
+    // getter (`createMemo(() => label() + '!')`) must keep resolving
+    // through the chain exactly as before; only the manifest's own seed
+    // choice changes, not the static-eval semantics.
     bindings[sig.getter] = value
   }
 
   for (const memo of metadata.memos) {
     if (memo.isModule) continue
     const value = tryStaticEval(memo.computation, { bindings, propsLike })
-    out[memo.name] = { value: resultToJsonable(value) }
+    // Same self-derivation collision as signals above, for a memo whose
+    // computation derives from a same-named prop
+    // (`createMemo(() => (props.label ?? 'Default') + n())`). See the
+    // signal loop's comment for the full mechanism and the `propName`
+    // invariant this relies on.
+    if (metadata.propsObjectName !== null && referencesOwnProp(memo.computation, metadata.propsObjectName, memo.name)) {
+      if (!(memo.name in out)) {
+        out[memo.name] = { propName: memo.name, value: null }
+      }
+    } else {
+      out[memo.name] = { value: resultToJsonable(value) }
+    }
     bindings[memo.name] = value
   }
 
@@ -266,6 +335,24 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   }
 
   return Object.keys(out).length === 0 ? undefined : out
+}
+
+/**
+ * Does `expr` (a signal initializer or memo computation) read
+ * `propsObjectName.<name>` where `name` is that SAME signal's getter / that
+ * SAME memo's name? This is the #2669 self-derivation test: reuses
+ * `collectPropRefs` (never a bespoke walker — see the CLAUDE.md rule this
+ * file already follows for `props.X` collection) and just checks membership
+ * of the one name we care about.
+ */
+function referencesOwnProp(
+  expr: string | undefined,
+  propsObjectName: string,
+  name: string,
+): boolean {
+  const referenced = new Set<string>()
+  collectPropRefs(expr, propsObjectName, referenced)
+  return referenced.has(name)
 }
 
 /**

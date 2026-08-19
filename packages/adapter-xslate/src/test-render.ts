@@ -564,6 +564,25 @@ function buildPerlProps(
   }
 
   // Signal values evaluated from props (after user props).
+  //
+  // #2669 note — this loop DELIBERATELY does NOT skip a `propName`-carrying
+  // self-derivation-collision entry the way the ERB / Jinja / Mojo / Blade /
+  // Twig / Rust harnesses now do (see their matching comment). Those six
+  // backends lower a self-referencing derived step in-template (`{% set
+  // count = (count if defined else 1) * 2 %}` and siblings), so the
+  // `deriveStashFromDefaults`-resolved RAW prop is enough — the template
+  // finishes the derivation. Xslate's Kolon target language cannot: its
+  // `: my $x = …` is a fresh lexical DECLARATION, so a self-referencing RHS
+  // would read the just-declared (undefined) lexical instead of the stash
+  // value — `computeSsrSeedPlan`'s consumer in
+  // `packages/adapter-xslate/src/adapter/memo/seed.ts` therefore skips
+  // lowering a self-referencing derived step entirely, permanently (a
+  // pre-existing, documented Kolon limitation, not a #2669 regression to
+  // fix here). With no in-template recompute possible, this harness's own
+  // `evaluateSignalInit(initializer, props)` — evaluating the initializer
+  // against the REAL caller props — is the only place a self-derived
+  // signal's correct value can be produced at all, so it must keep running
+  // unconditionally, including for `propName`-carrying entries.
   for (const signal of ir.metadata.signals) {
     // Env signals (#2057) are bound below via `search_params('')`, not from a
     // static initial value.
@@ -575,7 +594,9 @@ function buildPerlProps(
   }
 
   // Memo values seeded from the statically-evaluated ssrDefaults, same
-  // as the production plugin's before_render hook.
+  // as the production plugin's before_render hook. Same #2669 note as the
+  // signal loop above: no skip for `propName`-carrying entries, for the
+  // same Kolon self-ref-lowering limitation.
   for (const memo of ir.metadata.memos) {
     const entry = rootSsrDefaults[memo.name]
     const value = entry ? entry.value : 0

@@ -4318,6 +4318,24 @@
         "text"
       ]
     },
+    "signal-prop-same-name-derived": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-with-fallback": {
       "kinds": [
         "call",
@@ -5295,14 +5313,14 @@
     "array-literal": 80,
     "array-method": 69,
     "arrow": 69,
-    "binary": 91,
-    "call": 219,
+    "binary": 92,
+    "call": 220,
     "conditional": 25,
-    "identifier": 308,
+    "identifier": 309,
     "index-access": 14,
-    "literal": 250,
-    "logical": 45,
-    "member": 173,
+    "literal": 251,
+    "logical": 46,
+    "member": 174,
     "object-literal": 57,
     "template-literal": 30,
     "unary": 23,
@@ -5335,7 +5353,7 @@
     "array-method:trimStart": 1,
     "binary:!=": 2,
     "binary:!==": 9,
-    "binary:*": 10,
+    "binary:*": 11,
     "binary:+": 21,
     "binary:-": 11,
     "binary:/": 1,
@@ -5345,10 +5363,10 @@
     "binary:>=": 1,
     "literal:boolean": 49,
     "literal:null": 23,
-    "literal:number": 104,
+    "literal:number": 105,
     "literal:string": 178,
     "logical:&&": 7,
-    "logical:??": 39,
+    "logical:??": 40,
     "logical:||": 14,
     "member:computed": 8,
     "member:optional": 1,

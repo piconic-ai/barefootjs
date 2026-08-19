@@ -103,6 +103,98 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.n).toEqual({ value: 0 })
   })
 
+  test('self-derived signal collision (#2669, shape A): entry stays a PROP entry, not the evaluated signal value', () => {
+    // `props.label` and the signal getter `label` share a name — the
+    // bare-props-arg form is the only shape where this collides (a
+    // destructured-arg `function C({ label })` + `const [label] = ...`
+    // is a JS redeclaration error, so it can't happen there). The
+    // emitted template reads the stash var `label` as the RAW caller
+    // prop and OVERWRITES it with the derived signal value under that
+    // SAME name (`{% set label = (label if label is defined else
+    // 'Default') %}`). Seeding the stash with the pre-fix `{ value:
+    // 'Default' }` (the EVALUATED signal value, discarding `propName`)
+    // means a caller-passed `label` can never win — production seeds
+    // 'Default', the template sees a non-none value, and keeps it. The
+    // fix: this entry must stay a PROP entry (`propName` set, `value:
+    // null`) so the template's own `?? 'Default'` guard supplies the
+    // real fallback, and a caller-supplied prop still wins via
+    // `propName`.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const [label, setLabel] = createSignal(props.label ?? 'Default')
+        return <span>{label()}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+  })
+
+  test('self-derived signal collision (#2669, shape B): non-idempotent derivation must not seed the pre-fix double-applied value', () => {
+    // `(props.count ?? 1) * 2` is NOT idempotent: seeding the stash with
+    // the pre-fix EVALUATED value (2, for no caller prop) makes the
+    // template's own recompute apply the `* 2` a second time (`2 * 2 =
+    // 4`) — wrong even with no caller props at all. Pin that the entry
+    // is the RAW-prop shape (`value: null`), not `{ value: 2 }`.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { count?: number }) {
+        const [count, setCount] = createSignal((props.count ?? 1) * 2)
+        return <span>{count()}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.count).toEqual({ propName: 'count', value: null })
+  })
+
+  test('self-derived memo collision (#2669): the same rule applies to a memo whose computation derives from a same-named prop', () => {
+    // Same collision, memo flavor: `createMemo(() => (props.label ??
+    // 'Default') + n())` — the memo's OWN name (`label`) is the
+    // template variable the emitted template both reads (raw prop) and
+    // overwrites (derived memo value). `n` is an unrelated ordinary
+    // signal and must be unaffected (plain `{ value }` entry, no
+    // `propName`).
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const [n, setN] = createSignal(0)
+        const label = createMemo(() => (props.label ?? 'Default') + n())
+        return <span>{label()}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.n).toEqual({ value: 0 })
+  })
+
+  test('NON-self-derived collision (#2669, shape C — out of scope, must be unchanged): signal value still wins, no `propName`', () => {
+    // Same-named `label` getter and `label` prop, but the signal's OWN
+    // initializer does NOT derive from `props.label` (it's a plain
+    // string literal) — the JSX body separately reads `label()` AND
+    // `props.label`. That's a template-variable-ALIASING defect (both
+    // expressions lower to the same template variable, so no seeding
+    // choice can be right for both readers) — a different bug, tracked
+    // separately, and this fix must leave it byte-identical: the entry
+    // stays the plain evaluated-signal-value shape with no `propName`.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const [label, setLabel] = createSignal('sig')
+        return <span>{label()}{props.label}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ value: 'sig' })
+  })
+
   test('aliased destructured prop (#2460): `propName` is the CALLER-facing key, not the local binding', () => {
     // `{ n: count }` — the caller passes `n`, the template variable (and
     // stash entry key) is the local binding `count`. The manifest
@@ -300,6 +392,31 @@ describe('deriveStashFromDefaults', () => {
       count: { propName: 'n', value: 99 },
     }
     expect(deriveStashFromDefaults(defaults, { n: 0 })).toEqual({ count: 0 })
+  })
+
+  test('self-derived signal collision (#2669): the caller-supplied prop now wins, and an absent prop falls back to null', () => {
+    // End-to-end proof of the fix's effect at the `deriveStashFromDefaults`
+    // layer: run the real `extractSsrDefaults` output for shape A through
+    // the seeding function. Pre-fix, this entry was `{ value: 'Default' }`
+    // (propName-less) so a caller's `label: 'Hello'` was IGNORED —
+    // `deriveStashFromDefaults` had no `propName` to resolve against and
+    // always used the static value. Post-fix the entry is a PROP entry, so
+    // the caller's value wins, and an absent prop resolves to the RAW
+    // fallback `null` (not the old evaluated `'Default'`) — the emitted
+    // template's own `?? 'Default'` guard supplies the real default from
+    // there.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const [label, setLabel] = createSignal(props.label ?? 'Default')
+        return <span>{label()}</span>
+      }
+    `)
+    const defaults = extractSsrDefaults(metadata)!
+
+    expect(deriveStashFromDefaults(defaults, { label: 'Hello' })).toEqual({ label: 'Hello' })
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ label: null })
   })
 
   test('propName-less entry (signal / memo local): always uses the static value', () => {
