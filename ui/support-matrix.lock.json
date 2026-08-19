@@ -1357,7 +1357,7 @@
           ]
         },
         "xslate": {
-          "pass": 81,
+          "pass": 83,
           "total": 92,
           "gaps": [
             {
@@ -1390,14 +1390,6 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -1961,7 +1953,7 @@
           ]
         },
         "xslate": {
-          "pass": 202,
+          "pass": 205,
           "total": 220,
           "gaps": [
             {
@@ -2012,18 +2004,6 @@
             },
             {
               "fixture": "reduce-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -2785,7 +2765,7 @@
           ]
         },
         "xslate": {
-          "pass": 289,
+          "pass": 292,
           "total": 309,
           "gaps": [
             {
@@ -2844,18 +2824,6 @@
             },
             {
               "fixture": "reduce-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -3317,7 +3285,7 @@
           ]
         },
         "xslate": {
-          "pass": 237,
+          "pass": 240,
           "total": 251,
           "gaps": [
             {
@@ -3350,18 +3318,6 @@
             },
             {
               "fixture": "reduce-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -3513,21 +3469,9 @@
           ]
         },
         "xslate": {
-          "pass": 41,
+          "pass": 44,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -4145,7 +4089,7 @@
           ]
         },
         "xslate": {
-          "pass": 154,
+          "pass": 157,
           "total": 174,
           "gaps": [
             {
@@ -4204,18 +4148,6 @@
             },
             {
               "fixture": "reduce-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -6615,14 +6547,8 @@
           "total": 11
         },
         "xslate": {
-          "pass": 10,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "signal-prop-same-name-derived",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         }
       },
       "source": {
@@ -6729,13 +6655,9 @@
           ]
         },
         "xslate": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7702,7 +7624,7 @@
           ]
         },
         "xslate": {
-          "pass": 98,
+          "pass": 100,
           "total": 105,
           "gaps": [
             {
@@ -7719,14 +7641,6 @@
             },
             {
               "fixture": "reduce-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
               "issues": []
             },
             {
@@ -8036,7 +7950,7 @@
           ]
         },
         "xslate": {
-          "pass": 169,
+          "pass": 170,
           "total": 178,
           "gaps": [
             {
@@ -8061,10 +7975,6 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
               "issues": []
             },
             {
@@ -8264,21 +8174,9 @@
           ]
         },
         "xslate": {
-          "pass": 35,
+          "pass": 38,
           "total": 40,
           "gaps": [
-            {
-              "fixture": "signal-default-from-jsx",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name",
-              "issues": []
-            },
-            {
-              "fixture": "signal-prop-same-name-derived",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
