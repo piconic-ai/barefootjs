@@ -944,7 +944,8 @@ export function List() {
       // A struct is synthesised with one field per inferred key + Go type.
       expect(types).toMatch(/type \w+ struct \{[\s\S]*ID string[\s\S]*N int[\s\S]*Ok bool[\s\S]*\}/)
       // The signal field is a slice of the synthesised struct, not []interface{}.
-      expect(types).toMatch(/Items \[\]\w+ `json:"items"`/)
+      // Excluded from bf-p (json:"-") — component-internal signal state (#2672).
+      expect(types).toMatch(/Items \[\]\w+ `json:"-"`/)
       expect(types).not.toContain('Items []interface{}')
       // The initial items are baked, not nil.
       expect(types).not.toContain('Items: nil,')
@@ -1697,6 +1698,56 @@ export function Box({ children }: { children: any }) {
 `, adapter)
       const types = adapter.generateTypes(ir)!
       expect(types).toMatch(/Children\s+\S+\s+`json:"-"`/)
+    })
+
+    test('signal and memo fields are excluded from bf-p serialization — user props only (#2672)', () => {
+      // A signal-bearing component whose only DECLARED prop is `label`, plus
+      // a signal (`count`, not itself a prop) and a memo derived from it
+      // (`doubled`). Only `label` may carry a real json tag — `count` and
+      // `doubled` are component-internal state/derivation the client
+      // re-derives itself and never reads back off `_p`.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+'use client'
+import { createSignal, createMemo } from '@barefootjs/client'
+export function Counter(props: { label: string }) {
+  const [count, setCount] = createSignal(0)
+  const doubled = createMemo(() => count() * 2)
+  return <button onClick={() => setCount(count() + 1)}>{props.label}: {count()} / {doubled()}</button>
+}
+`, adapter)
+      const types = adapter.generateTypes(ir)!
+      // The real prop keeps its real tag — hydration reads `_p.label`.
+      expect(types).toMatch(/Label\s+\S+\s+`json:"label"`/)
+      // The signal field is component-internal state, not caller input.
+      expect(types).toMatch(/Count\s+\S+\s+`json:"-"`/)
+      // The memo field is component-internal derivation, not caller input.
+      expect(types).toMatch(/Doubled\s+\S+\s+`json:"-"`/)
+    })
+
+    test('prop-backed signal default still keeps the PROP field a real tag (#2672)', () => {
+      // Mirrors the `signal-default-from-jsx` adapter-tests fixture: `x` is a
+      // declared PROP whose default happens to come from a signal initial
+      // value (keeps a real tag, seeds client-side `createSignal(_p.x ?? 7)`),
+      // while `incremented` is a pure memo derivation the client never reads
+      // off `_p`. Flipping signal/memo fields to `json:"-"` must NOT touch
+      // this prop field — it is the loop-guard case CLAUDE.md's "don't flip
+      // prop-backed fields" warns against.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+'use client'
+import { createSignal, createMemo } from '@barefootjs/client'
+export function SignalDefaultFromJsx(props: { x?: number }) {
+  const [x, setX] = createSignal(props.x ?? 7)
+  const incremented = createMemo(() => x() + 1)
+  return <div onClick={() => setX(x() + 1)}>{x()} / {incremented()}</div>
+}
+`, adapter)
+      const types = adapter.generateTypes(ir)!
+      // The prop-backed field keeps its real tag — hydration reads `_p.x`.
+      expect(types).toMatch(/X\s+\S+\s+`json:"x"`/)
+      // The memo field is component-internal derivation, not caller input.
+      expect(types).toMatch(/Incremented\s+\S+\s+`json:"-"`/)
     })
   })
 
@@ -4860,6 +4911,39 @@ export function Counter({ count: initialCount }: { count: number }) {
     expect((types.match(/json:"count"/g) ?? []).length).toBe(1)
   })
 
+  // #2672 near-miss: a prop-derived dynamic loop's nested-array field is
+  // normally redundant (the client re-derives every row from the real prop
+  // field, e.g. `_p.items`) and gets `json:"-"`. But when the array field's
+  // Go name collides with its OWN driving prop's Go name — `toggleItems`
+  // driving a `.map()` into `<ToggleItem>` both capitalize to `ToggleItems`
+  // — `emitPropsDataFields` already shadows the prop's own field to avoid a
+  // Go redeclaration, so the nested-array field is the ONLY struct field
+  // carrying that prop's data. Flipping it to `-` there would silently drop
+  // caller input from `bf-p` instead of trimming a redundant copy. Caught by
+  // the `hydration-props-inventory` oracle against the `toggle-shared`
+  // fixture (a real `integrations/shared/components/Toggle.tsx` shape)
+  // before landing; this pins the same shape directly.
+  test('a prop-derived nested-array field keeps a real tag when it shadows its own driving prop (#2672)', () => {
+    const result = compileJSX(`
+type ToggleItemProps = { label: string; defaultOn?: boolean }
+function ToggleItem(props: ToggleItemProps) {
+  return <div>{props.label}</div>
+}
+type ToggleProps = { toggleItems: ToggleItemProps[] }
+export function Toggle({ toggleItems }: ToggleProps) {
+  return <div>{toggleItems.map((item) => <ToggleItem key={item.label} label={item.label} defaultOn={item.defaultOn} />)}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    const togglePropsAndAfter = types.slice(types.indexOf('type ToggleProps struct'))
+    // The shadowed scalar prop field is absent...
+    expect(togglePropsAndAfter.slice(0, togglePropsAndAfter.indexOf('}'))).not.toMatch(/\bItems\b/)
+    // ...and the nested-array field is the sole carrier, with a REAL tag —
+    // not `json:"-"`, which would drop `toggleItems` from `bf-p` entirely.
+    expect((togglePropsAndAfter.match(/json:"toggleItems"/g) ?? []).length).toBe(1)
+  })
+
   // The nested-array skip check must union both namings at all four sites
   // (`isNestedArrayShadowed`) — a one-sided check lets Input and
   // Props/NewProps disagree on whether an aliased prop's field exists.
@@ -6045,7 +6129,15 @@ export { TaggedList }
     expect(payload).toEqual({ items: [{ title: 'Alpha', tags: ['a', 'b'] }] })
   })
 
-  test('real go-run render: bf-p carries camelCase keys for a nested anonymous object inside a named type (case ii)', async () => {
+  test('real go-run render: a signal-backed nested anonymous object is baked into SSR HTML but excluded from bf-p (#2672)', async () => {
+    // `rows` here is a SIGNAL, not a prop — `NestedNames` takes no props at
+    // all. Its data still resolves the synthesized-struct-type branch of
+    // `emitPropsDataFields` (the case ii struct-synthesis this describe
+    // block exists to cover), so this doubles as a real-go-run confirmation
+    // that branch's json tag is also `-` now, not just the general one.
+    // `{{.Field}}` SSR access is unaffected by json tags — the rendered
+    // `<li>Ada</li>` still bakes correctly; only `bf-p` (component-internal
+    // signal state, not caller input) drops the redundant `rows` key.
     const source = `
 "use client"
 import { createSignal } from "@barefootjs/client"
@@ -6063,12 +6155,17 @@ export function NestedNames() {
       if (err instanceof GoNotAvailableError) return // Go toolchain not installed on this host
       throw err
     }
+    // SSR HTML still bakes the signal's initial data — unaffected by the
+    // json tag, since `{{.Field}}` template access doesn't consult it.
+    expect(html).toContain('<li')
+    expect(html).toContain('Ada')
     const bfPMatch = html.match(/bf-p="([^"]*)"/)
     expect(bfPMatch).not.toBeNull()
     const decoded = bfPMatch![1]
       .replace(/&#34;/g, '"')
       .replace(/&quot;/g, '"')
     const payload = JSON.parse(decoded)
-    expect(payload).toEqual({ rows: [{ id: 'r1', user: { name: 'Ada' } }] })
+    // No props at all on this component — bf-p carries nothing.
+    expect(payload).toEqual({})
   })
 })

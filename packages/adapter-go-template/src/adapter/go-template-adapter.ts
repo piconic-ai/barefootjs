@@ -2782,7 +2782,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (signal.envReader) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
-      const jsonTag = this.claimJsonTag(this.toJsonTag(signal.getter), takenJsonTags)
+      // Signal fields are component-internal state, not caller input (#2672):
+      // the client never reads `_p.<signalGetter>` — it re-derives the value
+      // from `createSignal(...)`'s own initial expression (which itself reads
+      // whatever PROP field seeded it, already emitted above with a real tag
+      // by the propsParams loop). Excluding the signal field from JSON stops
+      // it from co-boarding into `bf-p` while leaving `{{.Field}}` SSR access
+      // untouched — Go template field access doesn't consult json tags.
+      const jsonTag = '-'
       // A synthesised struct type wins outright — the signal is an untyped
       // object array we gave a concrete element type.
       const synthType = this.state.synthStructTypes.get(signal.getter)
@@ -2832,7 +2839,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const memo of ir.metadata.memos) {
       const fieldName = capitalizeFieldName(memo.name)
       if (propFieldNames.has(fieldName)) continue
-      const jsonTag = this.claimJsonTag(this.toJsonTag(memo.name), takenJsonTags)
+      // Memo fields are derived, re-computed client-side from the same prop
+      // reads the memo body itself performs — never read as `_p.<memoName>`
+      // (#2672). Same rationale as the signal fields above.
+      const jsonTag = '-'
       const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
@@ -2868,8 +2878,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
     ])
     for (const c of this.nonCollidingContextConsumers(takenProps)) {
-      const jsonTag = this.claimJsonTag(this.toJsonTag(c.localName), takenJsonTags)
+      // Context-consumer fields are resolved server-side from the enclosing
+      // `Provider` and read via `{{.Field}}` in SSR only — the client's own
+      // `useContext` re-reads the DOM-scoped provider value at hydration
+      // time, never `_p.<contextField>` (#2672).
+      const jsonTag = '-'
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
+    }
+
+    // Capitalized Go field names of every declared prop — BOTH the LOCAL
+    // binding and the caller-facing (`sourceName`) spelling, unioned the
+    // same way `isNestedArrayShadowed` does for the propsParams loop above
+    // (an aliased destructure like `{ rows: items }` can collide under
+    // either naming depending on alias direction — see the #2525 collision
+    // tests). Used below to detect when a nested-array field's name
+    // collides with (and shadows) an actual prop field.
+    const propDrivingFieldNames = new Set<string>()
+    for (const p of ir.metadata.propsParams) {
+      propDrivingFieldNames.add(capitalizeFieldName(p.name))
+      propDrivingFieldNames.add(capitalizeFieldName(p.sourceName ?? p.name))
     }
 
     for (const nested of nestedComponents) {
@@ -2889,8 +2916,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (nested.isDynamic && !nested.isPropDerived) {
         // Dynamic signal-array loops are template-only.
         lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
+      } else if (
+        nested.isDynamic &&
+        nested.isPropDerived &&
+        !propDrivingFieldNames.has(`${nested.name}s`)
+      ) {
+        // Prop-derived dynamic loops (`props.items.map(item => <Child/>)`,
+        // #2672): this field is USUALLY a RE-SHAPED COPY of the driving prop,
+        // built for SSR's `{{range}}` — not the prop itself. The client's own
+        // `mapArray` re-derives every row straight from the real prop field
+        // (`_p.items`, emitted with a real tag by the propsParams loop
+        // above), never from `_p.<Name>s`, so co-boarding this copy into
+        // `bf-p` is redundant component-internal derivation, same as a memo.
+        //
+        // EXCEPT when the two Go field names collide (`propDrivingFieldNames`
+        // — mirrors `isNestedArrayShadowed`'s check the propsParams loop
+        // itself runs): a prop named `toggleItems` driving a `<ToggleItem>`
+        // loop capitalizes to the SAME Go field name as the nested-array
+        // field (`ToggleItems`), so `emitPropsDataFields` shadows the prop's
+        // OWN field entirely and this array field is the ONLY carrier of
+        // that prop's data. Flipping it there would silently drop caller
+        // input from `bf-p` instead of merely trimming a redundant copy —
+        // the `else` branch below keeps a real tag for exactly that case.
+        lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
       } else {
-        // Static + prop-derived arrays go in JSON so the client can hydrate.
+        // Static arrays go in JSON so the client can hydrate (that data can
+        // be non-literal, request-time Input the caller supplies with no
+        // prop-field twin to fall back on) — and so does a prop-derived
+        // dynamic array whose field name shadows its own driving prop's
+        // field (the `propDrivingFieldNames` case above): this field is
+        // that prop's ONLY remaining carrier in the struct.
         const jsonTag = this.claimJsonTag(
           this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`),
           takenJsonTags,
@@ -2906,9 +2961,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Top-level intrinsic-element spreads: each gets a `Spread_<slotId>
     // map[string]any` field the template reads via `{{bf_spread_attrs}}`.
-    // Loop-internal spreads emit inline and don't appear here.
+    // Loop-internal spreads emit inline and don't appear here. SSR-only —
+    // the resolved attrs are already baked into the rendered HTML, and no
+    // client runtime reads `_p.Spread_<slotId>` back out of `bf-p` (#2672).
     for (const slot of spreadSlots) {
-      const jsonTag = this.claimJsonTag(this.toJsonTag(slot.slotId), takenJsonTags)
+      const jsonTag = '-'
       lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
     }
   }
