@@ -1,5 +1,13 @@
 # @barefootjs/erb
 
+## 0.31.9
+
+### Patch Changes
+
+- 5b08e1f: The `bf-p` hydration-props attribute no longer includes the component's internal scope id (Go: the `ScopeID` struct field, previously serialised as `scopeID`; ERB/Jinja: a `scope_id` dict key). It has no client runtime consumer — the shared client runtime's only `bf-p` parser reads scope identity from the `bf-s`/`bf-h`/`bf-m` attributes, never from the JSON payload — so this was dead weight on every hydrated request and a payload shape that diverged from the reference Hono adapter. User-declared props in `bf-p` are unaffected.
+- abe5d6f: Fixed the conformance test harnesses (`test-render.ts`) so every adapter now actually exercises `props_attr`'s `bf-p` hydration-props contract during SSR rendering, matching production's `Renderer.renderComponentInto` (Go) / `_props` accessor (ERB, Jinja, Mojolicious): previously none of these harnesses seeded the caller-facing props the way a real route handler does, so `bf-p` was silently absent from every rendered fixture regardless of what the adapter itself emitted. No adapter runtime behavior changed — only the harness code used by the test suite.
+  - @barefootjs/shared@0.31.9
+
 ## 0.31.8
 
 ### Patch Changes

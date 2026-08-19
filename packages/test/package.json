@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/test",
-  "version": "0.31.8",
+  "version": "0.31.9",
   "description": "Test utilities for BarefootJS - IR-based component testing without a browser",
   "type": "module",
   "main": "./dist/index.js",

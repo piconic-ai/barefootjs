@@ -1,5 +1,12 @@
 # @barefootjs/mojolicious
 
+## 0.31.9
+
+### Patch Changes
+
+- abe5d6f: Fixed the conformance test harnesses (`test-render.ts`) so every adapter now actually exercises `props_attr`'s `bf-p` hydration-props contract during SSR rendering, matching production's `Renderer.renderComponentInto` (Go) / `_props` accessor (ERB, Jinja, Mojolicious): previously none of these harnesses seeded the caller-facing props the way a real route handler does, so `bf-p` was silently absent from every rendered fixture regardless of what the adapter itself emitted. No adapter runtime behavior changed — only the harness code used by the test suite.
+  - @barefootjs/shared@0.31.9
+
 ## 0.31.8
 
 ### Patch Changes
