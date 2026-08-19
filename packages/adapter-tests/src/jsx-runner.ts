@@ -154,8 +154,16 @@ export function normalizeHTML(html: string): string {
     // Also strips per-item start markers `<!--bf-loop-i-->` emitted for
     // multi-root Fragment loop bodies (#1212).
     .replace(/<!--bf-\/?loop(?::l\d+)?-->|<!--bf-loop-i-->/g, '')
-    // Remove bf-p attribute (Hono uses JSON serialization, Go uses struct fields)
-    .replace(/\s*bf-p="[^"]*"/g, '')
+    // Remove bf-p attribute (Hono uses JSON serialization, Go uses struct
+    // fields). Both quote styles: Hono/Go double-quote it, but ERB/Jinja/
+    // Perl/Rust deliberately SINGLE-quote it (props_attr's own comment —
+    // the JSON must be attribute-escaped so a raw `'` inside a string
+    // prop value doesn't terminate a double-quoted attribute early). Must
+    // run before the raw-apostrophe canonicalisation below, or a single-
+    // quoted bf-p's delimiter quotes survive as literal `'` and get
+    // rewritten to `&#39;` by that later, unrelated rule instead of being
+    // removed with the rest of the attribute.
+    .replace(/\s*bf-p=(?:"[^"]*"|'[^']*')/g, '')
     // Remove bf-h / bf-m slot-relationship markers. Hono emits them
     // for upsertChild's bf-h + bf-m lookup against the @barefootjs
     // client runtime. Other SSR adapters (Mojo, Go template) don't pair with

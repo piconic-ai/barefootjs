@@ -235,7 +235,7 @@ export async function renderJinjaComponent(options: RenderOptions): Promise<stri
     }
 
     // Build props dict for Python.
-    const propsPy = buildPythonProps(componentName, props, ir)
+    const { propsPy, userPropsPy } = buildPythonProps(componentName, props, ir)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -262,6 +262,18 @@ bf = BarefootJS(None, {'backend': backend})
 bf._scope_id(${pyStr(rootScopeIdRaw)})
 
 props = ${propsPy}
+# Mirrors production's \`props_attr\` contract (see runtime.py's \`_props\`
+# dual-accessor and its Ruby/Perl siblings): the caller is expected to
+# seed \`_props\` before rendering the root component, so this harness
+# must call it explicitly.
+#
+# \`userPropsPy\` — NOT \`props\` above — is what \`_props\` gets: \`props\` is
+# this harness's internal vars hash (scope_id, signal/memo seed values,
+# and — when the component imports searchParams — a non-JSON-serializable
+# SearchParams reader object), none of which a real Flask route handler
+# has or passes. Production's bf-p carries none of those, only the
+# caller-facing props.
+bf._props(${userPropsPy})
 
 ${childRenderers}
 html = backend.render_named(${pyStr(toSnakeCase(componentName))}, bf, props)
@@ -480,16 +492,25 @@ function toSnakeCase(name: string): string {
 
 /**
  * Build a Python dict literal from props (+ signal / memo seeds).
+ *
+ * Returns the full internal vars-hash Python literal (`props`, what the
+ * compiled template renders against) AND `userPropsPy` — the exact raw
+ * fixture props (no defaults, no null-fill, no signal/memo seeding),
+ * mirroring production's route-handler call `bf._props(props)` verbatim.
+ * `userPropsPy` is for `bf._props(...)` (bf-p hydration payload) only —
+ * these must NOT be the same value, and `userPropsPy` must NOT be
+ * derived from `entries` or the defaulted stash: production's own bf-p
+ * carries only what the caller actually passed in, unmodified.
  */
 function buildPythonProps(
   _componentName: string,
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
-): string {
+): { propsPy: string; userPropsPy: string } {
+  // The full internal vars hash (local-template-var-name keyed, e.g.
+  // `count` for `{ n: count }`) that the compiled template renders
+  // against.
   const entries: string[] = []
-
-  const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
-  entries.push(`${pyStr('scope_id')}: ${pyStr(explicitScope)}`)
 
   // Prop params with defaults (before signals, so signals can reference them).
   // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
@@ -555,6 +576,25 @@ function buildPythonProps(
     }
   }
 
+  // `bf._props(...)` payload (bf-p hydration): mirrors production's
+  // route-handler call `bf._props(props)` verbatim — the caller's raw
+  // props dict, unmodified. No default-filling, no signal/memo seeding,
+  // no rest-bag nesting: a real Flask route handler never rearranges
+  // the dict it received before handing it to `_props`. Excludes
+  // internal harness-only keys (`__instanceId` etc.), which are never a
+  // real caller-facing prop.
+  const userEntries: string[] = []
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      userEntries.push(`${pyStr(key)}: ${toPyLiteral(value)}`)
+    }
+  }
+  const userPropsPy = `{${userEntries.join(', ')}}`
+
+  const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
+  const fullEntries = [...entries, `${pyStr('scope_id')}: ${pyStr(explicitScope)}`]
+
   // Signal values evaluated from props (after user props).
   for (const signal of ir.metadata.signals) {
     // Env signals (#2057) are bound below via `SearchParams('')`, not from a
@@ -562,7 +602,7 @@ function buildPythonProps(
     if (signal.envReader) continue
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
     if (value !== null) {
-      entries.push(`${pyStr(signal.getter)}: ${toPyLiteral(value)}`)
+      fullEntries.push(`${pyStr(signal.getter)}: ${toPyLiteral(value)}`)
     }
   }
 
@@ -571,7 +611,7 @@ function buildPythonProps(
   for (const memo of ir.metadata.memos) {
     const entry = rootSsrDefaults[memo.name]
     const value = entry ? entry.value : 0
-    entries.push(`${pyStr(memo.name)}: ${toPyLiteral(value ?? 0)}`)
+    fullEntries.push(`${pyStr(memo.name)}: ${toPyLiteral(value ?? 0)}`)
   }
 
   // (#1922) Request-scoped `searchParams()`: bind `searchParams` to an
@@ -581,10 +621,10 @@ function buildPythonProps(
   // `.get(k)` resolves to `None` and the author's `?? default` renders. Only
   // when the component imports `searchParams`.
   if (importsSearchParams(ir.metadata)) {
-    entries.push(`${pyStr('searchParams')}: SearchParams('')`)
+    fullEntries.push(`${pyStr('searchParams')}: SearchParams('')`)
   }
 
-  return `{${entries.join(', ')}}`
+  return { propsPy: `{${fullEntries.join(', ')}}`, userPropsPy }
 }
 
 
