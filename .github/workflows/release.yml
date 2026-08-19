@@ -73,13 +73,21 @@ jobs:
 
       - run: bun install
 
+      # The action's major version is coupled to the Changesets CLI major
+      # version in package.json: v2 of the action refuses to run against CLI
+      # v2 ("designed to work with Changesets CLI v3"), and v1 is the one
+      # built for CLI v2. We pin @changesets/cli to ^2.31.0, so this must stay
+      # on v1 — see the matching Dependabot ignore in .github/dependabot.yml.
+      # Bumping either side alone breaks every release (run #798-#801, which
+      # left 0.31.9 versioned on main but unpublished).
       - name: Changesets — version or publish
         id: changesets
-        uses: changesets/action@198f833dd7d863100ea6e28967bc9a9fdefadb0a # v2.1.0
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
-          version-script: bunx changeset version
-          publish-script: bun run release:publish
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: bunx changeset version
+          publish: bun run release:publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Mirror whatever Changesets just published to npm onto JSR. Delegates to
   # the reusable jsr-publish.yml so the release-driven path and the manual
