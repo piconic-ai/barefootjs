@@ -10,6 +10,10 @@ image = "./Dockerfile"
 # ../../packages/adapter-go-template/runtime can resolve inside the image.
 image_build_context = "../.."
 max_instances = 1
+# Memory and disk are billed on the instance type's provisioned size, so pin it
+# rather than inherit a platform default that could move the bill silently.
+# `lite` (256 MiB / 1/16 vCPU / 2 GB) is the smallest and fits this demo.
+instance_type = "lite"
 
 [[durable_objects.bindings]]
 name = "GIN_CONTAINER"

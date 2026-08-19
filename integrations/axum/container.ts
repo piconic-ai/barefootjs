@@ -15,7 +15,11 @@ type Env = {
 
 export class AxumContainer extends Container<Env> {
   defaultPort = 8080
-  sleepAfter = '10m'
+  // Billing runs for every second the instance is up, idle included, so this
+  // window is the cost knob. Short enough that one crawler hit does not keep
+  // the instance warm for the rest of the hour, long enough that a visitor
+  // reading a page still lands on a warm container for the next click.
+  sleepAfter = '2m'
 }
 
 export default {
