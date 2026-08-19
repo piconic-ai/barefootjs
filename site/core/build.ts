@@ -14,7 +14,7 @@
  * - dist/uno.css + dist/static/globals.css (tokens + globals + landing)
  * - dist/static/logos/, dist/static/snippets/, icons
  * - dist/playground/ (worker + page script + Monaco type bundle)
- * - dist/_headers, dist/llms.txt
+ * - dist/_headers, dist/llms.txt, dist/robots.txt
  */
 
 import { mkdir, readdir } from 'node:fs/promises'
@@ -342,5 +342,24 @@ const coreDocs = scanCoreDocs(CONTENT_DIR)
 const coreLlmsTxt = generateCoreLlmsTxt(coreDocs, 'https://barefootjs.dev/docs')
 await Bun.write(resolve(DIST_DIR, 'llms.txt'), coreLlmsTxt)
 console.log('Generated: dist/llms.txt')
+
+// ── 10. Write robots.txt ──────────────────────────────────────
+// Everything under /integrations/<adapter>/ is a live demo server backed by a
+// Cloudflare Container, billed for every second it runs. A crawl of all of them
+// wakes fifteen containers to render what is, to a crawler, the same page
+// fifteen times — the examples share one set of components and differ only in
+// the backend that renders them. Nothing is gained by indexing them.
+//
+// The trailing slash matters: it excludes the demos while leaving the bare
+// /integrations catalog page (served from these static assets, no container)
+// crawlable, so the examples stay discoverable even though they are not indexed.
+//
+// This is advisory — well-behaved crawlers honor it, others do not. Blocking
+// the rest takes a WAF rule on the zone, which runs before the Worker.
+const robotsTxt = `User-agent: *
+Disallow: /integrations/
+`
+await Bun.write(resolve(DIST_DIR, 'robots.txt'), robotsTxt)
+console.log('Generated: dist/robots.txt')
 
 console.log('\nBuild complete!')
