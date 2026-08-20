@@ -20,12 +20,21 @@
 //   bun scripts/changeset-publish.ts
 
 import { resolve } from 'node:path'
-import { appendFileSync, mkdtempSync, rmSync } from 'node:fs'
+import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { $ } from 'bun'
 
 const repoRoot = resolve(import.meta.dir, '..')
 const tmpDir = mkdtempSync(`${tmpdir()}/bf-publish-`)
+
+// Unset when the script is run by hand outside changesets/action.
+const outputFile = process.env.CHANGESETS_OUTPUT
+// Not left to the first append: the action names this file but never creates
+// it, so a run that publishes nothing would leave it missing and the action
+// warns that the script failed to report -- the same warning it gives when
+// reporting is genuinely broken. An empty file says "nothing published" in a
+// way that stays distinct from that.
+if (outputFile) writeFileSync(outputFile, '')
 
 // Publish order: dependencies before dependents.
 const PUBLISHABLE = [
@@ -116,8 +125,6 @@ try {
     }
     // Not stdout: changesets/action v2 reads only this file, and a publish it
     // cannot see is one it never tags, releases, or gates downstream jobs on.
-    // Unset outside the action.
-    const outputFile = process.env.CHANGESETS_OUTPUT
     if (outputFile) {
       appendFileSync(
         outputFile,
