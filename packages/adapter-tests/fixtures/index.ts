@@ -508,6 +508,11 @@ import { fixture as controlledRadioChecked } from './controlled-radio-checked'
 import { fixture as detailsOpen } from './details-open'
 import { fixture as dialogOpen } from './dialog-open'
 import { fixture as progressMeterValue } from './progress-meter-value'
+// #2677: the analyzer's destructured-parameter member-type gate widened to
+// admit structural (array/object) shapes, not just primitives — a
+// plain-object (non-array-wrapped) destructured prop with a nested array
+// and a nested object property.
+import { fixture as destructuredObjectPropNested } from './destructured-object-prop-nested'
 
 import type { JSXFixture } from '../src/types'
 
@@ -866,5 +871,6 @@ export const jsxFixtures: JSXFixture[] = [
   detailsOpen,
   dialogOpen,
   progressMeterValue,
+  destructuredObjectPropNested,
   loopPreambleConditionalReactive,
 ]

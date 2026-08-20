@@ -426,7 +426,13 @@ describe('Destructured props keep their declared types (BF043 fixture #2150)', (
     })
   })
 
-  test('leaves NON-primitive members (arrays/objects) as unknown', () => {
+  // #2677: a STRUCTURAL member (array/object) built entirely out of
+  // primitives resolves fully now — go-template's `emitSynthPropStructs`
+  // (#2674/#2676) can synthesize a real struct for either shape, so the
+  // #2150 "unchecked assertion" concern doesn't apply to them any more.
+  // `rows: number[][]` is a nested array of primitives; `meta: { id:
+  // string }` is an inline object literal with a primitive property.
+  test('resolves STRUCTURAL members (nested arrays / inline objects) built entirely out of primitives (#2677)', () => {
     const source = `
       type Props = { rows: number[][]; meta: { id: string } }
 
@@ -437,7 +443,38 @@ describe('Destructured props keep their declared types (BF043 fixture #2150)', (
 
     const ctx = analyzeComponent(source, 'Component.tsx')
 
-    expect(typeOf(ctx, 'rows')).toEqual({ kind: 'unknown', raw: 'unknown' })
-    expect(typeOf(ctx, 'meta')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    expect(typeOf(ctx, 'rows')).toEqual({
+      kind: 'array',
+      raw: 'number[][]',
+      elementType: { kind: 'array', raw: 'number[]', elementType: { kind: 'primitive', raw: 'number', primitive: 'number' } },
+    })
+    expect(typeOf(ctx, 'meta')).toEqual({
+      kind: 'object',
+      raw: '{ id: string }',
+      properties: [{ name: 'id', type: { kind: 'primitive', raw: 'string', primitive: 'string' }, optional: false, readonly: false }],
+    })
+  })
+
+  // A structural member declines WHOLLY (not per-leaf) when ANY reachable
+  // leaf is a union, a function, or an un-catalogued named type — the same
+  // three shapes `isResolvableMemberType` declines at the top level.
+  test('declines a structural member when a nested leaf is a union/function/un-catalogued named type (#2677)', () => {
+    const source = `
+      type Props = {
+        variants: { id: string; kind: 'a' | 'b' }[]
+        handlers: { onClick: () => void }
+        configs: { data: Map<string, string> }
+      }
+
+      export function Component({ variants, handlers, configs }: Props) {
+        return <div>{variants.length}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'variants')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    expect(typeOf(ctx, 'handlers')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    expect(typeOf(ctx, 'configs')).toEqual({ kind: 'unknown', raw: 'unknown' })
   })
 })

@@ -1793,6 +1793,21 @@
         "text"
       ]
     },
+    "destructured-object-prop-nested": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "details-open": {
       "kinds": [
         "call",
@@ -5311,16 +5326,16 @@
   },
   "kindCounts": {
     "array-literal": 80,
-    "array-method": 69,
+    "array-method": 70,
     "arrow": 69,
     "binary": 92,
     "call": 220,
     "conditional": 25,
-    "identifier": 309,
+    "identifier": 310,
     "index-access": 14,
-    "literal": 251,
+    "literal": 252,
     "logical": 46,
-    "member": 174,
+    "member": 175,
     "object-literal": 57,
     "template-literal": 30,
     "unary": 23,
@@ -5333,7 +5348,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 41,
+    "array-method:join": 42,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -5364,7 +5379,7 @@
     "literal:boolean": 49,
     "literal:null": 23,
     "literal:number": 105,
-    "literal:string": 178,
+    "literal:string": 179,
     "logical:&&": 7,
     "logical:??": 40,
     "logical:||": 14,

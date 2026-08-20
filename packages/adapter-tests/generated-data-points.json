@@ -63,7 +63,124 @@
       }
     }
   ],
+  "array-at": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-at-default": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-concat": [
+    {
+      "name": "gen:left:empty",
+      "props": {
+        "left": [],
+        "right": [
+          "c",
+          "d"
+        ]
+      }
+    },
+    {
+      "name": "gen:right:empty",
+      "props": {
+        "left": [
+          "a",
+          "b"
+        ],
+        "right": []
+      }
+    }
+  ],
+  "array-concat-copy": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-entries": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-every": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-find": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-findIndex": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-findLast": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-findLastIndex": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-flat": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "array-flat-depth": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "array-flat-dynamic-depth": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "depth": 2
+      }
+    },
     {
       "name": "gen:depth:zero",
       "props": {
@@ -137,7 +254,71 @@
       }
     }
   ],
+  "array-flat-infinity": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "array-flatmap-field": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-flatmap-nested-filter-join": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-flatmap-nested-map": [
+    {
+      "name": "gen:posts:empty",
+      "props": {
+        "posts": []
+      }
+    }
+  ],
+  "array-flatmap-self": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "array-flatmap-thisarg": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "ctx": null
+      }
+    }
+  ],
+  "array-flatmap-tuple": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "array-includes": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "target": "b"
+      }
+    },
     {
       "name": "gen:target:empty",
       "props": {
@@ -174,6 +355,13 @@
   ],
   "array-indexOf": [
     {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "target": "b"
+      }
+    },
+    {
       "name": "gen:target:empty",
       "props": {
         "items": [
@@ -207,7 +395,38 @@
       }
     }
   ],
+  "array-join": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-join-default": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-keys": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "array-lastIndexOf": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "target": "b"
+      }
+    },
     {
       "name": "gen:target:empty",
       "props": {
@@ -245,6 +464,142 @@
           "d"
         ],
         "target": "日本語"
+      }
+    }
+  ],
+  "array-map-function-reference": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
+  "array-map-value-field": [
+    {
+      "name": "gen:users:empty",
+      "props": {
+        "users": []
+      }
+    }
+  ],
+  "array-map-value-template": [
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
+  "array-reverse": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-slice": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-slice-copy": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-some": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-sort-field-asc": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-sort-field-desc": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-sort-fnref": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-sort-locale": [
+    {
+      "name": "gen:names:empty",
+      "props": {
+        "names": []
+      }
+    }
+  ],
+  "array-sort-multikey": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-sort-primitive": [
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "nums": []
+      }
+    }
+  ],
+  "array-sort-ternary": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-toReversed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "array-toSorted": [
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "nums": []
+      }
+    }
+  ],
+  "array-values": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],
@@ -953,6 +1308,20 @@
       }
     }
   ],
+  "destructured-object-prop-nested": [
+    {
+      "name": "gen:user:object:minimal",
+      "props": {
+        "user": {
+          "name": "",
+          "tags": [],
+          "address": {
+            "city": ""
+          }
+        }
+      }
+    }
+  ],
   "else-if-chain": [
     {
       "name": "gen:level:markup",
@@ -964,6 +1333,14 @@
       "name": "gen:level:multibyte",
       "props": {
         "level": "日本語"
+      }
+    }
+  ],
+  "flatmap-expression-body": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],
@@ -1187,6 +1564,14 @@
       }
     }
   ],
+  "loop-destructured-param-condition": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-param-shadows-bool-prop": [
     {
       "name": "gen:active:false",
@@ -1196,6 +1581,21 @@
           "on",
           "off"
         ]
+      }
+    },
+    {
+      "name": "gen:flags:empty",
+      "props": {
+        "active": true,
+        "flags": []
+      }
+    }
+  ],
+  "loop-param-shadows-const-key": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
       }
     }
   ],
@@ -1232,9 +1632,40 @@
           3
         ]
       }
+    },
+    {
+      "name": "gen:values:empty",
+      "props": {
+        "label": "Item",
+        "values": []
+      }
+    }
+  ],
+  "loop-param-shadows-record-const": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "loop-param-shadows-record-template-span": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "k": "a"
+      }
     }
   ],
   "loop-param-shadows-spread-const": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "big": true
+      }
+    },
     {
       "name": "gen:big:false",
       "props": {
@@ -1249,6 +1680,46 @@
           }
         ],
         "big": false
+      }
+    }
+  ],
+  "map-array-builder-body": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "map-array-builder-escaping": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "map-if-chain-body": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "map-preamble-branch-body": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "map-switch-fallthrough-body": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],
@@ -1474,6 +1945,46 @@
       }
     }
   ],
+  "reduce-concat": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "reduce-product": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "reduce-right-concat": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "reduce-sum-field": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "reduce-sum-self": [
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "nums": []
+      }
+    }
+  ],
   "return-logical-or": [
     {
       "name": "gen:label:empty",
@@ -1499,6 +2010,27 @@
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "sibling-loops-key-isolation": [
+    {
+      "name": "gen:fruits:empty",
+      "props": {
+        "fruits": [],
+        "veggies": [
+          "carrot"
+        ]
+      }
+    },
+    {
+      "name": "gen:veggies:empty",
+      "props": {
+        "fruits": [
+          "apple",
+          "plum"
+        ],
+        "veggies": []
       }
     }
   ],

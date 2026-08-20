@@ -914,11 +914,28 @@ function goSliceElemType(
  * `[]any{…}`/`map[string]interface{}{…}` for that field no longer compiles
  * against it the way it always did against the old `map[string]interface{}`
  * element type.
+ *
+ * An ARRAY element (`elemType` itself starting with `[]`, i.e. the field is
+ * doubly-nested — `Rows [][]int`) recurses with the INNER element type
+ * (`int`) instead of falling to `goArrayLiteralFromArray`'s generic
+ * `[]any{…}` — #2677 widened the analyzer's destructured-parameter gate to
+ * resolve a nested-array prop (`{ rows }: { rows: number[][] }`) to a real
+ * `[][]int` field (previously `unknown` → `interface{}` → `[]any`, which
+ * `goArrayLiteralFromArray`'s untyped literal always compiled against fine).
+ * Without this, the harness's OWN convenience literal-builder — not the
+ * production adapter's `typeInfoToGo`, which already recurses correctly —
+ * bakes `[]any{1, 2}` for a `[1, 2]` row, and `[][]int{[]any{1, 2}, …}`
+ * fails to compile against the now-concrete field.
  */
 function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string, goTypes?: string): string {
   const entries = arr.map(v => {
     if (v instanceof Date) return goStringLit(v.toISOString())
-    if (v && typeof v === 'object' && !Array.isArray(v)) {
+    if (Array.isArray(v)) {
+      return elemType.startsWith('[]')
+        ? goTypedSliceLiteralFromArray(v, elemType.slice(2), goTypes)
+        : goArrayLiteralFromArray(v)
+    }
+    if (v && typeof v === 'object') {
       return goStructLiteral(v as Record<string, unknown>, elemType, goTypes)
     }
     if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
