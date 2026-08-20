@@ -41,7 +41,7 @@
     "@babel/core": "^7.26.0",
     "@babel/preset-typescript": "^7.26.0",
     "@biomejs/biome": "2.4.16",
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "^3.0.1",
     "@happy-dom/global-registrator": "^20.0.11",
     "@playwright/test": "^1.57.0",
     "@types/bun": "latest",
