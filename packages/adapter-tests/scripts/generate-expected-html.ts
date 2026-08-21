@@ -52,6 +52,9 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   // value; must not be silently overwritten by a future regeneration pass.
   // See the fixture file's docstring for the full mechanism.
   'signal-prop-same-name-derived',
+  // #2685 review: same reasoning, one hop of const indirection removed.
+  // See the fixture file's docstring for the full mechanism.
+  'signal-prop-same-name-via-const-derived',
 ])
 
 async function main() {

@@ -209,4 +209,76 @@ describe('computeSsrSeedPlan', () => {
       expect(on.frees).toEqual(['props'])
     }
   })
+
+  test('prop-derived signal init THROUGH a component-scope const (#2685 review): still derived, resolves to the prop free', () => {
+    // Pre-fix, `mid` (a component-scope const, not part of `baseScope`)
+    // was a free identifier `classify` couldn't find in `available`, so
+    // this step fell to `opaque` — no adapter emits an in-template
+    // recompute for it at all (a DIFFERENT, worse-than-#2669 defect: even
+    // with `propName` restored on the manifest side, an absent caller prop
+    // would render permanently empty instead of the signal's own
+    // `'Default'`). `resolveThroughLocalConsts` inlines `mid` to
+    // `props.defaultOn` before classification, so this now derives exactly
+    // like the direct-access form above.
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Toggle(props: { defaultOn?: boolean }) {
+        const mid = props.defaultOn
+        const [on, setOn] = createSignal(mid ?? false)
+        return <button aria-pressed={on()}>t</button>
+      }
+    `)
+
+    const on = step(plan, 'on')
+    expect(on.kind).toBe('derived')
+    if (on.kind === 'derived') {
+      expect(on.origin).toBe('signal')
+      // The RESOLVED free set names `props` (what the inlined form reads),
+      // never the intermediate const `mid` — a consumer emitting `on`'s
+      // seed line never needs to know `mid` existed.
+      expect(on.frees).toEqual(['props'])
+    }
+  })
+
+  test('multi-hop const chain THROUGH TWO component-scope consts (#2685 review): still derived', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { x?: number }) {
+        const a = props.x
+        const b = a
+        const [count, setCount] = createSignal(b ?? 1)
+        return <p>{count()}</p>
+      }
+    `)
+
+    const count = step(plan, 'count')
+    expect(count.kind).toBe('derived')
+    if (count.kind === 'derived') {
+      expect(count.frees).toEqual(['props'])
+    }
+  })
+
+  test('const chain that bottoms out on an UNAVAILABLE name → opaque (fails safe, not a wrong substitution)', () => {
+    // `mid` inlines to `laterMemo`, a memo declared AFTER `on` in source —
+    // per the plan's ordering guarantee, `laterMemo` is not yet in
+    // `available` when `on` is classified, so this must stay `opaque`
+    // exactly like a direct forward-reference would (mirrors the existing
+    // "forward reference … → opaque" case above, one hop of const
+    // indirection removed).
+    const plan = planFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      function C() {
+        const mid = laterMemo()
+        const [on, setOn] = createSignal(mid ?? false)
+        const laterMemo = createMemo(() => true)
+        return <button aria-pressed={on()}>{laterMemo()}</button>
+      }
+    `)
+
+    const on = step(plan, 'on')
+    expect(on.kind).toBe('opaque')
+  })
 })

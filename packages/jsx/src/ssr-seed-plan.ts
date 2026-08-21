@@ -35,6 +35,7 @@ import { envSignalReaderFor, type EnvSignalReader } from './adapters/env-signal.
 import {
   extractArrowBodyExpression,
   freeIdentifiers,
+  inlineBinding,
   isSupported,
   parseExpression,
   type ParsedExpr,
@@ -98,6 +99,72 @@ function classify(
 }
 
 /**
+ * Component-scope (non-module) `const` locals, by name, parsed to their
+ * `ParsedExpr` value — the substitution table `resolveThroughLocalConsts`
+ * inlines through. Module-scope consts are excluded: they're already part
+ * of `baseScope` (every adapter compile-time-inlines them to their literal
+ * value, so a reference to one is never a template-variable read — see the
+ * module doc), and a `let` has no stable value to substitute.
+ */
+function localConstExprsByName(metadata: IRMetadata): ReadonlyMap<string, ParsedExpr> {
+  const out = new Map<string, ParsedExpr>()
+  for (const c of metadata.localConstants ?? []) {
+    if (c.isModule || c.declarationKind !== 'const' || c.value === undefined) continue
+    out.set(c.name, c.parsed ?? parseExpression(c.value.trim()))
+  }
+  return out
+}
+
+/**
+ * Resolve a signal/memo's parsed expression through any component-scope
+ * `const` locals it references, so a hop of pure indirection between a
+ * prop read and its derived signal/memo — `const mid = props.label;
+ * createSignal(mid ?? 'Default')` — classifies from the SAME scope its
+ * fully-inlined form (`props.label ?? 'Default'`) would (#2685 review, the
+ * jsx-side twin of `ssr-defaults.ts`'s own `collectPropRefs` closure).
+ *
+ * Structural substitution only (never string splicing, per CLAUDE.md):
+ * reuses `inlineBinding`, the exact "let-inline" step `foldBlockToExpr`
+ * already performs for a block-bodied memo's own internal `const`s. A
+ * chained const (`const a = props.x; const b = a; createSignal(b ?? 1)`)
+ * closes the same way — each pass substitutes whatever local consts are
+ * still free in the current form, so `b` resolves to `a` first and `a`
+ * resolves to `props.x` on the next pass. Bounded to `localConsts.size + 1`
+ * iterations (the longest possible chain) purely as a cycle guard; a real
+ * cycle is impossible in valid source (JS TDZ forbids a const referencing
+ * itself, directly or transitively).
+ *
+ * `inlineBinding` returns `null` only on a capture hazard (the const's own
+ * free variable would be shadowed by a nested callback parameter of the
+ * same name inside the current form) — that occurrence is left un-inlined,
+ * so its name simply stays free and later fails `classify`'s availability
+ * check like any other out-of-scope reference (fails safe to `opaque`,
+ * never a wrong substitution).
+ */
+function resolveThroughLocalConsts(
+  parsed: ParsedExpr,
+  localConsts: ReadonlyMap<string, ParsedExpr>,
+): ParsedExpr {
+  let current = parsed
+  const maxIter = localConsts.size + 1
+  for (let i = 0; i < maxIter; i++) {
+    const frees = freeIdentifiers(current)
+    if (frees === null) break
+    let changed = false
+    for (const name of frees) {
+      const value = localConsts.get(name)
+      if (!value) continue
+      const inlined = inlineBinding(current, name, value)
+      if (inlined === null) continue
+      current = inlined
+      changed = true
+    }
+    if (!changed) break
+  }
+  return current
+}
+
+/**
  * Compute the component's SSR seed plan from its metadata. See the module
  * doc for the contract. Memo steps are gated to EXPRESSION-BODIED memos
  * (`extractArrowBodyExpression` returns the body): a block-bodied memo is
@@ -111,6 +178,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   }
 
   const available = new Set<string>(baseScope)
+  const localConsts = localConstExprsByName(metadata)
   const steps: SsrSeedStep[] = []
 
   for (const signal of metadata.signals) {
@@ -126,7 +194,13 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
     steps.push(
       expr === ''
         ? { kind: 'opaque', name: signal.getter, origin: 'signal' }
-        : classify(signal.getter, 'signal', expr, parseExpression(expr), available),
+        : classify(
+            signal.getter,
+            'signal',
+            expr,
+            resolveThroughLocalConsts(parseExpression(expr), localConsts),
+            available,
+          ),
     )
     available.add(signal.getter)
   }
@@ -137,7 +211,13 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
     steps.push(
       expr === ''
         ? { kind: 'opaque', name: memo.name, origin: 'memo' }
-        : classify(memo.name, 'memo', expr, memo.parsed ?? parseExpression(expr), available),
+        : classify(
+            memo.name,
+            'memo',
+            expr,
+            resolveThroughLocalConsts(memo.parsed ?? parseExpression(expr), localConsts),
+            available,
+          ),
     )
     available.add(memo.name)
   }

@@ -3037,8 +3037,17 @@ function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number
  * leaves that inner reference untouched (it is the parameter, not the binding).
  * Mirrors the structural walk of `substituteDestructuredFields`; every
  * `ParsedExpr` kind is handled so a new kind surfaces as a compile error here.
+ *
+ * Exported for `computeSsrSeedPlan` (`ssr-seed-plan.ts`), which reuses this
+ * SAME let-inline step to resolve a signal/memo initializer through
+ * component-scope `const` locals sitting between it and the prop it reads
+ * (`const mid = props.label; createSignal(mid ?? 'Default')`) — the
+ * structural (never string-splicing) analogue of what `foldBlockToExpr`
+ * already does for a block-bodied memo's own internal `const`s, and of what
+ * the CSR client-JS emitter's `csrSubstitute` does over TS source text for
+ * the compiled JS domain (#2685 review).
  */
-function inlineBinding(
+export function inlineBinding(
   expr: ParsedExpr,
   name: string,
   value: ParsedExpr,

@@ -31,4 +31,14 @@ export const renderDivergences: RenderDivergences = {
   // skip emits a duplicate field — the real fix needs its own PR.
   'signal-prop-same-name-derived':
     'self-derived signal collides with its prop field name in the generated Go props struct — the non-idempotent `* 2` derivation is dropped and the signal renders the raw prop value instead (https://github.com/piconic-ai/barefootjs/issues/2683)',
+  // #2685 review: same #2683 bug, one hop of const indirection removed —
+  // the props-struct field-name collision is keyed on the SIGNAL's name,
+  // not on how its initializer reaches the prop, so
+  // `const mid = props.count; createSignal((mid ?? 1) * 2)` collides
+  // exactly like the direct-access form above. This is go's PRE-EXISTING
+  // #2683 defect surfacing through a new fixture, not a regression from
+  // the #2685 review fix (which lands correctly on every other
+  // template-stash adapter — see those adapters' conformance runs).
+  'signal-prop-same-name-via-const-derived':
+    'self-derived signal (reached through a component-scope const) collides with its prop field name in the generated Go props struct — the non-idempotent `* 2` derivation is dropped and the signal renders the raw prop value instead (https://github.com/piconic-ai/barefootjs/issues/2683)',
 }

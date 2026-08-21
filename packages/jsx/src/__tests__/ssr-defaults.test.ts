@@ -195,6 +195,119 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.label).toEqual({ value: 'sig' })
   })
 
+  test('self-derived signal collision THROUGH a component-scope const (#2685 review): entry stays a PROP entry', () => {
+    // One hop of pure indirection past #2669's shape A: `referencesOwnProp`
+    // (built on `collectPropRefs`) only saw a DIRECT `props.<name>` access
+    // in the initializer — a `const mid = props.label` sitting between the
+    // prop read and `createSignal(mid ?? 'Default')` defeated the
+    // detection, so this entry regressed to the pre-#2669 `{ value:
+    // 'Default' }` shape (no `propName`) even after the #2669 fix landed.
+    // Same fix, widened: `collectPropRefsTransitive` now looks through
+    // component-scope const locals.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const mid = props.label
+        const [label, setLabel] = createSignal(mid ?? 'Default')
+        return <span>{label()}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+  })
+
+  test('self-derived memo collision THROUGH a component-scope const (#2685 review)', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const mid = props.label
+        const label = createMemo(() => mid ?? 'Default')
+        return <span>{label()}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+  })
+
+  test('multi-hop const chain resolves transitively (#2685 review): `const a = props.x; const b = a`', () => {
+    // Two hops of indirection (`b` reads `a`, `a` reads `props.x`) — the
+    // signal here is named `count`, a DIFFERENT name from the prop `x`, so
+    // this exercises the bare-props safety net's transitive resolution
+    // (not the self-derivation `propName` collision path above): `x` must
+    // still be seeded, or the template-stash adapters' bare-scalar
+    // recompute for `x` aborts at render time (#1297/#2126).
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { x?: number }) {
+        const a = props.x
+        const b = a
+        const [count, setCount] = createSignal(b ?? 1)
+        return <span>{count()}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.count).toEqual({ value: 1 })
+    expect(defaults?.x).toEqual({ propName: 'x', value: null })
+  })
+
+  test('safety-net seeding sees a prop through a component-scope const (#2685 review)', () => {
+    // The #1297/#2126 bare-props safety net (`collectPropRefs` at the
+    // bottom of `extractSsrDefaults`) only saw a DIRECT `props.X` access
+    // too — this is that same gap, single hop: `const mid = props.initial;
+    // createSignal(mid ?? 0)` misses seeding `initial`, which is a
+    // `Global symbol "$initial" requires explicit package name` render
+    // abort on Perl-strict backends. `count` (the signal's own name) is
+    // unrelated to `initial`, so this is NOT the self-collision path —
+    // purely the safety net.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Counter(props: { initial?: number }) {
+        const mid = props.initial
+        const [count, setCount] = createSignal(mid ?? 0)
+        return <p>{count()}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.count).toEqual({ value: 0 })
+    expect(defaults?.initial).toEqual({ propName: 'initial', value: null })
+  })
+
+  test('NEGATIVE (#2685 review): a const NOT derived from props keeps the signal-wins behavior', () => {
+    // Same-named `label` getter and `label` prop, wrapped in a const — but
+    // the const's OWN value doesn't read `props` at all, so
+    // `collectPropRefsTransitive` must NOT report a collision here. Must
+    // stay the plain evaluated-signal-value shape with no `propName` — the
+    // const-chain widening only ever ADDS prop references it finds by
+    // actually walking through `props.X`, never invents one.
+    //
+    // (The value resolves to `null`, not `'sig'`: `tryStaticEval` doesn't
+    // bind component-scope const locals into its evaluation `bindings` —
+    // see the signal loop's `bindings` comment above — so `mid` itself is
+    // unresolved for VALUE purposes independent of this fix; only the
+    // separate `propName`-detection walk this test is pinning follows the
+    // const chain.)
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const mid = 'sig'
+        const [label, setLabel] = createSignal(mid)
+        return <span>{label()}{props.label}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ value: null })
+  })
+
   test('aliased destructured prop (#2460): `propName` is the CALLER-facing key, not the local binding', () => {
     // `{ n: count }` — the caller passes `n`, the template variable (and
     // stash entry key) is the local binding `count`. The manifest

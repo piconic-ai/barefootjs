@@ -2102,6 +2102,54 @@
       }
     }
   ],
+  "signal-prop-same-name-via-const": [
+    {
+      "name": "gen:label:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "signal-prop-same-name-via-const-derived": [
+    {
+      "name": "gen:count:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    }
+  ],
   "signal-with-fallback": [
     {
       "name": "gen:initial:absent",
