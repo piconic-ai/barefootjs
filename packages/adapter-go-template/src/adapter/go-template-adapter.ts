@@ -119,7 +119,7 @@ import type {
 } from "./lib/types.ts"
 import { collectRootScopeNodes } from "./lib/ir-scope.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
-import { CompileState } from "./lib/compile-state.ts"
+import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
@@ -1948,7 +1948,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (propFieldNames.has(fieldName)) continue
       // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
       // one value.
-      const fallbackMatch = this.extractPropFallback(signal.initialValue, signal.parsed)
+      const fallbackMatch = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
       const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
       if (hoisted) {
         lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
@@ -3588,7 +3588,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
     for (const signal of ir.metadata.signals) {
-      const match = this.extractPropFallback(signal.initialValue, signal.parsed)
+      const match = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
       if (!match) continue
       if (result.has(match.propName)) continue
       const param = ir.metadata.propsParams.find(p => p.name === match.propName)
@@ -3651,6 +3651,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       })
     }
     return result
+  }
+
+  /**
+   * Resolve a signal's initializer through the SSR seed plan's const-hop
+   * inlining (#2685) before prop-fallback extraction — see
+   * {@link resolveSignalParsedThroughSeedPlan} (shared with
+   * `collectNullishConsumedPropNames`'s signal-seed loop, the single door
+   * both consumers of this resolution go through).
+   */
+  private resolvedSignalParsed(signal: { getter: string; parsed?: ParsedExpr }): ParsedExpr | undefined {
+    return resolveSignalParsedThroughSeedPlan(this.state, signal)
   }
 
   /**

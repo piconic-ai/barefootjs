@@ -22,6 +22,7 @@ import type {
   IRNode,
   LoweringMatcher,
   MemoInfo,
+  ParsedExpr,
   SsrSeedPlan,
   TypeDefinition,
   TypeInfo,
@@ -261,4 +262,37 @@ export class CompileState {
   /** Set when a constructor-context lowering emits a `strings.` call, so
    *  `strings` is added to the generated types file's import block. */
   needsStringsImport = false
+}
+
+/**
+ * Resolve a signal's initializer through the SSR seed plan's const-hop
+ * inlining (#2685, `resolveThroughLocalConsts` in
+ * `packages/jsx/src/ssr-seed-plan.ts`) before prop-fallback shape matching,
+ * so a component-scope `const` sitting between a `props.X` read and
+ * `createSignal` (`const mid = props.label; createSignal(mid ?? 'Default')`)
+ * doesn't hide the `props.X ?? <literal>` shape from
+ * `extractPropFallbackFromParsed` / `collectNullishConsumedPropNames`'s
+ * signal-seed loop — both need the SAME resolved tree (single door, not two
+ * divergent walks: a mismatch between them is exactly what let the field-type
+ * flip and the fallback-var construction disagree on nullish handling for
+ * the const-hop shape).
+ *
+ * Falls back to the signal's own `parsed` when the plan didn't classify this
+ * signal `derived` (opaque for an unrelated reason, e.g. a free identifier
+ * genuinely out of scope) — never invents a substitution the plan itself
+ * didn't make.
+ *
+ * `signal` takes the minimal structural shape (not the internal `SignalInfo`
+ * type, which `@barefootjs/jsx`'s public index doesn't export — the same
+ * inline-shape convention `memo-compute.ts`'s extracted helpers already use
+ * for signal params).
+ */
+export function resolveSignalParsedThroughSeedPlan(
+  state: CompileState,
+  signal: { getter: string; parsed?: ParsedExpr },
+): ParsedExpr | undefined {
+  const step = state.ssrSeedPlan.steps.find(
+    s => s.kind === 'derived' && s.origin === 'signal' && s.name === signal.getter,
+  )
+  return step?.kind === 'derived' ? step.parsed : signal.parsed
 }
