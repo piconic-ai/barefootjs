@@ -255,6 +255,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractPropNameFromInitialValue: (initialValue, preParsed) =>
       this.extractPropNameFromInitialValue(initialValue, preParsed),
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
+    extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
   }
 
@@ -1921,7 +1922,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
       const hoisted = propFallbackVars.get(param.name)
       if (hoisted) {
-        lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
+        // #2683: a `collisionWrap` entry means this field is ALSO a
+        // colliding signal's shared field — `hoisted.varName` alone only
+        // carries the coalesced `props.X ?? <lit>` value, so the surrounding
+        // arithmetic (`* 2`, etc.) is composed back on here, giving the
+        // FULLY DERIVED value the signal's own initializer computes. Without
+        // this the field would silently carry just the coalesce result (the
+        // same class of bug this fix addresses, one operator short).
+        const value = hoisted.collisionWrap
+          ? `${hoisted.varName} ${hoisted.collisionWrap.operator} ${hoisted.collisionWrap.operand}`
+          : hoisted.varName
+        lines.push(`\t\t${fieldName}: ${value},`)
       } else {
         const paramDefault = goPropDefault(param.defaultValue)
         const memoFold = memoFallbacks.get(fieldName)
@@ -3742,7 +3753,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
     for (const signal of ir.metadata.signals) {
-      const match = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
+      let match = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
+      // #2683: the idempotent fold above declines a non-idempotent
+      // derivation (`(props.count ?? 1) * 2`) at the top level. When that
+      // signal's Go field name COLLIDES with the prop's own field — the
+      // exact condition under which the props-field loop below would
+      // otherwise silently drop the derivation and emit the raw prop
+      // instead — fall back to the collision-derivation matcher so the
+      // coalesced value still gets hoisted; the props-field loop composes
+      // the surrounding arithmetic back on top of it (`collisionWrap`).
+      // Gated strictly on the collision so a differently-named signal
+      // deriving from the same prop (not colliding) is untouched — that
+      // path's own dedicated field keeps today's behavior byte-for-byte.
+      let collisionWrap: { operator: string; operand: string } | undefined
+      if (!match) {
+        const collision = this.extractCollisionDerivation(this.resolvedSignalParsed(signal))
+        if (collision) {
+          const collisionParam = ir.metadata.propsParams.find(p => p.name === collision.propName)
+          const collisionField = collisionParam
+            ? capitalizeFieldName(collisionParam.sourceName ?? collision.propName)
+            : null
+          if (collisionField && capitalizeFieldName(signal.getter) === collisionField) {
+            match = { propName: collision.propName, goFallback: collision.goFallback }
+            collisionWrap = { operator: collision.operator, operand: collision.operand }
+          }
+        }
+      }
       if (!match) continue
       if (result.has(match.propName)) continue
       const param = ir.metadata.propsParams.find(p => p.name === match.propName)
@@ -3802,6 +3838,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         goFallback: match.goFallback,
         zeroLiteral,
         ...(nullishLowered ? { assertType: concreteType } : {}),
+        ...(collisionWrap ? { collisionWrap } : {}),
       })
     }
     return result
@@ -3894,6 +3931,67 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const goFallback = goPropDefault(negate + (right.raw ?? String(right.value)))
     if (goFallback === null) return null
     return { propName, goFallback }
+  }
+
+  /**
+   * #2683: match a signal's collision-derivation shape — `(props.X ?? <lit>)
+   * <op> <int>` — the ONE non-idempotent shape this adapter faithfully lowers
+   * when a signal's Go field name collides with its own prop's field (see the
+   * collision-override loop in `collectPropFallbackVars` / the props-field
+   * loop in `generateNewPropsFunction`). Composes two ALREADY-EXISTING
+   * lowerings instead of adding a third: `extractPropFallbackFromParsed`
+   * recognizes the embedded `props.X ?? <lit>` presence check exactly as it
+   * does for the idempotent fold, and the wrap mirrors the SAME `<ref> <op>
+   * <int>` arithmetic shape `memoInitialFromParsedBody`'s multiply-family
+   * branch already supports for a bare `props.X <op> N` (non-negative
+   * integer operand only, matching that branch's own restriction).
+   *
+   * Returns null for any other shape — the caller then keeps today's
+   * raw-passthrough behavior (sound-or-loud; the remaining #2683 pin, if
+   * any, covers whatever this doesn't reach).
+   */
+  private extractCollisionDerivation(
+    parsed: ParsedExpr | undefined,
+  ): { propName: string; goFallback: string; operator: string; operand: string } | null {
+    if (!parsed || parsed.kind !== 'binary') return null
+    if (!['*', '+', '-', '/'].includes(parsed.op)) return null
+    const { right } = parsed
+    if (
+      right.kind !== 'literal' ||
+      right.literalType !== 'number' ||
+      typeof right.value !== 'number' ||
+      !Number.isInteger(right.value) ||
+      right.value < 0
+    ) {
+      return null
+    }
+    // Constant division by zero is a Go COMPILE error (`invalid operation:
+    // division by zero`), unlike JS's Infinity — declining keeps that shape
+    // on the raw-passthrough path instead of breaking the build.
+    if (parsed.op === '/' && right.value === 0) return null
+    // The `??` fallback itself must be a NUMERIC literal before delegating
+    // to the fold: `extractPropFallbackFromParsed` happily matches a string
+    // fallback (`(props.label ?? 'x') + 2`), which would hoist
+    // `var label string = "x"` and emit `Label: label + 2,` — invalid Go
+    // (string + int), a compile break where the pre-existing behavior at
+    // least built (Copilot review on #2694). JS's `'x' + 2` is string
+    // concatenation besides, so a numeric compose could never be faithful
+    // for it — the shape belongs on the raw-passthrough path until someone
+    // lowers it through ConcatStr deliberately. Gating on `??` (not `||`)
+    // also keeps JS nullish semantics exact for numeric props, where a
+    // caller's explicit `0` must NOT trigger the fallback.
+    const coalesce = parsed.left
+    if (
+      coalesce.kind !== 'logical' ||
+      coalesce.op !== '??' ||
+      coalesce.right.kind !== 'literal' ||
+      coalesce.right.literalType !== 'number'
+    ) {
+      return null
+    }
+    const inner = this.extractPropFallbackFromParsed(parsed.left)
+    if (!inner) return null
+    return { ...inner, operator: parsed.op, operand: String(right.value) }
   }
 
   /**

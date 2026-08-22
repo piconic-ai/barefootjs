@@ -60,6 +60,20 @@ export interface GoEmitContext {
   ): { propName: string; goFallback: string } | null
 
   /**
+   * #2683: match the collision-derivation shape `(props.X ?? <lit>) <op>
+   * <int>` against an already-resolved `ParsedExpr` — the ONE non-idempotent
+   * form this adapter faithfully lowers when a signal's Go field name
+   * collides with its own prop's field. Composes
+   * {@link extractPropFallback}'s structural presence-check recognition
+   * (applied to the embedded `??` subtree) with the same non-negative-
+   * integer arithmetic wrap the memo-computation emitter already supports
+   * for a bare `props.X <op> N`. Returns null for any other shape.
+   */
+  extractCollisionDerivation(
+    parsed: ParsedExpr | undefined,
+  ): { propName: string; goFallback: string; operator: string; operand: string } | null
+
+  /**
    * Inline a module string const by name as a Go double-quoted literal
    * (`"<escaped>"`), or null when the name is not such a const (loop vars and
    * outer-loop params are excluded).
