@@ -1884,7 +1884,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.usesSearchParams(ir)) {
       lines.push('\t\tSearchParams: in.SearchParams,')
     }
-    lines.push('\t\tBfCallerProps: callerProps,')
+    lines.push('\t\tBfCallerProps: bfCallerProps,')
 
     const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
@@ -2053,7 +2053,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Build the `callerProps` local (assigned to `BfCallerProps` in the
+   * Build the `bfCallerProps` local (assigned to `BfCallerProps` in the
    * returned struct) — the hydration-only, caller-supplied-keys-only view
    * of this component's props (#2684). See the field's doc comment
    * (`emitPropsStructHeader`) for the two-consumers rationale.
@@ -2117,8 +2117,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     emittedWrapperVars: Set<string>,
     propTypeOverrides: Map<string, string>,
   ): void {
-    lines.push('\tcallerProps := map[string]interface{}{}')
-    const callerPropsTakenTags = new Set<string>()
+    lines.push('\tbfCallerProps := map[string]interface{}{}')
+    const bfCallerPropsTakenTags = new Set<string>()
     const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
     for (const param of ir.metadata.propsParams) {
@@ -2132,7 +2132,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // own `json:"…"` tag, re-derived against a FRESH set: props are always
       // processed first, in the same order, over an empty set in BOTH
       // places, so the two computations can't disagree.
-      const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), callerPropsTakenTags)
+      const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), bfCallerPropsTakenTags)
       if (callerKey === '-') continue // tag collision — dropped from the wire, same as the Props field itself would be
       const inputField = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
@@ -2152,12 +2152,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // (accurately or not) false — see the method docstring's residual list.
       if (param.optional && isNillable) {
         lines.push(`\tif ${inputField} != nil {`)
-        lines.push(`\t\tcallerProps["${callerKey}"] = ${inputField}`)
+        lines.push(`\t\tbfCallerProps["${callerKey}"] = ${inputField}`)
         lines.push(`\t}`)
       } else {
         // Required (class 1), or optional-but-concrete residual (class 3),
         // or optional-but-misresolved-required residual — see docstring.
-        lines.push(`\tcallerProps["${callerKey}"] = ${inputField}`)
+        lines.push(`\tbfCallerProps["${callerKey}"] = ${inputField}`)
       }
     }
 
@@ -2172,14 +2172,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         p => capitalizeFieldName(p.name) === arrayFieldName || capitalizeFieldName(p.sourceName ?? p.name) === arrayFieldName,
       )
       if (!param || !this.isNestedArrayShadowed(param, nestedArrayFields)) continue
-      const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), callerPropsTakenTags)
+      const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), bfCallerPropsTakenTags)
       if (callerKey === '-') continue
       if (param.optional) {
         lines.push(`\tif in.${nested.name}s != nil {`)
-        lines.push(`\t\tcallerProps["${callerKey}"] = ${varName}`)
+        lines.push(`\t\tbfCallerProps["${callerKey}"] = ${varName}`)
         lines.push(`\t}`)
       } else {
-        lines.push(`\tcallerProps["${callerKey}"] = ${varName}`)
+        lines.push(`\tbfCallerProps["${callerKey}"] = ${varName}`)
       }
     }
     lines.push('')
