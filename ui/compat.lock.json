@@ -3018,18 +3018,6 @@
           ]
         }
       },
-      "signal-prop-same-name-derived": {
-        "go-template": {
-          "kind": "render",
-          "reason": "self-derived signal collides with its prop field name in the generated Go props struct — the non-idempotent `* 2` derivation is dropped and the signal renders the raw prop value instead (https://github.com/piconic-ai/barefootjs/issues/2683)"
-        }
-      },
-      "signal-prop-same-name-via-const-derived": {
-        "go-template": {
-          "kind": "render",
-          "reason": "self-derived signal (reached through a component-scope const) collides with its prop field name in the generated Go props struct — the non-idempotent `* 2` derivation is dropped and the signal renders the raw prop value instead (https://github.com/piconic-ai/barefootjs/issues/2683)"
-        }
-      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -3527,14 +3515,6 @@
       "rich-prop-client-read": {
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
-      },
-      "signal-prop-same-name-derived": {
-        "description": "Signal initialized from a NON-IDEMPOTENT derivation of a prop with the identical name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-prop-same-name-derived.ts"
-      },
-      "signal-prop-same-name-via-const-derived": {
-        "description": "Signal initialized from a NON-IDEMPOTENT derivation of a same-named prop through one…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-prop-same-name-via-const-derived.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",

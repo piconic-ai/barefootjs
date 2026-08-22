@@ -1,5 +1,5 @@
 ---
-"@barefootjs/jsx": patch
+"@barefootjs/jsx": minor
 "@barefootjs/jinja": patch
 "@barefootjs/erb": patch
 "@barefootjs/mojolicious": patch
@@ -12,6 +12,8 @@
 The 7 template-stash adapters' conformance test harnesses (`test-render.ts`) now seed a root component's signal/memo template vars EXCLUSIVELY from `deriveStashFromDefaults(extractSsrDefaults(...), props)` — the same manifest-driven value a real before_render-equivalent plugin/integration consumes at runtime. Removes the harness's own `evaluateSignalInit` re-evaluation of a signal's initializer against raw props, and the `?? 0` fallback a memo used to get when the manifest had no entry for it; the #2669 self-derivation propName-skip these loops carried is gone too, since `deriveStashFromDefaults` already resolves a propName-carrying entry correctly on its own. Root-path seeding is now the same semantics the child-component-renderer path already had.
 
 `@barefootjs/jsx` removes `evaluateSignalInit`/`tryEvaluateSignalInit`/`SignalInitEvalResult` (`signal-init-eval.ts`, added for #2209): a test-harness-only sandboxed real-JS evaluator (`new Function`) strictly more powerful than production's own static `extractSsrDefaults`/`tryStaticEval`, which has no support for `.map()` on any receiver shape. That extra power was silently masking a real production gap — a signal/memo initialized via a `.map()` chain never gets a working SSR seed in production either, on any of the 7 backends. The 7 harnesses were its only remaining callers.
+
+This export removal is a breaking change, bumped **minor** rather than patch: pre-1.0 (0.31.x), a minor is this repo's breaking-change slot under semver §4 (precedent: the `renderImportMapHtml`/`BfImportMap`/`TemplateAdapter.importMapInjection` removal, 0.31.0). #2209, which ADDED this export, was correctly patch — adding an export isn't breaking — but removing one is.
 
 Surfaced (and pinned via `renderDivergences`, `#2696`) on all 7 adapters:
 
