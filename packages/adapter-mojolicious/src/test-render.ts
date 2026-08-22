@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, augmentInheritedPropAccesses, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, augmentInheritedPropAccesses, importsSearchParams } from '@barefootjs/jsx'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -520,10 +520,7 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
     // MUST stay a hashref so `_derive_stash_from_defaults` resolves it
     // against the REAL child props at runtime; the declared-prop loop above
     // already emitted it for a DECLARED prop, so only an undeclared one
-    // needs adding here. Either way, do NOT fall through to this harness's
-    // own `evaluateSignalInit(..., undefined)` recompute below — that call
-    // sees no props at all and would silently re-flatten the collision back
-    // to a bare, non-caller-overridable value.
+    // needs adding here.
     const d = ssrDefaults[signal.getter]
     if (d?.propName !== undefined) {
       if (!declared.has(signal.getter)) {
@@ -532,8 +529,15 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
       }
       continue
     }
-    const value = evaluateSignalInit(signal.initialValue.trim(), undefined)
-    entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
+    // Ordinary (non-propName) entry: the static `ssrDefaults` value,
+    // VERBATIM — same as the memo loop right below (#2696). This used to
+    // call this harness's own `evaluateSignalInit(..., undefined)`
+    // recompute instead, which is strictly MORE powerful than production's
+    // static evaluator (`extractSsrDefaults`'s `tryStaticEval`) ever is —
+    // masking the exact same production seeding gap the root-path fix
+    // addresses, just for a child component's own signal.
+    const value = d ? d.value : undefined
+    entries.push(`${signal.getter} => ${value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
   for (const memo of ir.metadata.memos) {
     const entry = ssrDefaults[memo.name]
@@ -588,13 +592,6 @@ function buildPerlProps(
   // what `propName` resolves against.
   const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
   const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  // F2 (#measurement): `BF_STRICT_SEED=1` seeds the root signal/memo loops
-  // below ONLY from `derivedProps` — the same manifest-driven value the
-  // production before_render-equivalent plugin consumes — instead of this
-  // harness's own `evaluateSignalInit` re-evaluation / `?? 0` invention.
-  // Flag-gated so the default (lenient) path is unchanged; see the F2
-  // inventory for what newly diverges under strict seeding.
-  const STRICT_SEED = process.env.BF_STRICT_SEED === '1'
   for (const param of ir.metadata.propsParams) {
     if (param.isRest) continue
     // No default and no caller-supplied value: pass `undef` so the
@@ -751,48 +748,32 @@ function buildPerlProps(
   // ternary) rather than skipping it — an unseeded getter faults strict
   // vars with `Global symbol "$x" requires explicit package name`. Same
   // rule `buildChildDefaultsPerl` applies to child signals (#1897).
+  // Signal values seeded from the production-faithful `derivedProps` only
+  // (#2696) — the same manifest-driven value a real before_render-equivalent
+  // integration consumes via `_derive_stash_from_defaults`. No re-evaluation
+  // of the initializer against the caller's raw props: that used to be this
+  // harness's OWN, more-powerful-than-production `evaluateSignalInit`
+  // recompute (sandboxed real-JS execution — see #2696), which silently
+  // hid the case where `extractSsrDefaults`'s static evaluator can't
+  // resolve the initializer (e.g. a `.map()` chain) — production seeds
+  // `undef` there, this harness now matches that faithfully. The #2669
+  // self-derivation propName-skip this loop used to need is gone too:
+  // `deriveStashFromDefaults` already resolves a propName-carrying entry to
+  // the caller's prop value, so `derivedProps` is correct either way — same
+  // semantics `buildChildDefaultsPerl`'s child-renderer path already had.
   for (const signal of ir.metadata.signals) {
     if (signal.envReader) continue // env signal bound below via search_params('') (#2057)
-    if (STRICT_SEED) {
-      // Strict: seed ONLY the manifest-derived value — no re-evaluation of
-      // the initializer against the caller's raw props. #2669's propName
-      // skip below is unnecessary here: `deriveStashFromDefaults` already
-      // resolves a propName-carrying entry to the caller's prop value.
-      if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-        entries.push(`${signal.getter} => ${toPerlLiteral(derivedProps[signal.getter])}`)
-      }
-      continue
+    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
+      entries.push(`${signal.getter} => ${toPerlLiteral(derivedProps[signal.getter])}`)
     }
-    // #2669: a self-derivation collision already got the correct RAW-prop
-    // seed above via `derivedProps` — `extractSsrDefaults` marks that with
-    // a `propName`-carrying entry (see its docstring's invariant). Skip
-    // re-seeding here or this harness's own `evaluateSignalInit` recompute
-    // clobbers the correctly-derived caller value.
-    if (rootSsrDefaults[signal.getter]?.propName !== undefined) continue
-    const value = evaluateSignalInit(signal.initialValue.trim(), props)
-    entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
 
-  // Add memo values. The production Mojo plugin seeds these from the
-  // manifest's `ssrDefaults` (see Plugin/BarefootJS.pm `before_render`
-  // hook), which carries the statically-evaluated result of each memo
-  // computation. Mirror that here so the test harness doesn't diverge
-  // from the plugin: hard-coding `0` masked memos with non-zero
-  // initial values until #1423 added a fixture that exposed the gap.
+  // Memo values, same `derivedProps`-only seeding as signals above — no
+  // `?? 0` invention for a memo `derivedProps` doesn't cover (#2696).
   for (const memo of ir.metadata.memos) {
-    if (STRICT_SEED) {
-      // Strict: seed ONLY when the manifest has an entry — no `?? 0`
-      // invention for a memo the manifest never covers.
-      if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-        entries.push(`${memo.name} => ${toPerlLiteral(derivedProps[memo.name])}`)
-      }
-      continue
+    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
+      entries.push(`${memo.name} => ${toPerlLiteral(derivedProps[memo.name])}`)
     }
-    // #2669: same self-derivation skip as the signal loop above.
-    if (rootSsrDefaults[memo.name]?.propName !== undefined) continue
-    const entry = rootSsrDefaults[memo.name]
-    const value = entry ? entry.value : 0
-    entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)
   }
 
   // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
