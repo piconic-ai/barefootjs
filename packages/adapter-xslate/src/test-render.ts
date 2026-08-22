@@ -506,6 +506,13 @@ function buildPerlProps(
   // resolves against.
   const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
   const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
+  // F2 (#measurement): `BF_STRICT_SEED=1` seeds the root signal/memo loops
+  // below ONLY from `derivedProps` — the same manifest-driven value the
+  // production before_render-equivalent plugin consumes — instead of this
+  // harness's own `evaluateSignalInit` re-evaluation / `?? 0` invention.
+  // Flag-gated so the default (lenient) path is unchanged; see the F2
+  // inventory for what newly diverges under strict seeding.
+  const STRICT_SEED = process.env.BF_STRICT_SEED === '1'
   for (const param of ir.metadata.propsParams) {
     if (param.isRest) continue
     // No default + no caller value: pass `undef` so Kolon's var lookup
@@ -568,6 +575,16 @@ function buildPerlProps(
     // Env signals (#2057) are bound below via `search_params('')`, not from a
     // static initial value.
     if (signal.envReader) continue
+    if (STRICT_SEED) {
+      // Strict: seed ONLY the manifest-derived value — no re-evaluation of
+      // the initializer against the caller's raw props. #2669's propName
+      // skip below is unnecessary here: `deriveStashFromDefaults` already
+      // resolves a propName-carrying entry to the caller's prop value.
+      if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
+        entries.push(`${signal.getter} => ${toPerlLiteral(derivedProps[signal.getter])}`)
+      }
+      continue
+    }
     // #2669: a self-derivation collision (the signal's own initializer
     // derives from a same-named prop, e.g. `createSignal(props.label ??
     // 'Default')`) already got the correct RAW-prop seed above via
@@ -587,6 +604,14 @@ function buildPerlProps(
   // Memo values seeded from the statically-evaluated ssrDefaults, same
   // as the production plugin's before_render hook.
   for (const memo of ir.metadata.memos) {
+    if (STRICT_SEED) {
+      // Strict: seed ONLY when the manifest has an entry — no `?? 0`
+      // invention for a memo the manifest never covers.
+      if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
+        entries.push(`${memo.name} => ${toPerlLiteral(derivedProps[memo.name])}`)
+      }
+      continue
+    }
     // #2669: same self-derivation skip as the signal loop above — a
     // `propName`-carrying memo entry already stands as the correctly
     // prop-derived seed; don't clobber it with the memo's OWN evaluated
