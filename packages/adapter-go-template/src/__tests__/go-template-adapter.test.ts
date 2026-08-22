@@ -1121,7 +1121,11 @@ export function Rows() {
       expect(types).toContain('DataX string `json:"data-x"`')
       expect(types).not.toContain('"Data-x"')
       expect(types).toContain('Row{ID: "r1", Meta: RowMeta{DataX: "v"}}')
-      expect(types).not.toContain('map[string]interface{}')
+      // `Meta` resolved to the real synthesized struct, not the
+      // `map[string]interface{}` fallback — scoped to the field itself
+      // since `BfCallerProps map[string]interface{}` (#2684) legitimately
+      // appears elsewhere in every generated Props struct now.
+      expect(types).not.toMatch(/Meta map\[string\]interface\{\}/)
     })
 
     test('snake_case keys keep their underscore in the generated field name (#2089 review)', () => {
@@ -5011,13 +5015,84 @@ export function Foo({ q: searchParams }: { q: string }) {
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const types = result.files.find(f => f.type === 'types')!.content
     const structStart = types.indexOf('type FooProps struct')
-    const fooPropsBody = types.slice(structStart, types.indexOf('}', structStart))
+    // The struct's actual closing brace is the first `}` that starts its
+    // OWN line (fields are tab-indented) — a bare `indexOf('}', ...)` would
+    // stop early at the embedded `}` inside `BfCallerProps map[string]interface{}` (#2684).
+    const fooPropsBody = types.slice(structStart, types.indexOf('\n}', structStart))
     // Exactly one "SearchParams" field in the struct body — the prop's
     // own — never a second `SearchParams bf.SearchParams` reader field
     // colliding with it (a Go redeclaration error).
     expect((fooPropsBody.match(/SearchParams/g) ?? []).length).toBe(1)
     expect(fooPropsBody).toContain('SearchParams string `json:"q"`')
     expect(types).not.toContain('bf.SearchParams')
+  })
+})
+
+// #2684: `bf-p` must carry only what the caller actually passed — required
+// props always, optional ones only when supplied — never the author's
+// baked default (`x ?? 7`), never `null` for an omitted optional, never a
+// Go zero value standing in for "unset". `NewXxxProps` now ALSO populates a
+// `BfCallerProps map[string]interface{}` sidecar (marshaled by `BfPropsAttr`
+// INSTEAD OF the whole struct) with exactly the caller-supplied, raw
+// (undefaulted) values — see the field's doc comment in
+// `emitPropsStructHeader` for the two-consumers rationale.
+describe('GoTemplateAdapter - BfCallerProps hydration sidecar (#2684)', () => {
+  test('NewXxxProps populates BfCallerProps for the three classes: required, nullish-consumed optional, concrete-typed optional residual', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { x?: number; label?: string; name: string }) {
+  const [x] = createSignal(props.x ?? 7)
+  return <div data-name={props.name}>{x()}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    // The sidecar field itself, on the Props struct.
+    expect(types).toContain('BfCallerProps map[string]interface{} `json:"-"`')
+
+    const newProps = types.slice(types.indexOf('func NewCProps'))
+    expect(newProps).toContain('bfCallerProps := map[string]interface{}{}')
+    // Class 1 — required prop: always included, raw `in.Name` (never a
+    // baked/defaulted value — there is none for a required prop anyway).
+    expect(newProps).toContain('bfCallerProps["name"] = in.Name')
+    // Class 2 — optional, nullish-consumed (`??`) prop: flips to `interface{}`
+    // (#2248) and is included ONLY when the caller actually passed something.
+    // Critically, the RAW `in.X` goes in the map, never the baked default
+    // `7` the hoisted fallback var applies to the template-facing field.
+    expect(newProps).toContain('if in.X != nil {')
+    expect(newProps).toContain('bfCallerProps["x"] = in.X')
+    expect(newProps).not.toMatch(/bfCallerProps\["x"\]\s*=\s*7/)
+    // Class 3 — optional prop that resolves to a CONCRETE type (`label` is
+    // never consumed nullish/attr/text/presence-wise, so it stays a plain
+    // `string`): presence is unknowable from Input alone, so it's included
+    // unconditionally — a documented residual, not silently dropped.
+    expect(newProps).toContain('bfCallerProps["label"] = in.Label')
+
+    // The struct literal wires the local into the field.
+    expect(newProps).toContain('BfCallerProps: bfCallerProps,')
+  })
+
+  test('a required nested-array-shadowed prop (#2672/#2525) is carried via its reshaped array local, not silently dropped', () => {
+    const result = compileJSX(`
+type ToggleItemProps = { label: string; defaultOn?: boolean }
+function ToggleItem(props: ToggleItemProps) {
+  return <div>{props.label}</div>
+}
+type ToggleProps = { toggleItems: ToggleItemProps[] }
+export function Toggle({ toggleItems }: ToggleProps) {
+  return <div>{toggleItems.map((item) => <ToggleItem key={item.label} label={item.label} defaultOn={item.defaultOn} />)}</div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    const newProps = types.slice(types.indexOf('func NewToggleProps'))
+    // The shadowed prop has no `in.ToggleItems` scalar field to read — its
+    // data is carried via the already-built reshaped array local instead.
+    // `toggleItems` is REQUIRED here, so it's unconditional — same
+    // required-stays-unconditional rule as the main loop.
+    expect(newProps).toContain('bfCallerProps["toggleItems"] = toggleItems')
+    expect(newProps).not.toContain('if in.ToggleItems != nil {')
   })
 })
 
@@ -6032,9 +6107,11 @@ export { TaggedList }
     expect(types).toContain('Title string `json:"title"`')
     expect(types).toContain('Tags []string `json:"tags"`')
     // The Input/Props field is a typed struct slice, not the old
-    // `[]map[string]interface{}` fallback.
+    // `[]map[string]interface{}` fallback. Scoped to the field itself —
+    // `BfCallerProps map[string]interface{}` (#2684) legitimately appears
+    // elsewhere in every generated Props struct now.
     expect(types).toMatch(/Items \[\]TaggedListItemsItem/)
-    expect(types).not.toContain('map[string]interface{}')
+    expect(types).not.toMatch(/Items \[?\]?map\[string\]interface\{\}/)
   })
 
   test('nested anonymous property inside a NAMED type synthesizes a named struct (case ii, Row.user)', () => {
@@ -6068,7 +6145,10 @@ export function NestedNames() {
     // The signal's inline initial value bakes through the STRUCT literal
     // path, not `bakeInlineObjectAsGoMap`'s capitalized-key map convention.
     expect(types).toContain('Row{ID: "r1", User: RowUser{Name: "Ada"}}')
-    expect(types).not.toContain('map[string]interface{}')
+    // Scoped to the `User` field itself — `BfCallerProps
+    // map[string]interface{}` (#2684) legitimately appears elsewhere in
+    // every generated Props struct now.
+    expect(types).not.toMatch(/User map\[string\]interface\{\}/)
   })
 
   test('a synthesized-name collision gracefully falls back to the pre-#2674 map convention, not a regression', () => {
@@ -6165,7 +6245,53 @@ export function NestedNames() {
       .replace(/&#34;/g, '"')
       .replace(/&quot;/g, '"')
     const payload = JSON.parse(decoded)
-    // No props at all on this component — bf-p carries nothing.
+    // No props at all on this component — bf-p carries nothing. Still a
+    // real, present `bf-p="{}"` (#2684's sidecar substitution isn't gated
+    // on emptiness — see `BfPropsAttr`'s doc comment for why).
     expect(payload).toEqual({})
+  })
+
+  // #2684 end-to-end: an omitted optional prop must not resurrect the
+  // author's default, or a `null`, in the wire payload — and an EXPLICIT
+  // falsy/zero value the caller DID pass must still come through.
+  test('real go-run render: bf-p carries only caller-supplied keys — omitted optional absent, explicit zero present, required always present', async () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { x?: number; label?: string; name: string }) {
+  const [x] = createSignal(props.x ?? 7)
+  return <div data-name={props.name}>{x()}</div>
+}
+export { C }
+`
+    let htmlOmitted: string
+    let htmlExplicitZero: string
+    try {
+      htmlOmitted = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { name: 'Ada' },
+      })
+      htmlExplicitZero = await renderGoTemplateComponent({
+        source,
+        adapter: new GoTemplateAdapter(),
+        props: { name: 'Ada', x: 0 },
+      })
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) return // Go toolchain not installed on this host
+      throw err
+    }
+    const decode = (html: string) => {
+      const m = html.match(/bf-p="([^"]*)"/)
+      expect(m).not.toBeNull()
+      return JSON.parse(m![1].replace(/&#34;/g, '"').replace(/&quot;/g, '"'))
+    }
+    // `x` omitted: no baked `7`, no `null` — the key is simply absent.
+    // `label` (class-3 residual, no consumption anywhere) still shows up at
+    // its Go zero value — documented, not silently dropped.
+    expect(decode(htmlOmitted)).toEqual({ name: 'Ada', label: '' })
+    // `x: 0` explicitly passed: present with the caller's real value, not
+    // coalesced away or confused with "absent".
+    expect(decode(htmlExplicitZero)).toEqual({ name: 'Ada', label: '', x: 0 })
   })
 })
