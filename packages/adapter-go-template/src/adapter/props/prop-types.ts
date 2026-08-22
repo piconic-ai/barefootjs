@@ -10,6 +10,7 @@ import { isBooleanAttr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
+import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
@@ -224,7 +225,31 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
     // between `props.X` and `createSignal` doesn't leave this loop and
     // `collectPropFallbackVars`'s identical extraction disagreeing on
     // whether the prop needs the nillable flip.
-    const match = ctx.extractPropFallback(signal.initialValue, resolveSignalParsedThroughSeedPlan(ctx.state, signal))
+    const resolvedParsed = resolveSignalParsedThroughSeedPlan(ctx.state, signal)
+    let match = ctx.extractPropFallback(signal.initialValue, resolvedParsed)
+    // #2683: the idempotent fold above declines a non-idempotent derivation
+    // (`(props.count ?? 1) * 2`) at the top level. When that signal's Go
+    // field name COLLIDES with the prop's own field, the props-struct
+    // emitter composes the derivation onto the SHARED field (see
+    // `collectPropFallbackVars`'s identical collision gate) — which needs
+    // the SAME nillable flip an ordinary `??` fallback gets, so an absent
+    // prop (nil) stays distinguishable from an explicit zero-equivalent
+    // value. Gated strictly on the collision, matching that other site, so
+    // a differently-named signal deriving from the same prop (not
+    // colliding — its own dedicated field, untouched by this fix) doesn't
+    // spuriously flip the prop's type.
+    if (!match) {
+      const collision = ctx.extractCollisionDerivation(resolvedParsed)
+      if (collision) {
+        const collisionParam = ir.metadata.propsParams.find(p => p.name === collision.propName)
+        const collisionField = collisionParam
+          ? capitalizeFieldName(collisionParam.sourceName ?? collision.propName)
+          : null
+        if (collisionField && capitalizeFieldName(signal.getter) === collisionField) {
+          match = { propName: collision.propName, goFallback: collision.goFallback }
+        }
+      }
+    }
     if (!match || !optionalParams.has(match.propName)) continue
     const f = match.goFallback
     if (f === '""' || f === 'false' || f === 'nil' || Number(f) === 0) continue

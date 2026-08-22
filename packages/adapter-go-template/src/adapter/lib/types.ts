@@ -167,6 +167,16 @@ export interface PropFallbackVar {
    * distinguishable from an absent one.
    */
   assertType?: string
+  /**
+   * #2683: set when this fallback var was hoisted from a signal's
+   * COLLISION-DERIVATION initializer (`(props.X ?? <lit>) <op> <int>`, where
+   * the signal's Go field name collides with prop X's) rather than a plain
+   * `props.X ?? <lit>`. `varName` above still holds only the coalesced RAW
+   * value (the presence-check declaration is unchanged) — this records the
+   * arithmetic wrap the props-field loop applies ON TOP of it so the shared
+   * field carries the FULLY DERIVED value, not just the coalesce result.
+   */
+  collisionWrap?: { operator: string; operand: string }
 }
 
 /**

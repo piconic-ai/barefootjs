@@ -5096,6 +5096,83 @@ export function Toggle({ toggleItems }: ToggleProps) {
   })
 })
 
+describe('GoTemplateAdapter - collision-derivation lowering (#2683)', () => {
+  test('a signal colliding with its own prop composes the presence-check fold with the surrounding arithmetic', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { count?: number }) {
+  const [count, setCount] = createSignal((props.count ?? 1) * 2)
+  return <span>{count()}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const types = result.files.find(f => f.type === 'types')!.content
+    // The collision flips the field to the nillable representation — the
+    // SAME flip an ordinary `??`-consumed optional prop gets (#2248) — so an
+    // absent prop (nil) and an explicit `0` stay distinguishable.
+    expect(types).toContain('Count interface{}')
+    const newProps = types.slice(types.indexOf('func NewCProps'))
+    // The presence-check fold (`extractPropFallbackFromParsed`'s shape,
+    // reused unchanged) hoists the RAW coalesced value into a local...
+    expect(newProps).toContain('var count int = 1')
+    expect(newProps).toContain('if in.Count != nil {')
+    expect(newProps).toContain('count = bf.ToInt(in.Count)')
+    // ...and the shared field carries the FULLY DERIVED value — the local
+    // with the surrounding `* 2` composed back on, not just the coalesce
+    // result.
+    expect(newProps).toContain('Count: count * 2,')
+    // `BfCallerProps` (#2684) keeps carrying the RAW caller value, never the
+    // derived one.
+    expect(newProps).toContain('if in.Count != nil {')
+    expect(newProps).toContain('callerProps["count"] = in.Count')
+    expect(newProps).not.toMatch(/callerProps\["count"\]\s*=\s*count/)
+  })
+
+  test('the same collision reached through a component-scope const hop (#2685) lowers identically', () => {
+    const direct = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Direct(props: { count?: number }) {
+  const [count, setCount] = createSignal((props.count ?? 1) * 2)
+  return <span>{count()}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const viaConst = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function ViaConst(props: { count?: number }) {
+  const mid = props.count
+  const [count, setCount] = createSignal((mid ?? 1) * 2)
+  return <span>{count()}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const directTypes = direct.files.find(f => f.type === 'types')!.content
+    const viaConstTypes = viaConst.files.find(f => f.type === 'types')!.content
+    expect(directTypes.slice(directTypes.indexOf('func NewDirectProps'))).toContain('Count: count * 2,')
+    expect(viaConstTypes.slice(viaConstTypes.indexOf('func NewViaConstProps'))).toContain('Count: count * 2,')
+  })
+
+  test('a differently-named signal deriving from the same prop (no collision) is untouched — its own field, not the shared one', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function NonCollide(props: { count?: number }) {
+  const [doubled, setDoubled] = createSignal((props.count ?? 1) * 2)
+  return <span>{doubled()}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const types = result.files.find(f => f.type === 'types')!.content
+    // No collision here — `count`'s own field stays the plain concrete type,
+    // byte-identical to before this fix.
+    expect(types).toContain('Count int')
+    expect(types).not.toContain('Count interface{}')
+    const newProps = types.slice(types.indexOf('func NewNonCollideProps'))
+    expect(newProps).not.toContain('var count int')
+    expect(newProps).toContain('Count: in.Count,')
+  })
+})
+
 // #2228: a `.filter(t => …).map(todo => <Child todo={todo} .../>)` loop whose
 // body is a single child component ranges the WRAPPER slice (`.TodoItems`,
 // `.{ChildName}s` — see #2130 above), so `{{if}}`'s dot context for the
