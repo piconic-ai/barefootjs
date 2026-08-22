@@ -1,5 +1,40 @@
 # @barefootjs/mojolicious
 
+## 0.31.10
+
+### Patch Changes
+
+- 032e6dd: A signal or memo whose name collides with the prop its own initializer derives from now seeds its SSR template variable from the RAW prop instead of the derived value (#2669)
+  
+  `extractSsrDefaults` builds its manifest map in three passes — prop entries, then signals, then memos — and the last two unconditionally overwrote a same-named prop entry, discarding its `propName`. The collision only arises in the bare-props-arg form (`function C(props: P)`), since `function C({ label })` alongside `const [label] = …` is a redeclaration error.
+  
+  Template-stash adapters lower such a signal to an in-template recompute that READS the stash variable as its input (the raw caller prop) and OVERWRITES it with the derived value under the same name — `{% set label = (label if (label is defined and label is not none) else 'Default') %}`. With `propName` discarded, the manifest consumer (`_derive_stash_from_defaults` and its per-language twins) seeded that variable with the DERIVED value, so the recompute saw a non-nullish value and kept it: a caller-supplied `label='Hello'` could never win, and the SSR body rendered `Default` while `bf-p` correctly carried `Hello`. A non-idempotent derivation was wrong even with no caller props at all — `createSignal((props.count ?? 1) * 2)` seeded with the evaluated `2` re-derived to `2 * 2 = 4`.
+  
+  Such an entry is now a prop entry (`propName` set, `value: null`), letting the template's own `?? <default>` guard supply the fallback and a caller-supplied prop win. This establishes an invariant consumers can rely on: a signal/memo entry carries `propName` if and only if it is one of these self-derivation collisions. A collision whose initializer does NOT read the same-named prop is unchanged.
+  
+  **Text::Xslate is the exception.** Kolon's `: my $x = …` is a fresh lexical already in scope inside its own initializer, so a self-referencing derived step cannot be lowered to an in-template recompute at all and the adapter skips it. Xslate therefore has nowhere to perform the derivation at SSR time: a caller-supplied prop passes through un-derived, and an absent prop now renders empty rather than the static default it previously reached by coincidence. That gap is declared in the adapter's published fixture divergences and tracked in #2679.
+- 57d936b: The #2669 self-derivation fix now sees THROUGH a component-scope `const` sitting between a signal/memo's initializer and the prop it derives from, closing the gap found in review
+  
+  ```tsx
+  'use client'
+  import { createSignal } from '@barefootjs/client'
+  export function C(props: { label?: string }) {
+    const mid = props.label
+    const [label, setLabel] = createSignal(mid ?? 'Default')
+    return <span>{label()}</span>
+  }
+  ```
+  
+  #2669's fix (`referencesOwnProp` in `packages/jsx/src/ssr-defaults.ts`) only recognized a DIRECT `props.<name>` access in the initializer expression. One hop of pure indirection defeated it on both sides of the pipeline:
+  
+  - **Manifest**: `collectPropRefs` (both the self-derivation check and the bare-props-arg safety net that seeds a prop a signal/memo initializer reads, #1297/#2126) never looked through a local `const` — the `label` entry lost `propName` and fell back to `{ value: 'Default' }`, so a caller-supplied `label='Hello'` could never win.
+  - **Template**: even with `propName` restored, `computeSsrSeedPlan` (`packages/jsx/src/ssr-seed-plan.ts`) classified the signal as `opaque` because `mid` (a component-scope const) wasn't part of its `baseScope` — no adapter emitted an in-template recompute at all, so an absent prop rendered permanently empty instead of falling back to `'Default'`.
+  
+  Both now resolve transitively through any chain of component-scope `const` locals (`collectPropRefsTransitive` on the manifest side; `resolveThroughLocalConsts`, reusing the same structural `inlineBinding` let-inline step `foldBlockToExpr` already performs for a block-bodied memo's own locals, on the seed-plan side) — never string splicing, per this repo's write-side rule. The seed-plan fix lives in the shared `computeSsrSeedPlan`, so every template-stash adapter's existing self-referencing-lowering handling (Jinja/Twig/Blade/Rust's re-read-before-reassign `{% set %}` semantics, Xslate's capture-before-shadow `: my $__bf_seed_*` lowering) picks it up with no adapter-side changes.
+  
+  **go-template**: the manifest/seed-plan fix applies equally, but the pre-existing #2683 props-struct field-name-collision bug (keyed on the signal's name colliding with its prop field, independent of how the initializer reaches that prop) still drops the derivation for the non-idempotent via-const shape — pinned in `render-divergences.ts` alongside the direct-access form #2683 already covers.
+- @barefootjs/shared@0.31.10
+
 ## 0.31.9
 
 ### Patch Changes

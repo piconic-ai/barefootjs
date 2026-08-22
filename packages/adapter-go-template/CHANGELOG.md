@@ -1,5 +1,77 @@
 # @barefootjs/go-template
 
+## 0.31.10
+
+### Patch Changes
+
+- 883e2c5: Analyzer resolves structural (array/object) types for destructured-parameter props, closing a `unknown`-degradation asymmetry with the `props`-object form (#2677)
+  
+  `collectMemberTypes` (`packages/jsx/src/analyzer.ts`) gated every destructured-parameter member's `TypeInfo` through a primitives-plus-catalogued-rich-types-only predicate — anything else, including a perfectly well-formed inline array or object type, degraded to `kind: 'unknown'`. That gate was `#2150`'s fix for a real problem (a non-primitive `TypeInfo` used to mean a typed adapter would emit an unchecked scalar assertion that panics for a shape the template layer had no representation for), but the reasoning went stale for structural types once `#2674`/`#2676` taught go-template's `emitSynthPropStructs` to synthesize a real, json-tagged Go struct for any anonymous object type reachable through `ir.metadata.propsParams[].type` — array-element positions included. The gate itself was never widened to match, so the exact same declared type resolved differently depending on parameter syntax:
+  
+  ```tsx
+  function TagList(props: { items: { id: string; tags: string[] }[] }) { ... }        // resolved fully
+  function TagList({ items }: { items: { id: string; tags: string[] }[] }) { ... }    // degraded to unknown
+  ```
+  
+  The gate (renamed `isResolvableMemberType`, still living in `analyzer.ts`) now also admits `kind: 'array'` (with a resolvable element type) and `kind: 'object'` (with every property resolvable), recursively — matching the full recursive shape `typeNodeToTypeInfo` already builds. It still declines a union, a function, and an un-catalogued named type (`Map`, `Set`, a local type alias) reached ANYWHERE inside the structure — declining the WHOLE member, not just the offending leaf, since this is an all-or-nothing gate and per-field graceful degradation (`interface{}` for what a typed adapter can't represent) is `typeInfoToGo`'s job downstream, not this gate's.
+  
+  **go-template**: the widened `propsParams[].type` is exactly the input `emitSynthPropStructs`'s "walk root 2" (every props param's own `TypeInfo` tree) already consumes — no adapter code changed. A destructured array-of-object or plain-object prop now synthesizes the same named, json-tagged struct the `props`-object form already got, replacing the historical `interface{}` / PascalCase-keyed `map[string]interface{}` fallback. Fixes the silent `bf-p` hydration-payload casing divergence measured in `#2677` (destructured `{ users }: { users: { name: string }[] }` shipped `{"users":[{"Name":"Ada"}]}` instead of the reference `{"users":[{"name":"Ada"}]}`) for `array-map-value-field`, `array-flatmap-tuple`, and `flatmap-expression-body`, plus every other destructured-parameter fixture with an array/object-typed prop across the corpus (`array-flat`, `array-flat-depth`, `array-flat-infinity`, `array-flatmap-self`, `array-flat-dynamic-depth`, and more) — those previously fell to `interface{}`-backed `[]any`/`map[string]interface{}` and now bake through the typed struct/slice path instead.
+  
+  Also fixes a latent test-harness-only bug the widening surfaced: `test-render.ts`'s `buildGoPropsInit` convenience literal-builder (used only to seed the Go conformance harness's `main.go`, not shipped as part of the adapter) didn't recurse into a doubly-nested array VALUE when baking a typed slice literal, so a newly-concrete `[][]int` field (`{ rows }: { rows: number[][] }`, previously `interface{}`) received an untyped `[]any{…}` inner literal and failed to compile. `goTypedSliceLiteralFromArray` now recurses with the inner element type for a nested-array value, matching what the production adapter's own `typeInfoToGo` already did correctly.
+  
+  Every other adapter (Hono, ERB, Jinja, Twig, Xslate, Blade, Mojolicious, Rust/minijinja) was verified to emit byte-identical output for every fixture in the corpus — none of them key adapter behavior off a destructured prop's `TypeInfo` kind beyond primitive-vs-not, so the widened structural cases pass through unchanged.
+  
+  New conformance fixture `destructured-object-prop-nested` covers the shapes `#2676`'s three array-of-object fixtures didn't: a destructured prop that is itself a plain (non-array-wrapped) object type, with a nested array-of-primitives property and a nested object property, both newly resolvable.
+- f273996: The `bf-p` hydration-props attribute no longer co-boards component-internal state: signal fields, memo fields, `useContext` consumer fields, prop-derived nested-component-loop array fields, and top-level JSX-spread slot fields are now tagged `json:"-"` in the generated Go `Props` struct, so `encoding/json.Marshal` skips them the same way it already skips derived-const fields, static child instances, `children`, `SearchParams`, and `BfDataKey` (the `ScopeID` precedent from #2668).
+  
+  None of these categories have a client-runtime reader. Signals and memos are re-derived client-side from the same prop reads their own initializer/body performs (`createSignal(_p.x ?? 7)`, a memo closure) — never read back as `_p.<signalGetter>` or `_p.<memoName>`. Context-consumer fields are an SSR-only resolution of the enclosing `Provider`'s value; the client's own `useContext` re-resolves from the DOM-scoped provider registry at hydration, never from `_p.<contextField>`. A prop-derived dynamic loop's nested-array field (`props.items.map(item => <Child/>)`) is a reshaped COPY of the driving prop built for SSR's `{{range}}` — the client's `mapArray` re-derives every row straight from the real prop field (`_p.items`), which already carries a real json tag from the props loop. Spread-slot fields (`{...rest()}` on an intrinsic element) resolve the spread's attrs into the rendered HTML at SSR time; no client code reads `_p.Spread_<slotId>` back out.
+  
+  Two categories are deliberately left alone. A signal-backed dynamic loop (`nested.isDynamic && !nested.isPropDerived`, e.g. a `.map()` over a signal/memo array) already emitted `json:"-"` before this change and needed no further work. A **static** nested-component-loop array (`!nested.isDynamic`, e.g. a component-scope array that isn't a literal baked at compile time) keeps its real tag: unlike the prop-derived case, this data can be non-literal, request-time `Input` the caller supplies with no prop-field twin the client could fall back on. And declared PROPS themselves are never touched, even when a signal's default value happens to derive from one (`createSignal(props.x ?? 7)` still emits a real `x` field) — the client reads that field directly, so removing its tag would break hydration outright, not just trim the payload.
+  
+  One more carve-out inside the prop-derived-loop case, caught by the oracle rather than guessed up front: when the nested-array field's Go name collides with its own driving prop's Go name (a prop named `toggleItems` driving a `.map()` into `<ToggleItem>` both capitalize to `ToggleItems`), `emitPropsDataFields` already shadows the prop's own field entirely to avoid a Go redeclaration — so in that specific case the nested-array field is the ONLY struct field carrying that prop's data, and it keeps a real tag. The shadow check unions both the local and caller-facing (aliased) prop names, mirroring the existing `isNestedArrayShadowed` check the props loop itself runs.
+  
+  Verified against the `hydration-props-inventory` oracle (`packages/adapter-tests/src/hydration-props-inventory.ts`, reference = the Hono adapter) across the full 331-fixture JSX corpus, run for real against a downloaded Go 1.25.6 toolchain (`GOTOOLCHAIN=go1.25.6`, the escape hatch `test-render.ts` already documents for a host whose system Go is older — this sandbox's is 1.24.7): fixtures with a fully-matching `bf-p` payload against the Hono reference went from 98/313 to 121/313, and `value-mismatch` divergences (payload present on both sides but with different keys) dropped from 68 to 45. A key-level diff between the before/after inventories confirms every key removed by this change falls into one of the categories above, and — the property that actually matters — no fixture lost a key the reference carries in the final state (the `toggleItems` collision above was caught and fixed via exactly this check, before it could ship). The residual 45 `value-mismatch` fixtures are a separate, pre-existing defect: Go's generated `Props` struct always serializes every declared prop field with its zero value, while the JS reference only serializes props the caller actually passed — unrelated to internal-state co-boarding and out of scope here.
+- ab7a159: Fix `go-template`'s props-struct field-default baking for a signal initialized through a component-scope `const` hop from a same-named prop:
+  
+  ```tsx
+  'use client'
+  import { createSignal } from '@barefootjs/client'
+  export function C(props: { label?: string }) {
+    const mid = props.label
+    const [label, setLabel] = createSignal(mid ?? 'Default')
+    return <span>{label()}</span>
+  }
+  ```
+  
+  An absent `label` prop rendered empty instead of falling back to `'Default'` — the direct form (`createSignal(props.label ?? 'Default')`) already worked (#2669/#2683), but the const hop defeated it on go-template specifically, even after `#2685`'s `computeSsrSeedPlan` fix (`resolveThroughLocalConsts` in `packages/jsx/src/ssr-seed-plan.ts`) taught the shared seed plan to see through the hop.
+  
+  The remaining gap was go-template-side: `extractPropFallbackFromParsed` (structural `props.X ?? <literal>` recognizer feeding the props-struct constructor's field-default baking) and `collectNullishConsumedPropNames`'s signal-seed loop (decides whether the field needs the `interface{}` nil-vs-zero-value flip, #2248) both matched against the signal's own best-effort `parsed` tree — `mid ?? 'Default'` — never the const-inlined form `computeSsrSeedPlan` already computes and attaches at `ir.metadata.ssrSeedPlan`. `mid` is a bare identifier, not `props.<name>`, so both matchers silently declined and the field kept Go's `""` zero value.
+  
+  Fixed by threading the seed plan's already-const-hop-inlined `ParsedExpr` (its `derived` step for the signal) through both matchers instead of the signal's raw `parsed` — a single shared `resolveSignalParsedThroughSeedPlan` helper (`packages/adapter-go-template/src/adapter/lib/compile-state.ts`) so the two matchers can't drift from each other again. Fixing only the fallback-var extraction and not the nullish-consumed classification left the two disagreeing on the const-hop shape: the field-default baked in correctly for an ABSENT prop, but the field stayed a concrete (non-`interface{}`) Go string, so the fallback's zero-value conflation (an accepted trade-off for the direct form's own field, where `interface{}` already made "absent" distinguishable from an explicit `""`) newly swallowed an EXPLICIT empty-string prop into the const's default too. Both matchers now resolve identically, so the const-hop shape gets the same nil-vs-zero-value handling as the direct form.
+  
+  The `-derived` (non-idempotent, self-referencing) sibling shapes stay pinned per #2683/#2684 — this fix is scoped to the idempotent const-hop fold only.
+- 57d936b: The #2669 self-derivation fix now sees THROUGH a component-scope `const` sitting between a signal/memo's initializer and the prop it derives from, closing the gap found in review
+  
+  ```tsx
+  'use client'
+  import { createSignal } from '@barefootjs/client'
+  export function C(props: { label?: string }) {
+    const mid = props.label
+    const [label, setLabel] = createSignal(mid ?? 'Default')
+    return <span>{label()}</span>
+  }
+  ```
+  
+  #2669's fix (`referencesOwnProp` in `packages/jsx/src/ssr-defaults.ts`) only recognized a DIRECT `props.<name>` access in the initializer expression. One hop of pure indirection defeated it on both sides of the pipeline:
+  
+  - **Manifest**: `collectPropRefs` (both the self-derivation check and the bare-props-arg safety net that seeds a prop a signal/memo initializer reads, #1297/#2126) never looked through a local `const` — the `label` entry lost `propName` and fell back to `{ value: 'Default' }`, so a caller-supplied `label='Hello'` could never win.
+  - **Template**: even with `propName` restored, `computeSsrSeedPlan` (`packages/jsx/src/ssr-seed-plan.ts`) classified the signal as `opaque` because `mid` (a component-scope const) wasn't part of its `baseScope` — no adapter emitted an in-template recompute at all, so an absent prop rendered permanently empty instead of falling back to `'Default'`.
+  
+  Both now resolve transitively through any chain of component-scope `const` locals (`collectPropRefsTransitive` on the manifest side; `resolveThroughLocalConsts`, reusing the same structural `inlineBinding` let-inline step `foldBlockToExpr` already performs for a block-bodied memo's own locals, on the seed-plan side) — never string splicing, per this repo's write-side rule. The seed-plan fix lives in the shared `computeSsrSeedPlan`, so every template-stash adapter's existing self-referencing-lowering handling (Jinja/Twig/Blade/Rust's re-read-before-reassign `{% set %}` semantics, Xslate's capture-before-shadow `: my $__bf_seed_*` lowering) picks it up with no adapter-side changes.
+  
+  **go-template**: the manifest/seed-plan fix applies equally, but the pre-existing #2683 props-struct field-name-collision bug (keyed on the signal's name colliding with its prop field, independent of how the initializer reaches that prop) still drops the derivation for the non-idempotent via-const shape — pinned in `render-divergences.ts` alongside the direct-access form #2683 already covers.
+- @barefootjs/shared@0.31.10
+
 ## 0.31.9
 
 ### Patch Changes
