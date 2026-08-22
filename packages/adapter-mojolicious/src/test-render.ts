@@ -514,11 +514,37 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
   // semantic divergence from those adapters.
   for (const signal of ir.metadata.signals) {
     if (signal.envReader) continue // env signal is the request reader, not a stashed value (#2057)
+    // #2669: a self-derivation collision (the signal's initializer derives
+    // from a same-named prop) gets a `propName`-carrying entry from
+    // `extractSsrDefaults` (see its docstring's invariant) — that entry
+    // MUST stay a hashref so `_derive_stash_from_defaults` resolves it
+    // against the REAL child props at runtime; the declared-prop loop above
+    // already emitted it for a DECLARED prop, so only an undeclared one
+    // needs adding here. Either way, do NOT fall through to this harness's
+    // own `evaluateSignalInit(..., undefined)` recompute below — that call
+    // sees no props at all and would silently re-flatten the collision back
+    // to a bare, non-caller-overridable value.
+    const d = ssrDefaults[signal.getter]
+    if (d?.propName !== undefined) {
+      if (!declared.has(signal.getter)) {
+        entries.push(`${signal.getter} => ${ssrDefaultEntryToPerl(d)}`)
+        declared.add(signal.getter)
+      }
+      continue
+    }
     const value = evaluateSignalInit(signal.initialValue.trim(), undefined)
     entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
   for (const memo of ir.metadata.memos) {
     const entry = ssrDefaults[memo.name]
+    // #2669: same self-derivation handling as the signal loop above.
+    if (entry?.propName !== undefined) {
+      if (!declared.has(memo.name)) {
+        entries.push(`${memo.name} => ${ssrDefaultEntryToPerl(entry)}`)
+        declared.add(memo.name)
+      }
+      continue
+    }
     const value = entry ? entry.value : undefined
     entries.push(
       `${memo.name} => ${value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'}`,
@@ -720,6 +746,12 @@ function buildPerlProps(
   // rule `buildChildDefaultsPerl` applies to child signals (#1897).
   for (const signal of ir.metadata.signals) {
     if (signal.envReader) continue // env signal bound below via search_params('') (#2057)
+    // #2669: a self-derivation collision already got the correct RAW-prop
+    // seed above via `derivedProps` — `extractSsrDefaults` marks that with
+    // a `propName`-carrying entry (see its docstring's invariant). Skip
+    // re-seeding here or this harness's own `evaluateSignalInit` recompute
+    // clobbers the correctly-derived caller value.
+    if (rootSsrDefaults[signal.getter]?.propName !== undefined) continue
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
     entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
@@ -731,6 +763,8 @@ function buildPerlProps(
   // from the plugin: hard-coding `0` masked memos with non-zero
   // initial values until #1423 added a fixture that exposed the gap.
   for (const memo of ir.metadata.memos) {
+    // #2669: same self-derivation skip as the signal loop above.
+    if (rootSsrDefaults[memo.name]?.propName !== undefined) continue
     const entry = rootSsrDefaults[memo.name]
     const value = entry ? entry.value : 0
     entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)

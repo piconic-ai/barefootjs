@@ -605,6 +605,16 @@ function buildRubyProps(
     // Env signals (#2057 / #1922) are bound below via `search_params('')`,
     // not from a static initial value.
     if (signal.envReader) continue
+    // #2669: a self-derivation collision (the signal's own initializer
+    // derives from a same-named prop, e.g. `createSignal(props.label ??
+    // 'Default')`) already got the correct RAW-prop seed above via
+    // `derivedProps` / `obj[param.name]` — `extractSsrDefaults` marks that
+    // with a `propName`-carrying entry (see its docstring's invariant).
+    // Re-seeding here with this harness's OWN recompute
+    // (`evaluateSignalInit`) would clobber the correctly-derived caller
+    // value with the harness's evaluated-from-static-props number, papering
+    // over the exact production bug this fixture exists to catch.
+    if (rootSsrDefaults[signal.getter]?.propName !== undefined) continue
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
     if (value !== null) {
       obj[signal.getter] = value
@@ -614,6 +624,12 @@ function buildRubyProps(
   // Memo values seeded from the statically-evaluated ssrDefaults, same
   // as the production plugin's before_render hook.
   for (const memo of ir.metadata.memos) {
+    // #2669: same self-derivation skip as the signal loop above — a
+    // `propName`-carrying memo entry already stands as the correctly
+    // prop-derived seed; don't clobber it with the memo's OWN evaluated
+    // value (which for a non-idempotent derivation is already the WRONG,
+    // double-applied number).
+    if (rootSsrDefaults[memo.name]?.propName !== undefined) continue
     obj[memo.name] = rootSsrDefaults[memo.name]?.value ?? 0
   }
 

@@ -1793,6 +1793,21 @@
         "text"
       ]
     },
+    "destructured-object-prop-nested": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "details-open": {
       "kinds": [
         "call",
@@ -4318,6 +4333,58 @@
         "text"
       ]
     },
+    "signal-prop-same-name-derived": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-prop-same-name-via-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-prop-same-name-via-const-derived": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-with-fallback": {
       "kinds": [
         "call",
@@ -5293,16 +5360,16 @@
   },
   "kindCounts": {
     "array-literal": 80,
-    "array-method": 69,
+    "array-method": 70,
     "arrow": 69,
-    "binary": 91,
-    "call": 219,
+    "binary": 93,
+    "call": 222,
     "conditional": 25,
-    "identifier": 308,
+    "identifier": 312,
     "index-access": 14,
-    "literal": 250,
-    "logical": 45,
-    "member": 173,
+    "literal": 254,
+    "logical": 48,
+    "member": 177,
     "object-literal": 57,
     "template-literal": 30,
     "unary": 23,
@@ -5315,7 +5382,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 41,
+    "array-method:join": 42,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -5335,7 +5402,7 @@
     "array-method:trimStart": 1,
     "binary:!=": 2,
     "binary:!==": 9,
-    "binary:*": 10,
+    "binary:*": 12,
     "binary:+": 21,
     "binary:-": 11,
     "binary:/": 1,
@@ -5345,10 +5412,10 @@
     "binary:>=": 1,
     "literal:boolean": 49,
     "literal:null": 23,
-    "literal:number": 104,
-    "literal:string": 178,
+    "literal:number": 106,
+    "literal:string": 180,
     "logical:&&": 7,
-    "logical:??": 39,
+    "logical:??": 42,
     "logical:||": 14,
     "member:computed": 8,
     "member:optional": 1,

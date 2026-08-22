@@ -42,10 +42,10 @@ type AIChatInteractiveProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Messages []Message `json:"messages"`
-	Input string `json:"input"`
-	StreamingText string `json:"streamingText"`
-	IsStreaming bool `json:"isStreaming"`
+	Messages []Message `json:"-"`
+	Input string `json:"-"`
+	StreamingText string `json:"-"`
+	IsStreaming bool `json:"-"`
 }
 
 // ConditionalReturnInput is the user-facing input type.
@@ -66,7 +66,7 @@ type ConditionalReturnProps struct {
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Variant string `json:"variant"`
-	Count int `json:"count"`
+	Count int `json:"-"`
 }
 
 // CounterInput is the user-facing input type.
@@ -87,8 +87,8 @@ type CounterProps struct {
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Initial int `json:"initial"`
-	Count int `json:"count"`
-	Doubled int `json:"doubled"`
+	Count int `json:"-"`
+	Doubled int `json:"-"`
 }
 
 // FormInput is the user-facing input type.
@@ -107,7 +107,7 @@ type FormProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Accepted bool `json:"accepted"`
+	Accepted bool `json:"-"`
 }
 
 // ToggleItem represents a toggleitem.
@@ -153,7 +153,7 @@ type PortalExampleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Open bool `json:"open"`
+	Open bool `json:"-"`
 }
 
 // ReactiveChildInput is the user-facing input type.
@@ -196,8 +196,8 @@ type ReactivePropsProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Count int `json:"count"`
-	Doubled int `json:"doubled"`
+	Count int `json:"-"`
+	Doubled int `json:"-"`
 	ReactiveChildSlot5 ReactiveChildProps `json:"-"`
 	ReactiveChildSlot6 ReactiveChildProps `json:"-"`
 }
@@ -222,7 +222,7 @@ type PropsStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
-	DisplayValue interface{} `json:"displayValue"`
+	DisplayValue interface{} `json:"-"`
 }
 
 // DestructuredStyleChildInput is the user-facing input type.
@@ -245,7 +245,7 @@ type DestructuredStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
-	DisplayValue interface{} `json:"displayValue"`
+	DisplayValue interface{} `json:"-"`
 }
 
 // PropsReactivityComparisonInput is the user-facing input type.
@@ -264,7 +264,7 @@ type PropsReactivityComparisonProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Count int `json:"count"`
+	Count int `json:"-"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
 	DestructuredStyleChildSlot4 DestructuredStyleChildProps `json:"-"`
 }
@@ -287,7 +287,7 @@ type TextEscapeProps struct {
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Label string `json:"label"`
-	Count int `json:"count"`
+	Count int `json:"-"`
 }
 
 // TodoAppInitialTodosItem is a synthesised type for an anonymous object type (#2674).
@@ -326,9 +326,9 @@ type TodoAppProps struct {
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
-	Todos []Todo `json:"todos"`
-	NewText string `json:"newText"`
-	Filter Filter `json:"filter"`
+	Todos []Todo `json:"-"`
+	NewText string `json:"-"`
+	Filter Filter `json:"-"`
 	TodoItems []TodoItemProps `json:"-"`
 }
 
@@ -357,9 +357,9 @@ type TodoAppSSRProps struct {
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
-	Todos []Todo `json:"todos"`
-	NewText string `json:"newText"`
-	Filter Filter `json:"filter"`
+	Todos []Todo `json:"-"`
+	NewText string `json:"-"`
+	Filter Filter `json:"-"`
 	TodoItems []TodoItemProps `json:"-"`
 }
 
@@ -411,7 +411,7 @@ type ToggleItemProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Label string `json:"label"`
 	DefaultOn bool `json:"defaultOn"`
-	On bool `json:"on"`
+	On bool `json:"-"`
 }
 
 // ToggleInput is the user-facing input type.
@@ -450,7 +450,7 @@ type LikeButtonProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Likes int `json:"likes"`
+	Likes int `json:"-"`
 }
 
 // NowPlayingInput is the user-facing input type.
@@ -469,8 +469,8 @@ type NowPlayingProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Playing bool `json:"playing"`
-	Elapsed int `json:"elapsed"`
+	Playing bool `json:"-"`
+	Elapsed int `json:"-"`
 }
 
 // PageShellInput is the user-facing input type.
@@ -575,8 +575,8 @@ type PostListProps struct {
 	Items []Item `json:"items"`
 	Tags []string `json:"tags"`
 	Base string `json:"base"`
-	Params map[string]interface{} `json:"params"`
-	Visible []Item `json:"visible"`
+	Params map[string]interface{} `json:"-"`
+	Visible []Item `json:"-"`
 	Root string `json:"-"`
 	PostListItems []PostListItemProps `json:"-"`
 }
@@ -605,7 +605,7 @@ type PostListItemProps struct {
 	Title string `json:"title"`
 	Date string `json:"date"`
 	Meta string `json:"meta"`
-	Pinned bool `json:"pinned"`
+	Pinned bool `json:"-"`
 }
 
 // ReaderToolbarInput is the user-facing input type.
@@ -624,7 +624,7 @@ type ReaderToolbarProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Level int `json:"level"`
+	Level int `json:"-"`
 }
 
 // ReadingTimerInput is the user-facing input type.
@@ -643,7 +643,7 @@ type ReadingTimerProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Secs int `json:"secs"`
+	Secs int `json:"-"`
 }
 
 // SidebarInput is the user-facing input type.
@@ -662,7 +662,7 @@ type SidebarProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Pins int `json:"pins"`
+	Pins int `json:"-"`
 }
 
 // ThemeToggleInput is the user-facing input type.
@@ -681,7 +681,7 @@ type ThemeToggleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Light bool `json:"light"`
+	Light bool `json:"-"`
 }
 
 // NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.

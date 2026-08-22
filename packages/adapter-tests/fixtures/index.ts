@@ -102,6 +102,9 @@ import { fixture as signalWithFallback } from './signal-with-fallback'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
 import { fixture as signalPropSameName } from './signal-prop-same-name'
+import { fixture as signalPropSameNameDerived } from './signal-prop-same-name-derived'
+import { fixture as signalPropSameNameViaConst } from './signal-prop-same-name-via-const'
+import { fixture as signalPropSameNameViaConstDerived } from './signal-prop-same-name-via-const-derived'
 import { fixture as memo } from './memo'
 import { fixture as effect } from './effect'
 import { fixture as multipleSignals } from './multiple-signals'
@@ -507,6 +510,11 @@ import { fixture as controlledRadioChecked } from './controlled-radio-checked'
 import { fixture as detailsOpen } from './details-open'
 import { fixture as dialogOpen } from './dialog-open'
 import { fixture as progressMeterValue } from './progress-meter-value'
+// #2677: the analyzer's destructured-parameter member-type gate widened to
+// admit structural (array/object) shapes, not just primitives — a
+// plain-object (non-array-wrapped) destructured prop with a nested array
+// and a nested object property.
+import { fixture as destructuredObjectPropNested } from './destructured-object-prop-nested'
 
 import type { JSXFixture } from '../src/types'
 
@@ -553,6 +561,9 @@ export const jsxFixtures: JSXFixture[] = [
   signalDefaultFromJsx,
   controlledSignal,
   signalPropSameName,
+  signalPropSameNameDerived,
+  signalPropSameNameViaConst,
+  signalPropSameNameViaConstDerived,
   memo,
   effect,
   multipleSignals,
@@ -864,5 +875,6 @@ export const jsxFixtures: JSXFixture[] = [
   detailsOpen,
   dialogOpen,
   progressMeterValue,
+  destructuredObjectPropNested,
   loopPreambleConditionalReactive,
 ]

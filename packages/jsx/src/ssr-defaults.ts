@@ -30,6 +30,7 @@
 // `undef`, which Mojo renders as empty string).
 
 import ts from 'typescript'
+import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import type { IRMetadata } from './types.ts'
 
 /**
@@ -52,6 +53,16 @@ export interface SsrDefault {
    * (`{ variant = 'default' }`) where the template variable maps 1:1
    * to a caller-supplied prop. Omitted for signal / memo entries that
    * are internal to the component.
+   *
+   * Invariant (#2669): a signal / memo entry carries `propName` IF AND
+   * ONLY IF it's a self-derivation collision — the signal/memo's own
+   * template variable shares a name with the prop its initializer
+   * derives from (`const [label] = createSignal(props.label ?? 'x')`).
+   * Every OTHER signal/memo entry is `propName`-less. Consumers (e.g.
+   * every template-stash adapter's conformance harness, `test-render.ts`)
+   * rely on this to know a signal/memo's stash seed must defer to the
+   * already-derived prop value rather than re-seeding from its own
+   * evaluated initial — see `extractSsrDefaults`'s signal/memo loops.
    */
   propName?: string
   /**
@@ -204,6 +215,11 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   // fed into the bindings map so subsequent memos can reference earlier
   // signals (Counter's `doubled = createMemo(() => count() * 2)`).
   const bindings: Record<string, EvalResult> = {}
+  // Component-scope const locals, for the transitive prop-reference
+  // resolution both `referencesOwnProp` calls below and the bare-props
+  // safety net (further down) use — computed once so every caller shares
+  // the same table.
+  const localConsts = localConstValuesByName(metadata)
 
   // (#checkbox) Seed module-scope constants so a memo template-literal that
   // references them resolves to a concrete string. Checkbox's `classes` memo
@@ -225,14 +241,73 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // baked initial value.
     if (sig.envReader) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
-    out[sig.getter] = { value: resultToJsonable(value) }
+    // Self-derivation collision (#2669): a signal whose getter shares its
+    // name with the prop its OWN initializer derives from
+    // (`const [label] = createSignal(props.label ?? 'Default')`) gets a
+    // template-stash variable that the emitted template both READS (as the
+    // raw caller prop) and OVERWRITES (with the derived signal value) under
+    // that SAME name — see the Mojo/Jinja/etc. emitter's `{% set label =
+    // (label if label is defined else 'Default') %}`. Seeding the stash
+    // with the DERIVED value here would either permanently lock out a
+    // caller-supplied prop (idempotent derivations like `?? 'Default'` hide
+    // this — a caller's real value can never win) or double-apply a
+    // non-idempotent derivation (`(props.count ?? 1) * 2` seeded with the
+    // evaluated `2` re-derives to `2 * 2 = 4`). The correct seed is the RAW
+    // prop, so the entry must be a PROP entry (`propName` set, `value:
+    // null`) instead of a plain signal-value entry — the template's own
+    // `?? <default>` / `is not none` guard performs the real derivation,
+    // exactly like the bare-props safety net below.
+    //
+    // NOT self-derived (the initializer references a DIFFERENT prop, or no
+    // prop at all) keeps today's behavior: the signal's evaluated value
+    // wins the entry outright. This also correctly leaves alone the
+    // separate (out-of-scope) case where the signal's OWN initializer does
+    // NOT reference the same-named prop but the JSX body separately reads
+    // both `label()` and `props.label` — that's a template-variable-
+    // aliasing defect, not this one, and must render byte-identically.
+    //
+    // Invariant this establishes (relied on by every template-stash
+    // conformance harness's seeding loops — see `test-render.ts`): a
+    // signal/memo entry carries `propName` IF AND ONLY IF it went through
+    // this collision path. An ordinary signal/memo entry never has
+    // `propName` — that's exclusively how a harness (or a production
+    // manifest consumer) can tell "this local's stash seed must come from
+    // the caller-facing prop, not the local's own evaluated value" apart
+    // from "this is an internal signal/memo the caller cannot override".
+    if (metadata.propsObjectName !== null && referencesOwnProp(sig.initialValue, metadata.propsObjectName, sig.getter, localConsts)) {
+      // Pass 1 above already wrote the prop entry when the prop is
+      // *declared* on the props type — leave it as-is. An undeclared
+      // (untyped / inline-typed) prop has no pass-1 entry yet; create it
+      // here so the collision is still resolved for that shape.
+      if (!(sig.getter in out)) {
+        out[sig.getter] = { propName: sig.getter, value: null }
+      }
+    } else {
+      out[sig.getter] = { value: resultToJsonable(value) }
+    }
+    // `bindings` always gets the EVALUATED value regardless of which stash
+    // seed the entry above ended up with — a later memo referencing this
+    // getter (`createMemo(() => label() + '!')`) must keep resolving
+    // through the chain exactly as before; only the manifest's own seed
+    // choice changes, not the static-eval semantics.
     bindings[sig.getter] = value
   }
 
   for (const memo of metadata.memos) {
     if (memo.isModule) continue
     const value = tryStaticEval(memo.computation, { bindings, propsLike })
-    out[memo.name] = { value: resultToJsonable(value) }
+    // Same self-derivation collision as signals above, for a memo whose
+    // computation derives from a same-named prop
+    // (`createMemo(() => (props.label ?? 'Default') + n())`). See the
+    // signal loop's comment for the full mechanism and the `propName`
+    // invariant this relies on.
+    if (metadata.propsObjectName !== null && referencesOwnProp(memo.computation, metadata.propsObjectName, memo.name, localConsts)) {
+      if (!(memo.name in out)) {
+        out[memo.name] = { propName: memo.name, value: null }
+      }
+    } else {
+      out[memo.name] = { value: resultToJsonable(value) }
+    }
     bindings[memo.name] = value
   }
 
@@ -251,11 +326,11 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     const referenced = new Set<string>()
     for (const sig of metadata.signals) {
       if (!sig.getter || sig.isModule || sig.envReader) continue
-      collectPropRefs(sig.initialValue, metadata.propsObjectName, referenced)
+      collectPropRefsTransitive(sig.initialValue, metadata.propsObjectName, localConsts, referenced)
     }
     for (const memo of metadata.memos) {
       if (memo.isModule) continue
-      collectPropRefs(memo.computation, metadata.propsObjectName, referenced)
+      collectPropRefsTransitive(memo.computation, metadata.propsObjectName, localConsts, referenced)
     }
     for (const name of referenced) {
       // Don't clobber a signal / memo (or already-seeded prop) of the same
@@ -269,6 +344,47 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
 }
 
 /**
+ * Component-scope (non-module) `const` locals, by name → value source text.
+ * `referencesOwnProp` and `collectPropRefsTransitive` (below) use this to
+ * see PAST one hop of pure indirection between a prop read and the
+ * signal/memo that derives from it — `const mid = props.label;
+ * createSignal(mid ?? 'Default')` (#2685 review, one hop past #2669's
+ * direct-access-only detection). Module-scope consts are excluded: a
+ * MODULE const's value is fixed at compile time and isn't a `props.X` read
+ * (a module const referencing `props` isn't legal JS — `props` is a
+ * function parameter), so it can never contribute a prop reference here.
+ */
+function localConstValuesByName(metadata: IRMetadata): ReadonlyMap<string, string> {
+  const out = new Map<string, string>()
+  for (const c of metadata.localConstants ?? []) {
+    if (c.isModule || c.value === undefined) continue
+    out.set(c.name, c.value)
+  }
+  return out
+}
+
+/**
+ * Does `expr` (a signal initializer or memo computation) read
+ * `propsObjectName.<name>` where `name` is that SAME signal's getter / that
+ * SAME memo's name — directly, or through a chain of component-scope
+ * `const` locals? This is the #2669 self-derivation test (widened by
+ * #2685 review to see through indirection): reuses `collectPropRefsTransitive`
+ * (never a bespoke walker — see the CLAUDE.md rule this file already
+ * follows for `props.X` collection) and just checks membership of the one
+ * name we care about.
+ */
+function referencesOwnProp(
+  expr: string | undefined,
+  propsObjectName: string,
+  name: string,
+  localConsts: ReadonlyMap<string, string>,
+): boolean {
+  const referenced = new Set<string>()
+  collectPropRefsTransitive(expr, propsObjectName, localConsts, referenced)
+  return referenced.has(name)
+}
+
+/**
  * Collect the first-level property name of every `propsObjectName.X` access
  * within `expr` (e.g. `props.initial ?? 0` → `initial`). Used to seed the
  * stash vars a template-stash adapter's bare-scalar signal/memo recompute
@@ -276,6 +392,11 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
  * prop `a`: adapters lower that to `$a->{b}`, so the bare `$a` needs
  * seeding just the same — the walk stops at the first
  * `propsObjectName.<name>` match and collects `a` (not `b`).
+ *
+ * Direct-access only — does NOT look through a component-scope `const`
+ * that itself reads `propsObjectName.X`. Callers that need to see past
+ * that indirection use `collectPropRefsTransitive` below, which wraps this
+ * function rather than duplicating its walk.
  */
 function collectPropRefs(
   expr: string | undefined,
@@ -302,6 +423,46 @@ function collectPropRefs(
     ts.forEachChild(n, visit)
   }
   visit(node)
+}
+
+/**
+ * `collectPropRefs`, widened to look THROUGH component-scope `const`
+ * locals (#2685 review): a signal/memo initializer often reads a prop one
+ * hop removed — `const mid = props.label; createSignal(mid ?? 'Default')`
+ * — rather than `propsObjectName.X` directly. Runs the existing
+ * direct-access walk over `expr` first (unchanged behavior for the common
+ * case), then finds every VALUE-POSITION identifier `expr` references
+ * (via the analyzer's `extractFreeIdentifiersFromNode` — never a bespoke
+ * identifier scan, so a property-access tail like `foo.mid` or an
+ * object-literal key like `{ mid: 1 }` is correctly NOT mistaken for a
+ * read of a local named `mid`) and, for each one that names a local
+ * const, recurses into THAT const's own value expression the same way.
+ *
+ * `visited` guards re-entering the same const twice — both for the
+ * (source-impossible, since JS TDZ forbids a const referencing itself)
+ * pathological-cycle case, and for the ordinary diamond case (two
+ * branches of `expr` both reading the same local) so it isn't walked
+ * twice. Fresh per top-level call via the default parameter, so unrelated
+ * calls for different signals/memos don't share state.
+ */
+function collectPropRefsTransitive(
+  expr: string | undefined,
+  propsObjectName: string,
+  localConsts: ReadonlyMap<string, string>,
+  out: Set<string>,
+  visited: Set<string> = new Set(),
+): void {
+  if (!expr || !expr.trim()) return
+  collectPropRefs(expr, propsObjectName, out)
+  const node = parseExpression(expr)
+  if (!node) return
+  for (const id of extractFreeIdentifiersFromNode(node)) {
+    if (visited.has(id)) continue
+    const constValue = localConsts.get(id)
+    if (constValue === undefined) continue
+    visited.add(id)
+    collectPropRefsTransitive(constValue, propsObjectName, localConsts, out, visited)
+  }
 }
 
 function resultToJsonable(v: EvalResult): unknown {
@@ -366,12 +527,16 @@ function evalStatementsForReturn(
 
 function parseExpression(expr: string): ts.Expression | null {
   // Wrap in parens so a leading `{}` parses as an object literal rather
-  // than an empty block statement.
+  // than an empty block statement. Parent nodes ARE set (unlike a bare
+  // parse) so `collectPropRefsTransitive` can call the analyzer's
+  // `extractFreeIdentifiersFromNode` — which needs `.parent` to tell a
+  // value-position identifier from a property-access tail / object-literal
+  // key / parameter name — on the result.
   const sf = ts.createSourceFile(
     '__ssr_default__.ts',
     `(${expr})`,
     ts.ScriptTarget.Latest,
-    false,
+    true,
     ts.ScriptKind.TS,
   )
   const stmt = sf.statements[0]

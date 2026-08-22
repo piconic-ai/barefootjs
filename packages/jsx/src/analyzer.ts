@@ -3430,6 +3430,82 @@ function collectKeysFromMembers(
 }
 
 /**
+ * Decide whether a member's `TypeInfo` is admissible for
+ * `collectMemberTypes`'s destructured-parameter resolution (#2677 —
+ * widened from the original string/number/boolean-only gate).
+ *
+ * #2150 originally restricted the gate to string/number/boolean, because a
+ * non-primitive `TypeInfo` there used to mean "the typed adapters will emit
+ * an unchecked scalar assertion (`in.X.(int)`) that panics" for a shape the
+ * template layer had no representation for. That reasoning does NOT extend
+ * to a rich type with a CATALOGUED lowering (#2274: `Date` → the `date`
+ * helper): its propsParams `TypeInfo` is consumed only as call-site
+ * evidence for `resolveReceiverType` (rich-type-evidence.ts) — never
+ * emitted as a concrete field type (`typeInfoToGo`'s `interface` case falls
+ * through to `interface{}` for an unbacked host name exactly as `unknown`
+ * already did) — so there is no assertion to panic. Gating on
+ * `CATALOGUED_RICH_TYPE_NAMES` specifically (not `HOST_RICH_TYPE_NAMES`
+ * wholesale) keeps an un-catalogued rich type (`Map`, `Set`, …) at
+ * `unknown`, i.e. avoids resurrecting the #2150 mistake for a shape no
+ * lowering plugin exists for yet.
+ *
+ * Nor does it extend to a STRUCTURAL shape (`kind: 'array'` /
+ * `kind: 'object'`) any more. `typeNodeToTypeInfo` already builds these
+ * fully recursively (`elementType`, `properties`) — the same walk the
+ * `props`-object form (`extractPropsFromTypeMembers`) always got — and
+ * go-template's `emitSynthPropStructs` (#2674/#2676) synthesizes a real,
+ * json-tagged Go struct for any anonymous object type it reaches through
+ * `ir.metadata.propsParams[].type`, array-element positions included. A
+ * structural `TypeInfo` is representable today, so admitting it here no
+ * longer resurrects #2150 either — it lets `propsParams[].type` carry the
+ * SAME shape the props-object form already resolved, closing the
+ * asymmetry #2677 reports (`{ items }: { items: {...}[] }` degrading to
+ * `unknown` while `(props: { items: {...}[] })` resolved fully).
+ *
+ * `array`/`object` admit only when EVERY reachable leaf resolves — an
+ * array's element type and an object's every property type must pass this
+ * same check, recursively. A union, a function, or an un-catalogued named
+ * type reachable ANYWHERE inside the shape declines the WHOLE member (not
+ * just that one leaf): `collectMemberTypes` is an all-or-nothing gate per
+ * member, so a partially-resolvable structural type must still decline —
+ * per-field graceful degradation is `typeInfoToGo`'s job downstream, not
+ * this gate's.
+ *
+ * The `object` arm requires `properties` to be PRESENT, not merely falsy-
+ * coalesced to `[]` — an absent-members claim and a zero-members claim are
+ * different things, and `.every()` on a defaulted-to-`[]` array would admit
+ * both identically (vacuously `true`), which is the #2150 failure mode
+ * wearing a different hat: a concrete representation with no evidence
+ * behind it. `typeNodeToTypeInfo`'s `object` arm DOES omit `properties`
+ * entirely in its `synthetic` mode (the checker-driven `tsTypeToTypeInfo`
+ * path, used for e.g. `createMemo` inference off a resolved `ts.Type`,
+ * which has no source positions for `membersToProperties`' `getText()`).
+ * This gate's only caller (`collectMemberTypes`'s `fromMembers`) always
+ * calls the NON-synthetic 2-arg form, so `properties` is in practice always
+ * at least `[]` here today — but `isResolvableMemberType` is a module-level
+ * function, not a closure scoped to that one caller, so it guards the
+ * general case rather than trust a caller-specific invariant. A genuinely
+ * EMPTY object literal (`{}`, real zero members) DOES resolve — an empty
+ * synthesized struct is exactly as faithful a representation as the type
+ * itself claims, nothing is being guessed.
+ */
+function isResolvableMemberType(info: TypeInfo): boolean {
+  switch (info.kind) {
+    case 'primitive':
+      return info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean'
+    case 'interface':
+      return CATALOGUED_RICH_TYPE_NAMES.has(baseTypeName(info.raw))
+    case 'array':
+      return !!info.elementType && isResolvableMemberType(info.elementType)
+    case 'object':
+      return info.properties !== undefined && info.properties.every(prop => isResolvableMemberType(prop.type))
+    // Unions, functions, and `unknown` all decline — see docstring.
+    default:
+      return false
+  }
+}
+
+/**
  * Build a property-name -> { type, optional } map from a props type
  * annotation, for destructured params (`{ value }: Props`) so they carry the
  * same per-prop TypeInfo and optionality the props-object path
@@ -3443,36 +3519,17 @@ function collectKeysFromMembers(
  *   degraded to `unknown` -> `interface{}` for attribute omission, because
  *   #2252's nullish-flip machinery supplies the nillable representation
  *   exactly where absence is semantically observable (#2259).
- * - Only PRIMITIVE members (string/number/boolean) resolve a type. Those are
- *   the types that otherwise produce an unchecked scalar assertion (`in.X.(int)`)
- *   that panics. Arrays/objects/functions are left as `unknown` because typed
- *   adapters lower them through interface{}-based helpers (`bf_flat`, spread,
- *   `bf_json`); giving them concrete types would break that lowering and is a
- *   larger, separate change.
+ * - A member resolves a type when it is a PRIMITIVE (string/number/boolean),
+ *   a CATALOGUED rich type (`Date`), or a STRUCTURAL shape (array/object)
+ *   built entirely out of those, recursively (#2677). Unions, functions, and
+ *   un-catalogued named types (`Map`, `Set`, …) are left as `unknown` — see
+ *   `isResolvableMemberType`'s own docstring for why the structural cases
+ *   are safe to admit and why those three still are not.
  */
 function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
 ): Map<string, { type: TypeInfo | null; optional: boolean }> | null {
-  // #2150 originally restricted this gate to string/number/boolean only,
-  // because a non-primitive TypeInfo here used to mean "the typed adapters
-  // will emit an unchecked scalar assertion (`in.X.(int)`) that panics" for
-  // a shape the template layer has no representation for. That reasoning
-  // does NOT extend to a rich type with a CATALOGUED lowering (#2274: `Date`
-  // → the `date` helper): its propsParams TypeInfo is consumed only as
-  // call-site evidence for `resolveReceiverType` (rich-type-evidence.ts) —
-  // never emitted as a concrete field type (`typeInfoToGo`'s `interface`
-  // case falls through to `interface{}` for an unbacked host name exactly
-  // as `unknown` already did) — so there is no assertion to panic. Gating on
-  // `CATALOGUED_RICH_TYPE_NAMES` specifically (not `HOST_RICH_TYPE_NAMES`
-  // wholesale) keeps an un-catalogued rich type (`Map`, `Set`, …) at
-  // `unknown`, i.e. avoids resurrecting the #2150 mistake for a shape no
-  // lowering plugin exists for yet.
-  const isResolvablePrimitive = (info: TypeInfo): boolean =>
-    (info.kind === 'primitive' &&
-      (info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean')) ||
-    (info.kind === 'interface' && CATALOGUED_RICH_TYPE_NAMES.has(baseTypeName(info.raw)))
-
   const fromMembers = (
     members: ts.NodeArray<ts.TypeElement>
   ): Map<string, { type: TypeInfo | null; optional: boolean }> => {
@@ -3481,7 +3538,7 @@ function collectMemberTypes(
       if (ts.isPropertySignature(member) && member.name) {
         const info = member.type ? typeNodeToTypeInfo(member.type, ctx.sourceFile) : null
         map.set(member.name.getText(ctx.sourceFile), {
-          type: info && isResolvablePrimitive(info) ? info : null,
+          type: info && isResolvableMemberType(info) ? info : null,
           optional: !!member.questionToken,
         })
       }

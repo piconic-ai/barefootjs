@@ -101,7 +101,7 @@ describe('datePlugin matcher recognition (#2274)', () => {
     // destructured path reads the type from propsType, not propsParams, so
     // the widening isn't load-bearing for the matcher above, but propsParams
     // is itself observable IR metadata this plugin's existence is meant to
-    // unlock (see analyzer.ts's docstring on `isResolvablePrimitive`).
+    // unlock (see analyzer.ts's docstring on `isResolvableMemberType`).
     const md = metadata(`
       export function Foo({ createdAt }: { createdAt: Date }) {
         return <div>{createdAt.toISOString()}</div>

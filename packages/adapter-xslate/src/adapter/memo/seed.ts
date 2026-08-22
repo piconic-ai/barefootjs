@@ -53,13 +53,19 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
  * backend-specific emit guards: skip an empty lowering, skip a lowering that
  * references no `$var` at all (a constant init/body — e.g. a `derived` step
  * with empty `frees` — keeps the existing static ssr-defaults seed instead),
- * and skip a self-referencing lowering (Kolon's `my` shadows the RHS, so
- * `: my $x = … $x …` would read the just-declared undefined lexical rather
- * than the render var — the plan rules out SOURCE-level self-refs, but a
- * lowered canonical name could still collide, so this stays as the cheap
- * defense it always was). `env-reader` and `opaque` steps emit nothing (the
- * runtime supplies the reader, or the adapter's ssr-defaults path already
- * covers it). (#1297, #2075)
+ * and capture-before-shadow a self-referencing lowering (Kolon's `my`
+ * shadows the RHS, so `: my $x = … $x …` would read the just-declared
+ * undefined lexical rather than the render var — the plan rules out
+ * SOURCE-level self-refs, but a lowered canonical name could still collide,
+ * e.g. `createMemo(() => props.size ?? 'icon')` lowers `props.size` straight
+ * to the stash var `$size`, colliding with the memo's own name). The
+ * self-referencing case still emits the SAME verbatim Kolon — nothing about
+ * `kolon` changes — just as the RHS of a throwaway `__bf_seed_*` local
+ * declared BEFORE `$<name>` is shadowed, so `$<name>` inside `kolon` still
+ * resolves to the stash var, not the fresh lexical; a second statement then
+ * binds the real name off the already-evaluated capture. `env-reader` and
+ * `opaque` steps emit nothing (the runtime supplies the reader, or the
+ * adapter's ssr-defaults path already covers it). (#1297, #2075, #2679)
  */
 export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR): string {
   // Package G attached this to metadata at compile time; the `??` fallback
@@ -71,7 +77,21 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
     if (step.kind !== 'derived') continue
     const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed)
     if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) continue
-    if (new RegExp(`\\$${step.name}\\b`).test(kolon)) continue
+    if (new RegExp(`\\$${step.name}\\b`).test(kolon)) {
+      // Self-referencing lowering (#2679): capture the RHS into a
+      // throwaway local BEFORE `$<name>` is declared — `$<name>` inside
+      // `kolon` still reads the stash var at this point, nothing is
+      // shadowed yet — then bind the real name off the capture. The
+      // `__bf_seed_` prefix follows the adapter's established internal-
+      // temporary convention (`__bf_item` / `__bf_pair` in the loop
+      // lowering); suffixing with `step.name` keeps two derived steps in
+      // the same template from colliding, since `step.name` is itself
+      // unique per plan (each step declares a distinct local).
+      const tmp = `__bf_seed_${step.name}`
+      lines.push(`: my $${tmp} = ${kolon};`)
+      lines.push(`: my $${step.name} = $${tmp};`)
+      continue
+    }
     lines.push(`: my $${step.name} = ${kolon};`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''

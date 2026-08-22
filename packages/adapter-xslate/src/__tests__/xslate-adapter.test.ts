@@ -199,9 +199,11 @@ export function Item(props: { defaultOn?: boolean }) {
     expect(template).toContain(': my $on = ($defaultOn // 0);')
   })
 
-  // Kolon can't `: my $x = … $x …`; a same-name signal stays on the existing
-  // (harness/manifest) seeding rather than an in-template seed.
-  test('does NOT in-template-seed a same-name signal', () => {
+  // Kolon can't `: my $x = … $x …` directly (the declaration shadows the
+  // RHS's own reference), so a same-name signal captures the lowered
+  // expression into a throwaway `__bf_seed_<name>` local BEFORE `$x` is
+  // declared, then binds `$x` off that capture (#2679).
+  test('in-template-seeds a same-name signal via capture-before-shadow', () => {
     const { template } = compileAndGenerate(`
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -210,7 +212,8 @@ export function C(props: { x?: number }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).not.toContain(': my $x =')
+    expect(template).toContain(': my $__bf_seed_x = ($x // 7);')
+    expect(template).toContain(': my $x = $__bf_seed_x;')
   })
 
   test('emits data_key_attr on the component root', () => {

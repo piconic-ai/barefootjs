@@ -47,7 +47,15 @@ function resolveFixturePath(id: string): string | null {
 // fixture exists specifically to pin that gap). Auto-update would
 // overwrite the intentional value with the bug's output, so we skip
 // regeneration here.
-const SKIP_AUTO_UPDATE = new Set<string>([])
+const SKIP_AUTO_UPDATE = new Set<string>([
+  // #2669 (shape B): hand-authored to the CORRECT non-idempotent-derivation
+  // value; must not be silently overwritten by a future regeneration pass.
+  // See the fixture file's docstring for the full mechanism.
+  'signal-prop-same-name-derived',
+  // #2685 review: same reasoning, one hop of const indirection removed.
+  // See the fixture file's docstring for the full mechanism.
+  'signal-prop-same-name-via-const-derived',
+])
 
 async function main() {
   let updated = 0

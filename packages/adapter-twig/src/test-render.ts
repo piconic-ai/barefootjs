@@ -591,6 +591,12 @@ function buildTwigProps(
     // Env signals (#2057) are bound below via `SearchParams('')`, not from a
     // static initial value.
     if (signal.envReader) continue
+    // #2669: a self-derivation collision already got the correct RAW-prop
+    // seed above via `derivedProps` — `extractSsrDefaults` marks that with
+    // a `propName`-carrying entry (see its docstring's invariant). Skip
+    // re-seeding here or this harness's own `evaluateSignalInit` recompute
+    // clobbers the correctly-derived caller value.
+    if (rootSsrDefaults[signal.getter]?.propName !== undefined) continue
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
     if (value !== null) {
       setEntry(signal.getter, value)
@@ -600,6 +606,8 @@ function buildTwigProps(
   // Memo values seeded from the statically-evaluated ssrDefaults, same
   // as the production plugin's before_render hook.
   for (const memo of ir.metadata.memos) {
+    // #2669: same self-derivation skip as the signal loop above.
+    if (rootSsrDefaults[memo.name]?.propName !== undefined) continue
     const entry = rootSsrDefaults[memo.name]
     const value = entry ? entry.value : 0
     setEntry(memo.name, value ?? 0)

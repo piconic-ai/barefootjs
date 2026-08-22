@@ -9,6 +9,7 @@ import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/js
 import { isBooleanAttr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
+import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
@@ -218,7 +219,12 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
   // zero-equivalent exclusion matches on the Go-formatted fallback literal.
   for (const signal of ir.metadata.signals) {
-    const match = ctx.extractPropFallback(signal.initialValue, signal.parsed)
+    // Resolved through the seed plan's const-hop inlining (#2685) — see
+    // `resolveSignalParsedThroughSeedPlan` — so a component-scope `const`
+    // between `props.X` and `createSignal` doesn't leave this loop and
+    // `collectPropFallbackVars`'s identical extraction disagreeing on
+    // whether the prop needs the nillable flip.
+    const match = ctx.extractPropFallback(signal.initialValue, resolveSignalParsedThroughSeedPlan(ctx.state, signal))
     if (!match || !optionalParams.has(match.propName)) continue
     const f = match.goFallback
     if (f === '""' || f === 'false' || f === 'nil' || Number(f) === 0) continue
