@@ -1103,6 +1103,41 @@ func JSKeys(item any) map[string]any {
 	return out
 }
 
+// bfHydrationPayload returns the value to actually `json.Marshal` for a
+// props struct's hydration attribute (#2684): when `props` exposes a
+// non-nil `BfCallerProps map[string]interface{}` field (populated by
+// `NewXxxProps` with exactly the keys the caller passed — see that
+// field's doc comment in the generated Props struct for the two-consumers
+// rationale), that map is marshaled INSTEAD OF the struct itself, so the
+// wire payload carries only caller-supplied data — matching the
+// reference (Hono's `serializeHydrationProps`), which only ever
+// serializes caller-passed keys. `ok` is false for a `props` value with
+// no such field (a hand-built Props value, or code generated before this
+// field existed) — callers fall back to marshaling `props` whole,
+// unchanged from the pre-#2684 behavior. Reused by both `BfPropsAttr` and
+// `ScopeComment` so the two hydration-payload emission sites can't drift.
+func bfHydrationPayload(props interface{}) (payload interface{}, ok bool) {
+	v := reflect.ValueOf(props)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil, false
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return nil, false
+	}
+	field := v.FieldByName("BfCallerProps")
+	if !field.IsValid() || field.Kind() != reflect.Map || field.IsNil() {
+		return nil, false
+	}
+	m, isMap := field.Interface().(map[string]interface{})
+	if !isMap {
+		return nil, false
+	}
+	return m, true
+}
+
 // BfPropsAttr returns the bf-p attribute with the JSON-serialized
 // props in flat format. Output format: `bf-p='{"propName":value,...}'`.
 // Only emits the attribute for root components (BfIsRoot == true);
@@ -1119,7 +1154,22 @@ func BfPropsAttr(props interface{}) (template.HTMLAttr, error) {
 		return "", nil
 	}
 
-	propsJSON, err := json.Marshal(props)
+	// #2684: NOT gated on emptiness — the reference (Hono) still emits a
+	// literal `bf-p="{}"` for a root component that has declared
+	// client-tracked props but received none of them from the caller
+	// (`JSON.stringify({x: undefined})` drops the key but the object
+	// itself, and the attribute, are still real); it only skips the
+	// attribute altogether for a component with NO client-tracked props at
+	// all, a distinction Go's `BfIsRoot`-only gate doesn't draw. Matching
+	// that finer gate is a separate, pre-existing architectural difference
+	// (documented in the PR that introduced this comment), not something
+	// this substitution should paper over by guessing at emptiness.
+	payload, hasCallerProps := bfHydrationPayload(props)
+	if !hasCallerProps {
+		payload = props
+	}
+
+	propsJSON, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
@@ -2852,7 +2902,14 @@ func ScopeComment(props interface{}) (template.HTML, error) {
 	}
 	propsJSON := ""
 	if getBoolField(props, "BfIsRoot") {
-		pJSON, err := json.Marshal(props)
+		// Same caller-props-sidecar substitution as BfPropsAttr (#2684) —
+		// see that function's comment for why this is NOT gated on
+		// emptiness.
+		payload, hasCallerProps := bfHydrationPayload(props)
+		if !hasCallerProps {
+			payload = props
+		}
+		pJSON, err := json.Marshal(payload)
 		if err != nil {
 			return "", err
 		}

@@ -1873,6 +1873,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push('')
     }
 
+    this.emitCallerPropsInit(lines, ir, nestedComponents, staticWithoutBody, staticWithBody, dynamicWithBody, emittedWrapperVars, propTypeOverrides)
+
     lines.push(`\treturn ${propsTypeName}{`)
     lines.push('\t\tScopeID: scopeID,')
     // Host context, for when *this* component is itself a slot-attached child.
@@ -1881,6 +1883,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.usesSearchParams(ir)) {
       lines.push('\t\tSearchParams: in.SearchParams,')
     }
+    lines.push('\t\tBfCallerProps: callerProps,')
 
     const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
 
@@ -2036,6 +2039,139 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     lines.push('\t}')
     lines.push('}')
+  }
+
+  /**
+   * Build the `callerProps` local (assigned to `BfCallerProps` in the
+   * returned struct) — the hydration-only, caller-supplied-keys-only view
+   * of this component's props (#2684). See the field's doc comment
+   * (`emitPropsStructHeader`) for the two-consumers rationale.
+   *
+   * Three classes, mirroring the issue's taxonomy — gated on `param.optional`
+   * (NOT on the resolved Go type's nillability alone, even though that reads
+   * as the more "obvious" test): a REQUIRED prop must stay unconditional
+   * even when its resolved type happens to be nillable (`ctx: unknown`, the
+   * `array-flatmap-thisarg` fixture passes `ctx: null` explicitly) — Go's
+   * `interface{}` cannot tell "explicit null" from "omitted" once
+   * unmarshaled (both are the nil zero value), so nil-checking a required
+   * field would silently turn an intentional `null` into a dropped key.
+   *   1. Required prop → always included, raw `in.<InputField>` (never the
+   *      defaulted Props-field value — a caller who passes the same value
+   *      as the author's default is indistinguishable from one who didn't,
+   *      but that's inherent to a required prop having no "omitted" state).
+   *   2. Optional prop whose resolved Go type is nillable (`interface{}`,
+   *      `map[string]interface{}`, or any slice `[]T`) → included only
+   *      when `in.<InputField> != nil`, i.e. only when the caller actually
+   *      passed something.
+   *   3. Optional prop that nonetheless resolved to a CONCRETE type (a
+   *      string-union alias like `placement?: 'top' | 'bottom'`, a bare
+   *      scalar never consumed nullish/attr/text/presence-wise, OR a type
+   *      that resolves to `interface{}` some OTHER way — e.g. an inherited
+   *      `extends` clause the analyzer can't fully resolve — while
+   *      `param.optional` itself is, possibly inaccurately, `false`) —
+   *      presence is unknowable from Input alone, so it's included
+   *      unconditionally, same as class 1. A documented residual, not
+   *      silently dropped; see the PR that introduced this method for named
+   *      instances found in the corpus (e.g. `textarea`'s `rows`, inherited
+   *      through `TextareaHTMLAttributes`). Do NOT widen these props' types
+   *      to "fix" this — that's `resolvePropGoType`'s call, not this
+   *      method's, and doing so would risk the same `ctx`-style regression.
+   *
+   * `children` is excluded outright (#1952 — a separately-declared
+   * position, not relitigated here). Rest-props bags are never added to
+   * the Props struct's JSON at all (checked: no field exists for them
+   * outside Input), so nothing to exclude here either — already at parity
+   * with the reference, which never serializes rest keys.
+   *
+   * A prop shadowed by its own driving nested-array field (`isNestedArrayShadowed`
+   * — e.g. `toggleItems` colliding with a `<ToggleItem>` loop's derived
+   * `ToggleItems` field, #2672/#2525) has NO Props/Input field of its own;
+   * the reshaped nested-array local (`varName`, already built above by the
+   * static/dynamic body-wrapper emission) is its only remaining carrier, so
+   * that's what gets keyed in here instead of `in.<InputField>`. KNOWN
+   * RESIDUAL: each item within that array is still the OLD whole-struct
+   * marshal (baked author defaults / null-for-absent / zero-for-required
+   * inside every item) — recursing the sidecar into embedded Props-struct
+   * arrays needs either a generated `MarshalJSON` per Props type or a
+   * runtime array-flattening helper, a bigger surface this method's design
+   * doesn't cover. Reported, not chased (see PR description).
+   */
+  private emitCallerPropsInit(
+    lines: string[],
+    ir: ComponentIR,
+    nestedComponents: NestedComponentInfo[],
+    staticWithoutBody: NestedComponentInfo[],
+    staticWithBody: NestedComponentInfo[],
+    dynamicWithBody: NestedComponentInfo[],
+    emittedWrapperVars: Set<string>,
+    propTypeOverrides: Map<string, string>,
+  ): void {
+    lines.push('\tcallerProps := map[string]interface{}{}')
+    const callerPropsTakenTags = new Set<string>()
+    const nestedArrayFields = this.propDerivedNestedArrayFields(nestedComponents)
+
+    for (const param of ir.metadata.propsParams) {
+      // Children are DOM content, not hydration data (#1952) — excluded the
+      // same way `emitPropsDataFields` excludes them from the Props struct.
+      if (param.name === 'children') continue
+      // Shadowed by its own driving nested-array field (#2672/#2525) — no
+      // Input field exists for it at all; handled below via the array local.
+      if (this.isNestedArrayShadowed(param, nestedArrayFields)) continue
+      // Same tag algorithm `emitPropsDataFields` uses for the Props field's
+      // own `json:"…"` tag, re-derived against a FRESH set: props are always
+      // processed first, in the same order, over an empty set in BOTH
+      // places, so the two computations can't disagree.
+      const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), callerPropsTakenTags)
+      if (callerKey === '-') continue // tag collision — dropped from the wire, same as the Props field itself would be
+      const inputField = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
+      const isNillable = goType === 'interface{}' || goType === 'map[string]interface{}' || goType.startsWith('[]')
+      // `param.optional` gates the branch (not "isNillable alone") because a
+      // REQUIRED prop must stay unconditional even when its resolved type
+      // happens to be nillable (`ctx: unknown`, #2094's array-flatmap-thisarg
+      // fixture passes `ctx: null` explicitly) — Go's `interface{}` cannot
+      // tell "explicit null" from "omitted" once unmarshaled (both are the
+      // nil zero value), so a nil-check here would silently turn an
+      // intentional `null` into a dropped key, regressing a fixture that
+      // matched the reference before this method existed. `resolvePropGoType`
+      // never applies its nillable flip to a required prop, so this ONLY
+      // affects the rare case where a type resolves to `interface{}` some
+      // OTHER way (e.g. `unknown`, or a type inherited through an
+      // unresolved external `extends` clause) while `param.optional` is
+      // (accurately or not) false — see the method docstring's residual list.
+      if (param.optional && isNillable) {
+        lines.push(`\tif ${inputField} != nil {`)
+        lines.push(`\t\tcallerProps["${callerKey}"] = ${inputField}`)
+        lines.push(`\t}`)
+      } else {
+        // Required (class 1), or optional-but-concrete residual (class 3),
+        // or optional-but-misresolved-required residual — see docstring.
+        lines.push(`\tcallerProps["${callerKey}"] = ${inputField}`)
+      }
+    }
+
+    // Shadowed nested-array props — see method docstring.
+    for (const nested of [...staticWithoutBody, ...staticWithBody, ...dynamicWithBody]) {
+      if (!nested.isPropDerived) continue
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const isBuilt = staticWithoutBody.includes(nested) || emittedWrapperVars.has(varName)
+      if (!isBuilt) continue
+      const arrayFieldName = capitalizeFieldName(`${nested.name}s`)
+      const param = ir.metadata.propsParams.find(
+        p => capitalizeFieldName(p.name) === arrayFieldName || capitalizeFieldName(p.sourceName ?? p.name) === arrayFieldName,
+      )
+      if (!param || !this.isNestedArrayShadowed(param, nestedArrayFields)) continue
+      const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), callerPropsTakenTags)
+      if (callerKey === '-') continue
+      if (param.optional) {
+        lines.push(`\tif in.${nested.name}s != nil {`)
+        lines.push(`\t\tcallerProps["${callerKey}"] = ${varName}`)
+        lines.push(`\t}`)
+      } else {
+        lines.push(`\tcallerProps["${callerKey}"] = ${varName}`)
+      }
+    }
+    lines.push('')
   }
 
   private emitStaticChildInstances(lines: string[], ir: ComponentIR): void {
@@ -2741,6 +2877,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.usesSearchParams(ir)) {
       lines.push('\tSearchParams bf.SearchParams `json:"-"`')
     }
+
+    // #2684: the raw, CALLER-SUPPLIED view of this component's props —
+    // populated by `NewXxxProps` with exactly the keys the caller passed
+    // (required props always; optional ones only when not nil), holding
+    // the UNDEFAULTED value. This exists because every prop field above
+    // (e.g. `X`) serves TWO different consumers that want two different
+    // values: the Go TEMPLATE wants the DEFAULTED value so `{{.X}}` renders
+    // the author's fallback, while the HYDRATION PAYLOAD wants to know only
+    // what the caller actually supplied — baking the author's default into
+    // it makes an omitted prop indistinguishable from one explicitly passed
+    // with that value, and a Go zero value indistinguishable from an
+    // explicit zero/empty/false (the reference, Hono, only ever serializes
+    // caller-passed keys). One field can't answer both questions at once,
+    // so this sidecar gives the hydration payload its own carrier;
+    // `BfPropsAttr` (runtime/bf.go) marshals THIS map instead of the whole
+    // struct when it's present. `json:"-"` — never marshaled as an ordinary
+    // struct field; `BfPropsAttr` reads it directly by name via reflection.
+    lines.push('\tBfCallerProps map[string]interface{} `json:"-"`')
   }
 
   private emitPropsDataFields(

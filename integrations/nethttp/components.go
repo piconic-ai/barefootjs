@@ -42,6 +42,7 @@ type AIChatInteractiveProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Messages []Message `json:"-"`
 	Input string `json:"-"`
 	StreamingText string `json:"-"`
@@ -65,6 +66,7 @@ type ConditionalReturnProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Variant string `json:"variant"`
 	Count int `json:"-"`
 }
@@ -86,6 +88,7 @@ type CounterProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Initial int `json:"initial"`
 	Count int `json:"-"`
 	Doubled int `json:"-"`
@@ -107,6 +110,7 @@ type FormProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Accepted bool `json:"-"`
 }
 
@@ -134,6 +138,7 @@ type NestedCondToggleListProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Items []ToggleItem `json:"items"`
 }
 
@@ -153,6 +158,7 @@ type PortalExampleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Open bool `json:"-"`
 }
 
@@ -175,6 +181,7 @@ type ReactiveChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
 	OnIncrement interface{} `json:"onIncrement"`
@@ -196,6 +203,7 @@ type ReactivePropsProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Count int `json:"-"`
 	Doubled int `json:"-"`
 	ReactiveChildSlot5 ReactiveChildProps `json:"-"`
@@ -220,6 +228,7 @@ type PropsStyleChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
 	DisplayValue interface{} `json:"-"`
@@ -243,6 +252,7 @@ type DestructuredStyleChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
 	DisplayValue interface{} `json:"-"`
@@ -264,6 +274,7 @@ type PropsReactivityComparisonProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Count int `json:"-"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
 	DestructuredStyleChildSlot4 DestructuredStyleChildProps `json:"-"`
@@ -286,6 +297,7 @@ type TextEscapeProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Label string `json:"label"`
 	Count int `json:"-"`
 }
@@ -325,6 +337,7 @@ type TodoAppProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
@@ -356,6 +369,7 @@ type TodoAppSSRProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
@@ -384,6 +398,7 @@ type TodoItemProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Todo Todo `json:"todo"`
 	OnToggle interface{} `json:"onToggle"`
 	OnDelete interface{} `json:"onDelete"`
@@ -409,6 +424,7 @@ type ToggleItemProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Label string `json:"label"`
 	DefaultOn bool `json:"defaultOn"`
 	On bool `json:"-"`
@@ -431,6 +447,7 @@ type ToggleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	ToggleItems []ToggleItemProps `json:"toggleItems"`
 }
 
@@ -450,6 +467,7 @@ type LikeButtonProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Likes int `json:"-"`
 }
 
@@ -469,6 +487,7 @@ type NowPlayingProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Playing bool `json:"-"`
 	Elapsed int `json:"-"`
 }
@@ -490,6 +509,7 @@ type PageShellProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Children interface{} `json:"-"`
 	ReaderToolbarSlot0 ReaderToolbarProps `json:"-"`
 }
@@ -522,6 +542,7 @@ type PostArticleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Slug string `json:"slug"`
 	Title string `json:"title"`
 	Date string `json:"date"`
@@ -572,6 +593,7 @@ type PostListProps struct {
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	SearchParams bf.SearchParams `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Items []Item `json:"items"`
 	Tags []string `json:"tags"`
 	Base string `json:"base"`
@@ -601,6 +623,7 @@ type PostListItemProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Href string `json:"href"`
 	Title string `json:"title"`
 	Date string `json:"date"`
@@ -624,6 +647,7 @@ type ReaderToolbarProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Level int `json:"-"`
 }
 
@@ -643,6 +667,7 @@ type ReadingTimerProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Secs int `json:"-"`
 }
 
@@ -662,6 +687,7 @@ type SidebarProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Pins int `json:"-"`
 }
 
@@ -681,6 +707,7 @@ type ThemeToggleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
 	Light bool `json:"-"`
 }
 
@@ -691,10 +718,13 @@ func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps
 		scopeID = "AIChatInteractive_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return AIChatInteractiveProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Messages: nil,
 		Input: "",
 		StreamingText: "",
@@ -709,10 +739,14 @@ func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps
 		scopeID = "ConditionalReturn_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["variant"] = in.Variant
+
 	return ConditionalReturnProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Variant: in.Variant,
 		Count: 0,
 	}
@@ -725,10 +759,14 @@ func NewCounterProps(in CounterInput) CounterProps {
 		scopeID = "Counter_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["initial"] = in.Initial
+
 	return CounterProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Initial: in.Initial,
 		Count: in.Initial,
 		Doubled: in.Initial * 2,
@@ -742,10 +780,13 @@ func NewFormProps(in FormInput) FormProps {
 		scopeID = "Form_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return FormProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Accepted: false,
 	}
 }
@@ -757,10 +798,16 @@ func NewNestedCondToggleListProps(in NestedCondToggleListInput) NestedCondToggle
 		scopeID = "NestedCondToggleList_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	if in.Items != nil {
+		callerProps["items"] = in.Items
+	}
+
 	return NestedCondToggleListProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Items: in.Items,
 	}
 }
@@ -772,10 +819,13 @@ func NewPortalExampleProps(in PortalExampleInput) PortalExampleProps {
 		scopeID = "PortalExample_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return PortalExampleProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Open: false,
 	}
 }
@@ -787,10 +837,16 @@ func NewReactiveChildProps(in ReactiveChildInput) ReactiveChildProps {
 		scopeID = "ReactiveChild_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["value"] = in.Value
+	callerProps["label"] = in.Label
+	callerProps["onIncrement"] = in.OnIncrement
+
 	return ReactiveChildProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Value: in.Value,
 		Label: in.Label,
 		OnIncrement: in.OnIncrement,
@@ -804,10 +860,13 @@ func NewReactivePropsProps(in ReactivePropsInput) ReactivePropsProps {
 		scopeID = "ReactiveProps_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return ReactivePropsProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Count: 0,
 		Doubled: 0 * 2,
 		ReactiveChildSlot5: NewReactiveChildProps(ReactiveChildInput{
@@ -834,10 +893,15 @@ func NewPropsStyleChildProps(in PropsStyleChildInput) PropsStyleChildProps {
 		scopeID = "PropsStyleChild_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["value"] = in.Value
+	callerProps["label"] = in.Label
+
 	return PropsStyleChildProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Value: in.Value,
 		Label: in.Label,
 		DisplayValue: in.Value * 10,
@@ -851,10 +915,15 @@ func NewDestructuredStyleChildProps(in DestructuredStyleChildInput) Destructured
 		scopeID = "DestructuredStyleChild_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["value"] = in.Value
+	callerProps["label"] = in.Label
+
 	return DestructuredStyleChildProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Value: in.Value,
 		Label: in.Label,
 		DisplayValue: in.Value * 10,
@@ -868,10 +937,13 @@ func NewPropsReactivityComparisonProps(in PropsReactivityComparisonInput) PropsR
 		scopeID = "PropsReactivityComparison_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return PropsReactivityComparisonProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Count: 1,
 		PropsStyleChildSlot3: NewPropsStyleChildProps(PropsStyleChildInput{
 			ScopeID: scopeID + "_s3",
@@ -897,10 +969,14 @@ func NewTextEscapeProps(in TextEscapeInput) TextEscapeProps {
 		scopeID = "TextEscape_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["label"] = in.Label
+
 	return TextEscapeProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Label: in.Label,
 		Count: 0,
 	}
@@ -926,10 +1002,16 @@ func NewTodoAppProps(in TodoAppInput) TodoAppProps {
 		scopeID = "TodoApp_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	if in.InitialTodos != nil {
+		callerProps["initialTodos"] = in.InitialTodos
+	}
+
 	return TodoAppProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		InitialTodos: in.InitialTodos,
 		Todos: in.InitialTodos,
 		NewText: "",
@@ -957,10 +1039,16 @@ func NewTodoAppSSRProps(in TodoAppSSRInput) TodoAppSSRProps {
 		scopeID = "TodoAppSSR_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	if in.InitialTodos != nil {
+		callerProps["initialTodos"] = in.InitialTodos
+	}
+
 	return TodoAppSSRProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		InitialTodos: in.InitialTodos,
 		Todos: in.InitialTodos,
 		NewText: "",
@@ -975,10 +1063,18 @@ func NewTodoItemProps(in TodoItemInput) TodoItemProps {
 		scopeID = "TodoItem_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["todo"] = in.Todo
+	callerProps["onToggle"] = in.OnToggle
+	callerProps["onDelete"] = in.OnDelete
+	callerProps["onStartEdit"] = in.OnStartEdit
+	callerProps["onFinishEdit"] = in.OnFinishEdit
+
 	return TodoItemProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Todo: in.Todo,
 		OnToggle: in.OnToggle,
 		OnDelete: in.OnDelete,
@@ -994,10 +1090,15 @@ func NewToggleItemProps(in ToggleItemInput) ToggleItemProps {
 		scopeID = "ToggleItem_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["label"] = in.Label
+	callerProps["defaultOn"] = in.DefaultOn
+
 	return ToggleItemProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Label: in.Label,
 		DefaultOn: in.DefaultOn,
 		On: in.DefaultOn,
@@ -1019,10 +1120,14 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 		toggleItems[i].BfDataKey = fmt.Sprint(item.Label)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["toggleItems"] = toggleItems
+
 	return ToggleProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		ToggleItems: toggleItems,
 	}
 }
@@ -1034,10 +1139,13 @@ func NewLikeButtonProps(in LikeButtonInput) LikeButtonProps {
 		scopeID = "LikeButton_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return LikeButtonProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Likes: 0,
 	}
 }
@@ -1049,10 +1157,13 @@ func NewNowPlayingProps(in NowPlayingInput) NowPlayingProps {
 		scopeID = "NowPlaying_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return NowPlayingProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Playing: false,
 		Elapsed: 0,
 	}
@@ -1065,10 +1176,13 @@ func NewPageShellProps(in PageShellInput) PageShellProps {
 		scopeID = "PageShell_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return PageShellProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Children: in.Children,
 		ReaderToolbarSlot0: NewReaderToolbarProps(ReaderToolbarInput{
 			ScopeID: scopeID + "_s0",
@@ -1085,10 +1199,29 @@ func NewPostArticleProps(in PostArticleInput) PostArticleProps {
 		scopeID = "PostArticle_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["slug"] = in.Slug
+	callerProps["title"] = in.Title
+	callerProps["date"] = in.Date
+	callerProps["tags"] = in.Tags
+	callerProps["body"] = in.Body
+	callerProps["position"] = in.Position
+	callerProps["total"] = in.Total
+	callerProps["base"] = in.Base
+	callerProps["prevSlug"] = in.PrevSlug
+	if in.PrevTitle != nil {
+		callerProps["prevTitle"] = in.PrevTitle
+	}
+	callerProps["nextSlug"] = in.NextSlug
+	if in.NextTitle != nil {
+		callerProps["nextTitle"] = in.NextTitle
+	}
+
 	return PostArticleProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Slug: in.Slug,
 		Title: in.Title,
 		Date: in.Date,
@@ -1139,11 +1272,17 @@ func NewPostListProps(in PostListInput) PostListProps {
 		scopeID = "PostList_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["items"] = in.Items
+	callerProps["tags"] = in.Tags
+	callerProps["base"] = in.Base
+
 	return PostListProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		SearchParams: in.SearchParams,
+		BfCallerProps: callerProps,
 		Items: in.Items,
 		Tags: in.Tags,
 		Base: in.Base,
@@ -1163,10 +1302,17 @@ func NewPostListItemProps(in PostListItemInput) PostListItemProps {
 		scopeID = "PostListItem_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+	callerProps["href"] = in.Href
+	callerProps["title"] = in.Title
+	callerProps["date"] = in.Date
+	callerProps["meta"] = in.Meta
+
 	return PostListItemProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Href: in.Href,
 		Title: in.Title,
 		Date: in.Date,
@@ -1182,10 +1328,13 @@ func NewReaderToolbarProps(in ReaderToolbarInput) ReaderToolbarProps {
 		scopeID = "ReaderToolbar_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return ReaderToolbarProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Level: 1,
 	}
 }
@@ -1197,10 +1346,13 @@ func NewReadingTimerProps(in ReadingTimerInput) ReadingTimerProps {
 		scopeID = "ReadingTimer_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return ReadingTimerProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Secs: 0,
 	}
 }
@@ -1212,10 +1364,13 @@ func NewSidebarProps(in SidebarInput) SidebarProps {
 		scopeID = "Sidebar_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return SidebarProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Pins: 0,
 	}
 }
@@ -1227,10 +1382,13 @@ func NewThemeToggleProps(in ThemeToggleInput) ThemeToggleProps {
 		scopeID = "ThemeToggle_" + randomID(6)
 	}
 
+	callerProps := map[string]interface{}{}
+
 	return ThemeToggleProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
+		BfCallerProps: callerProps,
 		Light: false,
 	}
 }

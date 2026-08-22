@@ -1675,6 +1675,66 @@ func TestBfPropsAttrPropagatesError(t *testing.T) {
 	}
 }
 
+// #2684: when props exposes a non-nil BfCallerProps map, BfPropsAttr must
+// marshal THAT instead of the whole struct. An empty map still renders a
+// literal `bf-p="{}"` (NOT an omitted attribute) — the reference (Hono)
+// does the same for a root component with declared client-tracked props
+// none of which the caller supplied (`JSON.stringify({x: undefined})`
+// drops the key but still stringifies to "{}", it doesn't return
+// `undefined` the way an ENTIRELY prop-less component's `{}` does).
+func TestBfPropsAttrUsesCallerPropsSidecar(t *testing.T) {
+	type withSidecar struct {
+		BfIsRoot      bool
+		Name          string      `json:"name"`
+		X             interface{} `json:"x"`
+		BfCallerProps map[string]interface{}
+	}
+
+	// Caller passed only "name" — the sidecar carries just that key, even
+	// though the struct's own "X" field (a defaulted/zero value a template
+	// would read) is also present with a real json tag.
+	got, err := BfPropsAttr(withSidecar{
+		BfIsRoot:      true,
+		Name:          "Ada",
+		X:             nil,
+		BfCallerProps: map[string]interface{}{"name": "Ada"},
+	})
+	if err != nil {
+		t.Fatalf("BfPropsAttr unexpected err: %v", err)
+	}
+	if got != `bf-p="{&#34;name&#34;:&#34;Ada&#34;}"` {
+		t.Errorf("BfPropsAttr = %q, want the sidecar map only (no \"x\" key)", got)
+	}
+
+	// Empty sidecar (caller passed nothing hydration-relevant) → still a
+	// real, present attribute with an empty object, matching Hono.
+	got, err = BfPropsAttr(withSidecar{
+		BfIsRoot:      true,
+		BfCallerProps: map[string]interface{}{},
+	})
+	if err != nil {
+		t.Fatalf("BfPropsAttr unexpected err: %v", err)
+	}
+	if got != `bf-p="{}"` {
+		t.Errorf("BfPropsAttr(empty sidecar) = %q, want bf-p=\"{}\"", got)
+	}
+
+	// A struct with NO BfCallerProps field at all (hand-built Props value,
+	// or code generated before this field existed) falls back to marshaling
+	// the whole struct, unchanged from the pre-#2684 behavior.
+	type noSidecar struct {
+		BfIsRoot bool   `json:"-"`
+		Name     string `json:"name"`
+	}
+	got, err = BfPropsAttr(noSidecar{BfIsRoot: true, Name: "Ada"})
+	if err != nil {
+		t.Fatalf("BfPropsAttr unexpected err: %v", err)
+	}
+	if got != `bf-p="{&#34;name&#34;:&#34;Ada&#34;}"` {
+		t.Errorf("BfPropsAttr(no sidecar) = %q, want whole-struct marshal", got)
+	}
+}
+
 func TestScopeCommentPropagatesError(t *testing.T) {
 	type bad struct {
 		BfIsRoot bool
