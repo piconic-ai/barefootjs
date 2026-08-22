@@ -5052,25 +5052,25 @@ export function C(props: { x?: number; label?: string; name: string }) {
     expect(types).toContain('BfCallerProps map[string]interface{} `json:"-"`')
 
     const newProps = types.slice(types.indexOf('func NewCProps'))
-    expect(newProps).toContain('callerProps := map[string]interface{}{}')
+    expect(newProps).toContain('bfCallerProps := map[string]interface{}{}')
     // Class 1 — required prop: always included, raw `in.Name` (never a
     // baked/defaulted value — there is none for a required prop anyway).
-    expect(newProps).toContain('callerProps["name"] = in.Name')
+    expect(newProps).toContain('bfCallerProps["name"] = in.Name')
     // Class 2 — optional, nullish-consumed (`??`) prop: flips to `interface{}`
     // (#2248) and is included ONLY when the caller actually passed something.
     // Critically, the RAW `in.X` goes in the map, never the baked default
     // `7` the hoisted fallback var applies to the template-facing field.
     expect(newProps).toContain('if in.X != nil {')
-    expect(newProps).toContain('callerProps["x"] = in.X')
-    expect(newProps).not.toMatch(/callerProps\["x"\]\s*=\s*7/)
+    expect(newProps).toContain('bfCallerProps["x"] = in.X')
+    expect(newProps).not.toMatch(/bfCallerProps\["x"\]\s*=\s*7/)
     // Class 3 — optional prop that resolves to a CONCRETE type (`label` is
     // never consumed nullish/attr/text/presence-wise, so it stays a plain
     // `string`): presence is unknowable from Input alone, so it's included
     // unconditionally — a documented residual, not silently dropped.
-    expect(newProps).toContain('callerProps["label"] = in.Label')
+    expect(newProps).toContain('bfCallerProps["label"] = in.Label')
 
     // The struct literal wires the local into the field.
-    expect(newProps).toContain('BfCallerProps: callerProps,')
+    expect(newProps).toContain('BfCallerProps: bfCallerProps,')
   })
 
   test('a required nested-array-shadowed prop (#2672/#2525) is carried via its reshaped array local, not silently dropped', () => {
@@ -5091,7 +5091,7 @@ export function Toggle({ toggleItems }: ToggleProps) {
     // data is carried via the already-built reshaped array local instead.
     // `toggleItems` is REQUIRED here, so it's unconditional — same
     // required-stays-unconditional rule as the main loop.
-    expect(newProps).toContain('callerProps["toggleItems"] = toggleItems')
+    expect(newProps).toContain('bfCallerProps["toggleItems"] = toggleItems')
     expect(newProps).not.toContain('if in.ToggleItems != nil {')
   })
 })
