@@ -1,5 +1,14 @@
 # @barefootjs/test
 
+## 0.31.10
+
+### Patch Changes
+
+- Updated dependencies [883e2c5]
+- Updated dependencies [032e6dd]
+- Updated dependencies [57d936b]
+  - @barefootjs/jsx@0.31.10
+
 ## 0.31.9
 
 ### Patch Changes
