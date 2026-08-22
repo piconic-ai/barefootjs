@@ -3965,6 +3965,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ) {
       return null
     }
+    // Constant division by zero is a Go COMPILE error (`invalid operation:
+    // division by zero`), unlike JS's Infinity — declining keeps that shape
+    // on the raw-passthrough path instead of breaking the build.
+    if (parsed.op === '/' && right.value === 0) return null
+    // The `??` fallback itself must be a NUMERIC literal before delegating
+    // to the fold: `extractPropFallbackFromParsed` happily matches a string
+    // fallback (`(props.label ?? 'x') + 2`), which would hoist
+    // `var label string = "x"` and emit `Label: label + 2,` — invalid Go
+    // (string + int), a compile break where the pre-existing behavior at
+    // least built (Copilot review on #2694). JS's `'x' + 2` is string
+    // concatenation besides, so a numeric compose could never be faithful
+    // for it — the shape belongs on the raw-passthrough path until someone
+    // lowers it through ConcatStr deliberately. Gating on `??` (not `||`)
+    // also keeps JS nullish semantics exact for numeric props, where a
+    // caller's explicit `0` must NOT trigger the fallback.
+    const coalesce = parsed.left
+    if (
+      coalesce.kind !== 'logical' ||
+      coalesce.op !== '??' ||
+      coalesce.right.kind !== 'literal' ||
+      coalesce.right.literalType !== 'number'
+    ) {
+      return null
+    }
     const inner = this.extractPropFallbackFromParsed(parsed.left)
     if (!inner) return null
     return { ...inner, operator: parsed.op, operand: String(right.value) }

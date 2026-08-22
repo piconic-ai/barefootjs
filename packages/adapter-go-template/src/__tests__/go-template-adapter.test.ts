@@ -5129,6 +5129,43 @@ export function C(props: { count?: number }) {
     expect(newProps).not.toMatch(/callerProps\["count"\]\s*=\s*count/)
   })
 
+  test('a NON-NUMERIC `??` fallback declines collision-derivation — raw passthrough, never invalid Go (Copilot review, #2694)', () => {
+    // `(props.label ?? 'x') + 2` would otherwise hoist `var label string =
+    // "x"` and emit `Label: label + 2,` — invalid Go (string + int), a
+    // compile BREAK where the pre-fix behavior at least built. JS semantics
+    // are string concatenation here besides, so a numeric compose could
+    // never be faithful; the shape stays on the raw-passthrough path.
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { label?: string }) {
+  const [label, setLabel] = createSignal((props.label ?? 'x') + 2)
+  return <span>{label()}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const types = result.files.find(f => f.type === 'types')!.content
+    const newProps = types.slice(types.indexOf('func NewCProps'))
+    expect(newProps).not.toContain('label + 2')
+    expect(newProps).not.toContain('var label string = "x"')
+    // The field keeps the pre-existing raw passthrough.
+    expect(newProps).toContain('Label: in.Label,')
+  })
+
+  test('a `/ 0` operand declines collision-derivation — Go constant division by zero is a compile error', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { count?: number }) {
+  const [count, setCount] = createSignal((props.count ?? 1) / 0)
+  return <span>{count()}</span>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const types = result.files.find(f => f.type === 'types')!.content
+    const newProps = types.slice(types.indexOf('func NewCProps'))
+    expect(newProps).not.toContain('count / 0')
+    expect(newProps).toContain('Count: in.Count,')
+  })
+
   test('the same collision reached through a component-scope const hop (#2685) lowers identically', () => {
     const direct = compileJSX(`
 'use client'
