@@ -7,6 +7,12 @@
  * and marker-id encoding.
  */
 
+/** Escape a string for a Perl single-quoted literal: backslash first (so
+ *  it doesn't double-escape the quote we add next), then the quote. */
+export function escapePerlSingleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
 /**
  * (#checkbox) Quote a `render_child` named-arg / hashref key when it isn't a
  * bare Perl identifier. A JSX attribute name like `data-slot` would otherwise
@@ -15,7 +21,7 @@
  * through unquoted to keep the generated template readable.
  */
 export function perlHashKey(name: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${escapePerlSingleQuoted(name)}'`
 }
 
 /**

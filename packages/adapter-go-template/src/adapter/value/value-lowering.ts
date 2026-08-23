@@ -390,40 +390,43 @@ function resolveMapJoinBaseAsGo(
   return null
 }
 
+/** `.map`/`.filter` → the runtime evaluator function that composes it. Both
+ *  take `items any` and return `[]any` (`eval.go`), so nesting one call's
+ *  result straight into another's `items` argument is exactly `.a().b()`'s
+ *  JS semantics — no expression-tree fusion needed (#2696 review). */
+const CALLBACK_EVAL_FUNC: Record<string, string> = { map: 'bf.MapEval', filter: 'bf.FilterEval' }
+
 /**
- * Lower a `.map(cb).join(sep)` chain (matched by {@link matchMapJoinChain})
- * to a `bf.Join(bf.MapEval(<items>, "<projJSON>", "<param>", <envMap>),
- * <sep>)` Go expression — the constructor-source analogue of
- * `matchFilterArmMemo`'s `bf.FilterEval` emit (`memo-compute.ts`), reusing
- * the SAME two runtime evaluator functions (`MapEval`, `eval.go`; `Join`,
- * `bf.go`) the template-position `bf_map_eval`/`bf_join` lowering already
- * calls. Shared by a memo's derived value (`memoInitialFromParsedBody`'s
- * concatenation-chain arm) and a SIGNAL's own initializer
- * (`convertInitialValue`'s `string` branch, #2492).
+ * Lower ONE `.map(cb)`/`.filter(cb)` step to a runtime-evaluator call over an
+ * already-resolved `itemsGo` Go expression: `bf.MapEval(<itemsGo>,
+ * "<projJSON>", "<param>", <envMap>)` (or `bf.FilterEval` for `.filter`).
+ * Shared by {@link resolveMapChainAsGo} (an intermediate step feeding the
+ * NEXT step's `items`) and {@link mapJoinChainToGo} (the outermost step,
+ * whose result feeds `bf.Join`).
  *
- * @returns the Go expression, or null when the receiver doesn't resolve
- *   ({@link resolveMapJoinBaseAsGo}), the projection body isn't
- *   representable to the runtime evaluator (`serializeParsedExpr` refusal),
- *   a captured free variable doesn't resolve, or the separator isn't a
- *   string literal (a dynamic separator — out of scope for this arm).
+ * @returns the Go expression, or null when the callback body isn't
+ *   representable to the runtime evaluator (`serializeParsedExpr` refusal)
+ *   or a captured free variable doesn't resolve.
  */
-export function mapJoinChainToGo(
+function callbackStepToGo(
   ctx: GoEmitContext,
-  chain: { object: ParsedExpr; arrow: Extract<ParsedExpr, { kind: 'arrow' }>; sepArg?: ParsedExpr },
+  method: string,
+  itemsGo: string,
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
   signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
-  const itemsGo = resolveMapJoinBaseAsGo(ctx, chain.object, signals, propsParams)
-  if (itemsGo === null) return null
+  const evalFunc = CALLBACK_EVAL_FUNC[method]
+  if (!evalFunc) return null
 
   const knownGetterNames = new Set(signals.map(s => s.getter))
-  const materialized = materializeGetterCalls(chain.arrow.body, knownGetterNames)
+  const materialized = materializeGetterCalls(arrow.body, knownGetterNames)
   const projJSON = serializeParsedExpr(materialized)
   if (projJSON === null) return null
 
-  const paramName = chain.arrow.params[0] ?? '_'
-  const freeVars = freeVarsInBody(materialized, new Set(chain.arrow.params))
+  const paramName = arrow.params[0] ?? '_'
+  const freeVars = freeVarsInBody(materialized, new Set(arrow.params))
   const envEntries: string[] = []
   for (const name of freeVars) {
     const sig = signals.find(s => s.getter === name)
@@ -440,6 +443,74 @@ export function mapJoinChainToGo(
   }
   const envMap = `map[string]any{${envEntries.join(', ')}}`
 
+  return `${evalFunc}(${itemsGo}, "${escapeGoString(projJSON)}", ${JSON.stringify(paramName)}, ${envMap})`
+}
+
+/**
+ * Resolve a `.map()`/`.filter()` CHAIN of any depth to a Go expression:
+ * peel off callback-method layers one at a time (`asCallbackMethodCall`),
+ * composing a `bf.MapEval`/`bf.FilterEval` call around the PREVIOUS layer's
+ * result for each one, down to the base receiver
+ * ({@link resolveMapJoinBaseAsGo} — a signal call, prop field, or array
+ * literal). `rows().map(t => ({ id: t.id, … })).map(r => r.id)` composes as
+ * `bf.MapEval(bf.MapEval(<rows>, "{id:t.id,…}", "t", {}), "r.id", "r", {})`
+ * — before this, only a chain whose FIRST layer already matched a base
+ * shape resolved; a nested map/filter layer silently fell to `null` (#2696
+ * review: `map-object-literal-body`'s two chained `.map()`s).
+ *
+ * @returns the Go expression, or null when the base receiver doesn't
+ *   resolve or any layer's callback isn't representable
+ *   ({@link callbackStepToGo}).
+ */
+function resolveMapChainAsGo(
+  ctx: GoEmitContext,
+  expr: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  const cb = asCallbackMethodCall(expr)
+  if (cb && cb.method in CALLBACK_EVAL_FUNC) {
+    const innerGo = resolveMapChainAsGo(ctx, cb.object, signals, propsParams, propFallbackVars)
+    if (innerGo === null) return null
+    return callbackStepToGo(ctx, cb.method, innerGo, cb.arrow, signals, propsParams, propFallbackVars)
+  }
+  return resolveMapJoinBaseAsGo(ctx, expr, signals, propsParams)
+}
+
+/**
+ * Lower a `.map(cb).join(sep)` chain (matched by {@link matchMapJoinChain})
+ * to a `bf.Join(<chain>, <sep>)` Go expression, where `<chain>` is the
+ * chain's OWN `.map()` step composed by {@link callbackStepToGo} over
+ * whatever {@link resolveMapChainAsGo} resolves its receiver to (a base
+ * shape, or one or more nested `.map()`/`.filter()` layers) — the
+ * constructor-source analogue of `matchFilterArmMemo`'s `bf.FilterEval`
+ * emit (`memo-compute.ts`), reusing the SAME runtime evaluator functions
+ * (`MapEval`/`FilterEval`, `eval.go`; `Join`, `bf.go`) the template-position
+ * `bf_map_eval`/`bf_join` lowering already calls. Shared by a memo's
+ * derived value (`memoInitialFromParsedBody`'s concatenation-chain arm and
+ * bare-chain arm) and a SIGNAL's own initializer (`convertInitialValue`'s
+ * `string` branch, #2492).
+ *
+ * @returns the Go expression, or null when the receiver doesn't resolve
+ *   ({@link resolveMapChainAsGo}), the projection body isn't representable
+ *   to the runtime evaluator (`serializeParsedExpr` refusal), a captured
+ *   free variable doesn't resolve, or the separator isn't a string literal
+ *   (a dynamic separator — out of scope for this arm).
+ */
+export function mapJoinChainToGo(
+  ctx: GoEmitContext,
+  chain: { object: ParsedExpr; arrow: Extract<ParsedExpr, { kind: 'arrow' }>; sepArg?: ParsedExpr },
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  const itemsGo = resolveMapChainAsGo(ctx, chain.object, signals, propsParams, propFallbackVars)
+  if (itemsGo === null) return null
+
+  const mapGo = callbackStepToGo(ctx, 'map', itemsGo, chain.arrow, signals, propsParams, propFallbackVars)
+  if (mapGo === null) return null
+
   let sepGo: string
   if (!chain.sepArg) {
     sepGo = JSON.stringify(',')
@@ -449,5 +520,5 @@ export function mapJoinChainToGo(
     return null
   }
 
-  return `bf.Join(bf.MapEval(${itemsGo}, "${escapeGoString(projJSON)}", ${JSON.stringify(paramName)}, ${envMap}), ${sepGo})`
+  return `bf.Join(${mapGo}, ${sepGo})`
 }

@@ -1814,38 +1814,8 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 334,
+    "totalFixtures": 335,
     "fixtures": {
-      "callback-param-shadows-prop": {
-        "blade": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "the `first` signal seeds from `[{ a: 'p' }].map((title) => title.a).join(',')` — a constant expression `extractSsrDefaults` still cannot statically resolve (`.map()` is unsupported for any receiver) and, unlike the sibling `joined` memo's structurally similar chain, gets no in-template recompute (`computeSsrSeedPlan` classifies it opaque too); `<span>{first()}</span>` SSRs empty instead of `p` (https://github.com/piconic-ai/barefootjs/issues/2696)"
-        }
-      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -3456,10 +3426,6 @@
       }
     },
     "docs": {
-      "callback-param-shadows-prop": {
-        "description": "Nested callback param sharing a prop name stays a param in the CSR template (no invalid `_p.`…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-param-shadows-prop.ts"
-      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"

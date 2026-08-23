@@ -28,6 +28,7 @@ import { groupBinaryOperand,
 
 import type { XslateEmitContext } from '../emit-context.ts'
 import { XSLATE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
+import { escapeKolonSingleQuoted } from '../lib/kolon-naming.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -590,16 +591,14 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return "''"
   }
 
-  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
-    // The shared `isSupported` gate only ever lets this dispatcher see an
-    // object literal as the EMPTY (`?? {}`) fallback operand of `??`
-    // (expression-parser.ts, `logical` case) — any other object literal is
-    // refused before reaching here. Emit Kolon's real empty hashref
-    // literal, matching the `'{}'` convention `objectLiteralToKolonHashref`
-    // already uses for the zero-property case in the spread path. A
-    // populated literal is structurally unreachable given the gate, but
-    // still degrades safely to the pre-existing empty-string sentinel
-    // rather than silently dropping keys.
-    return properties.length === 0 ? '{}' : "''"
+  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, emit: (e: ParsedExpr) => string): string {
+    // Reachable here in VALUE position (a `.map()` receiver/callback body, an
+    // array-literal element, …) since `isSupportedValue` admits an object
+    // literal whose every property value is itself supported
+    // (expression-parser.ts, `checkSupport`'s `pos` parameter). Emit a Kolon
+    // hashref literal, quoted the same way `objectLiteralToKolonHashref`
+    // quotes the spread-path literal.
+    if (properties.length === 0) return '{}'
+    return `{ ${properties.map(p => `'${escapeKolonSingleQuoted(p.key)}' => ${emit(p.value)}`).join(', ')} }`
   }
 }

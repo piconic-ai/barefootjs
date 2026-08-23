@@ -4991,12 +4991,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `bf_arr ${parts.join(' ')}`
   }
 
-  objectLiteral(_properties: ObjectLiteralProperty[], raw: string, _emit: (e: ParsedExpr) => string): string {
-    // The shared `isSupported` gate now admits an EMPTY object literal
-    // (`?? {}`) as `??`'s right operand (expression-parser.ts, `logical`
-    // case) — every other adapter has a native `{}` dict/hashref literal to
-    // emit here, but `text/template` has none, so this dispatcher is the
-    // one place left to refuse the shape. Unlike the sibling adapters, Go
+  objectLiteral(properties: ObjectLiteralProperty[], raw: string, emit: (e: ParsedExpr) => string): string {
+    // A POPULATED literal is reachable here only in VALUE position (a
+    // `.map()` receiver/callback body, an array-literal element, …) —
+    // `isSupportedValue` admits it when every property value is itself
+    // supported (expression-parser.ts, `checkSupport`'s `pos` parameter).
+    // `text/template` has no map-literal syntax, so lower through the
+    // variadic `bf_map` runtime helper (the object counterpart of
+    // `arrayLiteral`'s `bf_arr`) instead of trying to spell a literal.
+    if (properties.length > 0) {
+      const parts = properties.map(p => {
+        const rendered = emit(p.value)
+        const val = rendered.includes(' ') ? `(${rendered})` : rendered
+        return `"${escapeGoString(p.key)}" ${val}`
+      })
+      return `bf_map ${parts.join(' ')}`
+    }
+    // The EMPTY object literal (`?? {}`) reaches here as `??`'s right
+    // operand (expression-parser.ts, `logical` case) — a RENDERED-position
+    // admission, not a value-position one. Unlike the sibling adapters, Go
     // can't silently fall back to a safe sentinel text: `this.unsupported`'s
     // `[UNSUPPORTED: …]` marker would be spliced into a Go template action
     // (e.g. as an `or`/`and` operand) and break template parsing, and the

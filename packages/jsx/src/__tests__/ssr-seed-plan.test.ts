@@ -158,7 +158,12 @@ describe('computeSsrSeedPlan', () => {
     if (label.kind === 'opaque') expect(label.origin).toBe('memo')
   })
 
-  test('unsupported body (object literal) → opaque', () => {
+  test('object-literal body → derived (#2696: value-position object literal, isSupportedValue)', () => {
+    // Was `opaque` before `checkSupport` gained its `pos` parameter — a
+    // memo's WHOLE body is a value position (an assignment, never a
+    // render), so an object literal there is exactly the shape
+    // `isSupportedValue` now admits (every property value — here `n()` —
+    // is itself supported).
     const plan = planFor(`
       'use client'
       import { createMemo, createSignal } from '@barefootjs/client'
@@ -169,7 +174,12 @@ describe('computeSsrSeedPlan', () => {
       }
     `)
 
-    expect(step(plan, 'obj').kind).toBe('opaque')
+    const obj = step(plan, 'obj')
+    expect(obj.kind).toBe('derived')
+    if (obj.kind === 'derived') {
+      expect(obj.origin).toBe('memo')
+      expect(obj.frees).toEqual(['n'])
+    }
   })
 
   test('literal signal init → derived with empty frees (constant-skip is emit-side)', () => {

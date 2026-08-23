@@ -458,6 +458,47 @@ describe('extractSsrDefaults', () => {
     // space mirrors Hono's empty-className interpolation).
     expect(defaults?.classes).toEqual({ value: 'a b c d  tail' })
   })
+
+  // #2698 review: a property access on a non-plain-object base (an array
+  // element bound by `.map()`) must refuse (UNRESOLVED), not silently read
+  // `undefined` via `hasOwnProperty` — an array exposes prototype members
+  // (`.map`, `.filter`, …) that aren't own properties, so the old guard
+  // (`typeof !== 'object'`) let arrays through and misreported them as a
+  // real `undefined` value instead of an unrepresentable read.
+  test('.map() body property-access on an ARRAY element is UNRESOLVED, not undefined', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [x] = createSignal([[1, 2], [3, 4]].map(t => t.foo))
+        return <p>{x()}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    // UNRESOLVED aborts the whole `.map()` (not a per-element `null`) —
+    // resultToJsonable renders the abort as the same `null` a genuinely
+    // undefined value would, but the two paths reach it differently: this
+    // pin exists to keep the array case going through the abort path.
+    expect(defaults?.x).toEqual({ value: null })
+  })
+
+  test('.map() body property-access on a PLAIN-OBJECT element still resolves a missing key to undefined', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [x] = createSignal([{ a: 1 }, {}].map(t => t.a))
+        return <p>{x()}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    // Unlike the array case, a missing key on a plain object resolves that
+    // ONE element to `undefined` (→ `null`) and the `.map()` keeps going —
+    // it does not abort the whole computation.
+    expect(defaults?.x).toEqual({ value: [1, null] })
+  })
 })
 
 // TS twin of the Ruby/Python/PHP/Perl/Rust `derive*FromDefaults` runtime

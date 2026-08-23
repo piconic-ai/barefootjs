@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, foldBlockToExpr, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, asCallbackMethodCall, containsHigherOrder } from '../expression-parser'
+import { parseExpression, isSupported, isSupportedValue, exprToString, stringifyParsedExpr, parseBlockBody, foldBlockToExpr, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, asCallbackMethodCall, containsHigherOrder } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -1400,6 +1400,32 @@ describe('expression-parser', () => {
       const expr = parseExpression('({}) ?? props.config')
       const result = isSupported(expr)
       expect(result.supported).toBe(false)
+    })
+
+    // #2696 review: `pos` propagates by pure inheritance, with no per-shape
+    // forcing to `value` — a RENDERED entry point's behaviour must stay
+    // byte-identical to before `isSupportedValue` existed, on every shape
+    // that reaches a container-contents position (an array-literal element,
+    // an array-method/callback receiver, a callback body). `isSupportedValue`
+    // admits the identical trees, since the whole tree it's entered on is a
+    // `value` position (a signal/memo initializer).
+    test('a populated object-literal array-literal element is refused at RENDERED, supported at VALUE', () => {
+      const expr = parseExpression('[{ a: 1 }]')
+      expect(expr.kind).toBe('array-literal')
+      expect(isSupported(expr).supported).toBe(false)
+      expect(isSupportedValue(expr).supported).toBe(true)
+    })
+
+    test('an array-of-objects .join() receiver is refused at RENDERED, supported at VALUE', () => {
+      const expr = parseExpression("[{ a: 1 }].join(',')")
+      expect(isSupported(expr).supported).toBe(false)
+      expect(isSupportedValue(expr).supported).toBe(true)
+    })
+
+    test('a .map() callback body returning an object literal is refused at RENDERED, supported at VALUE', () => {
+      const expr = parseExpression('items.map(t => ({ a: t }))')
+      expect(isSupported(expr).supported).toBe(false)
+      expect(isSupportedValue(expr).supported).toBe(true)
     })
 
     test('L5: filter() with simple predicate IS supported', () => {

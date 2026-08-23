@@ -65,7 +65,8 @@ export function generateDerivedMemoSeed(ctx: MojoMemoContext, ir: ComponentIR): 
   const lines: string[] = []
   for (const step of plan.steps) {
     if (step.kind !== 'derived') continue
-    const perl = ctx.convertExpressionToPerl(step.expr, step.parsed)
+    // `'value'` — this RHS is an assignment, not a render (#2696 review).
+    const perl = ctx.convertExpressionToPerl(step.expr, step.parsed, 'value')
     if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) continue
     lines.push(`% my $${step.name} = ${perl};`)
   }

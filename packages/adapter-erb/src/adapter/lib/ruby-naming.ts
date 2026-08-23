@@ -88,6 +88,12 @@ export function rubyStringLiteral(s: string): string {
 /** A syntactically valid bare Ruby hash-key / symbol identifier. */
 const VALID_RUBY_SYMBOL = /^[A-Za-z_][A-Za-z0-9_]*[?!]?$/
 
+/** Escape a string for a Ruby double-quoted literal: backslash first (so
+ *  it doesn't double-escape the quote we add next), then the quote. */
+export function escapeRubyDoubleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
 /**
  * Render `name` as a Ruby Hash literal SYMBOL key in `key: value` position.
  * A JSX attribute / prop name like `data-slot` isn't a valid bare Ruby
@@ -98,7 +104,7 @@ const VALID_RUBY_SYMBOL = /^[A-Za-z_][A-Za-z0-9_]*[?!]?$/
  * unquoted (`size: value`) for readability.
  */
 export function rubySymbolKey(name: string): string {
-  return VALID_RUBY_SYMBOL.test(name) ? `${name}:` : `"${name.replace(/"/g, '\\"')}":`
+  return VALID_RUBY_SYMBOL.test(name) ? `${name}:` : `"${escapeRubyDoubleQuoted(name)}":`
 }
 
 /**
@@ -107,7 +113,7 @@ export function rubySymbolKey(name: string): string {
  * `rubySymbolKey`'s `key: value` Hash-literal position.
  */
 export function rubySymbolLiteral(name: string): string {
-  return VALID_RUBY_SYMBOL.test(name) ? `:${name}` : `:"${name.replace(/"/g, '\\"')}"`
+  return VALID_RUBY_SYMBOL.test(name) ? `:${name}` : `:"${escapeRubyDoubleQuoted(name)}"`
 }
 
 /**

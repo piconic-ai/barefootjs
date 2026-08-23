@@ -27,6 +27,7 @@ import { renderErbComponent, ErbNotAvailableError } from '../test-render'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
 import { renderDivergences } from '../render-divergences'
+import { escapeRubyDoubleQuoted, rubySymbolKey } from '../adapter/lib/ruby-naming'
 
 runAdapterConformanceTests({
   name: 'erb',
@@ -653,5 +654,18 @@ export function Counter() {
       preloadAssets: ['/assets/index-pre1.js'],
     })
     expect(template).not.toContain('<link')
+  })
+})
+
+// A backslash ahead of a quote must be escaped first, or the doubled
+// quote-escape eats the closing quote instead of round-tripping the
+// original bytes (PR #2698 review).
+describe('ErbAdapter - Ruby double-quote escaping order (#2698 review)', () => {
+  test('escapeRubyDoubleQuoted doubles a backslash before escaping a quote', () => {
+    expect(escapeRubyDoubleQuoted('a\\"b')).toBe('a\\\\\\"b')
+  })
+
+  test('rubySymbolKey applies the same backslash-first rule to a non-identifier key', () => {
+    expect(rubySymbolKey('a\\"b')).toBe('"a\\\\\\"b":')
   })
 })

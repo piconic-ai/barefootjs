@@ -67,7 +67,8 @@ export function generateDerivedMemoSeed(ctx: ErbMemoContext, ir: ComponentIR): s
   const lines: string[] = []
   for (const step of plan.steps) {
     if (step.kind !== 'derived') continue
-    const ruby = ctx.convertExpressionToRuby(step.expr, step.parsed)
+    // `'value'` — this RHS is an assignment, not a render (#2696 review).
+    const ruby = ctx.convertExpressionToRuby(step.expr, step.parsed, 'value')
     if (ruby === '' || !/v\[:[A-Za-z_]\w*\]/.test(ruby)) continue
     lines.push(`<% v[:${step.name}] = ${ruby} %>`)
   }

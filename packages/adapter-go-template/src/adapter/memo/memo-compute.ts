@@ -592,6 +592,17 @@ export function memoInitialFromParsedBody(
     if (concatGo !== null) return concatGo
   }
 
+  // () => <object>.map(cb).join(sep) as the memo's WHOLE body (no `+`
+  // concatenation) — `map-object-literal-body`'s `ids` memo: `rows().map(t
+  // => ({ id: t.id, done: false })).map(r => r.id).join(',')`. The `+`-chain
+  // arm above only reaches `matchMapJoinChain` as ONE leaf of a
+  // concatenation; a bare chain memo never entered it (#2696 review).
+  const bareChain = matchMapJoinChain(body)
+  if (bareChain) {
+    const chainGo = mapJoinChainToGo(ctx, bareChain, signals, propsParams, propFallbackVars)
+    if (chainGo !== null) return chainGo
+  }
+
   return null
 }
 

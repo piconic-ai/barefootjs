@@ -102,8 +102,11 @@ export interface BladeMemoContext {
   /**
    * Lower a JS expression to its Blade form (the core recursive entry). See
    * `BladeSpreadContext.convertExpressionToBlade` for the `preParsed` contract.
+   * `pos` (default `'rendered'`) must be `'value'` for a derived-seed RHS —
+   * an assignment, not a render — so the internal support gate matches the
+   * `isSupportedValue` classification the seed plan already used.
    */
-  convertExpressionToBlade(expr: string, preParsed?: ParsedExpr): string
+  convertExpressionToBlade(expr: string, preParsed?: ParsedExpr, pos?: 'rendered' | 'value'): string
 
   /**
    * Per-compile diagnostic list `convertExpressionToBlade` appends to on an

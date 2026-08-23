@@ -75,7 +75,8 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   const lines: string[] = []
   for (const step of plan.steps) {
     if (step.kind !== 'derived') continue
-    const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed)
+    // `'value'` — this RHS is an assignment, not a render (#2696 review).
+    const kolon = ctx.convertExpressionToKolon(step.expr, step.parsed, 'value')
     if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) continue
     if (new RegExp(`\\$${step.name}\\b`).test(kolon)) {
       // Self-referencing lowering (#2679): capture the RHS into a

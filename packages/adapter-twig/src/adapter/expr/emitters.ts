@@ -76,7 +76,7 @@ import { groupBinaryOperand,
 
 import type { TwigEmitContext } from '../emit-context.ts'
 import { TWIG_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { twigIdent, escapeTwigSingleQuoted } from '../lib/twig-naming.ts'
+import { twigIdent, escapeTwigSingleQuoted, twigHashKey } from '../lib/twig-naming.ts'
 import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
@@ -663,16 +663,14 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     return "''"
   }
 
-  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
-    // The shared `isSupported` gate only ever lets this dispatcher see an
-    // object literal as the EMPTY (`?? {}`) fallback operand of `??`
-    // (expression-parser.ts, `logical` case) — any other object literal is
-    // refused before reaching here. Emit Twig's real empty hash literal,
-    // matching the `'{}'` convention `objectLiteralToTwigDict` already uses
-    // for the zero-property case in the spread path. A populated literal is
-    // structurally unreachable given the gate, but still degrades safely to
-    // the pre-existing empty-string sentinel rather than silently dropping
-    // keys.
-    return properties.length === 0 ? '{}' : "''"
+  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, emit: (e: ParsedExpr) => string): string {
+    // Reachable here in VALUE position (a `.map()` receiver/callback body, an
+    // array-literal element, …) since `isSupportedValue` admits an object
+    // literal whose every property value is itself supported
+    // (expression-parser.ts, `checkSupport`'s `pos` parameter). Emit a Twig
+    // hash literal, keyed the same way `objectLiteralToTwigDict` quotes the
+    // spread-path literal.
+    if (properties.length === 0) return '{}'
+    return `{${properties.map(p => `${twigHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
   }
 }

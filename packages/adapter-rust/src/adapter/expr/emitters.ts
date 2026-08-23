@@ -64,7 +64,7 @@ import { groupBinaryOperand,
 
 import type { JinjaEmitContext } from '../emit-context.ts'
 import { JINJA_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { minijinjaIdent, escapeMinijinjaSingleQuoted } from '../lib/minijinja-naming.ts'
+import { minijinjaIdent, escapeMinijinjaSingleQuoted, minijinjaHashKey } from '../lib/minijinja-naming.ts'
 import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
@@ -623,16 +623,14 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return "''"
   }
 
-  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
-    // The shared `isSupported` gate only ever lets this dispatcher see an
-    // object literal as the EMPTY (`?? {}`) fallback operand of `??`
-    // (expression-parser.ts, `logical` case) — any other object literal is
-    // refused before reaching here. Emit minijinja's real empty dict
-    // literal, matching the `'{}'` convention `objectLiteralToJinjaDict`
-    // already uses for the zero-property case in the spread path. A
-    // populated literal is structurally unreachable given the gate, but
-    // still degrades safely to the pre-existing empty-string sentinel
-    // rather than silently dropping keys.
-    return properties.length === 0 ? '{}' : "''"
+  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, emit: (e: ParsedExpr) => string): string {
+    // Reachable here in VALUE position (a `.map()` receiver/callback body, an
+    // array-literal element, …) since `isSupportedValue` admits an object
+    // literal whose every property value is itself supported
+    // (expression-parser.ts, `checkSupport`'s `pos` parameter). Emit a
+    // minijinja dict literal, keyed the same way `objectLiteralToJinjaDict`
+    // quotes the spread-path literal.
+    if (properties.length === 0) return '{}'
+    return `{${properties.map(p => `${minijinjaHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
   }
 }

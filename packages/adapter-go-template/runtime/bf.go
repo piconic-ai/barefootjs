@@ -107,7 +107,14 @@ func FuncMap() template.FuncMap {
 		"bf_first":          First,
 		"bf_last":           Last,
 		"bf_arr":            Arr,
-		"bf_filter_truthy":  FilterTruthy,
+		// `bf_map` reuses `Env` (eval.go) — both build a `map[string]any`
+		// from an alternating key/value variadic list. `Env` was written
+		// for the evaluator's free-var capture map; a JS object-literal
+		// lowered to a template action (the `objectLiteral` emitter,
+		// #2696 Step 1) needs the exact same construction, so it's
+		// registered under a second name rather than duplicated.
+		"bf_map":           Env,
+		"bf_filter_truthy": FilterTruthy,
 
 		// Higher-order Array Methods
 		"bf_every":           Every,
