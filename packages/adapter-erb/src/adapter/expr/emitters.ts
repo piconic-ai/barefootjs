@@ -42,6 +42,7 @@ import {
   type FlatDepth,
   type TemplatePart,
   emitParsedExpr,
+  groupObjectLiteralSegments,
   identifierPath,
   matchSearchParamsMethodCall,
   sortComparatorFromArrow,
@@ -683,6 +684,18 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // Hash literal, keyed the same way `objectLiteralToRubyHash` quotes the
     // spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{ ${properties.map(p => `${rubySymbolKey(p.key)} ${emit(p.value)}`).join(', ')} }`
+    const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
+      `{ ${run.map(p => `${rubySymbolKey(p.key)} ${emit(p.value)}`).join(', ')} }`
+    if (!properties.some(p => p.kind === 'spread')) {
+      return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
+    }
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2): `Hash#merge` has
+    // accepted multiple hash arguments since Ruby 2.6 (this gem requires
+    // >= 3.1), overriding left-to-right — exactly JS spread's semantics.
+    // Starting from a fresh `{}` (rather than the first segment) means the
+    // fold works uniformly whether the FIRST entry is a `prop` run or a
+    // `spread` — no special-casing which segment is the merge "receiver".
+    const segments = groupObjectLiteralSegments(properties, literalOf, emit)
+    return `{}.merge(${segments.join(', ')})`
   }
 }

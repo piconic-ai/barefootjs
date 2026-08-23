@@ -65,7 +65,7 @@ export function minijinjaHashKey(name: string): string {
  * truth, IDENTICAL to adapter-jinja's set; the Rust runtime's
  * `mangle_ident` mirrors this exact set.
  */
-const RESERVED_WORDS = new Set([
+export const RESERVED_WORDS = new Set([
   'if', 'else', 'for', 'in', 'is', 'not', 'and', 'or', 'none', 'true', 'false',
   'import', 'from', 'class', 'def', 'pass', 'del', 'return', 'lambda', 'global',
   'with', 'as', 'raise', 'try', 'except', 'finally', 'while', 'break',

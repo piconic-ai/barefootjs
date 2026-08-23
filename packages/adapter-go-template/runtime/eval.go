@@ -166,10 +166,26 @@ func EvalNode(node any, env map[string]any) any {
 		return out
 
 	case "object-literal":
+		// Each entry carries its own "kind" ("prop" | "spread", #2696 Step
+		// 2) — the SAME encoding `toEvalNode`'s object-literal case emits
+		// AND the raw ParsedExpr shape the eval-vectors.json golden corpus
+		// carries, so this one decoder serves both sources. A "spread"
+		// evaluates its "expr" and shallow-merges the result's own keys (a
+		// non-map result — including a null/undefined JS spread source — is
+		// a no-op, via Merge's same skip-non-map tolerance); a "prop" sets
+		// one key. Later entries win on a shared key, in source order,
+		// matching JS object-spread exactly.
 		props, _ := n["properties"].([]any)
 		out := make(map[string]any, len(props))
 		for _, p := range props {
 			pm, _ := p.(map[string]any)
+			if kind, _ := pm["kind"].(string); kind == "spread" {
+				spread, _ := EvalNode(pm["expr"], env).(map[string]any)
+				for k, v := range spread {
+					out[k] = v
+				}
+				continue
+			}
 			key, _ := pm["key"].(string)
 			out[key] = EvalNode(pm["value"], env)
 		}
@@ -1006,6 +1022,30 @@ func Env(pairs ...any) map[string]any {
 		env[key] = pairs[i+1]
 	}
 	return env
+}
+
+// Merge shallow-merges any number of maps, later arguments winning on a
+// shared key — `bf_map`'s sibling for a POPULATED object-literal SPREAD
+// (#2696 Step 2, `{ ...t, editing: false }`), registered as `bf_merge` in
+// FuncMap (bf.go). A non-`map[string]any` argument (nil included) is
+// SKIPPED rather than panicking — this is the template-action-emit path's
+// null-safety counterpart to `toEvalNode`'s object-literal spread handling
+// (a null/undefined JS spread source is a no-op, and this also tolerates any
+// other non-object value the same way, never panicking on stray input).
+// With zero maps to merge it returns a non-nil empty map (never nil), same
+// as `Env` with no pairs.
+func Merge(maps ...any) map[string]any {
+	out := make(map[string]any, len(maps))
+	for _, m := range maps {
+		mm, ok := m.(map[string]any)
+		if !ok {
+			continue
+		}
+		for k, v := range mm {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 func evalReadIndex(obj any, index any) any {

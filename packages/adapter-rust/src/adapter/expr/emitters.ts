@@ -64,7 +64,7 @@ import { groupBinaryOperand,
 
 import type { JinjaEmitContext } from '../emit-context.ts'
 import { JINJA_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { minijinjaIdent, escapeMinijinjaSingleQuoted, minijinjaHashKey } from '../lib/minijinja-naming.ts'
+import { minijinjaIdent, escapeMinijinjaSingleQuoted, minijinjaHashKey, RESERVED_WORDS as MINIJINJA_KWARG_RESERVED } from '../lib/minijinja-naming.ts'
 import { isBooleanResultParsed } from '../boolean-result.ts'
 import {
   renderArrayMethod,
@@ -623,7 +623,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return "''"
   }
 
-  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, emit: (e: ParsedExpr) => string): string {
+  objectLiteral(properties: ObjectLiteralProperty[], raw: string, emit: (e: ParsedExpr) => string): string {
     // Reachable here in VALUE position (a `.map()` receiver/callback body, an
     // array-literal element, …) since `isSupportedValue` admits an object
     // literal whose every property value is itself supported
@@ -631,6 +631,36 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // minijinja dict literal, keyed the same way `objectLiteralToJinjaDict`
     // quotes the spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{${properties.map(p => `${minijinjaHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
+    if (!properties.some(p => p.kind === 'spread')) {
+      return `{${properties.map(p => (p.kind === 'prop' ? `${minijinjaHashKey(p.key)}: ${emit(p.value)}` : '')).join(', ')}}`
+    }
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2). minijinja's builtin
+    // `dict(value, **kwargs)` (functions.rs) merges kwargs OVER a base value
+    // — `None`/undefined bases to an empty map (JS's null/undefined-spread
+    // no-op, for free) — but minijinja has NO `**expr` unpack at call sites
+    // (`**` lexes only as the power operator), so the override side must be
+    // STATIC named kwargs. That expresses exactly ONE shape faithfully: a
+    // single spread FIRST, followed only by plain `prop` entries whose keys
+    // are valid bareword identifiers (a reserved word can't be a kwarg name
+    // either) — the todo-app motivating shape. Any other arrangement (a
+    // spread not first, two spreads, or a non-identifier prop key sharing an
+    // object with a spread) has no minijinja spelling — self-report BF101
+    // rather than silently dropping the unmergeable keys.
+    const [first, ...rest] = properties
+    const kwargSafe = (p: Extract<ObjectLiteralProperty, { kind: 'prop' }>) =>
+      p.keyKind !== 'numeric' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(p.key) && !MINIJINJA_KWARG_RESERVED.has(p.key)
+    const shapeOk =
+      first.kind === 'spread' &&
+      rest.every(p => p.kind === 'prop' && kwargSafe(p))
+    if (!shapeOk) {
+      this.ctx._recordExprBF101(
+        `Object-literal spread '${raw}' isn't expressible in minijinja — a spread must be the FIRST entry, followed only by plain properties with bareword-identifier keys (minijinja's 'dict(value, **kwargs)' has no '**expr' unpack for a dynamic override)`,
+        `Reorder so the spread comes first with only simple identifier keys after it, or precompute the merged object and move this position to a '/* @client */' boundary.`,
+      )
+      return "''"
+    }
+    const kwargs = (rest as Extract<ObjectLiteralProperty, { kind: 'prop' }>[]).map(p => `${p.key}=${emit(p.value)}`)
+    const base = emit(first.expr)
+    return kwargs.length === 0 ? `dict(${base})` : `dict(${base}, ${kwargs.join(', ')})`
   }
 }

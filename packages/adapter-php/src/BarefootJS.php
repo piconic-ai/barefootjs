@@ -1200,6 +1200,36 @@ final class BarefootJS
         return $this->isJsObject($recv) ? array_values((array) $recv) : [];
     }
 
+    /**
+     * Shallow-merge any number of JS objects, later arguments winning on a
+     * shared key -- an object-literal SPREAD's direct-value-position
+     * lowering (`{ ...t, editing: false }`, #2696 Step 2), shared between
+     * the Blade (`$bf->merge(...)`) and Twig (`bf.merge(...)`) emitters.
+     *
+     * NOT PHP's own `array_merge()` / Twig's `merge` filter directly: a
+     * `json_decode()`-sourced object prop decodes as `stdClass` (this
+     * runtime's canonical JSON-object representation, `isJsObject()`'s
+     * docstring), and neither `array_merge()` nor Twig's `merge` filter
+     * accepts a `stdClass` operand -- `array_merge(stdClass, ...)` is a
+     * PHP `TypeError`, and Twig's filter raises `The "merge" filter
+     * expects a sequence or a mapping`. Routing through `isJsObject()` +
+     * `(array)` (the SAME normalisation `entries()`/`keys()`/`values()`
+     * already use) accepts either representation uniformly. A non-object
+     * argument (including a JS null/undefined spread source) is SKIPPED
+     * rather than raising -- matching every other backend evaluator's
+     * null/undefined-spread-is-a-no-op semantics.
+     */
+    public function merge(...$args): array
+    {
+        $out = [];
+        foreach ($args as $v) {
+            if ($this->isJsObject($v)) {
+                $out = array_merge($out, (array) $v);
+            }
+        }
+        return $out;
+    }
+
     private function arrayIndexOf($recv, $elem, bool $reverse): int
     {
         if (!Evaluator::isJsArray($recv)) {

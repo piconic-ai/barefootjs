@@ -21,7 +21,7 @@
           "total": 80
         },
         "blade": {
-          "pass": 66,
+          "pass": 68,
           "total": 80,
           "gaps": [
             {
@@ -75,19 +75,11 @@
             {
               "fixture": "tag-cloud",
               "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 67,
+          "pass": 69,
           "total": 80,
           "gaps": [
             {
@@ -134,14 +126,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -205,7 +189,7 @@
           ]
         },
         "jinja": {
-          "pass": 66,
+          "pass": 68,
           "total": 80,
           "gaps": [
             {
@@ -258,20 +242,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 66,
+          "pass": 68,
           "total": 80,
           "gaps": [
             {
@@ -324,20 +300,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 67,
+          "pass": 69,
           "total": 80,
           "gaps": [
             {
@@ -384,20 +352,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 66,
+          "pass": 68,
           "total": 80,
           "gaps": [
             {
@@ -450,20 +410,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 66,
+          "pass": 68,
           "total": 80,
           "gaps": [
             {
@@ -516,14 +468,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -531,8 +475,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 176,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
+        "line": 179,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       },
       "example": {
         "fixture": "client-only-loop",
@@ -695,8 +639,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 178,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
+        "line": 181,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L181"
       },
       "example": {
         "fixture": "array-at-default",
@@ -713,7 +657,7 @@
           "total": 70
         },
         "blade": {
-          "pass": 59,
+          "pass": 61,
           "total": 70,
           "gaps": [
             {
@@ -755,19 +699,11 @@
             {
               "fixture": "tag-cloud",
               "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 60,
+          "pass": 62,
           "total": 70,
           "gaps": [
             {
@@ -802,14 +738,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -861,7 +789,7 @@
           ]
         },
         "jinja": {
-          "pass": 59,
+          "pass": 61,
           "total": 70,
           "gaps": [
             {
@@ -902,20 +830,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 59,
+          "pass": 61,
           "total": 70,
           "gaps": [
             {
@@ -956,20 +876,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 60,
+          "pass": 62,
           "total": 70,
           "gaps": [
             {
@@ -1004,20 +916,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 59,
+          "pass": 61,
           "total": 70,
           "gaps": [
             {
@@ -1058,20 +962,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 59,
+          "pass": 61,
           "total": 70,
           "gaps": [
             {
@@ -1112,14 +1008,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -1127,8 +1015,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 174,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
+        "line": 177,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L177"
       },
       "example": {
         "fixture": "array-sort-field-asc",
@@ -1145,7 +1033,7 @@
           "total": 93
         },
         "blade": {
-          "pass": 82,
+          "pass": 84,
           "total": 93,
           "gaps": [
             {
@@ -1189,19 +1077,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 83,
+          "pass": 85,
           "total": 93,
           "gaps": [
             {
@@ -1239,14 +1119,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
@@ -1299,7 +1171,7 @@
           ]
         },
         "jinja": {
-          "pass": 82,
+          "pass": 84,
           "total": 93,
           "gaps": [
             {
@@ -1343,19 +1215,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 82,
+          "pass": 84,
           "total": 93,
           "gaps": [
             {
@@ -1399,19 +1263,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 83,
+          "pass": 85,
           "total": 93,
           "gaps": [
             {
@@ -1449,19 +1305,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 82,
+          "pass": 84,
           "total": 93,
           "gaps": [
             {
@@ -1505,19 +1353,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 82,
+          "pass": 84,
           "total": 93,
           "gaps": [
             {
@@ -1561,22 +1401,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         }
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 169,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L169"
+        "line": 172,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
       },
       "example": {
         "fixture": "array-sort-field-asc",
@@ -1586,11 +1418,11 @@
       }
     },
     "call": {
-      "total": 223,
+      "total": 224,
       "cells": {
         "hono": {
-          "pass": 222,
-          "total": 223,
+          "pass": 223,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1601,8 +1433,8 @@
           ]
         },
         "blade": {
-          "pass": 206,
-          "total": 223,
+          "pass": 209,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1673,20 +1505,12 @@
             {
               "fixture": "tag-cloud",
               "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 207,
-          "total": 223,
+          "pass": 210,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1750,21 +1574,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 208,
-          "total": 223,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1814,6 +1630,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             },
             {
@@ -1839,8 +1659,8 @@
           ]
         },
         "jinja": {
-          "pass": 206,
-          "total": 223,
+          "pass": 209,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1910,21 +1730,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 206,
-          "total": 223,
+          "pass": 209,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1994,21 +1806,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 207,
-          "total": 223,
+          "pass": 210,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2072,21 +1876,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 206,
-          "total": 223,
+          "pass": 209,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2156,21 +1952,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 206,
-          "total": 223,
+          "pass": 209,
+          "total": 224,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2240,14 +2028,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2255,8 +2035,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 166,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L166"
+        "line": 169,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L169"
       },
       "example": {
         "fixture": "aliased-prop-signal-tag-collision",
@@ -2273,7 +2053,7 @@
           "total": 25
         },
         "blade": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2282,20 +2062,12 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2304,14 +2076,6 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2331,7 +2095,7 @@
           ]
         },
         "jinja": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2340,20 +2104,12 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2362,20 +2118,12 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2384,20 +2132,12 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2406,20 +2146,12 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 21,
+          "pass": 23,
           "total": 25,
           "gaps": [
             {
@@ -2428,14 +2160,6 @@
             },
             {
               "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2443,8 +2167,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 171,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L171"
+        "line": 174,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
       },
       "example": {
         "fixture": "attr-ternary-title",
@@ -2454,11 +2178,11 @@
       }
     },
     "identifier": {
-      "total": 313,
+      "total": 314,
       "cells": {
         "hono": {
-          "pass": 312,
-          "total": 313,
+          "pass": 313,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2469,8 +2193,8 @@
           ]
         },
         "blade": {
-          "pass": 294,
-          "total": 313,
+          "pass": 297,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2549,20 +2273,12 @@
             {
               "fixture": "tag-cloud",
               "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 295,
-          "total": 313,
+          "pass": 298,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2634,21 +2350,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 296,
-          "total": 313,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2706,6 +2414,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             },
             {
@@ -2731,8 +2443,8 @@
           ]
         },
         "jinja": {
-          "pass": 294,
-          "total": 313,
+          "pass": 297,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2810,21 +2522,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 294,
-          "total": 313,
+          "pass": 297,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2902,21 +2606,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 295,
-          "total": 313,
+          "pass": 298,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2988,21 +2684,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 294,
-          "total": 313,
+          "pass": 297,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3080,21 +2768,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 294,
-          "total": 313,
+          "pass": 297,
+          "total": 314,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3172,14 +2852,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3187,8 +2859,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 164,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L164"
+        "line": 167,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L167"
       },
       "example": {
         "fixture": "aliased-destructured-prop",
@@ -3239,8 +2911,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 168,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L168"
+        "line": 171,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L171"
       },
       "example": {
         "fixture": "record-index-lookup-via-child-prop",
@@ -3250,15 +2922,15 @@
       }
     },
     "literal": {
-      "total": 255,
+      "total": 256,
       "cells": {
         "hono": {
-          "pass": 255,
-          "total": 255
+          "pass": 256,
+          "total": 256
         },
         "blade": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3304,21 +2976,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3364,21 +3028,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 244,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3410,6 +3066,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             },
             {
@@ -3429,8 +3089,8 @@
           ]
         },
         "jinja": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3476,21 +3136,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3536,21 +3188,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3596,21 +3240,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3656,21 +3292,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 242,
-          "total": 255,
+          "pass": 245,
+          "total": 256,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3716,14 +3344,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3731,8 +3351,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 165,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L165"
+        "line": 168,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L168"
       },
       "example": {
         "fixture": "boolean-attr-literals",
@@ -3749,7 +3369,7 @@
           "total": 48
         },
         "blade": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3760,20 +3380,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3784,14 +3396,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3813,7 +3417,7 @@
           ]
         },
         "jinja": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3824,20 +3428,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3848,20 +3444,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3872,20 +3460,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3896,20 +3476,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 44,
+          "pass": 46,
           "total": 48,
           "gaps": [
             {
@@ -3920,14 +3492,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3935,8 +3499,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 172,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
+        "line": 175,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L175"
       },
       "example": {
         "fixture": "loop-preamble-conditional-reactive",
@@ -3946,11 +3510,11 @@
       }
     },
     "member": {
-      "total": 178,
+      "total": 179,
       "cells": {
         "hono": {
-          "pass": 177,
-          "total": 178,
+          "pass": 178,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3961,8 +3525,8 @@
           ]
         },
         "blade": {
-          "pass": 159,
-          "total": 178,
+          "pass": 162,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4041,20 +3605,12 @@
             {
               "fixture": "tag-cloud",
               "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 160,
-          "total": 178,
+          "pass": 163,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4126,21 +3682,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 161,
-          "total": 178,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4198,6 +3746,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             },
             {
@@ -4223,8 +3775,8 @@
           ]
         },
         "jinja": {
-          "pass": 159,
-          "total": 178,
+          "pass": 162,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4302,21 +3854,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 159,
-          "total": 178,
+          "pass": 162,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4394,21 +3938,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 160,
-          "total": 178,
+          "pass": 163,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4480,21 +4016,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 159,
-          "total": 178,
+          "pass": 162,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4572,21 +4100,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 159,
-          "total": 178,
+          "pass": 162,
+          "total": 179,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4664,14 +4184,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -4679,8 +4191,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 167,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L167"
+        "line": 170,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L170"
       },
       "example": {
         "fixture": "grandchild-composition",
@@ -4690,15 +4202,15 @@
       }
     },
     "object-literal": {
-      "total": 58,
+      "total": 62,
       "cells": {
         "hono": {
-          "pass": 58,
-          "total": 58
+          "pass": 62,
+          "total": 62
         },
         "blade": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4709,12 +4221,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4725,15 +4241,23 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 56,
-          "total": 58,
+          "pass": 58,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             },
             {
@@ -4741,12 +4265,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4757,12 +4285,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4773,12 +4305,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4789,12 +4325,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4805,12 +4345,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 56,
-          "total": 58,
+          "pass": 59,
+          "total": 62,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4821,14 +4365,18 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
             }
           ]
         }
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 177,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L177"
+        "line": 180,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L180"
       },
       "example": {
         "fixture": "dangerous-inner-html-dynamic",
@@ -4879,8 +4427,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 175,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L175"
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
       }
     },
     "template-literal": {
@@ -4973,8 +4521,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 173,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
+        "line": 176,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
       },
       "example": {
         "fixture": "flatmap-expression-body",
@@ -4984,15 +4532,15 @@
       }
     },
     "unary": {
-      "total": 23,
+      "total": 24,
       "cells": {
         "hono": {
-          "pass": 23,
-          "total": 23
+          "pass": 24,
+          "total": 24
         },
         "blade": {
-          "pass": 20,
-          "total": 23,
+          "pass": 22,
+          "total": 24,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -5001,44 +4549,40 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 21,
-          "total": 23,
+          "pass": 23,
+          "total": 24,
           "gaps": [
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 22,
-          "total": 23,
+          "total": 24,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 20,
-          "total": 23,
+          "pass": 22,
+          "total": 24,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -5047,18 +4591,14 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 20,
-          "total": 23,
+          "pass": 22,
+          "total": 24,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -5067,32 +4607,24 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 21,
-          "total": 23,
+          "pass": 23,
+          "total": 24,
           "gaps": [
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 20,
-          "total": 23,
+          "pass": 22,
+          "total": 24,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -5101,18 +4633,14 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 20,
-          "total": 23,
+          "pass": 22,
+          "total": 24,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -5121,11 +4649,7 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
@@ -5133,8 +4657,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 170,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L170"
+        "line": 173,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
         "fixture": "array-at",
@@ -5144,15 +4668,15 @@
       }
     },
     "unsupported": {
-      "total": 40,
+      "total": 39,
       "cells": {
         "hono": {
-          "pass": 40,
-          "total": 40
+          "pass": 39,
+          "total": 39
         },
         "blade": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5168,10 +4692,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5200,21 +4720,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5230,10 +4742,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5262,21 +4770,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 29,
-          "total": 40,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5292,10 +4792,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5329,8 +4825,8 @@
           ]
         },
         "jinja": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5346,10 +4842,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5378,21 +4870,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5408,10 +4892,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5440,21 +4920,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5470,10 +4942,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5502,21 +4970,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5532,10 +4992,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5564,21 +5020,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 27,
-          "total": 40,
+          "pass": 29,
+          "total": 39,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5594,10 +5042,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
               "issues": []
             },
             {
@@ -5626,14 +5070,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -5641,8 +5077,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 179,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
+        "line": 182,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L182"
       },
       "example": {
         "fixture": "date-client-revival",
@@ -5694,8 +5130,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 204,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L204"
+        "line": 207,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L207"
       },
       "example": {
         "fixture": "array-at-default",
@@ -5746,8 +5182,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 205,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L205"
+        "line": 208,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L208"
       },
       "example": {
         "fixture": "array-concat",
@@ -5798,8 +5234,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 217,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L217"
+        "line": 220,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L220"
       },
       "example": {
         "fixture": "string-endsWith",
@@ -5850,8 +5286,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 223,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L223"
+        "line": 226,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L226"
       },
       "example": {
         "fixture": "array-flat",
@@ -5902,8 +5338,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 201,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L201"
+        "line": 204,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L204"
       },
       "example": {
         "fixture": "array-includes",
@@ -5954,8 +5390,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 202,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L202"
+        "line": 205,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L205"
       },
       "example": {
         "fixture": "array-indexOf",
@@ -6086,8 +5522,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 200,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L200"
+        "line": 203,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L203"
       },
       "example": {
         "fixture": "array-join-default",
@@ -6138,8 +5574,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 203,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L203"
+        "line": 206,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L206"
       },
       "example": {
         "fixture": "array-lastIndexOf",
@@ -6190,8 +5626,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 222,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L222"
+        "line": 225,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L225"
       },
       "example": {
         "fixture": "string-padEnd",
@@ -6242,8 +5678,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 221,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L221"
+        "line": 224,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L224"
       },
       "example": {
         "fixture": "string-padStart",
@@ -6294,8 +5730,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 220,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L220"
+        "line": 223,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L223"
       },
       "example": {
         "fixture": "string-repeat",
@@ -6346,8 +5782,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 218,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L218"
+        "line": 221,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L221"
       },
       "example": {
         "fixture": "string-replace",
@@ -6398,8 +5834,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 219,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L219"
+        "line": 222,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L222"
       },
       "example": {
         "fixture": "string-replaceall",
@@ -6450,8 +5886,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 207,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L207"
+        "line": 210,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L210"
       },
       "example": {
         "fixture": "array-reverse",
@@ -6550,8 +5986,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 206,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L206"
+        "line": 209,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L209"
       },
       "example": {
         "fixture": "array-slice-copy",
@@ -6602,8 +6038,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 215,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L215"
+        "line": 218,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L218"
       },
       "example": {
         "fixture": "string-split",
@@ -6654,8 +6090,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 216,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L216"
+        "line": 219,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L219"
       },
       "example": {
         "fixture": "string-startsWith",
@@ -6706,8 +6142,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 214,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L214"
+        "line": 217,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L217"
       },
       "example": {
         "fixture": "number-tofixed",
@@ -6758,8 +6194,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 209,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L209"
+        "line": 212,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L212"
       },
       "example": {
         "fixture": "string-toLowerCase",
@@ -6810,8 +6246,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 208,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L208"
+        "line": 211,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L211"
       },
       "example": {
         "fixture": "array-toReversed",
@@ -6821,49 +6257,97 @@
       }
     },
     "array-method:toUpperCase": {
-      "total": 2,
+      "total": 3,
       "cells": {
         "hono": {
-          "pass": 2,
-          "total": 2
+          "pass": 3,
+          "total": 3
         },
         "blade": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "erb": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "twig": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 2,
-          "total": 2
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 210,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L210"
+        "line": 213,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L213"
       },
       "example": {
         "fixture": "string-toUpperCase",
@@ -6914,8 +6398,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 211,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L211"
+        "line": 214,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L214"
       },
       "example": {
         "fixture": "string-trim",
@@ -6966,8 +6450,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 213,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L213"
+        "line": 216,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L216"
       },
       "example": {
         "fixture": "string-trim-sided",
@@ -7018,8 +6502,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 212,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L212"
+        "line": 215,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L215"
       },
       "example": {
         "fixture": "string-trim-sided",
@@ -7463,7 +6947,7 @@
           "total": 49
         },
         "blade": {
-          "pass": 39,
+          "pass": 41,
           "total": 49,
           "gaps": [
             {
@@ -7501,19 +6985,11 @@
             {
               "fixture": "some-typeof-predicate",
               "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 40,
+          "pass": 42,
           "total": 49,
           "gaps": [
             {
@@ -7544,14 +7020,6 @@
             },
             {
               "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -7599,7 +7067,7 @@
           ]
         },
         "jinja": {
-          "pass": 39,
+          "pass": 41,
           "total": 49,
           "gaps": [
             {
@@ -7636,20 +7104,12 @@
             },
             {
               "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 39,
+          "pass": 41,
           "total": 49,
           "gaps": [
             {
@@ -7686,20 +7146,12 @@
             },
             {
               "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 40,
+          "pass": 42,
           "total": 49,
           "gaps": [
             {
@@ -7730,20 +7182,12 @@
             },
             {
               "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 39,
+          "pass": 41,
           "total": 49,
           "gaps": [
             {
@@ -7780,20 +7224,12 @@
             },
             {
               "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 39,
+          "pass": 41,
           "total": 49,
           "gaps": [
             {
@@ -7830,14 +7266,6 @@
             },
             {
               "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -7863,106 +7291,36 @@
           "total": 11
         },
         "blade": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "erb": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "go-template": {
           "pass": 11,
           "total": 11
         },
         "jinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "minijinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "mojolicious": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "twig": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "xslate": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         }
       },
       "source": {
@@ -8030,15 +7388,15 @@
       }
     },
     "literal:boolean": {
-      "total": 50,
+      "total": 53,
       "cells": {
         "hono": {
-          "pass": 50,
-          "total": 50
+          "pass": 53,
+          "total": 53
         },
         "blade": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8047,8 +7405,8 @@
           ]
         },
         "erb": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8057,18 +7415,22 @@
           ]
         },
         "go-template": {
-          "pass": 49,
-          "total": 50,
+          "pass": 51,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8077,8 +7439,8 @@
           ]
         },
         "minijinja": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8087,8 +7449,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8097,8 +7459,8 @@
           ]
         },
         "twig": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8107,8 +7469,8 @@
           ]
         },
         "xslate": {
-          "pass": 49,
-          "total": 50,
+          "pass": 52,
+          "total": 53,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8137,106 +7499,36 @@
           "total": 23
         },
         "blade": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         },
         "erb": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         },
         "go-template": {
           "pass": 23,
           "total": 23
         },
         "jinja": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         },
         "minijinja": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         },
         "mojolicious": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         },
         "twig": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         },
         "xslate": {
-          "pass": 21,
-          "total": 23,
-          "gaps": [
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 23,
+          "total": 23
         }
       },
       "source": {
@@ -8258,7 +7550,7 @@
           "total": 106
         },
         "blade": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8279,20 +7571,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8313,14 +7597,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -8352,7 +7628,7 @@
           ]
         },
         "jinja": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8373,20 +7649,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8407,20 +7675,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8441,20 +7701,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8475,20 +7727,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 99,
+          "pass": 101,
           "total": 106,
           "gaps": [
             {
@@ -8509,14 +7753,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -8535,15 +7771,15 @@
       }
     },
     "literal:string": {
-      "total": 181,
+      "total": 182,
       "cells": {
         "hono": {
-          "pass": 181,
-          "total": 181
+          "pass": 182,
+          "total": 182
         },
         "blade": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8578,20 +7814,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8626,20 +7854,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 173,
-          "total": 181,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8663,6 +7883,10 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "signal-object-spread-init",
               "issues": []
             },
             {
@@ -8678,8 +7902,8 @@
           ]
         },
         "jinja": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8714,20 +7938,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8762,20 +7978,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8810,20 +8018,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8858,20 +8058,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 171,
-          "total": 181,
+          "pass": 174,
+          "total": 182,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8906,14 +8098,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
             }
           ]
         }
@@ -8938,78 +8122,36 @@
           "total": 7
         },
         "blade": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         },
         "erb": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         },
         "go-template": {
           "pass": 7,
           "total": 7
         },
         "jinja": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         },
         "minijinja": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         },
         "mojolicious": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         },
         "twig": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         },
         "xslate": {
-          "pass": 6,
-          "total": 7,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 7,
+          "total": 7
         }
       },
       "source": {
@@ -9032,7 +8174,7 @@
           "total": 42
         },
         "blade": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9043,20 +8185,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9067,14 +8201,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -9096,7 +8222,7 @@
           ]
         },
         "jinja": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9107,20 +8233,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9131,20 +8249,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9155,20 +8265,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9179,20 +8281,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 38,
+          "pass": 40,
           "total": 42,
           "gaps": [
             {
@@ -9203,14 +8297,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -9236,78 +8322,36 @@
           "total": 14
         },
         "blade": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         },
         "erb": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         },
         "go-template": {
           "pass": 14,
           "total": 14
         },
         "jinja": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         },
         "minijinja": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         },
         "twig": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         },
         "xslate": {
-          "pass": 13,
-          "total": 14,
-          "gaps": [
-            {
-              "fixture": "todo-app-ssr",
-              "issues": []
-            }
-          ]
+          "pass": 14,
+          "total": 14
         }
       },
       "source": {
@@ -9427,15 +8471,15 @@
       }
     },
     "unary:!": {
-      "total": 15,
+      "total": 16,
       "cells": {
         "hono": {
-          "pass": 15,
-          "total": 15
+          "pass": 16,
+          "total": 16
         },
         "blade": {
-          "pass": 12,
-          "total": 15,
+          "pass": 14,
+          "total": 16,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -9444,44 +8488,40 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 13,
-          "total": 15,
+          "pass": 15,
+          "total": 16,
           "gaps": [
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 14,
-          "total": 15,
+          "total": 16,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 12,
-          "total": 15,
+          "pass": 14,
+          "total": 16,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -9490,18 +8530,14 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 12,
-          "total": 15,
+          "pass": 14,
+          "total": 16,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -9510,32 +8546,24 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 15,
+          "pass": 15,
+          "total": 16,
           "gaps": [
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 12,
-          "total": 15,
+          "pass": 14,
+          "total": 16,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -9544,18 +8572,14 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 12,
-          "total": 15,
+          "pass": 14,
+          "total": 16,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -9564,11 +8588,7 @@
               ]
             },
             {
-              "fixture": "todo-app",
-              "issues": []
-            },
-            {
-              "fixture": "todo-app-ssr",
+              "fixture": "preamble-cells",
               "issues": []
             }
           ]

@@ -163,9 +163,11 @@ export interface ParsedExprEmitter {
   arrow(params: string[], body: ParsedExpr, emit: (e: ParsedExpr) => string): string
   regex(raw: string): string
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string
-  // Emit an object literal `{ a: 1, b: x }`. `raw` is the original
-  // expression string so an adapter that doesn't lower object values yet
-  // can delegate to `unsupported(raw, …)` and stay byte-identical.
+  // Emit an object literal `{ a: 1, b: x, ...rest }` (#2696 Step 2 adds
+  // spread entries — `properties` is ORDER-PRESERVING, so an adapter must
+  // merge left-to-right, later entries winning, to match JS). `raw` is the
+  // original expression string so an adapter that doesn't lower object
+  // values yet can delegate to `unsupported(raw, …)` and stay byte-identical.
   objectLiteral(
     properties: ObjectLiteralProperty[],
     raw: string,
@@ -275,6 +277,50 @@ export function groupBinaryOperand(operand: ParsedExpr, emitted: string): string
   return operand.kind === 'binary' || operand.kind === 'logical' || operand.kind === 'conditional'
     ? `(${emitted})`
     : emitted
+}
+
+/**
+ * Split an `object-literal`'s (order-preserving) `properties` into rendered
+ * SEGMENTS an adapter's `objectLiteral()` folds with its own merge idiom
+ * (#2696 Step 2): each maximal run of consecutive `prop` entries collapses
+ * into ONE literal (via `literalOf`), and each `spread` entry becomes its
+ * own segment (its emitted source expression) — so `{ a: 1, b: 2, ...t, c: 3
+ * }` yields `[literal({a,b}), emit(t), literal({c})]`, in source order.
+ *
+ * A caller with NO spread entries at all should keep its pre-#2696 single
+ * `literalOf(properties)` call instead of this (this always returns at
+ * least one segment, but a caller folding 1-segment output through a merge
+ * call — `array_merge(x)`, `{}.merge(x)` — would be needlessly indirect
+ * for the common spread-free case).
+ *
+ * Shared here (not duplicated per adapter) because the grouping itself is
+ * backend-neutral structure — only `literalOf` (the target language's
+ * literal syntax) and the fold (the target language's merge idiom) are
+ * adapter-specific.
+ */
+export function groupObjectLiteralSegments(
+  properties: readonly ObjectLiteralProperty[],
+  literalOf: (run: ReadonlyArray<Extract<ObjectLiteralProperty, { kind: 'prop' }>>) => string,
+  emit: (e: ParsedExpr) => string,
+): string[] {
+  const segments: string[] = []
+  let run: Extract<ObjectLiteralProperty, { kind: 'prop' }>[] = []
+  const flushRun = () => {
+    if (run.length > 0) {
+      segments.push(literalOf(run))
+      run = []
+    }
+  }
+  for (const p of properties) {
+    if (p.kind === 'spread') {
+      flushRun()
+      segments.push(emit(p.expr))
+    } else {
+      run.push(p)
+    }
+  }
+  flushRun()
+  return segments
 }
 
 /**

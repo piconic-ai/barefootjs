@@ -112,8 +112,24 @@ sub evaluate ($node, $env) {
         return [ map { evaluate($_, $env) } @{ $node->{elements} // [] } ];
     }
     if ($kind eq 'object-literal') {
+        # Each entry carries its own `kind` ('prop' | 'spread', #2696 Step 2)
+        # — the SAME encoding the Go evaluator (eval.go) and the raw
+        # ParsedExpr shape the eval-vectors.json golden corpus carry, so
+        # this one decoder serves both a compiled `*_eval` payload and the
+        # golden-vector JSON directly. A 'spread' evaluates its `expr` and
+        # shallow-merges the result's own keys (a non-hashref result —
+        # including a null/undefined JS spread source — is a no-op); a
+        # 'prop' sets one key. Later entries win on a shared key, in source
+        # order, matching JS object-spread exactly.
         my %out;
         for my $prop (@{ $node->{properties} // [] }) {
+            if (($prop->{kind} // '') eq 'spread') {
+                my $spread = evaluate($prop->{expr}, $env);
+                if (ref $spread eq 'HASH') {
+                    $out{$_} = $spread->{$_} for keys %$spread;
+                }
+                next;
+            }
             $out{ $prop->{key} } = evaluate($prop->{value}, $env);
         }
         return \%out;

@@ -395,12 +395,23 @@ describe('expression-parser', () => {
       expect((parseExpression('true') as { raw?: string }).raw).toBeUndefined()
     })
 
-    test('falls through to unsupported for spread / computed-key object literals', () => {
-      // A spread member is not a plain map property — preserves the
-      // pre-A-1 `unsupported` behaviour (byte-identical).
-      expect(parseExpression('({ ...rest, a: 1 })').kind).toBe('unsupported')
-      // Computed key `[k]: v` can't resolve to a static name.
+    test('falls through to unsupported for computed-key object literals; spread parses as object-literal (#2696 Step 2)', () => {
+      // Computed key `[k]: v` can't resolve to a static name — still
+      // unsupported.
       expect(parseExpression('({ [k]: 1 })').kind).toBe('unsupported')
+      // A spread member (#2696 Step 2) is now a structured `{ kind:
+      // 'spread', expr }` entry, in source order alongside any `prop`
+      // entries — no longer the pre-#2696 blanket `unsupported`.
+      const spread = parseExpression('({ ...rest, a: 1 })')
+      expect(spread).toMatchObject({
+        kind: 'object-literal',
+        properties: [
+          { kind: 'spread', expr: { kind: 'identifier', name: 'rest' } },
+          { kind: 'prop', key: 'a', shorthand: false, value: { kind: 'literal', value: 1 } },
+        ],
+      })
+      // A method / getter / setter still isn't a plain map — still refuses.
+      expect(parseExpression('({ f() { return 1 } })').kind).toBe('unsupported')
     })
 
     test('a bare `{ … }` at statement position is a block, not an object literal', () => {

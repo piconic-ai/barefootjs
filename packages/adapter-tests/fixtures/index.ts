@@ -462,6 +462,10 @@ import { fixture as callbackParamShadowsProp } from './callback-param-shadows-pr
 // with a NON-EMPTY free set forcing a genuine in-template recompute on
 // every template-stash adapter (see the fixture file header).
 import { fixture as mapObjectLiteralBody } from './map-object-literal-body'
+// #2696 Step 2: a signal initializer spreading a prop-derived object
+// directly, in value position (not nested in a `.map()` body) — see the
+// fixture file header.
+import { fixture as signalObjectSpreadInit } from './signal-object-spread-init'
 import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
 // #2482 audit follow-ups, adapter-side (pinned known limitations):
 // Go condition-position destructured bindings, Go nested-loop `inLoop`
@@ -848,6 +852,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsRecordConst,
   callbackParamShadowsProp,
   mapObjectLiteralBody,
+  signalObjectSpreadInit,
   loopParamShadowsRecordTemplateSpan,
   loopDestructuredParamCondition,
   nestedLoopTailContent,

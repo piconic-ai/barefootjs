@@ -113,7 +113,15 @@ func FuncMap() template.FuncMap {
 		// lowered to a template action (the `objectLiteral` emitter,
 		// #2696 Step 1) needs the exact same construction, so it's
 		// registered under a second name rather than duplicated.
-		"bf_map":           Env,
+		"bf_map": Env,
+		// `bf_merge` (eval.go) is `bf_map`'s sibling for a POPULATED
+		// object-literal SPREAD (#2696 Step 2, `{ ...t, editing: false }`):
+		// a variadic, null-safe shallow merge (a non-map argument is
+		// skipped, matching JS's null/undefined-spread no-op), later
+		// arguments winning — the `objectLiteral` emitter folds each
+		// maximal run of plain properties (a `bf_map` call) and each spread
+		// (its own value) through this, in source order.
+		"bf_merge":         Merge,
 		"bf_filter_truthy": FilterTruthy,
 
 		// Higher-order Array Methods

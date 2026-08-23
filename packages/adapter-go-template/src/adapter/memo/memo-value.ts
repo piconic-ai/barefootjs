@@ -181,6 +181,9 @@ export function computeObjectMemoInitialValue(
   const env: CtorLowerEnv = { searchParamsVars: new Set(), params: new Map() }
   const entries: string[] = []
   for (const prop of retObj.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no per-key `.Params.<Field>`
+    // accessor to match against — bail, same as any other unsupported shape.
+    if (prop.kind === 'spread') return null
     // Bail on a shorthand property (`return { tag }`): its value is a bare
     // identifier whose name need not match a `.Params.<Field>` accessor.
     if (prop.shorthand) return null

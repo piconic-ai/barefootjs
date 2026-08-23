@@ -49,6 +49,7 @@
  */
 
 import { groupBinaryOperand,
+  groupObjectLiteralSegments,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -644,6 +645,17 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // dict literal, keyed the same way `objectLiteralToJinjaDict` quotes the
     // spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{${properties.map(p => `${jinjaHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
+    const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
+      `{${run.map(p => `${jinjaHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
+    if (!properties.some(p => p.kind === 'spread')) {
+      return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
+    }
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2): real Jinja2
+    // (unlike minijinja) supports `**expr` kwargs-unpacking at a call site,
+    // so `dict(base, **override)` — Python's own dict-merge idiom, which
+    // Jinja2's `dict()` global mirrors exactly — folds ANY segment onto the
+    // accumulator, later segments winning, matching JS spread left-to-right.
+    const segments = groupObjectLiteralSegments(properties, literalOf, emit)
+    return segments.reduce((acc, seg) => `dict(${acc}, **${seg.includes(' ') ? `(${seg})` : seg})`)
   }
 }

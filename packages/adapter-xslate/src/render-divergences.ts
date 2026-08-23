@@ -9,6 +9,12 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
+// #2696 graduated: `todo-app` / `todo-app-ssr` seeded `todos` opaque
+// because their `.map(t => ({ ...t, editing: false }))` callback body's
+// object-literal SPREAD refused (`checkSupport`). Step 2 admits a spread
+// at value position and the runtime evaluator's `object-literal` case
+// now merges it, so the seed classifies `derived` and SSRs identically
+// to Hono.
 // #2679 graduated (capture-before-shadow in `generateDerivedMemoSeed`,
 // packages/adapter-xslate/src/adapter/memo/seed.ts): a self-referencing
 // derived signal/memo now seeds a throwaway `__bf_seed_<name>` local from
@@ -16,9 +22,4 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // the real name off that capture — the same in-template recompute the other
 // six template-stash backends already had. Keep the file even when the set
 // is empty — the next divergence lands here, not in a re-created file.
-export const renderDivergences: RenderDivergences = {
-  'todo-app':
-    'the `todos` signal seeds from `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))` — a different-prop-derived `.map()` chain `extractSsrDefaults` cannot statically resolve, and `computeSsrSeedPlan` classifies it opaque (no in-template recompute), so it seeds `undef`; the non-`/* @client */`-marked `{todos().length > 0 && ...}` toggle-all block SSRs as if there are zero todos regardless of `initialTodos` (https://github.com/piconic-ai/barefootjs/issues/2696)',
-  'todo-app-ssr':
-    "same root cause as `todo-app` (https://github.com/piconic-ai/barefootjs/issues/2696); this fixture's todo-list loop carries no `/* @client */` marker, but Kolon's `for` iterates an undef list as empty rather than raising, so it SSRs an empty `<ul class=\"todo-list\">` with the toggle-all controls also absent, regardless of `initialTodos`",
-}
+export const renderDivergences: RenderDivergences = {}

@@ -143,6 +143,10 @@ function parsedObjectLiteralToGoMap(parsed: ParsedExpr | undefined): string | nu
   if (!parsed || parsed.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of parsed.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no static key/value pair this
+    // conservative Go-map bake can express — bail, same as any other
+    // unsupported shape.
+    if (prop.kind === 'spread') return null
     // Reject a numeric key (`{ 1: 'a' }`); `keyKind` distinguishes it from a
     // string `'1'` key.
     if (prop.keyKind === 'numeric') return null
@@ -386,6 +390,10 @@ function objectLiteralToGoSpreadMap(
 ): string | null {
   const entries: string[] = []
   for (const prop of obj.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) isn't a per-key entry this
+    // conditional-spread inline lowering can express — bail (the docstring
+    // already declares spread out-of-scope for this function).
+    if (prop.kind === 'spread') return null
     // Shorthand (`{ describedBy }`) is unsupported.
     if (prop.shorthand) return null
     // Reject a numeric key (`{ 1: x }`); `keyKind` distinguishes it from a

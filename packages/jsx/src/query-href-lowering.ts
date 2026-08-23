@@ -58,6 +58,10 @@ export function matchQueryHrefCall(
 
   const triples: QueryHrefTriple[] = []
   for (const p of obj.properties) {
+    // A spread (`{ ...extra, key: v }`, #2696 Step 2) has no static key to
+    // build a triple from — fall back to the generic lowering rather than
+    // dropping the spread's keys silently.
+    if (p.kind === 'spread') return null
     const v = p.value
     if (v.kind === 'conditional' && isOmitBranch(v.alternate)) {
       triples.push({ guard: v.test, key: p.key, value: v.consequent })

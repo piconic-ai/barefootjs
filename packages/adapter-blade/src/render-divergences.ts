@@ -9,9 +9,10 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {
-  'todo-app':
-    'the `todos` signal seeds from `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))` — a different-prop-derived `.map()` chain `extractSsrDefaults` cannot statically resolve, and `computeSsrSeedPlan` classifies it opaque (no in-template recompute), so it seeds `null`; the non-`/* @client */`-marked `{todos().length > 0 && ...}` toggle-all block SSRs as if there are zero todos regardless of `initialTodos` (https://github.com/piconic-ai/barefootjs/issues/2696)',
-  'todo-app-ssr':
-    "same root cause as `todo-app` (https://github.com/piconic-ai/barefootjs/issues/2696); this fixture's todo-list loop carries no `/* @client */` marker and Blade's `@foreach` over a null value renders zero rows rather than throwing, so it SSRs an empty `<ul class=\"todo-list\">` with the toggle-all controls also absent, regardless of `initialTodos`",
-}
+// #2696 graduated: `todo-app` / `todo-app-ssr` seeded `todos` opaque
+// because their `.map(t => ({ ...t, editing: false }))` callback body's
+// object-literal SPREAD refused (`checkSupport`). Step 2 admits a spread
+// at value position and the runtime evaluator's `object-literal` case
+// now merges it, so the seed classifies `derived` and SSRs identically
+// to Hono.
+export const renderDivergences: RenderDivergences = {}

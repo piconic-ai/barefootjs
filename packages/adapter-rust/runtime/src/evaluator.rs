@@ -149,9 +149,27 @@ pub fn evaluate(node: &JsonValue, env: &Env) -> JsValue {
             JsValue::Array(elements)
         }
         "object-literal" => {
+            // Each entry carries its own "kind" ("prop" | "spread", #2696
+            // Step 2) -- the same encoding the Go/Perl/Python/Ruby/PHP
+            // evaluators and the raw ParsedExpr shape the eval-vectors.json
+            // golden corpus carry. A "spread" evaluates its "expr" and
+            // shallow-merges the result's own keys (a non-Object result --
+            // including a null/undefined JS spread source -- is a no-op);
+            // a "prop" sets one key. Later entries win on a shared key, in
+            // source order, matching JS object-spread exactly.
             let mut out = std::collections::BTreeMap::new();
             if let Some(props) = node.get("properties").and_then(|v| v.as_array()) {
                 for prop in props {
+                    let kind = prop.get("kind").and_then(|v| v.as_str()).unwrap_or("");
+                    if kind == "spread" {
+                        let spread = evaluate(prop.get("expr").unwrap_or(&JsonValue::Null), env);
+                        if let JsValue::Object(spread_map) = spread {
+                            for (k, v) in spread_map {
+                                out.insert(k, v);
+                            }
+                        }
+                        continue;
+                    }
                     let key = prop.get("key").and_then(|v| v.as_str()).unwrap_or("").to_string();
                     let value = evaluate(prop.get("value").unwrap_or(&JsonValue::Null), env);
                     out.insert(key, value);

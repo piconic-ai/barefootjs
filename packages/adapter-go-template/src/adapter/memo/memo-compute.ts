@@ -965,7 +965,7 @@ export function collectPropsReadByCtorInit(
         e.elements.forEach(el => visit(el, bound))
         return
       case 'object-literal':
-        for (const p of e.properties) visit(p.value, bound)
+        for (const p of e.properties) visit(p.kind === 'spread' ? p.expr : p.value, bound)
         return
       case 'array-method':
         visit(e.object, bound)
