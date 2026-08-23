@@ -1707,6 +1707,14 @@
       }
     }
   ],
+  "map-object-literal-body": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "map-preamble-branch-body": [
     {
       "name": "gen:items:empty",

@@ -457,6 +457,11 @@ import { fixture as loopParamShadowsRecordConst } from './loop-param-shadows-rec
 // a prop name used to emit invalid `.map((_p.x) => …)` client JS); the
 // second pins the `${IDENT[KEY]}` template-span fold's loop-param guard.
 import { fixture as callbackParamShadowsProp } from './callback-param-shadows-prop'
+// #2696 Step 1: the non-constant sibling of `callbackParamShadowsProp`'s
+// `first` signal — a `.map()` callback body returning an object literal,
+// with a NON-EMPTY free set forcing a genuine in-template recompute on
+// every template-stash adapter (see the fixture file header).
+import { fixture as mapObjectLiteralBody } from './map-object-literal-body'
 import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
 // #2482 audit follow-ups, adapter-side (pinned known limitations):
 // Go condition-position destructured bindings, Go nested-loop `inLoop`
@@ -842,6 +847,7 @@ export const jsxFixtures: JSXFixture[] = [
   filterParamNameDiffers,
   loopParamShadowsRecordConst,
   callbackParamShadowsProp,
+  mapObjectLiteralBody,
   loopParamShadowsRecordTemplateSpan,
   loopDestructuredParamCondition,
   nestedLoopTailContent,

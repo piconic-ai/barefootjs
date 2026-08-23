@@ -3129,6 +3129,25 @@
         "text"
       ]
     },
+    "map-object-literal-body": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "map-preamble-branch-body": {
       "kinds": [
         "array-method",
@@ -5360,17 +5379,17 @@
   },
   "kindCounts": {
     "array-literal": 80,
-    "array-method": 70,
-    "arrow": 69,
+    "array-method": 71,
+    "arrow": 70,
     "binary": 93,
-    "call": 222,
+    "call": 223,
     "conditional": 25,
-    "identifier": 312,
+    "identifier": 313,
     "index-access": 14,
-    "literal": 254,
+    "literal": 255,
     "logical": 48,
-    "member": 177,
-    "object-literal": 57,
+    "member": 178,
+    "object-literal": 58,
     "template-literal": 30,
     "unary": 23,
     "unsupported": 40
@@ -5382,7 +5401,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 42,
+    "array-method:join": 43,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -5410,10 +5429,10 @@
     "binary:===": 49,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 49,
+    "literal:boolean": 50,
     "literal:null": 23,
     "literal:number": 106,
-    "literal:string": 180,
+    "literal:string": 181,
     "logical:&&": 7,
     "logical:??": 42,
     "logical:||": 14,
