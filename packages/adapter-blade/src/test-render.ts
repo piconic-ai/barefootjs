@@ -38,7 +38,7 @@
  *     caller's `props` and needs no JSON round-trip.
  */
 
-import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -588,31 +588,22 @@ function buildBladeProps(
     }
   }
 
-  // Signal values evaluated from props (after user props).
+  // No initializer re-evaluation against raw props — production's
+  // before_render seeds only from `deriveStashFromDefaults` (#2696).
   for (const signal of ir.metadata.signals) {
     // Env signals (#2057) are bound below via `SearchParams('')`, not from a
     // static initial value.
     if (signal.envReader) continue
-    // #2669: a self-derivation collision already got the correct RAW-prop
-    // seed above via `derivedProps` — `extractSsrDefaults` marks that with
-    // a `propName`-carrying entry (see its docstring's invariant). Skip
-    // re-seeding here or this harness's own `evaluateSignalInit` recompute
-    // clobbers the correctly-derived caller value.
-    if (rootSsrDefaults[signal.getter]?.propName !== undefined) continue
-    const value = evaluateSignalInit(signal.initialValue.trim(), props)
-    if (value !== null) {
-      setEntry(signal.getter, value)
+    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
+      setEntry(signal.getter, derivedProps[signal.getter])
     }
   }
 
-  // Memo values seeded from the statically-evaluated ssrDefaults, same
-  // as the production plugin's before_render hook.
+  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
   for (const memo of ir.metadata.memos) {
-    // #2669: same self-derivation skip as the signal loop above.
-    if (rootSsrDefaults[memo.name]?.propName !== undefined) continue
-    const entry = rootSsrDefaults[memo.name]
-    const value = entry ? entry.value : 0
-    setEntry(memo.name, value ?? 0)
+    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
+      setEntry(memo.name, derivedProps[memo.name])
+    }
   }
 
   // (#1922) Request-scoped `searchParams()`: bind `searchParams` to an

@@ -21,9 +21,13 @@
           "total": 80
         },
         "blade": {
-          "pass": 68,
+          "pass": 65,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -75,13 +79,25 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 69,
+          "pass": 66,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -126,6 +142,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -189,9 +213,13 @@
           ]
         },
         "jinja": {
-          "pass": 68,
+          "pass": 65,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -242,14 +270,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 68,
+          "pass": 65,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -300,14 +340,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 69,
+          "pass": 66,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -352,14 +404,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 68,
+          "pass": 65,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -410,14 +474,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 68,
+          "pass": 65,
           "total": 80,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -468,6 +544,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -493,9 +577,13 @@
           "total": 70
         },
         "blade": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -511,9 +599,13 @@
           ]
         },
         "erb": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -547,9 +639,13 @@
           ]
         },
         "jinja": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -565,9 +661,13 @@
           ]
         },
         "minijinja": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -583,9 +683,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -601,9 +705,13 @@
           ]
         },
         "twig": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -619,9 +727,13 @@
           ]
         },
         "xslate": {
-          "pass": 67,
+          "pass": 66,
           "total": 70,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -657,9 +769,13 @@
           "total": 69
         },
         "blade": {
-          "pass": 60,
+          "pass": 57,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -699,13 +815,25 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 61,
+          "pass": 58,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -738,6 +866,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -789,9 +925,13 @@
           ]
         },
         "jinja": {
-          "pass": 60,
+          "pass": 57,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -830,14 +970,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 60,
+          "pass": 57,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -876,14 +1028,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 61,
+          "pass": 58,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -916,14 +1080,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 60,
+          "pass": 57,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -962,14 +1138,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 60,
+          "pass": 57,
           "total": 69,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1008,6 +1196,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -1033,9 +1229,13 @@
           "total": 93
         },
         "blade": {
-          "pass": 84,
+          "pass": 81,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1077,13 +1277,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 85,
+          "pass": 82,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1119,6 +1331,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
@@ -1171,9 +1391,13 @@
           ]
         },
         "jinja": {
-          "pass": 84,
+          "pass": 81,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1215,13 +1439,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 84,
+          "pass": 81,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1263,13 +1499,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 85,
+          "pass": 82,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1305,13 +1553,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 84,
+          "pass": 81,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1353,13 +1613,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 84,
+          "pass": 81,
           "total": 93,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1401,6 +1673,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         }
@@ -1433,9 +1713,13 @@
           ]
         },
         "blade": {
-          "pass": 207,
+          "pass": 204,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1505,13 +1789,25 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 208,
+          "pass": 205,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1574,6 +1870,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -1655,9 +1959,13 @@
           ]
         },
         "jinja": {
-          "pass": 207,
+          "pass": 204,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1726,14 +2034,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 207,
+          "pass": 204,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1802,14 +2122,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 208,
+          "pass": 205,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1872,14 +2204,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 207,
+          "pass": 204,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1948,14 +2292,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 207,
+          "pass": 204,
           "total": 222,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2024,6 +2380,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2049,7 +2413,7 @@
           "total": 25
         },
         "blade": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2058,12 +2422,20 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2072,6 +2444,14 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2091,7 +2471,7 @@
           ]
         },
         "jinja": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2100,12 +2480,20 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2114,12 +2502,20 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2128,12 +2524,20 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2142,12 +2546,20 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 23,
+          "pass": 21,
           "total": 25,
           "gaps": [
             {
@@ -2156,6 +2568,14 @@
             },
             {
               "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2189,9 +2609,13 @@
           ]
         },
         "blade": {
-          "pass": 295,
+          "pass": 292,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2269,13 +2693,25 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 296,
+          "pass": 293,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2346,6 +2782,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2435,9 +2879,13 @@
           ]
         },
         "jinja": {
-          "pass": 295,
+          "pass": 292,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2514,14 +2962,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 295,
+          "pass": 292,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2598,14 +3058,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 296,
+          "pass": 293,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2676,14 +3148,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 295,
+          "pass": 292,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2760,14 +3244,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 295,
+          "pass": 292,
           "total": 312,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2844,6 +3340,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -2921,9 +3425,13 @@
           "total": 254
         },
         "blade": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -2968,14 +3476,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3020,6 +3540,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3077,9 +3605,13 @@
           ]
         },
         "jinja": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3124,14 +3656,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3176,14 +3720,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3228,14 +3784,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3280,14 +3848,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 243,
+          "pass": 240,
           "total": 254,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3332,6 +3912,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3357,7 +3945,7 @@
           "total": 48
         },
         "blade": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3369,11 +3957,19 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3384,6 +3980,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3405,7 +4009,7 @@
           ]
         },
         "jinja": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3416,12 +4020,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3432,12 +4044,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3448,12 +4068,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3465,11 +4093,19 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 46,
+          "pass": 44,
           "total": 48,
           "gaps": [
             {
@@ -3480,6 +4116,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3513,9 +4157,13 @@
           ]
         },
         "blade": {
-          "pass": 160,
+          "pass": 157,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3593,13 +4241,25 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 161,
+          "pass": 158,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3670,6 +4330,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -3759,9 +4427,13 @@
           ]
         },
         "jinja": {
-          "pass": 160,
+          "pass": 157,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3838,14 +4510,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 160,
+          "pass": 157,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3922,14 +4606,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 161,
+          "pass": 158,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4000,14 +4696,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 160,
+          "pass": 157,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4084,14 +4792,26 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 160,
+          "pass": 157,
           "total": 177,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4168,6 +4888,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -4193,9 +4921,13 @@
           "total": 57
         },
         "blade": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4209,9 +4941,13 @@
           ]
         },
         "erb": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4241,9 +4977,13 @@
           ]
         },
         "jinja": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4257,9 +4997,13 @@
           ]
         },
         "minijinja": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4273,9 +5017,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4289,9 +5037,13 @@
           ]
         },
         "twig": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4305,9 +5057,13 @@
           ]
         },
         "xslate": {
-          "pass": 55,
+          "pass": 54,
           "total": 57,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4487,7 +5243,7 @@
           "total": 23
         },
         "blade": {
-          "pass": 22,
+          "pass": 20,
           "total": 23,
           "gaps": [
             {
@@ -4495,12 +5251,30 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 22,
@@ -4515,7 +5289,7 @@
           ]
         },
         "jinja": {
-          "pass": 22,
+          "pass": 20,
           "total": 23,
           "gaps": [
             {
@@ -4523,11 +5297,19 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 22,
+          "pass": 20,
           "total": 23,
           "gaps": [
             {
@@ -4535,15 +5317,33 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 22,
+          "pass": 20,
           "total": 23,
           "gaps": [
             {
@@ -4551,11 +5351,19 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 22,
+          "pass": 20,
           "total": 23,
           "gaps": [
             {
@@ -4563,6 +5371,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         }
@@ -4587,7 +5403,7 @@
           "total": 40
         },
         "blade": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -4636,12 +5452,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -4690,6 +5514,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -4749,7 +5581,7 @@
           ]
         },
         "jinja": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -4798,12 +5630,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -4852,12 +5692,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -4906,12 +5754,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -4960,12 +5816,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 29,
+          "pass": 27,
           "total": 40,
           "gaps": [
             {
@@ -5014,6 +5878,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -5352,9 +6224,13 @@
           "total": 42
         },
         "blade": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -5366,9 +6242,13 @@
           ]
         },
         "erb": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -5394,9 +6274,13 @@
           ]
         },
         "jinja": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -5408,9 +6292,13 @@
           ]
         },
         "minijinja": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -5422,9 +6310,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -5436,9 +6328,13 @@
           ]
         },
         "twig": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -5450,9 +6346,13 @@
           ]
         },
         "xslate": {
-          "pass": 40,
+          "pass": 39,
           "total": 42,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6571,9 +7471,13 @@
           "total": 21
         },
         "blade": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6583,9 +7487,13 @@
           ]
         },
         "erb": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6607,9 +7515,13 @@
           ]
         },
         "jinja": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6619,9 +7531,13 @@
           ]
         },
         "minijinja": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6631,9 +7547,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6643,9 +7563,13 @@
           ]
         },
         "twig": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6655,9 +7579,13 @@
           ]
         },
         "xslate": {
-          "pass": 20,
+          "pass": 19,
           "total": 21,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -6843,7 +7771,7 @@
           "total": 49
         },
         "blade": {
-          "pass": 41,
+          "pass": 39,
           "total": 49,
           "gaps": [
             {
@@ -6881,11 +7809,19 @@
             {
               "fixture": "some-typeof-predicate",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 42,
+          "pass": 40,
           "total": 49,
           "gaps": [
             {
@@ -6916,6 +7852,14 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -6963,7 +7907,7 @@
           ]
         },
         "jinja": {
-          "pass": 41,
+          "pass": 39,
           "total": 49,
           "gaps": [
             {
@@ -7000,12 +7944,20 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 41,
+          "pass": 39,
           "total": 49,
           "gaps": [
             {
@@ -7042,12 +7994,20 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 42,
+          "pass": 40,
           "total": 49,
           "gaps": [
             {
@@ -7078,12 +8038,20 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 41,
+          "pass": 39,
           "total": 49,
           "gaps": [
             {
@@ -7120,12 +8088,20 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 41,
+          "pass": 39,
           "total": 49,
           "gaps": [
             {
@@ -7162,6 +8138,14 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -7187,36 +8171,106 @@
           "total": 11
         },
         "blade": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "erb": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 11,
           "total": 11
         },
         "jinja": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
-          "pass": 11,
-          "total": 11
+          "pass": 9,
+          "total": 11,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -7391,36 +8445,106 @@
           "total": 23
         },
         "blade": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "erb": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 23,
           "total": 23
         },
         "jinja": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
-          "pass": 23,
-          "total": 23
+          "pass": 21,
+          "total": 23,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -7442,7 +8566,7 @@
           "total": 106
         },
         "blade": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7463,12 +8587,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7489,6 +8621,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -7520,7 +8660,7 @@
           ]
         },
         "jinja": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7541,12 +8681,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7567,12 +8715,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7593,12 +8749,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7619,12 +8783,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 101,
+          "pass": 99,
           "total": 106,
           "gaps": [
             {
@@ -7645,6 +8817,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -7670,9 +8850,13 @@
           "total": 180
         },
         "blade": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7706,13 +8890,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7746,6 +8942,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
@@ -7790,9 +8994,13 @@
           ]
         },
         "jinja": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7826,13 +9034,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7866,13 +9086,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7906,13 +9138,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7946,13 +9190,25 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 172,
+          "pass": 169,
           "total": 180,
           "gaps": [
+            {
+              "fixture": "callback-param-shadows-prop",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -7986,6 +9242,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         }
@@ -8010,36 +9274,78 @@
           "total": 7
         },
         "blade": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "erb": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 7,
           "total": 7
         },
         "jinja": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
-          "pass": 7,
-          "total": 7
+          "pass": 6,
+          "total": 7,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -8062,7 +9368,7 @@
           "total": 42
         },
         "blade": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8074,11 +9380,19 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8089,6 +9403,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -8110,7 +9432,7 @@
           ]
         },
         "jinja": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8121,12 +9443,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8137,12 +9467,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8153,12 +9491,20 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8170,11 +9516,19 @@
             {
               "fixture": "tag-cloud",
               "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 40,
+          "pass": 38,
           "total": 42,
           "gaps": [
             {
@@ -8185,6 +9539,14 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
               "issues": []
             }
           ]
@@ -8210,36 +9572,78 @@
           "total": 14
         },
         "blade": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "erb": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 14,
           "total": 14
         },
         "jinja": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -8366,7 +9770,7 @@
           "total": 15
         },
         "blade": {
-          "pass": 14,
+          "pass": 12,
           "total": 15,
           "gaps": [
             {
@@ -8374,12 +9778,30 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 15,
-          "total": 15
+          "pass": 13,
+          "total": 15,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 14,
@@ -8394,7 +9816,7 @@
           ]
         },
         "jinja": {
-          "pass": 14,
+          "pass": 12,
           "total": 15,
           "gaps": [
             {
@@ -8402,11 +9824,19 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 14,
+          "pass": 12,
           "total": 15,
           "gaps": [
             {
@@ -8414,15 +9844,33 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 15,
-          "total": 15
+          "pass": 13,
+          "total": 15,
+          "gaps": [
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 14,
+          "pass": 12,
           "total": 15,
           "gaps": [
             {
@@ -8430,11 +9878,19 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 14,
+          "pass": 12,
           "total": 15,
           "gaps": [
             {
@@ -8442,6 +9898,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "todo-app",
+              "issues": []
+            },
+            {
+              "fixture": "todo-app-ssr",
+              "issues": []
             }
           ]
         }

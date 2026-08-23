@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, augmentInheritedPropAccesses, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, augmentInheritedPropAccesses, importsSearchParams } from '@barefootjs/jsx'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -520,10 +520,7 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
     // MUST stay a hashref so `_derive_stash_from_defaults` resolves it
     // against the REAL child props at runtime; the declared-prop loop above
     // already emitted it for a DECLARED prop, so only an undeclared one
-    // needs adding here. Either way, do NOT fall through to this harness's
-    // own `evaluateSignalInit(..., undefined)` recompute below — that call
-    // sees no props at all and would silently re-flatten the collision back
-    // to a bare, non-caller-overridable value.
+    // needs adding here.
     const d = ssrDefaults[signal.getter]
     if (d?.propName !== undefined) {
       if (!declared.has(signal.getter)) {
@@ -532,8 +529,9 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
       }
       continue
     }
-    const value = evaluateSignalInit(signal.initialValue.trim(), undefined)
-    entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
+    // Static manifest value only — no harness-side evaluation (#2696).
+    const value = d ? d.value : undefined
+    entries.push(`${signal.getter} => ${value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
   for (const memo of ir.metadata.memos) {
     const entry = ssrDefaults[memo.name]
@@ -744,30 +742,20 @@ function buildPerlProps(
   // ternary) rather than skipping it — an unseeded getter faults strict
   // vars with `Global symbol "$x" requires explicit package name`. Same
   // rule `buildChildDefaultsPerl` applies to child signals (#1897).
+  // No initializer re-evaluation against raw props — production's
+  // before_render seeds only from `deriveStashFromDefaults` (#2696).
   for (const signal of ir.metadata.signals) {
     if (signal.envReader) continue // env signal bound below via search_params('') (#2057)
-    // #2669: a self-derivation collision already got the correct RAW-prop
-    // seed above via `derivedProps` — `extractSsrDefaults` marks that with
-    // a `propName`-carrying entry (see its docstring's invariant). Skip
-    // re-seeding here or this harness's own `evaluateSignalInit` recompute
-    // clobbers the correctly-derived caller value.
-    if (rootSsrDefaults[signal.getter]?.propName !== undefined) continue
-    const value = evaluateSignalInit(signal.initialValue.trim(), props)
-    entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
+    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
+      entries.push(`${signal.getter} => ${toPerlLiteral(derivedProps[signal.getter])}`)
+    }
   }
 
-  // Add memo values. The production Mojo plugin seeds these from the
-  // manifest's `ssrDefaults` (see Plugin/BarefootJS.pm `before_render`
-  // hook), which carries the statically-evaluated result of each memo
-  // computation. Mirror that here so the test harness doesn't diverge
-  // from the plugin: hard-coding `0` masked memos with non-zero
-  // initial values until #1423 added a fixture that exposed the gap.
+  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
   for (const memo of ir.metadata.memos) {
-    // #2669: same self-derivation skip as the signal loop above.
-    if (rootSsrDefaults[memo.name]?.propName !== undefined) continue
-    const entry = rootSsrDefaults[memo.name]
-    const value = entry ? entry.value : 0
-    entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)
+    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
+      entries.push(`${memo.name} => ${toPerlLiteral(derivedProps[memo.name])}`)
+    }
   }
 
   // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
