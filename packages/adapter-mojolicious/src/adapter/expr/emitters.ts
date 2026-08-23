@@ -31,6 +31,7 @@ import { groupBinaryOperand,
 
 import type { MojoEmitContext } from '../emit-context.ts'
 import { MOJO_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
+import { escapePerlSingleQuoted } from '../lib/perl-naming.ts'
 import { emitIndexAccessPerl } from './operand.ts'
 import {
   renderArrayMethod,
@@ -708,6 +709,6 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // hashref literal, quoted the same way `objectLiteralToPerlHashref`
     // quotes the spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{ ${properties.map(p => `'${p.key.replace(/'/g, "\\'")}' => ${emit(p.value)}`).join(', ')} }`
+    return `{ ${properties.map(p => `'${escapePerlSingleQuoted(p.key)}' => ${emit(p.value)}`).join(', ')} }`
   }
 }
