@@ -39,8 +39,6 @@ export function MapObjectLiteralBody({ items }: { items: { id: string }[] }) {
 `,
   props: { items: [{ id: 'a' }, { id: 'b' }] },
   expectedHtml: `
-    <div bf-s="test">
-      <span bf="s1"><!--bf:s0-->a,b<!--/--></span>
-    </div>
+    <div bf-s="test"><span bf="s1"><!--bf:s0-->a,b<!--/--></span></div>
   `,
 })
