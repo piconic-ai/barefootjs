@@ -1,5 +1,11 @@
 # @barefootjs/client
 
+## 0.32.0
+
+### Patch Changes
+
+- @barefootjs/shared@0.32.0
+
 ## 0.31.10
 
 ### Patch Changes
