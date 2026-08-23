@@ -1000,10 +1000,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
             // surface — the depth must be *expressible*, even if not
             // known until render time.
             const parsedDepth = convertNode(depthNode, raw)
-            // Value position — `depthExpr` is checked the same way at its
-            // other call site (the `array-method`/`flat` arm of
-            // `checkSupport`), consistent with every other array-method arg.
-            if (checkSupport(parsedDepth, 'value').supported) {
+            if (checkSupport(parsedDepth, 'rendered').supported) {
               depthExpr = parsedDepth
               flatDepth = 1 // unused placeholder — consumers must check `depthExpr` first
             } else {
@@ -2369,24 +2366,20 @@ function getUnaryOperatorString(op: ts.PrefixUnaryOperator): string {
  * a RENDERED position — a standalone template expression (`{expr}`, an
  * attribute value, a condition test, …) whose value is what actually
  * reaches the page. See {@link isSupportedValue} for the sibling VALUE-
- * position check (a signal/memo initializer, a `.map()` receiver/callback,
- * …), and `checkSupport`'s `pos` parameter for the full rendered-vs-value
- * distinction.
+ * position entry point, and `checkSupport`'s `pos` parameter for why the two
+ * never converge partway through a tree.
  */
 export function isSupported(expr: ParsedExpr): SupportResult {
   return checkSupport(expr, 'rendered')
 }
 
 /**
- * Check if a parsed expression is supported at a VALUE position — the
- * position of a signal/memo initializer (`computeSsrSeedPlan`'s classify
- * step treats the WHOLE initializer as value position: it's an assignment,
- * never a render) or a container's contents once already inside one (an
- * array-literal element, an object-literal property value, a `.map()` /
- * `array-method` receiver or callback receiver/body/args — see the `pos`
- * doc on `checkSupport`). The one behavioural difference from
- * {@link isSupported}: an `object-literal` is admitted here when every
- * property value is itself supported, instead of being refused outright.
+ * Check if a parsed expression is supported at a VALUE position — a
+ * signal/memo initializer (`computeSsrSeedPlan`'s classify step: an
+ * assignment, never a render). The one behavioural difference from
+ * {@link isSupported}: an `object-literal` anywhere in the tree is admitted
+ * when every property value is itself supported, instead of being refused
+ * outright.
  */
 export function isSupportedValue(expr: ParsedExpr): SupportResult {
   return checkSupport(expr, 'value')
@@ -2394,28 +2387,18 @@ export function isSupportedValue(expr: ParsedExpr): SupportResult {
 
 /**
  * Where in the expression tree a node sits, for the ONE shape whose support
- * depends on it: `object-literal`. A standalone object literal has no
- * lowering as a RENDERED template expression (no template language stringifies
- * a bare struct/map the way it does a scalar) — refused unconditionally, same
- * byte-identical reason as before `pos` existed (Roadmap A-1). But an object
- * literal that is itself a CONTAINER's contents — an array-literal element,
- * an object-literal property value, or the receiver/callback body/args of a
- * `.map()`-family call or `array-method` — is a genuine value an adapter can
- * lower structurally (Go `bf_map`, PHP/Perl/Ruby/Python/Twig/Jinja/minijinja/
- * Kolon's native dict/hash/hashref literal — see each adapter's `objectLiteral`
- * emitter).
- *
- * Threading rule: `pos` propagates UNCHANGED through every recursive call
- * that isn't one of those four container-contents positions — `member`/
- * `index-access`'s object, `binary`/`unary`/`logical`/`conditional`'s
- * operands, a generic (non-callback) `call`'s callee/args, and
- * `template-literal`'s interpolated parts all inherit the position they were
- * entered at. This matters for `conditional`: `cond ? {a:1} : {b:2}` at a
- * RENDERED position stays refused (the branches are what ends up rendered,
- * whichever is taken) — it does NOT become value position just because it's
- * a sub-expression. Only the four container-contents sites below force
- * `pos: 'value'` on their children regardless of the position the container
- * itself was checked at.
+ * depends on it: `object-literal` (refused at `rendered`, admitted at `value`
+ * when every property value is itself supported — see the `object-literal`
+ * case). `pos` is set ONLY by the two entry points ({@link isSupported} /
+ * {@link isSupportedValue}) and propagates UNCHANGED through every recursive
+ * call, with no per-shape forcing — forcing a container's contents to
+ * `value` would let an object literal survive a `.map()`/`array-method`/
+ * array-literal reachable from a RENDERED entry point and reach a string/
+ * equality position (`{[{a:1}]}`, `[{a:1}].join(',')`, `.includes({a:1})`)
+ * that no adapter renders identically to JS — a new silent-divergence class,
+ * not a capability. Pure inheritance keeps `isSupported`'s behaviour
+ * byte-identical to before `pos` existed; only a `value`-ENTERED tree (a
+ * signal/memo initializer) ever admits a populated object literal.
  */
 type ExprPos = 'rendered' | 'value'
 
@@ -2425,14 +2408,16 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       return { supported: false, reason: expr.reason }
 
     case 'object-literal': {
-      // See `ExprPos`'s doc: refused at a RENDERED position (byte-identical
-      // reason to the pre-`pos` behaviour, Roadmap A-1); admitted at a VALUE
-      // position when every property value is itself supported there.
+      // See `ExprPos`'s doc: refused at `rendered` (byte-identical reason to
+      // the pre-`pos` behaviour, Roadmap A-1); admitted at `value` when
+      // every property value is itself supported. Property values inherit
+      // `pos`, which is already `value` here — written as `pos`, not the
+      // literal `'value'`, for consistency with every other recursive call.
       if (pos !== 'value') {
         return { supported: false, reason: 'Unsupported syntax: ObjectLiteralExpression' }
       }
       for (const prop of expr.properties) {
-        const propSupport = checkSupport(prop.value, 'value')
+        const propSupport = checkSupport(prop.value, pos)
         if (!propSupport.supported) return propSupport
       }
       return { supported: true, level: 'L2' }
@@ -2452,17 +2437,14 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       return { supported: false, reason: 'Standalone arrow functions / regex literals are not supported' }
 
     case 'array-literal': {
-      // Array literal is lowerable iff every element is. Elements are
-      // container CONTENTS (see `ExprPos`'s doc), so they're always checked
-      // at a VALUE position regardless of the array literal's own `pos` —
-      // this is what admits `[{ a: 1 }]` (an object-literal element) even
-      // when the array itself sits at a rendered position. Adapters that
-      // don't have an array-literal form in their template language
-      // (Go templates) still need to refuse it — they do so in their
-      // own `arrayLiteral` emitter method, not here, because we can't
-      // see which adapter is consuming the IR at this point.
+      // Array literal is lowerable iff every element is; elements inherit
+      // `pos` (see `ExprPos`'s doc). Adapters that don't have an
+      // array-literal form in their template language (Go templates) still
+      // need to refuse it — they do so in their own `arrayLiteral` emitter
+      // method, not here, because we can't see which adapter is consuming
+      // the IR at this point.
       for (const el of expr.elements) {
-        const elSupport = checkSupport(el, 'value')
+        const elSupport = checkSupport(el, pos)
         if (!elSupport.supported) return elSupport
       }
       return { supported: true, level: 'L2' }
@@ -2481,24 +2463,22 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
             `String.prototype.${expr.method} supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */`,
         }
       }
-      // The receiver/args are container CONTENTS (see `ExprPos`'s doc) —
-      // always checked at VALUE position, admitting e.g. an array-of-objects
-      // receiver (`[{ a: 'p' }].join(...)`) regardless of `pos` here.
-      const objSupport = checkSupport(expr.object, 'value')
+      // Receiver/args inherit `pos` (see `ExprPos`'s doc).
+      const objSupport = checkSupport(expr.object, pos)
       if (!objSupport.supported) return objSupport
       for (const arg of expr.args) {
-        const argSupport = checkSupport(arg, 'value')
+        const argSupport = checkSupport(arg, pos)
         if (!argSupport.supported) return argSupport
       }
       // A dynamic `.flat(depth)` carries its depth expression outside
-      // `args` (see the `depthExpr` doc) — check it too, same VALUE
-      // position as the other args. The parser already gated this at parse
-      // time (only a SUPPORTED depth expression becomes `depthExpr`), so
-      // this re-check is defensive: it keeps `isSupported`/`isSupportedValue`
-      // total for any `array-method`/`flat` node regardless of how it was
-      // constructed (e.g. by a rewrite walker).
+      // `args` (see the `depthExpr` doc) — check it too, same inherited
+      // `pos`. The parser already gated this at parse time (only a
+      // SUPPORTED depth expression becomes `depthExpr`), so this re-check
+      // is defensive: it keeps `isSupported`/`isSupportedValue` total for
+      // any `array-method`/`flat` node regardless of how it was constructed
+      // (e.g. by a rewrite walker).
       if (expr.method === 'flat' && expr.depthExpr) {
-        const depthSupport = checkSupport(expr.depthExpr, 'value')
+        const depthSupport = checkSupport(expr.depthExpr, pos)
         if (!depthSupport.supported) return depthSupport
       }
       return { supported: true, level: 'L2' }
@@ -2518,16 +2498,15 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // predicate fallback's exact degrade points (#2038) — a blanket refusal
       // here would break the faithful shapes (#1443 PR4).
       //
-      // The receiver, callback body, and trailing args are all container
-      // CONTENTS of this callback call (see `ExprPos`'s doc) — checked at
-      // VALUE position regardless of `pos` here, admitting e.g. a
-      // `[{ a: 'p' }].map(t => t.a)` receiver or a `.map(t => ({ id: t.id }))`
-      // object-literal-returning body.
+      // Receiver, callback body, and trailing args inherit `pos` (see
+      // `ExprPos`'s doc) — a RENDERED `.map(t => ({...}))` stays refused
+      // (the body value is what ends up rendered), while a VALUE-entered
+      // one (a signal/memo initializer) admits it.
       const cb = asCallbackMethodCall(expr)
       if (cb) {
-        const objSupport = checkSupport(cb.object, 'value')
+        const objSupport = checkSupport(cb.object, pos)
         if (!objSupport.supported) return objSupport
-        const bodySupport = checkSupport(cb.arrow.body, 'value')
+        const bodySupport = checkSupport(cb.arrow.body, pos)
         if (!bodySupport.supported) {
           return {
             supported: false,
@@ -2536,7 +2515,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
           }
         }
         for (const rest of cb.args) {
-          const restSupport = checkSupport(rest, 'value')
+          const restSupport = checkSupport(rest, pos)
           if (!restSupport.supported) return restSupport
         }
         return { supported: true, level: 'L5' }

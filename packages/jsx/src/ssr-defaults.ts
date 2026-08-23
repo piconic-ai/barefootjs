@@ -675,17 +675,12 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     ) {
       return ctx.bindings[node.expression.text]
     }
-    // `<array>.map(cb)` — a single-param, expression-bodied arrow projected
-    // over a resolved array receiver. Needed so a constant `.map().join()`
-    // chain (`createSignal([{ a: 'p' }].map(t => t.a).join(','))`, no free
-    // identifiers — #2696) resolves to its real value here instead of
-    // falling through to `null`: `computeSsrSeedPlan` classifies such a
-    // chain `derived` with EMPTY `frees` (a compile-time constant), and every
-    // template-stash adapter's derived-seed generator skips emitting an
-    // in-template recompute for a constant lowering (no free var appears in
-    // the rendered text), relying on THIS static default being correct
-    // instead. A block-bodied / multi-param arrow, or a non-array receiver,
-    // stays unresolved — same conservative narrowing as every other arm here.
+    // `<array>.map(cb)` — a single-param, expression-bodied arrow over a
+    // resolved array receiver; anything else (block body, multi-param,
+    // non-array receiver) stays `UNRESOLVED`, same conservative narrowing as
+    // every other arm here. A `derived` step with empty `frees` gets no
+    // in-template recompute (#2696), so this static value is what production
+    // actually reads.
     if (
       ts.isPropertyAccessExpression(node.expression) &&
       node.expression.name.text === 'map' &&
