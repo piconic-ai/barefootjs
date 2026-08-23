@@ -21,13 +21,9 @@
           "total": 80
         },
         "blade": {
-          "pass": 65,
+          "pass": 66,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -91,13 +87,9 @@
           ]
         },
         "erb": {
-          "pass": 66,
+          "pass": 67,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -213,13 +205,9 @@
           ]
         },
         "jinja": {
-          "pass": 65,
+          "pass": 66,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -283,13 +271,9 @@
           ]
         },
         "minijinja": {
-          "pass": 65,
+          "pass": 66,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -353,13 +337,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 66,
+          "pass": 67,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -417,13 +397,9 @@
           ]
         },
         "twig": {
-          "pass": 65,
+          "pass": 66,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -487,13 +463,9 @@
           ]
         },
         "xslate": {
-          "pass": 65,
+          "pass": 66,
           "total": 80,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -570,20 +542,16 @@
       }
     },
     "array-method": {
-      "total": 70,
+      "total": 71,
       "cells": {
         "hono": {
-          "pass": 70,
-          "total": 70
+          "pass": 71,
+          "total": 71
         },
         "blade": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -599,13 +567,9 @@
           ]
         },
         "erb": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -621,8 +585,8 @@
           ]
         },
         "go-template": {
-          "pass": 67,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -639,13 +603,9 @@
           ]
         },
         "jinja": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -661,13 +621,9 @@
           ]
         },
         "minijinja": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -683,13 +639,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -705,13 +657,9 @@
           ]
         },
         "twig": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -727,13 +675,9 @@
           ]
         },
         "xslate": {
-          "pass": 66,
-          "total": 70,
+          "pass": 68,
+          "total": 71,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -762,20 +706,16 @@
       }
     },
     "arrow": {
-      "total": 69,
+      "total": 70,
       "cells": {
         "hono": {
-          "pass": 69,
-          "total": 69
+          "pass": 70,
+          "total": 70
         },
         "blade": {
-          "pass": 57,
-          "total": 69,
+          "pass": 59,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -827,13 +767,9 @@
           ]
         },
         "erb": {
-          "pass": 58,
-          "total": 69,
+          "pass": 60,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -879,8 +815,8 @@
           ]
         },
         "go-template": {
-          "pass": 60,
-          "total": 69,
+          "pass": 61,
+          "total": 70,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -925,13 +861,9 @@
           ]
         },
         "jinja": {
-          "pass": 57,
-          "total": 69,
+          "pass": 59,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -983,13 +915,9 @@
           ]
         },
         "minijinja": {
-          "pass": 57,
-          "total": 69,
+          "pass": 59,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1041,13 +969,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 58,
-          "total": 69,
+          "pass": 60,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1093,13 +1017,9 @@
           ]
         },
         "twig": {
-          "pass": 57,
-          "total": 69,
+          "pass": 59,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1151,13 +1071,9 @@
           ]
         },
         "xslate": {
-          "pass": 57,
-          "total": 69,
+          "pass": 59,
+          "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1229,13 +1145,9 @@
           "total": 93
         },
         "blade": {
-          "pass": 81,
+          "pass": 82,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1289,13 +1201,9 @@
           ]
         },
         "erb": {
-          "pass": 82,
+          "pass": 83,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1391,13 +1299,9 @@
           ]
         },
         "jinja": {
-          "pass": 81,
+          "pass": 82,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1451,13 +1355,9 @@
           ]
         },
         "minijinja": {
-          "pass": 81,
+          "pass": 82,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1511,13 +1411,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 82,
+          "pass": 83,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1565,13 +1461,9 @@
           ]
         },
         "twig": {
-          "pass": 81,
+          "pass": 82,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1625,13 +1517,9 @@
           ]
         },
         "xslate": {
-          "pass": 81,
+          "pass": 82,
           "total": 93,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1698,11 +1586,11 @@
       }
     },
     "call": {
-      "total": 222,
+      "total": 223,
       "cells": {
         "hono": {
-          "pass": 221,
-          "total": 222,
+          "pass": 222,
+          "total": 223,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1713,13 +1601,9 @@
           ]
         },
         "blade": {
-          "pass": 204,
-          "total": 222,
+          "pass": 206,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1801,13 +1685,9 @@
           ]
         },
         "erb": {
-          "pass": 205,
-          "total": 222,
+          "pass": 207,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1883,8 +1763,8 @@
           ]
         },
         "go-template": {
-          "pass": 207,
-          "total": 222,
+          "pass": 208,
+          "total": 223,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1959,13 +1839,9 @@
           ]
         },
         "jinja": {
-          "pass": 204,
-          "total": 222,
+          "pass": 206,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2047,13 +1923,9 @@
           ]
         },
         "minijinja": {
-          "pass": 204,
-          "total": 222,
+          "pass": 206,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2135,13 +2007,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 205,
-          "total": 222,
+          "pass": 207,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2217,13 +2085,9 @@
           ]
         },
         "twig": {
-          "pass": 204,
-          "total": 222,
+          "pass": 206,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2305,13 +2169,9 @@
           ]
         },
         "xslate": {
-          "pass": 204,
-          "total": 222,
+          "pass": 206,
+          "total": 223,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2594,11 +2454,11 @@
       }
     },
     "identifier": {
-      "total": 312,
+      "total": 313,
       "cells": {
         "hono": {
-          "pass": 311,
-          "total": 312,
+          "pass": 312,
+          "total": 313,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2609,13 +2469,9 @@
           ]
         },
         "blade": {
-          "pass": 292,
-          "total": 312,
+          "pass": 294,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2705,13 +2561,9 @@
           ]
         },
         "erb": {
-          "pass": 293,
-          "total": 312,
+          "pass": 295,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2795,8 +2647,8 @@
           ]
         },
         "go-template": {
-          "pass": 295,
-          "total": 312,
+          "pass": 296,
+          "total": 313,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2879,13 +2731,9 @@
           ]
         },
         "jinja": {
-          "pass": 292,
-          "total": 312,
+          "pass": 294,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2975,13 +2823,9 @@
           ]
         },
         "minijinja": {
-          "pass": 292,
-          "total": 312,
+          "pass": 294,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3071,13 +2915,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 293,
-          "total": 312,
+          "pass": 295,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3161,13 +3001,9 @@
           ]
         },
         "twig": {
-          "pass": 292,
-          "total": 312,
+          "pass": 294,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3257,13 +3093,9 @@
           ]
         },
         "xslate": {
-          "pass": 292,
-          "total": 312,
+          "pass": 294,
+          "total": 313,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3418,20 +3250,16 @@
       }
     },
     "literal": {
-      "total": 254,
+      "total": 255,
       "cells": {
         "hono": {
-          "pass": 254,
-          "total": 254
+          "pass": 255,
+          "total": 255
         },
         "blade": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3489,13 +3317,9 @@
           ]
         },
         "erb": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3553,8 +3377,8 @@
           ]
         },
         "go-template": {
-          "pass": 243,
-          "total": 254,
+          "pass": 244,
+          "total": 255,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3605,13 +3429,9 @@
           ]
         },
         "jinja": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3669,13 +3489,9 @@
           ]
         },
         "minijinja": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3733,13 +3549,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3797,13 +3609,9 @@
           ]
         },
         "twig": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3861,13 +3669,9 @@
           ]
         },
         "xslate": {
-          "pass": 240,
-          "total": 254,
+          "pass": 242,
+          "total": 255,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -4142,11 +3946,11 @@
       }
     },
     "member": {
-      "total": 177,
+      "total": 178,
       "cells": {
         "hono": {
-          "pass": 176,
-          "total": 177,
+          "pass": 177,
+          "total": 178,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4157,13 +3961,9 @@
           ]
         },
         "blade": {
-          "pass": 157,
-          "total": 177,
+          "pass": 159,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4253,13 +4053,9 @@
           ]
         },
         "erb": {
-          "pass": 158,
-          "total": 177,
+          "pass": 160,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4343,8 +4139,8 @@
           ]
         },
         "go-template": {
-          "pass": 160,
-          "total": 177,
+          "pass": 161,
+          "total": 178,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4427,13 +4223,9 @@
           ]
         },
         "jinja": {
-          "pass": 157,
-          "total": 177,
+          "pass": 159,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4523,13 +4315,9 @@
           ]
         },
         "minijinja": {
-          "pass": 157,
-          "total": 177,
+          "pass": 159,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4619,13 +4407,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 158,
-          "total": 177,
+          "pass": 160,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4709,13 +4493,9 @@
           ]
         },
         "twig": {
-          "pass": 157,
-          "total": 177,
+          "pass": 159,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4805,13 +4585,9 @@
           ]
         },
         "xslate": {
-          "pass": 157,
-          "total": 177,
+          "pass": 159,
+          "total": 178,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4914,20 +4690,16 @@
       }
     },
     "object-literal": {
-      "total": 57,
+      "total": 58,
       "cells": {
         "hono": {
-          "pass": 57,
-          "total": 57
+          "pass": 58,
+          "total": 58
         },
         "blade": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4941,13 +4713,9 @@
           ]
         },
         "erb": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4961,8 +4729,8 @@
           ]
         },
         "go-template": {
-          "pass": 55,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4977,13 +4745,9 @@
           ]
         },
         "jinja": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4997,13 +4761,9 @@
           ]
         },
         "minijinja": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -5017,13 +4777,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -5037,13 +4793,9 @@
           ]
         },
         "twig": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -5057,13 +4809,9 @@
           ]
         },
         "xslate": {
-          "pass": 54,
-          "total": 57,
+          "pass": 56,
+          "total": 58,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -6217,20 +5965,16 @@
       }
     },
     "array-method:join": {
-      "total": 42,
+      "total": 43,
       "cells": {
         "hono": {
-          "pass": 42,
-          "total": 42
+          "pass": 43,
+          "total": 43
         },
         "blade": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6242,13 +5986,9 @@
           ]
         },
         "erb": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6260,8 +6000,8 @@
           ]
         },
         "go-template": {
-          "pass": 40,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -6274,13 +6014,9 @@
           ]
         },
         "jinja": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6292,13 +6028,9 @@
           ]
         },
         "minijinja": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6310,13 +6042,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6328,13 +6056,9 @@
           ]
         },
         "twig": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6346,13 +6070,9 @@
           ]
         },
         "xslate": {
-          "pass": 39,
-          "total": 42,
+          "pass": 41,
+          "total": 43,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -7471,13 +7191,9 @@
           "total": 21
         },
         "blade": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7487,13 +7203,9 @@
           ]
         },
         "erb": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7515,13 +7227,9 @@
           ]
         },
         "jinja": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7531,13 +7239,9 @@
           ]
         },
         "minijinja": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7547,13 +7251,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7563,13 +7263,9 @@
           ]
         },
         "twig": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -7579,13 +7275,9 @@
           ]
         },
         "xslate": {
-          "pass": 19,
+          "pass": 20,
           "total": 21,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -8338,15 +8030,15 @@
       }
     },
     "literal:boolean": {
-      "total": 49,
+      "total": 50,
       "cells": {
         "hono": {
-          "pass": 49,
-          "total": 49
+          "pass": 50,
+          "total": 50
         },
         "blade": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8355,8 +8047,8 @@
           ]
         },
         "erb": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8365,8 +8057,8 @@
           ]
         },
         "go-template": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8375,8 +8067,8 @@
           ]
         },
         "jinja": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8385,8 +8077,8 @@
           ]
         },
         "minijinja": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8395,8 +8087,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8405,8 +8097,8 @@
           ]
         },
         "twig": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8415,8 +8107,8 @@
           ]
         },
         "xslate": {
-          "pass": 48,
-          "total": 49,
+          "pass": 49,
+          "total": 50,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -8843,20 +8535,16 @@
       }
     },
     "literal:string": {
-      "total": 180,
+      "total": 181,
       "cells": {
         "hono": {
-          "pass": 180,
-          "total": 180
+          "pass": 181,
+          "total": 181
         },
         "blade": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8902,13 +8590,9 @@
           ]
         },
         "erb": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8954,8 +8638,8 @@
           ]
         },
         "go-template": {
-          "pass": 172,
-          "total": 180,
+          "pass": 173,
+          "total": 181,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8994,13 +8678,9 @@
           ]
         },
         "jinja": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -9046,13 +8726,9 @@
           ]
         },
         "minijinja": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -9098,13 +8774,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -9150,13 +8822,9 @@
           ]
         },
         "twig": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -9202,13 +8870,9 @@
           ]
         },
         "xslate": {
-          "pass": 169,
-          "total": 180,
+          "pass": 171,
+          "total": 181,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
