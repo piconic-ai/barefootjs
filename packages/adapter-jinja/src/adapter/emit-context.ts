@@ -100,8 +100,11 @@ export interface JinjaMemoContext {
   /**
    * Lower a JS expression to its Jinja form (the core recursive entry). See
    * `JinjaSpreadContext.convertExpressionToJinja` for the `preParsed` contract.
+   * `pos` (default `'rendered'`) must be `'value'` for a derived-seed RHS —
+   * an assignment, not a render — so the internal support gate matches the
+   * `isSupportedValue` classification the seed plan already used.
    */
-  convertExpressionToJinja(expr: string, preParsed?: ParsedExpr): string
+  convertExpressionToJinja(expr: string, preParsed?: ParsedExpr, pos?: 'rendered' | 'value'): string
 
   /**
    * Per-compile diagnostic list `convertExpressionToJinja` appends to on an

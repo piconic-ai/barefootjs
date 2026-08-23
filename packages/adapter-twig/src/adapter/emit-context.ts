@@ -102,8 +102,11 @@ export interface TwigMemoContext {
   /**
    * Lower a JS expression to its Twig form (the core recursive entry). See
    * `TwigSpreadContext.convertExpressionToTwig` for the `preParsed` contract.
+   * `pos` (default `'rendered'`) must be `'value'` for a derived-seed RHS —
+   * an assignment, not a render — so the internal support gate matches the
+   * `isSupportedValue` classification the seed plan already used.
    */
-  convertExpressionToTwig(expr: string, preParsed?: ParsedExpr): string
+  convertExpressionToTwig(expr: string, preParsed?: ParsedExpr, pos?: 'rendered' | 'value'): string
 
   /**
    * Per-compile diagnostic list `convertExpressionToTwig` appends to on an

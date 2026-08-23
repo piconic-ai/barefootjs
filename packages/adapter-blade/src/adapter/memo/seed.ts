@@ -123,7 +123,8 @@ export function generateDerivedMemoSeed(ctx: BladeMemoContext, ir: ComponentIR):
     if (step.kind !== 'derived') continue
     const materialized = materializeGetterCalls(step.parsed, knownGetterNames)
     const errorsBefore = ctx.errors.length
-    const blade = ctx.convertExpressionToBlade('', materialized)
+    // `'value'` — this RHS is an assignment, not a render (#2696 review).
+    const blade = ctx.convertExpressionToBlade('', materialized, 'value')
     if (ctx.errors.length > errorsBefore) {
       ctx.errors.length = errorsBefore
       continue

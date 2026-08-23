@@ -273,6 +273,7 @@ import {
   parseProviderObjectLiteral,
   parseStyleObjectEntries,
   isSupported,
+  isSupportedValue,
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
@@ -1911,12 +1912,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): BladeMemoContext {
     return {
-      convertExpressionToBlade: (e, preParsed) => this.convertExpressionToBlade(e, preParsed),
+      convertExpressionToBlade: (e, preParsed, pos) => this.convertExpressionToBlade(e, preParsed, pos),
       errors: this.errors,
     }
   }
 
-  private convertExpressionToBlade(expr: string, preParsed?: ParsedExpr): string {
+  private convertExpressionToBlade(expr: string, preParsed?: ParsedExpr, pos: 'rendered' | 'value' = 'rendered'): string {
     // Parse-first lowering — parity with the Jinja/Twig adapters'
     // `convertExpressionTo*`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST
@@ -1968,7 +1969,11 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       }
     }
 
-    const support = isSupported(parsed)
+    // `pos` distinguishes a derived-seed RHS (an assignment, checked via
+    // `isSupportedValue`) from every other, genuinely rendered call site —
+    // the rendered gate would otherwise re-refuse a tree the seed plan
+    // already classified `derived` at value position (#2696 review).
+    const support = pos === 'value' ? isSupportedValue(parsed) : isSupported(parsed)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',

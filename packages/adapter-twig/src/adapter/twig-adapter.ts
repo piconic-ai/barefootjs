@@ -179,6 +179,7 @@ import {
   parseProviderObjectLiteral,
   parseStyleObjectEntries,
   isSupported,
+  isSupportedValue,
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
@@ -1787,12 +1788,12 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): TwigMemoContext {
     return {
-      convertExpressionToTwig: (e, preParsed) => this.convertExpressionToTwig(e, preParsed),
+      convertExpressionToTwig: (e, preParsed, pos) => this.convertExpressionToTwig(e, preParsed, pos),
       errors: this.errors,
     }
   }
 
-  private convertExpressionToTwig(expr: string, preParsed?: ParsedExpr): string {
+  private convertExpressionToTwig(expr: string, preParsed?: ParsedExpr, pos: 'rendered' | 'value' = 'rendered'): string {
     // Parse-first lowering — parity with the Jinja adapter's
     // `convertExpressionToJinja`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST
@@ -1844,7 +1845,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       }
     }
 
-    const support = isSupported(parsed)
+    // `pos` distinguishes a derived-seed RHS (an assignment, checked via
+    // `isSupportedValue`) from every other, genuinely rendered call site —
+    // the rendered gate would otherwise re-refuse a tree the seed plan
+    // already classified `derived` at value position (#2696 review).
+    const support = pos === 'value' ? isSupportedValue(parsed) : isSupported(parsed)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',

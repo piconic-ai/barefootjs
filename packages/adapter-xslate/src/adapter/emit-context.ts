@@ -101,7 +101,10 @@ export interface XslateMemoContext {
    * re-parsing `expr` — mirrors go-template's
    * `convertExpressionToGo(jsExpr, out?, preParsed?)`. With `preParsed` set,
    * `expr` is unused for parsing (the converter derives any diagnostic text
-   * from the tree), so callers may pass `''`.
+   * from the tree), so callers may pass `''`. `pos` (default `'rendered'`)
+   * must be `'value'` for a derived-seed RHS — an assignment, not a render —
+   * so the internal support gate matches the `isSupportedValue`
+   * classification the seed plan already used.
    */
-  convertExpressionToKolon(expr: string, preParsed?: ParsedExpr): string
+  convertExpressionToKolon(expr: string, preParsed?: ParsedExpr, pos?: 'rendered' | 'value'): string
 }

@@ -57,6 +57,7 @@ import {
   parseProviderObjectLiteral,
   parseStyleObjectEntries,
   isSupported,
+  isSupportedValue,
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
@@ -1692,10 +1693,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): XslateMemoContext {
-    return { convertExpressionToKolon: (e, preParsed) => this.convertExpressionToKolon(e, preParsed) }
+    return { convertExpressionToKolon: (e, preParsed, pos) => this.convertExpressionToKolon(e, preParsed, pos) }
   }
 
-  private convertExpressionToKolon(expr: string, preParsed?: ParsedExpr): string {
+  private convertExpressionToKolon(expr: string, preParsed?: ParsedExpr, pos: 'rendered' | 'value' = 'rendered'): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST
@@ -1747,7 +1748,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       }
     }
 
-    const support = isSupported(parsed)
+    // `pos` distinguishes a derived-seed RHS (an assignment, checked via
+    // `isSupportedValue`) from every other, genuinely rendered call site —
+    // the rendered gate would otherwise re-refuse a tree the seed plan
+    // already classified `derived` at value position (#2696 review).
+    const support = pos === 'value' ? isSupportedValue(parsed) : isSupported(parsed)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',
