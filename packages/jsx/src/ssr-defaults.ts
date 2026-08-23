@@ -655,6 +655,12 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     if (baseResult === UNRESOLVED || baseResult === null || typeof baseResult !== 'object') {
       return UNRESOLVED
     }
+    // Own-property reads are only faithful for a plain object. An array (or
+    // any other non-plain object) exposes prototype members (`.map`,
+    // `.length`) that `hasOwnProperty` would wrongly resolve to `undefined`
+    // instead of the real function/value (#2698 review).
+    const proto = Object.getPrototypeOf(baseResult)
+    if (proto !== Object.prototype && proto !== null) return UNRESOLVED
     // A resolved plain-object base — an object-literal value, e.g. a
     // `.map()` callback param bound to one element (#2696's `t.a`). Missing
     // key → JS `undefined`, mirroring `isElementAccessExpression`'s own
