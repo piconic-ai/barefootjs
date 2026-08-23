@@ -6,10 +6,12 @@
  * `parseExpression` (so each vector carries a genuine `ParsedExpr` tree)
  * and runs it through the JS reference evaluator (eval-reference.ts) to
  * compute `expect`. Writes eval-vectors.json — the language-independent
- * conformance data the Go (runtime/eval_vectors_test.go), Perl
- * (t/eval_vectors.t), Python (tests/test_eval_vectors.py), and Ruby
- * (test/eval_vectors_test.rb) harnesses consume to prove their
- * evaluators are isomorphic with JS.
+ * conformance data all six backend harnesses consume to prove their
+ * evaluators are isomorphic with JS: Go (runtime/eval_vectors_test.go),
+ * shared Perl (t/eval_vectors.t, mojolicious + xslate), Python
+ * (tests/test_eval_vectors.py), Ruby (test/eval_vectors_test.rb), shared
+ * PHP (tests/test_eval_vectors.php, blade + twig), and Rust
+ * (tests/eval_vectors.rs).
  *
  *   cd packages/adapter-tests && bun run generate:eval-vectors
  *

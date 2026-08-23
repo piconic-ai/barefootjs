@@ -12,6 +12,7 @@
  */
 
 import { groupBinaryOperand,
+  groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
@@ -599,6 +600,17 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // hashref literal, quoted the same way `objectLiteralToKolonHashref`
     // quotes the spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{ ${properties.map(p => `'${escapeKolonSingleQuoted(p.key)}' => ${emit(p.value)}`).join(', ')} }`
+    const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
+      `{ ${run.map(p => `'${escapeKolonSingleQuoted(p.key)}' => ${emit(p.value)}`).join(', ')} }`
+    if (!properties.some(p => p.kind === 'spread')) {
+      return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
+    }
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2): Kolon's builtin
+    // `$hashref.merge($v)` method (Text::Xslate::Manual::Builtin) returns a
+    // new hashref of the receiver overridden by `$v`'s keys — chaining it
+    // across every segment folds ANY interleaving of `prop`/`spread`
+    // entries left-to-right, later segments winning, matching JS spread.
+    const segments = groupObjectLiteralSegments(properties, literalOf, emit)
+    return segments.reduce((acc, seg) => `${acc}.merge(${seg})`)
   }
 }

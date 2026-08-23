@@ -98,12 +98,26 @@ describe('serializeParsedExpr', () => {
     })
   })
 
-  test('map body: object literal carries key + value (no keyKind / shorthand)', () => {
+  test('map body: object literal carries kind + key + value (no keyKind / shorthand)', () => {
+    // #2696 Step 2: each entry now carries its own `kind` tag ('prop' here —
+    // no source spread in this body) so the evaluator can distinguish a
+    // `prop` from a `spread` entry without re-deriving it from field shape.
     expect(evalJSON('({ id: item.id, n: item.n })')).toEqual({
       kind: 'object-literal',
       properties: [
-        { key: 'id', value: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'id' } },
-        { key: 'n', value: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'n' } },
+        { kind: 'prop', key: 'id', value: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'id' } },
+        { kind: 'prop', key: 'n', value: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'n' } },
+      ],
+    })
+  })
+
+  test('map body: object literal carries a spread entry as `{ kind: "spread", expr }`', () => {
+    // The todo-app motivating shape (#2696): `{ ...t, editing: false }`.
+    expect(evalJSON("({ ...t, editing: false })")).toEqual({
+      kind: 'object-literal',
+      properties: [
+        { kind: 'spread', expr: { kind: 'identifier', name: 't' } },
+        { kind: 'prop', key: 'editing', value: { kind: 'literal', value: false } },
       ],
     })
   })

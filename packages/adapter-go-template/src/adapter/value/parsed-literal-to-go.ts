@@ -63,6 +63,9 @@ function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string |
   if (expr.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of expr.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no static key to bake as a Go
+    // map entry — bail, same as any other unsupported shape.
+    if (prop.kind === 'spread') return null
     if (prop.shorthand) return null
     const go =
       prop.value.kind === 'object-literal'
@@ -150,6 +153,10 @@ export function parsedLiteralToGo(
     if (!structFields) return null
     const entries: string[] = []
     for (const prop of expr.properties) {
+      // A spread (`{ ...t }`, #2696 Step 2) has no static key to match a
+      // struct field against — defer the whole object, same as any other
+      // unsupported shape.
+      if (prop.kind === 'spread') return null
       // A shorthand `{ a }` carries an identifier value → lowers to null below
       // and defers the whole object.
       const goField = structFields.get(prop.key)

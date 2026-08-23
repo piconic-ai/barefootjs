@@ -376,9 +376,21 @@ export function evaluate(expr: ParsedExpr, env: EvalEnv): EvalValue {
       // Null-prototype so every key is data-only — a `__proto__` key can't
       // mutate the prototype chain (which a plain `{}` would allow via
       // assignment), keeping parity with Go maps / Perl hashes that treat
-      // every key as data.
+      // every key as data. A `spread` entry (#2696 Step 2) evaluates its
+      // source and shallow-merges its own keys — a non-object result
+      // (including a null/undefined JS spread source) is a no-op — same as
+      // every backend evaluator; later entries win on a shared key.
       const out: { [k: string]: EvalValue } = Object.create(null)
-      for (const prop of expr.properties) out[prop.key] = evaluate(prop.value, env)
+      for (const prop of expr.properties) {
+        if (prop.kind === 'spread') {
+          const spread = evaluate(prop.expr, env)
+          if (spread !== null && typeof spread === 'object' && !Array.isArray(spread)) {
+            Object.assign(out, spread)
+          }
+          continue
+        }
+        out[prop.key] = evaluate(prop.value, env)
+      }
       return out
     }
 

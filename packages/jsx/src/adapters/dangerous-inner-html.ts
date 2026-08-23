@@ -122,6 +122,7 @@ function htmlPropValue(parsed: ParsedExpr): ParsedExpr | null {
   if (parsed.kind !== 'object-literal') return null
   if (parsed.properties.length !== 1) return null
   const [prop] = parsed.properties
+  if (prop.kind === 'spread') return null
   if (prop.key !== '__html') return null
   return prop.value
 }

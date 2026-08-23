@@ -60,6 +60,7 @@
  */
 
 import { groupBinaryOperand,
+  groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
@@ -671,6 +672,24 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // hash literal, keyed the same way `objectLiteralToTwigDict` quotes the
     // spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{${properties.map(p => `${twigHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
+    const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
+      `{${run.map(p => `${twigHashKey(p.key)}: ${emit(p.value)}`).join(', ')}}`
+    if (!properties.some(p => p.kind === 'spread')) {
+      return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
+    }
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2): NOT Twig's own
+    // `merge` filter — a spread source that is a `json_decode()`-sourced
+    // object prop decodes as `stdClass` (this runtime's canonical JSON-
+    // object representation), and Twig's `merge` filter raises `The
+    // "merge" filter expects a sequence or a mapping` on a `stdClass`
+    // operand. `bf.merge(...)` (BarefootJS.php, shared with Blade's
+    // `$bf->merge`) accepts either representation and is variadic +
+    // left-to-right override (a later argument's keys win), exactly JS
+    // spread's semantics — so ONE call folds any interleaving of
+    // `prop`/`spread` entries, one operand per maximal run of `prop`
+    // entries (a hash literal, which `bf.merge` also accepts) or per
+    // `spread` entry (its source expression, passed straight through).
+    const segments = groupObjectLiteralSegments(properties, literalOf, emit)
+    return `bf.merge(${segments.join(', ')})`
   }
 }

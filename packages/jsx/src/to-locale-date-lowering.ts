@@ -504,6 +504,10 @@ export function matchToLocaleDateStringCall(
   let tz: string | null = null
   const probeOptions: Record<string, string> = {}
   for (const prop of options.properties) {
+    // A spread (`{ ...opts, timeZone: 'UTC' }`, #2696 Step 2) isn't a
+    // literal-keyed entry this probe can read without evaluating the spread
+    // source — decline rather than silently skipping its keys.
+    if (prop.kind === 'spread') return null
     if (prop.value.kind !== 'literal' || prop.value.literalType !== 'string') return null
     const value = String(prop.value.value)
     if (prop.key === 'timeZone') {

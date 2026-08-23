@@ -200,6 +200,11 @@ function recordIndexInterpolationToGo(
 
   const entries: { key: string; value: { kind: 'number' | 'string'; text: string } }[] = []
   for (const prop of parsedConst.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no static key/value pair this
+    // record-index lowering can bake — bail, same as any other unsupported
+    // member (a record const containing spread already couldn't reach here
+    // as a whole before this kind existed).
+    if (prop.kind === 'spread') return null
     const v = prop.value
     if (v.kind === 'literal' && v.literalType === 'number') {
       entries.push({ key: prop.key, value: { kind: 'number', text: v.raw ?? String(v.value) } })

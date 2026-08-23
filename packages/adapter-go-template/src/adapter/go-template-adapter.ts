@@ -58,6 +58,7 @@ import {
   asCallbackMethodCall,
   sortComparatorFromArrow,
   emitParsedExpr,
+  groupObjectLiteralSegments,
   emitIRNode,
   emitAttrValue,
   augmentInheritedPropAccesses,
@@ -1370,6 +1371,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (el.kind !== 'object-literal') return null
       const seen = new Set<string>()
       for (const prop of el.properties) {
+        // A spread (`{ ...t, a: 1 }`, #2696 Step 2) isn't a plain per-key
+        // scalar shape this fast path bakes — fall back (the caller's
+        // `ts.createSourceFile` path, or refusal) rather than mis-baking.
+        if (prop.kind === 'spread') return null
         if (prop.shorthand) return null
         const key = prop.key
         if (!GO_IDENTIFIER.test(key)) return null
@@ -3401,6 +3406,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (parsed.kind !== 'object-literal') return null
     const entries: string[] = []
     for (const prop of parsed.properties) {
+      // A spread (`{ ...t }`, #2696 Step 2) isn't a per-key member this Go
+      // struct-literal lowering can express — fail the whole value, same as
+      // any other unsupported member (the consumer keeps its default).
+      if (prop.kind === 'spread') return null
       if (prop.shorthand) return null
       const goVal = this.lowerProviderMapMemberValue(prop.value, propsParams)
       if (goVal === null) return null
@@ -5000,12 +5009,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // variadic `bf_map` runtime helper (the object counterpart of
     // `arrayLiteral`'s `bf_arr`) instead of trying to spell a literal.
     if (properties.length > 0) {
-      const parts = properties.map(p => {
-        const rendered = emit(p.value)
-        const val = rendered.includes(' ') ? `(${rendered})` : rendered
-        return `"${escapeGoString(p.key)}" ${val}`
-      })
-      return `bf_map ${parts.join(' ')}`
+      const wrap = (rendered: string) => (rendered.includes(' ') ? `(${rendered})` : rendered)
+      const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
+        `bf_map ${run.map(p => `"${escapeGoString(p.key)}" ${wrap(emit(p.value))}`).join(' ')}`
+      if (!properties.some(p => p.kind === 'spread')) {
+        return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
+      }
+      // Spread (`{ ...t, editing: false }`, #2696 Step 2): `bf_merge`
+      // (runtime/eval.go, a `bf_map` sibling) is a variadic, null-safe map
+      // merge — a non-map argument (nil included) is skipped rather than
+      // panicking, matching JS's null/undefined-spread no-op — folding
+      // every segment (a `bf_map` run, or a spread's own emitted value) in
+      // ONE call, later segments winning, exactly JS spread's semantics.
+      const segments = groupObjectLiteralSegments(properties, literalOf, e => wrap(emit(e)))
+      return `bf_merge ${segments.join(' ')}`
     }
     // The EMPTY object literal (`?? {}`) reaches here as `??`'s right
     // operand (expression-parser.ts, `logical` case) — a RENDERED-position
@@ -6319,7 +6336,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (icon registries, variant/size class maps), so this fully covers them.
     const carried = constInfo.parsed
     if (carried?.kind === 'object-literal') {
-      const hit = carried.properties.find(prop => prop.key === key)
+      // A spread entry (`{ ...t }`, #2696 Step 2) has no static key to match
+      // against — skip it, same as before this kind existed (a record const
+      // containing spread already couldn't reach here as a whole).
+      const hit = carried.properties.find(
+        (prop): prop is Extract<ObjectLiteralProperty, { kind: 'prop' }> => prop.kind === 'prop' && prop.key === key,
+      )
       if (hit && hit.value.kind === 'literal') {
         if (hit.value.literalType === 'string') return JSON.stringify(hit.value.value)
         if (hit.value.literalType === 'number') return hit.value.raw ?? String(hit.value.value)

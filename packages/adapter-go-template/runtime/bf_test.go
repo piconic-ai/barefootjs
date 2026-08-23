@@ -928,7 +928,7 @@ func TestFuncMap(t *testing.T) {
 		"bf_add", "bf_sub", "bf_mul", "bf_div", "bf_mod", "bf_neg",
 		"bf_lower", "bf_upper", "bf_trim", "bf_contains", "bf_join",
 		"bf_len", "bf_at", "bf_includes", "bf_first", "bf_last",
-		"bf_arr", "bf_map", "bf_filter_truthy", "bf_ternary", "bf_truthy",
+		"bf_arr", "bf_map", "bf_merge", "bf_filter_truthy", "bf_ternary", "bf_truthy",
 		"bf_every", "bf_some", "bf_filter", "bf_find", "bf_find_index", "bf_sort",
 		"bf_sort_eval", "bf_reduce_eval", "bf_env",
 		"bf_filter_eval", "bf_every_eval", "bf_some_eval",
@@ -958,6 +958,25 @@ func TestEnv(t *testing.T) {
 	// skipped, not collapsed into an `env[""]` slot.
 	if got := Env(42, "v", "real", 7); len(got) != 1 || got["real"] != 7 {
 		t.Fatalf("Env should skip a non-string key, got %v", got)
+	}
+}
+
+// TestMerge exercises `Merge` (`bf_merge` in the template FuncMap), the
+// object-literal SPREAD counterpart to `Env`/`bf_map` (#2696 Step 2).
+func TestMerge(t *testing.T) {
+	// Later arguments win on a shared key (JS object-spread semantics).
+	got := Merge(map[string]any{"id": "row-1", "done": false}, map[string]any{"done": true})
+	if got["id"] != "row-1" || got["done"] != true {
+		t.Fatalf("Merge should override 'done' from the later argument, got %v", got)
+	}
+	// A non-map argument (nil included — a JS null/undefined spread source)
+	// is skipped rather than panicking or clobbering the accumulator.
+	if got := Merge(nil, map[string]any{"a": 1}, "not a map", 42); len(got) != 1 || got["a"] != 1 {
+		t.Fatalf("Merge should skip non-map arguments, got %v", got)
+	}
+	// Zero arguments → a non-nil empty map, same as Env().
+	if got := Merge(); got == nil || len(got) != 0 {
+		t.Fatalf("Merge() with no arguments should be a non-nil empty map, got %v", got)
 	}
 }
 

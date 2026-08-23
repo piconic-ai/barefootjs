@@ -3296,7 +3296,10 @@ function resolveCallbackMethodFunctionReferences(
           ...(e.method === 'flat' && e.depthExpr ? { depthExpr: visit(e.depthExpr, bound) } : {}),
         } as ParsedExpr
       case 'object-literal':
-        return { ...e, properties: e.properties.map(p => ({ ...p, value: visit(p.value, bound) })) }
+        return {
+          ...e,
+          properties: e.properties.map(p => (p.kind === 'spread' ? { ...p, expr: visit(p.expr, bound) } : { ...p, value: visit(p.value, bound) })),
+        }
       case 'arrow': {
         const inner = e.params.length === 0 ? bound : new Set([...bound, ...e.params])
         return { ...e, body: visit(e.body, inner) }

@@ -39,6 +39,9 @@ export function resolveConstants(
     // below (Copilot review, PR #2361).
     if (c.parsed?.kind === 'object-literal') {
       for (const prop of c.parsed.properties) {
+        // A spread (`{ ...t }`, #2696 Step 2) has no static `name.key`
+        // member path to expose — skip it, same as an unresolvable value.
+        if (prop.kind === 'spread') continue
         const value = resolveObjectPropValue(prop.value, resolved)
         if (value !== null) resolved.set(`${c.name}.${prop.key}`, value)
       }

@@ -17,4 +17,7 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  'signal-object-spread-init':
+    'PRE-EXISTING, unrelated to the #2696 Step 2 spread work this fixture pins: a `derived`-classified signal/memo whose value is an OBJECT literal has no live-template-expression lowering on Go — unlike the other six template-stash backends (e.g. minijinja emits `{% set merged = dict(base, done=true) %}`), Go always bakes an object-typed signal/memo field into Go SOURCE at `NewXxxProps` constructor time (`convertInitialValue`/`parsedLiteralToGo`), and that baker is STATIC-only (identifier/call/member operands defer, `parsed-literal-to-go.ts`\'s own docstring) — it cannot reference a live prop at all. Reproduced identically with the spread REMOVED (`createSignal({ id: base.id, done: true })`), confirming the gap predates and is independent of spread: the signal seeds `nil` and every field read (`.Merged.ID`/`.Merged.Done`) reads the Go zero value regardless of `initialTodos`. Not filed as a tracked `known-limitation` issue by this change — flagging here for the maintainer to triage (a genuinely new Go capability, not a #2696 regression).',
+}

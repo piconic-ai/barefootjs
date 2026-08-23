@@ -143,8 +143,22 @@ def evaluate(node: Any, env: dict) -> Any:
     if kind == "array-literal":
         return [evaluate(e, env) for e in node.get("elements") or []]
     if kind == "object-literal":
+        # Each entry carries its own "kind" ("prop" | "spread", #2696 Step
+        # 2) -- the same encoding the Go evaluator (eval.go) and the raw
+        # ParsedExpr shape the eval-vectors.json golden corpus carry, so
+        # this one decoder serves both a compiled `*_eval` payload and the
+        # golden-vector JSON directly. A "spread" evaluates its "expr" and
+        # shallow-merges the result's own keys (a non-dict result --
+        # including a null/undefined JS spread source -- is a no-op); a
+        # "prop" sets one key. Later entries win on a shared key, in source
+        # order, matching JS object-spread exactly.
         out: dict = {}
         for prop in node.get("properties") or []:
+            if (prop.get("kind") or "") == "spread":
+                spread = evaluate(prop.get("expr"), env)
+                if isinstance(spread, dict):
+                    out.update(spread)
+                continue
             out[prop.get("key")] = evaluate(prop.get("value"), env)
         return out
     if kind == "array-method":

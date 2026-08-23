@@ -114,6 +114,40 @@ export const evalCases: EvalCase[] = [
   { src: '[item.a, item.b]', env: { item: { a: 1, b: 2 } }, note: 'array literal of field projections' },
   { src: '({ id: item.id, doubled: item.n * 2 })', env: { item: { id: 3, n: 4 } }, note: 'object literal: map body building a new record' },
 
+  // ----- object-literal spread (#2696 Step 2) -------------------------------
+  // JS object-spread semantics: shallow merge, left-to-right, LATER entries
+  // win on a shared key; a null/undefined spread source is a no-op.
+  {
+    src: '({ ...item, done: true })',
+    env: { item: { id: 1, done: false } },
+    note: 'spread then override: a trailing prop overrides the spread source\'s same key',
+  },
+  {
+    src: '({ done: true, ...item })',
+    env: { item: { id: 1, done: false } },
+    note: 'override then spread: the spread source overrides an earlier same-name prop (later wins)',
+  },
+  {
+    src: '({ ...a, ...b })',
+    env: { a: { x: 1, y: 2 }, b: { y: 3, z: 4 } },
+    note: 'two spreads merge; the later spread\'s keys win on overlap',
+  },
+  {
+    src: '({ ...item, editing: false })',
+    env: { item: { id: 't1', text: 'buy milk', editing: true } },
+    note: 'the todo-app motivating shape: spread a row then reset one field',
+  },
+  {
+    src: '({ ...item, done: true })',
+    env: { item: null },
+    note: 'spreading a null source is a no-op (only the trailing prop survives)',
+  },
+  {
+    src: '({ ...item.missing, done: true })',
+    env: { item: {} },
+    note: 'spreading a missing field (reads as null) is a no-op',
+  },
+
   // ----- built-in calls (the deterministic allowlist) ---------------------
   { src: 'Math.max(a, b)', env: { a: 3, b: 7 }, note: 'Math.max of two numbers' },
   { src: 'Math.min(a, b, c)', env: { a: 3, b: 7, c: 1 }, note: 'Math.min is variadic' },

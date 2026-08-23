@@ -83,6 +83,7 @@
  */
 
 import { groupBinaryOperand,
+  groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
@@ -674,6 +675,23 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // array literal, keyed the same way `objectLiteralToBladeDict` quotes the
     // spread-path literal.
     if (properties.length === 0) return '[]'
-    return `[${properties.map(p => `${bladeHashKey(p.key)} => ${emit(p.value)}`).join(', ')}]`
+    const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
+      `[${run.map(p => `${bladeHashKey(p.key)} => ${emit(p.value)}`).join(', ')}]`
+    if (!properties.some(p => p.kind === 'spread')) {
+      return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
+    }
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2): NOT PHP's own
+    // `array_merge()` — a spread source that is a `json_decode()`-sourced
+    // object prop decodes as `stdClass` (this runtime's canonical JSON-
+    // object representation), and `array_merge(stdClass, …)` is a PHP
+    // `TypeError`. `$bf->merge(...)` (BarefootJS.php) accepts either
+    // representation and is variadic + left-to-right override (a later
+    // argument's keys win), exactly JS spread's semantics — so any
+    // interleaving of `prop`/`spread` entries folds into ONE call, one
+    // operand per maximal run of `prop` entries (an array literal, which
+    // `$bf->merge` also accepts) or per `spread` entry (its source
+    // expression, passed straight through).
+    const segments = groupObjectLiteralSegments(properties, literalOf, emit)
+    return `$bf->merge(${segments.join(', ')})`
   }
 }

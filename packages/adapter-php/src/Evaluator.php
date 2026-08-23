@@ -223,9 +223,31 @@ final class Evaluator
             return $out;
         }
         if ($kind === 'object-literal') {
+            // Each entry carries its own "kind" ("prop" | "spread", #2696
+            // Step 2) -- the same encoding the Go/Perl/Python/Ruby
+            // evaluators and the raw ParsedExpr shape the eval-vectors.json
+            // golden corpus carry. A "spread" evaluates its "expr" and
+            // shallow-merges the result's own properties (a non-array/
+            // non-object result -- including a null/undefined JS spread
+            // source -- is a no-op); a "prop" sets one key. Later entries
+            // win on a shared key, in source order, matching JS
+            // object-spread exactly.
             $out = new \stdClass();
             $propsNode = self::get($node, 'properties');
             foreach ((is_array($propsNode) ? $propsNode : []) as $prop) {
+                if (self::kind($prop) === 'spread') {
+                    $spread = self::evaluate(self::get($prop, 'expr'), $env);
+                    $pairs = is_array($spread)
+                        ? $spread
+                        : (is_object($spread) ? get_object_vars($spread) : null);
+                    if ($pairs !== null) {
+                        foreach ($pairs as $k => $v) {
+                            $key = (string) $k;
+                            $out->$key = $v;
+                        }
+                    }
+                    continue;
+                }
                 $key = (string) self::get($prop, 'key');
                 $out->$key = self::evaluate(self::get($prop, 'value'), $env);
             }

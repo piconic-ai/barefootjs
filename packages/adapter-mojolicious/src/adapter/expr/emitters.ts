@@ -709,6 +709,17 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // hashref literal, quoted the same way `objectLiteralToPerlHashref`
     // quotes the spread-path literal.
     if (properties.length === 0) return '{}'
-    return `{ ${properties.map(p => `'${escapePerlSingleQuoted(p.key)}' => ${emit(p.value)}`).join(', ')} }`
+    // Spread (`{ ...t, editing: false }`, #2696 Step 2): real Perl hashref
+    // construction is a flat key/value LIST — `%{$expr}` (hash-dereference)
+    // interpolates every key/value pair of `$expr` into that list at its
+    // source position, and Perl's own list-to-hash construction keeps the
+    // LAST occurrence of a duplicate key, exactly matching JS spread's
+    // left-to-right override. So every entry (prop or spread) contributes
+    // its own list segment to ONE hashref literal — no merge CALL needed,
+    // unlike the other 6 adapters.
+    const parts = properties.map(p =>
+      p.kind === 'spread' ? `%{${emit(p.expr)}}` : `'${escapePerlSingleQuoted(p.key)}' => ${emit(p.value)}`,
+    )
+    return `{ ${parts.join(', ')} }`
   }
 }

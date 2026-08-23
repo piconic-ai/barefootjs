@@ -60,9 +60,23 @@ export function evaluateStaticLiteral(
       // Shorthand (`{ a }`) and explicit (`{ a: value }`) properties both
       // carry their resolved tree in `value` (shorthand's is an
       // `identifier`) — recursing here handles both uniformly: a shorthand
-      // property only resolves when `bindings` supplies it.
+      // property only resolves when `bindings` supplies it. A spread
+      // (`{ ...base, a: 1 }`, #2696 Step 2) resolves its source and merges
+      // in source order — the same shallow-merge, later-wins, null/undefined-
+      // is-a-no-op semantics as the runtime evaluator (`toEvalNode`'s
+      // `object-literal` case) and JS itself; a spread source that resolves
+      // to anything other than a plain object/null/undefined isn't
+      // statically mergeable here, so the whole literal declines.
       const out: Record<string, unknown> = {}
       for (const prop of expr.properties) {
+        if (prop.kind === 'spread') {
+          const resolved = evaluateStaticLiteral(prop.expr, bindings)
+          if (!resolved) return null
+          if (resolved.value === null || resolved.value === undefined) continue
+          if (typeof resolved.value !== 'object' || Array.isArray(resolved.value)) return null
+          Object.assign(out, resolved.value)
+          continue
+        }
         const resolved = evaluateStaticLiteral(prop.value, bindings)
         if (!resolved) return null
         out[prop.key] = resolved.value

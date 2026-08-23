@@ -348,7 +348,7 @@ function checkExpr(
       for (const el of expr.elements) recurse(el)
       break
     case 'object-literal':
-      for (const prop of expr.properties) recurse(prop.value)
+      for (const prop of expr.properties) recurse(prop.kind === 'spread' ? prop.expr : prop.value)
       break
     case 'array-method':
       recurse(expr.object)

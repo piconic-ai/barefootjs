@@ -232,6 +232,9 @@ export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): stri
   if (expr.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of expr.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no static key to bake as a Go
+    // map entry — bail, same as any other unsupported shape.
+    if (prop.kind === 'spread') return null
     if (prop.shorthand) return null
     const val = parsedLiteralToGo(ctx, prop.value)
     if (val === null) return null

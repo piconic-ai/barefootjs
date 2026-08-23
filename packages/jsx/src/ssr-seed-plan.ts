@@ -203,7 +203,19 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
             signal.getter,
             'signal',
             expr,
-            resolveThroughLocalConsts(parseExpression(expr), localConsts),
+            // Prefer the analyzer's already-parenthesised parse (`analyzer.ts`'s
+            // `parseExpression(\`(${signal.initialValue})\`)`, Roadmap A) over
+            // re-parsing the bare `expr` string here — re-parsing WITHOUT the
+            // wrap misreads a bare object-literal initializer
+            // (`createSignal({ ...base, done: true })`) as a block statement
+            // (`parseExpression`'s documented block-vs-expression-statement
+            // rule), silently opaquing an otherwise-derivable signal (#2696
+            // Step 2 follow-up: this only became observable once `object-
+            // literal` could classify `derived` at all). Falling back to a
+            // parenthesised re-parse (not the bare string) keeps a signal
+            // whose shape the analyzer's pass left unparsed (`signal.parsed`
+            // undefined) equally safe.
+            resolveThroughLocalConsts(signal.parsed ?? parseExpression(`(${expr})`), localConsts),
             available,
           ),
     )

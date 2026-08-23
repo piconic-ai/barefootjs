@@ -68,16 +68,19 @@ export type ParsedExpr =
   // `unsupported`.
   | { kind: 'regex'; raw: string }
   | { kind: 'array-literal'; elements: ParsedExpr[] }
-  // Object literal `{ a: 1, b: x }` / shorthand `{ a }`. Carried so an
-  // adapter that lowers an object *value* (Go `map[string]interface{}`,
-  // Perl hashref) can emit from structure instead of re-parsing the
-  // source with `ts.createSourceFile`. Only produced for plain literals:
-  // every property is a non-computed `key: value` or shorthand `{ key }`.
-  // Spreads, computed keys, methods, and getters/setters fall through to
-  // `unsupported` (unchanged). `raw` is the original expression string —
-  // the same value the old `unsupported` fallback carried — so an adapter
-  // that does not yet consume `properties` stays byte-identical by
-  // emitting it exactly as it emits `unsupported`. Extending the type
+  // Object literal `{ a: 1, b: x }` / shorthand `{ a }` / spread
+  // `{ ...t, a: 1 }` (#2696 Step 2). Carried so an adapter that lowers an
+  // object *value* (Go `map[string]interface{}`, Perl hashref) can emit
+  // from structure instead of re-parsing the source with
+  // `ts.createSourceFile`. `properties` is an ORDER-PRESERVING list of
+  // `prop` / `spread` entries — order carries JS's override semantics
+  // (`{...t, k: v}` vs `{k: v, ...t}` differ in which value wins a shared
+  // key), so it is one list, never split into separate spread/prop
+  // arrays. A computed key, method, or getter/setter still falls through
+  // to `unsupported` (unchanged). `raw` is the original expression
+  // string — the same value the old `unsupported` fallback carried — so
+  // an adapter that does not yet consume `properties` stays byte-identical
+  // by emitting it exactly as it emits `unsupported`. Extending the type
   // adds a TS compile error in every exhaustive `ParsedExpr` switch, the
   // same drift defence used for `array-literal` / `array-method`.
   | { kind: 'object-literal'; properties: ObjectLiteralProperty[]; raw: string }
@@ -234,25 +237,45 @@ const _arrayMethodRegistryIsExhaustive: MissingFromArrayMethodRegistry extends n
 void _arrayMethodRegistryIsExhaustive
 
 /**
- * One property of an `object-literal` `ParsedExpr`. The key is the
- * resolved (non-computed) property name — for `{ a: 1 }` and shorthand
- * `{ a }` it is `a`; for `{ 'a-b': 1 }` it is `a-b`. Computed keys
- * (`{ [k]: 1 }`) are not represented; such literals fall through to
- * `unsupported` at parse time.
+ * One entry of an `object-literal` `ParsedExpr`, in SOURCE ORDER — a `prop`
+ * (`{ a: 1 }` / shorthand `{ a }`) or a `spread` (`{ ...t }`, #2696 Step 2).
+ * Kept as one discriminated-union list rather than separate prop/spread
+ * arrays because JS's override semantics are POSITIONAL — `{ ...t, a: 1 }`
+ * and `{ a: 1, ...t }` merge in opposite directions — and only a single
+ * ordered list can carry that. Every direct consumer of `properties`
+ * (emitters, `freeVarsInBody`, `inlineBinding`, the rewrite walkers,
+ * `objectLiteralTo*` adapter helpers, …) is exhaustive over `kind`, so a
+ * TS compile error surfaces any site this Step 2 change didn't already
+ * update.
  */
-export type ObjectLiteralProperty = {
-  key: string
-  // The syntactic kind of the key, since `key` normalises all three to a
-  // string and so loses the distinction. A consumer that must treat a numeric
-  // key (`{ 1: 'a' }`) differently from a same-text string key (`{ '1': 'a' }`)
-  // reads this; most consumers ignore it. `identifier` for shorthand.
-  keyKind?: 'identifier' | 'string' | 'numeric'
-  // Shorthand `{ a }` (the value is the identifier `a`) vs explicit
-  // `{ a: <value> }`. The `value` already carries the resolved tree
-  // either way; this flag is kept for re-stringification fidelity.
-  shorthand: boolean
-  value: ParsedExpr
-}
+export type ObjectLiteralProperty =
+  | {
+      kind: 'prop'
+      // The resolved (non-computed) property name — for `{ a: 1 }` and
+      // shorthand `{ a }` it is `a`; for `{ 'a-b': 1 }` it is `a-b`.
+      // Computed keys (`{ [k]: 1 }`) are not represented; such literals
+      // fall through to `unsupported` at parse time.
+      key: string
+      // The syntactic kind of the key, since `key` normalises all three to a
+      // string and so loses the distinction. A consumer that must treat a
+      // numeric key (`{ 1: 'a' }`) differently from a same-text string key
+      // (`{ '1': 'a' }`) reads this; most consumers ignore it. `identifier`
+      // for shorthand.
+      keyKind?: 'identifier' | 'string' | 'numeric'
+      // Shorthand `{ a }` (the value is the identifier `a`) vs explicit
+      // `{ a: <value> }`. The `value` already carries the resolved tree
+      // either way; this flag is kept for re-stringification fidelity.
+      shorthand: boolean
+      value: ParsedExpr
+    }
+  | {
+      kind: 'spread'
+      // The spread SOURCE expression (`t` in `{ ...t }`) — carried, not
+      // pre-flattened, so a consumer that can't merge structurally
+      // (`checkSupport`, the walkers) can still recurse into it uniformly
+      // with every other value-position `ParsedExpr`.
+      expr: ParsedExpr
+    }
 
 /**
  * One comparison key inside a sort comparator. A simple
@@ -1215,23 +1238,25 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     return { kind: 'array-literal', elements }
   }
 
-  // Object literal: { a: 1, b: x, shorthand }. Only plain literals are
-  // structured — every property must be a non-computed `key: value` or a
-  // shorthand `{ key }`. Anything else (spread, computed key, method,
-  // getter/setter) falls through to the generic `unsupported` fallback
-  // below, exactly as before this kind existed.
+  // Object literal: { a: 1, b: x, shorthand, ...spread }. Every property
+  // must be a non-computed `key: value`, a shorthand `{ key }`, or a
+  // spread `{ ...expr }` (#2696 Step 2). Anything else (computed key,
+  // method, getter/setter) falls through to the generic `unsupported`
+  // fallback below, exactly as before this kind existed.
   if (ts.isObjectLiteralExpression(node)) {
     const properties: ObjectLiteralProperty[] = []
     for (const prop of node.properties) {
       if (ts.isPropertyAssignment(prop)) {
         const k = objectLiteralKeyName(prop.name)
         if (k === null) return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
-        properties.push({ key: k.key, keyKind: k.keyKind, shorthand: false, value: convertNode(prop.initializer, raw) })
+        properties.push({ kind: 'prop', key: k.key, keyKind: k.keyKind, shorthand: false, value: convertNode(prop.initializer, raw) })
       } else if (ts.isShorthandPropertyAssignment(prop)) {
         const key = prop.name.text
-        properties.push({ key, keyKind: 'identifier', shorthand: true, value: { kind: 'identifier', name: key } })
+        properties.push({ kind: 'prop', key, keyKind: 'identifier', shorthand: true, value: { kind: 'identifier', name: key } })
+      } else if (ts.isSpreadAssignment(prop)) {
+        properties.push({ kind: 'spread', expr: convertNode(prop.expression, raw) })
       } else {
-        // Spread assignment, method, getter/setter — not a plain map.
+        // Computed key, method, getter/setter — not a plain map.
         return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
       }
     }
@@ -2417,7 +2442,10 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
         return { supported: false, reason: 'Unsupported syntax: ObjectLiteralExpression' }
       }
       for (const prop of expr.properties) {
-        const propSupport = checkSupport(prop.value, pos)
+        // A spread entry's SOURCE must itself be supported at `value`
+        // position — the same criterion as an explicit property's value,
+        // since the spread source is read (not rendered) at merge time.
+        const propSupport = checkSupport(prop.kind === 'spread' ? prop.expr : prop.value, pos)
         if (!propSupport.supported) return propSupport
       }
       return { supported: true, level: 'L2' }
@@ -3001,7 +3029,7 @@ function isPureInit(e: ParsedExpr, pureCallNames?: ReadonlySet<string>): boolean
     case 'array-literal':
       return e.elements.every(pure)
     case 'object-literal':
-      return e.properties.every(p => pure(p.value))
+      return e.properties.every(p => pure(p.kind === 'spread' ? p.expr : p.value))
     case 'call':
       // A zero-arg reactive getter read (`filter()`, `count()`) is idempotent;
       // any other call may be effectful or non-deterministic.
@@ -3085,7 +3113,7 @@ function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number
         }
         return add(walk(e.object), sum(e.args))
       case 'object-literal':
-        return sum(e.properties.map(p => p.value))
+        return sum(e.properties.map(p => (p.kind === 'spread' ? p.expr : p.value)))
       case 'arrow':
         // A callback body may run any number of times (per element, or never).
         return walk(e.body).max > 0 ? { min: 0, max: Number.POSITIVE_INFINITY } : { min: 0, max: 0 }
@@ -3181,7 +3209,9 @@ export function inlineBinding(
       case 'object-literal':
         return {
           kind: 'object-literal',
-          properties: e.properties.map(p => ({ ...p, value: walk(p.value, enclosing) })),
+          properties: e.properties.map(p =>
+            p.kind === 'spread' ? { ...p, expr: walk(p.expr, enclosing) } : { ...p, value: walk(p.value, enclosing) },
+          ),
           raw: e.raw,
         }
       case 'literal':
@@ -3553,7 +3583,7 @@ export function materializeGetterCalls(expr: ParsedExpr, names: ReadonlySet<stri
       return {
         kind: 'object-literal',
         raw: expr.raw,
-        properties: expr.properties.map(p => ({ ...p, value: rw(p.value) })),
+        properties: expr.properties.map(p => (p.kind === 'spread' ? { ...p, expr: rw(p.expr) } : { ...p, value: rw(p.value) })),
       }
     case 'arrow':
       return { kind: 'arrow', params: expr.params, body: rw(expr.body) }
@@ -3652,7 +3682,8 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
       case 'object-literal':
         // Object *values* are references; keys are not. (Shorthand `{ x }`
         // carries the ref on its `value` identifier, which is visited here.)
-        for (const p of e.properties) visit(p.value, bound)
+        // A spread's source expression is likewise a reference.
+        for (const p of e.properties) visit(p.kind === 'spread' ? p.expr : p.value, bound)
         return
       case 'array-method':
         // `.includes(x)` / `.join(sep?)` are serializable ({@link
@@ -3759,7 +3790,7 @@ export function freeIdentifiers(expr: ParsedExpr): Set<string> | null {
         if (e.method === 'flat' && e.depthExpr && !visit(e.depthExpr, bound)) return false
         return true
       case 'object-literal':
-        for (const p of e.properties) if (!visit(p.value, bound)) return false
+        for (const p of e.properties) if (!visit(p.kind === 'spread' ? p.expr : p.value, bound)) return false
         return true
       case 'arrow': {
         const inner = new Set(bound)
@@ -3935,11 +3966,25 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
       return { kind: 'array-literal', elements }
     }
     case 'object-literal': {
+      // Each entry carries its own `kind` tag (`prop` | `spread`) — the SAME
+      // discriminant `ObjectLiteralProperty` uses — so every backend
+      // evaluator (Go `eval.go`, Perl `Evaluator.pm`, Python, Ruby, PHP,
+      // Rust) decodes this exactly like the raw `ParsedExpr` shape the
+      // `eval-vectors.json` golden corpus carries (#2696 Step 2): a `prop`
+      // sets one key; a `spread` evaluates its `expr` and shallow-merges the
+      // result's own keys (later entries win; a null/undefined/non-object
+      // spread source is a no-op).
       const properties: Record<string, unknown>[] = []
       for (const p of e.properties) {
+        if (p.kind === 'spread') {
+          const spreadExpr = toEvalNode(p.expr)
+          if (!spreadExpr) return null
+          properties.push({ kind: 'spread', expr: spreadExpr })
+          continue
+        }
         const value = toEvalNode(p.value)
         if (!value) return null
-        properties.push({ key: p.key, value })
+        properties.push({ kind: 'prop', key: p.key, value })
       }
       return { kind: 'object-literal', properties }
     }

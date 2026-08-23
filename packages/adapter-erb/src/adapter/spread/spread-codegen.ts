@@ -82,6 +82,10 @@ export function objectLiteralToRubyHash(
 ): string | null {
   const entries: string[] = []
   for (const prop of obj.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) isn't a per-key entry this
+    // conditional-spread inline lowering can express — bail, same as any
+    // other unsupported shape (the caller falls back to the generic path).
+    if (prop.kind === 'spread') return null
     // Shorthand `{ a }` was a `ShorthandPropertyAssignment` (not a
     // `PropertyAssignment`), so the former parser rejected it — keep refusing.
     if (prop.shorthand) return null

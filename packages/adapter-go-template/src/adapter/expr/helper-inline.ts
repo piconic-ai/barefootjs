@@ -86,8 +86,10 @@ function isSubstituteSafeBody(body: ParsedExpr, paramNames: ReadonlySet<string>)
   const referencesParam = (n: ParsedExpr): boolean => {
     if (n.kind === 'identifier') return paramNames.has(n.name)
     if (n.kind === 'object-literal') {
-      return n.properties.some(
-        p => (p.shorthand && paramNames.has(p.key)) || referencesParam(p.value),
+      return n.properties.some(p =>
+        p.kind === 'spread'
+          ? referencesParam(p.expr)
+          : (p.shorthand && paramNames.has(p.key)) || referencesParam(p.value),
       )
     }
     let hit = false

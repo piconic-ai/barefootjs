@@ -1417,6 +1417,7 @@
         "kind": "object-literal",
         "properties": [
           {
+            "kind": "prop",
             "key": "id",
             "keyKind": "identifier",
             "shorthand": false,
@@ -1432,6 +1433,7 @@
             }
           },
           {
+            "kind": "prop",
             "key": "doubled",
             "keyKind": "identifier",
             "shorthand": false,
@@ -1470,6 +1472,235 @@
         "doubled": 8
       },
       "note": "object literal: map body building a new record"
+    },
+    {
+      "src": "({ ...item, done: true })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "identifier",
+              "name": "item"
+            }
+          },
+          {
+            "kind": "prop",
+            "key": "done",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "literal",
+              "value": true,
+              "literalType": "boolean"
+            }
+          }
+        ],
+        "raw": "({ ...item, done: true })"
+      },
+      "env": {
+        "item": {
+          "id": 1,
+          "done": false
+        }
+      },
+      "expect": {
+        "id": 1,
+        "done": true
+      },
+      "note": "spread then override: a trailing prop overrides the spread source's same key"
+    },
+    {
+      "src": "({ done: true, ...item })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "prop",
+            "key": "done",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "literal",
+              "value": true,
+              "literalType": "boolean"
+            }
+          },
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "identifier",
+              "name": "item"
+            }
+          }
+        ],
+        "raw": "({ done: true, ...item })"
+      },
+      "env": {
+        "item": {
+          "id": 1,
+          "done": false
+        }
+      },
+      "expect": {
+        "done": false,
+        "id": 1
+      },
+      "note": "override then spread: the spread source overrides an earlier same-name prop (later wins)"
+    },
+    {
+      "src": "({ ...a, ...b })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "identifier",
+              "name": "a"
+            }
+          },
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "identifier",
+              "name": "b"
+            }
+          }
+        ],
+        "raw": "({ ...a, ...b })"
+      },
+      "env": {
+        "a": {
+          "x": 1,
+          "y": 2
+        },
+        "b": {
+          "y": 3,
+          "z": 4
+        }
+      },
+      "expect": {
+        "x": 1,
+        "y": 3,
+        "z": 4
+      },
+      "note": "two spreads merge; the later spread's keys win on overlap"
+    },
+    {
+      "src": "({ ...item, editing: false })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "identifier",
+              "name": "item"
+            }
+          },
+          {
+            "kind": "prop",
+            "key": "editing",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "literal",
+              "value": false,
+              "literalType": "boolean"
+            }
+          }
+        ],
+        "raw": "({ ...item, editing: false })"
+      },
+      "env": {
+        "item": {
+          "id": "t1",
+          "text": "buy milk",
+          "editing": true
+        }
+      },
+      "expect": {
+        "id": "t1",
+        "text": "buy milk",
+        "editing": false
+      },
+      "note": "the todo-app motivating shape: spread a row then reset one field"
+    },
+    {
+      "src": "({ ...item, done: true })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "identifier",
+              "name": "item"
+            }
+          },
+          {
+            "kind": "prop",
+            "key": "done",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "literal",
+              "value": true,
+              "literalType": "boolean"
+            }
+          }
+        ],
+        "raw": "({ ...item, done: true })"
+      },
+      "env": {
+        "item": null
+      },
+      "expect": {
+        "done": true
+      },
+      "note": "spreading a null source is a no-op (only the trailing prop survives)"
+    },
+    {
+      "src": "({ ...item.missing, done: true })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "spread",
+            "expr": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "missing",
+              "computed": false,
+              "optional": false
+            }
+          },
+          {
+            "kind": "prop",
+            "key": "done",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "literal",
+              "value": true,
+              "literalType": "boolean"
+            }
+          }
+        ],
+        "raw": "({ ...item.missing, done: true })"
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": {
+        "done": true
+      },
+      "note": "spreading a missing field (reads as null) is a no-op"
     },
     {
       "src": "Math.max(a, b)",

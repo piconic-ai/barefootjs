@@ -100,8 +100,26 @@ module BarefootJS
       when 'array-literal'
         (node[:elements] || []).map { |e| evaluate(e, env) }
       when 'object-literal'
+        # Each entry carries its own `kind` ('prop' | 'spread', #2696 Step
+        # 2) -- the same encoding the Go/Perl/Python evaluators and the raw
+        # ParsedExpr shape the eval-vectors.json golden corpus carry. A
+        # 'spread' evaluates its `expr` and shallow-merges the result's own
+        # keys (a non-Hash result -- including a null/undefined JS spread
+        # source -- is a no-op). Every hash this evaluator builds uses
+        # SYMBOL keys (`read_property` below always looks up `key.to_sym`),
+        # so a spread's keys are symbolized on merge for the same reason a
+        # `prop` key already is, regardless of whether the spread source's
+        # own keys started out as symbols or strings. Later entries win on
+        # a shared key, in source order, matching JS object-spread exactly.
         out = {}
-        (node[:properties] || []).each { |prop| out[prop[:key].to_sym] = evaluate(prop[:value], env) }
+        (node[:properties] || []).each do |prop|
+          if (prop[:kind] || '') == 'spread'
+            spread = evaluate(prop[:expr], env)
+            spread.each { |k, v| out[k.to_sym] = v } if spread.is_a?(Hash)
+            next
+          end
+          out[prop[:key].to_sym] = evaluate(prop[:value], env)
+        end
         out
       when 'array-method'
         args = node[:args] || []
