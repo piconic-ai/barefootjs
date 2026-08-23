@@ -647,12 +647,22 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   }
 
   if (ts.isPropertyAccessExpression(node)) {
+    const baseResult = evalNode(node.expression, ctx)
     // `props.X` / `props?.X` — read of a binding we know nothing about, so
     // resolve to `undefined`. Chained access (`a.b.c`) collapses the same way
     // because the base read is already undefined.
-    const baseResult = evalNode(node.expression, ctx)
     if (baseResult === undefined) return undefined
-    return UNRESOLVED
+    if (baseResult === UNRESOLVED || baseResult === null || typeof baseResult !== 'object') {
+      return UNRESOLVED
+    }
+    // A resolved plain-object base — an object-literal value, e.g. a
+    // `.map()` callback param bound to one element (#2696's `t.a`). Missing
+    // key → JS `undefined`, mirroring `isElementAccessExpression`'s own
+    // missing-key handling above.
+    const key = node.name.text
+    return Object.prototype.hasOwnProperty.call(baseResult, key)
+      ? (baseResult as Record<string, unknown>)[key]
+      : undefined
   }
 
   if (ts.isCallExpression(node)) {
@@ -664,6 +674,44 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
       node.expression.text in ctx.bindings
     ) {
       return ctx.bindings[node.expression.text]
+    }
+    // `<array>.map(cb)` — a single-param, expression-bodied arrow projected
+    // over a resolved array receiver. Needed so a constant `.map().join()`
+    // chain (`createSignal([{ a: 'p' }].map(t => t.a).join(','))`, no free
+    // identifiers — #2696) resolves to its real value here instead of
+    // falling through to `null`: `computeSsrSeedPlan` classifies such a
+    // chain `derived` with EMPTY `frees` (a compile-time constant), and every
+    // template-stash adapter's derived-seed generator skips emitting an
+    // in-template recompute for a constant lowering (no free var appears in
+    // the rendered text), relying on THIS static default being correct
+    // instead. A block-bodied / multi-param arrow, or a non-array receiver,
+    // stays unresolved — same conservative narrowing as every other arm here.
+    if (
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'map' &&
+      node.arguments.length === 1
+    ) {
+      const arrow = node.arguments[0]
+      if (
+        ts.isArrowFunction(arrow) &&
+        arrow.parameters.length === 1 &&
+        ts.isIdentifier(arrow.parameters[0].name) &&
+        !ts.isBlock(arrow.body)
+      ) {
+        const recv = evalNode(node.expression.expression, ctx)
+        if (Array.isArray(recv)) {
+          const paramName = (arrow.parameters[0].name as ts.Identifier).text
+          const mapped: unknown[] = []
+          for (const item of recv) {
+            const localBindings: Record<string, EvalResult> = { ...ctx.bindings, [paramName]: item }
+            const v = evalNode(arrow.body as ts.Expression, { ...ctx, bindings: localBindings })
+            if (v === UNRESOLVED) return UNRESOLVED
+            mapped.push(v === undefined ? null : v)
+          }
+          return mapped
+        }
+      }
+      return UNRESOLVED
     }
     // `<array>.join(<sep?>)` — evaluate when the receiver resolves to an array
     // and the separator (default `,`) is a string. Covers `stateClasses =

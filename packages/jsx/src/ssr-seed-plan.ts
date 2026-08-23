@@ -36,7 +36,7 @@ import {
   extractArrowBodyExpression,
   freeIdentifiers,
   inlineBinding,
-  isSupported,
+  isSupportedValue,
   parseExpression,
   type ParsedExpr,
 } from './expression-parser.ts'
@@ -81,6 +81,11 @@ export interface SsrSeedPlan {
  * opaque). The scope check runs over the parsed SOURCE tree, so a shadowed
  * name (`items.filter((p) => p.ok) && p`, where the trailing `p` is a
  * different, unbound reference from the callback's own param) is rejected.
+ *
+ * Uses `isSupportedValue`, not `isSupported`: a signal/memo initializer is an
+ * ASSIGNMENT, never a render, so it's checked at VALUE position — this is
+ * what admits e.g. `createSignal([{ a: 'p' }].map(t => t.a).join(','))`
+ * (an object-literal array-method receiver) as `derived` instead of opaque.
  */
 function classify(
   name: string,
@@ -89,7 +94,7 @@ function classify(
   parsed: ParsedExpr,
   available: ReadonlySet<string>,
 ): SsrSeedStep {
-  if (!isSupported(parsed).supported) return { kind: 'opaque', name, origin }
+  if (!isSupportedValue(parsed).supported) return { kind: 'opaque', name, origin }
   const frees = freeIdentifiers(parsed)
   if (frees === null) return { kind: 'opaque', name, origin }
   for (const free of frees) {
