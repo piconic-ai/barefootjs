@@ -595,20 +595,8 @@ function buildPythonProps(
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
   const fullEntries = [...entries, `${pyStr('scope_id')}: ${pyStr(explicitScope)}`]
 
-  // Signal values seeded from the production-faithful `derivedProps` only
-  // (#2696) — the same manifest-driven value a real before_render-equivalent
-  // plugin consumes via `_derive_stash_from_defaults`. No re-evaluation of
-  // the initializer against the caller's raw props: that used to be this
-  // harness's OWN, more-powerful-than-production `evaluateSignalInit`
-  // recompute (sandboxed real-JS execution — see #2696), which silently
-  // hid the case where `extractSsrDefaults`'s static evaluator can't
-  // resolve the initializer (e.g. a `.map()` chain) — production seeds
-  // `null`/`nil`/`undef` there, this harness now matches that faithfully.
-  // The #2669 self-derivation propName-skip this loop used to need is gone
-  // too: `deriveStashFromDefaults` already resolves a propName-carrying
-  // entry to the caller's prop value, so `derivedProps` is correct either
-  // way — same semantics the child-renderer path (`buildChildRenderers`)
-  // already had.
+  // No initializer re-evaluation against raw props — production's
+  // before_render seeds only from `deriveStashFromDefaults` (#2696).
   for (const signal of ir.metadata.signals) {
     // Env signals (#2057) are bound below via `SearchParams('')`, not from a
     // static initial value.
@@ -618,8 +606,7 @@ function buildPythonProps(
     }
   }
 
-  // Memo values, same `derivedProps`-only seeding as signals above — no
-  // `?? 0` invention for a memo `derivedProps` doesn't cover (#2696).
+  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
   for (const memo of ir.metadata.memos) {
     if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
       fullEntries.push(`${pyStr(memo.name)}: ${toPyLiteral(derivedProps[memo.name])}`)
