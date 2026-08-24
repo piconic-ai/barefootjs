@@ -7000,6 +7000,32 @@ function getStringValue(node: ts.Expression): string | null {
 // =============================================================================
 
 /**
+ * Strip every legal-in-.tsx TRANSPARENT TS wrapper around an expression —
+ * parens, `as`, `satisfies`, and postfix non-null `!` — repeatedly, so a
+ * stack of them (`(x as any)!`) unwraps in one call. None of these change
+ * the RUNTIME value; they are compile-time-only annotations TypeScript
+ * erases, so a caller checking "is this JSX" (or "does this ternary/array
+ * wrap JSX") must see through all of them to avoid false negatives (#2703
+ * Copilot review on #2667: `header={cond ? (<a/> as any) : (<b/> as any)}`
+ * unwrapped only parens, so the `as`-wrapped shape slipped past the naked-
+ * wrapper refusal and still spliced raw JSX into the client bundle).
+ * Angle-bracket type assertions (`<any>x`) are illegal in `.tsx` — the
+ * `<` is always JSX — so there is no fourth wrapper kind to handle here.
+ */
+function unwrapTransparentTsWrappers(node: ts.Expression): ts.Expression {
+  let n = node
+  while (
+    ts.isParenthesizedExpression(n) ||
+    ts.isAsExpression(n) ||
+    ts.isSatisfiesExpression(n) ||
+    ts.isNonNullExpression(n)
+  ) {
+    n = n.expression
+  }
+  return n
+}
+
+/**
  * Whether `node` (a `ConditionalExpression` or `ArrayLiteralExpression`
  * already confirmed by the caller) has JSX syntax somewhere inside it —
  * a ternary arm that is (or recursively resolves to) a JSX element/
@@ -7009,16 +7035,17 @@ function getStringValue(node: ts.Expression): string | null {
  * compiling exactly as before — only the JSX-carrying shape is refused.
  *
  * Deliberately narrow, mirroring `expressionContainsJsx`'s sibling scope
- * in `analyzer.ts`-adjacent code: only descends through parens,
- * `ConditionalExpression` arms, and `ArrayLiteralExpression` elements
- * (spread elements unwrapped too) — the two wrapper shapes the issue
- * names. It does not chase JSX through arbitrary call arguments, object
+ * in `analyzer.ts`-adjacent code: only descends through transparent TS
+ * wrappers (`unwrapTransparentTsWrappers`), `ConditionalExpression` arms,
+ * and `ArrayLiteralExpression` elements (spread elements unwrapped too)
+ * — the two wrapper shapes the issue names, each itself possibly
+ * TS-wrapped (`(cond ? <a/> : <b/>) as any`, `cond ? (<a/> as any) : <b/>`,
+ * #2703). It does not chase JSX through arbitrary call arguments, object
  * literals, or logical expressions; those are out of this refusal's
  * scope and stay on the pre-existing (working, non-JSX) expression path.
  */
 function expressionWrapsJsx(node: ts.Expression): boolean {
-  let n: ts.Expression = node
-  while (ts.isParenthesizedExpression(n)) n = n.expression
+  const n = unwrapTransparentTsWrappers(node)
   if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) return true
   if (ts.isConditionalExpression(n)) {
     return expressionWrapsJsx(n.whenTrue) || expressionWrapsJsx(n.whenFalse)
@@ -7082,14 +7109,14 @@ function processComponentProps(
 
     const name = attr.name.getText(ctx.sourceFile)
 
-    // JSX element/fragment as prop value: controls={<select />} or
-    // controls={(<div/>)}. Carried as a `jsx-children` AttrValue variant
-    // so adapters render the JSX inline rather than passing a string.
+    // JSX element/fragment as prop value: controls={<select />},
+    // controls={(<div/>)}, or controls={<div/> as any} (#2703 — the
+    // entity is still directly JSX; `as`/`satisfies`/`!` are type-only
+    // and erased, so this must classify identically to the bare form).
+    // Carried as a `jsx-children` AttrValue variant so adapters render
+    // the JSX inline rather than passing a string.
     if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      let jsxExpr = attr.initializer.expression
-      while (ts.isParenthesizedExpression(jsxExpr)) {
-        jsxExpr = jsxExpr.expression
-      }
+      const jsxExpr = unwrapTransparentTsWrappers(attr.initializer.expression)
       if (ts.isJsxElement(jsxExpr) || ts.isJsxSelfClosingElement(jsxExpr) || ts.isJsxFragment(jsxExpr)) {
         const prevInsideComponentChildren = ctx.insideComponentChildren
         ctx.insideComponentChildren = true

@@ -367,4 +367,152 @@ describe('JSX props (#559)', () => {
       expect(clientJs!.content).toContain("kind: 'markup'")
     })
   })
+
+  // #2703 (Copilot review on #2667's PR): the naked ternary/array wrapper
+  // refusal, and the direct-JSX classification it sits beside, both used
+  // to unwrap only `ParenthesizedExpression` — a JSX-wrapping ternary/
+  // array (or a direct JSX element) additionally wrapped in a transparent
+  // TS annotation (`as`, `satisfies`, postfix non-null `!`) slipped past
+  // both checks and still spliced raw JSX into the emitted client JS.
+  describe('#2667/#2703: transparent TS wrappers around JSX in prop position', () => {
+    test('ternary wrapping `as`-cast JSX branches still refuses with BF021', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function App() {
+          const [cond, setCond] = createSignal(true)
+          return (
+            <Layout header={cond() ? (<a>x</a> as any) : (<b>y</b> as any)} />
+          )
+        }
+      `
+      const result = compileJSX(source, 'App.tsx', { adapter })
+      const errors = result.errors.filter(e => e.severity === 'error')
+      expect(errors).toHaveLength(1)
+      expect(errors[0].code).toBe('BF021')
+      // No raw JSX syntax leaked into the client bundle.
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs?.content ?? '').not.toMatch(/<a>x<\/a>|<b>y<\/b>/)
+    })
+
+    test('ternary wrapping `satisfies`-annotated JSX branches still refuses with BF021', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function App() {
+          const [cond, setCond] = createSignal(true)
+          return (
+            <Layout header={cond() ? (<a>x</a> satisfies any) : (<b>y</b> satisfies any)} />
+          )
+        }
+      `
+      const result = compileJSX(source, 'App.tsx', { adapter })
+      const errors = result.errors.filter(e => e.severity === 'error')
+      expect(errors).toHaveLength(1)
+      expect(errors[0].code).toBe('BF021')
+    })
+
+    test('ternary wrapping non-null-asserted JSX branches still refuses with BF021', () => {
+      // `!` must trail the CLOSING paren, not sit inside it: TS's parser
+      // mis-parses `(<a/>!)` (non-null touching the JSX closing tag
+      // directly, inside the parens) — confirmed by direct AST dump
+      // during #2703's investigation, unrelated to this fix.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function App() {
+          const [cond, setCond] = createSignal(true)
+          return (
+            <Layout header={cond() ? (<a>x</a>)! : (<b>y</b>)!} />
+          )
+        }
+      `
+      const result = compileJSX(source, 'App.tsx', { adapter })
+      const errors = result.errors.filter(e => e.severity === 'error')
+      expect(errors).toHaveLength(1)
+      expect(errors[0].code).toBe('BF021')
+    })
+
+    test('array literal wrapping `as`-cast JSX elements still refuses with BF021', () => {
+      const source = `
+        export function App() {
+          return (
+            <Layout header={[<a>x</a> as any, <b>y</b> as any]} />
+          )
+        }
+      `
+      const result = compileJSX(source, 'App.tsx', { adapter })
+      const errors = result.errors.filter(e => e.severity === 'error')
+      expect(errors).toHaveLength(1)
+      expect(errors[0].code).toBe('BF021')
+    })
+
+    test('a bare `as`-cast JSX element (no ternary) still classifies as jsx-children, not a refusal', () => {
+      const source = `
+        export function App() {
+          return <Layout header={<a>x</a> as any} />
+        }
+      `
+      const ctx = analyzeComponent(source, 'App.tsx')
+      const ir = jsxToIR(ctx)
+      expect(ir).not.toBeNull()
+      const layout = findComponent(ir!, 'Layout')
+      const headerProp = layout!.props.find(p => p.name === 'header')
+      expect(headerProp!.value.kind).toBe('jsx-children')
+
+      // Phase 2: the compiled client JS brands it (#2651), matching the
+      // bare `<a>x</a>` form byte-for-byte — `as any` is erased, not
+      // spliced as source text.
+      const result = compileJSX(source, 'App.tsx', { adapter })
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs!.content).toMatch(/bfMarkup\(`<a>x<\/a>`\)/)
+    })
+
+    test('a bare `satisfies`-annotated JSX element (no ternary) still classifies as jsx-children', () => {
+      const source = `
+        export function App() {
+          return <Layout header={<a>x</a> satisfies any} />
+        }
+      `
+      const ctx = analyzeComponent(source, 'App.tsx')
+      const ir = jsxToIR(ctx)
+      const layout = findComponent(ir!, 'Layout')
+      const headerProp = layout!.props.find(p => p.name === 'header')
+      expect(headerProp!.value.kind).toBe('jsx-children')
+    })
+
+    test('a bare non-null-asserted JSX element (no ternary) still classifies as jsx-children', () => {
+      // `!` must trail the closing paren (`(<a/>)!`), not touch the JSX
+      // closing tag directly (`<a/>!`) — the latter does not reliably
+      // parse as a NonNullExpression at all inside a JSX attribute
+      // expression (confirmed by direct AST dump during #2703's
+      // investigation: the bare form leaves stray tokens outside the
+      // JsxExpression entirely, so it never reaches this code path as a
+      // NonNullExpression in the first place — unrelated to this fix).
+      const source = `
+        export function App() {
+          return <Layout header={(<a>x</a>)!} />
+        }
+      `
+      const ctx = analyzeComponent(source, 'App.tsx')
+      const ir = jsxToIR(ctx)
+      const layout = findComponent(ir!, 'Layout')
+      const headerProp = layout!.props.find(p => p.name === 'header')
+      expect(headerProp!.value.kind).toBe('jsx-children')
+    })
+
+    test('a ternary with NO JSX inside, wrapped in `as`, is unaffected (ordinary expression, no refusal)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function App() {
+          const [cond, setCond] = createSignal(true)
+          return <Layout disabled={(cond() ? true : false) as any} />
+        }
+      `
+      const result = compileJSX(source, 'App.tsx', { adapter })
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    })
+  })
 })
