@@ -42,9 +42,12 @@ function extractClientTextRefs(js: string): string[] {
   return [...matches].map(m => m[1])
 }
 
-/** Extract insert(scope, 'sN', ...) conditional slot references from client JS */
+/** Extract insert(scope, 'sN', ...) conditional slot references from client JS.
+ *  Allows an optional leading `^` — a parent-owned conditional (e.g. one
+ *  living inside a JSX prop/children passed to a child component, #2667)
+ *  gets a `^`-prefixed id exactly like a parent-owned element/slot does. */
 function extractClientInsertRefs(js: string): string[] {
-  const matches = js.matchAll(/insert\([^,]+,\s*'(s\d+)'/g)
+  const matches = js.matchAll(/insert\([^,]+,\s*'(\^?s\d+)'/g)
   return [...matches].map(m => m[1])
 }
 
@@ -60,10 +63,11 @@ function extractTextMarkers(html: string): string[] {
   return [...matches].map(m => m[1])
 }
 
-/** Extract conditional marker IDs from rendered HTML (bf-c="sN" and <!--bf-cond-start:sN-->) */
+/** Extract conditional marker IDs from rendered HTML (bf-c="sN" and <!--bf-cond-start:sN-->).
+ *  Allows an optional leading `^` — see `extractClientInsertRefs`'s docstring. */
 function extractCondMarkers(html: string): string[] {
-  const bfcMatches = html.matchAll(/\bbf-c="(s\d+)"/g)
-  const condStartMatches = html.matchAll(/<!--bf-cond-start:(s\d+)-->/g)
+  const bfcMatches = html.matchAll(/\bbf-c="(\^?s\d+)"/g)
+  const condStartMatches = html.matchAll(/<!--bf-cond-start:(\^?s\d+)-->/g)
   return [...new Set([...[...bfcMatches].map(m => m[1]), ...[...condStartMatches].map(m => m[1])])]
 }
 

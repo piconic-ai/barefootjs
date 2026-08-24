@@ -407,6 +407,10 @@ import { fixture as svgInnerLoop } from './svg-inner-loop'
 import { fixture as siblingLoopsKeyIsolation } from './sibling-loops-key-isolation'
 import { fixture as conditionalReturnNull } from './conditional-return-null'
 import { fixture as jsxElementProp } from './jsx-element-prop'
+import { fixture as jsxElementPropTernary } from './jsx-element-prop-ternary'
+import { fixture as jsxElementPropArray } from './jsx-element-prop-array'
+import { fixture as jsxElementPropChildrenEscape } from './jsx-element-prop-children-escape'
+import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
@@ -822,6 +826,10 @@ export const jsxFixtures: JSXFixture[] = [
   siblingLoopsKeyIsolation,
   conditionalReturnNull,
   jsxElementProp,
+  jsxElementPropTernary,
+  jsxElementPropArray,
+  jsxElementPropChildrenEscape,
+  jsxElementPropFragmentConditional,
   grandchildComposition,
   compositeRowChildComponent,
   compositeRowChildDerivedProp,

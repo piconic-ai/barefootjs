@@ -14,4 +14,11 @@ import type { ConformancePins } from '@barefootjs/jsx'
 export const conformancePins: ConformancePins = {
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2648' }],
+  // #2667: a ternary/array LITERALLY WRAPPING JSX at a non-children prop
+  // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of
+  // `adapter.generate()` in the shared jsx-to-ir.ts phase, so it is pinned
+  // identically on every adapter (including Hono) — same reasoning as
+  // `rich-prop-client-read` above.
+  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
+  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
 }

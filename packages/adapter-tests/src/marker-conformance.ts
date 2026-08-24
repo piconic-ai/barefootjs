@@ -105,9 +105,28 @@ function walkIRNode(node: IRNode, visit: (n: IRNode) => void): void {
       for (const c of loop.children) walkIRNode(c, visit)
       break
     }
-    case 'component':
-      for (const c of (node as IRComponent).children) walkIRNode(c, visit)
+    case 'component': {
+      const comp = node as IRComponent
+      for (const c of comp.children) walkIRNode(c, visit)
+      // #2702: a prop value's own `jsx-children` payload (an element,
+      // fragment, or conditional passed at a NAMED prop position —
+      // `header={<>{cond ? <a/> : <b/>}</>}`) can carry its own slot ids
+      // (a `^`-prefixed one, since it's parent-owned) that DO reach the
+      // adapter's rendered template. This walker used to only descend
+      // through `.children`, silently never seeing any prop-payload
+      // marker at all — harmless while every such payload was marker-
+      // free (a lone static element), but a false "adapter is missing
+      // this marker" failure the moment a payload actually has one
+      // (`jsx-element-prop-fragment-conditional`, the first fixture to
+      // exercise this combination). Walk every prop's jsx-children
+      // payload the same way.
+      for (const prop of comp.props) {
+        if (prop.value.kind === 'jsx-children') {
+          for (const c of prop.value.children) walkIRNode(c, visit)
+        }
+      }
       break
+    }
     case 'fragment':
       for (const c of (node as IRFragment).children) walkIRNode(c, visit)
       break
@@ -200,6 +219,16 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
  *     match the end-marker form). The end-marker form (`/loop:<id>`) is
  *     collected into `loopEnds` so the pair contract is asserted, not
  *     just id presence.
+ *
+ * Every id pattern above accepts an optional leading `^` (a
+ * parent-owned slot/cond/loop id, e.g. an element inside a JSX prop —
+ * see `slotId`'s docstring in `types.ts`), matching the slot bullet's
+ * `\^?` — a conditional or loop can be parent-owned exactly the same
+ * way an element can (#2667: `jsx-element-prop-children-escape` is the
+ * first fixture whose reactive conditional is `^`-owned AND reaches a
+ * `bf-c=`/`cond-start:`-style marker, which surfaced this regex gap —
+ * every adapter's own template output already emitted the marker
+ * correctly, only this harness-side extractor missed the caret).
  */
 export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   const out = emptySets()
@@ -207,10 +236,10 @@ export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   for (const m of template.matchAll(/bfText\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/text_start\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/bfTextStart\s+"(\^?[\w-]+)"/g)) out.slots.add(m[1])
-  for (const m of template.matchAll(/\bbf-c="([\w-]+)"/g)) out.conds.add(m[1])
-  for (const m of template.matchAll(/cond-start:([\w-]+)/g)) out.conds.add(m[1])
-  for (const m of template.matchAll(/(?:^|[^/])loop:([\w-]+)/g)) out.loops.add(m[1])
-  for (const m of template.matchAll(/\/loop:([\w-]+)/g)) out.loopEnds.add(m[1])
+  for (const m of template.matchAll(/\bbf-c="(\^?[\w-]+)"/g)) out.conds.add(m[1])
+  for (const m of template.matchAll(/cond-start:(\^?[\w-]+)/g)) out.conds.add(m[1])
+  for (const m of template.matchAll(/(?:^|[^/])loop:(\^?[\w-]+)/g)) out.loops.add(m[1])
+  for (const m of template.matchAll(/\/loop:(\^?[\w-]+)/g)) out.loopEnds.add(m[1])
   return out
 }
 

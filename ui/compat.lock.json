@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 336,
+    "totalFixtures": 340,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2493,6 +2493,178 @@
             "state": "escapable",
             "twin": "flatmap-typeof-projection-client"
           }
+        }
+      },
+      "jsx-element-prop-array": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        }
+      },
+      "jsx-element-prop-fragment-conditional": {
+        "go-template": {
+          "kind": "render",
+          "reason": "Go-specific half of the fragment-wrapped-conditional prop shape, tracked as https://github.com/piconic-ai/barefootjs/issues/2703 (distinct from #2702, the cross-adapter hydrate-time bug). #2702 is a hydrate-time-only bug (SSR is correct on every adapter, confirmed for Go by direct `adapter.generate()` inspection of the raw template TEXT, which does contain `{{if .Cond}}<a bf-c=\"^s0\">x</a>{{else}}...{{end}}`-shaped markup). But the REAL Go render of this exact fixture (`go-template-adapter.test.ts`, real `go run`) produces an EMPTY `<header>` — `<header bf=\"s1\"><!--bf:s0--><!--/--></header>` instead of the reference `<a>x</a>` — i.e. the `header` prop's jsx-children payload never reaches the child (`Card`) component's slot construction (`.CardSlot1`) at all for this NAMED-prop shape, even though the same conditional-in-fragment payload renders correctly when passed via `children` instead (`jsx-element-prop-children-escape`). Root cause not yet isolated to a specific emitter function — only the reproducible symptom is pinned here. Every other adapter (Hono, ERB, Jinja, Mojolicious, MiniJinja, Twig, Xslate, Blade) renders this fixture correctly; verified by running each adapter's own JSX Conformance Tests for this fixture id."
+        }
+      },
+      "jsx-element-prop-ternary": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2667"
+          ]
         }
       },
       "map-array-builder-body": {
@@ -3403,6 +3575,18 @@
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
+      },
+      "jsx-element-prop-array": {
+        "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
+      },
+      "jsx-element-prop-fragment-conditional": {
+        "description": "Conditional inside a fragment-wrapped non-children prop (#2702)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-fragment-conditional.ts"
+      },
+      "jsx-element-prop-ternary": {
+        "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",

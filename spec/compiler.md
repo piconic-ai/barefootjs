@@ -837,7 +837,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF001 | Missing 'use client' directive |
 | BF003 | Client component importing server component |
 | BF011 | Module-level reactive declaration without `/* @client */` |
-| BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation; method call on a host rich-typed prop with no catalogued lowering, #2273) |
+| BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation; method call on a host rich-typed prop with no catalogued lowering, #2273; a ternary or array literal wrapping JSX at a non-`children` component prop position, #2667) |
 | BF023 | Missing `key` attribute in `.map()` loop — root JSX element has no `key` prop |
 | BF024 | Missing `key` attribute in nested `.map()` loop — inner loop root JSX element has no `key` prop |
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |

@@ -6999,6 +6999,100 @@ function getStringValue(node: ts.Expression): string | null {
 // Component Props Processing
 // =============================================================================
 
+/**
+ * Strip every legal-in-.tsx TRANSPARENT TS wrapper around an expression —
+ * parens, `as`, `satisfies`, and postfix non-null `!` — repeatedly, so a
+ * stack of them (`(x as any)!`) unwraps in one call. None of these change
+ * the RUNTIME value; they are compile-time-only annotations TypeScript
+ * erases, so a caller checking "is this JSX" (or "does this ternary/array
+ * wrap JSX") must see through all of them to avoid false negatives (#2703
+ * Copilot review on #2667: `header={cond ? (<a/> as any) : (<b/> as any)}`
+ * unwrapped only parens, so the `as`-wrapped shape slipped past the naked-
+ * wrapper refusal and still spliced raw JSX into the client bundle).
+ * Angle-bracket type assertions (`<any>x`) are illegal in `.tsx` — the
+ * `<` is always JSX — so there is no fourth wrapper kind to handle here.
+ */
+function unwrapTransparentTsWrappers(node: ts.Expression): ts.Expression {
+  let n = node
+  while (
+    ts.isParenthesizedExpression(n) ||
+    ts.isAsExpression(n) ||
+    ts.isSatisfiesExpression(n) ||
+    ts.isNonNullExpression(n)
+  ) {
+    n = n.expression
+  }
+  return n
+}
+
+/**
+ * Whether `node` (a `ConditionalExpression` or `ArrayLiteralExpression`
+ * already confirmed by the caller) has JSX syntax somewhere inside it —
+ * a ternary arm that is (or recursively resolves to) a JSX element/
+ * fragment, or an array element that is one. Used by #2667's naked-
+ * wrapper refusal: a ternary/array prop initializer with NO JSX inside
+ * (`disabled={cond ? a : b}`, `items={[a, b]}`) is ordinary and must keep
+ * compiling exactly as before — only the JSX-carrying shape is refused.
+ *
+ * Deliberately narrow, mirroring `expressionContainsJsx`'s sibling scope
+ * in `analyzer.ts`-adjacent code: only descends through transparent TS
+ * wrappers (`unwrapTransparentTsWrappers`), `ConditionalExpression` arms,
+ * and `ArrayLiteralExpression` elements (spread elements unwrapped too)
+ * — the two wrapper shapes the issue names, each itself possibly
+ * TS-wrapped (`(cond ? <a/> : <b/>) as any`, `cond ? (<a/> as any) : <b/>`,
+ * #2703). It does not chase JSX through arbitrary call arguments, object
+ * literals, or logical expressions; those are out of this refusal's
+ * scope and stay on the pre-existing (working, non-JSX) expression path.
+ */
+function expressionWrapsJsx(node: ts.Expression): boolean {
+  const n = unwrapTransparentTsWrappers(node)
+  if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) return true
+  if (ts.isConditionalExpression(n)) {
+    return expressionWrapsJsx(n.whenTrue) || expressionWrapsJsx(n.whenFalse)
+  }
+  if (ts.isArrayLiteralExpression(n)) {
+    return n.elements.some((el) => expressionWrapsJsx(ts.isSpreadElement(el) ? el.expression : el))
+  }
+  return false
+}
+
+/**
+ * Refuse a component prop whose initializer is a ternary/array literally
+ * wrapping JSX (#2667) — see `expressionWrapsJsx`'s docstring and the call
+ * site above for why this can't fall through to the plain `expression`
+ * AttrValue path (raw JSX syntax would splice into the emitted client
+ * JS) and why the fragment-wrap escape is NOT offered here (BF021 message
+ * below explains the unsoundness inline; see #2667's tracking issue for
+ * the full door-inventory finding).
+ */
+function reportNakedJsxWrapperProp(
+  ctx: TransformContext,
+  attr: ts.JsxAttribute,
+  propName: string,
+  jsxExpr: ts.Expression,
+): void {
+  const shape = ts.isConditionalExpression(jsxExpr) ? 'a ternary' : 'an array literal'
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(attr, ctx.sourceFile, ctx.filePath), {
+      message:
+        `Prop '${propName}' is ${shape} wrapping JSX (${jsxExpr.getText(ctx.sourceFile)}). ` +
+        `This shape is not compiled — only a JSX element/fragment given DIRECTLY as the prop value is.`,
+      suggestion: {
+        message:
+          `Move the conditional/array out of the prop position: compute it in a local ` +
+          `const and pass it as the component's children instead of a named prop ` +
+          `(e.g. const ${propName} = ${jsxExpr.getText(ctx.sourceFile)}; <Comp>{${propName}}</Comp>). ` +
+          `Wrapping the ternary/array in a fragment at the prop position ` +
+          `(${propName}={<>{${jsxExpr.getText(ctx.sourceFile)}}</>}) is NOT a safe escape here: it compiles, ` +
+          `but the child's own reactive prop getter receives the branch's HTML unbranded and re-escapes it as ` +
+          `text on the child's very next reactive run, corrupting the DOM (a narrower gap #2651's door ` +
+          `inventory left open — tracked separately).`,
+        escape: [{ kind: 'rewrite' }],
+      },
+    }),
+  )
+}
+
 function processComponentProps(
   attributes: ts.JsxAttributes,
   ctx: TransformContext
@@ -7015,14 +7109,14 @@ function processComponentProps(
 
     const name = attr.name.getText(ctx.sourceFile)
 
-    // JSX element/fragment as prop value: controls={<select />} or
-    // controls={(<div/>)}. Carried as a `jsx-children` AttrValue variant
-    // so adapters render the JSX inline rather than passing a string.
+    // JSX element/fragment as prop value: controls={<select />},
+    // controls={(<div/>)}, or controls={<div/> as any} (#2703 — the
+    // entity is still directly JSX; `as`/`satisfies`/`!` are type-only
+    // and erased, so this must classify identically to the bare form).
+    // Carried as a `jsx-children` AttrValue variant so adapters render
+    // the JSX inline rather than passing a string.
     if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      let jsxExpr = attr.initializer.expression
-      while (ts.isParenthesizedExpression(jsxExpr)) {
-        jsxExpr = jsxExpr.expression
-      }
+      const jsxExpr = unwrapTransparentTsWrappers(attr.initializer.expression)
       if (ts.isJsxElement(jsxExpr) || ts.isJsxSelfClosingElement(jsxExpr) || ts.isJsxFragment(jsxExpr)) {
         const prevInsideComponentChildren = ctx.insideComponentChildren
         ctx.insideComponentChildren = true
@@ -7036,6 +7130,31 @@ function processComponentProps(
           })
           continue
         }
+      }
+
+      // #2667: a ternary or array LITERALLY WRAPPING JSX at this prop
+      // position (`header={cond ? <a/> : <b/>}`, `header={[<a/>, <b/>]}`)
+      // is neither the direct-element shape above nor a plain value
+      // expression — it only classifies as `jsx-children` when the JSX is
+      // hoisted behind a fragment (`header={<>{cond ? <a/> : <b/>}</>}`,
+      // `unwrapHoistedFragment` above). Left undetected, this falls to the
+      // plain `expression` path below, which stringifies the initializer's
+      // SOURCE TEXT — literal JSX syntax spliced into the emitted client
+      // JS (invalid at runtime; the #2651 door inventory's discovery).
+      // Refuse loudly instead of guessing a lowering: the fragment-wrap
+      // escape this diagnostic once considered recommending turns out to
+      // be unsound for the same shape (`isSingleElementJsxChildren`'s
+      // docstring in `ir-to-client-js/collect-elements.ts` — a
+      // conditional-in-fragment reaches `initChild`'s getter UNbranded,
+      // corrupting the child's DOM the moment its own reactive effect
+      // first reads the prop), so only the children-passthrough escape is
+      // offered.
+      if (
+        (ts.isConditionalExpression(jsxExpr) || ts.isArrayLiteralExpression(jsxExpr)) &&
+        expressionWrapsJsx(jsxExpr)
+      ) {
+        reportNakedJsxWrapperProp(ctx, attr, name, jsxExpr)
+        continue
       }
     }
 

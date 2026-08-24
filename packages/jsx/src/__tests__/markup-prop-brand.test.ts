@@ -158,4 +158,53 @@ describe('markup-prop brand (#2651)', () => {
     // `__slot(...)` live-node wrapping — not itself re-wrapped in bfMarkup.
     expect(clientJs).toMatch(/get header\(\)\s*\{\s*return __slot\(/)
   })
+
+  // KNOWN BUG (#2702) — pins the CURRENT (broken) emission, not the
+  // correct one. `isSingleElementJsxChildren` (`ir-to-client-js/collect-
+  // elements.ts`) only brands the single-element jsx-children shape;
+  // #2651's PR body enumerated "conditional-in-fragment" as deliberately
+  // out of that PR's scope, and #2702 confirms it is actually broken, not
+  // merely unbranded-but-harmless: the child's own `escapeTextOrNode`
+  // reactive effect re-escapes the chosen branch's HTML as literal text
+  // the moment it first runs (real DOM corruption, verified directly —
+  // see `jsx-element-prop-fragment-conditional`'s fixture docstring,
+  // `packages/adapter-tests/fixtures/`, for the full mechanism and why no
+  // other shared conformance suite observes it: SSR is genuinely correct,
+  // and CSR conformance's `createEffect` mock never runs the effect).
+  //
+  // Graduation: once `bfMarkup()` branding is extended to this multi-part
+  // shape, this assertion starts failing — replace it with a positive
+  // `bfMarkup(...)`-wrapped assertion (mirroring test (b) above) and
+  // delete this comment block; that is the fixture's own graduation
+  // trigger too (its `expectedHtml` is already the correct SSR output, so
+  // no fixture change is needed, only this pin's removal and #2667's
+  // BF021 suggestion regaining the fragment-wrap escape).
+  test('(h) KNOWN BUG (#2702): a conditional-in-fragment jsx-children prop reaches initChild UNbranded', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any; children?: any }) {
+        return (
+          <section>
+            <header>{props.header}</header>
+            <div>{props.children}</div>
+          </section>
+        )
+      }
+      export function JsxElementPropFragmentConditional() {
+        const [cond, setCond] = createSignal(true)
+        return (
+          <Card header={<>{cond() ? <a>x</a> : <b>y</b>}</>}>
+            <p>body text</p>
+          </Card>
+        )
+      }
+    `
+    const clientJs = clientJsFor(source)
+    // Bug: the getter returns a bare template-literal ternary — NOT
+    // wrapped in bfMarkup(...). If this ever starts matching bfMarkup(...)
+    // the bug is fixed; see the graduation note above.
+    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return cond\(\)\s*\?\s*`<a>x<\/a>`\s*:\s*`<b>y<\/b>`\s*\}/)
+    expect(clientJs).not.toMatch(/get header\(\)\s*\{\s*return bfMarkup\(/)
+  })
 })
