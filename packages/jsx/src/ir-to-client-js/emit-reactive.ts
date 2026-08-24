@@ -462,24 +462,28 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
     }
 
     for (const [slotId, props] of propsBySlot) {
-      const v = varSlotId(slotId)
-      lines.push(`    if (_${v}) {`)
+      // The component's own `comment: true` root child IS `__scope` — no
+      // `$c` ref was declared for it (element-refs.ts), so reference
+      // `__scope` directly instead of a `_sN` var that doesn't exist
+      // (#2649, see `ClientJsContext.commentScopeRootSlotId`'s docstring).
+      const ref = slotId === ctx.commentScopeRootSlotId ? '__scope' : `_${varSlotId(slotId)}`
+      lines.push(`    if (${ref}) {`)
       for (const prop of props) {
         const value = `${prop.expression}()`
         if (prop.propName === 'selected') {
           if (prop.componentName === 'TabsContent') {
-            lines.push(`      _${v}.setAttribute('data-state', ${value} ? 'active' : 'inactive')`)
+            lines.push(`      ${ref}.setAttribute('data-state', ${value} ? 'active' : 'inactive')`)
             lines.push(`      if (${value}) {`)
-            lines.push(`        _${v}.classList.remove('hidden')`)
+            lines.push(`        ${ref}.classList.remove('hidden')`)
             lines.push(`      } else {`)
-            lines.push(`        _${v}.classList.add('hidden')`)
+            lines.push(`        ${ref}.classList.add('hidden')`)
             lines.push(`      }`)
           } else {
             // Update data-state and aria-selected attributes.
             // Visual styling is driven by CSS data-[state=active/inactive]: selectors.
-            lines.push(`      _${v}.setAttribute('aria-selected', String(${value}))`)
-            lines.push(`      _${v}.setAttribute('data-state', ${value} ? 'active' : 'inactive')`)
-            lines.push(`      _${v}.setAttribute('tabindex', ${value} ? '0' : '-1')`)
+            lines.push(`      ${ref}.setAttribute('aria-selected', String(${value}))`)
+            lines.push(`      ${ref}.setAttribute('data-state', ${value} ? 'active' : 'inactive')`)
+            lines.push(`      ${ref}.setAttribute('tabindex', ${value} ? '0' : '-1')`)
           }
         // Use DOM property assignment for value and boolean attrs.
         // setAttribute('value', x) only sets the initial HTML attribute; after user
@@ -488,11 +492,11 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
         // truthy, so setAttribute('disabled', 'false') still disables the element.
         } else if (prop.propName === 'value') {
           lines.push(`      const __val = String(${value})`)
-          lines.push(`      if (_${v}.value !== __val) _${v}.value = __val`)
+          lines.push(`      if (${ref}.value !== __val) ${ref}.value = __val`)
         } else if (isBooleanAttr(prop.propName)) {
-          lines.push(`      _${v}.${prop.propName} = !!(${value})`)
+          lines.push(`      ${ref}.${prop.propName} = !!(${value})`)
         } else {
-          lines.push(`      _${v}.setAttribute('${prop.propName}', String(${value}))`)
+          lines.push(`      ${ref}.setAttribute('${prop.propName}', String(${value}))`)
         }
       }
       lines.push(`    }`)
@@ -520,10 +524,17 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
 
     for (const [, props] of propsByComponent) {
       const first = props[0]
+      // The component's own `comment: true` root child IS `__scope` — query
+      // it directly rather than through `$c`, which cannot tell "I already
+      // am this slot" apart from a coincidentally-matching descendant
+      // (#2649, see `ClientJsContext.commentScopeRootSlotId`'s docstring).
+      const isCommentRoot = first.slotId !== null && first.slotId === ctx.commentScopeRootSlotId
       const varSuffix = first.slotId ? varSlotId(first.slotId).replace(/-/g, '_') : first.componentName
-      const varName = `__${first.componentName}_${varSuffix}El`
-      const selectorArg = first.slotId ? first.slotId : first.componentName
-      lines.push(`    const [${varName}] = $c(__scope, '${selectorArg}')`)
+      const varName = isCommentRoot ? '__scope' : `__${first.componentName}_${varSuffix}El`
+      if (!isCommentRoot) {
+        const selectorArg = first.slotId ? first.slotId : first.componentName
+        lines.push(`    const [${varName}] = $c(__scope, '${selectorArg}')`)
+      }
       lines.push(`    if (${varName}) {`)
       for (const prop of props) {
         for (const stmt of emitAttrUpdate(varName, prop.attrName, prop.expression, prop)) {

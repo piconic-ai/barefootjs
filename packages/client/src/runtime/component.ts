@@ -441,25 +441,25 @@ export function renderChild(
     return `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
   }
 
-  // NOTE: does NOT push `_parentScopeId` to this child's own derived scope
-  // while `templateFn` evaluates. That was tried (deriving a GRANDCHILD's
-  // scope from this scope rather than the caller's, to fix a third
-  // composition level collapsing onto the second — `grandchild-composition`)
-  // but it collides with `comment: true` wrapper transparency (#1211
-  // synthesized inline-JSX-callback wrappers, e.g. a `renderNode` callback
-  // prop): such a wrapper's OWN scope element IS its single child's element,
-  // and its init resolves itself via `$c(scope, 's0')`'s short-suffix
-  // self-match fallback (`query.ts`'s `$cSingle`). Pushing this scope makes
-  // a nested descendant of that SAME child derive `..._s0_s0` whenever the
-  // descendant's own first slot id also happens to be `s0` — the PRECISE
-  // suffix match then finds that unrelated descendant instead of falling
-  // through to the self-match, silently misrouting `initChild` (confirmed
-  // via `site/ui`'s xyflow Highlight-Depth demo, where this broke the
-  // `--node-glow` style effect). `grandchild-composition` stays a known
-  // limitation (CSR conformance skip) until the self-match lookup can be
-  // made unambiguous against a nested descendant sharing the same slot
-  // suffix.
-  const raw = templateFn(props)
+  // Push `_parentScopeId` to THIS child's own derived scope while its
+  // `templateFn` evaluates, so a grandchild rendered inside it derives its
+  // scope from THIS scope rather than the caller's (#2649). Without this a
+  // third composition level collapses onto the second: with `_parentScopeId`
+  // left at the caller's id, a grandchild whose slot suffix happens to match
+  // this child's OWN slot suffix computes the exact same string as this
+  // child's bf-s (`grandchild-composition`'s `test_s0` reused instead of
+  // deriving `test_s0_s0`). Restored via `finally` so a sibling rendered
+  // after this call (or the caller's own remaining template) sees the
+  // original `_parentScopeId`, matching the caller-restore discipline
+  // `materializeComponent` already uses around its own `templateFn` call.
+  const prevParentScopeId = _parentScopeId
+  _parentScopeId = `${scopePrefix}${suffix}`
+  let raw: string
+  try {
+    raw = templateFn(props)
+  } finally {
+    _parentScopeId = prevParentScopeId
+  }
 
   // The placeholder substitution is anchored to the exact `bf-s="…"`
   // shape so user content that contains the sentinel as text survives

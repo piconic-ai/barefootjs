@@ -220,19 +220,24 @@ function renderChild(name, props, key, suffix) {
   // output asserts the same shape SSR emits.
   const slotAttrs = suffix ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
   if (!template) return '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
-  // NOTE: does NOT push \`__parentScope\` to this child's own derived
-  // scope while \`template\` evaluates — mirrors production's renderChild
-  // (@barefootjs/client/runtime, component.ts, the NOTE above its
-  // \`templateFn(props)\` call). Pushing was tried there to fix a third
-  // composition level collapsing onto the second (\`grandchild-composition\`)
-  // but it collides with \`comment: true\` wrapper transparency's $cSingle
-  // short-suffix self-match, so production intentionally leaves
-  // grandchild-composition a known limitation (#2649) rather than pushing.
-  // This mock must reproduce that bug, not silently cure it.
-  const __rawHtml = template(props)
+  // Push \`__parentScope\` to this child's own derived scope while
+  // \`template\` evaluates — mirrors production's renderChild
+  // (@barefootjs/client/runtime, component.ts, its \`_parentScopeId\` push
+  // around \`templateFn(props)\`, #2649) so a grandchild rendered inside
+  // this child derives its scope from THIS scope rather than the
+  // caller's, matching SSR (\`test_s0_s0\` instead of collapsing onto
+  // \`test_s0\`).
+  const __prevParentScope = __parentScope
+  __parentScope = scopeId
+  let __rawHtml
+  try {
+    __rawHtml = template(props)
+  } finally {
+    __parentScope = __prevParentScope
+  }
   // #1320: substitute the hoisted-children placeholder with the CALLER's
-  // scope (\`__parentScope\`, unchanged since renderChild doesn't push).
-  // Mirrors the production renderChild in @barefootjs/client/runtime.
+  // scope (\`__parentScope\`, restored by the \`finally\` above before this
+  // line runs). Mirrors the production renderChild in @barefootjs/client/runtime.
   // Anchored to the exact attribute shape so user text containing the
   // sentinel is left alone.
   const html = __rawHtml.trim()

@@ -185,6 +185,10 @@ function createContext(
     refElements: [],
     childInits: [],
     deferredChildSlots: new Set(),
+    // Mirrors `emit-registration.ts`'s `isCommentScope` component-root
+    // disjunct (not the fragment disjunct — that case is disambiguated at
+    // runtime by `commentScopeRegistry`, not by this slot-id shortcut).
+    commentScopeRootSlotId: ir.root.type === 'component' ? ir.root.slotId : null,
     reactiveProps: [],
     reactiveChildProps: [],
     reactiveAttrs: [],
