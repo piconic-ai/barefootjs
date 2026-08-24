@@ -325,24 +325,47 @@ export function collectInnerLoops(
         // param) silently dropped its text-child update effect while the
         // sibling attribute effect (ungated) still fired. Refs need to fire
         // on every renderItem invocation (#1244).
-        //   - events / conditionals: only in `collectBindings` (branch)
-        //     mode; the legacy non-branch path didn't wire them on
-        //     `NestedLoop` because event delegation handles them through
-        //     the parent's bindings instead.
+        //   - events: only in `collectBindings` (branch) mode; the
+        //     legacy non-branch path didn't wire them on `NestedLoop`
+        //     because event delegation handles them through the parent's
+        //     bindings instead.
+        //   - conditionals: collected for EVERY inner loop, branch or not
+        //     (#2706) — see the `stopAtReactiveConditionals: true` note
+        //     below for why this must not be gated the same way events are.
         const bindings: LoopChildBindings = emptyLoopChildBindings()
         // Hoisted: one Set per loop, not one per child (Copilot review).
         const innerPreambleNames = preambleNamesOf(n)
         if (ctx) {
           for (const child of n.children) {
-            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, false, innerPreambleNames, n.index))
-            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, false, innerPreambleNames, n.index))
+            // `stopAtReactiveConditionals: true` (#2347's parameter, #2706's
+            // fix here) — a per-item conditional inside THIS loop's own row
+            // now always gets its own `bindings.conditionals` entry (below)
+            // and its own `insert()`, regardless of branch/general mode.
+            // Descending past it here too (the pre-#2706 default) would
+            // double-bind: once via insert()'s bindEvents, once via this
+            // flat `insideConditional`-flagged reclaim-on-every-run effect
+            // — the latter is also unsound on its own, since nothing
+            // guarantees the branch's marker is mounted the moment this
+            // effect first runs (issue-2706-nested-loop-conditional-slot
+            // .test.ts's original repro).
+            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
+          bindings.conditionals.push(...collectLoopChildConditionals(
+            { type: 'fragment', children: n.children, loc: n.loc } as unknown as IRNode,
+            ctx,
+            siblingOffsets,
+            n.param,
+            n.paramBindings,
+            innerPreambleNames,
+            n.index,
+          ))
         }
 
         // Per-item bindings for branch-mode callers (child components,
-        // events, nested conditionals) — matches the pre-Phase 2
-        // `collectBranchInnerLoops` behaviour.
+        // events) — matches the pre-Phase 2 `collectBranchInnerLoops`
+        // behaviour. Conditionals are collected above, uniformly.
         let childComponents: import('../types.ts').IRLoopChildComponent[] | undefined
         if (collectBindings) {
           // skipConditionals=true: components inside conditional branches
@@ -368,18 +391,6 @@ export function collectInnerLoops(
 
           for (const child of n.children) {
             bindings.events.push(...collectLoopChildEventsWithNesting(child))
-          }
-
-          if (ctx) {
-            bindings.conditionals.push(...collectLoopChildConditionals(
-              { type: 'fragment', children: n.children, loc: n.loc } as unknown as IRNode,
-              ctx,
-              siblingOffsets,
-              n.param,
-              n.paramBindings,
-              innerPreambleNames,
-              n.index,
-            ))
           }
         }
 

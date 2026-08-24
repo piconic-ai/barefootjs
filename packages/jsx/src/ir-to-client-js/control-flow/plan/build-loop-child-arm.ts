@@ -190,6 +190,14 @@ export interface BuildBranchInnerLoopsArgs {
   innerLoops: readonly NestedLoop[] | undefined
   /** The variable expression naming the parent scope element (e.g. `__branchScope`). */
   scopeVar: string
+  /**
+   * The enclosing conditional's own slot id — every call site of this
+   * builder originates from a conditional branch's arm, so this is always
+   * a real id. Used as the `containerExpr` fallback (`findCondContainer`,
+   * #2705) for an inner loop whose IR never got a `containerSlotId` of its
+   * own (its wrapper element sits outside the branch's IR subtree).
+   */
+  condSlotId: string
   /** Outer loop param identifier (the conditional's enclosing loop). */
   outerLoopParam: string
   /** Outer loop param destructuring metadata. */
@@ -214,6 +222,7 @@ export function buildBranchInnerLoopsPlan(
   const {
     innerLoops,
     scopeVar,
+    condSlotId,
     outerLoopParam,
     outerLoopParamBindings,
     wrapOuter,
@@ -230,10 +239,15 @@ export function buildBranchInnerLoopsPlan(
 
     const csl = inner.containerSlotId
     // Inner loop's container: host-side `bf="<slot>"` slot marker first,
-    // then (bf-h, bf-m) when the container is itself a child scope.
+    // then (bf-h, bf-m) when the container is itself a child scope. When
+    // neither exists — the loop's own IR never got a `containerSlotId`
+    // because its wrapper element sits outside the branch's IR subtree
+    // (#2705) — resolve via the conditional's OWN comment marker instead
+    // of falling back to the whole branch scope, which may be several
+    // elements wider than the loop's actual container.
     const containerExpr = csl
       ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector(\`[${BF_HOST}="\${__scopeId}"][${BF_AT}="${csl}"]\`) ?? ${scopeVar})`
-      : scopeVar
+      : `findCondContainer(${scopeVar}, '${condSlotId}')`
 
     const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
     const wrappedKey = inner.key
@@ -372,12 +386,14 @@ export function buildLoopChildConditionalsPlan(
         wrap,
         loopParam,
         loopParamBindings,
+        condId: cond.slotId,
       }),
       whenFalseArm: buildLoopChildArmPlan({
         branch: cond.whenFalse,
         wrap,
         loopParam,
         loopParamBindings,
+        condId: cond.slotId,
       }),
     })
   }
@@ -439,10 +455,12 @@ interface BuildLoopChildArmArgs {
   wrap: (expr: string) => string
   loopParam: string
   loopParamBindings?: readonly LoopParamBinding[]
+  /** The enclosing conditional's own slot id — threaded to `buildBranchInnerLoopsPlan`'s `condSlotId` (#2705). */
+  condId: string
 }
 
 function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
-  const { branch, wrap, loopParam, loopParamBindings } = args
+  const { branch, wrap, loopParam, loopParamBindings, condId } = args
   return {
     events: buildBranchEventBindingsPlan({
       events: branch.events,
@@ -455,6 +473,7 @@ function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
     innerLoops: buildBranchInnerLoopsPlan({
       innerLoops: branch.innerLoops,
       scopeVar: '__branchScope',
+      condSlotId: condId,
       outerLoopParam: loopParam,
       outerLoopParamBindings: loopParamBindings,
       wrapOuter: wrap,
