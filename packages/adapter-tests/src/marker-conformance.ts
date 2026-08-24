@@ -105,9 +105,28 @@ function walkIRNode(node: IRNode, visit: (n: IRNode) => void): void {
       for (const c of loop.children) walkIRNode(c, visit)
       break
     }
-    case 'component':
-      for (const c of (node as IRComponent).children) walkIRNode(c, visit)
+    case 'component': {
+      const comp = node as IRComponent
+      for (const c of comp.children) walkIRNode(c, visit)
+      // #2702: a prop value's own `jsx-children` payload (an element,
+      // fragment, or conditional passed at a NAMED prop position —
+      // `header={<>{cond ? <a/> : <b/>}</>}`) can carry its own slot ids
+      // (a `^`-prefixed one, since it's parent-owned) that DO reach the
+      // adapter's rendered template. This walker used to only descend
+      // through `.children`, silently never seeing any prop-payload
+      // marker at all — harmless while every such payload was marker-
+      // free (a lone static element), but a false "adapter is missing
+      // this marker" failure the moment a payload actually has one
+      // (`jsx-element-prop-fragment-conditional`, the first fixture to
+      // exercise this combination). Walk every prop's jsx-children
+      // payload the same way.
+      for (const prop of comp.props) {
+        if (prop.value.kind === 'jsx-children') {
+          for (const c of prop.value.children) walkIRNode(c, visit)
+        }
+      }
       break
+    }
     case 'fragment':
       for (const c of (node as IRFragment).children) walkIRNode(c, visit)
       break

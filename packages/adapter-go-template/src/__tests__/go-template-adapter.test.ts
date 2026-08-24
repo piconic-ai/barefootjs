@@ -118,6 +118,12 @@ runAdapterConformanceTests({
     'todo-app',
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
+    // Real-render divergence (see `render-divergences.ts` for the full
+    // description): Go's real SSR output drops the `header` prop's
+    // content entirely for this shape, so its rendered template has no
+    // `^s0` marker for the IR's conditional to match against. Paired
+    // with the `renderDivergences` entry, not an independent gap.
+    'jsx-element-prop-fragment-conditional',
   ]),
   skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
