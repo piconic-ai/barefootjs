@@ -200,6 +200,16 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
  *     match the end-marker form). The end-marker form (`/loop:<id>`) is
  *     collected into `loopEnds` so the pair contract is asserted, not
  *     just id presence.
+ *
+ * Every id pattern above accepts an optional leading `^` (a
+ * parent-owned slot/cond/loop id, e.g. an element inside a JSX prop —
+ * see `slotId`'s docstring in `types.ts`), matching the slot bullet's
+ * `\^?` — a conditional or loop can be parent-owned exactly the same
+ * way an element can (#2667: `jsx-element-prop-children-escape` is the
+ * first fixture whose reactive conditional is `^`-owned AND reaches a
+ * `bf-c=`/`cond-start:`-style marker, which surfaced this regex gap —
+ * every adapter's own template output already emitted the marker
+ * correctly, only this harness-side extractor missed the caret).
  */
 export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   const out = emptySets()
@@ -207,10 +217,10 @@ export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   for (const m of template.matchAll(/bfText\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/text_start\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/bfTextStart\s+"(\^?[\w-]+)"/g)) out.slots.add(m[1])
-  for (const m of template.matchAll(/\bbf-c="([\w-]+)"/g)) out.conds.add(m[1])
-  for (const m of template.matchAll(/cond-start:([\w-]+)/g)) out.conds.add(m[1])
-  for (const m of template.matchAll(/(?:^|[^/])loop:([\w-]+)/g)) out.loops.add(m[1])
-  for (const m of template.matchAll(/\/loop:([\w-]+)/g)) out.loopEnds.add(m[1])
+  for (const m of template.matchAll(/\bbf-c="(\^?[\w-]+)"/g)) out.conds.add(m[1])
+  for (const m of template.matchAll(/cond-start:(\^?[\w-]+)/g)) out.conds.add(m[1])
+  for (const m of template.matchAll(/(?:^|[^/])loop:(\^?[\w-]+)/g)) out.loops.add(m[1])
+  for (const m of template.matchAll(/\/loop:(\^?[\w-]+)/g)) out.loopEnds.add(m[1])
   return out
 }
 

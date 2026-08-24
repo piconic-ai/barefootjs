@@ -2518,6 +2518,46 @@
         "text"
       ]
     },
+    "jsx-element-prop-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-element-prop-children-escape": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "jsx-element-prop-ternary": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "jsx-spread-multiple": {
       "kinds": [
         "call",
@@ -5406,17 +5446,17 @@
     "array-method": 71,
     "arrow": 70,
     "binary": 93,
-    "call": 224,
-    "conditional": 25,
-    "identifier": 314,
+    "call": 225,
+    "conditional": 26,
+    "identifier": 317,
     "index-access": 14,
-    "literal": 256,
+    "literal": 258,
     "logical": 48,
-    "member": 179,
+    "member": 182,
     "object-literal": 62,
     "template-literal": 30,
     "unary": 24,
-    "unsupported": 39
+    "unsupported": 40
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -5453,7 +5493,7 @@
     "binary:===": 49,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 53,
+    "literal:boolean": 55,
     "literal:null": 23,
     "literal:number": 106,
     "literal:string": 182,
