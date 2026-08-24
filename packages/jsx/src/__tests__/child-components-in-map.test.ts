@@ -292,6 +292,12 @@ describe('child components inside .map() (#344)', () => {
   })
 
   test('no duplicate variable declaration when .map() slot ID matches component slot ID (#360)', () => {
+    // Wrapped in a `<div>` so `Wrapper` is a genuine, separately-addressed
+    // child (needs a `$c` ref) rather than the component's own `comment:
+    // true` root child — a BARE `<Wrapper>{...}</Wrapper>` return needs no
+    // `$c` ref at all since #2649 (the child IS `__scope`), which would
+    // make this test's collision between the component's `$c` ref and the
+    // loop's `mapArray` ref never arise in the first place.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -299,9 +305,11 @@ describe('child components inside .map() (#344)', () => {
       export function Parent() {
         const [items, setItems] = createSignal([{ name: 'a' }, { name: 'b' }])
         return (
-          <Wrapper>
-            {items().map((item, i) => <span key={i}>{item.name}</span>)}
-          </Wrapper>
+          <div>
+            <Wrapper>
+              {items().map((item, i) => <span key={i}>{item.name}</span>)}
+            </Wrapper>
+          </div>
         )
       }
     `

@@ -67,12 +67,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // reaches the CSR insert as `bfMarkup()`-branded HTML, matching the
   // claim-plan 'markup' classification instead of the stray `escapeText`
   // path that mangled the `__BF_PARENT_SCOPE__` sentinel.
-  // `grandchild-composition`: third level reuses the parent scope id
-  // (`test_s0`) in CSR instead of deriving `test_s0_s0` as SSR does. #2444
-  // fixed the sibling case, but deriving here via `renderChild`'s
-  // `_parentScopeId` push collided with `comment: true` wrapper self-lookup
-  // (`$cSingle`'s short-suffix fallback in `query.ts`), breaking hydration
-  // when an inner component's first slot id coincides with the wrapper's slot
-  // number (site/ui xyflow Highlight-Depth regression) — known limitation #2649.
-  'grandchild-composition',
+  // `grandchild-composition` graduated (#2649 fixed): `renderChild` now
+  // pushes `_parentScopeId` to a child's own derived scope while its
+  // template evaluates, so a third composition level derives `test_s0_s0`
+  // instead of collapsing onto `test_s0`. The `comment: true` wrapper
+  // self-lookup collision that reverted the first attempt at this is
+  // fixed at its source: a `comment: true` component's own root-level
+  // child needs no `$c` lookup at all (it IS `__scope`) — see
+  // `ClientJsContext.commentScopeRootSlotId` and
+  // `comment-wrapper-grandchild-slot-collision.test.ts`.
 ])

@@ -102,6 +102,27 @@ export interface ClientJsContext {
    * registration-template emit so both agree on which children defer.
    */
   deferredChildSlots: Set<string>
+  /**
+   * Slot id of the component's own root, when the ENTIRE render is a single
+   * child component call (`ir.root.type === 'component'` — the IR shape is
+   * the sole source of truth; `emit-registration.ts`'s `isCommentScope`
+   * derives the def's `comment: true` from the same shape). Such a child
+   * never gets its own DOM node: `materializeComponent`/`renderChild` leave
+   * `bf-s` unset and the child's markup becomes `__scope` itself (#2649).
+   * A generic `$c(__scope, slotId)` lookup for this one slot is therefore
+   * not just redundant but actively ambiguous — a genuine grandchild
+   * nested inside it can derive a `bf-s` whose suffix collides with this
+   * same slot id (see `component.ts`'s `_parentScopeId` push), and
+   * `$cSingle` cannot tell "I already am this slot" apart from "a
+   * coincidentally-matching descendant is this slot" from the DOM alone.
+   * Emission sites that would otherwise query this slot via `$c`
+   * (`element-refs.ts`, `provider-and-child-inits.ts`,
+   * `emit-reactive.ts`) use `__scope` directly instead, sidestepping the
+   * ambiguity entirely rather than trying to make the query precise
+   * enough to resolve it. `null` for a component whose root is a regular
+   * element/fragment (the overwhelmingly common case).
+   */
+  commentScopeRootSlotId: string | null
   reactiveProps: ReactiveComponentProp[]
   reactiveChildProps: ReactiveChildProp[]
   reactiveAttrs: ReactiveAttribute[]

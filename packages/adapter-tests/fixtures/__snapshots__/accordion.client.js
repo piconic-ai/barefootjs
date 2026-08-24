@@ -2870,7 +2870,7 @@ export function initAccordionSingleOpenDemo(__scope, _p = {}) {
 
   const [openItem, setOpenItem] = createSignal('item-1')
 
-  const [_s9, _s2, _s0, _s1, _s5, _s3, _s4, _s8, _s6, _s7] = $c(__scope, 's9', 's2', 's0', 's1', 's5', 's3', 's4', 's8', 's6', 's7')
+  const [_s2, _s0, _s1, _s5, _s3, _s4, _s8, _s6, _s7] = $c(__scope, 's2', 's0', 's1', 's5', 's3', 's4', 's8', 's6', 's7')
 
 
   // Reactive child component props
@@ -2890,7 +2890,7 @@ export function initAccordionSingleOpenDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('Accordion', _s9, {})
+  initChild('Accordion', __scope, {})
   initChild('AccordionItem', _s2, { value: "item-1", get open() { return openItem() === 'item-1' }, onOpenChange: (v) => setOpenItem(v ? 'item-1' : null) })
   initChild('AccordionTrigger', _s0, {})
   initChild('AccordionContent', _s1, {})
@@ -2956,7 +2956,7 @@ export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
   const [item2Open, setItem2Open] = createSignal(false)
   const [item3Open, setItem3Open] = createSignal(false)
 
-  const [_s2, _s5, _s8, _s9, _s0, _s1, _s3, _s4, _s6, _s7] = $c(__scope, 's2', 's5', 's8', 's9', 's0', 's1', 's3', 's4', 's6', 's7')
+  const [_s2, _s5, _s8, _s0, _s1, _s3, _s4, _s6, _s7] = $c(__scope, 's2', 's5', 's8', 's0', 's1', 's3', 's4', 's6', 's7')
 
 
   // Reactive prop bindings
@@ -2989,7 +2989,7 @@ export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('Accordion', _s9, {})
+  initChild('Accordion', __scope, {})
   initChild('AccordionItem', _s2, { value: "item-1", get open() { return item1Open() }, onOpenChange: setItem1Open })
   initChild('AccordionTrigger', _s0, {})
   initChild('AccordionContent', _s1, {})

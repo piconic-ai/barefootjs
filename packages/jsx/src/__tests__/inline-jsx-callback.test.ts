@@ -464,3 +464,58 @@ describe('inline JSX as object-literal arrow value (#1663)', () => {
     expect(js).toMatch(/lazySlots[^']*from '@barefootjs\/client\/runtime'/)
   })
 })
+
+describe('synthesized wrapper root-child resolution (#2649)', () => {
+  test('the wrapper\'s own (comment: true) child init uses __scope directly, not a $c lookup', () => {
+    // `Flow`'s callback is hoisted into a `comment: true` synthesized
+    // wrapper (BFInlineJsxCallback1) whose entire body is the single
+    // `<Body id={n.id} />` call — the wrapper's element IS Body's own
+    // element, no separate DOM node exists to look up. Body itself
+    // nests two REAL child components (Handle) whose own slot suffixes
+    // (`s0`, `s1`) can coincide with whatever slot the wrapper is
+    // mounted at in ITS caller once a grandchild's scope is correctly
+    // derived from Body's own scope (#2649) — so the wrapper's init
+    // must reference `__scope` directly rather than re-deriving it via
+    // `$c`, which cannot distinguish "I already am this slot" from a
+    // same-suffix grandchild underneath it.
+    const source = `
+      'use client'
+      import { Flow } from './Flow'
+
+      function Handle(props: { kind: string }) {
+        return <div class="handle">{props.kind}</div>
+      }
+
+      function Body(props: { id: string }) {
+        return (
+          <div>
+            <Handle kind="target" />
+            <span>{props.id}</span>
+            <Handle kind="source" />
+          </div>
+        )
+      }
+
+      export function Demo() {
+        return <Flow renderNode={(n) => <Body id={n.id} />} />
+      }
+    `
+    const js = clientJs(source)
+
+    // The synthesized wrapper's init must not query its own root child
+    // via $c — it already has it as `__scope`.
+    const wrapperInit = js.match(/function initBFInlineJsxCallback1\b[\s\S]*?\n\}/)
+    expect(wrapperInit).not.toBeNull()
+    expect(wrapperInit![0]).not.toMatch(/\$c\(__scope/)
+    expect(wrapperInit![0]).toMatch(/initChild\('Body[^,]*',\s*__scope,/)
+
+    // Body's OWN nested Handle children are unaffected — they are real,
+    // separate DOM nodes and still resolve through $c as normal (slot
+    // numbering interleaves with the `<span>` text marker in between, so
+    // the second Handle isn't necessarily 's1' — only that both go
+    // through $c, unlike the wrapper's own root child above).
+    const bodyInit = js.match(/function initBody\b[\s\S]*?\n\}/)
+    expect(bodyInit).not.toBeNull()
+    expect(bodyInit![0]).toMatch(/\$c\(__scope,\s*'s0',\s*'s\d+'\)/)
+  })
+})

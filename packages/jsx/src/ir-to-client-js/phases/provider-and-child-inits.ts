@@ -39,7 +39,11 @@ export function emitProviderAndChildInits(lines: string[], ctx: ClientJsContext)
         lines.push(`  upsertChild(__scope, '${registryName}', '${child.slotId}', ${child.propsExpr})`)
         continue
       }
-      const scopeRef = child.slotId ? `_${varSlotId(child.slotId)}` : '__scope'
+      // The component's own `comment: true` root child IS `__scope` (no
+      // separate DOM node exists for it to be looked up at) — see
+      // `ClientJsContext.commentScopeRootSlotId`'s docstring (#2649).
+      const isCommentRoot = child.slotId !== null && child.slotId === ctx.commentScopeRootSlotId
+      const scopeRef = !child.slotId || isCommentRoot ? '__scope' : `_${varSlotId(child.slotId)}`
       lines.push(`  initChild('${registryName}', ${scopeRef}, ${child.propsExpr})`)
     }
   }

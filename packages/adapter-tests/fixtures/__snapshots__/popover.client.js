@@ -220,26 +220,25 @@ export function initPopoverPreviewDemo(__scope, _p = {}) {
 
   const [open, setOpen] = createSignal(false)
 
-  const [_s2, _s0, _s1] = $c(__scope, 's2', 's0', 's1')
+  const [_s0, _s1] = $c(__scope, 's0', 's1')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s2) {
-      _s2.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Reactive child component props
   createEffect(() => {
-    const [__Popover_s2El] = $c(__scope, 's2')
-    if (__Popover_s2El) {
-      __Popover_s2El.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Initialize child components with props
-  initChild('Popover', _s2, { get open() { return open() }, onOpenChange: setOpen })
+  initChild('Popover', __scope, { get open() { return open() }, onOpenChange: setOpen })
   initChild('PopoverTrigger', _s0, {})
   initChild('PopoverContent', _s1, { className: "w-80" })
 }
@@ -252,26 +251,25 @@ export function initPopoverBasicDemo(__scope, _p = {}) {
 
   const [open, setOpen] = createSignal(false)
 
-  const [_s2, _s0, _s1] = $c(__scope, 's2', 's0', 's1')
+  const [_s0, _s1] = $c(__scope, 's0', 's1')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s2) {
-      _s2.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Reactive child component props
   createEffect(() => {
-    const [__Popover_s2El] = $c(__scope, 's2')
-    if (__Popover_s2El) {
-      __Popover_s2El.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Initialize child components with props
-  initChild('Popover', _s2, { get open() { return open() }, onOpenChange: setOpen })
+  initChild('Popover', __scope, { get open() { return open() }, onOpenChange: setOpen })
   initChild('PopoverTrigger', _s0, {})
   initChild('PopoverContent', _s1, {})
 }
@@ -293,7 +291,7 @@ export function initPopoverFormDemo(__scope, _p = {}) {
   }
 
   const [_s3, _s2] = $(__scope, '^s3', '^s2')
-  const [_s5, _s0, _s4, _s1] = $c(__scope, 's5', 's0', 's4', 's1')
+  const [_s0, _s4, _s1] = $c(__scope, 's0', 's4', 's1')
 
   insert(__scope, '^s2', () => saved(), {
     template: () => { const __slots = []; return { html: `<!--bf-cond-start:^s2-->${__bfSlot('Saved!', __slots)}<!--bf-cond-end:^s2-->`, slots: __slots } },
@@ -309,21 +307,20 @@ export function initPopoverFormDemo(__scope, _p = {}) {
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s5) {
-      _s5.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Reactive child component props
   createEffect(() => {
-    const [__Popover_s5El] = $c(__scope, 's5')
-    if (__Popover_s5El) {
-      __Popover_s5El.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Initialize child components with props
-  initChild('Popover', _s5, { get open() { return open() }, onOpenChange: setOpen })
+  initChild('Popover', __scope, { get open() { return open() }, onOpenChange: setOpen })
   initChild('PopoverTrigger', _s0, {})
   initChild('PopoverContent', _s4, { align: "start", className: "w-80" })
   initChild('PopoverClose', _s1, { className: "inline-flex items-center justify-center rounded-md border bg-background px-3 py-1.5 text-sm hover:bg-accent" })

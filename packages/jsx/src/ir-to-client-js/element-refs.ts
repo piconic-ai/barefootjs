@@ -71,6 +71,14 @@ export function generateElementRefs(ctx: ClientJsContext): string {
     regularSlots.delete(slotId)
   }
 
+  // The component's own `comment: true` root slot needs no `$c` ref at
+  // all — its consumers (provider-and-child-inits.ts, emit-reactive.ts)
+  // reference `__scope` directly instead (#2649, see
+  // `ClientJsContext.commentScopeRootSlotId`'s docstring).
+  if (ctx.commentScopeRootSlotId) {
+    componentSlots.delete(ctx.commentScopeRootSlotId)
+  }
+
   if (regularSlots.size === 0 && componentSlots.size === 0) return ''
 
   const refLines: string[] = []

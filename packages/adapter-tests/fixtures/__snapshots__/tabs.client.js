@@ -131,14 +131,14 @@ export function initTabsBasicDemo(__scope, _p = {}) {
   const isAccountSelected = createMemo(() => activeTab() === 'account')
   const isPasswordSelected = createMemo(() => activeTab() === 'password')
 
-  const [_s5, _s0, _s1, _s3, _s4, _s2] = $c(__scope, 's5', 's0', 's1', 's3', 's4', 's2')
+  const [_s0, _s1, _s3, _s4, _s2] = $c(__scope, 's0', 's1', 's3', 's4', 's2')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s5) {
+    if (__scope) {
       const __val = String(activeTab())
-      if (_s5.value !== __val) _s5.value = __val
+      if (__scope.value !== __val) __scope.value = __val
     }
     if (_s0) {
       _s0.setAttribute('aria-selected', String(isAccountSelected()))
@@ -170,10 +170,9 @@ export function initTabsBasicDemo(__scope, _p = {}) {
 
   // Reactive child component props
   createEffect(() => {
-    const [__Tabs_s5El] = $c(__scope, 's5')
-    if (__Tabs_s5El) {
+    if (__scope) {
       const __val = String(activeTab())
-      if (__Tabs_s5El.value !== __val) __Tabs_s5El.value = __val
+      if (__scope.value !== __val) __scope.value = __val
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
@@ -194,7 +193,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('Tabs', _s5, { get value() { return activeTab() }, onValueChange: setActiveTab })
+  initChild('Tabs', __scope, { get value() { return activeTab() }, onValueChange: setActiveTab })
   initChild('TabsList', _s2, {})
   initChild('TabsTrigger', _s0, { value: "account", get selected() { return isAccountSelected() }, get disabled() { return false }, onClick: () => setActiveTab('account') })
   initChild('TabsTrigger', _s1, { value: "password", get selected() { return isPasswordSelected() }, get disabled() { return false }, onClick: () => setActiveTab('password') })
@@ -214,14 +213,14 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
   const isReportsSelected = createMemo(() => activeTab() === 'reports')
   const isNotificationsSelected = createMemo(() => activeTab() === 'notifications')
 
-  const [_s9, _s0, _s1, _s2, _s3, _s5, _s6, _s7, _s8, _s4] = $c(__scope, 's9', 's0', 's1', 's2', 's3', 's5', 's6', 's7', 's8', 's4')
+  const [_s0, _s1, _s2, _s3, _s5, _s6, _s7, _s8, _s4] = $c(__scope, 's0', 's1', 's2', 's3', 's5', 's6', 's7', 's8', 's4')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s9) {
+    if (__scope) {
       const __val = String(activeTab())
-      if (_s9.value !== __val) _s9.value = __val
+      if (__scope.value !== __val) __scope.value = __val
     }
     if (_s0) {
       _s0.setAttribute('aria-selected', String(isOverviewSelected()))
@@ -279,10 +278,9 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
 
   // Reactive child component props
   createEffect(() => {
-    const [__Tabs_s9El] = $c(__scope, 's9')
-    if (__Tabs_s9El) {
+    if (__scope) {
       const __val = String(activeTab())
-      if (__Tabs_s9El.value !== __val) __Tabs_s9El.value = __val
+      if (__scope.value !== __val) __scope.value = __val
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
@@ -319,7 +317,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('Tabs', _s9, { get value() { return activeTab() }, onValueChange: setActiveTab })
+  initChild('Tabs', __scope, { get value() { return activeTab() }, onValueChange: setActiveTab })
   initChild('TabsList', _s4, {})
   initChild('TabsTrigger', _s0, { value: "overview", get selected() { return isOverviewSelected() }, get disabled() { return false }, onClick: () => setActiveTab('overview') })
   initChild('TabsTrigger', _s1, { value: "analytics", get selected() { return isAnalyticsSelected() }, get disabled() { return false }, onClick: () => setActiveTab('analytics') })
@@ -341,14 +339,14 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
   const isActiveSelected = createMemo(() => activeTab() === 'active')
   const isAnotherSelected = createMemo(() => activeTab() === 'another')
 
-  const [_s6, _s0, _s2, _s4, _s5, _s3, _s1] = $c(__scope, 's6', 's0', 's2', 's4', 's5', 's3', 's1')
+  const [_s0, _s2, _s4, _s5, _s3, _s1] = $c(__scope, 's0', 's2', 's4', 's5', 's3', 's1')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s6) {
+    if (__scope) {
       const __val = String(activeTab())
-      if (_s6.value !== __val) _s6.value = __val
+      if (__scope.value !== __val) __scope.value = __val
     }
     if (_s0) {
       _s0.setAttribute('aria-selected', String(isActiveSelected()))
@@ -380,10 +378,9 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
 
   // Reactive child component props
   createEffect(() => {
-    const [__Tabs_s6El] = $c(__scope, 's6')
-    if (__Tabs_s6El) {
+    if (__scope) {
       const __val = String(activeTab())
-      if (__Tabs_s6El.value !== __val) __Tabs_s6El.value = __val
+      if (__scope.value !== __val) __scope.value = __val
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
@@ -404,7 +401,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('Tabs', _s6, { get value() { return activeTab() } })
+  initChild('Tabs', __scope, { get value() { return activeTab() } })
   initChild('TabsList', _s3, {})
   initChild('TabsTrigger', _s0, { value: "active", get selected() { return isActiveSelected() }, get disabled() { return false }, onClick: () => setActiveTab('active') })
   initChild('TabsTrigger', _s1, { value: "disabled", get selected() { return false }, get disabled() { return true } })
