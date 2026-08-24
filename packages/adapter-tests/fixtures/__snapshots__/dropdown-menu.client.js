@@ -3328,26 +3328,25 @@ export function initDropdownMenuBasicDemo(__scope, _p = {}) {
 
   const [open, setOpen] = createSignal(false)
 
-  const [_s8, _s0, _s7, _s1, _s2, _s3, _s4, _s5, _s6] = $c(__scope, 's8', 's0', 's7', 's1', 's2', 's3', 's4', 's5', 's6')
+  const [_s0, _s7, _s1, _s2, _s3, _s4, _s5, _s6] = $c(__scope, 's0', 's7', 's1', 's2', 's3', 's4', 's5', 's6')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s8) {
-      _s8.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Reactive child component props
   createEffect(() => {
-    const [__DropdownMenu_s8El] = $c(__scope, 's8')
-    if (__DropdownMenu_s8El) {
-      __DropdownMenu_s8El.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
   })
 
   // Initialize child components with props
-  initChild('DropdownMenu', _s8, { get open() { return open() }, onOpenChange: setOpen })
+  initChild('DropdownMenu', __scope, { get open() { return open() }, onOpenChange: setOpen })
   initChild('DropdownMenuTrigger', _s0, {})
   initChild('DropdownMenuContent', _s7, {})
   initChild('DropdownMenuLabel', _s1, {})
@@ -3368,13 +3367,13 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
   const [showStatus, setShowStatus] = createSignal(true)
   const [showActivity, setShowActivity] = createSignal(false)
 
-  const [_s6, _s3, _s4, _s0, _s5, _s1, _s2] = $c(__scope, 's6', 's3', 's4', 's0', 's5', 's1', 's2')
+  const [_s3, _s4, _s0, _s5, _s1, _s2] = $c(__scope, 's3', 's4', 's0', 's5', 's1', 's2')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s6) {
-      _s6.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
     if (_s3) {
       _s3.checked = !!(showStatus())
@@ -3386,9 +3385,8 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
 
   // Reactive child component props
   createEffect(() => {
-    const [__DropdownMenu_s6El] = $c(__scope, 's6')
-    if (__DropdownMenu_s6El) {
-      __DropdownMenu_s6El.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
     const [__DropdownMenuCheckboxItem_s3El] = $c(__scope, 's3')
     if (__DropdownMenuCheckboxItem_s3El) {
@@ -3401,7 +3399,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('DropdownMenu', _s6, { get open() { return open() }, onOpenChange: setOpen })
+  initChild('DropdownMenu', __scope, { get open() { return open() }, onOpenChange: setOpen })
   initChild('DropdownMenuTrigger', _s0, {})
   initChild('DropdownMenuContent', _s5, {})
   initChild('DropdownMenuLabel', _s1, {})
@@ -3421,13 +3419,13 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
   const [showToolbar, setShowToolbar] = createSignal(false)
   const [language, setLanguage] = createSignal('en')
 
-  const [_s25, _s11, _s18, _s19, _s0, _s24, _s1, _s2, _s16, _s5, _s3, _s4, _s13, _s7, _s6, _s12, _s8, _s9, _s10, _s15, _s14, _s17, _s20, _s21, _s23, _s22] = $c(__scope, 's25', 's11', 's18', 's19', 's0', 's24', 's1', 's2', 's16', 's5', 's3', 's4', 's13', 's7', 's6', 's12', 's8', 's9', 's10', 's15', 's14', 's17', 's20', 's21', 's23', 's22')
+  const [_s11, _s18, _s19, _s0, _s24, _s1, _s2, _s16, _s5, _s3, _s4, _s13, _s7, _s6, _s12, _s8, _s9, _s10, _s15, _s14, _s17, _s20, _s21, _s23, _s22] = $c(__scope, 's11', 's18', 's19', 's0', 's24', 's1', 's2', 's16', 's5', 's3', 's4', 's13', 's7', 's6', 's12', 's8', 's9', 's10', 's15', 's14', 's17', 's20', 's21', 's23', 's22')
 
 
   // Reactive prop bindings
   createEffect(() => {
-    if (_s25) {
-      _s25.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
     if (_s11) {
       const __val = String(language())
@@ -3443,9 +3441,8 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
 
   // Reactive child component props
   createEffect(() => {
-    const [__DropdownMenu_s25El] = $c(__scope, 's25')
-    if (__DropdownMenu_s25El) {
-      __DropdownMenu_s25El.open = !!(open())
+    if (__scope) {
+      __scope.open = !!(open())
     }
     const [__DropdownMenuRadioGroup_s11El] = $c(__scope, 's11')
     if (__DropdownMenuRadioGroup_s11El) {
@@ -3463,7 +3460,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('DropdownMenu', _s25, { get open() { return open() }, onOpenChange: setOpen })
+  initChild('DropdownMenu', __scope, { get open() { return open() }, onOpenChange: setOpen })
   initChild('DropdownMenuTrigger', _s0, { className: "rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background" })
   initChild('DropdownMenuContent', _s24, { align: "end" })
   initChild('DropdownMenuLabel', _s1, {})

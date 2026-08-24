@@ -3362,14 +3362,13 @@ export function initCommandDialog(__scope, _p = {}) {
 
   const commandDialogContentClasses = 'overflow-hidden p-0'
 
-  const [_s3, _s0, _s2, _s1] = $c(__scope, 's3', 's0', 's2', 's1')
+  const [_s0, _s2, _s1] = $c(__scope, 's0', 's2', 's1')
 
 
   // Reactive child component props
   createEffect(() => {
-    const [__Dialog_s3El] = $c(__scope, 's3')
-    if (__Dialog_s3El) {
-      __Dialog_s3El.open = !!(_p.open ?? false)
+    if (__scope) {
+      __scope.open = !!(_p.open ?? false)
     }
     const [__Command_s1El] = $c(__scope, 's1')
     if (__Command_s1El) {
@@ -3379,7 +3378,7 @@ export function initCommandDialog(__scope, _p = {}) {
   })
 
   // Initialize child components with props
-  initChild('Dialog', _s3, { get open() { return _p.open ?? false }, onOpenChange: _p.onOpenChange ?? (() => {}) })
+  initChild('Dialog', __scope, { get open() { return _p.open ?? false }, onOpenChange: _p.onOpenChange ?? (() => {}) })
   initChild('DialogOverlay', _s0, {})
   initChild('DialogContent', _s2, { get className() { return `${commandDialogContentClasses} max-w-lg p-0` } })
   initChild('Command', _s1, { get id() { return _p.id }, get filter() { return _p.filter }, get className() { return `[&_[data-slot=command-input-wrapper]]:h-12` } })
@@ -3539,11 +3538,11 @@ export function initCommandPreviewDemo(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s15, _s0, _s14, _s1, _s5, _s2, _s3, _s4, _s6, _s13, _s8, _s7, _s10, _s9, _s12, _s11] = $c(__scope, 's15', 's0', 's14', 's1', 's5', 's2', 's3', 's4', 's6', 's13', 's8', 's7', 's10', 's9', 's12', 's11')
+  const [_s0, _s14, _s1, _s5, _s2, _s3, _s4, _s6, _s13, _s8, _s7, _s10, _s9, _s12, _s11] = $c(__scope, 's0', 's14', 's1', 's5', 's2', 's3', 's4', 's6', 's13', 's8', 's7', 's10', 's9', 's12', 's11')
 
 
   // Initialize child components with props
-  initChild('Command', _s15, { className: "rounded-lg border shadow-md md:min-w-[450px]" })
+  initChild('Command', __scope, { className: "rounded-lg border shadow-md md:min-w-[450px]" })
   initChild('CommandInput', _s0, { placeholder: "Type a command or search..." })
   initChild('CommandList', _s14, {})
   initChild('CommandEmpty', _s1, {})
@@ -3637,7 +3636,7 @@ export function initCommandFilterDemo(__scope, _p = {}) {
     return value.toLowerCase().startsWith(search.toLowerCase())
   }
 
-  const [_s10, _s0, _s9, _s1, _s8, _s2, _s3, _s4, _s5, _s6, _s7] = $c(__scope, 's10', 's0', 's9', 's1', 's8', 's2', 's3', 's4', 's5', 's6', 's7')
+  const [_s0, _s9, _s1, _s8, _s2, _s3, _s4, _s5, _s6, _s7] = $c(__scope, 's0', 's9', 's1', 's8', 's2', 's3', 's4', 's5', 's6', 's7')
 
 
   // Initialize child components with props

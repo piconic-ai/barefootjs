@@ -2890,11 +2890,11 @@ export function initPaginationBasicDemo(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s13, _s12, _s1, _s0, _s3, _s2, _s5, _s4, _s7, _s6, _s9, _s8, _s11, _s10] = $c(__scope, 's13', 's12', 's1', 's0', 's3', 's2', 's5', 's4', 's7', 's6', 's9', 's8', 's11', 's10')
+  const [_s12, _s1, _s0, _s3, _s2, _s5, _s4, _s7, _s6, _s9, _s8, _s11, _s10] = $c(__scope, 's12', 's1', 's0', 's3', 's2', 's5', 's4', 's7', 's6', 's9', 's8', 's11', 's10')
 
 
   // Initialize child components with props
-  initChild('Pagination', _s13, {})
+  initChild('Pagination', __scope, {})
   initChild('PaginationContent', _s12, {})
   initChild('PaginationItem', _s1, {})
   initChild('PaginationPrevious', _s0, { href: "#" })
