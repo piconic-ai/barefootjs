@@ -104,8 +104,9 @@ export interface ClientJsContext {
   deferredChildSlots: Set<string>
   /**
    * Slot id of the component's own root, when the ENTIRE render is a single
-   * child component call (`ir.root.type === 'component'`, the `comment: true`
-   * def flag — see `emit-registration.ts`'s `isCommentScope`). Such a child
+   * child component call (`ir.root.type === 'component'` — the IR shape is
+   * the sole source of truth; `emit-registration.ts`'s `isCommentScope`
+   * derives the def's `comment: true` from the same shape). Such a child
    * never gets its own DOM node: `materializeComponent`/`renderChild` leave
    * `bf-s` unset and the child's markup becomes `__scope` itself (#2649).
    * A generic `$c(__scope, slotId)` lookup for this one slot is therefore
