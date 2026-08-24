@@ -88,6 +88,36 @@ function findCondStartInRange(anchor: Comment, id: string): Comment | null {
 }
 
 /**
+ * Resolve the DOM element that actually hosts an element-scoped loop-row
+ * conditional's branch content (#2705). A nested `mapArray` inside the
+ * branch's `bindEvents` needs a container to search for its own loop
+ * markers, but has no `bf="<slot>"` marker to query when the conditional
+ * sits inside a wrapper element the container-slot collector never visits
+ * (`collectInnerLoops`'s branch walk only sees elements INSIDE the
+ * branch's own IR subtree — a wrapper enclosing the conditional from the
+ * outside, e.g. `<article>{cond && items.map(...)}</article>`, is never
+ * one of them, so `containerSlotId` comes back `null`).
+ *
+ * The one DOM anchor available in that case is the conditional's own
+ * `<!--bf-cond-start:id-->` marker: whatever element that marker's parent
+ * is, is where `insert()` keeps the branch's content — adopted from SSR or
+ * freshly spliced by `updateFragmentConditional`, either way the marker
+ * stays put as one of the range's boundaries. Falls back to `scope` itself
+ * when no such marker is found (an element-conditional branch with no
+ * comment markers, or a conditional with no wrapper at all — `scope` IS
+ * the right container in that shape too) — never throws.
+ */
+export function findCondContainer(scope: Element, id: string): Element {
+  const want = `bf-cond-start:${id}`
+  for (const comment of commentsInScope(scope)) {
+    if (comment.nodeValue === want) {
+      return (comment.parentElement as Element | null) ?? scope
+    }
+  }
+  return scope
+}
+
+/**
  * Result returned by a branch's `template()` when the template captures
  * live DOM nodes via `__bfSlot` (#1213). `html` carries the marker-bearing
  * HTML string; `slots[N]` is the actual `Node` referenced by the

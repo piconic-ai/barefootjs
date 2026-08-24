@@ -110,8 +110,8 @@ export function buildReactiveEffectsPlan(
         wrappedCondition: wrap(cond.condition),
         whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
         whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
-        whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, profileComponentName),
-        whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, profileComponentName),
+        whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, cond.slotId, profileComponentName),
+        whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, cond.slotId, profileComponentName),
         ...(cond.readsPreamble && { readsPreamble: true }),
       })
     }
@@ -130,6 +130,8 @@ function buildOuterArm(
   wrap: (expr: string) => string,
   loopParam: string,
   loopParamBindings: readonly LoopParamBinding[] | undefined,
+  /** The conditional's own slot id — threaded to `buildBranchInnerLoopsPlan`'s `condSlotId` (#2705). */
+  condSlotId: string,
   profileComponentName?: string,
 ): LoopChildArmPlan {
   return {
@@ -145,6 +147,7 @@ function buildOuterArm(
     innerLoops: buildBranchInnerLoopsPlan({
       innerLoops: branch.innerLoops,
       scopeVar: '__branchScope',
+      condSlotId,
       outerLoopParam: loopParam,
       outerLoopParamBindings: loopParamBindings,
       wrapOuter: wrap,

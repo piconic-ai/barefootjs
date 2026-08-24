@@ -11,6 +11,11 @@ import { identifierCallPattern } from '../identifier-pattern.ts'
 export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
   'hydrate', 'insert', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'mapArrayLazy', 'patchLeaf', 'createDisposableEffect',
+  // Resolves the real DOM container for a loop nested inside a loop-row
+  // conditional's branch when the conditional's wrapper element carries no
+  // `bf="<slot>"` marker of its own (#2705) — see `findCondContainer`'s
+  // docstring (runtime/insert.ts) for why the marker collector can't see it.
+  'findCondContainer',
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild',
   // Connects a template-clone loop row before the body's tail runs, so a child
   // that inits inside it resolves context against real ancestors rather than

@@ -1,5 +1,6 @@
 /**
- * Repro for https://github.com/piconic-ai/barefootjs/issues/2705
+ * Regression test for https://github.com/piconic-ai/barefootjs/issues/2705
+ * (fixed).
  *
  * `groups().map(group => <div><article>{group.show && group.items.map(item =>
  * <section key={item.id}>{item.label}</section>)}</article></div>)` — a
@@ -35,7 +36,19 @@
  *     `<article>`, directly under the outer row `<div>` — landing OUTSIDE
  *     `<article>` entirely.
  *
- * Reproduces on the very FIRST hydration pass — no click/update required.
+ * Reproduced on the very FIRST hydration pass — no click/update required.
+ *
+ * Fix: `buildBranchInnerLoopsPlan` (build-loop-child-arm.ts) now falls back
+ * to `findCondContainer(scopeVar, condSlotId)` (runtime/insert.ts, new)
+ * instead of the raw `scopeVar` when `containerSlotId` is null.
+ * `findCondContainer` walks the branch scope's comments for the enclosing
+ * conditional's own `<!--bf-cond-start:id-->` marker and returns ITS
+ * parent element — the marker is always a direct child of the real
+ * wrapper (`<article>`), since `insert()` keeps it as one of the range's
+ * boundaries regardless of whether the branch content was SSR-adopted or
+ * freshly spliced. `condSlotId` (the conditional's own slot id) is now
+ * threaded down through `buildOuterArm` / `buildLoopChildArmPlan` so it's
+ * always available at the fallback site.
  *
  * A different mechanism from #2706 (that one is a compiler codegen gap for
  * per-item conditionals inside a nested loop's OWN row; this one is a
@@ -107,12 +120,11 @@ function clientJsFor(source: string, filename: string): string {
 describe('#2705 — keyed nested loop behind a wrapped loop-row conditional', () => {
   beforeEach(() => { document.body.innerHTML = '' })
 
-  // Pinned failing (Bun's `test.failing`): passes today because the bug
-  // exists. Will start FAILING once `collectInnerLoops`/`buildBranchInner
-  // LoopsPlan` resolve the loop's real container (`<article>`) instead of
-  // falling back to the whole conditional's bind scope — flip back to
-  // `test` at that point.
-  test.failing('SSR hydration does not misplace the last item outside <article> or mis-key it', async () => {
+  // Graduated (#2705 fixed): `buildBranchInnerLoopsPlan` now falls back to
+  // `findCondContainer(scopeVar, condSlotId)` (runtime/insert.ts) instead of
+  // the whole conditional's bind scope when the inner loop's own IR never
+  // got a `containerSlotId` — see build-loop-child-arm.ts.
+  test('SSR hydration does not misplace the last item outside <article> or mis-key it', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bf-2705-'))
     const file = join(dir, 'Repro.mjs')
     writeFileSync(file, clientJsFor(SOURCE, 'BarefootNestedLoopDuplicateRepro.tsx'))
