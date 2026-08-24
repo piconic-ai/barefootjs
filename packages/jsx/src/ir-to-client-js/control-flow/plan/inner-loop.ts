@@ -17,6 +17,7 @@ import type {
   LoopParamBinding,
 } from '../../../types.ts'
 import type { LoopChildRefBinding } from './loop.ts'
+import type { LoopChildConditionalPlan } from './loop-child-arm.ts'
 
 /**
  * Body-entry statements emitted in order at the top of a `mapArray`
@@ -148,6 +149,17 @@ export interface InnerLoopReactiveEmit {
   reactiveTexts: readonly InnerLoopText[]
   /** Pre-wrapped reactive attribute effects for the inner-item body. */
   reactiveAttrs: readonly InnerLoopReactiveAttr[]
+  /**
+   * Per-item conditionals inside THIS loop's own row (#2706) — each gets
+   * its own `insert()` call, the same insert()-parity the top-level loop's
+   * row conditionals already have (`ReactiveEffectsPlan.conditionals`).
+   * Before this field existed, a per-item conditional inside a nested
+   * loop's row was baked into the static row template ONCE at row
+   * creation and never revisited — silently frozen against later signal
+   * changes — while its reactive text still (unsoundly) assumed insert()
+   * kept the branch's marker around.
+   */
+  conditionals: readonly LoopChildConditionalPlan[]
   /** Pre-wrapped imperative ref callbacks for the inner-item body (#1244). */
   childRefs: readonly LoopChildRefBinding[]
 }

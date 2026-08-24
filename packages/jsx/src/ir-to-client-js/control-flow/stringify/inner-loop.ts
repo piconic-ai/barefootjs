@@ -14,6 +14,7 @@
  *     <indent>  emitComponentAndEventSetup(...)
  *     <indent>  recurse on childLevels
  *     <indent>  reactive text effects
+ *     <indent>  per-item conditionals: insert() over __innerEl<uid> (#2706)
  *     <indent>  return __innerEl<uid>
  *     <indent>}) }
  *
@@ -36,6 +37,7 @@ import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines, namespaceWrapForTemplate } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
+import { stringifyLoopChildConditionals } from './loop-child-arm.ts'
 import type {
   InnerLoopPlan,
   InnerLoopsPlan,
@@ -138,6 +140,13 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
       lines.push(`${indent}    ${stmt}`)
     }
     lines.push(`${indent}  }${profileBindingId(pc, attr.slotId)}) }`)
+  }
+  // Per-item conditionals inside THIS loop's own row (#2706) — each is a
+  // real `insert()` over `__innerEl<uid>`, not a bake-once-at-creation
+  // ternary. Mirrors `stringifyBranchInnerLoops`'s identical call for a
+  // branch-scoped inner loop's own conditionals.
+  if (emit.conditionals.length > 0) {
+    stringifyLoopChildConditionals(lines, emit.conditionals, `${indent}  `, pc)
   }
   // Imperative ref callbacks fire on every renderItem invocation, which
   // means every mount: SSR hydration, initial CSR creation, and same-key

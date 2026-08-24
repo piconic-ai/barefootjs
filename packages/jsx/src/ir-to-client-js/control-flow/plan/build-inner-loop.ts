@@ -30,6 +30,8 @@ import {
 } from '../../utils.ts'
 import { buildChildRefBindings, buildStaticChildRefBindings } from '../shared.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
+import { buildLoopChildConditionalsPlan } from './build-loop-child-arm.ts'
+import type { LoopChildConditionalPlan } from './loop-child-arm.ts'
 
 /**
  * Mirror of the helper in `build-loop-child-arm.ts` — kept local to avoid
@@ -160,6 +162,7 @@ function buildReactiveEmit(
   outerLoopParamBindings?: readonly LoopParamBinding[],
 ): InnerLoopReactiveEmit {
   const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
+  const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
   const wrappedKey = inner.key
     ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings)
@@ -249,6 +252,21 @@ function buildReactiveEmit(
 
   const childRefs = buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings)
 
+  // Per-item conditionals inside THIS loop's own row (#2706) — same
+  // insert()-parity treatment the top-level loop's row conditionals
+  // already get (`buildLoopReactiveEffectsPlan`), now extended to a
+  // NESTED loop's row too. `scopeVar` is the row's own element
+  // (`__innerEl<uidSuffix>`, matching `stringifyInnerLoops`'s emission),
+  // and `wrapBoth` matches every other per-item expression in this emit
+  // (outer accessor, then inner accessor).
+  const conditionals: LoopChildConditionalPlan[] = buildLoopChildConditionalsPlan({
+    conditionals: inner.bindings.conditionals,
+    scopeVar: `__innerEl${uidSuffix}`,
+    wrap: wrapBoth,
+    loopParam: inner.param,
+    loopParamBindings: inner.paramBindings,
+  })
+
   return {
     mode: 'reactive',
     keyFn: loopKeyFn(inner),
@@ -261,6 +279,7 @@ function buildReactiveEmit(
     events,
     reactiveTexts,
     reactiveAttrs,
+    conditionals,
     childRefs,
   }
 }

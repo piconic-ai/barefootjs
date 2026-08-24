@@ -134,14 +134,15 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(mapArrayCount).toBeGreaterThanOrEqual(3)
   })
 
-  test('reactive text inside conditional inside inner loop uses re-claim pattern (#840)', () => {
-    // When a reactive text is inside a conditional branch inside a nested (inner) loop,
-    // insert() may replace the SSR element after the text node is captured.
-    // Slot unification A3: the generated code must re-claim on EVERY run via
-    // a fresh `claimSlots(...).write(...)` call inside the effect body — not
-    // a `lazySlots` writer built once outside it, which would go stale once
-    // insert() swaps the branch's DOM (see `stringifyInnerLoops`' docstring
-    // in `ir-to-client-js/control-flow/stringify/inner-loop.ts`).
+  test('reactive text inside conditional inside inner loop gets a real insert() (#840, fixed by #2706)', () => {
+    // A per-item conditional living inside a NESTED (inner) loop's row now
+    // gets full insert() parity with a top-level loop's row conditional
+    // (#2706) — the condition is a real reactive `createEffect` dependency,
+    // not baked once at row creation, and the branch's reactive text binds
+    // through the arm's own `lazySlots(__branchScope, ...)` +
+    // `createDisposableEffect` (same shape `stringifyLoopChildArm` emits for
+    // any other insert() arm), never a bare-claimSlots reclaim racing
+    // against a marker the active branch may not have rendered.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -176,9 +177,17 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Re-claim pattern: a fresh `claimSlots(...)` call inside createEffect so
-    // it always resolves against the live node, never a cached stale ref.
-    expect(content).toMatch(/createEffect\(\(\) => \{ claimSlots\(__innerEl\w*, \[\{ id: 's\d+', kind: 'text', path: \[\] \}\]\)\.write\('s\d+', String\(/)
+    // A real insert() over the row's own element, keyed to the conditional's
+    // slot id and condition — not a static bake.
+    expect(content).toMatch(/insert\(__innerEl\w*, 's\d+', \(\) => child\(\)\.type === 'text', \{/)
+
+    // The branch's reactive text binds inside `bindEvents` via the standard
+    // arm-text shape (`lazySlots` + `createDisposableEffect`), scoped to
+    // `__branchScope` — the node insert() actually mounts for this branch —
+    // never a bare `claimSlots` reclaim against `__innerEl<uid>` racing the
+    // branch's own mount/unmount.
+    expect(content).toMatch(/const __bfw_s\d+ = lazySlots\(__branchScope, \[\{ id: 's\d+', kind: 'markup', path: \[\] \}\]\)/)
+    expect(content).toMatch(/createDisposableEffect\(\(\) => \{ __bfw_s\d+\('s\d+', escapeTextOrNode\(child\(\)\.label\)\) \}\)/)
   })
 
   test('event handler inside conditional branch of loop item appears in bindEvents (#839)', () => {

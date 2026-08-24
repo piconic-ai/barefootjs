@@ -1,33 +1,41 @@
 /**
- * Repro for https://github.com/piconic-ai/barefootjs/issues/2706
+ * Regression test for https://github.com/piconic-ai/barefootjs/issues/2706
+ * (fixed).
  *
  * `rows().map(row => <div>{row.items.map(item => <p>{cond ? <span/> : null}</p>)}</div>)`
  * — a per-item conditional living inside an INNER (nested) `.map()` row.
  *
- * `stringifyInnerLoops`'s `emitReactive` (ir-to-client-js/control-flow/
- * stringify/inner-loop.ts) unconditionally emits a re-claiming
- * `createEffect(() => { claimSlots(...).write(...) })` for any reactive text
- * flagged `insideConditional` (`InnerLoopText.insideConditional`,
- * ir-to-client-js/control-flow/plan/inner-loop.ts) — a pattern whose
- * correctness assumes `insert()` mounts/unmounts the branch so the marker is
- * always (re)present whenever the effect runs. But `buildInnerLoopsPlan` /
- * `InnerLoopReactiveEmit` (control-flow/plan/build-inner-loop.ts) has no
- * `conditionals` field at all — unlike the top-level loop's
- * `ReactiveEffectsPlan.conditionals` (control-flow/plan/build-reactive-
- * effects.ts), which DOES route a loop-row conditional through `insert()`.
- * So a per-item conditional inside a NESTED loop's row is baked directly
- * into the row's static HTML template (condition evaluated once, at row
- * creation, never revisited) with no `insert()` at all — yet the reactive
- * text nested in its true branch still gets the "insert()-will-keep-the-
- * marker-around" treatment. When the row is first created with the false
- * branch active, the marker never existed, and the effect's first run warns
- * `slot sN marker not found; skipping` / `no claimed slot for id sN; write
- * ignored` — even though nothing is actually broken visually (the DOM is
- * byte-correct; only the console is polluted and the pattern is fragile).
+ * Root cause: `buildInnerLoopsPlan` / `InnerLoopReactiveEmit` (control-flow/
+ * plan/build-inner-loop.ts) had no `conditionals` field at all — unlike the
+ * top-level loop's `ReactiveEffectsPlan.conditionals` (control-flow/plan/
+ * build-reactive-effects.ts), which DOES route a loop-row conditional
+ * through `insert()`. So a per-item conditional inside a NESTED loop's row
+ * was baked directly into the row's static HTML template — the condition
+ * evaluated exactly ONCE, at row creation, and never revisited even when it
+ * read a signal (a genuine SILENT DIVERGENCE, confirmed by experiment: an
+ * independent `createSignal` read by the condition kept flipping while the
+ * DOM stayed frozen — deeper than the originally-reported console warning).
+ * The reactive text nested in the branch still got the
+ * "insert()-will-keep-the-marker-around" re-claim treatment regardless, so
+ * when the row was first created with the false branch active, the marker
+ * never existed and the effect's first run warned `slot sN marker not
+ * found; skipping` / `no claimed slot for id sN; write ignored`.
+ *
+ * Fix: `collectInnerLoops` (ir-to-client-js/collect-elements.ts) now
+ * collects `bindings.conditionals` for EVERY inner loop (branch or not,
+ * previously gated behind branch-only `collectItemBindings`), and passes
+ * `stopAtReactiveConditionals: true` to `collectLoopChildReactiveTexts` /
+ * `collectLoopChildReactiveAttrs` so a reactive conditional's own content is
+ * no longer ALSO flattened into the old bake-and-reclaim path. `buildReactiveEmit`
+ * (build-inner-loop.ts) feeds those conditionals through the same
+ * `buildLoopChildConditionalsPlan` the branch-arm path already used, and
+ * `stringifyInnerLoops`'s `emitReactive` (stringify/inner-loop.ts) now emits
+ * a real `insert()` over the row's own element — full parity with the
+ * top-level loop's row-conditional handling.
  *
  * Confirmed adapter-independent: `generateClientJs` output is byte-identical
  * whether compiled via TestAdapter, HonoAdapter, or GoTemplateAdapter — the
- * defect is in `packages/jsx`'s codegen, not any one adapter.
+ * defect (and the fix) is in `packages/jsx`'s codegen, not any one adapter.
  */
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -90,15 +98,10 @@ const SOURCE = `
   }
 `
 
-describe('#2706 — nested-loop conditional slot claimed against a marker that was never rendered', () => {
+describe('#2706 — nested-loop row conditional gets real insert() parity', () => {
   beforeEach(() => { document.body.innerHTML = '' })
 
-  // Pinned failing (Bun's `test.failing`): passes today because the bug
-  // exists (no console warnings expected, but warnings fire); will start
-  // FAILING — the intended graduation signal — once the compiler routes
-  // this shape through `insert()` (or otherwise stops claiming a slot the
-  // active branch never rendered). At that point flip this back to `test`.
-  test.failing('adding a row whose item does not satisfy the conditional does not warn', async () => {
+  test('adding a row whose item does not satisfy the conditional does not warn', async () => {
     const el = await mount(SOURCE, 'BarefootSlotRepro.tsx', 'BarefootSlotRepro')
 
     const warnings: string[] = []
@@ -114,10 +117,7 @@ describe('#2706 — nested-loop conditional slot claimed against a marker that w
     expect(warnings).toEqual([])
   })
 
-  // Not pinned: the DOM shape itself is correct even though the console
-  // warns — this is the "silent" half of the divergence (only the console
-  // is wrong), so it stays a normal, currently-passing assertion.
-  test('the rendered DOM is structurally correct despite the console warnings', async () => {
+  test('the rendered DOM is structurally correct', async () => {
     const el = await mount(SOURCE, 'BarefootSlotRepro.tsx', 'BarefootSlotRepro')
     const button = el.querySelector('button')!
     button.dispatchEvent(new window.Event('click', { bubbles: true }))
@@ -125,5 +125,47 @@ describe('#2706 — nested-loop conditional slot claimed against a marker that w
     const p = el.querySelector('p')!
     expect(p.textContent?.trim()).toBe('Item')
     expect(p.querySelector('span')).toBeNull()
+  })
+
+  // The deeper half of the bug (found via experiment while diagnosing the
+  // fix direction, not in the original report): before the fix, a nested
+  // loop's row conditional was baked ONCE at row creation and never
+  // revisited — even when the condition read an INDEPENDENT signal totally
+  // unrelated to the row's own data. This asserts the DOM now genuinely
+  // follows the signal, not just that the console stays quiet.
+  test('a nested-loop row conditional on an independent signal updates the DOM when that signal changes', async () => {
+    const source = `
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      type Item = { id: string; label: string }
+      type Row = { id: string; items: Item[] }
+      export function ExtraToggleRepro() {
+        const [rows] = createSignal<Row[]>([{ id: 'row', items: [{ id: 'item', label: 'X' }] }])
+        const [show, setShow] = createSignal(false)
+        return (
+          <div>
+            <button onClick={() => setShow((v) => !v)}>Toggle</button>
+            {rows().map((row) => (
+              <div key={row.id}>
+                {row.items.map((item) => (
+                  <p key={item.id}>
+                    Item {item.label}
+                    {show() ? <span>Extra</span> : null}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const el = await mount(source, 'ExtraToggleRepro.tsx', 'ExtraToggleRepro')
+    expect(el.querySelector('span')).toBeNull()
+
+    el.querySelector('button')!.dispatchEvent(new window.Event('click', { bubbles: true }))
+    expect(el.querySelector('span')?.textContent).toBe('Extra')
+
+    el.querySelector('button')!.dispatchEvent(new window.Event('click', { bubbles: true }))
+    expect(el.querySelector('span')).toBeNull()
   })
 })
