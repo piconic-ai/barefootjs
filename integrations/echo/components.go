@@ -49,6 +49,26 @@ type AIChatInteractiveProps struct {
 	IsStreaming bool `json:"-"`
 }
 
+// CheckboxNativeInput is the user-facing input type.
+type CheckboxNativeInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// CheckboxNativeProps is the props type for the CheckboxNative component.
+type CheckboxNativeProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Subscribed bool `json:"-"`
+}
+
 // ConditionalReturnInput is the user-facing input type.
 type ConditionalReturnInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -92,6 +112,26 @@ type CounterProps struct {
 	Initial int `json:"initial"`
 	Count int `json:"-"`
 	Doubled int `json:"-"`
+}
+
+// DetailsFaqInput is the user-facing input type.
+type DetailsFaqInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// DetailsFaqProps is the props type for the DetailsFaq component.
+type DetailsFaqProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Open bool `json:"-"`
 }
 
 // FormInput is the user-facing input type.
@@ -140,6 +180,26 @@ type NestedCondToggleListProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Items []ToggleItem `json:"items"`
+}
+
+// NoteBoxNativeInput is the user-facing input type.
+type NoteBoxNativeInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// NoteBoxNativeProps is the props type for the NoteBoxNative component.
+type NoteBoxNativeProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Note string `json:"-"`
 }
 
 // PortalExampleInput is the user-facing input type.
@@ -278,6 +338,33 @@ type PropsReactivityComparisonProps struct {
 	Count int `json:"-"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
 	DestructuredStyleChildSlot4 DestructuredStyleChildProps `json:"-"`
+}
+
+// Fruit represents a fruit.
+type Fruit struct {
+	ID string `json:"id"`
+	Label string `json:"label"`
+}
+
+// SelectNativeInput is the user-facing input type.
+type SelectNativeInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// SelectNativeProps is the props type for the SelectNative component.
+type SelectNativeProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Fruits []Fruit `json:"-"`
+	Picked string `json:"-"`
 }
 
 // TextEscapeInput is the user-facing input type.
@@ -732,6 +819,24 @@ func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps
 	}
 }
 
+// NewCheckboxNativeProps creates CheckboxNativeProps from CheckboxNativeInput.
+func NewCheckboxNativeProps(in CheckboxNativeInput) CheckboxNativeProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "CheckboxNative_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+
+	return CheckboxNativeProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Subscribed: false,
+	}
+}
+
 // NewConditionalReturnProps creates ConditionalReturnProps from ConditionalReturnInput.
 func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps {
 	scopeID := in.ScopeID
@@ -773,6 +878,24 @@ func NewCounterProps(in CounterInput) CounterProps {
 	}
 }
 
+// NewDetailsFaqProps creates DetailsFaqProps from DetailsFaqInput.
+func NewDetailsFaqProps(in DetailsFaqInput) DetailsFaqProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "DetailsFaq_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+
+	return DetailsFaqProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Open: false,
+	}
+}
+
 // NewFormProps creates FormProps from FormInput.
 func NewFormProps(in FormInput) FormProps {
 	scopeID := in.ScopeID
@@ -809,6 +932,24 @@ func NewNestedCondToggleListProps(in NestedCondToggleListInput) NestedCondToggle
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Items: in.Items,
+	}
+}
+
+// NewNoteBoxNativeProps creates NoteBoxNativeProps from NoteBoxNativeInput.
+func NewNoteBoxNativeProps(in NoteBoxNativeInput) NoteBoxNativeProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "NoteBoxNative_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+
+	return NoteBoxNativeProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Note: "initial note",
 	}
 }
 
@@ -959,6 +1100,25 @@ func NewPropsReactivityComparisonProps(in PropsReactivityComparisonInput) PropsR
 			Value: 1,
 			Label: "Destructured",
 		}),
+	}
+}
+
+// NewSelectNativeProps creates SelectNativeProps from SelectNativeInput.
+func NewSelectNativeProps(in SelectNativeInput) SelectNativeProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "SelectNative_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+
+	return SelectNativeProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Fruits: []Fruit{Fruit{ID: "apple", Label: "Apple"}, Fruit{ID: "banana", Label: "Banana"}, Fruit{ID: "cherry", Label: "Cherry"}},
+		Picked: "banana",
 	}
 }
 
