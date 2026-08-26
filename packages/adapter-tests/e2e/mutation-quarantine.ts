@@ -69,70 +69,77 @@ const ALIAS_PROPS_CSR_MOUNT_EMPTY =
 
 const ENTRIES: readonly MutationQuarantineEntry[] = [
   // --- G1 -----------------------------------------------------------------
-  { fixtureId: 'input', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'input', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'input', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'nested-cond-toggle-list', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'nested-cond-toggle-list', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
+  { fixtureId: 'input', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'input', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'input', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'nested-cond-toggle-list', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'nested-cond-toggle-list', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
   {
     fixtureId: 'nested-cond-toggle-list',
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: `${FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN} Surfaces here as a click timeout — the action's target no longer exists once its container was dropped.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2721',
   },
-  { fixtureId: 'text-escape', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'text-escape', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'text-escape', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'textarea', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'textarea', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'textarea', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'todo-app-ssr', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'todo-app-ssr', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
-  { fixtureId: 'todo-app-ssr', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
+  { fixtureId: 'text-escape', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'text-escape', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'text-escape', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'textarea', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'textarea', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'textarea', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'todo-app-ssr', mutationId: 'fragment-wrap', oracle: 'snap', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'todo-app-ssr', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
+  { fixtureId: 'todo-app-ssr', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
   {
     fixtureId: 'toggle-shared',
     mutationId: 'fragment-wrap',
     oracle: 'snap',
     reason: `${FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN} Confirmed directly: pre-hydration shows all 3 ToggleItem rows, post-hydration shows only the <h3> heading.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2721',
   },
-  { fixtureId: 'toggle-shared', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN },
+  { fixtureId: 'toggle-shared', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN, issue: 'https://github.com/piconic-ai/barefootjs/issues/2721' },
   {
     fixtureId: 'toggle-shared',
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: `${FRAGMENT_WRAP_HYDRATION_DROPS_CHILDREN} Surfaces here as a click timeout on the second toggle item's button — its row no longer exists once hydration dropped the list.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2721',
   },
 
   // --- G2 -------------------------------------------------------------------
-  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION },
-  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION },
+  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
   {
     fixtureId: 'conditional-return-button',
     mutationId: 'fragment-wrap',
     oracle: 'three-point',
     reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
   {
     fixtureId: 'conditional-return-button',
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
   {
     fixtureId: 'conditional-return-link',
     mutationId: 'fragment-wrap',
     oracle: 'three-point',
     reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
   {
     fixtureId: 'conditional-return-link',
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
-  { fixtureId: 'kbd', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION },
-  { fixtureId: 'tooltip', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION },
-  { fixtureId: 'tooltip', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION },
+  { fixtureId: 'kbd', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'tooltip', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'tooltip', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
 
   // --- G2b ------------------------------------------------------------------
   {
@@ -140,50 +147,56 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: `${FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION} This is the confirmed representative case.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
-  { fixtureId: 'radio-group', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
-  { fixtureId: 'data-table', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
-  { fixtureId: 'pagination', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
-  { fixtureId: 'tag-cloud', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
-  { fixtureId: 'todo-app', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
+  { fixtureId: 'radio-group', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'data-table', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'pagination', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'tag-cloud', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'todo-app', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
   {
     fixtureId: 'props-reactivity-comparison',
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: `${FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION} This fixture's snap/three-point oracles are already quarantined for a related-but-distinct expando-.value leak (oracle-quarantine.ts, issue 2716); idempotence is not covered by that entry, so this is tracked separately here.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
-  { fixtureId: 'textarea-native-shared', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
-  { fixtureId: 'branch-root-prop-attr', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION },
+  { fixtureId: 'textarea-native-shared', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
+  { fixtureId: 'branch-root-prop-attr', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION, issue: 'https://github.com/piconic-ai/barefootjs/issues/2722' },
   {
     fixtureId: 'reactive-props',
     mutationId: 'fragment-wrap',
     oracle: 'idempotence',
     reason: `${FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_POST_INTERACTION} This fixture's snap/three-point oracles are already quarantined for a related-but-distinct expando-.value leak (oracle-quarantine.ts, issue 2716); idempotence is not covered by that entry, so this is tracked separately here.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
   },
 
   // --- G3 ---------------------------------------------------------------
-  { fixtureId: 'button', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY },
+  { fixtureId: 'button', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
   {
     fixtureId: 'button',
     mutationId: 'alias-props',
     oracle: 'idempotence',
     reason: `${ALIAS_PROPS_CSR_MOUNT_EMPTY} Surfaces here as a click timeout — there is no <button> in the csr-mount DOM to click.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
   },
-  { fixtureId: 'input', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY },
+  { fixtureId: 'input', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
   {
     fixtureId: 'input',
     mutationId: 'alias-props',
     oracle: 'idempotence',
     reason: `${ALIAS_PROPS_CSR_MOUNT_EMPTY} Surfaces here as a fill timeout — there is no <input> in the csr-mount DOM to fill.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
   },
-  { fixtureId: 'kbd', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY },
-  { fixtureId: 'label', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY },
-  { fixtureId: 'textarea', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY },
+  { fixtureId: 'kbd', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
+  { fixtureId: 'label', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
+  { fixtureId: 'textarea', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
   {
     fixtureId: 'textarea',
     mutationId: 'alias-props',
     oracle: 'idempotence',
     reason: `${ALIAS_PROPS_CSR_MOUNT_EMPTY} Surfaces here as a fill timeout — there is no <textarea> in the csr-mount DOM to fill.`,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
   },
 
   // --- G4 -------------------------------------------------------------------
@@ -193,6 +206,7 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     oracle: 'idempotence',
     reason:
       "Distinct from the G3 empty-render pattern above: toggle-shared's ToggleItem list renders fully on both legs, but after replaying the two click actions the ON/OFF state lands on different rows between the hydrated and csr-mount legs (values are shuffled, not missing) — confirmed directly by diffing the two captures. Likely the alias-props indirection inside the `.map()` row body interacting with per-row closure capture.",
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2724',
   },
 
   // --- G5 -------------------------------------------------------------------
@@ -202,6 +216,7 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     oracle: 'idempotence',
     reason:
       "Click on '.btn-parent-increment' times out on one of the two legs. reactive-props already carries a known, different hydration divergence (a live .value DOM property appearing only after hydration — oracle-quarantine.ts, issue 2716) that is NOT quarantined for idempotence on the base fixture; this alias-props mutant's idempotence failure has not been isolated from that existing issue and may be the same underlying cause compounded by the extra alias hop.",
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
   },
 
   // --- G6 -------------------------------------------------------------------
@@ -211,6 +226,7 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     oracle: 'idempotence',
     reason:
       "Click on '[data-slot=\"carousel-next\"]' times out (button stays disabled). The base fixture's idempotence oracle is already excluded (not merely quarantined) in oracle.playwright.ts's IDEMPOTENCE_EXCLUDED map for the same reason: embla's drag steps are pointer-position-dependent on a CSS-less host page (#1971), so replaying the SAME drag sequence twice is inherently flaky independent of any real bug. This mutant reproduces that known flakiness rather than a new fragment-wrap-specific defect; kept here (mutation.playwright.ts has no equivalent exclusion map, only the ORACLE_QUARANTINE skip) rather than silently passing.",
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/1971',
   },
 ]
 
