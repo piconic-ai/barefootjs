@@ -54,6 +54,15 @@ export async function captureDomState(page: Page): Promise<DomStateSnapshot> {
   return page.evaluate(stateProps => {
     const state: Array<{ path: string; prop: string; value: unknown }> = []
 
+    // `<script>` elements are excluded from both the walk and the HTML
+    // below: they are HOST-PAGE bootstrapping (`fixture-host.ts`'s
+    // hydration/boot `<script>`), not fixture-rendered content, and their
+    // presence/position differs by construction across the three host
+    // modes — `'hydrate'` mode's script is a body child (matching real
+    // `bf build` output) while `'csr-mount'`'s lives in `<head>` (so a
+    // leftover body script wouldn't itself look like a structural diff —
+    // see `fixture-host.ts`). Comparing them would be comparing the
+    // harness, not the fixture.
     function walk(el: Element, path: string): void {
       for (const prop of stateProps) {
         // biome-ignore lint/suspicious/noExplicitAny: reading an arbitrary IDL property by name
@@ -64,6 +73,7 @@ export async function captureDomState(page: Page): Promise<DomStateSnapshot> {
       }
       const tagCounts = new Map<string, number>()
       for (const child of Array.from(el.children)) {
+        if (child.tagName === 'SCRIPT') continue
         const tag = child.tagName
         const index = tagCounts.get(tag) ?? 0
         tagCounts.set(tag, index + 1)
@@ -72,7 +82,11 @@ export async function captureDomState(page: Page): Promise<DomStateSnapshot> {
     }
 
     walk(document.body, 'BODY')
-    return { html: document.body.innerHTML, state }
+    const bodyClone = document.body.cloneNode(true) as HTMLElement
+    for (const script of Array.from(bodyClone.querySelectorAll('script'))) {
+      script.remove()
+    }
+    return { html: bodyClone.innerHTML, state }
   }, STATE_PROPS)
 }
 

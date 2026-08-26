@@ -39,18 +39,18 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // default-open/selected/checked item computed at SSR time from
   // non-empty initial state:
   accordion: {
-    oracles: ['snap', 'three-point'],
+    oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      "First accordion item's trigger SSRs aria-expanded=\"true\" (open by default); after hydration it reads \"false\" while the sibling data-state/grid-rows attributes stay correctly \"open\"/expanded — a partial hydration re-apply.",
+      "First accordion item's trigger SSRs aria-expanded=\"true\" (open by default); after hydration it reads \"false\" while the sibling data-state/grid-rows attributes stay correctly \"open\"/expanded — a partial hydration re-apply. Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches in one leg, consistent with the rest-spread attribute-loss pattern (data-table/pagination below).",
   },
   'radio-group': {
     oracles: ['snap', 'three-point'],
     reason: 'Default-checked radio item SSRs aria-checked="true"; after hydration it reads "false".',
   },
   command: {
-    oracles: ['snap', 'three-point'],
+    oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      'Default-selected command item SSRs data-selected="true" data-value="Calendar"; after hydration data-selected reads "false" and data-value is dropped entirely.',
+      'Default-selected command item SSRs data-selected="true" data-value="Calendar"; after hydration data-selected reads "false" and data-value is dropped entirely. Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
   },
   // Rest-spread (`{...props}`) attribute loss on hydration: an attribute
   // present in the SSR-rendered `{...props}` spread is missing from the
@@ -60,8 +60,9 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'SSR spans variant="a" via {...props} spread; the attribute is absent after hydration.',
   },
   combobox: {
-    oracles: ['snap', 'three-point'],
-    reason: 'Trigger SSRs an empty placeholder="" attribute; absent after hydration.',
+    oracles: ['snap', 'three-point', 'idempotence'],
+    reason:
+      'Trigger SSRs an empty placeholder="" attribute; absent after hydration. Idempotence: after replaying its click+fill+click sequence the two legs land on differently-ordered body content (a portal-content-vs-main-content ordering difference — see the dialog/popover/portal group below).',
   },
   select: {
     oracles: ['snap', 'three-point'],
@@ -80,22 +81,27 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // plausibly the INTENDED cleanup once the portal claims its content
   // rather than a bug, but flagged since this oracle has no way to tell
   // "expected marker removal" apart from "lost attribute" on its own；
-  // worth a human look before assuming either.
+  // worth a human look before assuming either. The idempotence leg
+  // (`oracle.playwright.ts`'s `canonicalizePortalOriginMarker` already
+  // normalizes the marker's random-hash SUFFIX away) still disagrees on
+  // where in `document.body`'s child order the portal content ends up
+  // relative to the main content — a real ordering divergence between
+  // the hydrated and csr-mount legs, not a normalization gap.
   dialog: {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect.',
+    oracles: ['snap', 'three-point', 'idempotence'],
+    reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect. Idempotence: after replaying its actions the portal content sits at a different position in body child order between the hydrated and csr-mount legs.',
   },
   'dropdown-menu': {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog.',
+    oracles: ['snap', 'three-point', 'idempotence'],
+    reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog. Idempotence: same body-child-order divergence as dialog.',
   },
   popover: {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog.',
+    oracles: ['snap', 'three-point', 'idempotence'],
+    reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog. Idempotence: same body-child-order divergence as dialog.',
   },
   portal: {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo).',
+    oracles: ['snap', 'three-point', 'idempotence'],
+    reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo). Idempotence: same body-child-order divergence as dialog.',
   },
   // Layout-dependent: embla measures real geometry, which the CSS-less
   // fixture-hydrate host page can't provide consistently pre/post
@@ -129,8 +135,8 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'ReactiveChild root <div> gains a live .value=0 DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison).',
   },
   tabs: {
-    oracles: ['snap', 'three-point'],
-    reason: 'Tabs root <div> gains a live .value="account" DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison).',
+    oracles: ['snap', 'three-point', 'idempotence'],
+    reason: 'Tabs root <div> gains a live .value="account" DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison). Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg.',
   },
   'todo-app': {
     oracles: ['snap', 'three-point'],

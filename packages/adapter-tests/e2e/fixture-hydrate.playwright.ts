@@ -22,13 +22,19 @@
  * runtime bundle is the import target the host page resolves at runtime.
  * CI's `Build packages` step already covers this; locally, `bun run
  * build` from the repo root is enough.
+ *
+ * Host/server construction lives in `./fixture-host.ts` and step dispatch
+ * in `./interaction-runner.ts` (#2481) — both shared with
+ * `oracle.playwright.ts`, which compares this same fixture corpus rendered
+ * three different ways instead of against a hand-authored expectation.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import { test } from '@playwright/test'
 import type { Server } from 'node:http'
 import { loadAllSharedFixtures } from '../fixtures/_helpers'
-import type { JSXFixture, InteractionStep } from '../src/types'
+import type { JSXFixture } from '../src/types'
 import { startFixtureServer, fixtureUrl } from './fixture-host'
+import { runStep } from './interaction-runner'
 
 let server: Server
 let baseUrl: string
@@ -39,10 +45,6 @@ let baseUrl: string
 // snapshot via `scripts/snapshot.ts`, and it shows up here on the
 // next test run.
 const fixtures: JSXFixture[] = await loadAllSharedFixtures()
-
-function assertNever(value: never): never {
-  throw new Error(`Unhandled InteractionStep variant: ${JSON.stringify(value)}`)
-}
 
 test.beforeAll(async () => {
   // Host page construction and the `node:http` server itself live in
@@ -56,66 +58,6 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()))
 })
-
-async function runStep(page: Page, step: InteractionStep): Promise<void> {
-  switch (step.type) {
-    case 'click':
-      await page.locator(step.selector).first().click()
-      return
-    case 'expectText':
-      await expect(page.locator(step.selector).first()).toHaveText(step.text)
-      return
-    case 'expectContains':
-      await expect(page.locator(step.selector).first()).toContainText(step.text)
-      return
-    case 'expectAttribute':
-      await expect(page.locator(step.selector).first()).toHaveAttribute(
-        step.attribute,
-        step.value,
-      )
-      return
-    case 'expectVisible':
-      await expect(page.locator(step.selector).first()).toBeVisible()
-      return
-    case 'expectHidden':
-      await expect(page.locator(step.selector).first()).toBeHidden()
-      return
-    case 'fill':
-      await page.locator(step.selector).first().fill(step.value)
-      return
-    case 'expectValue':
-      await expect(page.locator(step.selector).first()).toHaveValue(step.value)
-      return
-    case 'hover':
-      await page.locator(step.selector).first().hover({ position: step.position })
-      return
-    case 'press':
-      await page.locator(step.selector).first().press(step.key)
-      return
-    case 'drag': {
-      // Real pointer drag from the element centre. Embla binds
-      // `pointerdown`/`pointermove`/`pointerup`, which Playwright's
-      // mouse API dispatches alongside the mouse events. Stepped move so
-      // the gesture registers as a drag, not a teleport.
-      const el = page.locator(step.selector).first()
-      const box = await el.boundingBox()
-      if (!box) {
-        throw new Error(`drag: no bounding box for selector ${step.selector}`)
-      }
-      const startX = box.x + box.width / 2
-      const startY = box.y + box.height / 2
-      await page.mouse.move(startX, startY)
-      await page.mouse.down()
-      await page.mouse.move(startX + (step.deltaX ?? 0), startY + (step.deltaY ?? 0), {
-        steps: 10,
-      })
-      await page.mouse.up()
-      return
-    }
-    default:
-      return assertNever(step)
-  }
-}
 
 for (const fixture of fixtures) {
   if (!fixture.interactions || !fixture.expectedHtml || !fixture.expectedClientJs) {

@@ -23,9 +23,15 @@
  *     `createComponent(name, props)` from `@barefootjs/client/runtime`
  *     (not the Bun-side mock `csr-render.ts` uses) and mounting the
  *     result into an empty body. All three must agree.
- *   - **`'idempotence'`** — added in a later commit of this PR: replays a
- *     fixture's interaction *actions* against both the hydrated and the
- *     csr-mount legs and compares the resulting state.
+ *   - **`'idempotence'`** — same end state regardless of construction
+ *     path. Extracts only the ACTION steps (`click`/`fill`/`hover`/
+ *     `press`/`drag`) from a fixture's `interactions` — never the
+ *     `expect*` assertion steps, which `fixture-hydrate.playwright.ts`
+ *     already owns — and replays that action sequence against a fresh
+ *     `'hydrate'`-mode page and a fresh `'csr-mount'`-mode page. The
+ *     final DOM states must agree: whatever a click/fill/drag changes
+ *     should not depend on whether the component got there via hydration
+ *     or a from-scratch client mount.
  *
  * Every oracle test is generated for every fixture that carries the
  * `expectedHtml` + `expectedClientJs` pair (37 as of #2481, regardless of
@@ -49,6 +55,7 @@ import { captureDomState, diffDomState, type DomStateSnapshot } from './dom-stat
 // `html-normalize.ts`'s docstring.
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from '../src/html-normalize'
 import { ORACLE_QUARANTINE, type OracleKind } from './oracle-quarantine'
+import { actionStepsOf, runStep } from './interaction-runner'
 
 let server: Server
 let baseUrl: string
@@ -73,8 +80,44 @@ const oracleFixtures = fixtures.filter(f => f.expectedHtml && f.expectedClientJs
  */
 const CSR_MOUNT_EXCLUDED: ReadonlyMap<string, string> = new Map([])
 
+/**
+ * Fixtures excluded from the `'idempotence'` oracle, by declared id, with
+ * a reason. Reserved for a fixture whose action steps are inherently
+ * position/timing-dependent enough to be flaky when the SAME sequence
+ * runs twice for comparison, independent of any real idempotence bug —
+ * `carousel`'s `drag` step is the only current member (see the
+ * determinism caveat already documented on `InteractionStep`'s `'drag'`
+ * variant, `src/types.ts`, and #1971).
+ */
+const IDEMPOTENCE_EXCLUDED: ReadonlyMap<string, string> = new Map([
+  [
+    'carousel',
+    "drag steps are pointer-position-dependent on a CSS-less host page (src/types.ts's 'drag' variant docstring, #1971) — replaying the same drag twice for comparison would be flaky independent of any real idempotence bug.",
+  ],
+])
+
+/**
+ * Canonicalize `bf-po` (portal-origin marker) the same way `normalizeHTML`
+ * already canonicalizes `bf-s`: `Name_<randomhash>(_sN)*` → `Name_*(_sN)*`.
+ * `bf-po` carries the SAME non-deterministic-hash shape `bf-s` does (it's
+ * a portal's own scope id, stamped on the SSR placeholder for hydration
+ * reconciliation — see the dialog/popover/dropdown-menu/portal fixtures),
+ * but `normalizeHTML` (`html-normalize.ts`) doesn't know about it: every
+ * OTHER adapter-conformance/CSR-conformance consumer of that shared
+ * function compares SSR output against SSR output, where every render
+ * shares one fixed `__instanceId` root and `bf-po` is consequently
+ * byte-identical across sides — nothing ever needed this rule before.
+ * This oracle is the first consumer that compares two INDEPENDENTLY
+ * hydrated/mounted trees (each getting its own random portal scope id),
+ * so it layers this extra canonicalization on top locally rather than
+ * widening the shared cross-adapter function for one caller.
+ */
+function canonicalizePortalOriginMarker(html: string): string {
+  return html.replace(/bf-po="([A-Z][a-zA-Z]*)_[a-z0-9]+((?:_s\d+)*)"/g, 'bf-po="$1_*$2"')
+}
+
 function normalizeForCompare(html: string): string {
-  return stripConditionalMarkersForCrossAdapter(normalizeHTML(html))
+  return canonicalizePortalOriginMarker(stripConditionalMarkersForCrossAdapter(normalizeHTML(html)))
 }
 
 /** One animation frame — mirrors `fixture-hydrate.playwright.ts`'s hydration wait. */
@@ -107,6 +150,31 @@ async function captureCsrMount(
 ): Promise<DomStateSnapshot> {
   await page.goto(fixtureUrl(baseUrl, fixture.id, 'csr-mount'))
   await waitOneFrame(page)
+  return captureDomState(page)
+}
+
+/**
+ * Load `fixture` under `mode` (`'hydrate'` or `'csr-mount'`, both of
+ * which boot the client JS on load — no `addScriptTag` two-step needed
+ * here since idempotence only cares about the END state), replay every
+ * ACTION step from its `interactions` in order, then capture.
+ */
+async function replayActionsAndCapture(
+  page: import('@playwright/test').Page,
+  fixture: JSXFixture,
+  mode: 'hydrate' | 'csr-mount',
+): Promise<DomStateSnapshot> {
+  await page.goto(fixtureUrl(baseUrl, fixture.id, mode))
+  await waitOneFrame(page)
+  for (const step of actionStepsOf(fixture.interactions)) {
+    // Bounded well under the test's own (extended, see the `idempotence`
+    // test below) timeout: a selector genuinely absent in one leg — a
+    // real divergence, not a flake — must fail fast enough for
+    // `runQuarantined`'s plain `try`/`catch` to observe it, rather than
+    // hang until Playwright's outer per-test timeout force-cancels the
+    // test outside any `catch`'s reach. See `runStep`'s docstring.
+    await runStep(page, step, { timeout: 5_000 })
+  }
   return captureDomState(page)
 }
 
@@ -176,6 +244,28 @@ for (const fixture of oracleFixtures) {
       assertSnapshotsAgree(`${fixture.id} (SSR vs hydrated)`, pre, post)
       const csr = await captureCsrMount(page, fixture)
       assertSnapshotsAgree(`${fixture.id} (hydrated vs csr-mount)`, post, csr)
+    })
+  })
+
+  const actions = actionStepsOf(fixture.interactions)
+  if (actions.length === 0) {
+    // `kbd`/`label` ship no `interactions` at all (by design — see
+    // `fixture-hydrate.playwright.ts`'s skip-path coverage); nothing to
+    // replay, so this fixture gets no idempotence test.
+    continue
+  }
+  const idempotenceExcludeReason = IDEMPOTENCE_EXCLUDED.get(fixture.id)
+  test(`[idempotence] ${fixture.id}: replayed actions agree between hydrated and csr-mount`, async ({ page }) => {
+    test.skip(!!idempotenceExcludeReason, idempotenceExcludeReason)
+    // Two legs, each replaying up to a handful of 5s-bounded actions
+    // (`replayActionsAndCapture`) — the default 10s test timeout doesn't
+    // leave headroom for a quarantined fixture's actions to fail-fast on
+    // BOTH legs and still let `runQuarantined` observe the rejection.
+    test.setTimeout(30_000)
+    await runQuarantined(fixture.id, 'idempotence', async () => {
+      const hydratedFinal = await replayActionsAndCapture(page, fixture, 'hydrate')
+      const csrFinal = await replayActionsAndCapture(page, fixture, 'csr-mount')
+      assertSnapshotsAgree(`${fixture.id} (hydrated actions vs csr-mount actions)`, hydratedFinal, csrFinal)
     })
   })
 }
