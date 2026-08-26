@@ -164,6 +164,53 @@ jobs:
           name: playwright-report-site-core
           path: site/core/playwright-report/
 
+  fixture-hydrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      # Also picks up oracle.playwright.ts (#2481) — both specs match
+      # playwright.config.ts's `**/*.playwright.ts` testMatch.
+      - name: Run fixture-hydrate + oracle E2E tests
+        run: bun run --filter '@barefootjs/adapter-tests' test:fixture-hydrate
+
+      # `playwright.config.ts` uses the `list` reporter (not `html`), so
+      # there's no `playwright-report/` to upload here — `test-results/`
+      # is where `trace: 'retain-on-failure'` actually writes a failure's
+      # trace zip.
+      - name: Upload Playwright traces (fixture-hydrate)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-traces-fixture-hydrate
+          path: packages/adapter-tests/test-results/
+          retention-days: 30
+
   e2e-site-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 15
