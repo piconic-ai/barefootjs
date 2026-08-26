@@ -22,11 +22,24 @@ export const ErrorCodes = {
   // Signal/Memo errors (BF011-BF019)
   SIGNAL_OUTSIDE_COMPONENT: 'BF011',
 
-  // JSX errors (BF021-BF029)
+  // JSX errors (BF021-BF029). BF022 was retired (see
+  // `invalid-jsx-attribute.audit.test.ts`) and BF026 is reserved by
+  // `spec/callback-fidelity.md` for a future `.map()`-callback-shape
+  // diagnostic — BF027 is the next free slot.
   UNSUPPORTED_JSX_PATTERN: 'BF021',
   MISSING_KEY_IN_LIST: 'BF023',
   MISSING_KEY_IN_NESTED_LIST: 'BF024',
   UNSUPPORTED_DESTRUCTURE_REST: 'BF025',
+  // The component's return statement resolves to a bare identifier that
+  // refers to a local `const`/`let` whose initializer IS JSX (or a
+  // JSX-shaped ternary/`&&`/`||`/`??`), e.g. `const __root = <div/>; return
+  // __root`. JSX-child position resolves such identifiers through
+  // `jsxConstants` / `inlineableJsxConsts` (#547 / #1409), but return
+  // position deliberately does not (see `transformExpressionInner`'s
+  // docstring) — so the dispatcher's scalar-leaf fallback silently produces
+  // no IR and no diagnostic (#2720). Loud stopgap until the analyzer learns
+  // to resolve the identifier at return position too.
+  RETURN_VALUE_NOT_JSX: 'BF027',
 
   // Component errors (BF043-BF049)
   PROPS_DESTRUCTURING: 'BF043',
@@ -151,6 +164,9 @@ const errorMessages: Record<ErrorCode, string> = {
     // keeps its name so external consumers' `e.code === 'BF025'` checks remain
     // stable.
     'Computed property key in .map() callback destructure is not supported. Rewrite the callback to destructure explicit bindings (e.g., `({ a, b }) => ...`) so the compiler can rewrite references to per-item signal accessors.',
+
+  [ErrorCodes.RETURN_VALUE_NOT_JSX]:
+    "Component's return value is not recognized as JSX — return the JSX expression directly instead of binding it to a local variable first.",
 
   [ErrorCodes.PROPS_DESTRUCTURING]:
     'Props destructuring in function parameters breaks reactivity. Use props object directly.',

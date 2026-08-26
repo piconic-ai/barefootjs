@@ -1066,7 +1066,37 @@ function buildIRRoot(analyzer: AnalyzerContext): IRNode | null {
   // scope; the inner IR must not double-mark a nested element as root.
   ctx.isRoot = false
   const ir = transformJsxExpression(jsxReturn, ctx)
-  if (ir === null) return null
+  if (ir === null) {
+    // BF027 (#2720): a bare identifier at return position that names a
+    // local `const`/`let` PROVEN to hold JSX (`jsxConstants` — pure JSX
+    // literal; `inlineableJsxConsts` — a JSX-shaped ternary/`&&`/`||`/`??`)
+    // is the "returned JSX through a local variable" shape. Return position
+    // deliberately does not resolve identifiers the way JSX-child position
+    // does (see the #547/#1409 inlining above), so the scalar-leaf fallback
+    // would otherwise drop this component with zero files and zero
+    // diagnostics. Scoped to identifiers already proven JSX-holding by
+    // those two maps so an ordinary non-JSX return (`return 42`, `return
+    // someHelperResult`) — including from a PascalCase-but-not-a-component
+    // export the analyzer's syntactic component detector still matches —
+    // stays silent exactly as before.
+    if (
+      ts.isIdentifier(jsxReturn) &&
+      (analyzer.jsxConstants.has(jsxReturn.text) || analyzer.inlineableJsxConsts.has(jsxReturn.text))
+    ) {
+      analyzer.errors.push(createError(
+        ErrorCodes.RETURN_VALUE_NOT_JSX,
+        getSourceLocation(jsxReturn, analyzer.sourceFile, analyzer.filePath),
+        {
+          message:
+            `Component '${analyzer.componentName ?? '(unknown)'}' return value is not recognized ` +
+            `as JSX — return the JSX expression directly instead of binding it to a local variable ` +
+            `first (\`return ${jsxReturn.text}\` after \`const ${jsxReturn.text} = <jsx/>\` is not ` +
+            `resolved at return position).`,
+        },
+      ))
+    }
+    return null
+  }
   return wrapInScopeElement(ir)
 }
 
