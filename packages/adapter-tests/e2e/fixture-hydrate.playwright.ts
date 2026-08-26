@@ -25,23 +25,13 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { existsSync, readFileSync } from 'node:fs'
-import { createServer, type Server } from 'node:http'
-import type { AddressInfo } from 'node:net'
+import type { Server } from 'node:http'
 import { loadAllSharedFixtures } from '../fixtures/_helpers'
 import type { JSXFixture, InteractionStep } from '../src/types'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
-const RUNTIME_PATH = resolve(
-  HERE,
-  '../../client/dist/runtime/standalone.js',
-)
+import { startFixtureServer, fixtureUrl } from './fixture-host'
 
 let server: Server
 let baseUrl: string
-let runtimeSource: string
 
 // Top-level await: discover every shared-component fixture by
 // directory convention. Adding a new fixture file is now zero-touch
@@ -49,136 +39,18 @@ let runtimeSource: string
 // snapshot via `scripts/snapshot.ts`, and it shows up here on the
 // next test run.
 const fixtures: JSXFixture[] = await loadAllSharedFixtures()
-const byId = new Map(fixtures.map(f => [f.id, f]))
-
-// External third-party ESM bundles a fixture's client JS resolves at
-// runtime (#1467 Phase 3): bare specifier → absolute on-disk path,
-// unioned across every fixture that declares `externalImports`. The
-// server serves each at `/__external/<encoded-specifier>`; only the
-// fixtures that declared a specifier get its importmap entry, so existing
-// fixtures keep the bare `@barefootjs/client/runtime` importmap untouched.
-const externalModulePaths = new Map<string, string>()
-for (const fixture of fixtures) {
-  for (const [specifier, path] of Object.entries(fixture.externalImports ?? {})) {
-    // Two fixtures may legitimately share a specifier (both pointing at the
-    // same embla bundle), but a specifier mapped to two DIFFERENT paths is a
-    // corpus mistake that would silently serve the wrong bundle to one of
-    // them — fail loud instead.
-    const existing = externalModulePaths.get(specifier)
-    if (existing !== undefined && existing !== path) {
-      throw new Error(
-        `Conflicting externalImports for '${specifier}': '${existing}' vs '${path}'. ` +
-          `A bare specifier must resolve to one bundle across the whole corpus.`,
-      )
-    }
-    externalModulePaths.set(specifier, path)
-  }
-}
-
-function externalRoute(specifier: string): string {
-  return `/__external/${encodeURIComponent(specifier)}`
-}
-
-function hostPage(fixture: JSXFixture): string {
-  // Importmap maps the bare specifier the compiled client JS uses to the
-  // standalone runtime bundle. Order matters: importmap must precede the
-  // module script that imports against it.
-  //
-  // Prefer `rawExpectedHtml`: `createFixture` whitespace-normalizes
-  // `expectedHtml` for cross-adapter comparison, which would silently
-  // mutate hydration inputs for any fixture whose DOM cares about
-  // inter-element whitespace (e.g. `<pre>`, `<textarea>`).
-  const html = fixture.rawExpectedHtml ?? fixture.expectedHtml ?? ''
-  // Gate external entries: only fixtures declaring `externalImports`
-  // widen their importmap. The runtime entry is always present.
-  const imports: Record<string, string> = {
-    '@barefootjs/client/runtime': '/__runtime.js',
-  }
-  for (const specifier of Object.keys(fixture.externalImports ?? {})) {
-    imports[specifier] = externalRoute(specifier)
-  }
-  // Gated host CSS: empty for every fixture except the few that need a
-  // layout to hydrate against (carousel/embla). Keeps the page otherwise
-  // CSS-less so visibility/attribute assertions stay layout-independent.
-  const styleTag = fixture.hostStyles ? `\n<style>${fixture.hostStyles}</style>` : ''
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>${fixture.id}</title>
-<script type="importmap">
-${JSON.stringify({ imports })}
-</script>${styleTag}
-</head>
-<body>
-${html}
-<script type="module" src="__client.js"></script>
-</body>
-</html>`
-}
 
 function assertNever(value: never): never {
   throw new Error(`Unhandled InteractionStep variant: ${JSON.stringify(value)}`)
 }
 
 test.beforeAll(async () => {
-  if (!existsSync(RUNTIME_PATH)) {
-    throw new Error(
-      `Runtime bundle not found at ${RUNTIME_PATH}.\n` +
-        `Run \`bun run --filter '@barefootjs/client' build\` (or \`bun run build\` at the repo root) before this suite.`,
-    )
-  }
-  runtimeSource = readFileSync(RUNTIME_PATH, 'utf8')
-
-  server = createServer((req, res) => {
-    const url = new URL(req.url ?? '/', 'http://localhost')
-    // Route layout: `/__runtime.js` (shared), `/<fixtureId>/__client.js`
-    // (per-fixture), `/<fixtureId>/` (host page). Keeping the runtime at a
-    // fixture-independent path lets the host-page importmap use a stable
-    // absolute URL without baking the fixture id into the bare specifier
-    // resolution table.
-    if (url.pathname === '/__runtime.js') {
-      res.writeHead(200, { 'content-type': 'application/javascript' }).end(runtimeSource)
-      return
-    }
-    // Third-party ESM bundles (#1467 Phase 3, embla). Served fixture-
-    // independently like the runtime so the importmap can use a stable
-    // absolute URL. Read fresh per request — this is a handful of bundles
-    // hit once each, not a hot path worth caching.
-    if (url.pathname.startsWith('/__external/')) {
-      const specifier = decodeURIComponent(url.pathname.slice('/__external/'.length))
-      const modPath = externalModulePaths.get(specifier)
-      if (!modPath || !existsSync(modPath)) {
-        res.writeHead(404).end('not found')
-        return
-      }
-      res
-        .writeHead(200, { 'content-type': 'application/javascript' })
-        .end(readFileSync(modPath, 'utf8'))
-      return
-    }
-    const segments = url.pathname.split('/').filter(Boolean)
-    const fixture = segments[0] ? byId.get(segments[0]) : undefined
-    if (!fixture) {
-      res.writeHead(404).end('not found')
-      return
-    }
-    if (segments[1] === '__client.js') {
-      res
-        .writeHead(200, { 'content-type': 'application/javascript' })
-        .end(fixture.expectedClientJs ?? '')
-      return
-    }
-    res
-      .writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-      .end(hostPage(fixture))
-  })
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
-  const port = (server.address() as AddressInfo).port
-  // Use the bound IPv4 literal in baseUrl — on hosts where `localhost`
-  // resolves to `::1` first the IPv6 listener doesn't exist and the
-  // browser falls through to a connection error.
-  baseUrl = `http://127.0.0.1:${port}`
+  // Host page construction and the `node:http` server itself live in
+  // `./fixture-host.ts` (#2481) — shared with `oracle.playwright.ts`,
+  // which additionally needs the `'deferred'` / `'csr-mount'` host
+  // shapes. This suite only ever asks for the default `'hydrate'` mode,
+  // so its behavior is unchanged.
+  ;({ server, baseUrl } = await startFixtureServer(fixtures))
 })
 
 test.afterAll(async () => {
@@ -253,7 +125,7 @@ for (const fixture of fixtures) {
     const browserLogs: string[] = []
     page.on('console', msg => browserLogs.push(`${msg.type()}: ${msg.text()}`))
     page.on('pageerror', err => browserLogs.push(`pageerror: ${err.message}`))
-    await page.goto(`${baseUrl}/${fixture.id}/`)
+    await page.goto(fixtureUrl(baseUrl, fixture.id))
     // Hydration is microtask + rAF on the runtime side. A single rAF wait
     // covers both — we don't need to expose flushHydration just for tests.
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => r(null))))
