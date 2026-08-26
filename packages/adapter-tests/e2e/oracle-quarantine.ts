@@ -80,7 +80,7 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // after hydration moves the portaled content to its real destination —
   // plausibly the INTENDED cleanup once the portal claims its content
   // rather than a bug, but flagged since this oracle has no way to tell
-  // "expected marker removal" apart from "lost attribute" on its own；
+  // "expected marker removal" apart from "lost attribute" on its own —
   // worth a human look before assuming either. The idempotence leg
   // (`oracle.playwright.ts`'s `canonicalizePortalOriginMarker` already
   // normalizes the marker's random-hash SUFFIX away) still disagrees on
