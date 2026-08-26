@@ -70,7 +70,7 @@ function hostHead(fixture: JSXFixture): string {
   return `<meta charset="utf-8">
 <title>${fixture.id}</title>
 <script type="importmap">
-${JSON.stringify({ imports })}
+${embedJson({ imports })}
 </script>${styleTag}`
 }
 
@@ -229,9 +229,19 @@ export async function startFixtureServer(fixtures: ReadonlyArray<JSXFixture>): P
       return
     }
     // Second segment (if any) selects the host mode; absent means the
-    // legacy `/<id>/` hydrate shape.
-    const mode: HostMode =
-      segments[1] === 'deferred' || segments[1] === 'csr-mount' ? segments[1] : 'hydrate'
+    // legacy `/<id>/` hydrate shape. An unrecognized segment is 404, not
+    // a silent hydrate fallback — a typoed mode in a test URL would
+    // otherwise still serve a page and misattribute the oracle's diff.
+    const mode: HostMode | undefined =
+      segments[1] === undefined
+        ? 'hydrate'
+        : segments[1] === 'deferred' || segments[1] === 'csr-mount'
+          ? segments[1]
+          : undefined
+    if (mode === undefined) {
+      res.writeHead(404).end('not found')
+      return
+    }
     res
       .writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
       .end(hostPage(fixture, mode))
