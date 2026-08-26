@@ -220,9 +220,32 @@ function makeAliasReplacer(context: ts.TransformationContext, aliasMap: Readonly
     if (isFunctionLike(node)) {
       return withShadow(paramNames(node.parameters), node, visitor)
     }
-    if (ts.isVariableDeclarationList(node)) {
+    // A lexical declaration shadows for its WHOLE enclosing block (TDZ
+    // semantics), not just while its own declaration list is visited —
+    // shadowing only the `VariableDeclarationList` node would rewrite
+    // references in LATER statements of the same block that actually
+    // resolve to the block-local, breaking semantics preservation
+    // (Copilot review on #2725). Over-shadowing (`var`, hoisted
+    // function/class names included) merely skips a rewrite, which stays
+    // meaning-preserving; under-shadowing does not.
+    if (ts.isBlock(node) || ts.isCaseClause(node) || ts.isDefaultClause(node)) {
       const names = new Set<string>()
-      for (const d of node.declarations) collectBoundNames(d.name, names)
+      for (const stmt of node.statements) {
+        if (ts.isVariableStatement(stmt)) {
+          for (const d of stmt.declarationList.declarations) collectBoundNames(d.name, names)
+        } else if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) && stmt.name) {
+          names.add(stmt.name.text)
+        }
+      }
+      return withShadow(names, node, visitor)
+    }
+    if (
+      (ts.isForStatement(node) || ts.isForOfStatement(node) || ts.isForInStatement(node)) &&
+      node.initializer !== undefined &&
+      ts.isVariableDeclarationList(node.initializer)
+    ) {
+      const names = new Set<string>()
+      for (const d of node.initializer.declarations) collectBoundNames(d.name, names)
       return withShadow(names, node, visitor)
     }
     if (ts.isCatchClause(node) && node.variableDeclaration) {
@@ -351,10 +374,17 @@ export const fragmentWrap: Mutation = {
 
     const transformer: ts.TransformerFactory<ts.SourceFile> = context => {
       const { factory } = context
+      // The unwrapped root is a JsxElement/JsxSelfClosingElement/JsxFragment
+      // (guaranteed by `isJsxExpr` gating every wrap site), all of which are
+      // valid `JsxChild` nodes DIRECTLY. Wrapping it in a `JsxExpression`
+      // instead would print `<>{<jsx/>}</>` — an EXPRESSION child, which the
+      // compiler routes through different (dynamic-slot) machinery than a
+      // plain fragment child, so oracle failures would measure the `{}`
+      // wrapper artifact, not fragment-wrapping (Copilot review on #2725).
       const wrap = (expr: ts.Expression): ts.Expression =>
         factory.createJsxFragment(
           factory.createJsxOpeningFragment(),
-          [factory.createJsxExpression(undefined, unwrapParen(expr))],
+          [unwrapParen(expr) as ts.JsxChild],
           factory.createJsxJsxClosingFragment(),
         )
       const visitor = (node: ts.Node): ts.Node => {
