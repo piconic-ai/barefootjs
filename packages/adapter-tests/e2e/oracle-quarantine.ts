@@ -42,15 +42,18 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
       "First accordion item's trigger SSRs aria-expanded=\"true\" (open by default); after hydration it reads \"false\" while the sibling data-state/grid-rows attributes stay correctly \"open\"/expanded — a partial hydration re-apply. Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches in one leg, consistent with the rest-spread attribute-loss pattern (data-table/pagination below).",
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   'radio-group': {
     oracles: ['snap', 'three-point'],
     reason: 'Default-checked radio item SSRs aria-checked="true"; after hydration it reads "false".',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   command: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
       'Default-selected command item SSRs data-selected="true" data-value="Calendar"; after hydration data-selected reads "false" and data-value is dropped entirely. Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   // Rest-spread (`{...props}`) attribute loss on hydration: an attribute
   // present in the SSR-rendered `{...props}` spread is missing from the
@@ -58,23 +61,28 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   'branch-root-prop-attr': {
     oracles: ['snap', 'three-point'],
     reason: 'SSR spans variant="a" via {...props} spread; the attribute is absent after hydration.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   combobox: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
       'Trigger SSRs an empty placeholder="" attribute; absent after hydration. Idempotence: after replaying its click+fill+click sequence the two legs land on differently-ordered body content (a portal-content-vs-main-content ordering difference — see the dialog/popover/portal group below).',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   select: {
     oracles: ['snap', 'three-point'],
     reason: 'Trigger SSRs an empty placeholder="" attribute; absent after hydration (same shape as combobox).',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   pagination: {
     oracles: ['snap', 'three-point'],
     reason: 'Active page link SSRs a lowercased isactive="true" rest-spread attribute; absent after hydration.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   'data-table': {
     oracles: ['snap', 'three-point'],
     reason: 'Sortable column header SSRs a sorted="false" rest-spread attribute; absent after hydration.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   // Portal-origin marker (`bf-po`) present in the SSR placeholder, gone
   // after hydration moves the portaled content to its real destination —
@@ -90,18 +98,22 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   dialog: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect. Idempotence: after replaying its actions the portal content sits at a different position in body child order between the hydrated and csr-mount legs.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   'dropdown-menu': {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog. Idempotence: same body-child-order divergence as dialog.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   popover: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog. Idempotence: same body-child-order divergence as dialog.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   portal: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo). Idempotence: same body-child-order divergence as dialog.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   // Layout-dependent: embla measures real geometry, which the CSS-less
   // fixture-hydrate host page can't provide consistently pre/post
@@ -111,6 +123,7 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   carousel: {
     oracles: ['snap', 'three-point'],
     reason: 'SSR bakes style="transform: translate3d(0px, 0px, 0px)" on the track; hydration (embla measuring real, CSS-less-page geometry) removes the inline style — likely the #1971 layout-dependence caveat, not a hydration defect.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
   // `data-key` loop-reconciliation marker present in SSR, gone after
   // hydration claims the row — plausibly intended cleanup, same caveat
@@ -118,6 +131,7 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   'tag-cloud': {
     oracles: ['snap', 'three-point'],
     reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
   // Unexplained expando `.value` DOM PROPERTY (not attribute — `dom-
   // state.ts` reads the IDL property) appears on a plain, non-form-
@@ -129,17 +143,21 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   'props-reactivity-comparison': {
     oracles: ['snap', 'three-point'],
     reason: 'PropsStyleChild/DestructuredStyleChild root <div> gains a live .value=1 DOM property after hydration that is absent pre-hydration.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
   },
   'reactive-props': {
     oracles: ['snap', 'three-point'],
     reason: 'ReactiveChild root <div> gains a live .value=0 DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison).',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
   },
   tabs: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason: 'Tabs root <div> gains a live .value="account" DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison). Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
   },
   'todo-app': {
     oracles: ['snap', 'three-point'],
     reason: 'Large structural divergence after hydration (footer/filter/count section reflow) — needs a focused diff, not yet narrowed to one attribute/element.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2719',
   },
 }
