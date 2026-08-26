@@ -44,7 +44,7 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   accordion: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable expressions and SSR correctly). Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches on the leg whose mount effects haven't stamped it yet.",
+      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly). Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches on the leg whose mount effects haven't stamped it yet.",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   'radio-group': {
