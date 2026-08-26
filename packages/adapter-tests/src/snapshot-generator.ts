@@ -22,6 +22,7 @@ import {
   loadAllSharedSpecs,
   resolveSiblingBasenames,
   resolveSiblingComponents,
+  resolveSiblingModuleMap,
   resolveSiblingSpecifiers,
   sharedFixtureInstanceId,
   siblingSourceRoot,
@@ -36,7 +37,7 @@ import {
  * state is a pure function of its own id — adding or reordering fixtures
  * never churns another fixture's frozen output (#1494). FNV-1a 32-bit.
  */
-function seedFromId(id: string): number {
+export function seedFromId(id: string): number {
   let h = 0x811c9dc5
   for (let i = 0; i < id.length; i++) {
     h ^= id.charCodeAt(i)
@@ -115,6 +116,15 @@ async function writeUiChildModules(
 
 async function compileClientJs(root: FixtureSourceRoot, basename: string): Promise<string> {
   const source = await Bun.file(componentPath(root, basename)).text()
+  return compileClientJsFromSource(source, basename)
+}
+
+/**
+ * `compileClientJs` minus the disk read — the mutation sweep already has
+ * the (mutated) source text in memory and must not read the original
+ * on-disk file back over it.
+ */
+function compileClientJsFromSource(source: string, basename: string): string {
   const compiled = compileJSX(source, `${basename}.tsx`, { adapter: new HonoAdapter() })
   const file = compiled.files.find(f => f.type === 'clientJs')
   if (!file) {
@@ -164,12 +174,58 @@ function stripInlinedSiblingImports(clientJs: string, spec: SharedFixtureSpec): 
   return out + clientJs.slice(cursor)
 }
 
-export async function generateSharedComponentSnapshot(
+export interface GenerateSnapshotOptions {
+  /**
+   * Root component source text to compile/render instead of the on-disk
+   * file at `componentSourcePath(spec)` (mutation sweep, #2481 step 2:
+   * `mutation-generate.ts` feeds a mutated source through the exact same
+   * seeded-render pipeline the frozen fixtures use, so a mutant's SSR
+   * HTML + client JS are produced identically to how the original
+   * fixture's were). Siblings are NOT re-derived from this override —
+   * mutation only ever touches the fixture's own root file, so the
+   * committed sibling SSR modules (`writeUiChildModules`'s prior output)
+   * are reused read-only via `resolveSiblingModuleMap` instead of being
+   * regenerated, which would otherwise dirty the committed
+   * `__snapshots__/*.ssr.tsx` files on every mutation sweep.
+   */
+  sourceOverride?: string
+  /**
+   * Directory to write `<id>.html` / `<id>.client.js` into. Defaults to
+   * `SNAPSHOT_DIR`. Mutation sweep output goes to `.mutants/` (gitignored)
+   * so mutant artifacts never mix with the committed fixture corpus.
+   */
+  outDir?: string
+  /**
+   * Basename (without extension) for the written files, in place of
+   * `spec.id`. Lets the mutation sweep write `<fixtureId>__<mutationId>`
+   * pairs into one shared `.mutants/` directory without clobbering.
+   */
+  outBasename?: string
+  /**
+   * Seed for `withSeededMathRandom`, in place of `seedFromId(spec.id)`.
+   * The mutation sweep seeds on `${fixtureId}::${mutationId}` so each
+   * mutant gets its own stable-but-distinct scope-id stream rather than
+   * silently colliding with the base fixture's.
+   */
+  seed?: number
+}
+
+/**
+ * Core render pipeline shared by `generateSharedComponentSnapshot`
+ * (writes the committed fixture corpus) and the mutation sweep's
+ * `mutation-generate.ts` (writes disposable mutant artifacts under
+ * `.mutants/`). Split out so both callers stay byte-for-byte aligned on
+ * how a root source becomes SSR HTML + client JS — the only difference
+ * between them is which source text and which output directory.
+ */
+export async function generateSharedComponentSnapshotCore(
   spec: SharedFixtureSpec,
-): Promise<{ htmlBytes: number; clientJsBytes: number }> {
+  options: GenerateSnapshotOptions = {},
+): Promise<{ htmlBytes: number; clientJsBytes: number; html: string; clientJs: string }> {
   const root = fixtureSourceRoot(spec)
   const sourceBasename = sourceFileBasename(spec)
-  const source = await Bun.file(componentSourcePath(spec)).text()
+  const isOverride = options.sourceOverride !== undefined
+  const source = options.sourceOverride ?? (await Bun.file(componentSourcePath(spec)).text())
 
   // Pin the root scope's `bf-s` via `__instanceId`. The shared id
   // helper keeps snapshot generation and adapter-conformance runs
@@ -187,10 +243,15 @@ export async function generateSharedComponentSnapshot(
   //     so the parent's `../<child>` import is re-anchored to a real
   //     module — no export stripping. The sibling set is auto-inferred
   //     from `../<name>` imports.
+  //   - A source override (mutation sweep) never touches siblings, so it
+  //     reuses the already-committed modules read-only instead of
+  //     rewriting them via `writeUiChildModules`.
   const components = resolveSiblingComponents(spec)
-  const componentModules = await writeUiChildModules(spec)
+  const componentModules = isOverride
+    ? resolveSiblingModuleMap(spec)
+    : await writeUiChildModules(spec)
 
-  const ssrHtml = await withSeededMathRandom(seedFromId(spec.id), () =>
+  const ssrHtml = await withSeededMathRandom(options.seed ?? seedFromId(spec.id), () =>
     renderHonoComponent({
       source,
       adapter: new HonoAdapter(),
@@ -207,7 +268,7 @@ export async function generateSharedComponentSnapshot(
   let clientJs: string
   const extras = resolveSiblingBasenames(spec)
   if (extras.length === 0) {
-    clientJs = await compileClientJs(root, sourceBasename)
+    clientJs = isOverride ? await compileClientJsFromSource(source, sourceBasename) : await compileClientJs(root, sourceBasename)
   } else {
     // Use `combineParentChildClientJs` (same helper `bf build` uses) to
     // inline child component bundles into the parent and resolve the
@@ -215,7 +276,10 @@ export async function generateSharedComponentSnapshot(
     // Raw concat would leave the placeholders intact and the browser
     // would 404 on `/* @bf-child:... */` URLs.
     const files = new Map<string, string>()
-    files.set(sourceBasename, await compileClientJs(root, sourceBasename))
+    files.set(
+      sourceBasename,
+      isOverride ? await compileClientJsFromSource(source, sourceBasename) : await compileClientJs(root, sourceBasename),
+    )
     for (const extra of extras) {
       files.set(extra, await compileClientJs(siblingSourceRoot(root), extra))
     }
@@ -233,12 +297,20 @@ export async function generateSharedComponentSnapshot(
     clientJs = stripInlinedSiblingImports(clientJs, spec)
   }
 
-  const htmlOut = resolve(SNAPSHOT_DIR, `${spec.id}.html`)
-  const clientJsOut = resolve(SNAPSHOT_DIR, `${spec.id}.client.js`)
+  const outDir = options.outDir ?? SNAPSHOT_DIR
+  const outBasename = options.outBasename ?? spec.id
+  const htmlOut = resolve(outDir, `${outBasename}.html`)
+  const clientJsOut = resolve(outDir, `${outBasename}.client.js`)
   writeFileSync(htmlOut, ssrHtml.trim() + '\n')
   writeFileSync(clientJsOut, clientJs.trimEnd() + '\n')
 
-  return { htmlBytes: ssrHtml.length, clientJsBytes: clientJs.length }
+  return { htmlBytes: ssrHtml.length, clientJsBytes: clientJs.length, html: ssrHtml, clientJs }
+}
+
+export async function generateSharedComponentSnapshot(
+  spec: SharedFixtureSpec,
+): Promise<{ htmlBytes: number; clientJsBytes: number }> {
+  return generateSharedComponentSnapshotCore(spec)
 }
 
 export async function generateAllSharedComponentSnapshots(

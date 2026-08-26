@@ -194,8 +194,12 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bunx playwright install chromium
 
-      # Also picks up oracle.playwright.ts (#2481) — both specs match
-      # playwright.config.ts's `**/*.playwright.ts` testMatch.
+      # `test:fixture-hydrate` names its two spec files explicitly
+      # (fixture-hydrate.playwright.ts + oracle.playwright.ts, #2481) so
+      # this PR-triggered job does NOT also pick up mutation.playwright.ts
+      # (#2481 step 2) — that sweep needs a `mutation-generate.ts` run
+      # first and is nightly-only budget-wise; see
+      # `.github/workflows/mutation-sweep.yml`.
       - name: Run fixture-hydrate + oracle E2E tests
         run: bun run --filter '@barefootjs/adapter-tests' test:fixture-hydrate
 
