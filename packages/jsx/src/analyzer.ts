@@ -940,7 +940,15 @@ function findBlockBodyReturnedJsxLocalName(block: ts.Block): string | null {
         ts.isJsxElement(init) ||
         ts.isJsxSelfClosingElement(init) ||
         ts.isJsxFragment(init) ||
-        initializerShapeContainsJsx(init)
+        initializerShapeContainsJsx(init) ||
+        // `initializerShapeContainsJsx` deliberately stops at arrow
+        // boundaries, so a `.map()`/`.flatMap()` whose CALLBACK returns JSX
+        // needs the same dedicated check `collectConstant` uses to admit
+        // that shape into `inlineableJsxConsts` (#1554) — without it,
+        // `{ const __root = items.map(i => <div/>); return __root }` slips
+        // past BF027 back into the silent-drop path (Copilot review on
+        // #2726).
+        isMapLikeCallWithJsx(init)
       ) {
         return name
       }

@@ -132,6 +132,38 @@ describe('BF027: return-through-local-variable is not recognized as JSX (#2720)'
     expect(result.errors.find(e => e.code === 'BF027')).toBeDefined()
   })
 
+  test('nested-block shape with a `.map()`-with-JSX-callback initializer also reports BF027', () => {
+    // `initializerShapeContainsJsx` stops at arrow boundaries, so this
+    // variant needs the same `isMapLikeCallWithJsx` check `collectConstant`
+    // uses (#1554) — without it this shape slipped back into the silent
+    // drop even after BF027 landed (Copilot review on #2726).
+    const source = `
+      export function List() {
+        {
+          const __root = ['a', 'b'].map((item) => <div>{item}</div>)
+          return __root
+        }
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.files).toHaveLength(0)
+    const bf027 = result.errors.find(e => e.code === 'BF027')
+    expect(bf027).toBeDefined()
+    expect(bf027!.message).toContain('List')
+  })
+
+  test('flat shape with a `.map()`-with-JSX-callback initializer reports BF027 (via inlineableJsxConsts)', () => {
+    const source = `
+      export function List() {
+        const __root = ['a', 'b'].map((item) => <div>{item}</div>)
+        return __root
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.files).toHaveLength(0)
+    expect(result.errors.find(e => e.code === 'BF027')).toBeDefined()
+  })
+
   test('multi-component file: the broken sibling is flagged but the good sibling still compiles', () => {
     const source = `
       export function Good() { return <div>ok</div> }
