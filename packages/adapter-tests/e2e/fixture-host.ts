@@ -87,19 +87,40 @@ export function hostPage(fixture: JSXFixture, mode: HostMode = 'hydrate'): strin
         `hostPage: fixture '${fixture.id}' has no componentName — 'csr-mount' mode needs one to call createComponent(name, props).`,
       )
     }
+    // Drop internal `__`-prefixed keys (namely `__instanceId`, the
+    // harness's deterministic-scope-id pin — see `sharedFixtureInstanceId`
+    // in `fixtures/_helpers.ts`) before handing props to a REAL
+    // `createComponent`. SSR strips the same keys before serializing
+    // `bf-p`, so a real hydration init() (which reads props back off
+    // `bf-p`) never sees them either — passing them through here would
+    // leak a synthetic `__instanceid="…"` DOM attribute that only this
+    // harness's `props` object has any reason to carry, a false
+    // divergence against the other two legs rather than a real one.
+    // `createComponent` doesn't need `__instanceId` for anything: with no
+    // `mountAt`/derived scope it assigns its own random `Name_xxxxxx`
+    // scope id (`component.ts`'s `generateId()`), which `normalizeHTML`
+    // already canonicalizes like any other CSR-produced scope id.
+    const csrProps = Object.fromEntries(
+      Object.entries(fixture.props ?? {}).filter(([key]) => !key.startsWith('__')),
+    )
     const boot = `import '/${fixture.id}/__client.js'
 import { createComponent } from '@barefootjs/client/runtime'
-const __el = createComponent(${embedJson(fixture.componentName)}, ${embedJson(fixture.props ?? {})})
+const __el = createComponent(${embedJson(fixture.componentName)}, ${embedJson(csrProps)})
 document.body.appendChild(__el)`
+    // The boot script itself lives in `<head>`, NOT `<body>` — an oracle
+    // captures `document.body.innerHTML` to compare against the other two
+    // modes, and a `<script>` element left sitting in the body (module
+    // scripts are not auto-removed after they run) would show up as a
+    // spurious structural diff that has nothing to do with the fixture.
     return `<!DOCTYPE html>
 <html>
 <head>
 ${head}
-</head>
-<body>
 <script type="module">
 ${boot}
 </script>
+</head>
+<body>
 </body>
 </html>`
   }
