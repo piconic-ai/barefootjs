@@ -33,55 +33,68 @@ export interface QuarantineEntry {
 }
 
 export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
-  // Reactive boolean/enum attribute resets to its compiled DEFAULT value
-  // on hydration instead of the SSR-rendered non-default value — a
-  // recurring shape across several unrelated components, all involving a
-  // default-open/selected/checked item computed at SSR time from
-  // non-empty initial state:
+  // ref-effect-computed attribute state never reaches SSR (#2714,
+  // direction corrected 2026-08-26): these components hard-code the
+  // DEFAULT as a JSX literal (aria-expanded="false" etc.) and compute the
+  // real value inside `ref={handleMount}` (useContext + createEffect),
+  // which never runs during SSR — so SSR bakes the literal and the first
+  // client effect pass CORRECTS it. The snap/three-point failures record
+  // that pre-hydration state genuinely differs from post-hydration state;
+  // the side that is wrong is the SSR markup, not hydration.
   accordion: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      "First accordion item's trigger SSRs aria-expanded=\"true\" (open by default); after hydration it reads \"false\" while the sibling data-state/grid-rows attributes stay correctly \"open\"/expanded — a partial hydration re-apply. Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches in one leg, consistent with the rest-spread attribute-loss pattern (data-table/pagination below).",
+      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable expressions and SSR correctly). Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches on the leg whose mount effects haven't stamped it yet.",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   'radio-group': {
     oracles: ['snap', 'three-point'],
-    reason: 'Default-checked radio item SSRs aria-checked="true"; after hydration it reads "false".',
+    reason:
+      'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   command: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      'Default-selected command item SSRs data-selected="true" data-value="Calendar"; after hydration data-selected reads "false" and data-value is dropped entirely. Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
+      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar". Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
-  // Rest-spread (`{...props}`) attribute loss on hydration: an attribute
-  // present in the SSR-rendered `{...props}` spread is missing from the
-  // live DOM once the client runtime's own init/patch pass runs.
+  // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
+  // direction and mechanism corrected 2026-08-26): `emitReactiveChildProps`
+  // (emit-reactive.ts) mirrors a non-standard NAMED child prop onto the
+  // child's root element via a parent-side createEffect that exists only
+  // in client JS — `html-template.ts` has no counterpart — so the mirrored
+  // attribute is ABSENT from SSR markup and first appears after hydration.
+  // Not a rest-spread path at all; `apply-rest-attrs`/`spread-attrs` were
+  // checked and are consistent between SSR-string and CSR-apply modes.
   'branch-root-prop-attr': {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR spans variant="a" via {...props} spread; the attribute is absent after hydration.',
+    reason:
+      'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   combobox: {
     oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      'Trigger SSRs an empty placeholder="" attribute; absent after hydration. Idempotence: after replaying its click+fill+click sequence the two legs land on differently-ordered body content (a portal-content-vs-main-content ordering difference — see the dialog/popover/portal group below).',
+      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it. Idempotence: after replaying its click+fill+click sequence the two legs land on differently-ordered body content (a portal-content-vs-main-content ordering difference — see the dialog/popover/portal group below).',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   select: {
     oracles: ['snap', 'three-point'],
-    reason: 'Trigger SSRs an empty placeholder="" attribute; absent after hydration (same shape as combobox).',
+    reason:
+      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it (same shape as combobox).',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   pagination: {
     oracles: ['snap', 'three-point'],
-    reason: 'Active page link SSRs a lowercased isactive="true" rest-spread attribute; absent after hydration.',
+    reason:
+      'The mirrored isactive="true" named-prop attribute appears only after hydration; SSR markup never carries it.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   'data-table': {
     oracles: ['snap', 'three-point'],
-    reason: 'Sortable column header SSRs a sorted="false" rest-spread attribute; absent after hydration.',
+    reason:
+      'The mirrored sorted="false" named-prop attribute appears only after hydration; SSR markup never carries it.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   // Portal-origin marker (`bf-po`) present in the SSR placeholder, gone
