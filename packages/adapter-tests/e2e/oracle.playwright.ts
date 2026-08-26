@@ -34,7 +34,7 @@
  *     or a from-scratch client mount.
  *
  * Every oracle test is generated for every fixture that carries the
- * `expectedHtml` + `expectedClientJs` pair (37 as of #2481, regardless of
+ * `expectedHtml` + `expectedClientJs` pair (41 as of #2481, regardless of
  * whether the fixture also has `interactions` — `'snap'`/`'three-point'`
  * don't need any). A fixture/oracle pair known to currently diverge is
  * quarantined in `oracle-quarantine.ts` rather than skipped — see that
@@ -74,7 +74,7 @@ const oracleFixtures = fixtures.filter(f => f.expectedHtml && f.expectedClientJs
  * `'three-point'`), by declared id, with a reason. Reserved for a
  * fixture whose `props` can't survive the JSON round-trip
  * `fixture-host.ts`'s csr-mount boot script embeds them with — none of
- * the current 37 shared fixtures need this (their props already cross
+ * the current shared fixtures need this (their props already cross
  * the SSR `bf-p` JSON boundary, which demands the same domain), but a
  * future fixture with e.g. a function prop would need it.
  */
