@@ -841,6 +841,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF023 | Missing `key` attribute in `.map()` loop — root JSX element has no `key` prop |
 | BF024 | Missing `key` attribute in nested `.map()` loop — inner loop root JSX element has no `key` prop |
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
+| BF027 | Component's return statement is a bare identifier naming a local `const`/`let` already proven to hold JSX (`const __root = <jsx/>; return __root`) — return position does not resolve identifiers through their initializer the way JSX-child position does, so this shape produced zero output and zero diagnostics before this code existed (#2720) |
 | BF101 | An adapter has no template-language lowering for the expression (an off-catalogue array/string method, a nested higher-order callback, or a loop array bound to a computed component-scope local) — raised only by non-JS template adapters (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja); a JS-runtime adapter (Hono, CSR) executes the expression verbatim instead. See "Unsupported Expressions (BF101)" below. |
 | BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |

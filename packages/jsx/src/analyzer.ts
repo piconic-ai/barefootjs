@@ -796,6 +796,29 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
       (ts.isBlock(node) && node.parent === ctx.componentBodyBlock)
     )
   ) {
+    // #2720: a bare top-level block whose ONLY job is naming the render
+    // value before returning it (`{ const __root = <jsx/>; return __root
+    // }`) would otherwise be swallowed whole by the opaque-block
+    // preservation above — this walk never recurses into it, so neither
+    // `jsxConstants` nor `jsxReturn` ever get set and the component
+    // silently produces zero files, zero diagnostics. Detect the shape
+    // before preserving it and report loudly instead.
+    if (ts.isBlock(node)) {
+      const returnedLocal = findBlockBodyReturnedJsxLocalName(node)
+      if (returnedLocal) {
+        ctx.errors.push(createError(
+          ErrorCodes.RETURN_VALUE_NOT_JSX,
+          getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+          {
+            message:
+              `Component '${ctx.componentName ?? '(unknown)'}' return value is not recognized ` +
+              `as JSX — return the JSX expression directly instead of binding it to a local ` +
+              `variable first (\`return ${returnedLocal}\` after \`const ${returnedLocal} = ` +
+              `<jsx/>\` is not resolved at return position).`,
+          },
+        ))
+      }
+    }
     collectInitStatement(node, ctx)
     return
   }
@@ -884,6 +907,46 @@ export function unwrapJsxTransparent(expr: ts.Expression): ts.Expression {
     current = (current as ts.AsExpression | ts.ParenthesizedExpression | ts.SatisfiesExpression | ts.NonNullExpression | ts.TypeAssertion).expression
   }
   return current
+}
+
+/**
+ * BF027 (#2720) shape detector: a block whose last statement returns a
+ * bare identifier, where some earlier statement in the SAME block declares
+ * that identifier as a `const`/`let` initialized to JSX (root JSX, or JSX
+ * nested in a ternary/`&&`/`||`/`??`) — `{ const __root = <jsx/>; return
+ * __root }`. Mirrors the same two "does this initializer hold JSX" checks
+ * `collectConstant` uses to populate `jsxConstants` / `inlineableJsxConsts`
+ * for ordinary top-level locals, applied here to a nested block that would
+ * otherwise never be walked (it is preserved whole as an opaque init
+ * statement, see #930). Returns the identifier's name on a match, else
+ * null — deliberately narrow (exact "name, then return that name" shape)
+ * so an ordinary block scoping unrelated imperative logic is untouched.
+ */
+function findBlockBodyReturnedJsxLocalName(block: ts.Block): string | null {
+  const stmts = block.statements
+  const last = stmts[stmts.length - 1]
+  if (!last || !ts.isReturnStatement(last) || !last.expression) return null
+  const returned = unwrapJsxTransparent(last.expression)
+  if (!ts.isIdentifier(returned)) return null
+  const name = returned.text
+
+  for (const stmt of stmts) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || decl.name.text !== name || !decl.initializer) continue
+      let init: ts.Expression = decl.initializer
+      while (ts.isParenthesizedExpression(init)) init = init.expression
+      if (
+        ts.isJsxElement(init) ||
+        ts.isJsxSelfClosingElement(init) ||
+        ts.isJsxFragment(init) ||
+        initializerShapeContainsJsx(init)
+      ) {
+        return name
+      }
+    }
+  }
+  return null
 }
 
 /**
