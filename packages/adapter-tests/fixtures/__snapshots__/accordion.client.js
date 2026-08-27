@@ -2803,6 +2803,7 @@ export function initAccordionTrigger(__scope, _p = {}) {
       }
     })
   }
+  const className = _p.className ?? ''
 
   const [_s2, _s1] = $(__scope, 's2', 's1')
   const [_s0] = $c(__scope, 's0')
@@ -2810,6 +2811,7 @@ export function initAccordionTrigger(__scope, _p = {}) {
   createEffect(() => {
     if (_s1) {
       { const __v = _p.id; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
+      { const __v = `flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${className}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
       _s1.disabled = !!(_p.disabled)
       if (_p.disabled) _s1.setAttribute('aria-disabled', 'true')
       else _s1.removeAttribute('aria-disabled')

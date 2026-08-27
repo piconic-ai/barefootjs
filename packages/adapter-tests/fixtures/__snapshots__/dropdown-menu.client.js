@@ -3151,6 +3151,9 @@ export function initDropdownMenuSubTrigger(__scope, _p = {}) {
   createEffect(() => {
     if (_s1) {
       { const __v = _p.id; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
+      if (isDisabled) _s1.setAttribute('aria-disabled', 'true')
+      else _s1.removeAttribute('aria-disabled')
+      { const __v = isDisabled ? -1 : 0; if (__v != null) _s1.setAttribute('tabindex', String(__v)); else _s1.removeAttribute('tabindex') }
       { const __v = `${dropdownMenuSubTriggerClasses} ${isDisabled ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${_p.className ?? ''}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
     }
   })
