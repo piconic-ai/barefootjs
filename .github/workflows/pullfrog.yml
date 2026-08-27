@@ -1,0 +1,63 @@
+# PULLFROG ACTION — DO NOT EDIT EXCEPT WHERE INDICATED
+#
+# Reusable entry point for the Pullfrog GitHub bot (https://github.com/pullfrog/pullfrog).
+# The Pullfrog GitHub App dispatches this workflow via `workflow_dispatch` whenever a
+# configured trigger fires (PR opened, review requested, `@pullfrog` mention, ...), so the
+# trigger list itself lives in the Pullfrog console — NOT in this file.
+#
+# Cost posture for this repo (see PR that added this file):
+#   - Model billing runs off a Claude subscription OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`,
+#     minted with `claude setup-token`), not a metered API key. The subscription's own
+#     rate limits are the ceiling; there is no per-token invoice to overrun. Deliberately
+#     no `ANTHROPIC_API_KEY` below — adding one would silently reintroduce usage billing
+#     whenever the OAuth token is missing or expired.
+#   - `timeout` bounds a single run's wall clock so a stuck agent cannot burn quota.
+#   - GitHub Actions minutes are free here because the repo is public.
+name: Pullfrog
+
+run-name: ${{ inputs.name || github.workflow }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        type: string
+        description: Agent prompt
+      name:
+        type: string
+        description: Run name
+
+permissions:
+  contents: read
+
+jobs:
+  pullfrog:
+    runs-on: ubuntu-latest
+    permissions:
+      # OIDC is how the action mints its scoped Pullfrog installation token.
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Run agent
+        uses: pullfrog/pullfrog@v0
+        with:
+          prompt: ${{ inputs.prompt }}
+          # ↓↓↓ EDIT BELOW ↓↓↓
+          # Feature branches only — the agent can never push to `main` or move tags.
+          push: restricted
+          # Hard stop well under the action's 1h default.
+          timeout: 20m
+          # `model` / `effort` are intentionally unset: both are repo settings in the
+          # Pullfrog console, so they can be tuned without opening a PR. Setting them
+          # here would override the console and silently pin whatever was last committed.
+          # ↑↑↑ EDIT ABOVE ↑↑↑
+        env:
+          # ↓↓↓ EDIT BELOW ↓↓↓
+          # Claude subscription OAuth token — flat-rate. See the cost note at the top of
+          # this file before adding any metered `*_API_KEY` alongside it.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # ↑↑↑ EDIT ABOVE ↑↑↑
