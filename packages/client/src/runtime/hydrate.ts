@@ -422,8 +422,17 @@ function hydrateCommentScope(comment: Comment): void {
 
   commentScopeRegistry.set(proxyEl, { commentNode: comment, scopeId })
 
-  const parsed = parseProps(propsJson || null, `comment scope ${scopeId}`)
-  const props = (parsed[name] ?? {}) as Record<string, unknown>
+  // The JSON is the scope's OWN flat props object, not namespaced under
+  // the component name — `wrapWithScopeComment` (hono-adapter.ts) emits
+  // `__bfPropsJson` verbatim after the `|`, exactly like `hydrateElementScope`
+  // reads `bf-p` directly below with no unwrap step. An earlier `parsed[name]
+  // ?? {}` here assumed a `{ [name]: props }` shape that no emitter ever
+  // produces, so every root fragment scope with props hydrated against an
+  // empty object (#2721) — invisible whenever `currentComponentHasProps` was
+  // false (no props segment emitted at all, so `{}` was already correct),
+  // which is why this survived until the mutation sweep's fragment-wrap
+  // exercised a component that actually depends on its props at hydration.
+  const props = parseProps(propsJson || null, `comment scope ${scopeId}`)
   runInit(proxyEl, def, props)
 }
 
