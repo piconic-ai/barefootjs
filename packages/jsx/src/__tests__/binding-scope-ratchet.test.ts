@@ -210,14 +210,12 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // FLOOR (shape 1, already guarded): both `expandDynamicPropValue` and
   // `expandConstantForReactivity` precede their `.find(` with
   // `scope?.isBound(trimmedValue)` — see this file's own header comment
-  // (added Stage 1b) for the full SHADOW GUARD reasoning. A third
-  // (shape 2, #2723): `resolveRestSpreadOrigin` walks a `{...spread}`
-  // expression's `const x__alias = x` chain to see whether it ultimately
-  // names the component's rest-props/props-object parameter — component-
-  // scope alias resolution for the "does this spread forward the caller's
-  // leftover props" question, not "is this name shadowed by a loop
-  // callback param." `BindingScope` has no bearing on it.
-  'packages/jsx/src/ir-to-client-js/prop-handling.ts': { 'localConstants.find(': 3 },
+  // (added Stage 1b) for the full SHADOW GUARD reasoning. #2723's
+  // `resolveRestSpreadOrigin` deliberately does NOT add a third: it walks
+  // an alias chain hop by hop, so it indexes `ctx.localConstants` into a
+  // memoized `Map` (`localConstantValues`) instead — keeping this floor
+  // intact and avoiding a linear scan per hop.
+  'packages/jsx/src/ir-to-client-js/prop-handling.ts': { 'localConstants.find(': 2 },
   // FLOOR (shape 3): `wrapExprWithLoopParams` / `LoopParamSpec` — the
   // canonical definition of the accessor-rewrite payload every other
   // `loopParams`-named parameter in `ir-to-client-js/` forwards. See its

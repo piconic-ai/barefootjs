@@ -38,16 +38,40 @@ import type { BindingScope } from '../scope/binding-scope.ts'
  * never mistaken for the rest object.
  */
 export function resolveRestSpreadOrigin(ctx: ClientJsContext, name: string): 'rest' | 'props' | null {
+  const byName = localConstantValues(ctx)
   const visited = new Set<string>()
   let current: string | undefined = name.trim()
   while (current !== undefined && !visited.has(current)) {
     if (ctx.restPropsName && current === ctx.restPropsName) return 'rest'
     if (ctx.propsObjectName && current === ctx.propsObjectName) return 'props'
     visited.add(current)
-    const constant = ctx.localConstants.find((c) => c.name === current)
-    current = constant?.value?.trim()
+    current = byName.get(current)?.trim()
   }
   return null
+}
+
+/**
+ * `ctx.localConstants` indexed by name, memoized per `ctx`.
+ *
+ * A `Map` rather than the `.find(` this file's other two constant lookups
+ * use, deliberately: those two are SHADOW-GUARDED lookups that
+ * `binding-scope-ratchet.test.ts` deliberately counts, and that ledger is
+ * shrink-only and at its floor. Resolving an alias chain hop-by-hop would
+ * have added a third counted use — and a hot one, since the walk queries
+ * once per hop — so it indexes instead, which is both outside the ledger's
+ * concern and cheaper than a linear scan per hop.
+ */
+const _localConstantValuesCache: WeakMap<ClientJsContext, ReadonlyMap<string, string | undefined>> = new WeakMap()
+
+function localConstantValues(ctx: ClientJsContext): ReadonlyMap<string, string | undefined> {
+  const cached = _localConstantValuesCache.get(ctx)
+  if (cached) return cached
+  const byName = new Map<string, string | undefined>()
+  for (const constant of ctx.localConstants) {
+    if (!byName.has(constant.name)) byName.set(constant.name, constant.value)
+  }
+  _localConstantValuesCache.set(ctx, byName)
+  return byName
 }
 
 /**

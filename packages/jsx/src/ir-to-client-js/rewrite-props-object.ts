@@ -41,13 +41,19 @@ import { identifierPattern } from '../identifier-pattern.ts'
  * this pass whenever the init body needs `rest`'s OWN VALUE rather than
  * just recognising a `{...rest}` spread by name — e.g. a `const
  * rest__alias = rest` hop (#2723's `alias-props` mutation aliases the
- * rest parameter along with every named one). The old hardcoded `'props'`
- * fallback only caught this by the ACCIDENT of the rest binding also
- * being spelled "props" (the repo's own naming convention, which is why
- * every real UI component happened to work) — a rest binding named
- * anything else (`...rest`, `...leftover`) left the reference dangling as
- * a `ReferenceError`. Passing the analyzer's actual `restPropsName`
- * removes the guesswork.
+ * rest parameter along with every named one). A rest binding named
+ * anything but "props" (`...rest`, `...leftover`) left such a reference
+ * dangling as a `ReferenceError`, so the analyzer's actual
+ * `restPropsName` is passed in to remove that guesswork.
+ *
+ * The `propsObjectName ?? 'props'` fallback is KEPT alongside it, not
+ * replaced by it. The two do different jobs, and reading the fallback as
+ * merely a lucky guess at the rest binding's name regressed the
+ * doc-example `StatementExample`: a component that destructures its
+ * parameters can still write `props.itemId` inside a handler body, and
+ * `propsObjectName` is null for exactly that shape — so dropping the
+ * fallback left `props.itemId` in the emitted init, where no `props`
+ * binding exists to satisfy it.
  *
  * Each candidate name is rewritten independently and skipped when null,
  * already `_p`, or a duplicate of one already processed (a component
@@ -61,7 +67,7 @@ export function rewritePropsObjectRef(
 ): string {
   let result = code
   const seen = new Set<string>()
-  for (const srcPropsName of [propsObjectName, restPropsName]) {
+  for (const srcPropsName of [propsObjectName ?? 'props', restPropsName]) {
     if (srcPropsName === null || srcPropsName === PROPS_PARAM || seen.has(srcPropsName)) continue
     seen.add(srcPropsName)
     result = rewriteOneName(result, srcPropsName)

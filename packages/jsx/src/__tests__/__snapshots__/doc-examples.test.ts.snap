@@ -3558,7 +3558,7 @@ export function initStatementExample(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   el.addEventListener('click', () => {
-        ctx.toggle(props.itemId)
+        ctx.toggle(_p.itemId)
       })
 
 }
@@ -3731,7 +3731,7 @@ export function initStatementExample(__scope, _p = {}) {
   const ctx = useContext(AccordionContext)
 
   createEffect(() => {
-  const isOpen = ctx.activeItem() === props.itemId  // Tracks activeItem signal
+  const isOpen = ctx.activeItem() === _p.itemId  // Tracks activeItem signal
   el.hidden = !isOpen
 })
 }

@@ -60,16 +60,15 @@ describe('rewritePropsObjectRef', () => {
     expect(out).toBe('const name = _p.name')
   })
 
-  test('no-op when propsObjectName is null and no restPropsName is given', () => {
-    // #2723: the historical `propsObjectName ?? 'props'` fallback rewrote
-    // ANY bare `props` identifier here, on the (usually-true, but
-    // accidental) assumption that a destructured component's discarded
-    // rest binding was always spelled literally "props" — real
-    // destructured-props mode has no such binding to rewrite at all, so
-    // this must be a true no-op, matching the function's own docstring.
-    const code = 'const x = props.name'
-    const out = rewritePropsObjectRef(code, null)
-    expect(out).toBe(code)
+  test('still rewrites a literal `props` read when propsObjectName is null', () => {
+    // The `propsObjectName ?? 'props'` fallback survives the #2723 work.
+    // A destructured component can still write `props.itemId` inside a
+    // handler body — `propsObjectName` is null for that shape, so without
+    // the fallback the emitted init keeps a `props` reference that no
+    // binding satisfies (the doc-example `StatementExample` regressed
+    // exactly this way before the fallback was restored).
+    const out = rewritePropsObjectRef('const x = props.name', null)
+    expect(out).toBe('const x = _p.name')
   })
 
   test('rewrites via restPropsName when propsObjectName is null (#2723)', () => {
