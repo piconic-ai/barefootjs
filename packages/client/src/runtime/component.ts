@@ -408,7 +408,8 @@ function materializeComponent(
       // reorder/removal of this row would move/remove `element` without
       // its comments. Not reachable by any currently tracked fixture (no
       // fragment-root component is used as a loop row in the mutation
-      // corpus), so left as a known gap rather than grown here.
+      // corpus), so declared rather than grown here:
+      // https://github.com/piconic-ai/barefootjs/issues/2733
     } else {
       rowMount.container.insertBefore(element, rowMount.anchor)
     }
@@ -594,12 +595,15 @@ export function renderChild(
   // `bf-m` into a first element that, structurally, owns none of them —
   // `wrapWithScopeComment`'s CSR mirror, same as `materializeComponent`'s
   // fix for a top-level mount. `key`/`data-key` reconciliation for a
-  // fragment-root loop row is a known, separate gap (SSR itself doesn't
-  // emit `data-key` for this shape yet either — `renderElement`'s
+  // fragment-root loop row is a known, separate gap on both sides — SSR
+  // itself doesn't emit `data-key` for this shape either (`renderElement`'s
   // `__dataKey` block, hono-adapter.ts, only fires when `needsScope` is
-  // true, which a fragment root's inner element never is) — not
-  // reachable by any currently tracked fixture through this path, so left
-  // unhandled here rather than half-fixed.
+  // true, which a fragment root's inner element never is), so the two are
+  // consistently absent today rather than divergent. Not reachable by any
+  // currently tracked fixture through this path, so declared rather than
+  // half-fixed here: SSR emission is
+  // https://github.com/piconic-ai/barefootjs/issues/2732, row
+  // reconciliation is https://github.com/piconic-ai/barefootjs/issues/2733
   if (isFragmentRoot) {
     const hostSuffix = (_parentScopeId && slotSuffix) ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
     return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${html}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
