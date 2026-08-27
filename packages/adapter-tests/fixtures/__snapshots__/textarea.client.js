@@ -21,7 +21,7 @@ export function initTextarea(__scope, _p = {}) {
       { const __v = `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       { const __v = (_p.placeholder ?? ''); if (__v != null) _s0.setAttribute('placeholder', String(__v)); else _s0.removeAttribute('placeholder') }
       const __val = String((_p.value ?? ''))
-      if (_s0.value !== __val) _s0.value = __val
+      if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
       _s0.disabled = !!((_p.disabled ?? false))
       _s0.readonly = !!((_p.readonly ?? false))
       { const __v = _p.rows; if (__v != null) _s0.setAttribute('rows', String(__v)); else _s0.removeAttribute('rows') }

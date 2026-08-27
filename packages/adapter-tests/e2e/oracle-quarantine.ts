@@ -146,27 +146,22 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
-  // Unexplained expando `.value` DOM PROPERTY (not attribute — `dom-
-  // state.ts` reads the IDL property) appears on a plain, non-form-
-  // control root element after hydration, absent pre-hydration. Traced
-  // to `apply-rest-attrs.ts`'s unconditional `el.value = …` write for any
-  // spread `value` key (`ChildProps.value` here is a plain numeric data
-  // prop, not a form control's value) — worth confirming that's really
-  // the path hit for a `<div>` root that spreads nothing itself.
-  'props-reactivity-comparison': {
-    oracles: ['snap', 'three-point'],
-    reason: 'PropsStyleChild/DestructuredStyleChild root <div> gains a live .value=1 DOM property after hydration that is absent pre-hydration.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
-  },
-  'reactive-props': {
-    oracles: ['snap', 'three-point'],
-    reason: 'ReactiveChild root <div> gains a live .value=0 DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison).',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
-  },
+  // tabs' `snap` row (the expando-.value shape, #2716) is gone — the fix
+  // there was verified with the real oracle run. `three-point`'s FIRST
+  // comparison (SSR vs hydrated) now passes for the same reason, which
+  // unmasked a SECOND, previously-hidden comparison inside the same oracle
+  // (hydrated vs csr-mount, `runThreePointOracle` in oracle-core.ts runs it
+  // only after the first passes): csr-mount's default-active TabsTrigger
+  // renders `aria-selected="false" data-state="inactive"` with no
+  // `data-value` at all, while the hydrated leg correctly shows
+  // `aria-selected="true" data-state="active" data-value="account"` — the
+  // csr-mount leg isn't computing the default active tab the same way.
+  // Unrelated to #2716's DOM-property write; filed separately as #2728.
   tabs: {
-    oracles: ['snap', 'three-point', 'idempotence'],
-    reason: 'Tabs root <div> gains a live .value="account" DOM property after hydration that is absent pre-hydration (same shape as props-reactivity-comparison). Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
+    oracles: ['three-point', 'idempotence'],
+    reason:
+      "three-point: csr-mount's default-active TabsTrigger disagrees with the hydrated leg on aria-selected/data-state/data-value (see module comment above) — a distinct, previously-masked divergence, not the #2716 .value shape. Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg; may or may not share a root cause with the three-point row.",
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2728',
   },
   'todo-app': {
     oracles: ['snap', 'three-point'],

@@ -137,8 +137,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (__scope) {
-      const __val = String(activeTab())
-      if (__scope.value !== __val) __scope.value = __val
+      if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     if (_s0) {
       _s0.setAttribute('aria-selected', String(isAccountSelected()))
@@ -171,8 +170,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
   // Reactive child component props
   createEffect(() => {
     if (__scope) {
-      const __val = String(activeTab())
-      if (__scope.value !== __val) __scope.value = __val
+      if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
@@ -219,8 +217,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (__scope) {
-      const __val = String(activeTab())
-      if (__scope.value !== __val) __scope.value = __val
+      if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     if (_s0) {
       _s0.setAttribute('aria-selected', String(isOverviewSelected()))
@@ -279,8 +276,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
   // Reactive child component props
   createEffect(() => {
     if (__scope) {
-      const __val = String(activeTab())
-      if (__scope.value !== __val) __scope.value = __val
+      if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
@@ -345,8 +341,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (__scope) {
-      const __val = String(activeTab())
-      if (__scope.value !== __val) __scope.value = __val
+      if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     if (_s0) {
       _s0.setAttribute('aria-selected', String(isActiveSelected()))
@@ -379,8 +374,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
   // Reactive child component props
   createEffect(() => {
     if (__scope) {
-      const __val = String(activeTab())
-      if (__scope.value !== __val) __scope.value = __val
+      if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {

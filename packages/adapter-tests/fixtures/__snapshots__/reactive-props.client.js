@@ -50,12 +50,10 @@ export function initReactiveProps(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s5) {
-      const __val = String(count())
-      if (_s5.value !== __val) _s5.value = __val
+      if ('value' in _s5) { const __val = String(count()); if (_s5.value !== __val) _s5.value = __val }
     }
     if (_s6) {
-      const __val = String(doubled())
-      if (_s6.value !== __val) _s6.value = __val
+      if ('value' in _s6) { const __val = String(doubled()); if (_s6.value !== __val) _s6.value = __val }
     }
   })
 
@@ -63,13 +61,11 @@ export function initReactiveProps(__scope, _p = {}) {
   createEffect(() => {
     const [__ReactiveChild_s5El] = $c(__scope, 's5')
     if (__ReactiveChild_s5El) {
-      const __val = String(count())
-      if (__ReactiveChild_s5El.value !== __val) __ReactiveChild_s5El.value = __val
+      if ('value' in __ReactiveChild_s5El) { const __val = String(count()); if (__ReactiveChild_s5El.value !== __val) __ReactiveChild_s5El.value = __val }
     }
     const [__ReactiveChild_s6El] = $c(__scope, 's6')
     if (__ReactiveChild_s6El) {
-      const __val = String(doubled())
-      if (__ReactiveChild_s6El.value !== __val) __ReactiveChild_s6El.value = __val
+      if ('value' in __ReactiveChild_s6El) { const __val = String(doubled()); if (__ReactiveChild_s6El.value !== __val) __ReactiveChild_s6El.value = __val }
     }
   })
 
@@ -159,12 +155,10 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s3) {
-      const __val = String(count())
-      if (_s3.value !== __val) _s3.value = __val
+      if ('value' in _s3) { const __val = String(count()); if (_s3.value !== __val) _s3.value = __val }
     }
     if (_s4) {
-      const __val = String(count())
-      if (_s4.value !== __val) _s4.value = __val
+      if ('value' in _s4) { const __val = String(count()); if (_s4.value !== __val) _s4.value = __val }
     }
   })
 
@@ -172,13 +166,11 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   createEffect(() => {
     const [__PropsStyleChild_s3El] = $c(__scope, 's3')
     if (__PropsStyleChild_s3El) {
-      const __val = String(count())
-      if (__PropsStyleChild_s3El.value !== __val) __PropsStyleChild_s3El.value = __val
+      if ('value' in __PropsStyleChild_s3El) { const __val = String(count()); if (__PropsStyleChild_s3El.value !== __val) __PropsStyleChild_s3El.value = __val }
     }
     const [__DestructuredStyleChild_s4El] = $c(__scope, 's4')
     if (__DestructuredStyleChild_s4El) {
-      const __val = String(count())
-      if (__DestructuredStyleChild_s4El.value !== __val) __DestructuredStyleChild_s4El.value = __val
+      if ('value' in __DestructuredStyleChild_s4El) { const __val = String(count()); if (__DestructuredStyleChild_s4El.value !== __val) __DestructuredStyleChild_s4El.value = __val }
     }
   })
 

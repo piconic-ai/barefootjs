@@ -383,7 +383,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
   createEffect(() => {
     if (_s5) {
       const __val = String(confirmText())
-      if (_s5.value !== __val) _s5.value = __val
+      if ('value' in _s5) { if (_s5.value !== __val) _s5.value = __val } else { _s5.setAttribute('value', __val) }
     }
   })
 

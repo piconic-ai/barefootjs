@@ -3233,8 +3233,7 @@ export function initComboboxBasicDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s10) {
-      const __val = String(value())
-      if (_s10.value !== __val) _s10.value = __val
+      if ('value' in _s10) { const __val = String(value()); if (_s10.value !== __val) _s10.value = __val }
     }
   })
 
@@ -3242,8 +3241,7 @@ export function initComboboxBasicDemo(__scope, _p = {}) {
   createEffect(() => {
     const [__Combobox_s10El] = $c(__scope, 's10')
     if (__Combobox_s10El) {
-      const __val = String(value())
-      if (__Combobox_s10El.value !== __val) __Combobox_s10El.value = __val
+      if ('value' in __Combobox_s10El) { const __val = String(value()); if (__Combobox_s10El.value !== __val) __Combobox_s10El.value = __val }
     }
   })
 
@@ -3288,12 +3286,10 @@ export function initComboboxFormDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s10) {
-      const __val = String(language())
-      if (_s10.value !== __val) _s10.value = __val
+      if ('value' in _s10) { const __val = String(language()); if (_s10.value !== __val) _s10.value = __val }
     }
     if (_s21) {
-      const __val = String(framework())
-      if (_s21.value !== __val) _s21.value = __val
+      if ('value' in _s21) { const __val = String(framework()); if (_s21.value !== __val) _s21.value = __val }
     }
   })
 
@@ -3301,13 +3297,11 @@ export function initComboboxFormDemo(__scope, _p = {}) {
   createEffect(() => {
     const [__Combobox_s10El] = $c(__scope, 's10')
     if (__Combobox_s10El) {
-      const __val = String(language())
-      if (__Combobox_s10El.value !== __val) __Combobox_s10El.value = __val
+      if ('value' in __Combobox_s10El) { const __val = String(language()); if (__Combobox_s10El.value !== __val) __Combobox_s10El.value = __val }
     }
     const [__Combobox_s21El] = $c(__scope, 's21')
     if (__Combobox_s21El) {
-      const __val = String(framework())
-      if (__Combobox_s21El.value !== __val) __Combobox_s21El.value = __val
+      if ('value' in __Combobox_s21El) { const __val = String(framework()); if (__Combobox_s21El.value !== __val) __Combobox_s21El.value = __val }
     }
   })
 
@@ -3361,8 +3355,7 @@ export function initComboboxGroupedDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s20) {
-      const __val = String(timezone())
-      if (_s20.value !== __val) _s20.value = __val
+      if ('value' in _s20) { const __val = String(timezone()); if (_s20.value !== __val) _s20.value = __val }
     }
   })
 
@@ -3370,8 +3363,7 @@ export function initComboboxGroupedDemo(__scope, _p = {}) {
   createEffect(() => {
     const [__Combobox_s20El] = $c(__scope, 's20')
     if (__Combobox_s20El) {
-      const __val = String(timezone())
-      if (__Combobox_s20El.value !== __val) __Combobox_s20El.value = __val
+      if ('value' in __Combobox_s20El) { const __val = String(timezone()); if (__Combobox_s20El.value !== __val) __Combobox_s20El.value = __val }
     }
   })
 

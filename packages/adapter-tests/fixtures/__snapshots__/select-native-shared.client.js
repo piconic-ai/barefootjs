@@ -23,7 +23,7 @@ export function initSelectNative(__scope, _p = {}) {
   createEffect(() => {
     if (_s2) {
       const __val = String(picked())
-      if (_s2.value !== __val) _s2.value = __val
+      if ('value' in _s2) { if (_s2.value !== __val) _s2.value = __val } else { _s2.setAttribute('value', __val) }
     }
   })
 
@@ -43,7 +43,7 @@ export function initSelectNative(__scope, _p = {}) {
       if (__t) {
         const __x = f().id
         const __val = String(__x)
-        if (__t.value !== __val) __t.value = __val
+        if ('value' in __t) { if (__t.value !== __val) __t.value = __val } else { __t.setAttribute('value', __val) }
         __l[0] = __x
       } }
       { const __t = __r[0]
@@ -66,7 +66,7 @@ export function initSelectNative(__scope, _p = {}) {
         const __x = f().id
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           const __val = String(__x)
-          if (__t.value !== __val) __t.value = __val
+          if ('value' in __t) { if (__t.value !== __val) __t.value = __val } else { __t.setAttribute('value', __val) }
         }
         __l[0] = __x
       } }

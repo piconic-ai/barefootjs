@@ -47,7 +47,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
   createEffect(() => {
     if (_s6) {
       const __val = String(input())
-      if (_s6.value !== __val) _s6.value = __val
+      if ('value' in _s6) { if (_s6.value !== __val) _s6.value = __val } else { _s6.setAttribute('value', __val) }
       _s6.disabled = !!(isStreaming())
     }
   })

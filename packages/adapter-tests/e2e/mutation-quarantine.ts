@@ -215,8 +215,7 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     mutationId: 'alias-props',
     oracle: 'idempotence',
     reason:
-      "Click on '.btn-parent-increment' times out on one of the two legs. reactive-props already carries a known, different hydration divergence (a live .value DOM property appearing only after hydration — oracle-quarantine.ts, issue 2716) that is NOT quarantined for idempotence on the base fixture; this alias-props mutant's idempotence failure has not been isolated from that existing issue and may be the same underlying cause compounded by the extra alias hop.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2716',
+      "Click on '.btn-parent-increment' times out on one of the two legs. Confirmed INDEPENDENT of #2716 (the live .value DOM property expando this row's reason used to implicate): #2716 is fixed and this idempotence failure persists unchanged, so it is a genuine alias-props-specific defect, not that bug compounded by the extra alias hop. Not yet isolated to a root cause of its own.",
   },
 
   // --- G6 -------------------------------------------------------------------
@@ -227,6 +226,38 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     reason:
       "Click on '[data-slot=\"carousel-next\"]' times out (button stays disabled). The base fixture's idempotence oracle is already excluded (not merely quarantined) in oracle.playwright.ts's IDEMPOTENCE_EXCLUDED map for the same reason: embla's drag steps are pointer-position-dependent on a CSS-less host page (#1971), so replaying the SAME drag sequence twice is inherently flaky independent of any real bug. This mutant reproduces that known flakiness rather than a new fragment-wrap-specific defect; kept here (mutation.playwright.ts has no equivalent exclusion map, only the ORACLE_QUARANTINE skip) rather than silently passing.",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/1971',
+  },
+
+  // --- G7 ---------------------------------------------------------------
+  // Unmasked by the #2716 fix: `props-reactivity-comparison` and
+  // `reactive-props` were entirely quarantined in oracle-quarantine.ts
+  // (the .value expando) before this PR, so mutation.playwright.ts's
+  // `baseAlreadyQuarantined` skip (this file's docstring) skipped EVERY
+  // mutation triple for these two fixtures outright — none of them had
+  // ever actually run. With that quarantine gone, they ran for the first
+  // time and hit the SAME already-documented mutation-tool artifacts G2/G3
+  // already catalogue for other fixtures — not new bugs, just newly-run
+  // triples that happen to reproduce them.
+  {
+    fixtureId: 'props-reactivity-comparison',
+    mutationId: 'fragment-wrap',
+    oracle: 'three-point',
+    reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
+  },
+  {
+    fixtureId: 'reactive-props',
+    mutationId: 'fragment-wrap',
+    oracle: 'three-point',
+    reason: FRAGMENT_WRAP_CSR_MOUNT_SCOPE_ID_PRE_INTERACTION,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2722',
+  },
+  {
+    fixtureId: 'reactive-props',
+    mutationId: 'alias-props',
+    oracle: 'three-point',
+    reason: ALIAS_PROPS_CSR_MOUNT_EMPTY,
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
   },
 ]
 
