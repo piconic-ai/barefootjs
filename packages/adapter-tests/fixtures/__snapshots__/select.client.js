@@ -3131,8 +3131,7 @@ export function initSelectBasicDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s8) {
-      const __val = String(value())
-      if (_s8.value !== __val) _s8.value = __val
+      if ('value' in _s8) { const __val = String(value()); if (_s8.value !== __val) _s8.value = __val }
     }
   })
 
@@ -3140,8 +3139,7 @@ export function initSelectBasicDemo(__scope, _p = {}) {
   createEffect(() => {
     const [__Select_s8El] = $c(__scope, 's8')
     if (__Select_s8El) {
-      const __val = String(value())
-      if (__Select_s8El.value !== __val) __Select_s8El.value = __val
+      if ('value' in __Select_s8El) { const __val = String(value()); if (__Select_s8El.value !== __val) __Select_s8El.value = __val }
     }
   })
 
@@ -3186,16 +3184,13 @@ export function initSelectFormDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s7) {
-      const __val = String(framework())
-      if (_s7.value !== __val) _s7.value = __val
+      if ('value' in _s7) { const __val = String(framework()); if (_s7.value !== __val) _s7.value = __val }
     }
     if (_s15) {
-      const __val = String(role())
-      if (_s15.value !== __val) _s15.value = __val
+      if ('value' in _s15) { const __val = String(role()); if (_s15.value !== __val) _s15.value = __val }
     }
     if (_s23) {
-      const __val = String(experience())
-      if (_s23.value !== __val) _s23.value = __val
+      if ('value' in _s23) { const __val = String(experience()); if (_s23.value !== __val) _s23.value = __val }
     }
   })
 
@@ -3203,18 +3198,15 @@ export function initSelectFormDemo(__scope, _p = {}) {
   createEffect(() => {
     const [__Select_s7El] = $c(__scope, 's7')
     if (__Select_s7El) {
-      const __val = String(framework())
-      if (__Select_s7El.value !== __val) __Select_s7El.value = __val
+      if ('value' in __Select_s7El) { const __val = String(framework()); if (__Select_s7El.value !== __val) __Select_s7El.value = __val }
     }
     const [__Select_s15El] = $c(__scope, 's15')
     if (__Select_s15El) {
-      const __val = String(role())
-      if (__Select_s15El.value !== __val) __Select_s15El.value = __val
+      if ('value' in __Select_s15El) { const __val = String(role()); if (__Select_s15El.value !== __val) __Select_s15El.value = __val }
     }
     const [__Select_s23El] = $c(__scope, 's23')
     if (__Select_s23El) {
-      const __val = String(experience())
-      if (__Select_s23El.value !== __val) __Select_s23El.value = __val
+      if ('value' in __Select_s23El) { const __val = String(experience()); if (__Select_s23El.value !== __val) __Select_s23El.value = __val }
     }
   })
 
@@ -3271,8 +3263,7 @@ export function initSelectGroupedDemo(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s21) {
-      const __val = String(timezone())
-      if (_s21.value !== __val) _s21.value = __val
+      if ('value' in _s21) { const __val = String(timezone()); if (_s21.value !== __val) _s21.value = __val }
     }
   })
 
@@ -3280,8 +3271,7 @@ export function initSelectGroupedDemo(__scope, _p = {}) {
   createEffect(() => {
     const [__Select_s21El] = $c(__scope, 's21')
     if (__Select_s21El) {
-      const __val = String(timezone())
-      if (__Select_s21El.value !== __val) __Select_s21El.value = __val
+      if ('value' in __Select_s21El) { const __val = String(timezone()); if (__Select_s21El.value !== __val) __Select_s21El.value = __val }
     }
   })
 

@@ -553,7 +553,13 @@ function seedDiffersExpr(target: string, a: LazyRowAttrBinding): string {
   if (a.attrName === 'dangerouslySetInnerHTML' || html === 'dangerouslySetInnerHTML') return 'true'
   if (html === 'style') return `${target}.getAttribute('style') !== styleToCss(__x)`
   if (html === 'class') return `${target}.getAttribute('class') !== (__x != null ? String(__x) : null)`
-  if (html === 'value') return `${target}.value !== String(__x)`
+  // Mirrors `emitValueUpdateStatements`'s runtime `'value' in target` gate
+  // (#2716): a non-form-control target never gets the live `.value`
+  // property, so the seed-diff must compare against the ATTRIBUTE it would
+  // actually receive there, not the (absent) property.
+  if (html === 'value') {
+    return `('value' in ${target} ? ${target}.value !== String(__x) : ${target}.getAttribute('value') !== String(__x))`
+  }
   if (isBooleanAttr(html)) return `${target}.${html} !== !!(__x)`
   if (a.meta.presenceOrUndefined) {
     // Compare the VALUE the writer would produce, not just presence.

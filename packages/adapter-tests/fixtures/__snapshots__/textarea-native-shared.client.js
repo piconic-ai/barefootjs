@@ -18,7 +18,7 @@ export function initNoteBoxNative(__scope, _p = {}) {
   createEffect(() => {
     if (_s0) {
       const __val = String(note())
-      if (_s0.value !== __val) _s0.value = __val
+      if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
     }
   })
 

@@ -1245,7 +1245,14 @@ describe('Client JS generation', () => {
 
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
-      // Should use .value = for value prop, not setAttribute
+      // `value={text()}` on a CHILD COMPONENT drives the child-root MIRROR
+      // path (emitReactivePropBindings/emitReactiveChildProps), gated by a
+      // runtime `'value' in el` check (#2716): a genuine form-control root
+      // still gets the live `.value =` property write, but a non-form root
+      // gets NOTHING (no setAttribute fallback either) since this mirror has
+      // no SSR-rendered counterpart to stay in sync with — see
+      // `emitChildValueMirrorStatements`'s docstring.
+      expect(clientJs!.content).toContain("'value' in")
       expect(clientJs!.content).toContain('.value =')
       expect(clientJs!.content).not.toContain("setAttribute('value'")
     })
@@ -1274,6 +1281,35 @@ describe('Client JS generation', () => {
       // Should use .disabled = !! for boolean prop, not setAttribute
       expect(clientJs!.content).toContain('.disabled = !!')
       expect(clientJs!.content).not.toContain("setAttribute('disabled'")
+    })
+
+    // #2716: a `value` prop passed to a CHILD COMPONENT (above) drives the
+    // no-SSR-fallback mirror path; a `value` ATTRIBUTE the developer writes
+    // directly on a plain HOST element is the opposite case — SSR renders
+    // that attribute, so `emitAttrUpdate`'s dispatch (used here, not the
+    // mirror helper) correctly keeps the attribute fallback for a
+    // non-form-control target.
+    test('compiles a directly-authored value attribute on a plain element with an attribute fallback (emitAttrUpdate)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function LabeledValue() {
+          const [count, setCount] = createSignal(0)
+          return <div value={count()}>{count()}</div>
+        }
+      `
+
+      const result = compileJSX(source, 'LabeledValue.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      // Gated the same way as the mirror path, but WITH an attribute
+      // fallback — this is a literal attribute SSR already rendered.
+      expect(clientJs!.content).toContain("'value' in")
+      expect(clientJs!.content).toContain('.value =')
+      expect(clientJs!.content).toContain("setAttribute('value'")
     })
   })
 

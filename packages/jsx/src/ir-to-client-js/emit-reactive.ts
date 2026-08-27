@@ -29,6 +29,55 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
 }
 
 /**
+ * Generate statements that write a `value` HTML ATTRIBUTE the developer
+ * wrote directly on an element (`<div value={x}>`, a loop row's `<li
+ * value={x}>`, …) — SSR renders that same attribute, so hydration keeping
+ * it in sync is exactly the contract. Gated at runtime to genuine form
+ * controls (input/textarea/select/option — the controlled-value contract,
+ * where `setAttribute('value', x)` only sets the INITIAL HTML attribute and
+ * the live `.value` IDL property is required after user interaction); any
+ * other element falls back to a plain attribute write, which still matches
+ * what SSR rendered there. Writing the live property unconditionally would
+ * plant an expando SSR never had — a hydrated/SSR DOM-state divergence and a
+ * hazard for anything that duck-types form controls via `'value' in el`
+ * (#2716). `'value' in target` is the same runtime check `applyRestAttrs`
+ * already uses for its own rest-spread `value` handling.
+ *
+ * NOT for the child-component-root `value` MIRROR (`emitReactivePropBindings`
+ * / `emitReactiveChildProps` reflecting a named prop onto a child's root
+ * element) — that mechanism has no SSR-rendered counterpart at all
+ * regardless of prop name, so an attribute fallback there would itself
+ * plant a fresh SSR/hydrate divergence; see `emitChildValueMirrorStatements`.
+ */
+function emitValueUpdateStatements(target: string, expression: string): string[] {
+  return [
+    `const __val = String(${expression})`,
+    `if ('value' in ${target}) { if (${target}.value !== __val) ${target}.value = __val } else { ${target}.setAttribute('value', __val) }`,
+  ]
+}
+
+/**
+ * `value`-prop write for the CHILD-ROOT MIRROR mechanism
+ * (`emitReactivePropBindings` / `emitReactiveChildProps`, both reactively
+ * reflect a parent-passed NAMED PROP onto a child component's root DOM
+ * element). Unlike a developer-authored `value=` attribute
+ * (`emitValueUpdateStatements`), this mirror has NO SSR-rendered
+ * counterpart at all — SSR never puts a `value` attribute on a child's
+ * root just because the parent passed a `value` prop. So a non-form-control
+ * root gets NOTHING written (confirmed against the oracle's structural-HTML
+ * comparison, #2716: an attribute fallback here reintroduced a fresh
+ * SSR/hydrate divergence one layer down from the IDL-property expando this
+ * replaces). A genuine form-control root (`'value' in target`) still gets
+ * the live controlled-value property, same contract as the direct-attribute
+ * case.
+ */
+function emitChildValueMirrorStatements(target: string, expression: string): string[] {
+  return [
+    `if ('value' in ${target}) { const __val = String(${expression}); if (${target}.value !== __val) ${target}.value = __val }`,
+  ]
+}
+
+/**
  * Generate JS statements to update a DOM attribute reactively.
  * Centralizes the attribute-type dispatch (value, class, boolean, presence, generic)
  * so that new AttrMeta flags are handled in one place.
@@ -55,10 +104,7 @@ export function emitAttrUpdate(target: string, attrName: string, expression: str
     ]
   }
   if (htmlName === 'value') {
-    return [
-      `const __val = String(${expression})`,
-      `if (${target}.value !== __val) ${target}.value = __val`,
-    ]
+    return emitValueUpdateStatements(target, expression)
   }
   if (isBooleanAttr(htmlName)) {
     return [`${target}.${htmlName} = !!(${expression})`]
@@ -485,14 +531,16 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
             lines.push(`      ${ref}.setAttribute('data-state', ${value} ? 'active' : 'inactive')`)
             lines.push(`      ${ref}.setAttribute('tabindex', ${value} ? '0' : '-1')`)
           }
-        // Use DOM property assignment for value and boolean attrs.
-        // setAttribute('value', x) only sets the initial HTML attribute; after user
-        // interaction the DOM property diverges, so .value = x is required.
+        // Use DOM property assignment for value and boolean attrs, but only
+        // on genuine form controls — see `emitChildValueMirrorStatements`'s
+        // docstring (#2716). `ref` here is a named prop's MIRROR target
+        // element (a child component's arbitrary root), not necessarily a
+        // form control, and this mirror has no SSR-rendered counterpart to
+        // fall back to.
         // Boolean attrs (disabled, checked, etc.) treat any attribute presence as
         // truthy, so setAttribute('disabled', 'false') still disables the element.
         } else if (prop.propName === 'value') {
-          lines.push(`      const __val = String(${value})`)
-          lines.push(`      if (${ref}.value !== __val) ${ref}.value = __val`)
+          for (const stmt of emitChildValueMirrorStatements(ref, value)) lines.push(`      ${stmt}`)
         } else if (isBooleanAttr(prop.propName)) {
           lines.push(`      ${ref}.${prop.propName} = !!(${value})`)
         } else {
@@ -537,7 +585,14 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
       }
       lines.push(`    if (${varName}) {`)
       for (const prop of props) {
-        for (const stmt of emitAttrUpdate(varName, prop.attrName, prop.expression, prop)) {
+        // `value` is the CHILD-ROOT MIRROR case, not a developer-authored
+        // attribute — route it through the no-SSR-fallback helper instead
+        // of `emitAttrUpdate`'s generic (attribute-fallback) dispatch;
+        // see `emitChildValueMirrorStatements`'s docstring (#2716).
+        const stmts = toHtmlAttrName(prop.attrName) === 'value'
+          ? emitChildValueMirrorStatements(varName, prop.expression)
+          : emitAttrUpdate(varName, prop.attrName, prop.expression, prop)
+        for (const stmt of stmts) {
           lines.push(`      ${stmt}`)
         }
       }

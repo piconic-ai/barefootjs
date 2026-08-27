@@ -2630,8 +2630,7 @@ export function initExample(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s0) {
-      const __val = String(count())
-      if (_s0.value !== __val) _s0.value = __val
+      if ('value' in _s0) { const __val = String(count()); if (_s0.value !== __val) _s0.value = __val }
     }
   })
 
@@ -2639,8 +2638,7 @@ export function initExample(__scope, _p = {}) {
   createEffect(() => {
     const [__Child_s0El] = $c(__scope, 's0')
     if (__Child_s0El) {
-      const __val = String(count())
-      if (__Child_s0El.value !== __val) __Child_s0El.value = __val
+      if ('value' in __Child_s0El) { const __val = String(count()); if (__Child_s0El.value !== __val) __Child_s0El.value = __val }
     }
   })
 

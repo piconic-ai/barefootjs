@@ -27,7 +27,7 @@ export function initTodoItem(__scope, _p = {}) {
   createEffect(() => {
     if (_s4) {
       const __val = String(_p.todo.text)
-      if (_s4.value !== __val) _s4.value = __val
+      if ('value' in _s4) { if (_s4.value !== __val) _s4.value = __val } else { _s4.setAttribute('value', __val) }
     }
   })
 
@@ -168,7 +168,7 @@ export function initTodoAppSSR(__scope, _p = {}) {
   createEffect(() => {
     if (_s0) {
       const __val = String(newText())
-      if (_s0.value !== __val) _s0.value = __val
+      if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
     }
   })
 

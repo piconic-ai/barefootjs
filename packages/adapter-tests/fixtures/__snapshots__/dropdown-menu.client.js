@@ -3428,8 +3428,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
       __scope.open = !!(open())
     }
     if (_s11) {
-      const __val = String(language())
-      if (_s11.value !== __val) _s11.value = __val
+      if ('value' in _s11) { const __val = String(language()); if (_s11.value !== __val) _s11.value = __val }
     }
     if (_s18) {
       _s18.checked = !!(showBookmarks())
@@ -3446,8 +3445,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     }
     const [__DropdownMenuRadioGroup_s11El] = $c(__scope, 's11')
     if (__DropdownMenuRadioGroup_s11El) {
-      const __val = String(language())
-      if (__DropdownMenuRadioGroup_s11El.value !== __val) __DropdownMenuRadioGroup_s11El.value = __val
+      if ('value' in __DropdownMenuRadioGroup_s11El) { const __val = String(language()); if (__DropdownMenuRadioGroup_s11El.value !== __val) __DropdownMenuRadioGroup_s11El.value = __val }
     }
     const [__DropdownMenuCheckboxItem_s18El] = $c(__scope, 's18')
     if (__DropdownMenuCheckboxItem_s18El) {
