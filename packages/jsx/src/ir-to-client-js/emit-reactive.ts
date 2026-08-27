@@ -32,16 +32,17 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
  * Generate statements that write a `value` HTML ATTRIBUTE the developer
  * wrote directly on an element (`<div value={x}>`, a loop row's `<li
  * value={x}>`, …) — SSR renders that same attribute, so hydration keeping
- * it in sync is exactly the contract. Gated at runtime to genuine form
- * controls (input/textarea/select/option — the controlled-value contract,
- * where `setAttribute('value', x)` only sets the INITIAL HTML attribute and
- * the live `.value` IDL property is required after user interaction); any
+ * it in sync is exactly the contract. Gated at runtime to elements that
+ * ALREADY expose a native `.value` IDL property (`'value' in target` —
+ * form controls, but also e.g. `<li value>`; the same duck-type check
+ * `applyRestAttrs` uses, deliberately not a tag-name allowlist), because
+ * for those `setAttribute('value', x)` only sets the INITIAL HTML
+ * attribute and the live property is required after user interaction; any
  * other element falls back to a plain attribute write, which still matches
  * what SSR rendered there. Writing the live property unconditionally would
  * plant an expando SSR never had — a hydrated/SSR DOM-state divergence and a
  * hazard for anything that duck-types form controls via `'value' in el`
- * (#2716). `'value' in target` is the same runtime check `applyRestAttrs`
- * already uses for its own rest-spread `value` handling.
+ * (#2716).
  *
  * NOT for the child-component-root `value` MIRROR (`emitReactivePropBindings`
  * / `emitReactiveChildProps` reflecting a named prop onto a child's root
@@ -63,13 +64,14 @@ function emitValueUpdateStatements(target: string, expression: string): string[]
  * element). Unlike a developer-authored `value=` attribute
  * (`emitValueUpdateStatements`), this mirror has NO SSR-rendered
  * counterpart at all — SSR never puts a `value` attribute on a child's
- * root just because the parent passed a `value` prop. So a non-form-control
- * root gets NOTHING written (confirmed against the oracle's structural-HTML
- * comparison, #2716: an attribute fallback here reintroduced a fresh
- * SSR/hydrate divergence one layer down from the IDL-property expando this
- * replaces). A genuine form-control root (`'value' in target`) still gets
- * the live controlled-value property, same contract as the direct-attribute
- * case.
+ * root just because the parent passed a `value` prop. So a root WITHOUT a
+ * native `.value` property gets NOTHING written — not even an attribute
+ * (confirmed against the oracle's structural-HTML comparison, #2716: an
+ * attribute fallback here reintroduced a fresh SSR/hydrate divergence one
+ * layer down from the IDL-property expando this replaces). A root that
+ * already exposes `.value` (`'value' in target`, same duck-type gate as
+ * the direct-attribute case) still gets the live controlled-value
+ * property.
  */
 function emitChildValueMirrorStatements(target: string, expression: string): string[] {
   return [

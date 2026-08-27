@@ -554,8 +554,8 @@ function seedDiffersExpr(target: string, a: LazyRowAttrBinding): string {
   if (html === 'style') return `${target}.getAttribute('style') !== styleToCss(__x)`
   if (html === 'class') return `${target}.getAttribute('class') !== (__x != null ? String(__x) : null)`
   // Mirrors `emitValueUpdateStatements`'s runtime `'value' in target` gate
-  // (#2716): a non-form-control target never gets the live `.value`
-  // property, so the seed-diff must compare against the ATTRIBUTE it would
+  // (#2716): a target with no native `.value` property never gets one
+  // written, so the seed-diff must compare against the ATTRIBUTE it would
   // actually receive there, not the (absent) property.
   if (html === 'value') {
     return `('value' in ${target} ? ${target}.value !== String(__x) : ${target}.getAttribute('value') !== String(__x))`

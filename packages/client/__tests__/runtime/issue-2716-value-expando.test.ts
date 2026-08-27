@@ -16,9 +16,13 @@
  *
  * The fix gates the IDL-property write on `'value' in target` at runtime
  * (the same duck-type `applyRestAttrs.ts` already used for its own
- * rest-spread `value` handling) and falls back to a plain attribute mirror
- * for everything else — so a genuine form control (e.g. `<input>`) still
- * gets the live controlled-value write real user interaction requires.
+ * rest-spread `value` handling), so an element that already exposes
+ * `.value` (e.g. `<input>`) still gets the live controlled-value write real
+ * user interaction requires. Two DIFFERENT fallbacks for everything else,
+ * matching what SSR rendered in each case: a developer-authored `value=`
+ * attribute falls back to `setAttribute` (SSR renders that attribute), but
+ * the CHILD-ROOT named-prop mirror exercised below writes NOTHING — no
+ * property and no attribute — because SSR renders no mirror at all.
  */
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -126,12 +130,16 @@ describe('#2716 — reactive `value` prop does not plant a `.value` expando on a
     expect('value' in childAfter).toBe(false)
     expect((childAfter as unknown as Record<string, unknown>).value).toBeUndefined()
 
-    // The signal-driven update still reaches the child — as a plain
-    // attribute mirror, not a live property (#2715 already tracks that
-    // SSR itself doesn't render this mirror attribute; out of scope here).
+    // The child-root mirror writes NOTHING on an element with no native
+    // `.value`: no property AND no attribute (an attribute fallback here
+    // would be a fresh SSR/hydrate divergence of its own, since SSR renders
+    // no mirror at all). The signal-driven update still reaches the child
+    // through its own text binding.
+    expect(childAfter.hasAttribute('value')).toBe(false)
     document.querySelector('button')!.dispatchEvent(new window.Event('click', { bubbles: true }))
     expect(childAfter.textContent).toBe('1')
     expect('value' in childAfter).toBe(false)
+    expect(childAfter.hasAttribute('value')).toBe(false)
   })
 
   test('a genuine form control (<input>) still gets the live controlled-value property', async () => {
