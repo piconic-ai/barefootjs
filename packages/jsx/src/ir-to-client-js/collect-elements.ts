@@ -8,7 +8,7 @@ import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from '
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
-import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
+import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
@@ -497,23 +497,15 @@ function isSingleElementJsxChildren(nodes: IRNode[]): boolean {
   return nodes.length === 1 && nodes[0].type === 'element'
 }
 
-/** Build rest spread names from context (rest/props spreads handled by applyRestAttrs, not spreadAttrs). */
-function buildRestSpreadNames(ctx: ClientJsContext): Set<string> {
-  const names = new Set<string>()
-  if (ctx.restPropsName) names.add(ctx.restPropsName)
-  if (ctx.propsObjectName) names.add(ctx.propsObjectName)
-  return names
-}
-
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
-  const restName = ctx.restPropsName
-  const propsObjName = ctx.propsObjectName
   const knownSpreadProp = props.find(p => {
     if (p.name !== '...' && !p.name.startsWith('...')) return false
     if (p.value.kind !== 'spread' && p.value.kind !== 'expression') return false
     const expr = p.value.kind === 'spread' ? p.value.expr : p.value.expr
-    return expr === restName || expr === propsObjName
+    // #2723: resolve through any `const x__alias = x` hop onto the
+    // rest/props binding — see `resolveRestSpreadOrigin`'s docstring.
+    return resolveRestSpreadOrigin(ctx, expr) !== null
   })
   const spreadSource = knownSpreadProp ? PROPS_PARAM : null
 
@@ -762,7 +754,7 @@ export function collectElements(
           // drops the parent's slot suffix automatically. Each iteration
           // owns a distinct scope identified by `data-key`, mirroring the
           // SSR template's renderChild emit.
-          staticItemTemplate = irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, undefined, undefined)
+          staticItemTemplate = irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, undefined, undefined)
         }
       } else if (l.children[0] && !projectionInner) {
         // Pass loopParams so expressions are wrapped at generation time,
@@ -771,8 +763,8 @@ export function collectElements(
         // in the emitted template literal are rewritten to `__bfItem()[1].color`.
         const loopParamSpec = [{ param: l.param, bindings: l.paramBindings }]
         template = useElementReconciliation
-          ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0, loopParamSpec)
-          : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, loopParamSpec)
+          ? irToPlaceholderTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
+          : irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
         // Static-array loops emit a `forEach((param, idx) => ...)` whose body
         // references the destructured param directly — `__bfItem()` is not in
         // scope there. Build a second template that skips the loop-param
@@ -788,8 +780,8 @@ export function collectElements(
           // markers, so SSR's parent-anchored shape and CSR's random-id
           // shape both resolve through the same lookup.
           staticItemTemplate = useElementReconciliation
-            ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
-            : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
+            ? irToPlaceholderTemplate(l.children[0], resolveRestSpreadNames(ctx), 0)
+            : irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0)
         } else if (!useElementReconciliation && !l.bodyIsMultiRoot && !l.bodyIsItemConditional) {
           // Hoisted shared-template fast path (perf): only for the plain
           // `mapArray` shape — single-root, dynamic array, no element
@@ -855,13 +847,13 @@ export function collectElements(
         flatMapClient: projectionInner
           ? {
               params: l.index ? `(${l.param}, ${l.index})` : `(${l.param})`,
-              body: renderFlatMapProjectionClientBody(projectionInner, buildRestSpreadNames(ctx)),
+              body: renderFlatMapProjectionClientBody(projectionInner, resolveRestSpreadNames(ctx)),
               keyed: projectionInner.key !== null,
             }
           : l.flatMapCallback
             ? {
                 params: l.flatMapCallback.params,
-                body: renderFlatMapClientBody(l.flatMapCallback, buildRestSpreadNames(ctx)),
+                body: renderFlatMapClientBody(l.flatMapCallback, resolveRestSpreadNames(ctx)),
                 keyed: flatMapCallbackHasKeyedLeaf(l.flatMapCallback),
               }
             : undefined,
@@ -964,9 +956,10 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
       // Always use PROPS_PARAM as the source since the init function parameter is PROPS_PARAM.
       if (attr.name === '...' && attr.value) {
         const spreadVal = attrValueToString(attr.value) ?? ''
-        const elemRestName = ctx.restPropsName
-        const elemPropsObjName = ctx.propsObjectName
-        if (spreadVal && (spreadVal === elemRestName || spreadVal === elemPropsObjName)) {
+        // #2723: resolve through any `const x__alias = x` hop onto the
+        // rest/props binding — see `resolveRestSpreadOrigin`'s docstring.
+        const spreadOrigin = spreadVal ? resolveRestSpreadOrigin(ctx, spreadVal) : null
+        if (spreadOrigin !== null) {
           // `applyRestAttrs(_el, _p, exclude)` is handed the FULL props
           // object (`PROPS_PARAM`), not a computed JS rest binding, and the
           // runtime filters by SOURCE KEY (`source[key]`). So `exclude` must
@@ -985,7 +978,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
           // caller-keyed (#2524 CSR half) — so the exclude list must use
           // the caller-facing key too, not the local binding name.
           const consumedKeys =
-            spreadVal === elemRestName ? ctx.propsParams.map(p => p.sourceName ?? p.name) : []
+            spreadOrigin === 'rest' ? ctx.propsParams.map(p => p.sourceName ?? p.name) : []
           const staticAttrKeys = element.attrs
             .filter(a => a.name !== '...')
             .map(a => a.name)
@@ -1135,7 +1128,7 @@ function collectBranchLoops(
   siblingOffsets: Map<IRLoop, IRNode[]>,
 ): BranchLoop[] {
   const loops: BranchLoop[] = []
-  const restNames = ctx ? buildRestSpreadNames(ctx) : undefined
+  const restNames = ctx ? resolveRestSpreadNames(ctx) : undefined
 
   walkIR<string | null>(node, null, {
     // Don't recurse into nested conditionals / if-statements.
@@ -1258,7 +1251,7 @@ function buildConditionalMetadata(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
 ): ConditionalElement {
-  const restNames = buildRestSpreadNames(ctx)
+  const restNames = resolveRestSpreadNames(ctx)
   // Use loopDepth=-1 so the first loop encountered inside the branch emits
   // data-key (depth 0) for its items, matching the mapArray item template
   // and event dispatcher convention. Matches irToComponentTemplate/generateCsrTemplate.

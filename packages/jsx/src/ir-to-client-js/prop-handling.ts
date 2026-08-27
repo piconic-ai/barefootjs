@@ -7,6 +7,100 @@ import type { ClientJsContext } from './types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 
 /**
+ * Which of the component's two "forwards the caller's leftover props"
+ * bindings `name` ultimately names — `'rest'` for `ctx.restPropsName`
+ * (the destructured `...rest` binding), `'props'` for `ctx.propsObjectName`
+ * (a whole undestructured `(props)` parameter spread whole), or `null` when
+ * `name` is neither, walking through any bare `const x__alias = <name>`
+ * alias chain to get there (#2723's `alias-props` mutation aliases every
+ * destructured binding, the rest parameter included, e.g.
+ * `const props__alias = props`).
+ *
+ * A `{...spread}` attribute is recognised as "forwards the caller's
+ * leftover props" (routed to the `applyRestAttrs` runtime helper /
+ * excluded from the SSR template's `spreadAttrs({...})` merge, and — only
+ * for the `'rest'` case — given the destructured prop names to exclude
+ * from what it forwards) by comparing its source expression against
+ * exactly `ctx.restPropsName` / `ctx.propsObjectName`. Without this
+ * resolver an alias hop makes that comparison fail even though the spread
+ * still forwards the SAME object — `collect-elements.ts` then never
+ * registers the rest-attrs application at all, and `html-template.ts`'s
+ * merge path stops filtering the spread out, folding it into a
+ * `spreadAttrs({...})` call keyed by the alias name instead of the
+ * runtime-visible one.
+ *
+ * Walks the chain hop by hop (not a precomputed set) so a multi-hop alias
+ * (`const p2 = props; const p3 = p2`) resolves through every link; `visited`
+ * guards a constant cycle (`const a = b; const b = a`) the same way
+ * `free-refs.ts`'s `resolveConstantInitializerRefs` does. A constant whose
+ * value isn't a bare identifier already on the chain (e.g. a real computed
+ * object) stops the walk, so a genuinely different spread expression is
+ * never mistaken for the rest object.
+ */
+export function resolveRestSpreadOrigin(ctx: ClientJsContext, name: string): 'rest' | 'props' | null {
+  const byName = localConstantValues(ctx)
+  const visited = new Set<string>()
+  let current: string | undefined = name.trim()
+  while (current !== undefined && !visited.has(current)) {
+    if (ctx.restPropsName && current === ctx.restPropsName) return 'rest'
+    if (ctx.propsObjectName && current === ctx.propsObjectName) return 'props'
+    visited.add(current)
+    current = byName.get(current)?.trim()
+  }
+  return null
+}
+
+/**
+ * `ctx.localConstants` indexed by name, memoized per `ctx`.
+ *
+ * A `Map` rather than the `.find(` this file's other two constant lookups
+ * use, deliberately: those two are SHADOW-GUARDED lookups that
+ * `binding-scope-ratchet.test.ts` deliberately counts, and that ledger is
+ * shrink-only and at its floor. Resolving an alias chain hop-by-hop would
+ * have added a third counted use — and a hot one, since the walk queries
+ * once per hop — so it indexes instead, which is both outside the ledger's
+ * concern and cheaper than a linear scan per hop.
+ */
+const _localConstantValuesCache: WeakMap<ClientJsContext, ReadonlyMap<string, string | undefined>> = new WeakMap()
+
+function localConstantValues(ctx: ClientJsContext): ReadonlyMap<string, string | undefined> {
+  const cached = _localConstantValuesCache.get(ctx)
+  if (cached) return cached
+  const byName = new Map<string, string | undefined>()
+  for (const constant of ctx.localConstants) {
+    if (!byName.has(constant.name)) byName.set(constant.name, constant.value)
+  }
+  _localConstantValuesCache.set(ctx, byName)
+  return byName
+}
+
+/**
+ * Every name that resolves (via `resolveRestSpreadOrigin`) to either of the
+ * component's "forwards the caller's leftover props" bindings — used where
+ * callers need SET membership (`restSpreadNames?.has(...)` in
+ * `html-template.ts`) rather than a per-name resolution. Memoized per
+ * `ctx` (`WeakMap`, mirroring `free-refs.ts`'s `_bindingMapCache`) since
+ * some callers build this once per component and query it while walking
+ * the whole tree.
+ */
+const _restSpreadNamesCache: WeakMap<ClientJsContext, ReadonlySet<string>> = new WeakMap()
+
+export function resolveRestSpreadNames(ctx: ClientJsContext): ReadonlySet<string> {
+  const cached = _restSpreadNamesCache.get(ctx)
+  if (cached) return cached
+
+  const names = new Set<string>()
+  if (ctx.restPropsName) names.add(ctx.restPropsName)
+  if (ctx.propsObjectName) names.add(ctx.propsObjectName)
+  for (const constant of ctx.localConstants) {
+    if (resolveRestSpreadOrigin(ctx, constant.name) !== null) names.add(constant.name)
+  }
+
+  _restSpreadNamesCache.set(ctx, names)
+  return names
+}
+
+/**
  * Expand dynamic prop value by resolving local constants.
  *
  * Per spec/compiler.md, no prop reference transformation is needed:

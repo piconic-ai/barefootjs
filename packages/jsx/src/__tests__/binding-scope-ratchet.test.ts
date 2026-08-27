@@ -210,7 +210,11 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // FLOOR (shape 1, already guarded): both `expandDynamicPropValue` and
   // `expandConstantForReactivity` precede their `.find(` with
   // `scope?.isBound(trimmedValue)` — see this file's own header comment
-  // (added Stage 1b) for the full SHADOW GUARD reasoning.
+  // (added Stage 1b) for the full SHADOW GUARD reasoning. #2723's
+  // `resolveRestSpreadOrigin` deliberately does NOT add a third: it walks
+  // an alias chain hop by hop, so it indexes `ctx.localConstants` into a
+  // memoized `Map` (`localConstantValues`) instead — keeping this floor
+  // intact and avoiding a linear scan per hop.
   'packages/jsx/src/ir-to-client-js/prop-handling.ts': { 'localConstants.find(': 2 },
   // FLOOR (shape 3): `wrapExprWithLoopParams` / `LoopParamSpec` — the
   // canonical definition of the accessor-rewrite payload every other

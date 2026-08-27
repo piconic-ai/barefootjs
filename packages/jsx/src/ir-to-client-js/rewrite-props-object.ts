@@ -1,7 +1,8 @@
 /**
- * AST-based rename of the source-level props object name (e.g. `props`
- * or a user-supplied destructure name) → the generated parameter name
- * `_p` across the joined init-body string.
+ * AST-based rename of the source-level props object name(s) (e.g. `props`,
+ * a user-supplied destructure name, or a destructured rest binding like
+ * `...rest`) → the generated parameter name `_p` across the joined
+ * init-body string.
  *
  * Replaces the pre-C2 regex hack `\\b<propsObjectName>\\b` which silently
  * matched contexts that should NOT have been rewritten:
@@ -27,15 +28,54 @@ import { PROPS_PARAM } from './utils.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
 
 /**
- * Rename every value-position reference to `propsObjectName` in `code`
- * to `_p`. No-op when `propsObjectName` is null (destructured-prop mode
- * — the analyzer already pre-rewrites bare prop refs into `templateXxx`
- * fields) or already equals `_p`.
+ * Rename every value-position reference to `propsObjectName` — and,
+ * independently, to `restPropsName` (#2723) — in `code` to `_p`.
+ *
+ * `restPropsName` matters even in destructured-prop mode (where
+ * `propsObjectName` is null and the analyzer already pre-rewrites bare
+ * NAMED-prop refs into `templateXxx` fields, per the historical
+ * `propsObjectName ?? 'props'` fallback this replaces): a destructured
+ * rest binding (`const { className, ...rest } = props` /
+ * `function F({ className, ...rest })`) is not itself a "named prop," so
+ * nothing pre-rewrites a bare reference to it. Such a reference reaches
+ * this pass whenever the init body needs `rest`'s OWN VALUE rather than
+ * just recognising a `{...rest}` spread by name — e.g. a `const
+ * rest__alias = rest` hop (#2723's `alias-props` mutation aliases the
+ * rest parameter along with every named one). A rest binding named
+ * anything but "props" (`...rest`, `...leftover`) left such a reference
+ * dangling as a `ReferenceError`, so the analyzer's actual
+ * `restPropsName` is passed in to remove that guesswork.
+ *
+ * The `propsObjectName ?? 'props'` fallback is KEPT alongside it, not
+ * replaced by it. The two do different jobs, and reading the fallback as
+ * merely a lucky guess at the rest binding's name regressed the
+ * doc-example `StatementExample`: a component that destructures its
+ * parameters can still write `props.itemId` inside a handler body, and
+ * `propsObjectName` is null for exactly that shape — so dropping the
+ * fallback left `props.itemId` in the emitted init, where no `props`
+ * binding exists to satisfy it.
+ *
+ * Each candidate name is rewritten independently and skipped when null,
+ * already `_p`, or a duplicate of one already processed (a component
+ * whose props param IS its own rest destructure target, if that shape
+ * ever arises, would otherwise walk the AST twice for the same name).
  */
-export function rewritePropsObjectRef(code: string, propsObjectName: string | null): string {
-  const srcPropsName = propsObjectName ?? 'props'
-  if (srcPropsName === PROPS_PARAM) return code
+export function rewritePropsObjectRef(
+  code: string,
+  propsObjectName: string | null,
+  restPropsName: string | null = null,
+): string {
+  let result = code
+  const seen = new Set<string>()
+  for (const srcPropsName of [propsObjectName ?? 'props', restPropsName]) {
+    if (srcPropsName === null || srcPropsName === PROPS_PARAM || seen.has(srcPropsName)) continue
+    seen.add(srcPropsName)
+    result = rewriteOneName(result, srcPropsName)
+  }
+  return result
+}
 
+function rewriteOneName(code: string, srcPropsName: string): string {
   // Quick exit when the name doesn't appear at all.
   if (!identifierPattern(srcPropsName).test(code)) return code
 

@@ -51,10 +51,6 @@ function key(fixtureId: string, mutationId: string, oracle: OracleKind): string 
 // representative diff in the group; fixtures not individually traced are
 // flagged as "consistent with" rather than confirmed, honestly.
 
-/** G3: alias-props makes `createComponent()`'s CSR-mount path render nothing at all. */
-const ALIAS_PROPS_CSR_MOUNT_EMPTY =
-  "alias-props inserts `const x__alias = x` hops before a component's original body statements; the csr-mount leg (`createComponent()`, no SSR) then renders a completely EMPTY root — confirmed directly (Button/Kbd/Label/Input/Textarea all render '' via csr-mount while SSR+hydration render the expected element correctly), consistent with the CSR-side 'build from scratch' codegen path assuming the destructure/signal declarations are the function body's leading statements."
-
 /** G2c: a conditional-return branch independently fragment-wrapped has no per-branch CSR scope-shape declaration. */
 const FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID =
   "fragment-wrap wraps EVERY `return <jsx>` it finds, including ones inside an if-statement — for a conditional-return component (`if (asChild) return <Slot/>; return <button>...`, `ir.root.type === 'if-statement'`) this independently fragment-wraps one branch while leaving the other untouched. `emit-registration.ts`'s `isFragmentRoot`/`isCommentScope` only inspects `_ir.root.type` at the WHOLE-COMPONENT level (never 'if-statement'), so the resulting `ComponentDef` carries neither `comment` nor `fragmentRoot` — a single static per-component flag can't express \"branch A is fragment-rooted, branch B isn't\". `materializeComponent`'s pure CSR mount (`createComponent()`, no SSR) then picks ONE treatment for the whole component regardless of which branch actually renders, so the wrapped branch's root element gets no scope id at all (mirrors the pre-#2722 symptom, but the def-level #2722 fix cannot reach this per-branch shape). Distinct from #2722 (confirmed: #2722's fix graduated every OTHER `fragment-wrap` entry in this ledger; only the conditional-return-rooted components remain). Filed as its own enhancement (#2731) — the fix needs a per-branch scope-shape declaration or a CSR-time probe of the rendered markup's own shape, not a bigger flag."
@@ -147,33 +143,36 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2731',
   },
 
-  // --- G3 ---------------------------------------------------------------
-  { fixtureId: 'button', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
-  {
-    fixtureId: 'button',
-    mutationId: 'alias-props',
-    oracle: 'idempotence',
-    reason: `${ALIAS_PROPS_CSR_MOUNT_EMPTY} Surfaces here as a click timeout — there is no <button> in the csr-mount DOM to click.`,
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
-  },
-  { fixtureId: 'input', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
-  {
-    fixtureId: 'input',
-    mutationId: 'alias-props',
-    oracle: 'idempotence',
-    reason: `${ALIAS_PROPS_CSR_MOUNT_EMPTY} Surfaces here as a fill timeout — there is no <input> in the csr-mount DOM to fill.`,
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
-  },
-  { fixtureId: 'kbd', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
-  { fixtureId: 'label', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
-  { fixtureId: 'textarea', mutationId: 'alias-props', oracle: 'three-point', reason: ALIAS_PROPS_CSR_MOUNT_EMPTY, issue: 'https://github.com/piconic-ai/barefootjs/issues/2723' },
-  {
-    fixtureId: 'textarea',
-    mutationId: 'alias-props',
-    oracle: 'idempotence',
-    reason: `${ALIAS_PROPS_CSR_MOUNT_EMPTY} Surfaces here as a fill timeout — there is no <textarea> in the csr-mount DOM to fill.`,
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
-  },
+  // --- G3 (fixed, #2723) --------------------------------------------------
+  // The issue body's original theory (CSR "build from scratch" assuming a
+  // component body's leading statements are the destructure/signal
+  // declarations it replays) was wrong — corrected in the issue's own
+  // comment before the fix landed. The actual defects, both in Phase 2
+  // (`ir-to-client-js`, which never re-derives through a local-const chain
+  // the way Phase 1's `isPropsReference`/`isSignalOrMemoReference` already
+  // do against `ctx.patterns.constants`):
+  //   1. `needsEffectWrapper` (`reactivity.ts`) missed a prop reference
+  //      reached only through a `const x__alias = x` hop, so the
+  //      attribute's `createEffect` was never emitted — and when that
+  //      effect was `init`'s only content, the whole function (and the
+  //      `$`/`createEffect`/`applyRestAttrs` imports with it) collapsed to
+  //      `function initX() {}`.
+  //   2. Independently, the REST/whole-props spread source name check
+  //      (`collect-elements.ts`'s `applyRestAttrs` registration,
+  //      `html-template.ts`'s `spreadAttrs({...})` merge filter) compared
+  //      the spread expression against `ctx.restPropsName` /
+  //      `ctx.propsObjectName` by exact string equality — `alias-props`
+  //      aliases the rest parameter too (`const props__alias = props`),
+  //      so a real `{...props}` forward stopped being recognised as one.
+  // Fixed via `resolveRestSpreadOrigin`/`resolveRestSpreadNames`
+  // (`prop-handling.ts`) for (2) and a local-constant recursion in
+  // `needsEffectWrapper` for (1) — both walk `ctx.localConstants` the same
+  // way Phase 1 already does, not a new tracking structure (`BindingScope`
+  // is loop/callback scope resolution and has no bearing on a component-
+  // body `const` aliasing a prop).
+  // button / input / kbd / label / textarea graduated in full.
+  // `reactive-props` still fails `three-point` — see G7 below, now #2737 —
+  // a DIFFERENT divergence this fix does not reach.
 
   // --- G4 -------------------------------------------------------------------
   {
@@ -215,14 +214,16 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // already catalogue for other fixtures — not new bugs, just newly-run
   // triples that happen to reproduce them. The `fragment-wrap` × `three-point`
   // rows this group used to carry (the #2722 scope-id bug, above) graduated
-  // with the rest of G2; only the `alias-props` row (a separate, #2723
-  // defect) remains.
+  // with the rest of G2. The `alias-props` row below was originally
+  // attributed to the (since-fixed, #2723) G3 mechanism — it did NOT
+  // graduate alongside G3, and re-diagnosis (below) found a distinct cause.
   {
     fixtureId: 'reactive-props',
     mutationId: 'alias-props',
     oracle: 'three-point',
-    reason: ALIAS_PROPS_CSR_MOUNT_EMPTY,
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2723',
+    reason:
+      "NOT the G3 mechanism (#2723's fix graduated button/input/kbd/label/textarea; this fixture alone did not, and the divergence shape differs — hydrated renders empty while csr-mount renders the full correct DOM, the reverse of G3's csr-mount-empty pattern). Confirmed a DIFFERENT defect: `ReactiveChild(props: ChildProps)`, a SolidJS-style (non-destructured) component with an event handler, has its whole `props` parameter aliased (`const props__alias = props`); its compiled CSR template still reads the bare identifier `props` (`${escapeTextOrMarkup((props).label)}`) instead of `_p.label` — `props` is not in scope in that closure, so building it from scratch throws. A sibling non-destructured component in the same file WITHOUT an event handler (`PropsStyleChild`) does not reproduce, suggesting the gap is specific to whichever template-generation path (`generateCsrTemplate` vs `irToComponentTemplate`) an event handler routes a component through — each has its own copy of the `propsObjectName` → `_p.` access-prefix rewrite in `html-template.ts`'s `transformExpr`, and only one of them resolves through a `const` alias hop onto `propsObjectName` the way `resolveRestSpreadOrigin` (#2723) now does for the rest-spread case. Not yet fixed.",
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2737',
   },
 ]
 

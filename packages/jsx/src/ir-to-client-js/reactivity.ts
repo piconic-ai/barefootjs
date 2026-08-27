@@ -174,11 +174,30 @@ export function decideWrapForChildProp(
  * The signal-getter and memo regexes (`\b<name>\s*\(`) still run against
  * the raw string — those are call-shape patterns, not bare-identifier
  * checks, and are outside the scope of #1267.
+ *
+ * A reference that only reaches a signal/memo/prop through an intervening
+ * `const x__alias = x` hop is walked via `ctx.localConstants` below (#2723)
+ * — see that block's own comment for why this lives here rather than on
+ * `BindingScope` or a new tracking structure.
  */
 export function needsEffectWrapper(
   expr: string,
   ctx: ClientJsContext,
   freeIdentifiers?: ReadonlySet<string>,
+): boolean {
+  return needsEffectWrapperCore(expr, ctx, freeIdentifiers, new Set())
+}
+
+/**
+ * `needsEffectWrapper`'s actual body, with a `visitedConstants` accumulator
+ * threaded through the local-constant recursion below so a cycle
+ * (`const a = b; const b = a`) terminates instead of looping forever.
+ */
+function needsEffectWrapperCore(
+  expr: string,
+  ctx: ClientJsContext,
+  freeIdentifiers: ReadonlySet<string> | undefined,
+  visitedConstants: Set<string>,
 ): boolean {
   for (const signal of ctx.signals) {
     if (identifierCallPattern(signal.getter).test(expr)) {
@@ -207,6 +226,46 @@ export function needsEffectWrapper(
   if (ctx.propsObjectName) {
     const propsAccess = new RegExp(`\\b${ctx.propsObjectName}\\.(?!children\\b)\\w+`)
     if (propsAccess.test(expr)) return true
+  }
+
+  // #2723: a bare `const x__alias = x` hop between a destructured prop and
+  // its use site breaks every check above — `expr` (or its precomputed
+  // `freeIdentifiers`) names the ALIAS, never the prop it stands for, so
+  // none of the direct prop/signal/memo checks fire even though the value
+  // is exactly as reactive as `x` itself. Phase 1's `isReactiveExpression`
+  // already sees through this (`isPropsReference` / `isSignalOrMemoReference`
+  // in jsx-to-ir.ts recursively walk `ctx.patterns.constants`, the
+  // `TransformContext` twin of this function's `ctx.localConstants`) —
+  // this is that SAME constant-chain walk, ported onto Phase 2's string
+  // expression so its independent wrap decision agrees with Phase 1's
+  // `hasReactiveAttributes` slotId decision instead of silently
+  // disagreeing on whether the attribute gets a `createEffect` at all.
+  //
+  // This is NOT loop/callback binding resolution — `BindingScope` (#2482)
+  // answers "what name is this loop row's own item/index/destructure
+  // binding," a question with no bearing on a component-body `const`
+  // aliasing a prop — so it does not belong there. It also isn't a new ad
+  // hoc tracking structure: `ctx.localConstants` is the existing per-
+  // component constant list this file already reads (see
+  // `expandConstantForReactivity` above), walked here with a `visited`
+  // guard for the same reason `free-refs.ts`'s `resolveConstantInitializerRefs`
+  // carries one — a constant cycle must terminate, not loop forever.
+  //
+  // Constants whose initializer contains an arrow/function expression are
+  // skipped, mirroring `resolveConstantInitializerRefs`'s `containsArrow`
+  // skip: refs inside a function body run when (and if) the function is
+  // invoked, not merely because something reads the bare function value.
+  for (const constant of ctx.localConstants) {
+    if (visitedConstants.has(constant.name)) continue
+    if (constant.value === undefined || constant.containsArrow) continue
+    const referenced = freeIdentifiers
+      ? freeIdentifiers.has(constant.name)
+      : tokenContainsIdent(expr, constant.name)
+    if (!referenced) continue
+    visitedConstants.add(constant.name)
+    if (needsEffectWrapperCore(constant.value, ctx, constant.freeIdentifiers, visitedConstants)) {
+      return true
+    }
   }
 
   return false

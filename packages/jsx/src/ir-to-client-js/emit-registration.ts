@@ -10,6 +10,7 @@ import { PROPS_PARAM } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
 import { nameForRegistryRef } from './component-scope.ts'
+import { resolveRestSpreadNames } from './prop-handling.ts'
 
 /**
  * Resolve chained references within a constants map.
@@ -191,10 +192,11 @@ export function emitRegistrationAndHydration(
   const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
   const { inlinableConstants, unsafeLocalNames } = inlinability ?? buildInlinableConstants(ctx, graph, _ir.root)
 
-  // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
-  const restSpreadNames = new Set<string>()
-  if (ctx.restPropsName) restSpreadNames.add(ctx.restPropsName)
-  if (ctx.propsObjectName) restSpreadNames.add(ctx.propsObjectName)
+  // Build rest spread names: these are rest/props spreads handled by
+  // applyRestAttrs, not spreadAttrs — #2723: includes any `const x__alias
+  // = x` hop onto the rest/props binding (see `resolveRestSpreadNames`'s
+  // docstring in prop-handling.ts).
+  const restSpreadNames = resolveRestSpreadNames(ctx)
 
   // Two distinct shapes share the `comment: true` (proxy-scoped) def flag,
   // but need OPPOSITE runtime treatment of the def's own scope id
