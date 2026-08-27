@@ -1338,6 +1338,12 @@ describe('Client JS generation', () => {
       // hydrate() should include comment: true for fragment roots
       expect(content).toMatch(/hydrate\('FragComp',/)
       expect(content).toContain('comment: true')
+      // #2722 regression pin: a genuine fragment root ALSO needs
+      // `fragmentRoot: true` — distinct from the `comment: true` a
+      // root-is-a-child-call component gets (see the "component roots"
+      // describe block below) — so `materializeComponent` (component.ts)
+      // generates its own CSR scope id instead of leaving it null.
+      expect(content).toContain('fragmentRoot: true')
     })
 
     test('single-root component generates mount without comment flag', () => {
@@ -1390,6 +1396,11 @@ describe('Client JS generation', () => {
       // hydrate() should include comment: true for component roots
       expect(content).toMatch(/hydrate\('Wrapper',/)
       expect(content).toContain('comment: true')
+      // #2722 regression pin: the root-is-a-child-call shape must NOT get
+      // `fragmentRoot: true` — the child's OWN markup already carries its
+      // own scope id (#2649), so `materializeComponent` must keep leaving
+      // this wrapper's `scopeId` null, not generate a fresh one.
+      expect(content).not.toContain('fragmentRoot: true')
     })
 
     test('element-root client component does NOT generate comment: true', () => {

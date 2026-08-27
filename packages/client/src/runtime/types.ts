@@ -22,6 +22,24 @@ export interface ComponentDef {
   init: InitFn
   /** Template function for client-side component creation */
   template?: (props: Record<string, unknown>) => string
-  /** When true, use comment-based scope hydration (fragment roots) */
+  /**
+   * When true, this component's scope has no `bf-s`-carrying element of
+   * its own — a proxy element stands in for it. Set for TWO distinct
+   * shapes (see `fragmentRoot` below, which tells them apart):
+   *   - a genuine fragment root (`<>...</>`), where the proxy is the
+   *     fragment's own rendered content;
+   *   - a root that is itself a single child component call, where the
+   *     proxy is that child's own already-scoped element (#2649).
+   */
   comment?: boolean
+  /**
+   * True only for the genuine-fragment-root shape of `comment` above
+   * (`ir.root.type === 'fragment'`) — never for the root-is-a-child-call
+   * shape. `materializeComponent` (component.ts) uses this to decide
+   * whether a CSR mount must generate its OWN scope id (fragment root: yes,
+   * so nested `renderChild()` calls get parent-prefixed naming matching
+   * SSR/hydrate) or leave the scope id null to avoid overwriting the
+   * child's own (#2649's shape, #2722).
+   */
+  fragmentRoot?: boolean
 }

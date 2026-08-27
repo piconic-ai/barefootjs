@@ -161,7 +161,10 @@ export function upsertChild(
     // Hand the placeholder to `createComponent` so the new element is
     // connected before its init runs — `useContext` resolves by DOM
     // position, and a detached init silently fell back to the global
-    // context store.
+    // context store. `mountAt` (`ph`) is always given here, so this lands
+    // on `createComponent`'s non-null-`mountAt` overload and is typed
+    // `HTMLElement` — the bare-fragment-root `DocumentFragment` shape is
+    // unreachable from a call that names its mount point.
     return createComponent(name, props, key, slot, ph)
   }
   return null

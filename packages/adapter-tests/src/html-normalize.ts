@@ -133,7 +133,17 @@ export function normalizeHTML(html: string): string {
     // per-render volatile (random suffix), so they can never byte-match
     // across adapters — strip both markers to keep cross-adapter
     // conformance comparisons apples-to-apples.
-    .replace(/<!--bf-\/?scope:[^>]*-->/g, '')
+    //
+    // Non-greedy `[\s\S]*?` up to the literal `-->` terminator, NOT
+    // `[^>]*` — a fragment root's comment can embed the scope's serialized
+    // props JSON (`wrapWithScopeComment`, hono-adapter.ts), and a prop
+    // value containing a raw `>` (e.g. an HTML-metacharacter string like
+    // `<b>bold</b>`, `text-escape` fixture) made `[^>]*` stop mid-comment,
+    // leaving the whole marker unstripped and failing the mutation-sweep's
+    // fragment-wrap oracle even though hydration/CSR-mount agreed (#2721/
+    // #2722 mutation sweep). An HTML comment can't legally contain `--`
+    // itself, so matching up to the first `-->` is exact, not a heuristic.
+    .replace(/<!--bf-\/?scope:[\s\S]*?-->/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
     .replace(/bf-s="~([^"]*)"/g, 'bf-s="$1"')
     // Normalize non-deterministic child scope IDs. Keep the trailing

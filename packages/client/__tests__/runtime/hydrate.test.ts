@@ -203,8 +203,14 @@ describe('hydrate', () => {
   test('with comment=true hydrates comment-based scopes', async () => {
     const initialized: Array<{ props: Record<string, unknown>; scope: Element }> = []
 
+    // Flat, unnamespaced — matches what `wrapWithScopeComment` (hono-
+    // adapter.ts) actually emits after the `|` (same shape `bf-p` carries
+    // for an element-scoped root, above). A `{"FragComp": {...}}` wrapper
+    // shape here was #2721's bug fixture: no emitter ever produces that,
+    // so hydration silently read `{}` for every root fragment scope that
+    // had props at all.
     document.body.innerHTML = `
-      <!--bf-scope:FragComp_abc|{"FragComp":{"title":"hello"}}-->
+      <!--bf-scope:FragComp_abc|{"title":"hello"}-->
       <div>child 1</div>
     `
 

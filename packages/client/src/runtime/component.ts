@@ -11,7 +11,17 @@ import { getRegisteredDef } from './hydrate.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { untrack } from '@barefootjs/client/reactive'
 import { setCurrentScope } from './context.ts'
-import { BF_SCOPE, BF_KEY, BF_HOST, BF_AT, BF_PARENT_SCOPE_PLACEHOLDER, BF_PLACEHOLDER } from '@barefootjs/shared'
+import { commentScopeRegistry } from './scope.ts'
+import {
+  BF_SCOPE,
+  BF_KEY,
+  BF_HOST,
+  BF_AT,
+  BF_PARENT_SCOPE_PLACEHOLDER,
+  BF_PLACEHOLDER,
+  BF_SCOPE_COMMENT_PREFIX,
+  BF_SCOPE_COMMENT_END_PREFIX,
+} from '@barefootjs/shared'
 import type { ComponentDef } from './types.ts'
 
 // Parent scope ID context for renderChild() inside insert() branch templates.
@@ -137,13 +147,47 @@ export interface CreateComponentSlotInfo {
   mount: string
 }
 
+/**
+ * The `HTMLElement | DocumentFragment` return covers exactly one shape: a
+ * BARE call (no `mountAt`, no ambient row-mount point) for a genuine
+ * fragment-root component (#2722). Every other combination — a normal
+ * component, or a fragment-root one with `mountAt`/row-mount already
+ * telling this function where to connect — still returns the real,
+ * single `HTMLElement`, unchanged. Only the no-known-destination case has
+ * no single element to hand back: the fragment root's own `<!--bf-scope:-->`
+ * boundary comments (`materializeComponent` step 7b) must travel to
+ * wherever the caller inserts the result, and a `DocumentFragment` is the
+ * one `Node` a plain `container.appendChild(...)` / `el.replaceWith(...)`
+ * moves as a unit without the caller needing to know why.
+ *
+ * The first overload states that in the type system rather than only here:
+ * a call that passes a non-null `mountAt` is telling this function where to
+ * connect, so it can only get the real `HTMLElement` back. Callers on that
+ * overload need no cast, which is why `upsertChild` (registry.ts) and
+ * `upsertChildItem` (qsa-item.ts) assert nothing — the narrowing is the
+ * signature's job, not theirs.
+ */
+export function createComponent(
+  nameOrDef: string | ComponentDef,
+  props: Record<string, unknown>,
+  key: string | number | undefined,
+  slot: CreateComponentSlotInfo | undefined,
+  mountAt: Element,
+): HTMLElement
+export function createComponent(
+  nameOrDef: string | ComponentDef,
+  props?: Record<string, unknown>,
+  key?: string | number,
+  slot?: CreateComponentSlotInfo,
+  mountAt?: Element | null,
+): HTMLElement | DocumentFragment
 export function createComponent(
   nameOrDef: string | ComponentDef,
   props: Record<string, unknown> = {},
   key?: string | number,
   slot?: CreateComponentSlotInfo,
   mountAt?: Element | null,
-): HTMLElement {
+): HTMLElement | DocumentFragment {
   const element = materializeComponent(nameOrDef, props, key, slot, mountAt)
   // `mountAt` is an unconditional obligation: callers used to run
   // `ph.replaceWith(comp)` themselves on every outcome, so every path that
@@ -152,7 +196,9 @@ export function createComponent(
   // which must stay detached so its self-replacement stays recoverable.
   // `parentNode` (not `isConnected`) is the right "still unconsumed" probe: it
   // survives a `mountAt` that was itself detached, which is the normal case
-  // during multi-root loop-body setup.
+  // during multi-root loop-body setup. A fragment-root's `DocumentFragment`
+  // return only ever happens when `mountAt` is absent (see above), so it
+  // never reaches this branch.
   if (mountAt && mountAt.parentNode && element !== mountAt) {
     mountAt.replaceWith(element)
   }
@@ -173,7 +219,7 @@ function materializeComponent(
   key?: string | number,
   slot?: CreateComponentSlotInfo,
   mountAt?: Element | null,
-): HTMLElement {
+): HTMLElement | DocumentFragment {
   // A bare callable shim invoked from user code (e.g. an object-literal
   // value `LOGOS[id]()` whose arrow the compiler hoisted into a component)
   // reaches us with no props (#1663). Normalize to an empty object so the
@@ -230,11 +276,22 @@ function materializeComponent(
 
   // 4. Pre-generate the component's scope ID.
   //
-  // `comment: true` components (synthesized inline-JSX-callback wrappers
-  // from #1211) render as transparent shells — the parsed `firstChild` is
-  // already the inner component's root with its own bf-s. Don't overwrite
-  // it (scopeId stays null), or `$c(__scope, 's0')` from the wrapper's
-  // init resolves to null.
+  // `comment: true` components are proxy-scoped — no element of their own
+  // carries `bf-s` directly — but that covers TWO different shapes
+  // (`ComponentDef.fragmentRoot`'s docstring, types.ts) that need OPPOSITE
+  // treatment here:
+  //   - root-is-a-child-call (#1211/#2649, `fragmentRoot` false): the
+  //     parsed `firstChild` IS the child's own already-scoped element.
+  //     Don't overwrite it (scopeId stays null), or `$c(__scope, 's0')`
+  //     from the wrapper's init resolves to null.
+  //   - genuine fragment root (`fragmentRoot` true): the parsed `firstChild`
+  //     carries NO scope of its own (SSR moves it into the wrapping
+  //     `<!--bf-scope:-->` comment) — generate one just the same, so
+  //     `_parentScopeId` below still gets threaded into nested
+  //     `renderChild()` calls and their naming matches SSR/hydrate (#2722:
+  //     leaving this null made every nested child fall back to a random,
+  //     un-prefixed scope id — `Select_xyz` instead of the expected
+  //     `SelectBasicDemo_xyz_s8`).
   //
   // `slot` is only supplied by `upsertChild` / `upsertChildItem` mounting a
   // component nested below a loop row root — the SSR reference (Hono)
@@ -245,11 +302,12 @@ function materializeComponent(
   // random id, matching the reference behaviour.
   const def = getRegisteredDef(name)
   const isCommentWrapper = def?.comment === true
+  const isFragmentRoot = def?.fragmentRoot === true
   const derivedScopeId = slot?.parent && slot.mount ? `${slot.parent}_${slot.mount}` : null
   // Same as in `renderChild`: `name` is the registry key, which is
   // file-scoped (`Name__<8hex>`) for a non-exported component. The scope ID
   // must carry the plain name — see `ComponentDef.name` (#2518).
-  const scopeId = isCommentWrapper ? null : (derivedScopeId ?? `${def?.name ?? name}_${generateId()}`)
+  const scopeId = (isCommentWrapper && !isFragmentRoot) ? null : (derivedScopeId ?? `${def?.name ?? name}_${generateId()}`)
 
   // 5. Generate HTML from props.
   //
@@ -287,7 +345,13 @@ function materializeComponent(
   }
 
   // 7. Set scope ID and key attributes.
-  if (scopeId) {
+  //
+  // A genuine fragment root carries its scope id on a WRAPPING comment
+  // pair, never as a `bf-s` attribute on the element itself — matching
+  // `wrapWithScopeComment` (hono-adapter.ts) and `hydrateCommentScope`
+  // (hydrate.ts). `scopeId` is still non-null for this shape (step 4) so
+  // `_parentScopeId` threads correctly; only the ATTRIBUTE is skipped here.
+  if (scopeId && !isFragmentRoot) {
     element.setAttribute(BF_SCOPE, scopeId)
   }
   if (slot) {
@@ -296,6 +360,27 @@ function materializeComponent(
   }
   if (key !== undefined) {
     element.setAttribute(BF_KEY, String(key))
+  }
+
+  // 7a. Fragment-root boundary comments + registry (#2722).
+  //
+  // `find()`/`$()`/`$c()` (query.ts) resolve a slot or child scope by
+  // walking `commentScopeRegistry`'s stored comment and its boundary
+  // (`getCommentScopeBoundary`, scope.ts) — that walk needs REAL, sibling-
+  // connected comment nodes, not just a registry entry, or `find()`'s
+  // comment-scope branch enumerates zero candidates (worse than the
+  // fallback `querySelectorAll` path a non-fragment scope gets). So these
+  // are built now and threaded through to wherever `element` ends up
+  // connected below, exactly mirroring the SSR/hydrate shape:
+  //   <!--bf-scope:ID-->` + element + `<!--bf-/scope:ID-->`
+  const fragmentComments = isFragmentRoot && scopeId
+    ? {
+        start: document.createComment(`${BF_SCOPE_COMMENT_PREFIX}${scopeId}`),
+        end: document.createComment(`${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}`),
+      }
+    : null
+  if (fragmentComments) {
+    commentScopeRegistry.set(element, { commentNode: fragmentComments.start, scopeId: scopeId! })
   }
 
   // 7b. Connect before init.
@@ -317,14 +402,49 @@ function materializeComponent(
   // live DOM with no handle on the result, so this shape keeps the
   // detached behaviour.
   const rootIsDeferredPlaceholder = element.hasAttribute(BF_PLACEHOLDER)
+  // A fragment root's boundary comments must land adjacent to `element`
+  // at the SAME moment it connects, in each of the three shapes below —
+  // there is no later hook to attach them once the caller has taken the
+  // return value away (see `createComponent`'s docstring for the fourth,
+  // no-known-destination shape, handled after `init` runs).
+  let bareFragment: DocumentFragment | null = null
   if (mountAt && !rootIsDeferredPlaceholder) {
-    mountAt.replaceWith(element)
+    if (fragmentComments) {
+      mountAt.replaceWith(fragmentComments.start, element, fragmentComments.end)
+    } else {
+      mountAt.replaceWith(element)
+    }
   } else if (rowMount && !rootIsDeferredPlaceholder) {
     // Loop row: no placeholder exists, so connect at the position `mapArray`
     // handed down. The reorder step may move the row afterwards; any position
     // inside the container yields the same ancestor chain, which is all
     // `useContext`'s parentElement walk needs.
-    rowMount.container.insertBefore(element, rowMount.anchor)
+    if (fragmentComments) {
+      rowMount.container.insertBefore(fragmentComments.start, rowMount.anchor)
+      rowMount.container.insertBefore(element, rowMount.anchor)
+      rowMount.container.insertBefore(fragmentComments.end, rowMount.anchor)
+      // `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`) does not
+      // yet track a fragment-root row's own boundary comments the way it
+      // tracks a multi-root loop BODY's `__bfExtras` siblings — a future
+      // reorder/removal of this row would move/remove `element` without
+      // its comments. Not reachable by any currently tracked fixture (no
+      // fragment-root component is used as a loop row in the mutation
+      // corpus), so declared rather than grown here:
+      // https://github.com/piconic-ai/barefootjs/issues/2733
+    } else {
+      rowMount.container.insertBefore(element, rowMount.anchor)
+    }
+  } else if (fragmentComments && !rootIsDeferredPlaceholder) {
+    // Neither a placeholder nor an ambient row position: the caller owns
+    // connecting the result itself (e.g. the compiler's exported
+    // `export function Name(props, key) { return createComponent(...) }`
+    // shim, called directly with no further composition). Bundle the
+    // three nodes in one `DocumentFragment` so a plain `container.append(
+    // result)` / `el.replaceWith(result)` moves all of them together —
+    // `createComponent`'s docstring covers why this is the one shape that
+    // can't return a bare `HTMLElement`.
+    bareFragment = document.createDocumentFragment()
+    bareFragment.append(fragmentComments.start, element, fragmentComments.end)
   }
 
   // 8. Set currentScope so provideContext/useContext are element-scoped.
@@ -390,7 +510,10 @@ function materializeComponent(
   // 12. Mark element as initialized
   hydratedScopes.add(element)
 
-  return element
+  // `bareFragment` bundles `element` with its boundary comments for the
+  // one shape with no known destination (7b) — everything else returns
+  // the real, single element unchanged.
+  return bareFragment ?? element
 }
 
 /**
@@ -425,20 +548,38 @@ export function renderChild(
   // `integrations/shared/e2e/toggle.spec.ts` asserts. The def carries the
   // plain name for exactly this — see `ComponentDef.name`, "Used for scope
   // ID generation" (#2518).
-  const displayName = getRegisteredDef(name)?.name ?? name
+  const def = getRegisteredDef(name)
+  const displayName = def?.name ?? name
+  // A genuine fragment-root child (#2722) carries NO `bf-s`/`bf-h`/`bf-m`
+  // element attributes at all — SSR moves them into a wrapping
+  // `<!--bf-scope:-->` comment instead (`wrapWithScopeComment`, hono-
+  // adapter.ts). Below, `isFragmentRoot` skips the attribute-splicing path
+  // entirely and wraps the child's markup in the same comment shape —
+  // otherwise every fragment-root child rendered inline by a PARENT's own
+  // template (as opposed to a fresh top-level `createComponent()` mount,
+  // `materializeComponent`'s equivalent fix) kept stamping `bf-s` onto an
+  // element the SSR/hydrate reference never puts one on.
+  const isFragmentRoot = def?.fragmentRoot === true
   const scopePrefix = (_parentScopeId && slotSuffix)
     ? _parentScopeId
     : `${displayName}_${generateId()}`
+  const scopeId = `${scopePrefix}${suffix}`
   const keyAttr = key !== undefined ? ` ${BF_KEY}="${key}"` : ''
   // Slot-relationship markers — only emitted when both host and slot are
   // known; top-level renders without parent context omit them.
   const slotAttrs = (_parentScopeId && slotSuffix)
     ? ` ${BF_HOST}="${_parentScopeId}" ${BF_AT}="${slotSuffix}"`
     : ''
-  const bfsAttr = `${BF_SCOPE}="${scopePrefix}${suffix}"`
+  const bfsAttr = `${BF_SCOPE}="${scopeId}"`
 
   if (!templateFn) {
-    return `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
+    // No template registered: same empty-shell fallback either way, but a
+    // fragment-root child still gets its comment pair instead of `bf-s` —
+    // an empty `<div></div>` with no scope marker at all would be
+    // unfindable by any later `$c()` lookup.
+    return isFragmentRoot
+      ? `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}--><div></div><!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
+      : `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
   }
 
   // Push `_parentScopeId` to THIS child's own derived scope while its
@@ -469,6 +610,26 @@ export function renderChild(
     PLACEHOLDER_ATTR_PATTERN,
     _parentScopeId ? ` bf-s="${_parentScopeId}"` : '',
   )
+
+  // Fragment-root child (#2722): wrap the whole rendered markup in the
+  // SSR/hydrate boundary-comment shape instead of splicing `bf-s`/`bf-h`/
+  // `bf-m` into a first element that, structurally, owns none of them —
+  // `wrapWithScopeComment`'s CSR mirror, same as `materializeComponent`'s
+  // fix for a top-level mount. `key`/`data-key` reconciliation for a
+  // fragment-root loop row is a known, separate gap on both sides — SSR
+  // itself doesn't emit `data-key` for this shape either (`renderElement`'s
+  // `__dataKey` block, hono-adapter.ts, only fires when `needsScope` is
+  // true, which a fragment root's inner element never is), so the two are
+  // consistently absent today rather than divergent. Not reachable by any
+  // currently tracked fixture through this path, so declared rather than
+  // half-fixed here: SSR emission is
+  // https://github.com/piconic-ai/barefootjs/issues/2732, row
+  // reconciliation is https://github.com/piconic-ai/barefootjs/issues/2733
+  if (isFragmentRoot) {
+    const hostSuffix = (_parentScopeId && slotSuffix) ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
+    return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${html}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
+  }
+
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
   // so we find the first element tag rather than assuming index 0.
   const firstElMatch = html.match(/<(\w+)/)

@@ -137,7 +137,9 @@ export function upsertChildItem(
   const ph = qsaItem(primaryEl, `[data-bf-ph="${phId}"]`) as HTMLElement | null
   if (ph) {
     const slot = slotId ? buildSlotInfo(primaryEl, slotId, anchorScope) : undefined
-    // Connect before init — see the same call in `upsertChild`.
+    // Connect before init — see the same call in `upsertChild`. `mountAt`
+    // (`ph`) is always given here, so this lands on `createComponent`'s
+    // non-null-`mountAt` overload and is typed `HTMLElement`.
     return createComponent(name, props, key, slot, ph)
   }
   return null
