@@ -137,8 +137,11 @@ export function upsertChildItem(
   const ph = qsaItem(primaryEl, `[data-bf-ph="${phId}"]`) as HTMLElement | null
   if (ph) {
     const slot = slotId ? buildSlotInfo(primaryEl, slotId, anchorScope) : undefined
-    // Connect before init — see the same call in `upsertChild`.
-    return createComponent(name, props, key, slot, ph)
+    // Connect before init — see the same call in `upsertChild`. `mountAt`
+    // (`ph`) is always given here, so `createComponent` never returns the
+    // bare-fragment-root `DocumentFragment` shape (see its docstring) —
+    // this call always gets back the real element.
+    return createComponent(name, props, key, slot, ph) as HTMLElement
   }
   return null
 }

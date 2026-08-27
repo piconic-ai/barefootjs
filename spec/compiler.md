@@ -403,6 +403,29 @@ rendered outside the compiler pipeline. See piconic-ai/barefootjs#1915.
    queries onto later siblings. Every adapter must emit the pair from the
    same scope id.
 
+   **CSR mirror + the two `comment: true` shapes (#2722).** The client JS
+   `ComponentDef` passed to `hydrate()` carries `comment: true` whenever
+   `emit-registration.ts`'s `isCommentScope` is true — two IR shapes, not
+   one, that a pure CSR mount (`createComponent()`, no SSR) must tell
+   apart:
+   - `ir.root.type === 'fragment'` (this section's shape) — `ComponentDef`
+     additionally carries `fragmentRoot: true`. `materializeComponent`
+     (`component.ts`) must generate its OWN scope id (never leave it null)
+     and wrap the parsed markup in a matching `<!--bf-scope:-->` /
+     `<!--bf-/scope:-->` comment pair — mirroring this section's SSR shape
+     exactly, or a nested `renderChild()` call has no parent scope id to
+     prefix its own naming with (#1627's random-id fallback kicks in
+     instead), diverging from what SSR/hydrate produced.
+   - `ir.root.type === 'component'` (root is a single child component
+     call, #2649) — no `fragmentRoot` flag. The parsed markup IS the
+     child's own already-scoped element; `materializeComponent` must leave
+     `scopeId` null rather than stamp or wrap it.
+
+   Conflating the two (treating every `comment: true` def as the second
+   shape) is exactly the #2722 regression: a genuine fragment root's CSR
+   mount lost its scope id entirely, and every descendant fell back to
+   unprefixed random naming instead of matching SSR/hydrate.
+
 2. **Client JS**: Minimal JavaScript for reactivity
    - Uses `createEffect` for reactive updates
    - Event delegation for lists

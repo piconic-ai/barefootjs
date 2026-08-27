@@ -196,9 +196,23 @@ export function emitRegistrationAndHydration(
   if (ctx.restPropsName) restSpreadNames.add(ctx.restPropsName)
   if (ctx.propsObjectName) restSpreadNames.add(ctx.propsObjectName)
 
-  const isCommentScope = (_ir.root.type === 'fragment'
-    && (_ir.root as IRFragment).needsScopeComment)
-    || _ir.root.type === 'component'
+  // Two distinct shapes share the `comment: true` (proxy-scoped) def flag,
+  // but need OPPOSITE runtime treatment of the def's own scope id
+  // (component.ts's `materializeComponent`, #2722):
+  //   - `root.type === 'fragment'`: a genuine fragment root. Its rendered
+  //     markup carries NO scope id of its own (SSR moves it into the
+  //     wrapping `<!--bf-scope:-->` comment, `wrapWithScopeComment` in
+  //     hono-adapter.ts) — CSR mount must generate one just the same, or
+  //     every nested `renderChild()` call loses the parent-prefixed naming
+  //     `_parentScopeId` provides and falls back to a random per-child id
+  //     (#1627's fallback), diverging from SSR/hydrate.
+  //   - `root.type === 'component'`: the render-prop / "root is a single
+  //     child call" case (#2649). The child's OWN markup already carries
+  //     ITS OWN real scope id — the wrapping comment marks a scope with no
+  //     DOM presence of its own, and `materializeComponent` must leave
+  //     `scopeId` null so it doesn't stamp over (or duplicate) the child's.
+  const isFragmentRoot = _ir.root.type === 'fragment' && !!(_ir.root as IRFragment).needsScopeComment
+  const isCommentScope = isFragmentRoot || _ir.root.type === 'component'
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
@@ -231,6 +245,9 @@ export function emitRegistrationAndHydration(
   // No else: top-level-only components skip template entirely (save bytes)
   if (isCommentScope) {
     defParts.push('comment: true')
+  }
+  if (isFragmentRoot) {
+    defParts.push('fragmentRoot: true')
   }
 
   const registryKey = nameForRegistryRef(name)
