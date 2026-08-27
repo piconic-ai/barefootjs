@@ -400,7 +400,7 @@ function renderTemplateAttrPart(
   attr: IRAttribute,
   attrName: string,
   wrap: (expr: string) => string,
-  restSpreadNames?: Set<string>,
+  restSpreadNames?: ReadonlySet<string>,
 ): string {
   const v = attr.value
   switch (v.kind) {
@@ -667,7 +667,7 @@ function stripLeafKeyAttr(ir: IRNode): IRNode {
  */
 export function renderFlatMapClientBody(
   cb: Pick<FlatMapCallback, 'segments'>,
-  restSpreadNames?: Set<string>,
+  restSpreadNames?: ReadonlySet<string>,
 ): string {
   return renderPreamble(cb, {
     textVariant: 'client',
@@ -699,7 +699,7 @@ export function flatMapCallbackHasKeyedLeaf(cb: Pick<FlatMapCallback, 'segments'
  */
 export function renderFlatMapProjectionClientBody(
   inner: Extract<IRNode, { type: 'loop' }>,
-  restSpreadNames?: Set<string>,
+  restSpreadNames?: ReadonlySet<string>,
 ): string {
   const chained = applyLoopChain(inner)
   const params = inner.index ? `(${inner.param}, ${inner.index})` : `(${inner.param})`
@@ -747,7 +747,7 @@ function escapeLeafTextExpressions(ir: IRNode): IRNode {
 // docstring (`ir-to-client-js/utils.ts`) for why this stays outside #2482's
 // migration (it's the client-JS-emitter twin of the Go adapter's
 // `loopBindingStack`).
-export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, inHoistedChildren = false): string {
+export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, inHoistedChildren = false): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, inHoistedChildren)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
   const wrapInterpolation = (expr: string): string => branchSlotsVar
@@ -1373,7 +1373,7 @@ function walkSkeletonPathChildren(
  * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
  * The placeholders are replaced with real createComponent() elements at runtime.
  */
-export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
+export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: ReadonlySet<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
   const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth, loopParams)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
 
@@ -1637,7 +1637,7 @@ function isSingleRootElement(html: string): boolean {
  */
 export interface TemplateOptions {
   inlinableConstants?: Map<string, string>
-  restSpreadNames?: Set<string>
+  restSpreadNames?: ReadonlySet<string>
   propsObjectName?: string | null
   /**
    * Names that exist only in the init-body scope (or were demoted to unsafe
@@ -1728,7 +1728,7 @@ export interface TemplateOptions {
 export function irToComponentTemplate(
   node: IRNode,
   inlinableConstants?: Map<string, string>,
-  restSpreadNames?: Set<string>,
+  restSpreadNames?: ReadonlySet<string>,
   propsObjectName?: string | null,
   markupSlotIds?: ReadonlySet<string>
 ): string {
@@ -2133,7 +2133,7 @@ export function generateCsrTemplate(
   node: IRNode,
   inlinableConstants: Map<string, string> | undefined,
   ctx: ClientJsContext,
-  restSpreadNames?: Set<string>,
+  restSpreadNames?: ReadonlySet<string>,
   propsObjectName?: string | null,
   unsafeLocalNames?: Set<string>,
   deferredChildSlots?: ReadonlySet<string>,

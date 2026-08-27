@@ -3558,7 +3558,7 @@ export function initStatementExample(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   el.addEventListener('click', () => {
-        ctx.toggle(_p.itemId)
+        ctx.toggle(props.itemId)
       })
 
 }
@@ -3731,7 +3731,7 @@ export function initStatementExample(__scope, _p = {}) {
   const ctx = useContext(AccordionContext)
 
   createEffect(() => {
-  const isOpen = ctx.activeItem() === _p.itemId  // Tracks activeItem signal
+  const isOpen = ctx.activeItem() === props.itemId  // Tracks activeItem signal
   el.hidden = !isOpen
 })
 }
@@ -3925,9 +3925,28 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L54 — (no label) 1`] = `
-"import { createComponent, escapeAttr, hydrate } from '@barefootjs/client/runtime'
+"import { $, applyRestAttrs, createComponent, createEffect, escapeAttr, hydrate } from '@barefootjs/client/runtime'
 
-function initButton() {}
+
+export function initButton(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const variant = _p.variant ?? 'default'
+  const size = _p.size ?? 'md'
+  const classes = \`btn btn-\${variant} btn-\${size} \${_p.className ?? ''}\`
+
+  const [_s0] = $(__scope, 's0')
+
+  createEffect(() => {
+    if (_s0) {
+      { const __v = classes; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+    }
+  })
+
+  if (_s0) applyRestAttrs(_s0, _p, ["class"])
+
+}
 
 hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) != null ? 'class="' + escapeAttr((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) + '"' : ''} bf="s0">\${_p.children}</button>\`, name: 'Button' })
 export function Button(_p, __bfKey) { return createComponent('Button__b3c36eee', _p, __bfKey) }"

@@ -97,7 +97,7 @@ export function generateInitFunction(
   // into the analyzer / IR construction stage and introduce a
   // `PropRewritten<T>` brand type so missing the rewrite becomes a
   // compile-time error. ---
-  let generatedCode = rewritePropsObjectRef(lines.join('\n'), ctx.propsObjectName)
+  let generatedCode = rewritePropsObjectRef(lines.join('\n'), ctx.propsObjectName, ctx.restPropsName)
   generatedCode += '\n' + hydrateLine
 
   // Substitute module-level declarations BEFORE import detection: a

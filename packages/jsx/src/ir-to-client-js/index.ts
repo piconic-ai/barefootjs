@@ -19,6 +19,7 @@ import { PROPS_PARAM } from './utils.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
 import { nameForRegistryRef } from './component-scope.ts'
+import { resolveRestSpreadNames } from './prop-handling.ts'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
@@ -255,10 +256,11 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   const graph = buildReferencesGraph(ctx, ir.root)
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, ir.root)
 
-  // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
-  const restSpreadNames = new Set<string>()
-  if (ctx.restPropsName) restSpreadNames.add(ctx.restPropsName)
-  if (ctx.propsObjectName) restSpreadNames.add(ctx.propsObjectName)
+  // Build rest spread names: these are rest/props spreads handled by
+  // applyRestAttrs, not spreadAttrs — #2723: includes any `const x__alias
+  // = x` hop onto the rest/props binding (see `resolveRestSpreadNames`'s
+  // docstring in prop-handling.ts).
+  const restSpreadNames = resolveRestSpreadNames(ctx)
 
   let templateHtml: string | undefined
 

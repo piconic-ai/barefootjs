@@ -60,11 +60,49 @@ describe('rewritePropsObjectRef', () => {
     expect(out).toBe('const name = _p.name')
   })
 
-  test('no-op when propsObjectName is null (destructured-props mode)', () => {
+  test('no-op when propsObjectName is null and no restPropsName is given', () => {
+    // #2723: the historical `propsObjectName ?? 'props'` fallback rewrote
+    // ANY bare `props` identifier here, on the (usually-true, but
+    // accidental) assumption that a destructured component's discarded
+    // rest binding was always spelled literally "props" — real
+    // destructured-props mode has no such binding to rewrite at all, so
+    // this must be a true no-op, matching the function's own docstring.
     const code = 'const x = props.name'
     const out = rewritePropsObjectRef(code, null)
-    // null → defaults to 'props'; rewritten.
-    expect(out).toBe('const x = _p.name')
+    expect(out).toBe(code)
+  })
+
+  test('rewrites via restPropsName when propsObjectName is null (#2723)', () => {
+    // The destructured-props shape this exists for: `function F({ a,
+    // ...rest })` has no `propsObjectName` at all, but a `const
+    // rest__alias = rest` hop (or any other bare read of the rest
+    // binding) still needs `rest` rewritten to `_p`.
+    const out = rewritePropsObjectRef('const restAlias = rest', null, 'rest')
+    expect(out).toBe('const restAlias = _p')
+  })
+
+  test('restPropsName rewrite is not tied to the literal name "props"', () => {
+    // Regression guard for the bug the widened fallback replaced: a rest
+    // binding named anything OTHER than "props" left the reference
+    // dangling (a runtime ReferenceError) because the old fallback only
+    // ever guessed the literal word "props".
+    const out = rewritePropsObjectRef('const leftoverAlias = leftover', null, 'leftover')
+    expect(out).toBe('const leftoverAlias = _p')
+  })
+
+  test('rewrites BOTH propsObjectName and restPropsName when both are set', () => {
+    // A `(props)`-arg component that ALSO body-destructures a rest
+    // binding out of it (`const { a, ...rest } = props`) has both names
+    // live in the same init body.
+    const out = rewritePropsObjectRef('const x = props.a + rest.b', 'props', 'rest')
+    expect(out).toBe('const x = _p.a + _p.b')
+  })
+
+  test('restPropsName defaulting to null preserves the two-arg call shape', () => {
+    // Existing call sites that only ever passed `propsObjectName` (the
+    // pre-#2723 signature) must keep working unchanged.
+    const out = rewritePropsObjectRef('const name = props.name', 'props')
+    expect(out).toBe('const name = _p.name')
   })
 
   test('no-op when propsObjectName equals _p', () => {
