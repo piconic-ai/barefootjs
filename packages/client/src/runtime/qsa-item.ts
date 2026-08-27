@@ -138,10 +138,9 @@ export function upsertChildItem(
   if (ph) {
     const slot = slotId ? buildSlotInfo(primaryEl, slotId, anchorScope) : undefined
     // Connect before init — see the same call in `upsertChild`. `mountAt`
-    // (`ph`) is always given here, so `createComponent` never returns the
-    // bare-fragment-root `DocumentFragment` shape (see its docstring) —
-    // this call always gets back the real element.
-    return createComponent(name, props, key, slot, ph) as HTMLElement
+    // (`ph`) is always given here, so this lands on `createComponent`'s
+    // non-null-`mountAt` overload and is typed `HTMLElement`.
+    return createComponent(name, props, key, slot, ph)
   }
   return null
 }

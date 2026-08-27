@@ -159,7 +159,28 @@ export interface CreateComponentSlotInfo {
  * wherever the caller inserts the result, and a `DocumentFragment` is the
  * one `Node` a plain `container.appendChild(...)` / `el.replaceWith(...)`
  * moves as a unit without the caller needing to know why.
+ *
+ * The first overload states that in the type system rather than only here:
+ * a call that passes a non-null `mountAt` is telling this function where to
+ * connect, so it can only get the real `HTMLElement` back. Callers on that
+ * overload need no cast, which is why `upsertChild` (registry.ts) and
+ * `upsertChildItem` (qsa-item.ts) assert nothing — the narrowing is the
+ * signature's job, not theirs.
  */
+export function createComponent(
+  nameOrDef: string | ComponentDef,
+  props: Record<string, unknown>,
+  key: string | number | undefined,
+  slot: CreateComponentSlotInfo | undefined,
+  mountAt: Element,
+): HTMLElement
+export function createComponent(
+  nameOrDef: string | ComponentDef,
+  props?: Record<string, unknown>,
+  key?: string | number,
+  slot?: CreateComponentSlotInfo,
+  mountAt?: Element | null,
+): HTMLElement | DocumentFragment
 export function createComponent(
   nameOrDef: string | ComponentDef,
   props: Record<string, unknown> = {},
