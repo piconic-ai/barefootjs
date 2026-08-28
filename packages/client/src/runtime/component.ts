@@ -472,17 +472,27 @@ function materializeComponent(
       rowMount.container.insertBefore(fragmentComments.start, rowMount.anchor)
       rowMount.container.insertBefore(element, rowMount.anchor)
       rowMount.container.insertBefore(fragmentComments.end, rowMount.anchor)
+      // Hand the boundary pair to `mapArray`'s row bookkeeping (map-array.ts's
+      // `ItemScope.scopeComments`, #2733) via the same stash-on-the-element
+      // convention `__bfExtras` uses for a multi-root loop BODY's extra
+      // siblings: `createItemScope` reads and deletes this property right
+      // after `renderItem` returns, since there is no other channel back to
+      // the caller once `element` is the only thing returned below. Without
+      // this, a later reorder/removal of the row moves/removes `element`
+      // and leaves the comments behind, orphaned in the container.
+      ;(element as unknown as { __bfScopeComments?: { start: Comment; end: Comment } }).__bfScopeComments =
+        fragmentComments
       // Deliberately NOT inserting the other roots here (a fragment-root
       // component whose OWN render has 2+ top-level nodes, used as a loop
-      // row) — `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`)
-      // does not yet track a fragment-root row's own boundary comments the
-      // way it tracks a multi-root loop BODY's `__bfExtras` siblings, so a
-      // future reorder/removal of this row would move/remove `element`
-      // without its comments regardless of whether the rest were also
-      // wired through. Not reachable by any currently tracked fixture (no
-      // fragment-root component is used as a loop row in the mutation
-      // corpus), so declared rather than grown here — same gap #2735's fix
-      // leaves open for this one connect shape:
+      // row) — connecting them is a separate gap from the boundary-comment
+      // tracking #2733 fixed above: even with `ItemScope` now able to carry
+      // the row's comments, there is still nowhere on `ItemScope` for a
+      // second or third top-level ELEMENT of the row itself (as opposed to
+      // `extras`, which is the multi-root loop BODY's own, unrelated,
+      // per-item marker convention). Not reachable by any currently tracked
+      // fixture (no fragment-root component with 2+ top-level nodes is used
+      // as a loop row in the mutation corpus), so declared rather than grown
+      // here:
       // https://github.com/piconic-ai/barefootjs/issues/2733
       //
       // Loud, not silent: the whole point of the fix above is that
