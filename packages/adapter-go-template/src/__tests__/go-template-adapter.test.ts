@@ -125,7 +125,14 @@ runAdapterConformanceTests({
     // with the `renderDivergences` entry, not an independent gap.
     'jsx-element-prop-fragment-conditional',
   ]),
-  skipDataPoints: new Set<string>(),
+  skipDataPoints: new Set<string>([
+    // #2743: html/template's URL-context autoescape percent-encodes the
+    // queryHref BASE in href position (`日本語` → `%e6%97%a5…`); the JS
+    // reference only HTML-escapes. The bf_query helper itself is faithful —
+    // the divergence is Go's contextual escaper on the whole href value.
+    'query-href:gen:base:markup',
+    'query-href:gen:base:multibyte',
+  ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

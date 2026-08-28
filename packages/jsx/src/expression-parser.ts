@@ -318,6 +318,32 @@ export type SortComparator = {
 }
 
 /**
+ * Runtime registries of the sort-comparator catalogue's finite dimensions —
+ * the denominators for the coverage ledger's sort floor
+ * (`packages/adapter-tests/src/__tests__/coverage-map.test.ts`). This closes
+ * the comparator half of the change-time coupling rule
+ * (`spec/subset-conformance.md`) mechanically: the exhaustiveness pins below
+ * make widening {@link SortKey} without listing the new member here a compile
+ * error, and the floor test then makes shipping a listed member with no
+ * covering fixture a test failure — same drift defence `PARSED_EXPR_KINDS`
+ * and `ARRAY_METHOD_NAMES` provide for their halves.
+ */
+export const SORT_KEY_TYPES = ['numeric', 'string', 'auto'] as const satisfies ReadonlyArray<SortKey['type']>
+type MissingFromSortKeyTypes = Exclude<SortKey['type'], (typeof SORT_KEY_TYPES)[number]>
+const _sortKeyTypeRegistryIsExhaustive: MissingFromSortKeyTypes extends never ? true : never = true
+void _sortKeyTypeRegistryIsExhaustive
+
+export const SORT_KEY_TARGETS = ['self', 'field'] as const satisfies ReadonlyArray<SortKey['key']['kind']>
+type MissingFromSortKeyTargets = Exclude<SortKey['key']['kind'], (typeof SORT_KEY_TARGETS)[number]>
+const _sortKeyTargetRegistryIsExhaustive: MissingFromSortKeyTargets extends never ? true : never = true
+void _sortKeyTargetRegistryIsExhaustive
+
+export const SORT_KEY_DIRECTIONS = ['asc', 'desc'] as const satisfies ReadonlyArray<SortKey['direction']>
+type MissingFromSortKeyDirections = Exclude<SortKey['direction'], (typeof SORT_KEY_DIRECTIONS)[number]>
+const _sortKeyDirectionRegistryIsExhaustive: MissingFromSortKeyDirections extends never ? true : never = true
+void _sortKeyDirectionRegistryIsExhaustive
+
+/**
  * Flatten depth for `.flat(depth?)` (#1448 Tier C). A finite non-negative
  * integer flattens that many levels (`.flat()` defaults to `1`; a `0` or
  * negative JS depth means "no flatten" → a shallow copy, normalised to
