@@ -252,6 +252,31 @@ interface StateBuild {
 }
 
 /**
+ * Whether `buildState(value)`'s condition read (`Boolean(<initial value>)`)
+ * is true on first render, BEFORE any interaction — hardcoded against the
+ * literal seeds below (`0` for every reactive/getter-elided state, the `7`
+ * sample for `prop`/`prop-shadowing-signal`) rather than evaluating the
+ * built AST, since those seeds are themselves small, fixed, hand-authored
+ * constants a reviewer can read directly against this switch.
+ *
+ * Consumed by `pairwise-covering-array.test.ts`'s branch-selection
+ * exemption table: `conditional-ternary`/`early-return` each have a branch
+ * WITHOUT the row (by design — see their templates below), and which
+ * branch SSR renders depends entirely on this, not on the `event` axis.
+ */
+export function stateInitialValueIsTruthy(value: StateValue): boolean {
+  switch (value) {
+    case 'signal':
+    case 'memo':
+    case 'getter-elided-signal':
+      return false
+    case 'prop':
+    case 'prop-shadowing-signal':
+      return true
+  }
+}
+
+/**
  * Every state value shares the binding name `val`/`setVal` (or the `val`
  * prop key) so `binding`/`event` builders never need to know which state
  * value produced their input — only its `readExpr`/`valueExpr`/`setterCall`.
@@ -539,7 +564,19 @@ interface EventCtx {
   callback: CallbackValue
 }
 
-function buildEvent(value: EventValue, ctx: EventCtx): { attrs: ts.JsxAttribute[]; declarations: ts.Statement[] } {
+interface EventBuild {
+  attrs: ts.JsxAttribute[]
+  /** Safe to hoist to the component body — reads only outer/component-level state. */
+  declarations: ts.Statement[]
+  /**
+   * Must be declared INSIDE the per-row loop callback, not the component
+   * body — its body reads `row`/`idx`, which only exist in that scope. See
+   * `handler-reading-loop-param` below for the one case that populates this.
+   */
+  rowScopedDeclarations: ts.Statement[]
+}
+
+function buildEvent(value: EventValue, ctx: EventCtx): EventBuild {
   const { state, callback } = ctx
   switch (value) {
     case 'direct-handler':
@@ -548,27 +585,34 @@ function buildEvent(value: EventValue, ctx: EventCtx): { attrs: ts.JsxAttribute[
         ? [exprStmt(state.setterCall(factory.createBinaryExpression(state.readExpr, ts.SyntaxKind.PlusToken, numLit(1))))]
         : [exprStmt(call(prop(id('console'), 'log'), [state.readExpr]))]
       const { decl, ref } = shapeCallback(callback, 'handleClick', [], block(body))
-      return { attrs: [jsxAttrExpr('onClick', ref)], declarations: decl ? [decl] : [] }
+      return { attrs: [jsxAttrExpr('onClick', ref)], declarations: decl ? [decl] : [], rowScopedDeclarations: [] }
     }
     case 'handler-reading-loop-param': {
       // `row`/`idx` are the fixed loop-param names every loop `structure`
       // template declares (see `LOOP_ROW_PARAM`/`LOOP_INDEX_PARAM` below) —
       // resolved by lexical scope once this attribute lands inside the
       // `.map((row, idx) => ...)` callback, not by any marker plumbing.
+      // For `function-reference`, `shapeCallback` produces a NAMED `const`
+      // — that const must be declared INSIDE the map callback (via
+      // `rowScopedDeclarations`, injected by `injectRowScopedDeclarations`
+      // below), never hoisted to the component body: the component body is
+      // a different closure that never sees `row`/`idx`, so a hoisted
+      // version reads them as free variables and throws `ReferenceError` at
+      // render — caught as a real `ok`-sweep finding, not hypothetical.
       const body = [exprStmt(call(prop(id('console'), 'log'), [prop(id(LOOP_ROW_PARAM), 'id'), id(LOOP_INDEX_PARAM)]))]
       const { decl, ref } = shapeCallback(callback, 'handleRowClick', [], block(body))
-      return { attrs: [jsxAttrExpr('onClick', ref)], declarations: decl ? [decl] : [] }
+      return { attrs: [jsxAttrExpr('onClick', ref)], declarations: [], rowScopedDeclarations: decl ? [decl] : [] }
     }
     case 'handler-reading-outer-signal': {
       const body = [exprStmt(call(prop(id('console'), 'log'), [strLit('outer'), state.readExpr]))]
       const { decl, ref } = shapeCallback(callback, 'handleOuterClick', [], block(body))
-      return { attrs: [jsxAttrExpr('onClick', ref)], declarations: decl ? [decl] : [] }
+      return { attrs: [jsxAttrExpr('onClick', ref)], declarations: decl ? [decl] : [], rowScopedDeclarations: [] }
     }
     case 'ref-callback': {
       const elParam = factory.createParameterDeclaration(undefined, undefined, 'el')
       const body = [exprStmt(call(prop(id('el'), 'setAttribute'), [strLit('data-mounted'), call(id('String'), [state.readExpr])]))]
       const { decl, ref } = shapeCallback(callback, 'handleMount', [elParam], block(body))
-      return { attrs: [jsxAttrExpr('ref', ref)], declarations: decl ? [decl] : [] }
+      return { attrs: [jsxAttrExpr('ref', ref)], declarations: decl ? [decl] : [], rowScopedDeclarations: [] }
     }
   }
 }
@@ -587,6 +631,40 @@ interface StructureInputs {
   eventAttrs: ts.JsxAttribute[]
   /** `Boolean(<state read>)` — present for every case; only `conditional-ternary`/`early-return` templates reference it. */
   condition: ts.Expression
+  /** Statements that must land INSIDE the loop's `.map()` callback body — see `EventBuild.rowScopedDeclarations`. Empty for every structure but the loop ones, enforced by `assertEventRequiresLoop` upstream. */
+  rowScopedDeclarations: ts.Statement[]
+}
+
+/**
+ * Injects `statements` at the top of the OUTERMOST `.map(...)` callback's
+ * body found in `expr` — converting an expression-bodied arrow
+ * (`(row, idx) => (<jsx/>)`) to a block first if needed — the one scope
+ * `row`/`idx` are bound in for every loop `structure` template. Targeting
+ * the OUTER `.map()` (rather than hunting for the exact element
+ * `eventAttrs` landed on) also covers `nested-loop-depth-2` for free: a
+ * `const` declared in the outer callback's block is still visible from the
+ * inner `.map()` callback's closure. A no-op when `statements` is empty, so
+ * every case but `handler-reading-loop-param` × `function-reference` pays
+ * nothing.
+ */
+function injectRowScopedDeclarations(expr: ts.Expression, statements: ts.Statement[]): ts.Expression {
+  if (statements.length === 0) return expr
+  let injected = false
+  const visit = (node: ts.Node): ts.Node => {
+    if (!injected && ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'map' && node.arguments.length === 1 && ts.isArrowFunction(node.arguments[0])) {
+      injected = true
+      const arrow = node.arguments[0]
+      const newBody = ts.isBlock(arrow.body) ? factory.updateBlock(arrow.body, [...statements, ...arrow.body.statements]) : block([...statements, factory.createReturnStatement(unwrapParen(arrow.body))])
+      const newArrow = factory.updateArrowFunction(arrow, arrow.modifiers, arrow.typeParameters, arrow.parameters, arrow.type, arrow.equalsGreaterThanToken, newBody)
+      return factory.updateCallExpression(node, node.expression, node.typeArguments, [newArrow])
+    }
+    return ts.visitEachChild(node, visit, ts.nullTransformationContext)
+  }
+  const result = visit(expr) as ts.Expression
+  if (!injected) {
+    throw new Error('pairwise compose: rowScopedDeclarations supplied but no .map() callback was found to host them (covering-array constraint violated)')
+  }
+  return result
 }
 
 interface StructureOutput {
@@ -633,9 +711,18 @@ const COMPONENT_ROW_ROOT_TEMPLATE = `
     </div>
 `
 
+/**
+ * Forwards via a rest spread (`{ label, children, ...rest }`), the same
+ * open-ended-props-object shape `rest-spread-child-attrs` fixture pins for
+ * #2131 — NOT `{...props}` including `label`/`children` themselves, which
+ * would re-render `label` as a stray DOM attribute and double-render
+ * `children`. Without this the div root never carries the event
+ * attrs/handlers spread onto `<PairwiseRow>` at the call site, so
+ * `data-pw-event` (and the click handler) silently reach nothing real.
+ */
 const COMPONENT_ROW_ROOT_CHILD_DECL = `
-function PairwiseRow(props: { label: string; children?: unknown }) {
-  return <div className="row">{props.children}</div>
+function PairwiseRow({ label, children, ...rest }: { label: string; children?: unknown; [key: string]: unknown }) {
+  return <div className="row" {...rest}>{children}</div>
 }
 `
 
@@ -690,8 +777,8 @@ const EARLY_RETURN_BODY = `
  * own return and therefore inside its actual scope.
  */
 const CHILD_COMPONENT_CHILD_DECL = `
-function PairwiseRow(props: { children?: unknown }) {
-  return <div className="child">{props.children}</div>
+function PairwiseRow({ children, ...rest }: { children?: unknown; [key: string]: unknown }) {
+  return <div className="child" {...rest}>{children}</div>
 }
 `
 
@@ -707,11 +794,14 @@ const FRAGMENT_TEMPLATE = `
 `
 
 function buildStructure(structure: StructureValue, inputs: StructureInputs): StructureOutput {
+  if (inputs.rowScopedDeclarations.length > 0 && !isLoopStructure(structure)) {
+    throw new Error(`pairwise compose: rowScopedDeclarations supplied for non-loop structure '${structure}' (covering-array constraint violated)`)
+  }
   const subs: MarkerSubs = { source: inputs.source, rowContent: inputs.rowContent, eventAttrs: inputs.eventAttrs, condition: inputs.condition }
 
   const loopTemplate = (snippet: string): StructureOutput => ({
     preStatements: [],
-    returnExpr: substituteMarkers(parseTemplateExpression(snippet), subs) as ts.Expression,
+    returnExpr: injectRowScopedDeclarations(substituteMarkers(parseTemplateExpression(snippet), subs) as ts.Expression, inputs.rowScopedDeclarations),
     extraTopLevelDecls: [],
   })
 
@@ -732,7 +822,7 @@ function buildStructure(structure: StructureValue, inputs: StructureInputs): Str
       const childDecl = substituteMarkers(parseTopLevelStatement(COMPONENT_ROW_ROOT_CHILD_DECL), {}) as ts.Statement
       return {
         preStatements: [],
-        returnExpr: substituteMarkers(parseTemplateExpression(COMPONENT_ROW_ROOT_TEMPLATE), subs) as ts.Expression,
+        returnExpr: injectRowScopedDeclarations(substituteMarkers(parseTemplateExpression(COMPONENT_ROW_ROOT_TEMPLATE), subs) as ts.Expression, inputs.rowScopedDeclarations),
         extraTopLevelDecls: [childDecl],
       }
     }
@@ -819,6 +909,7 @@ export function composeCase(combo: AxisCombo): ComposedCase {
     rowContent,
     eventAttrs,
     condition: boolCall(state.readExpr),
+    rowScopedDeclarations: eventBuild.rowScopedDeclarations,
   })
   bodyStatements.push(...structureOut.preStatements)
   bodyStatements.push(factory.createReturnStatement(paren(structureOut.returnExpr)))

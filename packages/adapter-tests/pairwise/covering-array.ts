@@ -5,10 +5,11 @@
  * values each is small enough that the simpler algorithm covers every
  * valid pair in roughly the same case count, and it is far easier to
  * review than a general covering-array solver. Each step picks the single
- * uncovered pair with the fewest remaining candidate tuples (most
- * constrained first, to avoid painting a later pair into a corner), seeds
- * a candidate tuple around it, and greedily fills the other three axes
- * with whichever valid value covers the most STILL-uncovered pairs.
+ * uncovered pair that comes FIRST in `uncovered`'s iteration order — plain
+ * insertion order (axis-pair order × `AXIS_VALUES` order), not "most
+ * constrained first" — seeds a candidate tuple around it, and greedily
+ * fills the other three axes with whichever valid value covers the most
+ * STILL-uncovered pairs.
  *
  * Deterministic: every random-like choice is seeded from a fixed
  * constant plus the running case index via `seedFromId`/mulberry32 (the
