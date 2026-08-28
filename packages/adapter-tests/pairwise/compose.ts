@@ -971,7 +971,18 @@ export function composeCase(combo: AxisCombo): ComposedCase {
     source: printer.printFile(sourceFile),
     componentName: COMPONENT_NAME,
     props: state.sampleProps,
-    interactions: combo.event === 'ref-callback' ? [] : [{ type: 'click', selector: '[data-pw-event]' }],
+    // Every case gets the same click, `ref-callback` included (browser-
+    // oracle leg, #2481 step 5): a `ref` fires once at mount, so this
+    // click is semantically a no-op for it — but a no-op is still an
+    // assertion. `runIdempotenceOracle` (e2e/oracle-core.ts) replays this
+    // click against two independently-constructed legs (hydrated,
+    // csr-mount) and compares the END state; that catches the ref
+    // re-firing, or corrupting state, differently on one leg than the
+    // other, which the `three-point` oracle's single-mount-per-leg
+    // comparison structurally cannot see. Leaving `ref-callback` out here
+    // (as this used to) left `idempotence` never exercising that axis
+    // value at all — see `pairwise.playwright.ts`'s coverage floor test.
+    interactions: [{ type: 'click', selector: '[data-pw-event]' }],
   }
 }
 
