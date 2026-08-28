@@ -340,6 +340,7 @@ import { fixture as arrayFindLastIndex } from './methods/array-findLastIndex'
 // primitive numeric, primitive string via `.localeCompare`) plus
 // the non-mutating `.toSorted` alias.
 import { fixture as arraySortFieldAsc } from './methods/array-sort-field-asc'
+import { fixture as arraySortSelf } from './methods/array-sort-self'
 import { fixture as arraySortFieldDesc } from './methods/array-sort-field-desc'
 import { fixture as arraySortPrimitive } from './methods/array-sort-primitive'
 import { fixture as arraySortLocale } from './methods/array-sort-locale'
@@ -488,6 +489,7 @@ import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
+import { fixture as queryHref } from './query-href'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
 import { fixture as dateToLocaleDateStyle } from './date-tolocale-datestyle'
@@ -771,6 +773,7 @@ export const jsxFixtures: JSXFixture[] = [
   arrayFindLastIndex,
   // #1448 Tier B — sort / toSorted with structured comparator.
   arraySortFieldAsc,
+  arraySortSelf,
   reduceSumField,
   reduceSumSelf,
   reduceConcat,
@@ -875,6 +878,7 @@ export const jsxFixtures: JSXFixture[] = [
   richPropClientRead,
   richPropPrecompute,
   formatDate,
+  queryHref,
   dateToLocaleLiteral,
   dateToLocaleUnion,
   dateToLocaleDateStyle,

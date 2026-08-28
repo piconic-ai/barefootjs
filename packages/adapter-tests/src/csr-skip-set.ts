@@ -4,6 +4,12 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
+  // #2741: the effect-update emit prop-rewrites the queryHref params
+  // object's KEYS (`{ _p.tag: _p.tag }`) — the client module is a syntax
+  // error. The hydrate template lambda in the same output is correct;
+  // SSR conformance pins the contract. Graduation: fix the rewrite,
+  // delete this entry.
+  'query-href',
   // #2073: `.map(format)` closes over a module-scope const, which is not
   // available at CSR template module scope (CSR templates only have access
   // to props and signals); Hono render conformance covers the real-JS runtime.
