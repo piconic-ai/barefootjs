@@ -590,12 +590,20 @@ export function ChildFragment() {
     // last top-level node -- both read the same `$bf->_scope_id()` at
     // render time, so the emitted scope ids are identical by construction.
     const beginIdx = template.indexOf('$bf->scope_comment() !!')
-    const buttonIdx = template.indexOf('<button>')
+    const buttonIdx = template.indexOf('<button')
     const pIdx = template.indexOf('<p>')
     const endIdx = template.indexOf('$bf->scope_comment_end() !!')
     expect(beginIdx).toBeLessThan(buttonIdx)
     expect(buttonIdx).toBeLessThan(pIdx)
     expect(pIdx).toBeLessThan(endIdx)
+    // #2732: the fragment's FIRST element carries `data-key` — the wrapping
+    // comment holds scope identity only, so the tag is no longer bare (which
+    // is why the locator above matches `<button` and not `<button>`). Pinned
+    // both ways so "first element" can never silently widen to "every
+    // element": a second carrier would put the loop key on two nodes and
+    // `mapArray`'s `primaryEl.dataset.key` read would pick an arbitrary one.
+    expect(template.slice(buttonIdx, pIdx)).toContain('data_key_attr')
+    expect(template.slice(pIdx)).not.toContain('data_key_attr')
   })
 
   test('a non-fragment (single element) root does NOT get scope_comment_end (element attrs bound the scope instead)', () => {
