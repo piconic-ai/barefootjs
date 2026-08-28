@@ -389,6 +389,7 @@ import { fixture as staticAttrEscape } from './static-attr-escape'
 import { fixture as svgIcon } from './svg-icon'
 import { fixture as customElementTag } from './custom-element-tag'
 import { fixture as customElementChildLoopRow } from './custom-element-child-loop-row'
+import { fixture as fragmentRootConditionalLoopRow } from './fragment-root-conditional-loop-row'
 import { fixture as dataAriaValues } from './data-aria-values'
 import { fixture as attrTernaryTitle } from './attr-ternary-title'
 import { fixture as logicalAndChain } from './logical-and-chain'
@@ -810,6 +811,7 @@ export const jsxFixtures: JSXFixture[] = [
   svgIcon,
   customElementTag,
   customElementChildLoopRow,
+  fragmentRootConditionalLoopRow,
   dataAriaValues,
   attrTernaryTitle,
   logicalAndChain,

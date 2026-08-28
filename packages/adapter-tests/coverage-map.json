@@ -2438,6 +2438,19 @@
         "loop"
       ]
     },
+    "fragment-root-conditional-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "fragment-root-keyed-loop-row": {
       "kinds": [
         "call",
@@ -5484,13 +5497,13 @@
     "array-method": 71,
     "arrow": 70,
     "binary": 93,
-    "call": 227,
+    "call": 228,
     "conditional": 26,
-    "identifier": 320,
+    "identifier": 321,
     "index-access": 14,
     "literal": 259,
     "logical": 48,
-    "member": 185,
+    "member": 186,
     "object-literal": 62,
     "template-literal": 30,
     "unary": 24,
