@@ -153,12 +153,17 @@ export interface CreateComponentSlotInfo {
  * fragment-root component (#2722). Every other combination — a normal
  * component, or a fragment-root one with `mountAt`/row-mount already
  * telling this function where to connect — still returns the real,
- * single `HTMLElement`, unchanged. Only the no-known-destination case has
- * no single element to hand back: the fragment root's own `<!--bf-scope:-->`
- * boundary comments (`materializeComponent` step 7b) must travel to
- * wherever the caller inserts the result, and a `DocumentFragment` is the
- * one `Node` a plain `container.appendChild(...)` / `el.replaceWith(...)`
- * moves as a unit without the caller needing to know why.
+ * single `HTMLElement`, unchanged (that element stays the caller-visible
+ * proxy even when the fragment root has further sibling roots of its own
+ * — #2735 — those travel alongside it, never in place of it). Only the
+ * no-known-destination case has no single element to hand back: the
+ * fragment root's own `<!--bf-scope:-->` boundary comments PLUS every
+ * top-level node the fragment's template rendered — elements, bare text
+ * and `<!--bf:sN-->` slot markers alike (`materializeComponent` step 7b)
+ * — must travel to wherever the caller inserts the result, and a
+ * `DocumentFragment` is the one `Node` a plain `container.appendChild(...)`
+ * / `el.replaceWith(...)` moves as a unit without the caller needing to
+ * know why.
  *
  * The first overload states that in the type system rather than only here:
  * a call that passes a non-null `mountAt` is telling this function where to
@@ -336,8 +341,52 @@ function materializeComponent(
     _parentScopeId = prevParentScopeId
   }
 
-  // 6. Create DOM element
-  const element = parseHTML(html.trim()).firstChild as HTMLElement
+  // 6. Create DOM node(s).
+  //
+  // A genuine fragment root's template concatenates EVERY top-level
+  // sibling into one HTML string, so `roots` is the whole ordered list —
+  // `parseHTML(...).firstChild` used to be the only node kept, silently
+  // dropping the rest (#2735). Everything travels, whatever its node
+  // type: a fragment's top level is not only elements. Bare text between
+  // two element roots (`<><h1/>text<p/></>`) is a root, and a reactive
+  // text slot sitting there renders as a `<!--bf:sN-->` marker. Both were
+  // measured being dropped by an element-only walk — the text as a
+  // visible SSR/CSR-mount diff, the marker as something worse, since the
+  // runtime's own slot lookup then finds nothing to bind.
+  //
+  // `element` is the PROXY: the one node threaded through init /
+  // `commentScopeRegistry` / the return value. It must be an Element —
+  // everything downstream calls `setAttribute`/`hasAttribute` on it — so
+  // it is the first ELEMENT among the roots, not simply the first node.
+  // `<>text<p/></>` puts a Text node first, and taking that as the proxy
+  // threw `element.hasAttribute is not a function` at step 7b (measured;
+  // pre-dates #2735's fix, which is why the roots list and the proxy are
+  // chosen separately rather than the proxy being `roots[0]`).
+  //
+  // Only `isFragmentRoot` templates can emit more than one top-level node
+  // (jsx-to-ir.ts's `transformFragment`), so every other shape keeps
+  // exactly the single-node list it always had.
+  const parsedFragment = parseHTML(html.trim())
+  const roots: Node[] = isFragmentRoot
+    ? Array.from(parsedFragment.childNodes)
+    : parsedFragment.firstChild
+      ? [parsedFragment.firstChild]
+      : []
+  const element = (isFragmentRoot
+    ? roots.find(node => node.nodeType === Node.ELEMENT_NODE)
+    : roots[0]) as HTMLElement | undefined
+
+  // A fragment root with no element at all (`<>just text</>`) has nothing
+  // that can carry a scope. Refuse it the same way an empty template is
+  // refused rather than crashing on the first `setAttribute` — loud, not
+  // silent, per the sound-or-loud rule.
+  if (isFragmentRoot && roots.length > 0 && !element) {
+    console.warn(
+      `[BarefootJS] Fragment-root component ${name} rendered no element root; ` +
+        'a scope needs at least one element to attach to. Wrap the content in an element.',
+    )
+    return createPlaceholder(name, key)
+  }
 
   if (!element) {
     console.warn(`[BarefootJS] Template returned empty HTML for component: ${name}`)
@@ -410,7 +459,7 @@ function materializeComponent(
   let bareFragment: DocumentFragment | null = null
   if (mountAt && !rootIsDeferredPlaceholder) {
     if (fragmentComments) {
-      mountAt.replaceWith(fragmentComments.start, element, fragmentComments.end)
+      mountAt.replaceWith(fragmentComments.start, ...roots, fragmentComments.end)
     } else {
       mountAt.replaceWith(element)
     }
@@ -423,14 +472,30 @@ function materializeComponent(
       rowMount.container.insertBefore(fragmentComments.start, rowMount.anchor)
       rowMount.container.insertBefore(element, rowMount.anchor)
       rowMount.container.insertBefore(fragmentComments.end, rowMount.anchor)
-      // `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`) does not
-      // yet track a fragment-root row's own boundary comments the way it
-      // tracks a multi-root loop BODY's `__bfExtras` siblings — a future
-      // reorder/removal of this row would move/remove `element` without
-      // its comments. Not reachable by any currently tracked fixture (no
+      // Deliberately NOT inserting the other roots here (a fragment-root
+      // component whose OWN render has 2+ top-level nodes, used as a loop
+      // row) — `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`)
+      // does not yet track a fragment-root row's own boundary comments the
+      // way it tracks a multi-root loop BODY's `__bfExtras` siblings, so a
+      // future reorder/removal of this row would move/remove `element`
+      // without its comments regardless of whether the rest were also
+      // wired through. Not reachable by any currently tracked fixture (no
       // fragment-root component is used as a loop row in the mutation
-      // corpus), so declared rather than grown here:
+      // corpus), so declared rather than grown here — same gap #2735's fix
+      // leaves open for this one connect shape:
       // https://github.com/piconic-ai/barefootjs/issues/2733
+      //
+      // Loud, not silent: the whole point of the fix above is that
+      // dropping roots without saying so is the failure mode. A gap that
+      // stays quiet is indistinguishable from correctness at the call
+      // site, so the one shape still dropping them says so.
+      if (roots.length > 1) {
+        console.warn(
+          `[BarefootJS] Fragment-root component ${name} used as a loop row renders ` +
+            `${roots.length} top-level nodes; only the first element is connected here. ` +
+            'See https://github.com/piconic-ai/barefootjs/issues/2733',
+        )
+      }
     } else {
       rowMount.container.insertBefore(element, rowMount.anchor)
     }
@@ -438,13 +503,14 @@ function materializeComponent(
     // Neither a placeholder nor an ambient row position: the caller owns
     // connecting the result itself (e.g. the compiler's exported
     // `export function Name(props, key) { return createComponent(...) }`
-    // shim, called directly with no further composition). Bundle the
-    // three nodes in one `DocumentFragment` so a plain `container.append(
-    // result)` / `el.replaceWith(result)` moves all of them together —
+    // shim, called directly with no further composition — the shape
+    // `fixture-host.ts`'s `'csr-mount'` boot script uses). Bundle every
+    // node in one `DocumentFragment` so a plain `container.append(result)`
+    // / `el.replaceWith(result)` moves all of them together —
     // `createComponent`'s docstring covers why this is the one shape that
     // can't return a bare `HTMLElement`.
     bareFragment = document.createDocumentFragment()
-    bareFragment.append(fragmentComments.start, element, fragmentComments.end)
+    bareFragment.append(fragmentComments.start, ...roots, fragmentComments.end)
   }
 
   // 8. Set currentScope so provideContext/useContext are element-scoped.
