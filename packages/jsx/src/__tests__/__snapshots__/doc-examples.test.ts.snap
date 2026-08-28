@@ -4693,7 +4693,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L194 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4740,20 +4740,36 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
-  // Reactive texts in static array children
-  if (_s1) {
-    items.forEach((t, __idx) => {
-      let __iterEl = _s1.children[__idx]
-      if (__iterEl) {
-        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('s0', String(t.name)) })
-      }
-    })
-  }
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
+  const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
+  mapArrayLazy(() => items().toSorted((a, b) => a.priority - b.priority), _s1, (t) => String(t.id), {
+    createRow: (__e, __idx) => {
+      const t = () => __e.item
+      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
+      const __l = __e.last = []
+      { const __x = t().name
+      __r[0]('s0', textOrNode(__x))
+      __l[0] = __x }
+      return __el
+    },
+    applyItem: (__e) => {
+      const t = () => __e.item
+      const __r = __e.refs ?? (__e.refs = [])
+      const __l = __e.last ?? (__e.last = [])
+      const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
+      { const __x = t().name
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __d('s0', textOrNode(__x))
+      __l[0] = __x }
+    },
+  }, 'l0')
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${items.toSorted((a, b) => a.priority - b.priority).map((t) => \`<li data-key="\${escapeAttr(t.id)}"><!--bf:s0-->\${escapeText(t.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.priority - b.priority).map((t) => \`<li data-key="\${escapeAttr(t.id)}"><!--bf:s0-->\${escapeText(t.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -4950,7 +4966,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L195 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4997,25 +5013,41 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
-  // Reactive texts in static array children
-  if (_s1) {
-    items.forEach((item, __idx) => {
-      let __iterEl = _s1.children[__idx]
-      if (__iterEl) {
-        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('s0', String(item.name)) })
-      }
-    })
-  }
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
+  const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
+  mapArrayLazy(() => items(), _s1, (item) => String(item.id), {
+    createRow: (__e, __idx) => {
+      const item = () => __e.item
+      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
+      const __l = __e.last = []
+      { const __x = item().name
+      __r[0]('s0', textOrNode(__x))
+      __l[0] = __x }
+      return __el
+    },
+    applyItem: (__e) => {
+      const item = () => __e.item
+      const __r = __e.refs ?? (__e.refs = [])
+      const __l = __e.last ?? (__e.last = [])
+      const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
+      { const __x = item().name
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __d('s0', textOrNode(__x))
+      __l[0] = __x }
+    },
+  }, 'l0')
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${items.map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L200 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5062,20 +5094,36 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
-  // Reactive texts in static array children
-  if (_s1) {
-    items.forEach((item, __idx) => {
-      let __iterEl = _s1.children[__idx]
-      if (__iterEl) {
-        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('s0', String(item.name)) })
-      }
-    })
-  }
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
+  const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
+  mapArrayLazy(() => items(), _s1, (item) => String(item.id), {
+    createRow: (__e, __idx) => {
+      const item = () => __e.item
+      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
+      const __l = __e.last = []
+      { const __x = item().name
+      __r[0]('s0', textOrNode(__x))
+      __l[0] = __x }
+      return __el
+    },
+    applyItem: (__e) => {
+      const item = () => __e.item
+      const __r = __e.refs ?? (__e.refs = [])
+      const __l = __e.last ?? (__e.last = [])
+      const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
+      { const __x = item().name
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __d('s0', textOrNode(__x))
+      __l[0] = __x }
+    },
+  }, 'l0')
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${items.map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).map((item) => \`<li data-key="\${escapeAttr(item.id)}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 

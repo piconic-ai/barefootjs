@@ -2171,8 +2171,11 @@ function transformExpressionInner(
     return null
   }
 
-  // Check for bare signal/memo identifier (BF044)
-  checkBareSignalOrMemoIdentifier(expr, ctx)
+  // Check for bare signal/memo identifier (BF044). A JSX text child is
+  // inherently a RENDERED position — unlike a component prop, `{expr}`
+  // here always becomes literal rendered output, never an opaque value
+  // handed to a consumer to call later — so nested descent is always on.
+  checkBareSignalOrMemoIdentifier(expr, ctx, { descendNested: true })
 
   // #547: Inline a JSX constant referenced by identifier. Unique to JSX-child
   // position — conditional branches and return position don't resolve
@@ -6244,8 +6247,20 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
       return AttrValueOf.expression('undefined')
     }
 
-    // Check for bare signal/memo identifier (BF044)
-    checkBareSignalOrMemoIdentifier(expr, ctx)
+    // Check for bare signal/memo identifier (BF044). `getAttributeValue`
+    // serves BOTH a DOM element's attributes and a component's props
+    // (two call sites above, in `processElementAttributes` and
+    // `processComponentProps`), and only the element-attribute case is
+    // a RENDERED position — a component prop is an opaque value handed
+    // to the component, and this codebase's Context-Provider idiom
+    // depends on that value being an uncalled accessor (`value={{
+    // open }}`, ui/components/ui/select/index.tsx — calling it eagerly
+    // there would freeze the value at provider-render time and break
+    // every consumer's reactivity). So nested descent is gated on
+    // element-vs-component, derived from the tag this attribute lives
+    // on; the top-level bare-identifier check stays unconditional
+    // either way, unchanged from this diagnostic's original behaviour.
+    checkBareSignalOrMemoIdentifier(expr, ctx, { descendNested: isRenderedElementAttribute(attr, ctx) })
 
     // Static style object: style={{ key: 'value', ... }} → CSS string at compile time
     if (attr.name.getText(ctx.sourceFile) === 'style' && ts.isObjectLiteralExpression(expr)) {
@@ -7300,53 +7315,234 @@ function processComponentProps(
 // =============================================================================
 
 /**
- * Check if a bare identifier is a signal getter or memo name.
- * Emits BF044 error when a signal/memo getter is passed without calling it.
+ * Is `attr` an attribute on a DOM/SVG element's opening tag, as opposed
+ * to a prop on a component? `JsxAttributes.parent` is always the
+ * `JsxOpeningElement`/`JsxSelfClosingElement` the attribute list belongs
+ * to (`JsxOpeningLikeElement`); its `tagName` follows the same
+ * uppercase-means-component convention `transformSelfClosingElement`
+ * already uses (`isComponent = /^[A-Z]/.test(tagName)`) — lowercase or
+ * hyphenated (a custom element) is a real DOM node, capitalised or
+ * dotted (`Select.Provider`) is a component.
+ *
+ * Feeds `checkBareSignalOrMemoIdentifier`'s `descendNested` gate: a
+ * DOM attribute value is a RENDERED position (this is genuinely what
+ * ends up in the DOM), so a bare getter buried inside it — `style={{
+ * color: val }}` — is exactly as much a forgotten `()` as a top-level
+ * one. A component prop is not rendered — it's an opaque value handed
+ * to the component — and this codebase's Context-Provider idiom
+ * depends on that value being an UNCALLED accessor
+ * (`ui/components/ui/select/index.tsx`'s `value={{ open, ... }}`), so
+ * nested descent must not fire there.
+ */
+function isRenderedElementAttribute(attr: ts.JsxAttribute, ctx: TransformContext): boolean {
+  const tagName = attr.parent.parent.tagName.getText(ctx.sourceFile)
+  return !/^[A-Z]/.test(tagName)
+}
+
+/**
+ * Check for a bare signal/memo getter reference in `expr`.
+ * Emits BF044 when a signal/memo getter is passed without calling it.
  * e.g., value={count} instead of value={count()}
+ *
+ * The top-level check — is `expr` itself a bare reactive identifier —
+ * always runs, unchanged from this diagnostic's original behaviour
+ * (`value={count}`, `<Foo x={count} />` keep firing regardless of
+ * position). `descendNested` additionally opts into walking INSIDE a
+ * composite expression — call arguments, template-literal spans,
+ * ternary branches (condition + both arms), array/object literal
+ * members, binary/logical operands, parenthesized wrappers — to catch
+ * a bare reference buried anywhere in that reachable set (#2755,
+ * #2751: this is the single upstream gate whose shallow top-level-only
+ * check let both downstream bugs through). Callers opt in only for
+ * RENDERED positions (a JSX text child; a DOM element's attribute value
+ * via `isRenderedElementAttribute`) — never for a component prop, where
+ * a bare getter is this codebase's deliberate Context-Provider idiom
+ * (measured: 66 such uses across `ui/components/**`/`site/**`, all
+ * legitimate, none a forgotten `()` — widening the gate to fire there
+ * would be a correctness regression, not a fix).
+ *
+ * Two structural exclusions apply whenever descending, both required
+ * so the walk doesn't false-positive on shapes that read the name
+ * without evaluating its signal value:
+ *   - the callee of a zero-arg call (`val()`) is the CORRECT form and
+ *     is never visited as a bare reference — only the call's arguments
+ *     (there are none) would be descended into.
+ *   - a property-access chain's object is visited but its property
+ *     NAME never is, so `ctx.val` never fires when a signal `val`
+ *     exists — the exact bug class documented in this file's
+ *     `csr-substitute.ts` sibling walker, #1100.
+ * JSX embedded inside the checked expression (a `.map()`/`.filter()`
+ * callback returning JSX is the common shape) is NOT this walk's
+ * territory either: `transformNode` independently descends into that
+ * element's own attributes and children, each re-entering this same
+ * check on its own real value expression. Descending into it here
+ * would be actively wrong, not just redundant — a JSX element's `name`
+ * nodes (an attribute's NAME, a tag name) are plain `ts.Identifier`s
+ * with no marker distinguishing them from a value read, so without
+ * this guard an attribute like `checked={x}` gets its own NAME flagged
+ * whenever a same-named signal is in scope (measured directly against
+ * `checkbox-demo.tsx` while building this walk).
+ * A nested function/arrow body that rebinds the name shadows it for
+ * everything under that body — modeled with a local bound-name stack,
+ * same shape as `csrSubstituteOnce`'s `boundStack`
+ * (`ir-to-client-js/csr-substitute.ts`), which solves this exact
+ * member-access/shadowing pair of problems for the CSR-substitution
+ * walk. Deliberately NOT threaded through the shared `BindingScope`
+ * service (`scope/binding-scope.ts`) — that scope answers "what does
+ * the surrounding loop/callback bind"; this walk only needs shadowing
+ * introduced by nested function literals inside the single expression
+ * being checked, the same reasoning `csrSubstituteOnce` already
+ * documents for its own local `boundStack`.
  */
 function checkBareSignalOrMemoIdentifier(
   expr: ts.Expression,
-  ctx: TransformContext
+  ctx: TransformContext,
+  options?: { descendNested?: boolean }
 ): void {
-  if (!ts.isIdentifier(expr)) return
+  const reactiveNames = new Map<string, 'signal' | 'memo'>()
+  for (const signal of ctx.analyzer.signals) reactiveNames.set(signal.getter, 'signal')
+  for (const memo of ctx.analyzer.memos) reactiveNames.set(memo.name, 'memo')
+  if (reactiveNames.size === 0) return
 
-  const name = expr.text
-
-  for (const signal of ctx.analyzer.signals) {
-    if (signal.getter === name) {
-      ctx.analyzer.errors.push(
-        createError(ErrorCodes.SIGNAL_GETTER_NOT_CALLED,
-          getSourceLocation(expr, ctx.sourceFile, ctx.filePath),
-          {
-            message: `Signal getter '${name}' passed without calling it`,
-            suggestion: {
-              message: `Signal getters must be called to read the value. Use \`${name}()\` instead of \`${name}\`.`,
-              replacement: `${name}()`,
-            },
-          }
-        )
+  const report = (id: ts.Identifier, name: string, kind: 'signal' | 'memo'): void => {
+    const label = kind === 'signal' ? 'Signal' : 'Memo'
+    ctx.analyzer.errors.push(
+      createError(ErrorCodes.SIGNAL_GETTER_NOT_CALLED,
+        getSourceLocation(id, ctx.sourceFile, ctx.filePath),
+        {
+          message: `${label} getter '${name}' passed without calling it`,
+          suggestion: {
+            message: `${label} getters must be called to read the value. Use \`${name}()\` instead of \`${name}\`.`,
+            replacement: `${name}()`,
+          },
+        }
       )
-      return
+    )
+  }
+
+  // Top-level check — unchanged from this diagnostic's original
+  // position-gating (fires unconditionally, everywhere), but NOW also
+  // respects the ambient loop/callback `BindingScope` a shadowed name
+  // needs — a pre-existing gap (the original single-line
+  // `if (!ts.isIdentifier(expr)) return` never consulted scope either)
+  // that stayed invisible only because a bare top-level identifier
+  // shadowed by a `.map(name => ...)` row param never happened to be
+  // exercised by any prior test. `ctx.scope` is the LIVE scope at this
+  // JSX node — already entered for the current loop row/callback frame
+  // by the time an attribute/child expression under it is checked
+  // (`enterLoopRow`/`enterCallback`, `scope/binding-scope.ts`) — so
+  // `isBound` here is a shadow-guard read in exactly the sense
+  // `spec/compiler.md`'s `BindingScope` section describes: is a signal
+  // getter of this name shadowed HERE, not "does this expression need
+  // its own reactive slot".
+  if (ts.isIdentifier(expr)) {
+    const kind = reactiveNames.get(expr.text)
+    if (kind && !ctx.scope.isBound(expr.text)) report(expr, expr.text, kind)
+    return
+  }
+
+  if (!options?.descendNested) return
+
+  const boundStack: Array<Set<string>> = []
+  const isBound = (name: string): boolean => {
+    for (let i = boundStack.length - 1; i >= 0; i--) {
+      if (boundStack[i].has(name)) return true
+    }
+    return ctx.scope.isBound(name)
+  }
+
+  const collectBindingNames = (name: ts.BindingName, out: Set<string>): void => {
+    if (ts.isIdentifier(name)) out.add(name.text)
+    else if (ts.isObjectBindingPattern(name)) {
+      for (const el of name.elements) collectBindingNames(el.name, out)
+    } else if (ts.isArrayBindingPattern(name)) {
+      for (const el of name.elements) {
+        if (!ts.isOmittedExpression(el)) collectBindingNames(el.name, out)
+      }
     }
   }
 
-  for (const memo of ctx.analyzer.memos) {
-    if (memo.name === name) {
-      ctx.analyzer.errors.push(
-        createError(ErrorCodes.SIGNAL_GETTER_NOT_CALLED,
-          getSourceLocation(expr, ctx.sourceFile, ctx.filePath),
-          {
-            message: `Memo getter '${name}' passed without calling it`,
-            suggestion: {
-              message: `Memo getters must be called to read the value. Use \`${name}()\` instead of \`${name}\`.`,
-              replacement: `${name}()`,
-            },
-          }
-        )
-      )
-      return
+  const collectBlockDeclarations = (block: ts.Block, out: Set<string>): void => {
+    for (const stmt of block.statements) {
+      if (ts.isVariableStatement(stmt)) {
+        for (const decl of stmt.declarationList.declarations) collectBindingNames(decl.name, out)
+      } else if (ts.isFunctionDeclaration(stmt) && stmt.name) {
+        out.add(stmt.name.text)
+      }
     }
   }
+
+  function visit(node: ts.Node): void {
+    // JSX embedded inside the checked expression — see docstring.
+    if (
+      ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)
+    ) {
+      return
+    }
+
+    // Zero-arg call with bare-identifier callee (`val()`): the correct
+    // form. The callee is never visited as a bare reference; there are
+    // no arguments to descend into either.
+    if (ts.isCallExpression(node) && node.arguments.length === 0 && ts.isIdentifier(node.expression)) {
+      return
+    }
+
+    // Property access: `obj.prop` — visit `obj` (a real reference),
+    // never `prop` (a member-access tail, not a value read). #1100.
+    if (ts.isPropertyAccessExpression(node)) {
+      visit(node.expression)
+      return
+    }
+
+    // Object literal key: `{ X: value }` — `X` is a key, not a read.
+    if (ts.isPropertyAssignment(node)) {
+      if (ts.isComputedPropertyName(node.name)) visit(node.name.expression)
+      visit(node.initializer)
+      return
+    }
+
+    // Shorthand property: `{ X }` — `X` is both key and value, so the
+    // value side IS a bare reference.
+    if (ts.isShorthandPropertyAssignment(node)) {
+      if (ts.isIdentifier(node.name) && !isBound(node.name.text)) {
+        const kind = reactiveNames.get(node.name.text)
+        if (kind) report(node.name, node.name.text, kind)
+      }
+      return
+    }
+
+    // Nested function/arrow: bind params + block-scoped locals declared
+    // in its body, recurse, unbind. A name shadowed here is a different
+    // binding, not the signal/memo of the same name.
+    if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+      const bound = new Set<string>()
+      for (const p of node.parameters) collectBindingNames(p.name, bound)
+      if (node.body && ts.isBlock(node.body)) collectBlockDeclarations(node.body, bound)
+      boundStack.push(bound)
+      if (node.body) visit(node.body)
+      boundStack.pop()
+      return
+    }
+
+    // Variable declaration: the binding name itself isn't a reference;
+    // only its initializer can be.
+    if (ts.isVariableDeclaration(node)) {
+      if (node.initializer) visit(node.initializer)
+      return
+    }
+
+    // Bare identifier reference — the case this check exists for.
+    if (ts.isIdentifier(node)) {
+      if (isBound(node.text)) return
+      const kind = reactiveNames.get(node.text)
+      if (kind) report(node, node.text, kind)
+      return
+    }
+
+    ts.forEachChild(node, visit)
+  }
+
+  visit(expr)
 }
 
 /**

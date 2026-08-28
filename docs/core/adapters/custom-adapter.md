@@ -192,12 +192,12 @@ renderLoop(loop: IRLoop): string {
 
 **Input (JSX):**
 ```tsx
-{items.map(item => <li key={item.id}>{item.name}</li>)}
+{items().map(item => <li key={item.id}>{item.name}</li>)}
 ```
 
 **Output (TestAdapter):**
 ```tsx
-{items.map((item) => <li key={item.id}>{item.name}</li>)}
+{items().map((item) => <li key={item.id}>{item.name}</li>)}
 ```
 
 Non-JSX adapters translate to the target iteration syntax (e.g., `{{range .Items}}...{{end}}`).

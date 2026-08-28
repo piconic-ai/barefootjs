@@ -191,7 +191,7 @@ For complex filter predicates, the adapter generates template block functions.
 ### `.sort().map()` / `.toSorted().map()`
 
 ```tsx
-{items.toSorted((a, b) => a.priority - b.priority).map(t => <li key={t.id}>{t.name}</li>)}
+{items().toSorted((a, b) => a.priority - b.priority).map(t => <li key={t.id}>{t.name}</li>)}
 ```
 
 ```go-template
