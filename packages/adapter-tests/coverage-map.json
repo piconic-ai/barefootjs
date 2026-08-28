@@ -1508,6 +1508,19 @@
         "text"
       ]
     },
+    "custom-element-child-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "custom-element-tag": {
       "kinds": [
         "call",
@@ -5471,13 +5484,13 @@
     "array-method": 71,
     "arrow": 70,
     "binary": 93,
-    "call": 226,
+    "call": 227,
     "conditional": 26,
-    "identifier": 319,
+    "identifier": 320,
     "index-access": 14,
     "literal": 259,
     "logical": 48,
-    "member": 184,
+    "member": 185,
     "object-literal": 62,
     "template-literal": 30,
     "unary": 24,
