@@ -118,8 +118,16 @@ test.describe('pairwise sweep', () => {
       // measure fine but Playwright's hit-test resolves the shared edge to
       // the WRONG sibling (`<span data-key="1">` intercepts the click meant
       // for `data-key="0"`), a real regression caught empirically before
-      // landing this rule. `<div>` targets never need the display change —
-      // block is already sized by `min-height` — and `<li>`/`<button>`/
+      // landing this rule. The `<div>` rule carries the same `1em` for the
+      // same reason, and that is load-bearing rather than symmetry for its
+      // own sake: at `min-height: 1px` the three stacked row roots of
+      // `component-row-root-loop` sit edge-to-edge at 1px tall each, and
+      // `document.elementFromPoint` at row 0's click point returns row 1 —
+      // the span bug above, rotated onto the vertical axis. Found by review
+      // asking whether the div case had been verified or merely not yet
+      // triggered; measurement said the latter, on two cases. `<div>` targets
+      // never need the display change — block is already sized by
+      // `min-height` — and `<li>`/`<button>`/
       // `<input>`/`<select>`/`<textarea>` targets already have a UA-given
       // line box or intrinsic size and are deliberately left untouched: an
       // earlier, broader `[data-pw-event]{display:inline-block}` rule (no
@@ -127,7 +135,7 @@ test.describe('pairwise sweep', () => {
       // sibling list rows onto the same line so one covered another's click
       // point — a real regression this file's own history caught (see the
       // floor test below, which now guards the whole class from without).
-      hostStyles: 'span[data-pw-event]{display:inline-block;min-width:1em;min-height:1em;}div[data-pw-event]{min-height:1px;}',
+      hostStyles: 'span[data-pw-event]{display:inline-block;min-width:1em;min-height:1em;}div[data-pw-event]{min-height:1em;}',
     })
   }
 
@@ -243,7 +251,7 @@ test.describe('pairwise sweep', () => {
    * can fix. A geometry floor that can only be satisfied by fixing the
    * compiler is not a geometry floor.
    */
-  test('every click target has a real (non-zero-area) hit box', async ({ page }) => {
+  test('every click target actually receives the click at its own click point', async ({ page }) => {
     test.setTimeout(60_000)
     const targets = okCases.filter(
       e => actionStepsOf(e.interactions).length > 0 && !isLegitimatelyRowLess(e.axes.structure, e.axes.state),
@@ -252,15 +260,34 @@ test.describe('pairwise sweep', () => {
     // cases with a real click target, the loop below would vacuously pass.
     expect(targets.length).toBeGreaterThan(0)
 
-    const zeroArea: string[] = []
+    const unreachable: string[] = []
     for (const entry of targets) {
       await page.goto(fixtureUrl(baseUrl, entry.id, 'hydrate'))
       await waitOneFrame(page)
-      const box = await page.locator('[data-pw-event]').first().boundingBox()
-      if (!box || box.width * box.height <= 0) {
-        zeroArea.push(`${entry.id}: box=${JSON.stringify(box)}`)
-      }
+      // Playwright's own actionability criterion, asserted directly: take the
+      // point it would click (the target's centre) and ask the browser what
+      // is actually there. Non-zero area is NOT sufficient and asserting it
+      // was the earlier, weaker form of this test: a 1px-tall row root has
+      // area 1264, passes an area check, and still hit-tests to its SIBLING
+      // (measured on two `component-row-root-loop` cases before the `<div>`
+      // rule's `1em` floor). Area was a proxy; this is the property.
+      const verdict = await page.evaluate(() => {
+        const els = [...document.querySelectorAll('[data-pw-event]')]
+        const first = els[0] as HTMLElement | undefined
+        if (!first) return 'no-target'
+        const box = first.getBoundingClientRect()
+        if (box.width <= 0 || box.height <= 0) return `zero-area box=${box.width}x${box.height}`
+        const at = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+        if (at === null) return `nothing at click point (box=${box.width}x${box.height})`
+        if (at === first || first.contains(at)) return 'ok'
+        const sibling = els.findIndex(e => e === at || e.contains(at))
+        return `click point resolves to ${sibling >= 0 ? `sibling #${sibling}` : `<${at.tagName.toLowerCase()}>`} (box=${box.width}x${box.height})`
+      })
+      if (verdict !== 'ok') unreachable.push(`${entry.id}: ${verdict}`)
     }
-    expect(zeroArea, `${zeroArea.length} case(s) have a [data-pw-event] target with zero area:\n${zeroArea.join('\n')}`).toEqual([])
+    expect(
+      unreachable,
+      `${unreachable.length} case(s) have a [data-pw-event] target the click cannot reach:\n${unreachable.join('\n')}`,
+    ).toEqual([])
   })
 })
