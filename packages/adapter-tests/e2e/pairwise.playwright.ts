@@ -28,14 +28,15 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Server } from 'node:http'
-import { test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { createFixture, type JSXFixture } from '../src/types'
-import { startFixtureServer } from './fixture-host'
+import { startFixtureServer, fixtureUrl } from './fixture-host'
 import type { OracleKind } from './oracle-quarantine'
 import { pairwiseQuarantineEntry } from './pairwise-quarantine'
-import { runIdempotenceOracle, runSnapOracle, runThreePointOracle } from './oracle-core'
+import { runIdempotenceOracle, runSnapOracle, runThreePointOracle, waitOneFrame } from './oracle-core'
 import { actionStepsOf } from './interaction-runner'
 import type { PairwiseManifestEntry } from '../scripts/pairwise-generate'
+import { isLegitimatelyRowLess } from '../pairwise/axes'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PAIRWISE_DIR = resolve(HERE, '../.pairwise')
@@ -83,6 +84,50 @@ test.describe('pairwise sweep', () => {
       expectedHtml: html,
       expectedClientJs: clientJs,
       interactions: entry.interactions,
+      // Why paint the target instead of clicking around its geometry (e.g.
+      // `force: true`, or dispatching a synthetic event at an arbitrary
+      // point): Playwright's actionability checks — visible, stable,
+      // receives pointer events at the click point — exist to catch a REAL
+      // hydration bug (an element covered by an overlay, detached mid-click,
+      // etc). Bypassing them here would silently swallow that class of bug
+      // for every pairwise case, not just the ones this hostStyles rule
+      // targets. The actual defect is narrower than "the click can't land"
+      // — it's that several `binding` values (`attr`/`class`/`style`) render
+      // an event target whose only content is an attribute with no text, so
+      // the browser gives it no line box at all (a `<span>`) or a
+      // content-driven zero height (a `<div>` wrapping that empty `<span>`).
+      // That's a layout artefact of the harness's plain corpus, not
+      // something a passing case is supposed to exercise — so giving the
+      // target a floor size is the narrow fix, not a workaround for the
+      // click itself.
+      //
+      // Why CSS is safe here (and wouldn't be for a fixture whose oracle
+      // cared about layout): every oracle in `oracle-core.ts` compares
+      // `document.body`'s serialized HTML and a live DOM-state property
+      // table (`dom-state.ts`) — never computed style, geometry, or
+      // anything this stylesheet could perturb. It also applies IDENTICALLY
+      // to all three host modes (`fixture-host.ts`'s shared `hostStyles`
+      // gate), so it can't introduce an asymmetry between the legs being
+      // compared.
+      //
+      // `min-width`/`min-height` alone doesn't reach a `<span>`: CSS
+      // exempts non-replaced INLINE elements from min/max sizing, so the
+      // `<span>` rule also switches it to `inline-block` first. `1em` (not
+      // `1px`) is load-bearing for the `fragment-row-loop` structure, whose
+      // rows sit adjacent with no gap — at `1px` two adjacent 1x1 boxes
+      // measure fine but Playwright's hit-test resolves the shared edge to
+      // the WRONG sibling (`<span data-key="1">` intercepts the click meant
+      // for `data-key="0"`), a real regression caught empirically before
+      // landing this rule. `<div>` targets never need the display change —
+      // block is already sized by `min-height` — and `<li>`/`<button>`/
+      // `<input>`/`<select>`/`<textarea>` targets already have a UA-given
+      // line box or intrinsic size and are deliberately left untouched: an
+      // earlier, broader `[data-pw-event]{display:inline-block}` rule (no
+      // tag qualifier) flipped `<li>` out of `list-item` flow, collapsing
+      // sibling list rows onto the same line so one covered another's click
+      // point — a real regression this file's own history caught (see the
+      // floor test below, which now guards the whole class from without).
+      hostStyles: 'span[data-pw-event]{display:inline-block;min-width:1em;min-height:1em;}div[data-pw-event]{min-height:1px;}',
     })
   }
 
@@ -135,9 +180,87 @@ test.describe('pairwise sweep', () => {
     })
 
     if (actionStepsOf(fixture.interactions).length === 0) continue
+
+    // `conditional-ternary`/`early-return` combos in `LEGITIMATELY_ROW_LESS`
+    // (`pairwise/axes.ts` — shared with `pairwise-covering-array.test.ts` so
+    // the two consumers can't drift apart) render the row-LESS branch on
+    // first SSR: no `[data-pw-event]` element exists AT ALL, by design, so
+    // `runIdempotenceOracle`'s click can never find a target. Without this
+    // skip that's not a fast, obvious "no target" signal — it's a genuine
+    // `TimeoutError: locator.click` indistinguishable in the failure list
+    // from a real geometry or hydration bug, burning 5s per case to
+    // rediscover a fact the covering-array test already proved structurally.
+    // This is deliberately NOT "skip idempotence when the selector count is
+    // 0" — that blanket form would also silently swallow a row that SHOULD
+    // have rendered but didn't (a real hydration bug). It only fires for
+    // the specific structure/state combos the table documents, and the
+    // assertion below keeps the table honest: if a future compose.ts change
+    // ever makes one of these combos render the row after all, the skip
+    // itself fails loudly instead of quietly continuing to skip a case that
+    // now has something real to click.
+    if (isLegitimatelyRowLess(entry.axes.structure, entry.axes.state)) {
+      test(`[idempotence] ${entry.id}: skipped — documented row-less combo renders no click target (LEGITIMATELY_ROW_LESS)`, () => {
+        expect(
+          fixture.expectedHtml,
+          `${entry.id}: LEGITIMATELY_ROW_LESS says this structure/state combo never renders '[data-pw-event]', ` +
+            `but the SSR HTML has one — remove this entry from LEGITIMATELY_ROW_LESS (pairwise/axes.ts) and let the ` +
+            `real [idempotence] test run instead.`,
+        ).not.toContain('data-pw-event')
+      })
+      continue
+    }
+
     test(`[idempotence] ${entry.id}: replayed actions agree between hydrated and csr-mount`, async ({ page }) => {
       test.setTimeout(30_000)
       await runQuarantined(entry.id, 'idempotence', () => runIdempotenceOracle(page, fixture, baseUrl))
     })
   }
+
+  /**
+   * Mechanical floor for the `hostStyles` rule above (#2481 step 5,
+   * browser-oracle leg — the geometry hole this whole file's history is
+   * about). Without this, a future change to `compose.ts`'s structure/
+   * binding templates could reintroduce a `[data-pw-event]` target with no
+   * line box — exactly the defect the CSS rule fixes today — and nothing
+   * would notice until it silently widened `idempotence`'s click-timeout
+   * failure list again. This test measures the SAME leg (`'hydrate'`) the
+   * real `[idempotence]` tests click first, for every case this suite
+   * expects to have a target (excluding `LEGITIMATELY_ROW_LESS`, which by
+   * design has none) — so it fails LOUDLY, by name, the moment the hole
+   * reopens, instead of being rediscovered as an unexplained pile of
+   * `TimeoutError: locator.click` failures.
+   *
+   * Why only the `'hydrate'` leg, when `runIdempotenceOracle` replays the
+   * same click against `'csr-mount'` too: measured across all 85 `ok`
+   * cases, the `'csr-mount'` leg is missing `[data-pw-event]` entirely for
+   * a set of cases — not because the target has no box, but because the
+   * component either drops the caller-supplied prop or throws during
+   * construction (#2750, #2751). Those are product defects with their own
+   * issues and quarantine rows. Asserting geometry over that leg would
+   * fold them into THIS test, which exists to answer one narrow question
+   * — "does the harness's own corpus still produce clickable targets?" —
+   * and would leave it permanently red for reasons no `compose.ts` change
+   * can fix. A geometry floor that can only be satisfied by fixing the
+   * compiler is not a geometry floor.
+   */
+  test('every click target has a real (non-zero-area) hit box', async ({ page }) => {
+    test.setTimeout(60_000)
+    const targets = okCases.filter(
+      e => actionStepsOf(e.interactions).length > 0 && !isLegitimatelyRowLess(e.axes.structure, e.axes.state),
+    )
+    // Guards the guard: if the covering array ever stopped generating
+    // cases with a real click target, the loop below would vacuously pass.
+    expect(targets.length).toBeGreaterThan(0)
+
+    const zeroArea: string[] = []
+    for (const entry of targets) {
+      await page.goto(fixtureUrl(baseUrl, entry.id, 'hydrate'))
+      await waitOneFrame(page)
+      const box = await page.locator('[data-pw-event]').first().boundingBox()
+      if (!box || box.width * box.height <= 0) {
+        zeroArea.push(`${entry.id}: box=${JSON.stringify(box)}`)
+      }
+    }
+    expect(zeroArea, `${zeroArea.length} case(s) have a [data-pw-event] target with zero area:\n${zeroArea.join('\n')}`).toEqual([])
+  })
 })

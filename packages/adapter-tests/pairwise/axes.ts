@@ -104,3 +104,36 @@ export function isLoopStructure(structure: StructureValue): boolean {
     structure === 'preamble-builder-body'
   )
 }
+
+/**
+ * `conditional-ternary` / `early-return` each have a branch WITHOUT the row
+ * (and so without `data-pw-event`) BY DESIGN — see `CONDITIONAL_TERNARY_TEMPLATE`
+ * / `EARLY_RETURN_BODY` in `compose.ts`. Which branch actually renders on
+ * first SSR is decided entirely by `stateInitialValueIsTruthy(state)` — NOT
+ * by the `event` axis. A real `bun run pairwise:generate` sweep of all 97
+ * cases found the split is 100% consistent along exactly this table:
+ * falsy-seeded states (`signal`, `memo`, `getter-elided-signal`, all
+ * seeded/derived from `0`) never render the row; truthy-seeded ones
+ * (`prop`, `prop-shadowing-signal`, sampled at `7`) always do. See
+ * `pairwise-covering-array.test.ts`'s longer docstring on the describe
+ * block that asserts this table stays exhaustive and non-stale.
+ *
+ * Single source of truth for two independent consumers that both need to
+ * know "this combo legitimately renders no click target": the covering-
+ * array contract test (which asserts the table is exhaustive and none of
+ * its entries are wrongly exempted) and the browser-oracle pairwise sweep
+ * (which skips the `idempotence` oracle — there's nothing for it to click
+ * — instead of burning a 5s timeout finding that out the hard way). Keying
+ * both off one export means a future structure/state addition can't leave
+ * one consumer's copy stale relative to the other's.
+ */
+export const LEGITIMATELY_ROW_LESS: ReadonlySet<string> = new Set(
+  (['conditional-ternary', 'early-return'] as const).flatMap(structure =>
+    (['signal', 'memo', 'getter-elided-signal'] as const).map(state => `${structure}|${state}`),
+  ),
+)
+
+/** `true` iff `structure`/`state` is a documented no-render-target exemption — see `LEGITIMATELY_ROW_LESS`. */
+export function isLegitimatelyRowLess(structure: StructureValue, state: StateValue): boolean {
+  return LEGITIMATELY_ROW_LESS.has(`${structure}|${state}`)
+}

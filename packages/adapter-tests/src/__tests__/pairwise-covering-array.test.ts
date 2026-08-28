@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { AXIS_NAMES, AXIS_VALUES, EVENT_VALUES, type AxisCombo, type AxisName } from '../../pairwise/axes'
+import { AXIS_NAMES, AXIS_VALUES, EVENT_VALUES, LEGITIMATELY_ROW_LESS, type AxisCombo, type AxisName } from '../../pairwise/axes'
 import { buildCoveringArray, isValidCombo } from '../../pairwise/covering-array'
 import { assertNoMarkers, composeCase, stateInitialValueIsTruthy } from '../../pairwise/compose'
 
@@ -243,13 +243,14 @@ describe('pairwise compose — the event hook must land on something real', () =
  * full covering array both branches of both structures get exercised —
  * some cases render the row, others the fallback — so nothing here goes
  * untested, only unexercised BY THE HOOK given these particular samples.
+ *
+ * `LEGITIMATELY_ROW_LESS` itself lives in `../../pairwise/axes.ts`, not
+ * here — `e2e/pairwise.playwright.ts` needs the exact same table (to skip
+ * the `idempotence` oracle on these combos instead of burning a 5s
+ * timeout discovering there's nothing to click) and a second hand-copied
+ * literal would drift the moment one side gained a structure/state value
+ * without the other noticing.
  */
-const LEGITIMATELY_ROW_LESS: ReadonlySet<string> = new Set(
-  (['conditional-ternary', 'early-return'] as const).flatMap(structure =>
-    (['signal', 'memo', 'getter-elided-signal'] as const).map(state => `${structure}|${state}`),
-  ),
-)
-
 describe('pairwise compose — branch-selecting structures, a documented (not silent) non-coverage', () => {
   test('every conditional-ternary/early-return case with a falsy-seeded state is a documented exemption, and no truthy-seeded one is', () => {
     const { cases } = buildCoveringArray()
