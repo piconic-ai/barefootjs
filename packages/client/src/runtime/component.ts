@@ -153,12 +153,16 @@ export interface CreateComponentSlotInfo {
  * fragment-root component (#2722). Every other combination — a normal
  * component, or a fragment-root one with `mountAt`/row-mount already
  * telling this function where to connect — still returns the real,
- * single `HTMLElement`, unchanged. Only the no-known-destination case has
- * no single element to hand back: the fragment root's own `<!--bf-scope:-->`
- * boundary comments (`materializeComponent` step 7b) must travel to
- * wherever the caller inserts the result, and a `DocumentFragment` is the
- * one `Node` a plain `container.appendChild(...)` / `el.replaceWith(...)`
- * moves as a unit without the caller needing to know why.
+ * single `HTMLElement`, unchanged (that element stays the caller-visible
+ * proxy even when the fragment root has further sibling roots of its own
+ * — #2735 — those travel alongside it, never in place of it). Only the
+ * no-known-destination case has no single element to hand back: the
+ * fragment root's own `<!--bf-scope:-->` boundary comments PLUS every
+ * sibling root the fragment's template rendered (`materializeComponent`
+ * step 7b) must travel to wherever the caller inserts the result, and a
+ * `DocumentFragment` is the one `Node` a plain `container.appendChild(...)`
+ * / `el.replaceWith(...)` moves as a unit without the caller needing to
+ * know why.
  *
  * The first overload states that in the type system rather than only here:
  * a call that passes a non-null `mountAt` is telling this function where to
@@ -336,8 +340,34 @@ function materializeComponent(
     _parentScopeId = prevParentScopeId
   }
 
-  // 6. Create DOM element
-  const element = parseHTML(html.trim()).firstChild as HTMLElement
+  // 6. Create DOM element(s).
+  //
+  // A genuine fragment root's template concatenates EVERY top-level
+  // sibling into one HTML string — `element` (the parsed fragment's first
+  // child) stays the sole proxy this function threads through init /
+  // `commentScopeRegistry` / its return value, exactly as before. Any
+  // FURTHER top-level Elements are the fragment's other roots (#2735,
+  // `parseHTML(...).firstChild` used to be the only node kept, silently
+  // dropping them). Collected into a plain `HTMLElement[]` local — the
+  // same shape a multi-root LOOP BODY already stashes as `__bfExtras`
+  // (`emitMultiRootTemplateCloneLines`, `map-array.ts`'s `createItemScope`)
+  // — rather than inventing a second sibling-roots convention. NOT routed
+  // through the `__bfExtras` property itself: that stash is a handshake
+  // specific to `renderItem`'s return value on the way into
+  // `createItemScope`, and the two connect shapes below that use `extras`
+  // (`mountAt`, bare/no-destination) never pass through there — only the
+  // `rowMount` shape would, and it deliberately doesn't touch `extras` at
+  // all (see that branch's comment). Gated on `isFragmentRoot` because
+  // that is the only IR shape whose template ever emits more than one
+  // top-level element (jsx-to-ir.ts's `transformFragment`).
+  const parsedFragment = parseHTML(html.trim())
+  const element = parsedFragment.firstChild as HTMLElement
+  const extras: HTMLElement[] = []
+  if (isFragmentRoot) {
+    for (let node = element?.nextSibling ?? null; node; node = node.nextSibling) {
+      if (node.nodeType === Node.ELEMENT_NODE) extras.push(node as HTMLElement)
+    }
+  }
 
   if (!element) {
     console.warn(`[BarefootJS] Template returned empty HTML for component: ${name}`)
@@ -410,7 +440,7 @@ function materializeComponent(
   let bareFragment: DocumentFragment | null = null
   if (mountAt && !rootIsDeferredPlaceholder) {
     if (fragmentComments) {
-      mountAt.replaceWith(fragmentComments.start, element, fragmentComments.end)
+      mountAt.replaceWith(fragmentComments.start, element, ...extras, fragmentComments.end)
     } else {
       mountAt.replaceWith(element)
     }
@@ -423,13 +453,17 @@ function materializeComponent(
       rowMount.container.insertBefore(fragmentComments.start, rowMount.anchor)
       rowMount.container.insertBefore(element, rowMount.anchor)
       rowMount.container.insertBefore(fragmentComments.end, rowMount.anchor)
-      // `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`) does not
-      // yet track a fragment-root row's own boundary comments the way it
-      // tracks a multi-root loop BODY's `__bfExtras` siblings — a future
-      // reorder/removal of this row would move/remove `element` without
-      // its comments. Not reachable by any currently tracked fixture (no
+      // Deliberately NOT inserting `extras` here (a fragment-root
+      // component whose OWN render has 2+ top-level roots, used as a loop
+      // row) — `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`)
+      // does not yet track a fragment-root row's own boundary comments the
+      // way it tracks a multi-root loop BODY's `__bfExtras` siblings, so a
+      // future reorder/removal of this row would move/remove `element`
+      // without its comments regardless of whether `extras` were also
+      // wired through. Not reachable by any currently tracked fixture (no
       // fragment-root component is used as a loop row in the mutation
-      // corpus), so declared rather than grown here:
+      // corpus), so declared rather than grown here — same gap #2735's fix
+      // leaves open for this one connect shape:
       // https://github.com/piconic-ai/barefootjs/issues/2733
     } else {
       rowMount.container.insertBefore(element, rowMount.anchor)
@@ -438,13 +472,14 @@ function materializeComponent(
     // Neither a placeholder nor an ambient row position: the caller owns
     // connecting the result itself (e.g. the compiler's exported
     // `export function Name(props, key) { return createComponent(...) }`
-    // shim, called directly with no further composition). Bundle the
-    // three nodes in one `DocumentFragment` so a plain `container.append(
-    // result)` / `el.replaceWith(result)` moves all of them together —
+    // shim, called directly with no further composition — the shape
+    // `fixture-host.ts`'s `'csr-mount'` boot script uses). Bundle every
+    // node in one `DocumentFragment` so a plain `container.append(result)`
+    // / `el.replaceWith(result)` moves all of them together —
     // `createComponent`'s docstring covers why this is the one shape that
     // can't return a bare `HTMLElement`.
     bareFragment = document.createDocumentFragment()
-    bareFragment.append(fragmentComments.start, element, fragmentComments.end)
+    bareFragment.append(fragmentComments.start, element, ...extras, fragmentComments.end)
   }
 
   // 8. Set currentScope so provideContext/useContext are element-scoped.
