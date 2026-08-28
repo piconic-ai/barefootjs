@@ -645,7 +645,10 @@
         "member"
       ],
       "axes": [
-        "binary:-"
+        "binary:-",
+        "sort-direction:asc",
+        "sort-key:numeric",
+        "sort-target:field"
       ],
       "contexts": [
         "attribute",
@@ -661,7 +664,10 @@
         "member"
       ],
       "axes": [
-        "binary:-"
+        "binary:-",
+        "sort-direction:desc",
+        "sort-key:numeric",
+        "sort-target:field"
       ],
       "contexts": [
         "attribute",
@@ -677,7 +683,10 @@
         "member"
       ],
       "axes": [
-        "binary:-"
+        "binary:-",
+        "sort-direction:asc",
+        "sort-key:numeric",
+        "sort-target:field"
       ],
       "contexts": [
         "attribute",
@@ -713,7 +722,12 @@
       ],
       "axes": [
         "binary:-",
-        "logical:||"
+        "logical:||",
+        "sort-direction:asc",
+        "sort-key:numeric",
+        "sort-key:string",
+        "sort-target:field",
+        "sort:multi-key"
       ],
       "contexts": [
         "attribute",
@@ -740,6 +754,24 @@
         "text"
       ]
     },
+    "array-sort-self": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "identifier"
+      ],
+      "axes": [
+        "binary:-",
+        "sort-direction:asc",
+        "sort-key:numeric",
+        "sort-target:self"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "array-sort-ternary": {
       "kinds": [
         "arrow",
@@ -753,6 +785,9 @@
       "axes": [
         "binary:>",
         "literal:number",
+        "sort-direction:asc",
+        "sort-key:auto",
+        "sort-target:field",
         "unary:-"
       ],
       "contexts": [
@@ -1609,7 +1644,9 @@
         "identifier",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "lowering:date"
+      ],
       "contexts": [
         "text"
       ]
@@ -1620,7 +1657,9 @@
         "identifier",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "lowering:date"
+      ],
       "contexts": [
         "attribute",
         "text"
@@ -1632,7 +1671,9 @@
         "identifier",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "lowering:date"
+      ],
       "contexts": [
         "attribute"
       ]
@@ -1643,7 +1684,9 @@
         "identifier",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "lowering:date"
+      ],
       "contexts": [
         "text"
       ]
@@ -1679,7 +1722,8 @@
         "object-literal"
       ],
       "axes": [
-        "literal:string"
+        "literal:string",
+        "lowering:toLocaleDateString"
       ],
       "contexts": [
         "text"
@@ -1694,7 +1738,8 @@
         "object-literal"
       ],
       "axes": [
-        "literal:string"
+        "literal:string",
+        "lowering:toLocaleDateString"
       ],
       "contexts": [
         "text"
@@ -1709,7 +1754,8 @@
         "object-literal"
       ],
       "axes": [
-        "literal:string"
+        "literal:string",
+        "lowering:toLocaleDateString"
       ],
       "contexts": [
         "text"
@@ -1724,7 +1770,8 @@
         "object-literal"
       ],
       "axes": [
-        "literal:string"
+        "literal:string",
+        "lowering:toLocaleDateString"
       ],
       "contexts": [
         "text"
@@ -2187,7 +2234,10 @@
         "member"
       ],
       "axes": [
-        "binary:-"
+        "binary:-",
+        "sort-direction:asc",
+        "sort-key:numeric",
+        "sort-target:field"
       ],
       "contexts": [
         "attribute",
@@ -2380,7 +2430,8 @@
         "literal"
       ],
       "axes": [
-        "literal:string"
+        "literal:string",
+        "lowering:formatDate"
       ],
       "contexts": [
         "text"
@@ -3742,6 +3793,22 @@
         "text"
       ]
     },
+    "query-href": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "lowering:queryHref"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "radio-group": {
       "kinds": [
         "arrow",
@@ -4539,7 +4606,10 @@
         "member"
       ],
       "axes": [
-        "binary:-"
+        "binary:-",
+        "sort-direction:asc",
+        "sort-key:numeric",
+        "sort-target:field"
       ],
       "contexts": [
         "attribute",
@@ -5457,16 +5527,16 @@
   "kindCounts": {
     "array-literal": 80,
     "array-method": 71,
-    "arrow": 70,
-    "binary": 93,
-    "call": 225,
-    "conditional": 26,
-    "identifier": 318,
+    "arrow": 71,
+    "binary": 94,
+    "call": 226,
+    "conditional": 27,
+    "identifier": 320,
     "index-access": 14,
-    "literal": 259,
+    "literal": 260,
     "logical": 48,
     "member": 183,
-    "object-literal": 62,
+    "object-literal": 63,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 40
@@ -5500,7 +5570,7 @@
     "binary:!==": 9,
     "binary:*": 12,
     "binary:+": 21,
-    "binary:-": 11,
+    "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
     "binary:===": 49,
@@ -5509,12 +5579,24 @@
     "literal:boolean": 56,
     "literal:null": 23,
     "literal:number": 106,
-    "literal:string": 182,
+    "literal:string": 183,
     "logical:&&": 7,
     "logical:??": 42,
     "logical:||": 14,
+    "lowering:date": 4,
+    "lowering:formatDate": 1,
+    "lowering:queryHref": 1,
+    "lowering:toLocaleDateString": 4,
     "member:computed": 8,
     "member:optional": 1,
+    "sort-direction:asc": 7,
+    "sort-direction:desc": 1,
+    "sort-key:auto": 1,
+    "sort-key:numeric": 7,
+    "sort-key:string": 1,
+    "sort-target:field": 7,
+    "sort-target:self": 1,
+    "sort:multi-key": 1,
     "unary:!": 16,
     "unary:-": 11
   },

@@ -650,15 +650,15 @@
       }
     },
     "arrow": {
-      "total": 70,
+      "total": 71,
       "cells": {
         "hono": {
-          "pass": 70,
-          "total": 70
+          "pass": 71,
+          "total": 71
         },
         "blade": {
-          "pass": 61,
-          "total": 70,
+          "pass": 62,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -703,8 +703,8 @@
           ]
         },
         "erb": {
-          "pass": 62,
-          "total": 70,
+          "pass": 63,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -743,8 +743,8 @@
           ]
         },
         "go-template": {
-          "pass": 61,
-          "total": 70,
+          "pass": 62,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -789,8 +789,8 @@
           ]
         },
         "jinja": {
-          "pass": 61,
-          "total": 70,
+          "pass": 62,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -835,8 +835,8 @@
           ]
         },
         "minijinja": {
-          "pass": 61,
-          "total": 70,
+          "pass": 62,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -881,8 +881,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 62,
-          "total": 70,
+          "pass": 63,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -921,8 +921,8 @@
           ]
         },
         "twig": {
-          "pass": 61,
-          "total": 70,
+          "pass": 62,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -967,8 +967,8 @@
           ]
         },
         "xslate": {
-          "pass": 61,
-          "total": 70,
+          "pass": 62,
+          "total": 71,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1019,22 +1019,22 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L177"
       },
       "example": {
-        "fixture": "array-sort-field-asc",
-        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
-        "code": "(a, b) => a.price - b.price"
+        "fixture": "array-sort-self",
+        "description": ".sort((a,b) => a - b) sorts a primitive array by item value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-self.ts",
+        "code": "(a, b) => a - b"
       }
     },
     "binary": {
-      "total": 93,
+      "total": 94,
       "cells": {
         "hono": {
-          "pass": 93,
-          "total": 93
+          "pass": 94,
+          "total": 94
         },
         "blade": {
-          "pass": 84,
-          "total": 93,
+          "pass": 85,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1081,8 +1081,8 @@
           ]
         },
         "erb": {
-          "pass": 85,
-          "total": 93,
+          "pass": 86,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1123,8 +1123,8 @@
           ]
         },
         "go-template": {
-          "pass": 84,
-          "total": 93,
+          "pass": 85,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1171,8 +1171,8 @@
           ]
         },
         "jinja": {
-          "pass": 84,
-          "total": 93,
+          "pass": 85,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1219,8 +1219,8 @@
           ]
         },
         "minijinja": {
-          "pass": 84,
-          "total": 93,
+          "pass": 85,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1267,8 +1267,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 85,
-          "total": 93,
+          "pass": 86,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1309,8 +1309,8 @@
           ]
         },
         "twig": {
-          "pass": 84,
-          "total": 93,
+          "pass": 85,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1357,8 +1357,8 @@
           ]
         },
         "xslate": {
-          "pass": 84,
-          "total": 93,
+          "pass": 85,
+          "total": 94,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1411,18 +1411,18 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
       },
       "example": {
-        "fixture": "array-sort-field-asc",
-        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
-        "code": "a.price - b.price"
+        "fixture": "nested-ternary-bare-branch",
+        "description": "Nested ternary chain under a non-reactive (module-const) outer condition (#2470)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-ternary-bare-branch.ts",
+        "code": "MODE === 'a'"
       }
     },
     "call": {
-      "total": 225,
+      "total": 226,
       "cells": {
         "hono": {
-          "pass": 224,
-          "total": 225,
+          "pass": 225,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1433,8 +1433,8 @@
           ]
         },
         "blade": {
-          "pass": 210,
-          "total": 225,
+          "pass": 211,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1509,8 +1509,8 @@
           ]
         },
         "erb": {
-          "pass": 211,
-          "total": 225,
+          "pass": 212,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1579,8 +1579,8 @@
           ]
         },
         "go-template": {
-          "pass": 209,
-          "total": 225,
+          "pass": 210,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1659,8 +1659,8 @@
           ]
         },
         "jinja": {
-          "pass": 210,
-          "total": 225,
+          "pass": 211,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1735,8 +1735,8 @@
           ]
         },
         "minijinja": {
-          "pass": 210,
-          "total": 225,
+          "pass": 211,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1811,8 +1811,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 211,
-          "total": 225,
+          "pass": 212,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1881,8 +1881,8 @@
           ]
         },
         "twig": {
-          "pass": 210,
-          "total": 225,
+          "pass": 211,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1957,8 +1957,8 @@
           ]
         },
         "xslate": {
-          "pass": 210,
-          "total": 225,
+          "pass": 211,
+          "total": 226,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2046,15 +2046,15 @@
       }
     },
     "conditional": {
-      "total": 26,
+      "total": 27,
       "cells": {
         "hono": {
-          "pass": 26,
-          "total": 26
+          "pass": 27,
+          "total": 27
         },
         "blade": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2067,8 +2067,8 @@
           ]
         },
         "erb": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2081,8 +2081,8 @@
           ]
         },
         "go-template": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2095,8 +2095,8 @@
           ]
         },
         "jinja": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2109,8 +2109,8 @@
           ]
         },
         "minijinja": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2123,8 +2123,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2137,8 +2137,8 @@
           ]
         },
         "twig": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2151,8 +2151,8 @@
           ]
         },
         "xslate": {
-          "pass": 24,
-          "total": 26,
+          "pass": 25,
+          "total": 27,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2178,11 +2178,11 @@
       }
     },
     "identifier": {
-      "total": 318,
+      "total": 320,
       "cells": {
         "hono": {
-          "pass": 315,
-          "total": 318,
+          "pass": 317,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2205,8 +2205,8 @@
           ]
         },
         "blade": {
-          "pass": 299,
-          "total": 318,
+          "pass": 301,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2301,8 +2301,8 @@
           ]
         },
         "erb": {
-          "pass": 300,
-          "total": 318,
+          "pass": 302,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2391,8 +2391,8 @@
           ]
         },
         "go-template": {
-          "pass": 297,
-          "total": 318,
+          "pass": 299,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2495,8 +2495,8 @@
           ]
         },
         "jinja": {
-          "pass": 299,
-          "total": 318,
+          "pass": 301,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2591,8 +2591,8 @@
           ]
         },
         "minijinja": {
-          "pass": 299,
-          "total": 318,
+          "pass": 301,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2687,8 +2687,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 300,
-          "total": 318,
+          "pass": 302,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2777,8 +2777,8 @@
           ]
         },
         "twig": {
-          "pass": 299,
-          "total": 318,
+          "pass": 301,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2873,8 +2873,8 @@
           ]
         },
         "xslate": {
-          "pass": 299,
-          "total": 318,
+          "pass": 301,
+          "total": 320,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3034,11 +3034,11 @@
       }
     },
     "literal": {
-      "total": 259,
+      "total": 260,
       "cells": {
         "hono": {
-          "pass": 258,
-          "total": 259,
+          "pass": 259,
+          "total": 260,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -3049,8 +3049,8 @@
           ]
         },
         "blade": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3107,8 +3107,8 @@
           ]
         },
         "erb": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3165,8 +3165,8 @@
           ]
         },
         "go-template": {
-          "pass": 245,
-          "total": 259,
+          "pass": 246,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3231,8 +3231,8 @@
           ]
         },
         "jinja": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3289,8 +3289,8 @@
           ]
         },
         "minijinja": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3347,8 +3347,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3405,8 +3405,8 @@
           ]
         },
         "twig": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3463,8 +3463,8 @@
           ]
         },
         "xslate": {
-          "pass": 247,
-          "total": 259,
+          "pass": 248,
+          "total": 260,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -4486,15 +4486,15 @@
       }
     },
     "object-literal": {
-      "total": 62,
+      "total": 63,
       "cells": {
         "hono": {
-          "pass": 62,
-          "total": 62
+          "pass": 63,
+          "total": 63
         },
         "blade": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4513,8 +4513,8 @@
           ]
         },
         "erb": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4533,8 +4533,8 @@
           ]
         },
         "go-template": {
-          "pass": 58,
-          "total": 62,
+          "pass": 59,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4557,8 +4557,8 @@
           ]
         },
         "jinja": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4577,8 +4577,8 @@
           ]
         },
         "minijinja": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4597,8 +4597,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4617,8 +4617,8 @@
           ]
         },
         "twig": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4637,8 +4637,8 @@
           ]
         },
         "xslate": {
-          "pass": 59,
-          "total": 62,
+          "pass": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -6838,8 +6838,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "nullish-coalescing-jsx",
@@ -6889,8 +6889,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "comparison-ternary-text",
@@ -6941,8 +6941,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "memo",
@@ -7057,8 +7057,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "string-concat-plus",
@@ -7068,55 +7068,55 @@
       }
     },
     "binary:-": {
-      "total": 11,
+      "total": 12,
       "cells": {
         "hono": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "blade": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "jinja": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
-        "fixture": "array-sort-field-asc",
-        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
-        "code": "a.price - b.price"
+        "fixture": "array-sort-self",
+        "description": ".sort((a,b) => a - b) sorts a primitive array by item value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-self.ts",
+        "code": "a - b"
       }
     },
     "binary:/": {
@@ -7161,8 +7161,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "data-table",
@@ -7213,8 +7213,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "data-table",
@@ -7557,8 +7557,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "nested-ternary-bare-branch",
@@ -7609,8 +7609,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "top-level-ternary",
@@ -7661,8 +7661,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 89,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+        "line": 155,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L155"
       },
       "example": {
         "fixture": "comparison-ternary-text",
@@ -7825,8 +7825,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 95,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "boolean-attr-literals",
@@ -7877,8 +7877,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 95,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "logical-and-zero",
@@ -8104,8 +8104,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 95,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "svg-icon",
@@ -8115,15 +8115,15 @@
       }
     },
     "literal:string": {
-      "total": 182,
+      "total": 183,
       "cells": {
         "hono": {
-          "pass": 182,
-          "total": 182
+          "pass": 183,
+          "total": 183
         },
         "blade": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8162,8 +8162,8 @@
           ]
         },
         "erb": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8202,8 +8202,8 @@
           ]
         },
         "go-template": {
-          "pass": 173,
-          "total": 182,
+          "pass": 174,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8246,8 +8246,8 @@
           ]
         },
         "jinja": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8286,8 +8286,8 @@
           ]
         },
         "minijinja": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8326,8 +8326,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8366,8 +8366,8 @@
           ]
         },
         "twig": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8406,8 +8406,8 @@
           ]
         },
         "xslate": {
-          "pass": 174,
-          "total": 182,
+          "pass": 175,
+          "total": 183,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8448,8 +8448,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 95,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+        "line": 161,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L161"
       },
       "example": {
         "fixture": "jsx-text-whitespace",
@@ -8500,8 +8500,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 86,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
+        "line": 152,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
         "fixture": "logical-and-chain",
@@ -8648,8 +8648,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 86,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
+        "line": 152,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
         "fixture": "nullish-coalescing-destructured",
@@ -8700,14 +8700,218 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 86,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
+        "line": 152,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
         "fixture": "loop-preamble-conditional-reactive",
         "description": "Loop row preamble computes a conditional-condition value from item + prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-conditional-reactive.ts",
         "code": "row.done || props.highlight"
+      }
+    },
+    "lowering:date": {
+      "total": 4,
+      "cells": {
+        "hono": {
+          "pass": 4,
+          "total": 4
+        },
+        "blade": {
+          "pass": 4,
+          "total": 4
+        },
+        "erb": {
+          "pass": 4,
+          "total": 4
+        },
+        "go-template": {
+          "pass": 4,
+          "total": 4
+        },
+        "jinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "minijinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "twig": {
+          "pass": 4,
+          "total": 4
+        },
+        "xslate": {
+          "pass": 4,
+          "total": 4
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
+      },
+      "example": {
+        "fixture": "date-catalogued",
+        "description": "Date-typed prop: toISOString() and getUTCFullYear() render via the catalogued date helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-catalogued.ts"
+      }
+    },
+    "lowering:formatDate": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
+      },
+      "example": {
+        "fixture": "format-date",
+        "description": "formatDate(date, pattern, timeZone) renders via the catalogued format_date helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
+      }
+    },
+    "lowering:queryHref": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
+      },
+      "example": {
+        "fixture": "query-href",
+        "description": "queryHref(base, {…}) lowers to the query helper via the builtin plugin registry",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/query-href.ts"
+      }
+    },
+    "lowering:toLocaleDateString": {
+      "total": 4,
+      "cells": {
+        "hono": {
+          "pass": 4,
+          "total": 4
+        },
+        "blade": {
+          "pass": 4,
+          "total": 4
+        },
+        "erb": {
+          "pass": 4,
+          "total": 4
+        },
+        "go-template": {
+          "pass": 4,
+          "total": 4
+        },
+        "jinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "minijinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "twig": {
+          "pass": 4,
+          "total": 4
+        },
+        "xslate": {
+          "pass": 4,
+          "total": 4
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
+      },
+      "example": {
+        "fixture": "date-tolocale-datestyle",
+        "description": "toLocaleDateString dateStyle options lower to name-token patterns + shipped name tables",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-tolocale-datestyle.ts"
       }
     },
     "member:computed": {
@@ -8752,8 +8956,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 102,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L102"
+        "line": 168,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L168"
       },
       "example": {
         "fixture": "pagination",
@@ -8804,14 +9008,422 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 101,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L101"
+        "line": 167,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L167"
       },
       "example": {
         "fixture": "optional-chaining-prop",
         "description": "Optional chaining into an object prop with nullish fallback",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chaining-prop.ts",
         "code": "user?.name"
+      }
+    },
+    "sort-direction:asc": {
+      "total": 7,
+      "cells": {
+        "hono": {
+          "pass": 7,
+          "total": 7
+        },
+        "blade": {
+          "pass": 7,
+          "total": 7
+        },
+        "erb": {
+          "pass": 7,
+          "total": 7
+        },
+        "go-template": {
+          "pass": 7,
+          "total": 7
+        },
+        "jinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "minijinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "mojolicious": {
+          "pass": 7,
+          "total": 7
+        },
+        "twig": {
+          "pass": 7,
+          "total": 7
+        },
+        "xslate": {
+          "pass": 7,
+          "total": 7
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 130,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L130"
+      },
+      "example": {
+        "fixture": "array-sort-self",
+        "description": ".sort((a,b) => a - b) sorts a primitive array by item value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-self.ts"
+      }
+    },
+    "sort-direction:desc": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 130,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L130"
+      },
+      "example": {
+        "fixture": "array-sort-field-desc",
+        "description": ".sort((a,b) => b.f - a.f) sorts by field, descending",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-desc.ts"
+      }
+    },
+    "sort-key:auto": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 128,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L128"
+      },
+      "example": {
+        "fixture": "array-sort-ternary",
+        "description": ".toSorted((a,b) => a.rank > b.rank ? 1 : -1) sorts ascending by rank",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-ternary.ts"
+      }
+    },
+    "sort-key:numeric": {
+      "total": 7,
+      "cells": {
+        "hono": {
+          "pass": 7,
+          "total": 7
+        },
+        "blade": {
+          "pass": 7,
+          "total": 7
+        },
+        "erb": {
+          "pass": 7,
+          "total": 7
+        },
+        "go-template": {
+          "pass": 7,
+          "total": 7
+        },
+        "jinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "minijinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "mojolicious": {
+          "pass": 7,
+          "total": 7
+        },
+        "twig": {
+          "pass": 7,
+          "total": 7
+        },
+        "xslate": {
+          "pass": 7,
+          "total": 7
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 128,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L128"
+      },
+      "example": {
+        "fixture": "array-sort-self",
+        "description": ".sort((a,b) => a - b) sorts a primitive array by item value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-self.ts"
+      }
+    },
+    "sort-key:string": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 128,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L128"
+      },
+      "example": {
+        "fixture": "array-sort-multikey",
+        "description": ".sort((a,b) => a.price - b.price || a.name.localeCompare(b.name)) sorts by price, then name",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-multikey.ts"
+      }
+    },
+    "sort-target:field": {
+      "total": 7,
+      "cells": {
+        "hono": {
+          "pass": 7,
+          "total": 7
+        },
+        "blade": {
+          "pass": 7,
+          "total": 7
+        },
+        "erb": {
+          "pass": 7,
+          "total": 7
+        },
+        "go-template": {
+          "pass": 7,
+          "total": 7
+        },
+        "jinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "minijinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "mojolicious": {
+          "pass": 7,
+          "total": 7
+        },
+        "twig": {
+          "pass": 7,
+          "total": 7
+        },
+        "xslate": {
+          "pass": 7,
+          "total": 7
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 129,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
+      },
+      "example": {
+        "fixture": "array-sort-field-asc",
+        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
+      }
+    },
+    "sort-target:self": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 129,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L129"
+      },
+      "example": {
+        "fixture": "array-sort-self",
+        "description": ".sort((a,b) => a - b) sorts a primitive array by item value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-self.ts"
+      }
+    },
+    "sort:multi-key": {
+      "total": 1,
+      "cells": {
+        "hono": {
+          "pass": 1,
+          "total": 1
+        },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
+        "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
+          "pass": 1,
+          "total": 1
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 132,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L132"
+      },
+      "example": {
+        "fixture": "array-sort-multikey",
+        "description": ".sort((a,b) => a.price - b.price || a.name.localeCompare(b.name)) sorts by price, then name",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-multikey.ts"
       }
     },
     "unary:!": {
@@ -8940,8 +9552,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 92,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L92"
+        "line": 158,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L158"
       },
       "example": {
         "fixture": "form",
@@ -8992,8 +9604,8 @@
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 92,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L92"
+        "line": 158,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L158"
       },
       "example": {
         "fixture": "array-at",
