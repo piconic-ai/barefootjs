@@ -167,7 +167,17 @@ function parseIfAndFallback(snippet: string): { ifStatement: ts.IfStatement; fal
   const sf = ts.createSourceFile('pairwise-early-return.tsx', wrapped, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const fn = sf.statements[0] as ts.FunctionDeclaration
   const [ifStatement, fallbackReturn] = fn.body!.statements as unknown as [ts.IfStatement, ts.ReturnStatement]
-  return { ifStatement, fallback: unwrapParen(fallbackReturn.expression!) }
+  // The fallback carries no markers, but it still goes through
+  // `substituteMarkers` for the LEAF-REBUILD side effect every other parsed
+  // subtree in this file gets. TypeScript's printer splices a literal's raw
+  // text from its ORIGINAL source positions (`canUseOriginalText` checks only
+  // `nodeIsSynthesized` + `node.parent`, never whether the file matches), so
+  // an unrebuilt `StringLiteral` spliced into the assembled file prints from
+  // the wrong offsets. Today's fallback is bare `JsxText`, which resolves its
+  // own file through `.parent` and survives — but that is luck, not a design.
+  // Verified: giving this fallback a `className` without the rebuild prints
+  // `<div className=>fallback</div>`, the attribute value silently dropped.
+  return { ifStatement, fallback: substituteMarkers(unwrapParen(fallbackReturn.expression!), {}) as ts.Expression }
 }
 
 // =============================================================================
