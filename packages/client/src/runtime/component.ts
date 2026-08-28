@@ -598,11 +598,24 @@ function materializeComponent(
  * like `<!--bf-cond-start:...-->` before the first real element). No-op —
  * returns `html` unchanged — if no element tag is found at all.
  */
+/**
+ * A tag name is not `\\w+`: custom elements are required to contain a
+ * hyphen (`<my-widget>`), and `.` and `:` are legal too. Matching only
+ * `[A-Za-z0-9_]` spliced attributes into the MIDDLE of such a name
+ * (`<my bf-s="…"-widget>`), which the parser then drops entirely — while
+ * SSR, which places the same attributes as a compiler-emitted JSX spread,
+ * kept emitting them correctly. Anchored on a leading letter so the
+ * comment markers a template may open with (`<!--bf-cond-start:…-->`) are
+ * still skipped rather than matched.
+ */
+const FIRST_TAG_PATTERN = /<([a-zA-Z][^\s/>]*)/
+const TAG_HEAD_PATTERN = /^(<[a-zA-Z][^\s/>]*)/
+
 function spliceAttrsAfterFirstTag(html: string, attrs: string): string {
-  const firstElMatch = html.match(/<(\w+)/)
+  const firstElMatch = html.match(FIRST_TAG_PATTERN)
   if (!firstElMatch) return html
   const insertPos = firstElMatch.index!
-  return html.slice(0, insertPos) + html.slice(insertPos).replace(/^(<\w+)/, `$1${attrs}`)
+  return html.slice(0, insertPos) + html.slice(insertPos).replace(TAG_HEAD_PATTERN, `$1${attrs}`)
 }
 
 /**
@@ -721,7 +734,7 @@ export function renderChild(
 
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
   // so we find the first element tag rather than assuming index 0.
-  const firstElMatch = html.match(/<(\w+)/)
+  const firstElMatch = html.match(FIRST_TAG_PATTERN)
   if (!firstElMatch) return html
   const insertPos = firstElMatch.index!
   // Dedupe `bf-s` only when the template body's root already carries
@@ -734,10 +747,10 @@ export function renderChild(
   if (ROOT_HAS_BFS_PATTERN.test(afterInsert)) {
     if (!extraAttrs) return html
     return html.slice(0, insertPos) +
-      afterInsert.replace(/^(<\w+)/, `$1${extraAttrs}`)
+      afterInsert.replace(TAG_HEAD_PATTERN, `$1${extraAttrs}`)
   }
   return html.slice(0, insertPos) +
-    afterInsert.replace(/^(<\w+)/, `$1 ${bfsAttr}${extraAttrs}`)
+    afterInsert.replace(TAG_HEAD_PATTERN, `$1 ${bfsAttr}${extraAttrs}`)
 }
 
 // The leading `\s+` is part of the match so dropping the attribute

@@ -272,12 +272,16 @@ function renderChild(name, props, key, suffix) {
     // templates may open with a comment marker (e.g.
     // \`<!--bf-cond-start:...-->\`) before the first real element, exactly
     // like production's \`spliceAttrsAfterFirstTag\` (component.ts).
+    // The tag-name class is \`[a-zA-Z][^\\s/>]*\`, not \`\\w+\`: a custom
+    // element must contain a hyphen, and \`\\w+\` spliced the attribute
+    // into the middle of the name (\`<my data-key="1"-widget>\`), which
+    // the parser then drops. Mirrors production's \`TAG_HEAD_PATTERN\`.
     let keyedHtml = html
     if (keyAttr) {
-      const __m = html.match(/<(\\w+)/)
+      const __m = html.match(/<([a-zA-Z][^\\s/>]*)/)
       if (__m) {
         const __pos = __m.index
-        keyedHtml = html.slice(0, __pos) + html.slice(__pos).replace(/^(<\\w+)/, '$1' + keyAttr)
+        keyedHtml = html.slice(0, __pos) + html.slice(__pos).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + keyAttr)
       }
     }
     return '<!--bf-scope:' + scopeId + hostSuffix + '-->' + keyedHtml + '<!--bf-/scope:' + scopeId + '-->'
@@ -288,16 +292,16 @@ function renderChild(name, props, key, suffix) {
   // Dedupe bf-s only when the child template already carries one
   // (it was itself a renderChild call). slotAttrs / keyAttr still inject —
   // dropping them would regress list reconciliation. (#1320)
-  const childRootHasBfs = /^<\\w+[^>]*\\sbf-s="/.test(html)
+  const childRootHasBfs = /^<[a-zA-Z][^\\s/>]*[^>]*\\sbf-s="/.test(html)
   const childAttrs = childRootHasBfs ? extraAttrs : bfsAttr + extraAttrs
   if (childRootHasBfs && !extraAttrs) return html
-  if (html.match(/^<\\w+[^>]* bf="/)) {
+  if (html.match(/^<[a-zA-Z][^\\s/>]*[^>]* bf="/)) {
     return html.replace(/ bf="/, childAttrs + ' bf="')
   }
-  if (html.match(/^<\\w+\\s[^>]*>/)) {
-    return html.replace(/^(<\\w+\\s[^>]*?)(\\s*\\/?>)/, '$1' + childAttrs + '$2')
+  if (html.match(/^<[a-zA-Z][^\\s/>]*\\s[^>]*>/)) {
+    return html.replace(/^(<[a-zA-Z][^\\s/>]*\\s[^>]*?)(\\s*\\/?>)/, '$1' + childAttrs + '$2')
   }
-  return html.replace(/^(<\\w+)/, '$1' + childAttrs)
+  return html.replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + childAttrs)
 }
 
 // Noop stubs for init-phase functions (not needed for template evaluation)
@@ -502,13 +506,13 @@ __html = __html.replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __rootSco
 // mirrors production's \`createComponent\` (component.ts), which leaves
 // \`scopeId === null\` for such wrappers rather than stamping their own
 // bf-s over the inner component's root (#2653).
-if (!__comments.get(__lastComponent) && !/^<\\w+[^>]*\\sbf-s="/.test(__html)) {
-if (__html.match(/^<\\w+[^>]* bf="/)) {
+if (!__comments.get(__lastComponent) && !/^<[a-zA-Z][^\\s/>]*[^>]*\\sbf-s="/.test(__html)) {
+if (__html.match(/^<[a-zA-Z][^\\s/>]*[^>]* bf="/)) {
   __html = __html.replace(/ bf="/, ' bf-s="' + __rootScope + '" bf="')
-} else if (__html.match(/^<\\w+\\s[^>]*>/)) {
-  __html = __html.replace(/^(<\\w+\\s[^>]*?)(\\s*\\/?>)/, '$1 bf-s="' + __rootScope + '"$2')
+} else if (__html.match(/^<[a-zA-Z][^\\s/>]*\\s[^>]*>/)) {
+  __html = __html.replace(/^(<[a-zA-Z][^\\s/>]*\\s[^>]*?)(\\s*\\/?>)/, '$1 bf-s="' + __rootScope + '"$2')
 } else {
-  __html = __html.replace(/^(<\\w+)/, '$1 bf-s="' + __rootScope + '"')
+  __html = __html.replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1 bf-s="' + __rootScope + '"')
 }
 }
 export default __html
