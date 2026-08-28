@@ -1944,6 +1944,20 @@ function unwrapHoistedFragment(node: IRNode): IRNode {
   return { ...only, needsScope: true }
 }
 
+// #2732: a `needsScopeComment` fragment's five hydration markers move to
+// the wrapping comment, but `data-key` needs to stay on an element (see
+// `IRElement.carriesDataKey`'s docstring for why). Mark the first ELEMENT
+// among `children` — immutably (`{ ...el, carriesDataKey: true }`), matching
+// the rest of this file's post-hoc IR tagging (e.g. `unwrapHoistedFragment`)
+// rather than mutating the child in place.
+function markDataKeyCarrier(children: IRNode[]): IRNode[] {
+  const idx = children.findIndex(c => c.type === 'element')
+  if (idx < 0) return children
+  const marked = children.slice()
+  marked[idx] = { ...(children[idx] as IRElement), carriesDataKey: true }
+  return marked
+}
+
 function transformFragment(
   node: ts.JsxFragment,
   ctx: TransformContext
@@ -1968,7 +1982,7 @@ function transformFragment(
 
   return {
     type: 'fragment',
-    children,
+    children: needsScopeComment ? markDataKeyCarrier(children) : children,
     transparent: isTransparent || undefined,
     needsScopeComment,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),

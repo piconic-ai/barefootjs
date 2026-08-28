@@ -593,6 +593,19 @@ function materializeComponent(
 }
 
 /**
+ * Splice `attrs` (e.g. ` data-key="1"`) onto `html`'s first element's own
+ * tag, wherever that tag starts (templates may open with comment markers
+ * like `<!--bf-cond-start:...-->` before the first real element). No-op —
+ * returns `html` unchanged — if no element tag is found at all.
+ */
+function spliceAttrsAfterFirstTag(html: string, attrs: string): string {
+  const firstElMatch = html.match(/<(\w+)/)
+  if (!firstElMatch) return html
+  const insertPos = firstElMatch.index!
+  return html.slice(0, insertPos) + html.slice(insertPos).replace(/^(<\w+)/, `$1${attrs}`)
+}
+
+/**
  * Render a child component's template to an HTML string.
  * Used by compiler-generated template functions when a stateless component
  * appears inside a conditional branch or loop template.
@@ -691,19 +704,19 @@ export function renderChild(
   // SSR/hydrate boundary-comment shape instead of splicing `bf-s`/`bf-h`/
   // `bf-m` into a first element that, structurally, owns none of them —
   // `wrapWithScopeComment`'s CSR mirror, same as `materializeComponent`'s
-  // fix for a top-level mount. `key`/`data-key` reconciliation for a
-  // fragment-root loop row is a known, separate gap on both sides — SSR
-  // itself doesn't emit `data-key` for this shape either (`renderElement`'s
-  // `__dataKey` block, hono-adapter.ts, only fires when `needsScope` is
-  // true, which a fragment root's inner element never is), so the two are
-  // consistently absent today rather than divergent. Not reachable by any
-  // currently tracked fixture through this path, so declared rather than
-  // half-fixed here: SSR emission is
-  // https://github.com/piconic-ai/barefootjs/issues/2732, row
-  // reconciliation is https://github.com/piconic-ai/barefootjs/issues/2733
+  // fix for a top-level mount.
   if (isFragmentRoot) {
     const hostSuffix = (_parentScopeId && slotSuffix) ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
-    return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${html}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
+    // #2732: `data-key` for a fragment-root loop row lands on the row's own
+    // first element — the same "first element, not first node" convention
+    // `IRElement.carriesDataKey` uses on the SSR side (jsx-to-ir.ts) — not
+    // on the comment above, which carries scope identity only. This keeps
+    // `mapArray`'s existing `primaryEl.dataset.key` read (map-array.ts)
+    // working unchanged for markup this function pre-builds (the pure-CSR
+    // `materializeComponent` template-string path, used when there is no
+    // SSR content to hydrate against).
+    const keyedHtml = keyAttr ? spliceAttrsAfterFirstTag(html, keyAttr) : html
+    return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${keyedHtml}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
   }
 
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
