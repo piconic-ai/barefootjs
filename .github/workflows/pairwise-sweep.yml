@@ -1,0 +1,64 @@
+name: Pairwise Sweep
+
+# Nightly-only by design (#2481's CI budget: the browser leg of the
+# pairwise sweep — compile the t=2 covering array over the feature
+# grammar, then run the full three-oracle Playwright suite against every
+# case that compiled clean — is not cheap enough for every PR. `ci.yml`'s
+# `fixture-hydrate` job runs `test:fixture-hydrate` (fixture-hydrate +
+# oracle specs only, explicitly named) on every PR; `mutation-sweep.yml`
+# runs the mutation sweep on its own nightly schedule; this workflow runs
+# `test:pairwise` on the same cadence so none of the three ever compete
+# for the same PR-triggered budget. Mirrors `mutation-sweep.yml` exactly —
+# see that file for the precedent this follows.
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pairwise-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      # Generates `.pairwise/manifest.json` (bun) then runs the Playwright
+      # oracle sweep against every `status: 'ok'` case it produced — see
+      # `test:pairwise` in `packages/adapter-tests/package.json`.
+      - name: Run pairwise sweep
+        run: bun run --filter '@barefootjs/adapter-tests' test:pairwise
+
+      - name: Upload Playwright traces (pairwise-sweep)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-traces-pairwise-sweep
+          path: packages/adapter-tests/test-results/
+          retention-days: 30

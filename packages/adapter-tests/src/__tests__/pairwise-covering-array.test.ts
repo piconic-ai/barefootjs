@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { AXIS_NAMES, AXIS_VALUES, type AxisCombo, type AxisName } from '../../pairwise/axes'
+import { AXIS_NAMES, AXIS_VALUES, EVENT_VALUES, LEGITIMATELY_ROW_LESS, type AxisCombo, type AxisName } from '../../pairwise/axes'
 import { buildCoveringArray, isValidCombo } from '../../pairwise/covering-array'
 import { assertNoMarkers, composeCase, stateInitialValueIsTruthy } from '../../pairwise/compose'
 
@@ -243,13 +243,14 @@ describe('pairwise compose — the event hook must land on something real', () =
  * full covering array both branches of both structures get exercised —
  * some cases render the row, others the fallback — so nothing here goes
  * untested, only unexercised BY THE HOOK given these particular samples.
+ *
+ * `LEGITIMATELY_ROW_LESS` itself lives in `../../pairwise/axes.ts`, not
+ * here — `e2e/pairwise.playwright.ts` needs the exact same table (to skip
+ * the `idempotence` oracle on these combos instead of burning a 5s
+ * timeout discovering there's nothing to click) and a second hand-copied
+ * literal would drift the moment one side gained a structure/state value
+ * without the other noticing.
  */
-const LEGITIMATELY_ROW_LESS: ReadonlySet<string> = new Set(
-  (['conditional-ternary', 'early-return'] as const).flatMap(structure =>
-    (['signal', 'memo', 'getter-elided-signal'] as const).map(state => `${structure}|${state}`),
-  ),
-)
-
 describe('pairwise compose — branch-selecting structures, a documented (not silent) non-coverage', () => {
   test('every conditional-ternary/early-return case with a falsy-seeded state is a documented exemption, and no truthy-seeded one is', () => {
     const { cases } = buildCoveringArray()
@@ -272,6 +273,42 @@ describe('pairwise compose — branch-selecting structures, a documented (not si
     }
     expect(undocumented).toEqual([])
     expect(wronglyExempted).toEqual([])
+  })
+})
+
+/**
+ * Idempotence-oracle coverage floor (#2481 step 5, browser-oracle leg).
+ * `e2e/oracle.playwright.ts`'s `'idempotence'` oracle only ever runs on a
+ * case whose `interactions` carries at least one ACTION step
+ * (`actionStepsOf`, e2e/interaction-runner.ts) — a case with none is
+ * silently never exercised by it. Measured before the fix this guards
+ * (a real `bun run pairwise:generate` sweep): 19 of 85 `ok` cases had no
+ * interactions, and EVERY one of them was `event: 'ref-callback'` — an
+ * entire axis value the idempotence oracle never touched. `composeCase`
+ * now gives every case, `ref-callback` included, the same click (see its
+ * docstring for why a no-op click is still a real assertion there); this
+ * pair of tests is the mechanical backstop so a future change can't
+ * silently reopen that gap by re-adding a `combo.event === '…' ? [] : …`
+ * carve-out for any event value, known or new.
+ */
+describe('pairwise compose — idempotence coverage floor (#2481 step 5, browser-oracle leg)', () => {
+  test('every generated case declares at least one interaction', () => {
+    const { cases } = buildCoveringArray()
+    const missing: string[] = []
+    for (const combo of cases) {
+      const composed = composeCase(combo)
+      if (composed.interactions.length === 0) {
+        missing.push(`event=${combo.event} structure=${combo.structure} state=${combo.state}`)
+      }
+    }
+    expect(missing).toEqual([])
+  })
+
+  test('every EVENT_VALUES value is exercised by at least one case with a non-empty interactions array', () => {
+    const { cases } = buildCoveringArray()
+    const eventsWithInteractions = new Set(cases.filter(c => composeCase(c).interactions.length > 0).map(c => c.event))
+    const uncovered = EVENT_VALUES.filter(value => !eventsWithInteractions.has(value))
+    expect(uncovered).toEqual([])
   })
 })
 
