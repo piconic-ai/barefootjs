@@ -939,6 +939,14 @@
       }
     }
   ],
+  "custom-element-child-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "dangerous-inner-html-dynamic": [
     {
       "name": "gen:html:empty",
@@ -1383,6 +1391,22 @@
         "createdAt": {
           "$date": "9999-12-31T23:59:59.999Z"
         }
+      }
+    }
+  ],
+  "fragment-root-conditional-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "fragment-root-keyed-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],

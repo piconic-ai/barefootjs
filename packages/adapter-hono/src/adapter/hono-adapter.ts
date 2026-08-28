@@ -761,6 +761,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       }
       // Add data-key for list reconciliation (only on root elements with scope)
       hydrationAttrs += ' {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}'
+    } else if (element.carriesDataKey) {
+      // Fragment-root scope (#2732): the other four hydration markers live
+      // on the wrapping `<!--bf-scope:...-->` comment (`wrapWithScopeComment`
+      // below) since `needsScope` is false for every child of a fragment
+      // root — but `data-key` still needs to land on an element, because
+      // the client runtime's `mapArray` adopt loop reads it as a DOM
+      // attribute (`primaryEl.dataset.key`, map-array.ts), not out of the
+      // comment. `carriesDataKey` (jsx-to-ir.ts) marks the one child this
+      // belongs on.
+      hydrationAttrs += ' {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}'
     }
     // Add data-key-N for loop items so event delegation can identify inner items
     if (ctx?.isLoopItemRoot && this.loopKeyStack.length > 0) {

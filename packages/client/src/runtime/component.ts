@@ -472,17 +472,27 @@ function materializeComponent(
       rowMount.container.insertBefore(fragmentComments.start, rowMount.anchor)
       rowMount.container.insertBefore(element, rowMount.anchor)
       rowMount.container.insertBefore(fragmentComments.end, rowMount.anchor)
+      // Hand the boundary pair to `mapArray`'s row bookkeeping (map-array.ts's
+      // `ItemScope.scopeComments`, #2733) via the same stash-on-the-element
+      // convention `__bfExtras` uses for a multi-root loop BODY's extra
+      // siblings: `createItemScope` reads and deletes this property right
+      // after `renderItem` returns, since there is no other channel back to
+      // the caller once `element` is the only thing returned below. Without
+      // this, a later reorder/removal of the row moves/removes `element`
+      // and leaves the comments behind, orphaned in the container.
+      ;(element as unknown as { __bfScopeComments?: { start: Comment; end: Comment } }).__bfScopeComments =
+        fragmentComments
       // Deliberately NOT inserting the other roots here (a fragment-root
       // component whose OWN render has 2+ top-level nodes, used as a loop
-      // row) — `mapArray`'s row bookkeeping (map-array.ts's `ItemScope`)
-      // does not yet track a fragment-root row's own boundary comments the
-      // way it tracks a multi-root loop BODY's `__bfExtras` siblings, so a
-      // future reorder/removal of this row would move/remove `element`
-      // without its comments regardless of whether the rest were also
-      // wired through. Not reachable by any currently tracked fixture (no
-      // fragment-root component is used as a loop row in the mutation
-      // corpus), so declared rather than grown here — same gap #2735's fix
-      // leaves open for this one connect shape:
+      // row) — connecting them is a separate gap from the boundary-comment
+      // tracking #2733 fixed above: even with `ItemScope` now able to carry
+      // the row's comments, there is still nowhere on `ItemScope` for a
+      // second or third top-level ELEMENT of the row itself (as opposed to
+      // `extras`, which is the multi-root loop BODY's own, unrelated,
+      // per-item marker convention). Not reachable by any currently tracked
+      // fixture (no fragment-root component with 2+ top-level nodes is used
+      // as a loop row in the mutation corpus), so declared rather than grown
+      // here:
       // https://github.com/piconic-ai/barefootjs/issues/2733
       //
       // Loud, not silent: the whole point of the fix above is that
@@ -580,6 +590,32 @@ function materializeComponent(
   // one shape with no known destination (7b) — everything else returns
   // the real, single element unchanged.
   return bareFragment ?? element
+}
+
+/**
+ * Splice `attrs` (e.g. ` data-key="1"`) onto `html`'s first element's own
+ * tag, wherever that tag starts (templates may open with comment markers
+ * like `<!--bf-cond-start:...-->` before the first real element). No-op —
+ * returns `html` unchanged — if no element tag is found at all.
+ */
+/**
+ * A tag name is not `\\w+`: custom elements are required to contain a
+ * hyphen (`<my-widget>`), and `.` and `:` are legal too. Matching only
+ * `[A-Za-z0-9_]` spliced attributes into the MIDDLE of such a name
+ * (`<my bf-s="…"-widget>`), which the parser then drops entirely — while
+ * SSR, which places the same attributes as a compiler-emitted JSX spread,
+ * kept emitting them correctly. Anchored on a leading letter so the
+ * comment markers a template may open with (`<!--bf-cond-start:…-->`) are
+ * still skipped rather than matched.
+ */
+const FIRST_TAG_PATTERN = /<([a-zA-Z][^\s/>]*)/
+const TAG_HEAD_PATTERN = /^(<[a-zA-Z][^\s/>]*)/
+
+function spliceAttrsAfterFirstTag(html: string, attrs: string): string {
+  const firstElMatch = html.match(FIRST_TAG_PATTERN)
+  if (!firstElMatch) return html
+  const insertPos = firstElMatch.index!
+  return html.slice(0, insertPos) + html.slice(insertPos).replace(TAG_HEAD_PATTERN, `$1${attrs}`)
 }
 
 /**
@@ -681,24 +717,24 @@ export function renderChild(
   // SSR/hydrate boundary-comment shape instead of splicing `bf-s`/`bf-h`/
   // `bf-m` into a first element that, structurally, owns none of them —
   // `wrapWithScopeComment`'s CSR mirror, same as `materializeComponent`'s
-  // fix for a top-level mount. `key`/`data-key` reconciliation for a
-  // fragment-root loop row is a known, separate gap on both sides — SSR
-  // itself doesn't emit `data-key` for this shape either (`renderElement`'s
-  // `__dataKey` block, hono-adapter.ts, only fires when `needsScope` is
-  // true, which a fragment root's inner element never is), so the two are
-  // consistently absent today rather than divergent. Not reachable by any
-  // currently tracked fixture through this path, so declared rather than
-  // half-fixed here: SSR emission is
-  // https://github.com/piconic-ai/barefootjs/issues/2732, row
-  // reconciliation is https://github.com/piconic-ai/barefootjs/issues/2733
+  // fix for a top-level mount.
   if (isFragmentRoot) {
     const hostSuffix = (_parentScopeId && slotSuffix) ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
-    return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${html}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
+    // #2732: `data-key` for a fragment-root loop row lands on the row's own
+    // first element — the same "first element, not first node" convention
+    // `IRElement.carriesDataKey` uses on the SSR side (jsx-to-ir.ts) — not
+    // on the comment above, which carries scope identity only. This keeps
+    // `mapArray`'s existing `primaryEl.dataset.key` read (map-array.ts)
+    // working unchanged for markup this function pre-builds (the pure-CSR
+    // `materializeComponent` template-string path, used when there is no
+    // SSR content to hydrate against).
+    const keyedHtml = keyAttr ? spliceAttrsAfterFirstTag(html, keyAttr) : html
+    return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${keyedHtml}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
   }
 
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
   // so we find the first element tag rather than assuming index 0.
-  const firstElMatch = html.match(/<(\w+)/)
+  const firstElMatch = html.match(FIRST_TAG_PATTERN)
   if (!firstElMatch) return html
   const insertPos = firstElMatch.index!
   // Dedupe `bf-s` only when the template body's root already carries
@@ -711,10 +747,10 @@ export function renderChild(
   if (ROOT_HAS_BFS_PATTERN.test(afterInsert)) {
     if (!extraAttrs) return html
     return html.slice(0, insertPos) +
-      afterInsert.replace(/^(<\w+)/, `$1${extraAttrs}`)
+      afterInsert.replace(TAG_HEAD_PATTERN, `$1${extraAttrs}`)
   }
   return html.slice(0, insertPos) +
-    afterInsert.replace(/^(<\w+)/, `$1 ${bfsAttr}${extraAttrs}`)
+    afterInsert.replace(TAG_HEAD_PATTERN, `$1 ${bfsAttr}${extraAttrs}`)
 }
 
 // The leading `\s+` is part of the match so dropping the attribute

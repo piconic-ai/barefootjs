@@ -26,10 +26,37 @@ import {
   BF_LOOP_START,
   BF_LOOP_END,
   BF_LOOP_ITEM,
+  BF_SCOPE_COMMENT_PREFIX,
+  BF_SCOPE_COMMENT_END_PREFIX,
   loopStartMarker,
   loopEndMarker,
   loopItemMarker,
 } from '@barefootjs/shared'
+
+/**
+ * A fragment-rooted component's own `<!--bf-scope:ID-->` /
+ * `<!--bf-/scope:ID-->` boundary pair (`wrapWithScopeComment`,
+ * hono-adapter.ts), captured when that component is used as a keyed loop
+ * row's `primaryEl` (#2733). Distinct from `ItemScope.startMarker` (the
+ * `<!--bf-loop-i-->` marker for a multi-root loop BODY): that marks a
+ * loop-body concept this module owns; this marks a component's own scope
+ * identity that the row's SSR/CSR emission owns and `commentScopeRegistry`
+ * (scope.ts) keys off. `insertScope`/`removeScope` carry it as part of the
+ * row's atomic unit so a reorder/removal doesn't orphan it.
+ */
+type ScopeCommentPair = { start: Comment; end: Comment }
+
+/**
+ * The scope id inside a `<!--bf-scope:ID|h=…|m=…|props-->` comment — the
+ * `|`-free head, matching `getCommentScopeBoundary` (scope.ts) and
+ * `parseCommentScopeId` (query.ts). Used to pair a start comment with its
+ * OWN end marker by id, never with a sibling scope's.
+ */
+function scopeIdOf(start: Comment): string {
+  const rest = (start.nodeValue ?? '').slice(BF_SCOPE_COMMENT_PREFIX.length)
+  const pipe = rest.indexOf('|')
+  return pipe >= 0 ? rest.slice(0, pipe) : rest
+}
 
 type ItemScope<T> = {
   /**
@@ -49,6 +76,8 @@ type ItemScope<T> = {
    * two or more peers). Empty for single-root items.
    */
   extras: HTMLElement[]
+  /** See `ScopeCommentPair`. `null` when `primaryEl` isn't a fragment-root scope. */
+  scopeComments: ScopeCommentPair | null
   dispose: () => void
   setItem: (v: T) => void
 }
@@ -111,46 +140,103 @@ export function findLoopMarkers(
  * are present (single-root loops, the common case), each Element forms
  * its own range with `startMarker: null` and `extras: []` — preserving
  * legacy behavior verbatim.
+ *
+ * Also recognizes a fragment-rooted component's own `<!--bf-scope:ID-->` /
+ * `<!--bf-/scope:ID-->` pair immediately bracketing an item's `primaryEl`
+ * (#2733) and captures it as `scopeComments`, so the row's caller can pass
+ * it through to `createItemScope` and keep it moving with the row.
+ *
+ * A `|h=` child segment does NOT disqualify a comment here, though
+ * `hydrate.ts::hydrateCommentScope` skips exactly those. The two ask
+ * different questions. That walker runs at the top level, where a `|h=`
+ * comment means "some parent's `initChild` owns this scope, not me." This
+ * one runs BETWEEN a loop's own markers, where every row IS a child: real
+ * SSR emits each row as `<!--bf-scope:TodoRow_x|h=<host>|m=<slot>|<props>-->`
+ * (measured), so requiring a root-shaped comment matched nothing a server
+ * ever produces and left the pair behind on every reorder — the exact
+ * orphaning this field exists to prevent.
+ *
+ * The end comment is matched by scope ID rather than by "the next
+ * `bf-/scope:` seen", so a sibling root that is itself a fragment-rooted
+ * child cannot close this row's pair early.
  */
 function findItemRanges(start: Comment, end: Comment): Array<{
   startMarker: Comment | null
   primaryEl: HTMLElement
   extras: HTMLElement[]
+  scopeComments: ScopeCommentPair | null
 }> {
+  type PendingPair = { start: Comment; end: Comment | null }
   const ranges: Array<{
     startMarker: Comment | null
     primaryEl: HTMLElement | null
     extras: HTMLElement[]
+    scopeComments: PendingPair | null
   }> = []
-  let current: { startMarker: Comment | null; primaryEl: HTMLElement | null; extras: HTMLElement[] } | null = null
+  let current: (typeof ranges)[number] | null = null
   let sawItemMarker = false
+  // A fragment-root row's own start comment, seen but not yet matched to
+  // the element it brackets — consumed the instant the next Element is seen.
+  let pendingScopeStart: Comment | null = null
+  // The pair still awaiting its end comment, so a later `bf-/scope:` knows
+  // which range to close — there is at most one open at a time since a row's
+  // own scope comment never nests another row's.
+  let openScopeComments: PendingPair | null = null
   let node: Node | null = start.nextSibling
   while (node && node !== end) {
-    if (node.nodeType === Node.COMMENT_NODE && (node as Comment).nodeValue === BF_LOOP_ITEM) {
-      sawItemMarker = true
-      current = { startMarker: node as Comment, primaryEl: null, extras: [] }
-      ranges.push(current)
+    if (node.nodeType === Node.COMMENT_NODE) {
+      const value = (node as Comment).nodeValue ?? ''
+      if (value === BF_LOOP_ITEM) {
+        sawItemMarker = true
+        current = { startMarker: node as Comment, primaryEl: null, extras: [], scopeComments: null }
+        ranges.push(current)
+      } else if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
+        pendingScopeStart = node as Comment
+      } else if (
+        openScopeComments &&
+        value === BF_SCOPE_COMMENT_END_PREFIX + scopeIdOf(openScopeComments.start)
+      ) {
+        openScopeComments.end = node as Comment
+        openScopeComments = null
+      }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement
+      let scopeComments: PendingPair | null = null
+      if (pendingScopeStart) {
+        scopeComments = { start: pendingScopeStart, end: null }
+        openScopeComments = scopeComments
+        pendingScopeStart = null
+      }
       if (sawItemMarker) {
-        if (!current!.primaryEl) current!.primaryEl = el
-        else current!.extras.push(el)
+        if (!current!.primaryEl) {
+          current!.primaryEl = el
+          current!.scopeComments = scopeComments
+        } else current!.extras.push(el)
       } else {
-        ranges.push({ startMarker: null, primaryEl: el, extras: [] })
+        ranges.push({ startMarker: null, primaryEl: el, extras: [], scopeComments })
       }
     }
     node = node.nextSibling
   }
-  return ranges.filter(
-    (r): r is { startMarker: Comment | null; primaryEl: HTMLElement; extras: HTMLElement[] } =>
-      r.primaryEl !== null,
-  )
+  return ranges
+    .filter(
+      (r): r is { startMarker: Comment | null; primaryEl: HTMLElement; extras: HTMLElement[]; scopeComments: PendingPair | null } =>
+        r.primaryEl !== null,
+    )
+    .map(r => ({
+      ...r,
+      // Drop a scope-comment pair whose end was never found (malformed/
+      // truncated DOM) rather than carry a half-formed pair forward — the
+      // row still hydrates correctly, it just won't track the boundary.
+      scopeComments: r.scopeComments?.end ? (r.scopeComments as ScopeCommentPair) : null,
+    }))
 }
 
 /**
  * Insert a scope's nodes into `target` in their canonical order
- * (startMarker → primaryEl → extras). Idempotent — `insertBefore` on a
- * node already at the target position is a no-op.
+ * (startMarker → scopeComments.start → primaryEl → scopeComments.end →
+ * extras). Idempotent — `insertBefore` on a node already at the target
+ * position is a no-op.
  *
  * `target` is typed as `Node` (not `HTMLElement`) so callers can pass a
  * `DocumentFragment` to batch several scopes into one subsequent
@@ -159,7 +245,9 @@ function findItemRanges(start: Comment, end: Comment): Array<{
  */
 function insertScope<T>(scope: ItemScope<T>, target: Node, anchor: Node | null): void {
   if (scope.startMarker) target.insertBefore(scope.startMarker, anchor)
+  if (scope.scopeComments) target.insertBefore(scope.scopeComments.start, anchor)
   target.insertBefore(scope.primaryEl, anchor)
+  if (scope.scopeComments) target.insertBefore(scope.scopeComments.end, anchor)
   for (const ex of scope.extras) target.insertBefore(ex, anchor)
 }
 
@@ -211,7 +299,9 @@ export function longestIncreasingSubsequenceIndices(arr: number[]): number[] {
 /** Detach all of a scope's nodes from the DOM. */
 function removeScope<T>(scope: ItemScope<T>): void {
   if (scope.startMarker?.parentNode) scope.startMarker.remove()
+  if (scope.scopeComments?.start.parentNode) scope.scopeComments.start.remove()
   if (scope.primaryEl.parentNode) scope.primaryEl.remove()
+  if (scope.scopeComments?.end.parentNode) scope.scopeComments.end.remove()
   for (const ex of scope.extras) {
     if (ex.parentNode) ex.remove()
   }
@@ -226,6 +316,13 @@ function removeScope<T>(scope: ItemScope<T>): void {
  * sibling roots on the returned element via a `__bfExtras` property that
  * we read-and-delete here. On hydration the caller passes `existingExtras`
  * + `existingStart` collected from the SSR partition.
+ *
+ * Fragment-root row handling (#2733): on CSR, `createComponent`
+ * (component.ts's `rowMount` branch) stashes the row's own
+ * `<!--bf-scope:ID-->` boundary pair on the returned element via a
+ * `__bfScopeComments` property, read-and-deleted here exactly like
+ * `__bfExtras`. On hydration the caller passes `existingScopeComments`
+ * collected from the SSR partition (`findItemRanges`).
  */
 function createItemScope<T>(
   item: T,
@@ -234,6 +331,7 @@ function createItemScope<T>(
   existingPrimary?: HTMLElement,
   existingExtras?: HTMLElement[],
   existingStart?: Comment | null,
+  existingScopeComments?: ScopeCommentPair | null,
   rowMount?: RowMountPoint | null,
 ): ItemScope<T> {
   let primaryEl!: HTMLElement
@@ -241,6 +339,7 @@ function createItemScope<T>(
   let setItem!: (v: T) => void
   let extras: HTMLElement[] = []
   let startMarker: Comment | null = null
+  let scopeComments: ScopeCommentPair | null = null
 
   createRoot((d) => {
     dispose = d
@@ -274,6 +373,7 @@ function createItemScope<T>(
     if (existingPrimary) {
       extras = existingExtras ?? []
       startMarker = existingStart ?? null
+      scopeComments = existingScopeComments ?? null
     } else {
       const stashed = (primaryEl as unknown as { __bfExtras?: HTMLElement[] }).__bfExtras
       if (stashed && stashed.length > 0) {
@@ -281,6 +381,11 @@ function createItemScope<T>(
         startMarker = document.createComment(BF_LOOP_ITEM)
       }
       delete (primaryEl as unknown as { __bfExtras?: HTMLElement[] }).__bfExtras
+
+      const stashedScopeComments = (primaryEl as unknown as { __bfScopeComments?: ScopeCommentPair })
+        .__bfScopeComments
+      if (stashedScopeComments) scopeComments = stashedScopeComments
+      delete (primaryEl as unknown as { __bfScopeComments?: ScopeCommentPair }).__bfScopeComments
     }
     return undefined
   })
@@ -294,7 +399,7 @@ function createItemScope<T>(
     primaryEl.remove()
   }
 
-  return { startMarker, primaryEl, extras, dispose, setItem }
+  return { startMarker, primaryEl, extras, scopeComments, dispose, setItem }
 }
 
 /**
@@ -352,7 +457,7 @@ export function mapArray<T>(
       const existingRanges = startMarker
         ? findItemRanges(startMarker, endMarker!)
         : Array.from(container.children).map(
-            (el) => ({ startMarker: null, primaryEl: el as HTMLElement, extras: [] as HTMLElement[] }),
+            (el) => ({ startMarker: null, primaryEl: el as HTMLElement, extras: [] as HTMLElement[], scopeComments: null as ScopeCommentPair | null }),
           )
 
       // SSR elements need initialization when they haven't been adopted into scopes yet.
@@ -375,6 +480,7 @@ export function mapArray<T>(
             range.primaryEl,
             range.extras,
             range.startMarker,
+            range.scopeComments,
           )
           scopes.set(key, scope)
           hydratedScopes.add(range.primaryEl)
@@ -386,7 +492,7 @@ export function mapArray<T>(
           const key = getKey ? getKey(item, i) : String(i)
           // Final position is known here (append before the loop's trailing
           // anchor), so the row can be mounted at it before its init runs.
-          const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, { container, anchor })
+          const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, undefined, { container, anchor })
           if (!scope.primaryEl.dataset.key) scope.primaryEl.setAttribute(BF_KEY, key)
           scopes.set(key, scope)
           insertScope(scope, container, anchor)
@@ -396,7 +502,9 @@ export function mapArray<T>(
         for (let i = items.length; i < existingRanges.length; i++) {
           const range = existingRanges[i]
           if (range.startMarker?.parentNode) range.startMarker.remove()
+          if (range.scopeComments?.start.parentNode) range.scopeComments.start.remove()
           if (range.primaryEl.parentNode) range.primaryEl.remove()
+          if (range.scopeComments?.end.parentNode) range.scopeComments.end.remove()
           for (const ex of range.extras) {
             if (ex.parentNode) ex.remove()
           }
@@ -411,7 +519,7 @@ export function mapArray<T>(
       const loopRanges = startMarker
         ? findItemRanges(startMarker, endMarker!)
         : Array.from(container.children).map(
-            (el) => ({ startMarker: null, primaryEl: el as HTMLElement, extras: [] as HTMLElement[] }),
+            (el) => ({ startMarker: null, primaryEl: el as HTMLElement, extras: [] as HTMLElement[], scopeComments: null as ScopeCommentPair | null }),
           )
       for (const range of loopRanges) {
         const existingKey = range.primaryEl.dataset?.key
@@ -420,6 +528,7 @@ export function mapArray<T>(
             startMarker: range.startMarker,
             primaryEl: range.primaryEl,
             extras: range.extras,
+            scopeComments: range.scopeComments,
             dispose: () => {},
             setItem: () => {},
           })
@@ -450,6 +559,7 @@ export function mapArray<T>(
           let expectedNodeCount = 0
           for (const scope of scopes.values()) {
             expectedNodeCount += 1 + scope.extras.length + (scope.startMarker ? 1 : 0)
+              + (scope.scopeComments ? 2 : 0)
           }
           let actualNodeCount = 0
           for (let node = container.firstChild; node; node = node.nextSibling) actualNodeCount++
@@ -501,7 +611,7 @@ export function mapArray<T>(
         // the loop range before its init runs; the LIS reorder below moves it
         // to its final position (it participates in the walk like any other
         // attached scope, so the resulting order is unchanged).
-        const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, { container, anchor })
+        const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, undefined, { container, anchor })
         if (!scope.primaryEl.dataset.key) scope.primaryEl.setAttribute(BF_KEY, key)
         scopes.set(key, scope)
         desiredOrder.push(scope)
@@ -586,9 +696,14 @@ export function mapArray<T>(
       while (j < desiredOrder.length && !stationary[j]) j++
       // Insert this run immediately before the next stationary scope (which
       // is already exactly where it needs to be), or before the loop's
-      // trailing anchor when the run reaches the end of the list.
+      // trailing anchor when the run reaches the end of the list. Preferring
+      // `scopeComments.start` over `primaryEl` here matters when that next
+      // scope is a fragment-root row (#2733): inserting directly before its
+      // `primaryEl` would land the new run BETWEEN its still-attached
+      // `<!--bf-scope:-->` start comment and its element, splitting a
+      // stationary scope's own boundary pair.
       const before = j < desiredOrder.length
-        ? (desiredOrder[j].startMarker ?? desiredOrder[j].primaryEl)
+        ? (desiredOrder[j].startMarker ?? desiredOrder[j].scopeComments?.start ?? desiredOrder[j].primaryEl)
         : anchor
       if (j - i === 1) {
         insertScope(desiredOrder[i], container, before)

@@ -1543,6 +1543,19 @@
         "text"
       ]
     },
+    "custom-element-child-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "custom-element-tag": {
       "kinds": [
         "call",
@@ -2474,6 +2487,31 @@
       "contexts": [
         "attribute",
         "loop"
+      ]
+    },
+    "fragment-root-conditional-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "fragment-root-keyed-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
       ]
     },
     "fragment-wrapped-children-jsx-expression": {
@@ -5529,13 +5567,13 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 226,
+    "call": 229,
     "conditional": 27,
-    "identifier": 320,
+    "identifier": 323,
     "index-access": 14,
     "literal": 260,
     "logical": 48,
-    "member": 183,
+    "member": 186,
     "object-literal": 63,
     "template-literal": 30,
     "unary": 24,

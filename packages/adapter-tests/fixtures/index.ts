@@ -389,6 +389,8 @@ import { fixture as camelcaseAttributes } from './camelcase-attributes'
 import { fixture as staticAttrEscape } from './static-attr-escape'
 import { fixture as svgIcon } from './svg-icon'
 import { fixture as customElementTag } from './custom-element-tag'
+import { fixture as customElementChildLoopRow } from './custom-element-child-loop-row'
+import { fixture as fragmentRootConditionalLoopRow } from './fragment-root-conditional-loop-row'
 import { fixture as dataAriaValues } from './data-aria-values'
 import { fixture as attrTernaryTitle } from './attr-ternary-title'
 import { fixture as logicalAndChain } from './logical-and-chain'
@@ -452,6 +454,7 @@ import { fixture as filterWrapperPropsReachable } from './filter-wrapper-props-r
 // named params (`t` / `todo`) instead of renaming to dodge the ERB-only
 // `ErbFilterEmitter` ID-matching bug that naming previously routed around.
 import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
+import { fixture as fragmentRootKeyedLoopRow } from './fragment-root-keyed-loop-row'
 // #2237 (PR #2241): a `.map()` callback param shadows a module-scope
 // object const; every Twig-family adapter used to bake the const's
 // literal into each iteration instead of reading the loop's own item.
@@ -810,6 +813,8 @@ export const jsxFixtures: JSXFixture[] = [
   staticAttrEscape,
   svgIcon,
   customElementTag,
+  customElementChildLoopRow,
+  fragmentRootConditionalLoopRow,
   dataAriaValues,
   attrTernaryTitle,
   logicalAndChain,
@@ -900,4 +905,5 @@ export const jsxFixtures: JSXFixture[] = [
   progressMeterValue,
   destructuredObjectPropNested,
   loopPreambleConditionalReactive,
+  fragmentRootKeyedLoopRow,
 ]

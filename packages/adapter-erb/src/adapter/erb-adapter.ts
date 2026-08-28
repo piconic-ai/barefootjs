@@ -687,7 +687,13 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // stamping data-key on each loop item's scope root, including
     // early-return (if-statement) roots where every branch's top element
     // qualifies.
-    if (this.rootScopeNodes.has(element) && element.needsScope) {
+    // `carriesDataKey` is an INDEPENDENT reason to emit, not a refinement of
+    // the root-scope test above (#2732): a fragment root clears `needsScope` on
+    // its wrapped child and moves the other hydration markers onto the
+    // `<!--bf-scope:-->` comment, but `data-key` must stay a real attribute —
+    // the client's `mapArray` adopt loop reads `primaryEl.dataset.key`, never
+    // the comment. Mirrors the same branch in hono-adapter.ts.
+    if ((this.rootScopeNodes.has(element) && element.needsScope) || element.carriesDataKey) {
       hydrationAttrs += ` <%= bf.data_key_attr %>`
     }
     if (element.slotId) {

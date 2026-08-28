@@ -180,12 +180,20 @@ const __inits = new Map()
 // never stamped because the parsed firstChild IS the inner component's root.
 // Recorded here so the root bf-s injection below can skip it the same way.
 const __comments = new Map()
+// Mirrors production's \`ComponentDef.fragmentRoot\` (@barefootjs/client/runtime,
+// component.ts): a genuine JSX-fragment-rooted component (\`return <>...</>\`)
+// carries its scope identity on a wrapping \`<!--bf-scope:-->\` comment pair
+// instead of a \`bf-s\` element attribute — recorded here so \`renderChild\`
+// below can render that shape instead of splicing an attribute onto an
+// element that, structurally, owns none of the parent-scope markers (#2732).
+const __fragmentRoots = new Map()
 let __lastComponent = null
 
 function hydrate(name, def) {
   if (def.template) __templates.set(name, def.template)
   if (def.init) __inits.set(name, def.init)
   __comments.set(name, !!def.comment)
+  __fragmentRoots.set(name, !!def.fragmentRoot)
   __lastComponent = name
 }
 
@@ -215,11 +223,19 @@ function renderChild(name, props, key, suffix) {
     ? __parentScope + '_' + suffix
     : '~' + name + '_' + Math.random().toString(36).slice(2, 8)
   const keyAttr = key !== undefined ? ' data-key="' + key + '"' : ''
+  const isFragmentRoot = !!__fragmentRoots.get(name)
   // Slot-relationship markers (bf-h/bf-m) — mirrors the production
   // runtime renderChild in @barefootjs/client/runtime so CSR conformance
   // output asserts the same shape SSR emits.
   const slotAttrs = suffix ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
-  if (!template) return '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
+  if (!template) {
+    // A fragment-root child with no registered template still gets its
+    // comment pair instead of bf-s, matching production's empty-shell
+    // fallback (component.ts's \`renderChild\`).
+    return isFragmentRoot
+      ? '<!--bf-scope:' + scopeId + '--><div></div><!--bf-/scope:' + scopeId + '-->'
+      : '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
+  }
   // Push \`__parentScope\` to this child's own derived scope while
   // \`template\` evaluates — mirrors production's renderChild
   // (@barefootjs/client/runtime, component.ts, its \`_parentScopeId\` push
@@ -242,21 +258,50 @@ function renderChild(name, props, key, suffix) {
   // sentinel is left alone.
   const html = __rawHtml.trim()
     .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __parentScope + '"')
+
+  // A genuine fragment-root child (#2722) carries no bf-s/bf-h/bf-m element
+  // attributes at all — wrap its markup in the same comment-boundary shape
+  // SSR/hydrate use instead of splicing attrs into an element that owns
+  // none of them. #2732: \`data-key\` still lands on the fragment's own
+  // first element (mirrors production's \`spliceAttrsAfterFirstTag\`),
+  // since \`mapArray\`'s adopt loop reads it as a DOM attribute, not out of
+  // the comment.
+  if (isFragmentRoot) {
+    const hostSuffix = (__parentScope && suffix) ? '|h=' + __parentScope + '|m=' + suffix : ''
+    // Search for the first tag anywhere (not anchored at index 0) —
+    // templates may open with a comment marker (e.g.
+    // \`<!--bf-cond-start:...-->\`) before the first real element, exactly
+    // like production's \`spliceAttrsAfterFirstTag\` (component.ts).
+    // The tag-name class is \`[a-zA-Z][^\\s/>]*\`, not \`\\w+\`: a custom
+    // element must contain a hyphen, and \`\\w+\` spliced the attribute
+    // into the middle of the name (\`<my data-key="1"-widget>\`), which
+    // the parser then drops. Mirrors production's \`TAG_HEAD_PATTERN\`.
+    let keyedHtml = html
+    if (keyAttr) {
+      const __m = html.match(/<([a-zA-Z][^\\s/>]*)/)
+      if (__m) {
+        const __pos = __m.index
+        keyedHtml = html.slice(0, __pos) + html.slice(__pos).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + keyAttr)
+      }
+    }
+    return '<!--bf-scope:' + scopeId + hostSuffix + '-->' + keyedHtml + '<!--bf-/scope:' + scopeId + '-->'
+  }
+
   const bfsAttr = ' bf-s="' + scopeId + '"'
   const extraAttrs = slotAttrs + keyAttr
   // Dedupe bf-s only when the child template already carries one
   // (it was itself a renderChild call). slotAttrs / keyAttr still inject —
   // dropping them would regress list reconciliation. (#1320)
-  const childRootHasBfs = /^<\\w+[^>]*\\sbf-s="/.test(html)
+  const childRootHasBfs = /^<[a-zA-Z][^\\s/>]*[^>]*\\sbf-s="/.test(html)
   const childAttrs = childRootHasBfs ? extraAttrs : bfsAttr + extraAttrs
   if (childRootHasBfs && !extraAttrs) return html
-  if (html.match(/^<\\w+[^>]* bf="/)) {
+  if (html.match(/^<[a-zA-Z][^\\s/>]*[^>]* bf="/)) {
     return html.replace(/ bf="/, childAttrs + ' bf="')
   }
-  if (html.match(/^<\\w+\\s[^>]*>/)) {
-    return html.replace(/^(<\\w+\\s[^>]*?)(\\s*\\/?>)/, '$1' + childAttrs + '$2')
+  if (html.match(/^<[a-zA-Z][^\\s/>]*\\s[^>]*>/)) {
+    return html.replace(/^(<[a-zA-Z][^\\s/>]*\\s[^>]*?)(\\s*\\/?>)/, '$1' + childAttrs + '$2')
   }
-  return html.replace(/^(<\\w+)/, '$1' + childAttrs)
+  return html.replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + childAttrs)
 }
 
 // Noop stubs for init-phase functions (not needed for template evaluation)
@@ -461,13 +506,13 @@ __html = __html.replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __rootSco
 // mirrors production's \`createComponent\` (component.ts), which leaves
 // \`scopeId === null\` for such wrappers rather than stamping their own
 // bf-s over the inner component's root (#2653).
-if (!__comments.get(__lastComponent) && !/^<\\w+[^>]*\\sbf-s="/.test(__html)) {
-if (__html.match(/^<\\w+[^>]* bf="/)) {
+if (!__comments.get(__lastComponent) && !/^<[a-zA-Z][^\\s/>]*[^>]*\\sbf-s="/.test(__html)) {
+if (__html.match(/^<[a-zA-Z][^\\s/>]*[^>]* bf="/)) {
   __html = __html.replace(/ bf="/, ' bf-s="' + __rootScope + '" bf="')
-} else if (__html.match(/^<\\w+\\s[^>]*>/)) {
-  __html = __html.replace(/^(<\\w+\\s[^>]*?)(\\s*\\/?>)/, '$1 bf-s="' + __rootScope + '"$2')
+} else if (__html.match(/^<[a-zA-Z][^\\s/>]*\\s[^>]*>/)) {
+  __html = __html.replace(/^(<[a-zA-Z][^\\s/>]*\\s[^>]*?)(\\s*\\/?>)/, '$1 bf-s="' + __rootScope + '"$2')
 } else {
-  __html = __html.replace(/^(<\\w+)/, '$1 bf-s="' + __rootScope + '"')
+  __html = __html.replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1 bf-s="' + __rootScope + '"')
 }
 }
 export default __html

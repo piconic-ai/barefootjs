@@ -1944,6 +1944,52 @@ function unwrapHoistedFragment(node: IRNode): IRNode {
   return { ...only, needsScope: true }
 }
 
+// #2732: a `needsScopeComment` fragment's five hydration markers move to
+// the wrapping comment, but `data-key` needs to stay on an element (see
+// `IRElement.carriesDataKey`'s docstring for why). Mark the first ELEMENT
+// among `children` — immutably (`{ ...el, carriesDataKey: true }`), matching
+// the rest of this file's post-hoc IR tagging (e.g. `unwrapHoistedFragment`)
+// rather than mutating the child in place.
+function markDataKeyCarrier(children: IRNode[]): IRNode[] {
+  for (let i = 0; i < children.length; i++) {
+    const marked = markCarrierIn(children[i])
+    if (!marked) continue
+    const out = children.slice()
+    out[i] = marked
+    return out
+  }
+  return children
+}
+
+/**
+ * The marked copy of `node` if this subtree can render an element in first
+ * position, or null if it cannot.
+ *
+ * Descends through `conditional` because a fragment whose only top-level
+ * child is a ternary or `&&` is still a single-visual-root row —
+ * `{done ? <li class="done"/> : <li/>}` renders exactly one `<li>`. A flat
+ * `children.findIndex(c => c.type === 'element')` returns -1 there and
+ * silently reproduces #2732's own symptom for a shape the fix was supposed
+ * to cover.
+ *
+ * BOTH branches are marked, not just one: they are mutually exclusive at
+ * render time, so whichever is taken carries the key, and marking only
+ * `whenTrue` would drop it exactly when the condition is false.
+ */
+function markCarrierIn(node: IRNode): IRNode | null {
+  if (node.type === 'element') {
+    return { ...(node as IRElement), carriesDataKey: true }
+  }
+  if (node.type === 'conditional') {
+    const cond = node as IRConditional
+    const whenTrue = markCarrierIn(cond.whenTrue)
+    const whenFalse = markCarrierIn(cond.whenFalse)
+    if (!whenTrue && !whenFalse) return null
+    return { ...cond, whenTrue: whenTrue ?? cond.whenTrue, whenFalse: whenFalse ?? cond.whenFalse }
+  }
+  return null
+}
+
 function transformFragment(
   node: ts.JsxFragment,
   ctx: TransformContext
@@ -1968,7 +2014,7 @@ function transformFragment(
 
   return {
     type: 'fragment',
-    children,
+    children: needsScopeComment ? markDataKeyCarrier(children) : children,
     transparent: isTransparent || undefined,
     needsScopeComment,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),

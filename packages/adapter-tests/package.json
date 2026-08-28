@@ -12,7 +12,8 @@
     "generate:helper-vectors": "bun vectors/generate.ts",
     "generate:eval-vectors": "bun vectors/eval-generate.ts",
     "test:fixture-hydrate": "bunx playwright test --config=playwright.config.ts e2e/fixture-hydrate.playwright.ts e2e/oracle.playwright.ts",
-    "test:mutation": "bun run scripts/mutation-generate.ts && bunx playwright test --config=playwright.config.ts e2e/mutation.playwright.ts"
+    "test:mutation": "bun run scripts/mutation-generate.ts && bunx playwright test --config=playwright.config.ts e2e/mutation.playwright.ts",
+    "pairwise:generate": "bun run scripts/pairwise-generate.ts"
   },
   "dependencies": {
     "@barefootjs/jsx": "workspace:*",

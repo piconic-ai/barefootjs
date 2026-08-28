@@ -348,6 +348,20 @@ export interface IRElement {
   slotId: string | null
   needsScope: boolean
   /**
+   * Set on the first ELEMENT among a `needsScopeComment` fragment root's own
+   * top-level children (#2732) — the fragment's five hydration markers
+   * (`bf-s`/`bf-h`/`bf-m`/`bf-r`/`bf-p`) move to the wrapping
+   * `<!--bf-scope:...-->` comment instead of an element attribute, but
+   * `data-key` has to stay on an element because the client runtime's
+   * `mapArray` adopt loop reads it as a DOM attribute
+   * (`primaryEl.dataset.key`, map-array.ts). "First element, not first
+   * node" mirrors the CSR runtime's own resolution of the identical
+   * ambiguity (`component.ts`'s `roots.find(isElement)`, #2735) rather than
+   * inventing a second answer. Always `undefined` when `needsScope` is
+   * true — the two are mutually exclusive ways of carrying the same key.
+   */
+  carriesDataKey?: boolean
+  /**
    * Page-lifecycle boundary id for an element lowered from `<Region>`
    * (spec/router.md). Set only on region host elements; adapters emit it as
    * `bf-region="<id>"`. Deterministic (`<file scope>:<index>`) so a layout's

@@ -3201,10 +3201,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * plain static `childrenHtml` path already applies, or when any other template
    * action survives (genuinely dynamic — those stay on the drop path).
    */
+  /**
+   * Set only while baking a hoisted children value into a static Go string.
+   * `data-key` is a KEYED-LOOP-ROW contract, and a value baked into a
+   * caller's props at compile time is by construction not a loop row — so
+   * emitting `{{if .BfDataKey}}` there is dead weight. It is also actively
+   * harmful: `extractScopedHtmlChildren` rejects any surviving `{{` action
+   * as "genuinely dynamic" and returns null, and its caller drops the field
+   * without a word, so the baked children silently vanish.
+   *
+   * `ctx.isRoot` leaks into a JSX-valued prop's subtree, so such a fragment
+   * is already tagged `needsScopeComment` as if it were a component root —
+   * which is why `carriesDataKey` reaches this path at all.
+   */
+  private bakingStaticChildren = false
+
   private extractScopedHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
     if (children.every(c => c.type === 'text')) return null
-    const html = this.renderChildren(children)
+    const prevBaking = this.bakingStaticChildren
+    this.bakingStaticChildren = true
+    let html: string
+    try {
+      html = this.renderChildren(children)
+    } finally {
+      this.bakingStaticChildren = prevBaking
+    }
     // The needsScope marker renders parent-scope hydration attrs; in a
     // hoisted fragment every needsScope root resolves to the parent scopeID,
     // so collapse the whole marker to a bare `bf-s` sentinel (the empty
@@ -4122,7 +4144,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // parent's loop init stamped `.BfDataKey`, so a non-keyed render emits
     // nothing. Applies to early-return (if-statement) roots too, where every
     // branch's top element qualifies.
-    if (this.state.rootScopeNodes.has(element) && element.needsScope) {
+    // `carriesDataKey` is an INDEPENDENT reason to emit, not a refinement of
+    // the root-scope test above (#2732): a fragment root clears `needsScope` on
+    // its wrapped child and moves the other hydration markers onto the
+    // `<!--bf-scope:-->` comment, but `data-key` must stay a real attribute —
+    // the client's `mapArray` adopt loop reads `primaryEl.dataset.key`, never
+    // the comment. Mirrors the same branch in hono-adapter.ts.
+    if (
+      (this.state.rootScopeNodes.has(element) && element.needsScope) ||
+      (element.carriesDataKey && !this.bakingStaticChildren)
+    ) {
       hydrationAttrs += `{{if .BfDataKey}} data-key="{{.BfDataKey}}"{{end}}`
     }
     if (element.slotId) {

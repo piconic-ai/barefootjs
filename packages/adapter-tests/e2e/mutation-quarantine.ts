@@ -71,23 +71,14 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // its `snap`/`three-point` triples hit a SEPARATE, narrower gap this fix
   // unmasked (see G1b below).
 
-  // --- G1b (open, #2732) --------------------------------------------------
-  {
-    fixtureId: 'toggle-shared',
-    mutationId: 'fragment-wrap',
-    oracle: 'snap',
-    reason:
-      "Unmasked by the #2721 fix (previously hidden behind the props-parsing bug wiping the whole list). A fragment-wrapped keyed loop item's root never gets `data-key` in its SSR markup — `jsx-to-ir.ts`'s `transformFragment` clears `needsScope` on the wrapped element (correctly, for bf-s/bf-h/bf-m/bf-r/bf-p, which move to the wrapping `<!--bf-scope:-->` comment instead) but `renderElement`'s `__dataKey` stamp lives in that SAME `needsScope` block, so it silently drops too — `wrapWithScopeComment` never re-adds it. `mapArray`'s first-run hydration then stamps `data-key` onto each row for the first time ever (a real DOM mutation raw SSR bytes never had), breaking the snap oracle's no-op invariant. Confirmed directly: SSR bytes lack `data-key=\"Setting 1\"` (etc.) that both hydrated and csr-mount DOM carry post-mount.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2732',
-  },
-  {
-    fixtureId: 'toggle-shared',
-    mutationId: 'fragment-wrap',
-    oracle: 'three-point',
-    reason:
-      "Same root cause as the `snap` entry above (missing `data-key` in SSR for a fragment-wrapped keyed loop item) — the hydrated leg picks up the SSR-shaped (key-less) markup while post-hydration/csr-mount both carry the client-stamped `data-key`, so SSR ≡ hydrated already disagrees before csr-mount even enters the comparison.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2732',
-  },
+  // --- G1b (fixed, #2732 / #2733) ------------------------------------------
+  // A fragment-wrapped keyed loop item's root got no `data-key` in its SSR
+  // markup (`IRElement.carriesDataKey` now marks the fragment's own first
+  // element, jsx-to-ir.ts) and `mapArray`'s row bookkeeping had nowhere to
+  // carry the item's `<!--bf-scope:-->` boundary comments (`ItemScope.
+  // scopeComments`, map-array.ts). Both graduated; see
+  // `fragment-root-keyed-loop-row` in the shared JSX fixture corpus for the
+  // regression coverage.
 
   // --- G2 / G2b (fixed, #2722) --------------------------------------------
   // fragment-wrap disrupting `createComponent()`'s (CSR-mount, no SSR)
