@@ -35,10 +35,21 @@ type Row = { id: string; text: string }
 
 /** SSR shape: each row is a fragment-rooted `TodoRow` — its own
  *  `<!--bf-scope:-->` boundary pair wraps the `<li>` it renders,
- *  matching `wrapWithScopeComment` + `IRElement.carriesDataKey` (#2732). */
+ *  matching `wrapWithScopeComment` + `IRElement.carriesDataKey` (#2732).
+ *
+ *  The `|h=<host>|m=<slot>|<props>` segments are load-bearing, not
+ *  decoration: a loop row is rendered BY a parent, so every row a server
+ *  emits carries them (verified by rendering this fixture through
+ *  `renderHonoComponent`). An earlier version of this helper used the bare
+ *  `bf-scope:ID` form, which no server produces — and the implementation
+ *  it was written against skipped `|h=` comments outright, so the pair was
+ *  orphaned on every real reorder while these tests passed. */
 function ssrRows(rows: Row[]): string {
   return rows
-    .map((r) => `<!--bf-scope:TodoRow_${r.id}--><li data-key="${r.id}">${r.text}</li><!--bf-/scope:TodoRow_${r.id}-->`)
+    .map(
+      (r) =>
+        `<!--bf-scope:TodoRow_${r.id}|h=test|m=s0|{"todo":{"id":"${r.id}"}}--><li data-key="${r.id}">${r.text}</li><!--bf-/scope:TodoRow_${r.id}-->`,
+    )
     .join('')
 }
 
@@ -66,7 +77,9 @@ function assertBoundary(li: Element, id: string): void {
   const start = li.previousSibling
   const end = li.nextSibling
   expect(start?.nodeType).toBe(Node.COMMENT_NODE)
-  expect((start as Comment).nodeValue).toBe(`bf-scope:TodoRow_${id}`)
+  // Start carries `|h=…|m=…|props` in the SSR shape; the identity is the
+  // `|`-free head, which is what `scopeIdOf` pairs on.
+  expect((start as Comment).nodeValue?.split('|')[0]).toBe(`bf-scope:TodoRow_${id}`)
   expect(end?.nodeType).toBe(Node.COMMENT_NODE)
   expect((end as Comment).nodeValue).toBe(`bf-/scope:TodoRow_${id}`)
 }

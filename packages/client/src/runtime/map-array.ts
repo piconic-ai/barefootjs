@@ -46,6 +46,18 @@ import {
  */
 type ScopeCommentPair = { start: Comment; end: Comment }
 
+/**
+ * The scope id inside a `<!--bf-scope:ID|h=…|m=…|props-->` comment — the
+ * `|`-free head, matching `getCommentScopeBoundary` (scope.ts) and
+ * `parseCommentScopeId` (query.ts). Used to pair a start comment with its
+ * OWN end marker by id, never with a sibling scope's.
+ */
+function scopeIdOf(start: Comment): string {
+  const rest = (start.nodeValue ?? '').slice(BF_SCOPE_COMMENT_PREFIX.length)
+  const pipe = rest.indexOf('|')
+  return pipe >= 0 ? rest.slice(0, pipe) : rest
+}
+
 type ItemScope<T> = {
   /**
    * `<!--bf-loop-i-->` Comment that anchors a multi-root item. `null` for
@@ -132,10 +144,21 @@ export function findLoopMarkers(
  * Also recognizes a fragment-rooted component's own `<!--bf-scope:ID-->` /
  * `<!--bf-/scope:ID-->` pair immediately bracketing an item's `primaryEl`
  * (#2733) and captures it as `scopeComments`, so the row's caller can pass
- * it through to `createItemScope` and keep it moving with the row. A
- * ROOT-shaped scope comment is required (no `|h=` child segment — see
- * `hydrate.ts::hydrateCommentScope`'s identical check) since a `|h=`
- * comment belongs to a nested child scope, not this row's own boundary.
+ * it through to `createItemScope` and keep it moving with the row.
+ *
+ * A `|h=` child segment does NOT disqualify a comment here, though
+ * `hydrate.ts::hydrateCommentScope` skips exactly those. The two ask
+ * different questions. That walker runs at the top level, where a `|h=`
+ * comment means "some parent's `initChild` owns this scope, not me." This
+ * one runs BETWEEN a loop's own markers, where every row IS a child: real
+ * SSR emits each row as `<!--bf-scope:TodoRow_x|h=<host>|m=<slot>|<props>-->`
+ * (measured), so requiring a root-shaped comment matched nothing a server
+ * ever produces and left the pair behind on every reorder — the exact
+ * orphaning this field exists to prevent.
+ *
+ * The end comment is matched by scope ID rather than by "the next
+ * `bf-/scope:` seen", so a sibling root that is itself a fragment-rooted
+ * child cannot close this row's pair early.
  */
 function findItemRanges(start: Comment, end: Comment): Array<{
   startMarker: Comment | null
@@ -167,12 +190,12 @@ function findItemRanges(start: Comment, end: Comment): Array<{
         sawItemMarker = true
         current = { startMarker: node as Comment, primaryEl: null, extras: [], scopeComments: null }
         ranges.push(current)
-      } else if (
-        value.startsWith(BF_SCOPE_COMMENT_PREFIX) &&
-        !value.slice(BF_SCOPE_COMMENT_PREFIX.length).includes('|h=')
-      ) {
+      } else if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
         pendingScopeStart = node as Comment
-      } else if (openScopeComments && value.startsWith(BF_SCOPE_COMMENT_END_PREFIX)) {
+      } else if (
+        openScopeComments &&
+        value === BF_SCOPE_COMMENT_END_PREFIX + scopeIdOf(openScopeComments.start)
+      ) {
         openScopeComments.end = node as Comment
         openScopeComments = null
       }
