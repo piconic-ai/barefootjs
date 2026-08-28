@@ -348,7 +348,7 @@ function materializeComponent(
   // `commentScopeRegistry` / its return value, exactly as before. Any
   // FURTHER top-level Elements are the fragment's other roots (#2735,
   // `parseHTML(...).firstChild` used to be the only node kept, silently
-  // dropping them). Collected into a plain `HTMLElement[]` local — the
+  // dropping them). Collected into a plain array local — the
   // same shape a multi-root LOOP BODY already stashes as `__bfExtras`
   // (`emitMultiRootTemplateCloneLines`, `map-array.ts`'s `createItemScope`)
   // — rather than inventing a second sibling-roots convention. NOT routed
@@ -359,13 +359,22 @@ function materializeComponent(
   // `rowMount` shape would, and it deliberately doesn't touch `extras` at
   // all (see that branch's comment). Gated on `isFragmentRoot` because
   // that is the only IR shape whose template ever emits more than one
-  // top-level element (jsx-to-ir.ts's `transformFragment`).
+  // top-level node (jsx-to-ir.ts's `transformFragment`).
+  //
+  // `Node[]`, not `HTMLElement[]`: a fragment's top level is not only
+  // elements. Bare text between two element roots (`<><h1/>text<p/></>`)
+  // is a root, and a reactive text slot sitting there renders as a
+  // `<!--bf:sN-->` marker. Both were measured being dropped by an
+  // element-only walk — the text as a visible SSR/CSR-mount diff, and the
+  // marker as something worse: the runtime's own slot lookup then finds
+  // nothing to bind. Everything after `element` travels, whatever its
+  // node type.
   const parsedFragment = parseHTML(html.trim())
   const element = parsedFragment.firstChild as HTMLElement
-  const extras: HTMLElement[] = []
+  const extras: Node[] = []
   if (isFragmentRoot) {
     for (let node = element?.nextSibling ?? null; node; node = node.nextSibling) {
-      if (node.nodeType === Node.ELEMENT_NODE) extras.push(node as HTMLElement)
+      extras.push(node)
     }
   }
 

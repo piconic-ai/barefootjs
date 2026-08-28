@@ -32,7 +32,7 @@ export const spec: SharedFixtureSpec = {
   componentName: 'MultiRootFragment',
   sourceRoot: 'fixture',
   description:
-    'genuine multi-root fragment component (two top-level roots, no loop) — CSR mount must materialize every root, not just the first (#2735)',
+    'genuine multi-root fragment component (two element roots plus bare text between them, no loop) — CSR mount must materialize every top-level node, not just the first and not only the elements (#2735)',
   interactions: [
     { type: 'expectText', selector: 'h1', text: 'title' },
     { type: 'expectText', selector: 'p', text: '0' },

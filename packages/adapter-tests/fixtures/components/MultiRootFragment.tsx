@@ -13,6 +13,12 @@
 // `materializeComponent`'s `parseHTML(html.trim()).firstChild`
 // (`@barefootjs/client/runtime/component.ts` step 6) used to throw away,
 // since it kept only the fragment template's first parsed node.
+//
+// The bare text between the two elements is load-bearing too: a fragment's
+// top level is not only elements, and the first fix for this kept only
+// `nodeType === ELEMENT_NODE` siblings — which passed with two adjacent
+// elements while still dropping any text (and, worse, any `<!--bf:sN-->`
+// slot marker) that sat between them.
 
 import { createSignal } from '@barefootjs/client'
 
@@ -21,6 +27,7 @@ export function MultiRootFragment() {
   return (
     <>
       <h1>title</h1>
+      between
       <p onClick={() => setCount(count() + 1)}>{count()}</p>
     </>
   )
