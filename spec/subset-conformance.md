@@ -233,13 +233,19 @@ convention as `spec/adapter-architecture.md`):
 
 Cross-cutting: the change-time coupling rule (subset extensions merge only
 with fixtures in the same PR) is written into `CLAUDE.md`'s Testing section
-(#2276) so agent-driven PRs pick it up automatically. Its *kind* and
-*array-method-catalogue* halves are additionally enforced mechanically
-(the `PARSED_EXPR_KINDS` and `ARRAY_METHOD_NAMES` exhaustiveness pins + the
-coverage-ledger floor tests, which demand a covering fixture or a documented
-allowlist entry); other extensions — a builtin lowering plugin, a
-sort-comparator form — have no positive registry to floor-test against, so
-for those the written rule is the only backstop.
+(#2276) so agent-driven PRs pick it up automatically. All four of its named
+halves are enforced mechanically: the `PARSED_EXPR_KINDS` and
+`ARRAY_METHOD_NAMES` exhaustiveness pins for kinds and the method catalogue,
+and — same pattern — `BUILTIN_LOWERING_PLUGINS` plus the pinned `SORT_KEY_*`
+registries as denominators for builtin lowering plugins and sort-comparator
+forms, with the coverage walk recomputing their numerators (`lowering:<plugin>`
+and `sort-key:` / `sort-target:` / `sort-direction:` / `sort:multi-key` axes)
+by re-running each plugin's own `prepare`/match seam over fixture IRs and
+classifying each loop's comparator arrow through `sortComparatorFromArrow`.
+The coverage-ledger floor tests then demand a covering fixture or a documented
+allowlist entry for every denominator member. A genuinely new extension
+category — one without a registry — has the written rule as its only backstop
+until its first PR lands the registry + floor alongside the first member.
 
 ## Roadmap
 

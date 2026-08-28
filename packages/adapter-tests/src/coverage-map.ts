@@ -17,7 +17,18 @@
  * adapter's lowering: `logical:<op>`, `binary:<op>`, `unary:<op>`,
  * `literal:<literalType>`, `array-method:<method>`, `member:optional`,
  * `member:computed`. Kinds whose fields don't fork lowerings carry no
- * axis. Contexts come from where a parsed tree hangs off the IR:
+ * axis. Two axis families cover the halves of the change-time coupling
+ * rule that used to have no mechanical numerator (the floor tests'
+ * denominators are `BUILTIN_LOWERING_PLUGINS` and the `SORT_KEY_*`
+ * registries): `lowering:<plugin.name>` records that a fixture's IR
+ * carries a call a builtin lowering plugin recognises (matchers are
+ * bound per component via each plugin's own `prepare`, the exact seam
+ * adapters use at emit time — lowering nodes are never stored in the
+ * IR, so recognition is re-run here), and `sort-key:<type>` /
+ * `sort-target:<self|field>` / `sort-direction:<asc|desc>` /
+ * `sort:multi-key` classify each loop's `sortComparator` arrow through
+ * `sortComparatorFromArrow`, the same catalogue recovery the adapters'
+ * legacy fallback uses. Contexts come from where a parsed tree hangs off the IR:
  * `text` (child expression), `attribute`, `condition`, `loop`.
  *
  * Granularity note: `kinds`/`axes` walk the ENTIRE IR, metadata included
@@ -27,7 +38,15 @@
  * corresponding context entry.
  */
 
-import { compileJSX, PARSED_EXPR_KINDS } from '@barefootjs/jsx'
+import {
+  compileJSX,
+  PARSED_EXPR_KINDS,
+  BUILTIN_LOWERING_PLUGINS,
+  sortComparatorFromArrow,
+  type IRMetadata,
+  type LoweringMatcher,
+  type ParsedExpr,
+} from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { jsxFixtures } from '../fixtures'
 import type { JSXFixture } from './types'
@@ -71,10 +90,57 @@ function isParsedExprNode(kind: string, rec: Record<string, unknown>): boolean {
   }
 }
 
-function collectKindsAndAxes(node: unknown, kinds: Set<string>, axes: Set<string>): void {
+/** A builtin lowering plugin's matcher bound to one component's metadata. */
+interface BoundLoweringMatcher {
+  name: string
+  match: LoweringMatcher
+}
+
+/**
+ * Bind every builtin lowering plugin to a component's metadata via its own
+ * `prepare` — the same per-component resolution adapters run at emit time.
+ * A plugin whose import (or reachable prop type, for the Date plugins) is
+ * absent returns no matcher and simply can't contribute its axis.
+ */
+function prepareBuiltinMatchers(metadata: IRMetadata): BoundLoweringMatcher[] {
+  const bound: BoundLoweringMatcher[] = []
+  for (const plugin of BUILTIN_LOWERING_PLUGINS) {
+    const match = plugin.prepare(metadata)
+    if (match) bound.push({ name: plugin.name, match })
+  }
+  return bound
+}
+
+/**
+ * Classify an `IRLoopSort` comparator arrow into the finite catalogue and
+ * record its axes: `sort-key:<type>` / `sort-target:<self|field>` /
+ * `sort-direction:<asc|desc>` per key, plus `sort:multi-key` for a
+ * `||`-chained comparator. An arrow outside the catalogue (served by the
+ * runtime evaluator alone) records no axis — the floor ranges over the
+ * `SORT_KEY_*` registries, not over arbitrary comparators.
+ */
+function collectSortAxes(sort: Record<string, unknown>, axes: Set<string>): void {
+  const arrow = sort.arrow as ParsedExpr | undefined
+  if (!arrow || typeof arrow !== 'object' || arrow.kind !== 'arrow') return
+  const comparator = sortComparatorFromArrow(arrow)
+  if (!comparator) return
+  for (const key of comparator.keys) {
+    axes.add(`sort-key:${key.type}`)
+    axes.add(`sort-target:${key.key.kind}`)
+    axes.add(`sort-direction:${key.direction}`)
+  }
+  if (comparator.keys.length > 1) axes.add('sort:multi-key')
+}
+
+function collectKindsAndAxes(
+  node: unknown,
+  kinds: Set<string>,
+  axes: Set<string>,
+  matchers: readonly BoundLoweringMatcher[],
+): void {
   if (!node || typeof node !== 'object') return
   if (Array.isArray(node)) {
-    for (const item of node) collectKindsAndAxes(item, kinds, axes)
+    for (const item of node) collectKindsAndAxes(item, kinds, axes, matchers)
     return
   }
   const rec = node as Record<string, unknown>
@@ -101,9 +167,25 @@ function collectKindsAndAxes(node: unknown, kinds: Set<string>, axes: Set<string
         if (rec.optional === true) axes.add('member:optional')
         if (rec.computed === true) axes.add('member:computed')
         break
+      case 'call': {
+        // Lowering nodes are never stored in the IR — adapters recognise
+        // calls at emit time — so recognition re-runs here through the
+        // same bound matchers to compute the `lowering:<name>` numerator.
+        const callee = rec.callee as ParsedExpr | undefined
+        const args = rec.args as ParsedExpr[] | undefined
+        if (callee && Array.isArray(args)) {
+          for (const m of matchers) {
+            if (m.match(callee, args)) axes.add(`lowering:${m.name}`)
+          }
+        }
+        break
+      }
     }
   }
-  for (const value of Object.values(rec)) collectKindsAndAxes(value, kinds, axes)
+  if (rec.sortComparator && typeof rec.sortComparator === 'object') {
+    collectSortAxes(rec.sortComparator as Record<string, unknown>, axes)
+  }
+  for (const value of Object.values(rec)) collectKindsAndAxes(value, kinds, axes, matchers)
 }
 
 /**
@@ -163,7 +245,7 @@ export function computeFixtureCoverage(fixture: JSXFixture): FixtureCoverage {
     for (const file of result.files) {
       if (file.type !== 'ir') continue
       const ir = JSON.parse(file.content)
-      collectKindsAndAxes(ir, kinds, axes)
+      collectKindsAndAxes(ir, kinds, axes, prepareBuiltinMatchers(ir.metadata as IRMetadata))
       collectContexts(ir.root, contexts)
     }
   }

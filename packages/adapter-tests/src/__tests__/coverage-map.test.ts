@@ -19,7 +19,14 @@
 import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { PARSED_EXPR_KINDS, ARRAY_METHOD_NAMES } from '@barefootjs/jsx'
+import {
+  PARSED_EXPR_KINDS,
+  ARRAY_METHOD_NAMES,
+  BUILTIN_LOWERING_PLUGINS,
+  SORT_KEY_TYPES,
+  SORT_KEY_TARGETS,
+  SORT_KEY_DIRECTIONS,
+} from '@barefootjs/jsx'
 import { computeCoverageMap } from '../coverage-map'
 
 /**
@@ -43,6 +50,30 @@ const UNCOVERED_KIND_ALLOWLIST: Record<string, string> = {
  * while listed here becomes STALE and fails the no-stale test until deleted.
  */
 const UNCOVERED_ARRAY_METHOD_ALLOWLIST: Partial<Record<(typeof ARRAY_METHOD_NAMES)[number], string>> = {}
+
+/**
+ * Builtin lowering plugins allowed to stay uncovered, each with the reason —
+ * the plugin-half floor's counterpart to `UNCOVERED_KIND_ALLOWLIST`. Empty
+ * today: every plugin in `BUILTIN_LOWERING_PLUGINS` has a covering fixture
+ * (`lowering:<name>` axis). A plugin that gains a fixture while listed here
+ * becomes STALE and fails the no-stale test until deleted.
+ */
+const UNCOVERED_LOWERING_ALLOWLIST: Record<string, string> = {}
+
+/**
+ * Sort-catalogue members (`sort-key:` / `sort-target:` / `sort-direction:`
+ * axes plus `sort:multi-key`) allowed to stay uncovered. Empty today: every
+ * member of the `SORT_KEY_*` registries has a covering fixture.
+ */
+const UNCOVERED_SORT_AXIS_ALLOWLIST: Record<string, string> = {}
+
+/** The sort floor's full axis denominator, assembled from the registries. */
+const SORT_AXES: readonly string[] = [
+  ...SORT_KEY_TYPES.map(t => `sort-key:${t}`),
+  ...SORT_KEY_TARGETS.map(t => `sort-target:${t}`),
+  ...SORT_KEY_DIRECTIONS.map(d => `sort-direction:${d}`),
+  'sort:multi-key',
+]
 
 const MAP_PATH = resolve(import.meta.dir, '../../coverage-map.json')
 
@@ -104,6 +135,45 @@ describe('coverage ledger', () => {
   test('no stale array-method allowlist entries (covered methods must graduate)', () => {
     const stale = Object.keys(UNCOVERED_ARRAY_METHOD_ALLOWLIST).filter(
       method => (recomputed.axisCounts[`array-method:${method}`] ?? 0) > 0,
+    )
+    expect(stale).toEqual([])
+  })
+
+  // Plugin-half floor: every builtin lowering plugin is exercised by ≥1
+  // fixture whose IR carries a call its matcher recognises, or carries a
+  // documented exclusion. Before this floor, the change-time coupling rule
+  // was the ONLY backstop for this half (a written rule review had to
+  // enforce) — and it had already leaked: `queryHref` shipped with no
+  // conformance fixture until the fixture landed alongside this test.
+  test('every builtin lowering plugin is exercised by ≥1 fixture or documented uncovered', () => {
+    const holes = BUILTIN_LOWERING_PLUGINS.map(p => p.name).filter(
+      name => !recomputed.axisCounts[`lowering:${name}`] && !(name in UNCOVERED_LOWERING_ALLOWLIST),
+    )
+    expect(holes).toEqual([])
+  })
+
+  test('no stale lowering allowlist entries (covered plugins must graduate)', () => {
+    const stale = Object.keys(UNCOVERED_LOWERING_ALLOWLIST).filter(
+      name => (recomputed.axisCounts[`lowering:${name}`] ?? 0) > 0,
+    )
+    expect(stale).toEqual([])
+  })
+
+  // Sort-catalogue floor: every member of the finite comparator catalogue
+  // (`SORT_KEY_*` registries + multi-key chaining) is exercised by ≥1
+  // fixture, or carries a documented exclusion. The registries' pins in
+  // `expression-parser.ts` make widening `SortKey` without listing the new
+  // member a compile error; this floor then demands its fixture.
+  test('every sort-catalogue member is exercised by ≥1 fixture or documented uncovered', () => {
+    const holes = SORT_AXES.filter(
+      axis => !recomputed.axisCounts[axis] && !(axis in UNCOVERED_SORT_AXIS_ALLOWLIST),
+    )
+    expect(holes).toEqual([])
+  })
+
+  test('no stale sort-axis allowlist entries (covered members must graduate)', () => {
+    const stale = Object.keys(UNCOVERED_SORT_AXIS_ALLOWLIST).filter(
+      axis => (recomputed.axisCounts[axis] ?? 0) > 0,
     )
     expect(stale).toEqual([])
   })
