@@ -2425,6 +2425,18 @@
         "loop"
       ]
     },
+    "fragment-root-keyed-loop-row": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "fragment-wrapped-children-jsx-expression": {
       "kinds": [
         "identifier"
@@ -5459,13 +5471,13 @@
     "array-method": 71,
     "arrow": 70,
     "binary": 93,
-    "call": 225,
+    "call": 226,
     "conditional": 26,
-    "identifier": 318,
+    "identifier": 319,
     "index-access": 14,
     "literal": 259,
     "logical": 48,
-    "member": 183,
+    "member": 184,
     "object-literal": 62,
     "template-literal": 30,
     "unary": 24,

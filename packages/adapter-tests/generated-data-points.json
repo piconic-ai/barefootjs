@@ -1378,6 +1378,14 @@
       }
     }
   ],
+  "fragment-root-keyed-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "if-statement": [
     {
       "name": "gen:variant:absent",

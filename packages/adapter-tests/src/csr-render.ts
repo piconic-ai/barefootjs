@@ -180,12 +180,20 @@ const __inits = new Map()
 // never stamped because the parsed firstChild IS the inner component's root.
 // Recorded here so the root bf-s injection below can skip it the same way.
 const __comments = new Map()
+// Mirrors production's \`ComponentDef.fragmentRoot\` (@barefootjs/client/runtime,
+// component.ts): a genuine JSX-fragment-rooted component (\`return <>...</>\`)
+// carries its scope identity on a wrapping \`<!--bf-scope:-->\` comment pair
+// instead of a \`bf-s\` element attribute — recorded here so \`renderChild\`
+// below can render that shape instead of splicing an attribute onto an
+// element that, structurally, owns none of the parent-scope markers (#2732).
+const __fragmentRoots = new Map()
 let __lastComponent = null
 
 function hydrate(name, def) {
   if (def.template) __templates.set(name, def.template)
   if (def.init) __inits.set(name, def.init)
   __comments.set(name, !!def.comment)
+  __fragmentRoots.set(name, !!def.fragmentRoot)
   __lastComponent = name
 }
 
@@ -215,11 +223,19 @@ function renderChild(name, props, key, suffix) {
     ? __parentScope + '_' + suffix
     : '~' + name + '_' + Math.random().toString(36).slice(2, 8)
   const keyAttr = key !== undefined ? ' data-key="' + key + '"' : ''
+  const isFragmentRoot = !!__fragmentRoots.get(name)
   // Slot-relationship markers (bf-h/bf-m) — mirrors the production
   // runtime renderChild in @barefootjs/client/runtime so CSR conformance
   // output asserts the same shape SSR emits.
   const slotAttrs = suffix ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
-  if (!template) return '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
+  if (!template) {
+    // A fragment-root child with no registered template still gets its
+    // comment pair instead of bf-s, matching production's empty-shell
+    // fallback (component.ts's \`renderChild\`).
+    return isFragmentRoot
+      ? '<!--bf-scope:' + scopeId + '--><div></div><!--bf-/scope:' + scopeId + '-->'
+      : '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
+  }
   // Push \`__parentScope\` to this child's own derived scope while
   // \`template\` evaluates — mirrors production's renderChild
   // (@barefootjs/client/runtime, component.ts, its \`_parentScopeId\` push
@@ -242,6 +258,31 @@ function renderChild(name, props, key, suffix) {
   // sentinel is left alone.
   const html = __rawHtml.trim()
     .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __parentScope + '"')
+
+  // A genuine fragment-root child (#2722) carries no bf-s/bf-h/bf-m element
+  // attributes at all — wrap its markup in the same comment-boundary shape
+  // SSR/hydrate use instead of splicing attrs into an element that owns
+  // none of them. #2732: \`data-key\` still lands on the fragment's own
+  // first element (mirrors production's \`spliceAttrsAfterFirstTag\`),
+  // since \`mapArray\`'s adopt loop reads it as a DOM attribute, not out of
+  // the comment.
+  if (isFragmentRoot) {
+    const hostSuffix = (__parentScope && suffix) ? '|h=' + __parentScope + '|m=' + suffix : ''
+    // Search for the first tag anywhere (not anchored at index 0) —
+    // templates may open with a comment marker (e.g.
+    // \`<!--bf-cond-start:...-->\`) before the first real element, exactly
+    // like production's \`spliceAttrsAfterFirstTag\` (component.ts).
+    let keyedHtml = html
+    if (keyAttr) {
+      const __m = html.match(/<(\\w+)/)
+      if (__m) {
+        const __pos = __m.index
+        keyedHtml = html.slice(0, __pos) + html.slice(__pos).replace(/^(<\\w+)/, '$1' + keyAttr)
+      }
+    }
+    return '<!--bf-scope:' + scopeId + hostSuffix + '-->' + keyedHtml + '<!--bf-/scope:' + scopeId + '-->'
+  }
+
   const bfsAttr = ' bf-s="' + scopeId + '"'
   const extraAttrs = slotAttrs + keyAttr
   // Dedupe bf-s only when the child template already carries one
