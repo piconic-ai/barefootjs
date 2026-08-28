@@ -17,15 +17,22 @@ must-address として扱う。指摘には、違反した規約名と、規約�
 代替（IR metadata / AST walk、structured IR + 単一レンダラ、lowering-plugin
 registry、`BindingScope`）を添える。
 
-## カバレッジ結合（must-address — レビューが唯一の防壁）
+## カバレッジ結合（must-address）
 
-コンパイラの受理範囲を広げる PR — 新しい `ParsedExpr` kind やフィールド、
-array-method カタログ追加、builtin lowering plugin、sort-comparator 形式 —
-は、同じ PR に `packages/adapter-tests/fixtures/` の conformance fixture を
-最低1つ含まなければならない（`spec/subset-conformance.md` の change-time
-coupling rule）。kind / catalogue の2系統は CI が落とすが、**builtin lowering
-plugin と sort-comparator 形式には機械的な防壁がなく、レビューが唯一の
-ゲートである。** fixture 欠落は must-address として指摘する。
+コンパイラの受理範囲を広げる PR は、同じ PR に
+`packages/adapter-tests/fixtures/` の conformance fixture を最低1つ含む
+（`spec/subset-conformance.md` の change-time coupling rule）。既知の4半身
+（`ParsedExpr` kind、array-method、builtin lowering plugin、sort-comparator
+形式）はすべて exhaustiveness pin + coverage-ledger floor で機械化済み
+（#2742）なので、fixture の**有無**は CI が落とす。レビューの仕事は2つ:
+
+1. **fixture が意味を持つか。** 床は存在しか検査しない。拡張の本質的な形を
+   突いているか、adversarial なケース（空値・マークアップ・マルチバイト等）
+   を data points に足す余地はないか。
+2. **どのレジストリも想定しない新種の拡張カテゴリ**が現れたら、最初の PR に
+   レジストリ＋床の同梱を must-address として要求する。前例: レビューのみの
+   時代に queryHref は fixture ゼロで出荷され、最初の床が #2741 を即座に
+   暴いた。
 
 ## テストの置き場所
 
