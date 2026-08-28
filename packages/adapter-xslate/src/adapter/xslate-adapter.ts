@@ -563,7 +563,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // bf instance by the child renderer from the JSX `key` prop); non-keyed
     // renders add nothing. Mirrors Hono stamping data-key on each loop item's
     // root, including early-return (if-statement) roots. (#1297)
-    if (this.rootScopeNodes.has(element) && element.needsScope) {
+    // `carriesDataKey` is an INDEPENDENT reason to emit, not a refinement of
+    // the root-scope test above (#2732): a fragment root clears `needsScope` on
+    // its wrapped child and moves the other hydration markers onto the
+    // `<!--bf-scope:-->` comment, but `data-key` must stay a real attribute —
+    // the client's `mapArray` adopt loop reads `primaryEl.dataset.key`, never
+    // the comment. Mirrors the same branch in hono-adapter.ts.
+    if ((this.rootScopeNodes.has(element) && element.needsScope) || element.carriesDataKey) {
       hydrationAttrs += ` <: $bf.data_key_attr() | mark_raw :>`
     }
     if (element.slotId) {

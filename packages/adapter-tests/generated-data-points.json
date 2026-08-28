@@ -931,6 +931,14 @@
       }
     }
   ],
+  "custom-element-child-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "dangerous-inner-html-dynamic": [
     {
       "name": "gen:html:empty",

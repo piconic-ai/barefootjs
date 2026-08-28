@@ -4122,7 +4122,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // parent's loop init stamped `.BfDataKey`, so a non-keyed render emits
     // nothing. Applies to early-return (if-statement) roots too, where every
     // branch's top element qualifies.
-    if (this.state.rootScopeNodes.has(element) && element.needsScope) {
+    // `carriesDataKey` is an INDEPENDENT reason to emit, not a refinement of
+    // the root-scope test above (#2732): a fragment root clears `needsScope` on
+    // its wrapped child and moves the other hydration markers onto the
+    // `<!--bf-scope:-->` comment, but `data-key` must stay a real attribute —
+    // the client's `mapArray` adopt loop reads `primaryEl.dataset.key`, never
+    // the comment. Mirrors the same branch in hono-adapter.ts.
+    if ((this.state.rootScopeNodes.has(element) && element.needsScope) || element.carriesDataKey) {
       hydrationAttrs += `{{if .BfDataKey}} data-key="{{.BfDataKey}}"{{end}}`
     }
     if (element.slotId) {
