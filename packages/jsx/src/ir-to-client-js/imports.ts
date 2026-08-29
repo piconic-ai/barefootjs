@@ -171,23 +171,51 @@ export function collectExternalImports(ir: ComponentIR, generatedCode: string, l
 
     // Check which specifiers are actually used in the generated code.
     // Skip component names — they are rendered via initChild(), not imported directly.
-    const usedSpecs: string[] = []
+    // A default or namespace specifier needs its own import syntax
+    // (`import X from '...'` / `import * as X from '...'`), never the
+    // named-import braces every other specifier here gets — a plain
+    // `import { lock } from '...'` for a DEFAULT-imported `lock` compiles
+    // to a real, silently-wrong ESM import (no such named export) that
+    // only surfaces once a bundler actually resolves it (#2767 follow-up:
+    // a server component's own compiled init previously never reached a
+    // real Rollup graph, so this was unreachable until that gap closed).
+    const usedNamed: string[] = []
+    let usedDefault: string | null = null
+    let usedNamespace: string | null = null
     for (const spec of imp.specifiers) {
       // Per-specifier `import { type Foo }` has no value binding — #2432.
       if (spec.isTypeOnly) continue
       const localName = spec.alias || spec.name
       if (componentNames.has(localName)) continue
-      if (isUsedAsValue(localName)) {
-        usedSpecs.push(spec.alias ? `${spec.name} as ${spec.alias}` : spec.name)
+      if (!isUsedAsValue(localName)) continue
+      if (spec.isDefault) {
+        usedDefault = localName
+      } else if (spec.isNamespace) {
+        usedNamespace = localName
+      } else {
+        usedNamed.push(spec.alias ? `${spec.name} as ${spec.alias}` : spec.name)
       }
     }
 
-    if (usedSpecs.length > 0) {
+    if (usedDefault || usedNamespace || usedNamed.length > 0) {
       let source = imp.source
       if (ir.metadata.clientSignalImportSources?.has(source)) {
         source = source.replace(/\.tsx?$/, '') + '.client.js'
       }
-      importLines.push(`import { ${usedSpecs.join(', ')} } from '${source}'`)
+      // `import Default, { a, b } from '...'` is the only legal pairing —
+      // a namespace specifier can't combine with named ones, but multiple
+      // import declarations for the same source are legal ESM, so it gets
+      // its own line instead.
+      const defaultAndNamed = [
+        usedDefault,
+        usedNamed.length > 0 ? `{ ${usedNamed.join(', ')} }` : null,
+      ].filter((part): part is string => part !== null).join(', ')
+      if (defaultAndNamed) {
+        importLines.push(`import ${defaultAndNamed} from '${source}'`)
+      }
+      if (usedNamespace) {
+        importLines.push(`import * as ${usedNamespace} from '${source}'`)
+      }
     }
   }
   return importLines

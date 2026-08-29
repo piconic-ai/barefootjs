@@ -71,12 +71,75 @@ function makeSideEffectImport(source: string): ImportInfo {
   }
 }
 
+/** `import <localName> from 'source'`, optionally alongside named specifiers. */
+function makeDefaultImport(source: string, localName: string, namedSpecifiers: string[] = []): ImportInfo {
+  return {
+    source,
+    specifiers: [
+      { name: localName, alias: null, isDefault: true, isNamespace: false },
+      ...namedSpecifiers.map(name => ({ name, alias: null, isDefault: false, isNamespace: false })),
+    ],
+    isTypeOnly: false,
+    loc: dummyLoc,
+  }
+}
+
+/** `import * as localName from 'source'`. */
+function makeNamespaceImport(source: string, localName: string): ImportInfo {
+  return {
+    source,
+    specifiers: [{ name: localName, alias: null, isDefault: false, isNamespace: true }],
+    isTypeOnly: false,
+    loc: dummyLoc,
+  }
+}
+
 describe('collectExternalImports', () => {
   test('preserves third-party library imports used in generated code', () => {
     const ir = makeIR([makeImport('zod', ['z'])])
     const code = 'z.string().min(1)'
     const result = collectExternalImports(ir, code)
     expect(result).toEqual(["import { z } from 'zod'"])
+  })
+
+  // #2767 follow-up: a default-imported binding (e.g. a JSON module's
+  // `import lock from '...json' with { type: 'json' }`) was previously
+  // always re-emitted as a NAMED import (`import { lock } from '...'`),
+  // which is a real, silently-wrong ESM import — the module has no such
+  // named export — that only failed once a bundler actually resolved it.
+  test('preserves a default import with correct default-import syntax, not named braces', () => {
+    const ir = makeIR([makeDefaultImport('../data.json', 'lock')])
+    const code = 'lock.adapters'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import lock from '../data.json'"])
+  })
+
+  test('preserves a namespace import with correct namespace-import syntax', () => {
+    const ir = makeIR([makeNamespaceImport('./ns-module', 'NS')])
+    const code = 'NS.helper()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import * as NS from './ns-module'"])
+  })
+
+  test('combines a used default specifier with used named specifiers on one declaration', () => {
+    const ir = makeIR([makeDefaultImport('./mixed', 'Default', ['helper', 'other'])])
+    const code = 'Default(); helper()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import Default, { helper } from './mixed'"])
+  })
+
+  test('drops an unused default specifier but keeps a used named sibling', () => {
+    const ir = makeIR([makeDefaultImport('./mixed', 'Default', ['helper'])])
+    const code = 'helper()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { helper } from './mixed'"])
+  })
+
+  test('drops an unused namespace specifier entirely', () => {
+    const ir = makeIR([makeNamespaceImport('./ns-module', 'NS')])
+    const code = 'somethingElse()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
   })
 
   test('skips @barefootjs/client imports', () => {
