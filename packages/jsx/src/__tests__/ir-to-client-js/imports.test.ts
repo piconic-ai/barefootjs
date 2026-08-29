@@ -135,6 +135,50 @@ describe('collectExternalImports', () => {
     expect(result).toEqual(["import { helper } from './mixed'"])
   })
 
+  // `import Foo, * as NS from 'x'` is legal JS, but never emitted as one
+  // line — a namespace specifier always gets its own declaration (see
+  // `renderUsedImportLines`'s docstring). Pin the two-line output so a
+  // future refactor can't silently collapse or drop one of them.
+  test('a used default specifier and a used namespace specifier from the same source emit two separate lines', () => {
+    const ir = makeIR([
+      {
+        source: './both',
+        specifiers: [
+          { name: 'Foo', alias: null, isDefault: true, isNamespace: false },
+          { name: 'NS', alias: null, isDefault: false, isNamespace: true },
+        ],
+        isTypeOnly: false,
+        loc: dummyLoc,
+      },
+    ])
+    const code = 'Foo(); NS.helper()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import Foo from './both'", "import * as NS from './both'"])
+  })
+
+  test('a default-imported COMPONENT is skipped, same as a named-imported one', () => {
+    const ir = makeIR([makeDefaultImport('./button', 'Button')], ['Button'])
+    const code = '<Button/>'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  test('rewrites a default import to the .client.js sibling when its source is a client-signal import', () => {
+    const ir = makeIR([makeDefaultImport('./state', 'store')])
+    ir.metadata.clientSignalImportSources = new Set(['./state'])
+    const code = 'store.count'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import store from './state.client.js'"])
+  })
+
+  test('rewrites a namespace import to the .client.js sibling when its source is a client-signal import', () => {
+    const ir = makeIR([makeNamespaceImport('./state', 'NS')])
+    ir.metadata.clientSignalImportSources = new Set(['./state'])
+    const code = 'NS.count'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import * as NS from './state.client.js'"])
+  })
+
   test('drops an unused namespace specifier entirely', () => {
     const ir = makeIR([makeNamespaceImport('./ns-module', 'NS')])
     const code = 'somethingElse()'

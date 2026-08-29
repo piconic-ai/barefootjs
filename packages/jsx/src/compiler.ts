@@ -19,7 +19,7 @@ import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
 import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
-import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest } from './ir-to-client-js/imports.ts'
+import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest, renderUsedImportLines } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports.ts'
 import { applyCssLayerPrefix, applyCssLayerPrefixToFile } from './css-layer-prefixer.ts'
@@ -43,11 +43,27 @@ export interface CompileOptionsWithAdapter extends CompileOptions {
  * conflict-free block.
  *
  * Named value/type imports from the same source are folded into their first
- * occurrence (preserving line order and first-seen symbol order); every
- * other import form (side-effect, default, namespace) is kept in place and
- * de-duplicated by exact line. This ensures a symbol is never imported
- * twice across sibling components — a redeclaration that Bun tolerates but
- * stricter ESM parsers (the Deno runtime that renders SSR templates) reject.
+ * occurrence (preserving line order and first-seen symbol order); a default
+ * or namespace import is likewise folded by source rather than deduplicated
+ * by exact line — every sibling component that shares a module-scope import
+ * declaration compiles it independently, so the same default binding can
+ * legally arrive as `import cfg from 'x'` from one component and `import
+ * cfg, { helper } from 'x'` from another once only the SECOND one also uses
+ * a named specifier from the same statement. Folding by source (default
+ * name from the first occurrence that has one, named specifiers unioned)
+ * collapses both into one `import cfg, { helper } from 'x'` line; the two
+ * exact-line-deduplicated strings would otherwise both survive and
+ * redeclare `cfg` (#2767 follow-up — this shape was unreachable before a
+ * default/namespace-importing server component could become a real client
+ * bundle at all). A namespace specifier can't combine with named ones on
+ * one line, so it's folded to its own line, keyed by (source, local name)
+ * — see `renderUsedImportLines`'s docstring for the same split rendering
+ * rule `collectExternalImports` uses.
+ *
+ * Every other import form (side-effect) is kept in place and de-duplicated
+ * by exact line. This ensures a symbol is never imported twice across
+ * sibling components — a redeclaration that Bun tolerates but stricter ESM
+ * parsers (the Deno runtime that renders SSR templates) reject.
  *
  * For a single-component file the output is identical to the input order;
  * only repeated sibling imports collapse.
@@ -62,38 +78,70 @@ export interface CompileOptionsWithAdapter extends CompileOptions {
 export function mergeTemplateImports(lines: string[]): string {
   const result: string[] = []
   const valueIdx = new Map<string, number>()
+  const valueDefault = new Map<string, string>()
   const valueNames = new Map<string, Set<string>>()
   const typeIdx = new Map<string, number>()
   const typeNames = new Map<string, Set<string>>()
   const seenOther = new Set<string>()
 
-  const fold = (
-    src: string,
-    rawNames: string,
-    idx: Map<string, number>,
-    names: Map<string, Set<string>>,
-    render: (src: string, names: Set<string>) => string,
-  ) => {
-    if (!idx.has(src)) {
-      idx.set(src, result.length)
-      names.set(src, new Set())
+  const foldType = (src: string, rawNames: string) => {
+    if (!typeIdx.has(src)) {
+      typeIdx.set(src, result.length)
+      typeNames.set(src, new Set())
       result.push('')
     }
-    const set = names.get(src)!
+    const set = typeNames.get(src)!
     for (const n of rawNames.split(',').map(s => s.trim()).filter(Boolean)) set.add(n)
-    result[idx.get(src)!] = render(src, set)
+    result[typeIdx.get(src)!] = `import type { ${[...set].join(', ')} } from '${src}'`
+  }
+
+  const foldValue = (src: string, defaultName: string | null, rawNames: string | null) => {
+    if (!valueIdx.has(src)) {
+      valueIdx.set(src, result.length)
+      valueNames.set(src, new Set())
+      result.push('')
+    }
+    if (defaultName && !valueDefault.has(src)) valueDefault.set(src, defaultName)
+    if (rawNames) {
+      const set = valueNames.get(src)!
+      for (const n of rawNames.split(',').map(s => s.trim()).filter(Boolean)) set.add(n)
+    }
+    result[valueIdx.get(src)!] = renderUsedImportLines(
+      src,
+      valueDefault.get(src) ?? null,
+      null,
+      [...valueNames.get(src)!],
+    ).join('\n')
   }
 
   for (const raw of lines) {
     const line = raw.trim()
     if (!line) continue
     const typeMatch = line.match(/^import\s+type\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
-    const valueMatch = line.match(/^import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
-    if (valueMatch) {
-      fold(valueMatch[2], valueMatch[1], valueIdx, valueNames, (s, n) => `import { ${[...n].join(', ')} } from '${s}'`)
-    } else if (typeMatch) {
-      fold(typeMatch[2], typeMatch[1], typeIdx, typeNames, (s, n) => `import type { ${[...n].join(', ')} } from '${s}'`)
+    const namedMatch = line.match(/^import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
+    const defaultNamedMatch = line.match(/^import\s+([A-Za-z_$][\w$]*)\s*,\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
+    const defaultOnlyMatch = line.match(/^import\s+([A-Za-z_$][\w$]*)\s*from\s*['"]([^'"]+)['"]\s*;?$/)
+
+    if (typeMatch) {
+      foldType(typeMatch[2], typeMatch[1])
+    } else if (namedMatch) {
+      foldValue(namedMatch[2], null, namedMatch[1])
+    } else if (defaultNamedMatch) {
+      foldValue(defaultNamedMatch[3], defaultNamedMatch[1], defaultNamedMatch[2])
+    } else if (defaultOnlyMatch) {
+      foldValue(defaultOnlyMatch[2], defaultOnlyMatch[1], null)
     } else if (!seenOther.has(line)) {
+      // Covers namespace imports (`import * as X from 'src'`) and
+      // side-effect imports alike — deduplicated by exact line, same as
+      // before. A namespace import can't combine with named specifiers on
+      // one line (see `renderUsedImportLines`), so two components that
+      // both import the SAME namespace binding from the SAME source
+      // always emit byte-identical lines and collapse here; two DIFFERENT
+      // local namespace names for the same source (unusual — would require
+      // sibling components to alias the same module-scope `import * as`
+      // declaration differently, which isn't possible for one shared
+      // declaration) are kept as separate lines rather than silently
+      // merged.
       seenOther.add(line)
       result.push(line)
     }
@@ -446,30 +494,21 @@ function compileMultipleComponents(
     }
     const clientJsOutputs = allOutputs.map(o => o.clientJs).filter(Boolean) as string[]
     if (clientJsOutputs.length > 0) {
-      const importsBySource = new Map<string, Set<string>>()
-      const otherImports: string[] = []
+      // Same conflict-free fold `mergeTemplateImports` already does for
+      // SSR template imports — see its docstring for why a plain
+      // exact-line dedup re-declares a shared default/named import across
+      // sibling components (#2767 follow-up).
+      const importLines: string[] = []
       const allCode: string[] = []
       for (const js of clientJsOutputs) {
         for (const line of js.split('\n')) {
-          if (line.startsWith('import ')) {
-            const match = line.match(/^import \{ ([^}]+) \} from ['"]([^'"]+)['"]$/)
-            if (match) {
-              const source = match[2]
-              if (!importsBySource.has(source)) importsBySource.set(source, new Set())
-              for (const n of match[1].split(',').map(n => n.trim())) importsBySource.get(source)!.add(n)
-            } else if (!otherImports.includes(line)) {
-              otherImports.push(line)
-            }
-          }
+          if (line.startsWith('import ')) importLines.push(line)
         }
         allCode.push(js.replace(/^import .+\n/gm, '').trim())
       }
-      const mergedClientImports = [...importsBySource].map(([src, names]) =>
-        `import { ${[...names].sort().join(', ')} } from '${src}'`
-      )
       files.push({
         path: filePath.replace(/\.tsx?$/, '.client.js'),
-        content: [...mergedClientImports, ...otherImports, '', ...allCode.filter(Boolean)].join('\n'),
+        content: [mergeTemplateImports(importLines), '', ...allCode.filter(Boolean)].join('\n'),
         type: 'clientJs',
       })
     }
@@ -557,56 +596,29 @@ function compileMultipleComponents(
     })
   }
 
-  // Combine client JS if any
+  // Combine client JS if any. Same conflict-free fold `mergeTemplateImports`
+  // does for SSR template imports (see its docstring) — a plain exact-line
+  // dedup would re-declare a default/named import shared across sibling
+  // components (#2767 follow-up).
   const clientJsOutputs = allOutputs.map(o => o.clientJs).filter(Boolean) as string[]
   if (clientJsOutputs.length > 0) {
-    // Separate imports from code and merge imports by source
-    const importsBySource = new Map<string, Set<string>>()
-    const otherImports: string[] = []
+    const importLines: string[] = []
     const allCode: string[] = []
 
     for (const js of clientJsOutputs) {
-      const lines = js.split('\n')
       const codeLines: string[] = []
-
-      for (const line of lines) {
+      for (const line of js.split('\n')) {
         if (line.startsWith('import ')) {
-          // Parse named imports: import { a, b } from 'source'
-          const match = line.match(/^import \{ ([^}]+) \} from ['"]([^'"]+)['"]$/)
-          if (match) {
-            const names = match[1].split(',').map(n => n.trim())
-            const source = match[2]
-            if (!importsBySource.has(source)) {
-              importsBySource.set(source, new Set())
-            }
-            const set = importsBySource.get(source)!
-            for (const name of names) {
-              set.add(name)
-            }
-          } else {
-            // Other import styles (default, namespace, etc.)
-            if (!otherImports.includes(line)) {
-              otherImports.push(line)
-            }
-          }
+          importLines.push(line)
         } else {
           codeLines.push(line)
         }
       }
-
       allCode.push(codeLines.join('\n').trim())
     }
 
-    // Generate merged imports
-    const mergedImports: string[] = []
-    for (const [source, names] of importsBySource) {
-      const sortedNames = [...names].sort()
-      mergedImports.push(`import { ${sortedNames.join(', ')} } from '${source}'`)
-    }
-
     const combinedClientJs = [
-      ...mergedImports,
-      ...otherImports,
+      mergeTemplateImports(importLines),
       '',
       ...allCode.filter(Boolean),
     ].join('\n')
@@ -735,7 +747,9 @@ export function compileJSX(
 
       // Preserve non-runtime user imports whose specifiers are referenced
       // in the generated body (e.g. an initializer that calls an imported
-      // helper: `createSignal(defaultValue())`).
+      // helper: `createSignal(defaultValue())`). A default- or namespace-
+      // imported helper needs its own import syntax, not named braces —
+      // see `renderUsedImportLines`'s docstring.
       const externalImportLines: string[] = []
       const isUsedAsValue = makeValueUsageTest(body)
       for (const imp of ctx.imports) {
@@ -745,12 +759,22 @@ export function compileJSX(
           externalImportLines.push(`import '${imp.source}'`)
           continue
         }
-        const used = imp.specifiers
-          .filter(s => !s.isDefault && !s.isNamespace && !s.isTypeOnly && isUsedAsValue(s.alias || s.name))
-          .map(s => s.alias ? `${s.name} as ${s.alias}` : s.name)
-        if (used.length > 0) {
-          externalImportLines.push(`import { ${used.join(', ')} } from '${imp.source}'`)
+        const usedNamed: string[] = []
+        let usedDefault: string | null = null
+        let usedNamespace: string | null = null
+        for (const s of imp.specifiers) {
+          if (s.isTypeOnly) continue
+          const localName = s.alias || s.name
+          if (!isUsedAsValue(localName)) continue
+          if (s.isDefault) {
+            usedDefault = localName
+          } else if (s.isNamespace) {
+            usedNamespace = localName
+          } else {
+            usedNamed.push(s.alias ? `${s.name} as ${s.alias}` : s.name)
+          }
         }
+        externalImportLines.push(...renderUsedImportLines(imp.source, usedDefault, usedNamespace, usedNamed))
       }
 
       const allImports = [runtimeImportLine, ...externalImportLines].filter(Boolean).join('\n')

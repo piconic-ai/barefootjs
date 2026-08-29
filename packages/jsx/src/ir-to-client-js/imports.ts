@@ -149,6 +149,45 @@ export function makeValueUsageTest(generatedCode: string): (localName: string) =
 }
 
 /**
+ * Render already-filtered-to-used specifier fragments for one import source
+ * into one or two legal import declaration lines. Shared by every call site
+ * that re-serializes an `ImportInfo`'s specifiers into client-JS import
+ * text — `collectExternalImports` below and the state-only-file client-JS
+ * path (`compiler.ts`'s single-component early return for a `.tsx` with no
+ * JSX return but exported `@client` module signals) — so the
+ * default/namespace handling lives in exactly one place.
+ *
+ * A default or namespace specifier needs its own import syntax
+ * (`import X from '...'` / `import * as X from '...'`), never the
+ * named-import braces a plain specifier gets — a plain `import { lock }
+ * from '...'` for a DEFAULT-imported `lock` compiles to a real, silently-
+ * wrong ESM import (no such named export) that only surfaces once a
+ * bundler actually resolves it (#2767 follow-up: a server component's own
+ * compiled init previously never reached a real Rollup graph, so this was
+ * unreachable until that gap closed).
+ *
+ * `import Default, { a, b } from '...'` is the only legal single-line
+ * pairing — a namespace specifier can't combine with named ones, but
+ * multiple import declarations for the same source are legal ESM, so a
+ * used namespace specifier always gets its own line.
+ */
+export function renderUsedImportLines(
+  source: string,
+  usedDefault: string | null,
+  usedNamespace: string | null,
+  usedNamed: string[],
+): string[] {
+  const lines: string[] = []
+  const defaultAndNamed = [
+    usedDefault,
+    usedNamed.length > 0 ? `{ ${usedNamed.join(', ')} }` : null,
+  ].filter((part): part is string => part !== null).join(', ')
+  if (defaultAndNamed) lines.push(`import ${defaultAndNamed} from '${source}'`)
+  if (usedNamespace) lines.push(`import * as ${usedNamespace} from '${source}'`)
+  return lines
+}
+
+/**
  * Collect external (non-DOM, non-component) imports that are used in generated code.
  * These are third-party libraries like @barefootjs/form, zod, etc. that need to be
  * preserved in client JS output so the browser can resolve them via import map.
@@ -171,14 +210,6 @@ export function collectExternalImports(ir: ComponentIR, generatedCode: string, l
 
     // Check which specifiers are actually used in the generated code.
     // Skip component names — they are rendered via initChild(), not imported directly.
-    // A default or namespace specifier needs its own import syntax
-    // (`import X from '...'` / `import * as X from '...'`), never the
-    // named-import braces every other specifier here gets — a plain
-    // `import { lock } from '...'` for a DEFAULT-imported `lock` compiles
-    // to a real, silently-wrong ESM import (no such named export) that
-    // only surfaces once a bundler actually resolves it (#2767 follow-up:
-    // a server component's own compiled init previously never reached a
-    // real Rollup graph, so this was unreachable until that gap closed).
     const usedNamed: string[] = []
     let usedDefault: string | null = null
     let usedNamespace: string | null = null
@@ -202,20 +233,7 @@ export function collectExternalImports(ir: ComponentIR, generatedCode: string, l
       if (ir.metadata.clientSignalImportSources?.has(source)) {
         source = source.replace(/\.tsx?$/, '') + '.client.js'
       }
-      // `import Default, { a, b } from '...'` is the only legal pairing —
-      // a namespace specifier can't combine with named ones, but multiple
-      // import declarations for the same source are legal ESM, so it gets
-      // its own line instead.
-      const defaultAndNamed = [
-        usedDefault,
-        usedNamed.length > 0 ? `{ ${usedNamed.join(', ')} }` : null,
-      ].filter((part): part is string => part !== null).join(', ')
-      if (defaultAndNamed) {
-        importLines.push(`import ${defaultAndNamed} from '${source}'`)
-      }
-      if (usedNamespace) {
-        importLines.push(`import * as ${usedNamespace} from '${source}'`)
-      }
+      importLines.push(...renderUsedImportLines(source, usedDefault, usedNamespace, usedNamed))
     }
   }
   return importLines
