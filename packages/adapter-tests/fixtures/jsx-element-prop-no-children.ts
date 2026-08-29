@@ -12,10 +12,16 @@ import { createFixture } from '../src/types'
  *
  * `props.children ?? ''` guards the interpolation (same convention as
  * `component-with-jsx-children`'s Card): a genuinely-absent `children`
- * hits an unrelated, pre-existing CSR quirk where the client template's
+ * hits a separate, pre-existing CSR defect where the client template's
  * bare `${_p.children}` splice renders the literal text "undefined" for
  * an actually-undefined value, which is not what this fixture exists to
  * pin. The guard keeps this fixture scoped to the #2773 predicate only.
+ *
+ * That defect is https://github.com/piconic-ai/barefootjs/issues/2775.
+ * The guard is why no conformance layer reports it today, here or in
+ * `component-with-jsx-children` — so #2775 owes a fixture written with
+ * the UNGUARDED source. Drop this guard once #2775 is fixed; until then
+ * it is a deliberate scope boundary, not an accident.
  */
 export const fixture = createFixture({
   id: 'jsx-element-prop-no-children',
