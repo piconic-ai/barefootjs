@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": patch
----
-
-Close the two review-only halves of the change-time coupling rule (`spec/subset-conformance.md`) with mechanical floors. New exhaustiveness-pinned registries `SORT_KEY_TYPES` / `SORT_KEY_TARGETS` / `SORT_KEY_DIRECTIONS` are exported alongside `PARSED_EXPR_KINDS`, so widening `SortKey` without listing the new member is a compile error; the coverage ledger (`packages/adapter-tests`) recomputes numerators for both halves — `lowering:<plugin>` axes by re-running each `BUILTIN_LOWERING_PLUGINS` entry's own `prepare`/match seam over fixture IRs, and `sort-key:`/`sort-target:`/`sort-direction:`/`sort:multi-key` axes by classifying each loop's comparator arrow through `sortComparatorFromArrow` — and new floor tests demand a covering fixture or documented allowlist entry per denominator member. The floors start with zero allowlist entries: the two holes they found on day one are filled by new fixtures (`query-href`, `array-sort-self`), the first of which immediately surfaced #2741 (queryHref's effect-update emit produces syntactically invalid client JS), pinned via a CSR-conformance skip.
