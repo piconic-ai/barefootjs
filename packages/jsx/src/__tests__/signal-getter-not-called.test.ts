@@ -343,6 +343,28 @@ describe('Signal Getter Not Called (BF044)', () => {
       })
     })
 
+    describe('binding and parameter defaults', () => {
+      // A default VALUE is an ordinary expression in the enclosing scope, but
+      // the walk used to visit only binding NAMES. Measured before the fix:
+      // both shapes compiled silently and emitted a module-scope `template`
+      // thunk referencing a component-scope binding — `ReferenceError` on CSR
+      // mount, i.e. #2751's mechanism surviving inside the very check meant to
+      // close it.
+      test('destructuring default in a rendered position', () => {
+        expect(bf044Of('<div className={(() => { const { x = count } = ({} as { x?: unknown }); return String(x) })()} />')).toHaveLength(1)
+      })
+
+      test('parameter default in a rendered position', () => {
+        expect(bf044Of('<div className={((f = count) => String(f))()} />')).toHaveLength(1)
+      })
+
+      test('a literal default stays silent', () => {
+        // The overwhelmingly common shape (`{ size = 'md' }`): the default is
+        // not a reactive name, so widening the walk must not touch it.
+        expect(bf044Of(`<div className={(({ size = 'md' }: { size?: string }) => size)({})} />`)).toHaveLength(0)
+      })
+    })
+
     test('does not misfire on a nested element ATTRIBUTE NAME', () => {
       // The walk stops at a nested JSX boundary. Without that guard, descending
       // into a `.map()` body that returns JSX read the nested element's own

@@ -7451,6 +7451,26 @@ function checkBareSignalOrMemoIdentifier(
     return ctx.scope.isBound(name)
   }
 
+  /**
+   * Default values inside a binding pattern (`const { x = count } = obj`) and
+   * parameter defaults (`(f = count) => …`).
+   *
+   * `collectBindingNames` deliberately walks only NAMES — a binding name is
+   * not a reference — but a default VALUE is an ordinary expression evaluated
+   * in the enclosing scope, so a bare getter can hide there. Not hypothetical:
+   * measured, such a shape emits a module-scope `template` thunk that
+   * references a component-scope binding and throws `ReferenceError` on CSR
+   * mount, which is #2751's mechanism — the class this check exists to close.
+   */
+  const visitBindingDefaults = (name: ts.BindingName): void => {
+    if (ts.isIdentifier(name)) return
+    for (const el of name.elements) {
+      if (ts.isOmittedExpression(el)) continue
+      if (el.initializer) visit(el.initializer)
+      visitBindingDefaults(el.name)
+    }
+  }
+
   const collectBindingNames = (name: ts.BindingName, out: Set<string>): void => {
     if (ts.isIdentifier(name)) out.add(name.text)
     else if (ts.isObjectBindingPattern(name)) {
@@ -7516,6 +7536,14 @@ function checkBareSignalOrMemoIdentifier(
     // binding, not the signal/memo of the same name.
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
       const bound = new Set<string>()
+      // Parameter DEFAULTS are visited before the params are bound: a default
+      // is evaluated in the enclosing scope, so `(count = count) => …` reads
+      // the OUTER `count`. Binding the params first would mask it as
+      // self-shadowed.
+      for (const p of node.parameters) {
+        if (p.initializer) visit(p.initializer)
+        visitBindingDefaults(p.name)
+      }
       for (const p of node.parameters) collectBindingNames(p.name, bound)
       if (node.body && ts.isBlock(node.body)) collectBlockDeclarations(node.body, bound)
       boundStack.push(bound)
@@ -7528,6 +7556,7 @@ function checkBareSignalOrMemoIdentifier(
     // only its initializer can be.
     if (ts.isVariableDeclaration(node)) {
       if (node.initializer) visit(node.initializer)
+      visitBindingDefaults(node.name)
       return
     }
 
