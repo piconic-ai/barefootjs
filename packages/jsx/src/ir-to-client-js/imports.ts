@@ -2,6 +2,7 @@
  * Import detection and DOM import management.
  */
 
+import ts from 'typescript'
 import type { ComponentIR, IRNode } from '../types.ts'
 import { isClientBuiltinName } from '../builtins.ts'
 import { collectValueReferencedNames } from '../value-references.ts'
@@ -185,6 +186,116 @@ export function renderUsedImportLines(
   if (defaultAndNamed) lines.push(`import ${defaultAndNamed} from '${source}'`)
   if (usedNamespace) lines.push(`import * as ${usedNamespace} from '${source}'`)
   return lines
+}
+
+/**
+ * Merge multiple sibling components' compiled client-JS blobs (one file
+ * with several `export function`s, e.g. `compileMultipleComponents`'s two
+ * `.client.js` outputs) into one conflict-free block.
+ *
+ * Real top-level `ImportDeclaration` statements are found via a
+ * `ts.createSourceFile` AST walk — never a text/regex line scan — so a
+ * string or template-literal VALUE that merely contains a line starting
+ * with `import ` (a docs component embedding a code sample, say) can never
+ * be torn out of its literal and hoisted into the imports block. This
+ * mirrors `combine-client-js.ts`'s `parseAndMerge`, the established
+ * precedent for exactly this shape of parse (see that file's docstring
+ * and issue #1702, the regression it exists to prevent) — CLAUDE.md
+ * requires it for "compiled client JS" specifically. Reaching a bundler
+ * for the FIRST time is precisely what a plain server component newly
+ * promoted to a Rollup entry by `needsClientEntry` (#2767) now does, so a
+ * line-based scan here carries real risk, not just a style violation.
+ *
+ * Differs from `parseAndMerge` in two ways required by this call site:
+ * (1) default and named specifiers from the same source fold into ONE
+ * declaration via `renderUsedImportLines`'s rule, rather than surviving
+ * as separate verbatim, exact-string-deduped lines — the fold is what
+ * prevents the duplicate-binding `SyntaxError` two sibling components can
+ * otherwise produce for a shared default import (#2767 follow-up); (2) an
+ * unresolved `@bf-child:` placeholder import is KEPT (deduped by exact
+ * text, same as any other side-effect import), never dropped — unlike
+ * `parseAndMerge`'s parent-child inlining case, this merge runs inside
+ * `compileMultipleComponents`, BEFORE `@barefootjs/vite`'s `resolveId`
+ * gets a chance to rewrite the placeholder into a real module reference.
+ *
+ * Returns the fully assembled `<imports>\n\n<code…>` block ready to use
+ * as a `.client.js` file's content.
+ */
+export function mergeCompiledClientJsImports(codeBlobs: string[]): string {
+  const sourceOrder: string[] = []
+  const namedBySource = new Map<string, Set<string>>()
+  const defaultBySource = new Map<string, string>()
+  const otherImports: string[] = []
+  const seenOther = new Set<string>()
+  const codeSections: string[] = []
+
+  const ensureSource = (source: string): Set<string> => {
+    if (!namedBySource.has(source)) {
+      namedBySource.set(source, new Set())
+      sourceOrder.push(source)
+    }
+    return namedBySource.get(source)!
+  }
+
+  for (const content of codeBlobs) {
+    const sourceFile = ts.createSourceFile(
+      'combine.js',
+      content,
+      ts.ScriptTarget.Latest,
+      /*setParentNodes*/ false,
+      ts.ScriptKind.JS,
+    )
+    const importSpans: Array<[number, number]> = []
+
+    for (const stmt of sourceFile.statements) {
+      if (!ts.isImportDeclaration(stmt)) continue
+      const start = stmt.getStart(sourceFile)
+      const end = stmt.getEnd()
+      importSpans.push([start, end])
+
+      const clause = stmt.importClause
+      const bindings = clause?.namedBindings
+      const specifier = ts.isStringLiteral(stmt.moduleSpecifier) ? stmt.moduleSpecifier.text : ''
+      const isNamed = !!bindings && ts.isNamedImports(bindings)
+
+      if (clause?.name || isNamed) {
+        // Default and/or named specifiers — fold by source.
+        const set = ensureSource(specifier)
+        if (clause?.name && !defaultBySource.has(specifier)) {
+          defaultBySource.set(specifier, clause.name.text)
+        }
+        if (isNamed) {
+          for (const el of (bindings as ts.NamedImports).elements) {
+            set.add(el.propertyName ? `${el.propertyName.text} as ${el.name.text}` : el.name.text)
+          }
+        }
+      } else {
+        // Namespace or side-effect import (including an unresolved
+        // `@bf-child:` placeholder) — kept verbatim, deduped by exact text.
+        const stmtText = content.slice(start, end)
+        if (!seenOther.has(stmtText)) {
+          seenOther.add(stmtText)
+          otherImports.push(stmtText)
+        }
+      }
+    }
+
+    let code = ''
+    let cursor = 0
+    for (const [start, end] of importSpans) {
+      code += content.slice(cursor, start)
+      cursor = end
+    }
+    code += content.slice(cursor)
+    code = code.trim()
+    if (code) codeSections.push(code)
+  }
+
+  const mergedImports = sourceOrder.flatMap(source =>
+    renderUsedImportLines(source, defaultBySource.get(source) ?? null, null, [...namedBySource.get(source)!]),
+  )
+
+  return [...mergedImports, ...otherImports, '', ...codeSections].join('\n')
 }
 
 /**

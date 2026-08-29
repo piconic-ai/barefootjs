@@ -19,7 +19,7 @@ import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
 import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
-import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest, renderUsedImportLines } from './ir-to-client-js/imports.ts'
+import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest, renderUsedImportLines, mergeCompiledClientJsImports } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports.ts'
 import { applyCssLayerPrefix, applyCssLayerPrefixToFile } from './css-layer-prefixer.ts'
@@ -494,21 +494,9 @@ function compileMultipleComponents(
     }
     const clientJsOutputs = allOutputs.map(o => o.clientJs).filter(Boolean) as string[]
     if (clientJsOutputs.length > 0) {
-      // Same conflict-free fold `mergeTemplateImports` already does for
-      // SSR template imports — see its docstring for why a plain
-      // exact-line dedup re-declares a shared default/named import across
-      // sibling components (#2767 follow-up).
-      const importLines: string[] = []
-      const allCode: string[] = []
-      for (const js of clientJsOutputs) {
-        for (const line of js.split('\n')) {
-          if (line.startsWith('import ')) importLines.push(line)
-        }
-        allCode.push(js.replace(/^import .+\n/gm, '').trim())
-      }
       files.push({
         path: filePath.replace(/\.tsx?$/, '.client.js'),
-        content: [mergeTemplateImports(importLines), '', ...allCode.filter(Boolean)].join('\n'),
+        content: mergeCompiledClientJsImports(clientJsOutputs),
         type: 'clientJs',
       })
     }
@@ -596,36 +584,14 @@ function compileMultipleComponents(
     })
   }
 
-  // Combine client JS if any. Same conflict-free fold `mergeTemplateImports`
-  // does for SSR template imports (see its docstring) — a plain exact-line
-  // dedup would re-declare a default/named import shared across sibling
-  // components (#2767 follow-up).
+  // Combine client JS if any — see `mergeCompiledClientJsImports`'s
+  // docstring for why this AST-based merge (not a text/regex line scan)
+  // is required here specifically (#2767 follow-up).
   const clientJsOutputs = allOutputs.map(o => o.clientJs).filter(Boolean) as string[]
   if (clientJsOutputs.length > 0) {
-    const importLines: string[] = []
-    const allCode: string[] = []
-
-    for (const js of clientJsOutputs) {
-      const codeLines: string[] = []
-      for (const line of js.split('\n')) {
-        if (line.startsWith('import ')) {
-          importLines.push(line)
-        } else {
-          codeLines.push(line)
-        }
-      }
-      allCode.push(codeLines.join('\n').trim())
-    }
-
-    const combinedClientJs = [
-      mergeTemplateImports(importLines),
-      '',
-      ...allCode.filter(Boolean),
-    ].join('\n')
-
     files.push({
       path: filePath.replace(/\.tsx?$/, '.client.js'),
-      content: combinedClientJs,
+      content: mergeCompiledClientJsImports(clientJsOutputs),
       type: 'clientJs',
     })
   }
