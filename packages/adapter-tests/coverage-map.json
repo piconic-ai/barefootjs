@@ -2663,6 +2663,16 @@
         "text"
       ]
     },
+    "jsx-element-prop-explicit-children": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "jsx-element-prop-fragment-conditional": {
       "kinds": [
         "identifier",
@@ -2671,6 +2681,21 @@
       ],
       "axes": [
         "literal:boolean"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-element-prop-no-children": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "text"
@@ -5625,11 +5650,11 @@
     "binary": 94,
     "call": 232,
     "conditional": 27,
-    "identifier": 327,
+    "identifier": 329,
     "index-access": 14,
-    "literal": 263,
-    "logical": 48,
-    "member": 186,
+    "literal": 264,
+    "logical": 49,
+    "member": 188,
     "object-literal": 63,
     "template-literal": 30,
     "unary": 24,
@@ -5673,9 +5698,9 @@
     "literal:boolean": 56,
     "literal:null": 23,
     "literal:number": 109,
-    "literal:string": 184,
+    "literal:string": 185,
     "logical:&&": 7,
-    "logical:??": 42,
+    "logical:??": 43,
     "logical:||": 14,
     "lowering:date": 4,
     "lowering:formatDate": 1,

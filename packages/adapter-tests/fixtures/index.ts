@@ -415,6 +415,8 @@ import { fixture as jsxElementProp } from './jsx-element-prop'
 import { fixture as jsxElementPropTernary } from './jsx-element-prop-ternary'
 import { fixture as jsxElementPropArray } from './jsx-element-prop-array'
 import { fixture as jsxElementPropChildrenEscape } from './jsx-element-prop-children-escape'
+import { fixture as jsxElementPropExplicitChildren } from './jsx-element-prop-explicit-children'
+import { fixture as jsxElementPropNoChildren } from './jsx-element-prop-no-children'
 import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
@@ -849,6 +851,8 @@ export const jsxFixtures: JSXFixture[] = [
   jsxElementPropTernary,
   jsxElementPropArray,
   jsxElementPropChildrenEscape,
+  jsxElementPropExplicitChildren,
+  jsxElementPropNoChildren,
   jsxElementPropFragmentConditional,
   grandchildComposition,
   compositeRowChildComponent,

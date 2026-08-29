@@ -80,7 +80,7 @@ import {
   BindingScope,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
-import { BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
   GO_IDENTIFIER,
@@ -2312,7 +2312,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
           case 'jsx-children':
             // The RESERVED children slot (`comp.children.length > 0 ? comp.children
-            // : jsxChildrenPropNodes(...)`) is handled below via
+            // : resolveJsxChildrenProp(...)`) is handled below via
             // `child.childrenText` / `child.childrenHtml` and must not be
             // re-emitted here. A JSX-valued prop under any OTHER name
             // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) is a
@@ -3162,17 +3162,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return out
   }
 
-  /**
-   * Pull the IR nodes out of a `children={<…/>}` attribute (a `jsx-children`
-   * prop value). Empty when the component takes no such prop.
-   */
-  private jsxChildrenPropNodes(props: IRProp[]): IRNode[] {
-    for (const p of props) {
-      if (p.value.kind === 'jsx-children') return p.value.children
-    }
-    return []
-  }
-
   private extractHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
     if (children.every(c => c.type === 'text')) return null
@@ -3264,7 +3253,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // paths below see them.
         const effectiveChildren = comp.children.length > 0
           ? comp.children
-          : this.jsxChildrenPropNodes(comp.props)
+          : resolveJsxChildrenProp(comp.props)
         result.push({
           name: comp.name,
           slotId: comp.slotId,
@@ -7338,7 +7327,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private queueDynamicChildrenDefine(comp: IRComponent): string | null {
     const effectiveChildren = comp.children.length > 0
       ? comp.children
-      : this.jsxChildrenPropNodes(comp.props)
+      : resolveJsxChildrenProp(comp.props)
     if (effectiveChildren.length === 0) return null
     if (this.extractTextChildren(effectiveChildren) !== null) return null
     if (this.extractHtmlChildren(effectiveChildren) !== null) return null
@@ -7365,7 +7354,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private queueLoopBodyChildrenDefine(comp: IRComponent): string | null {
     const effectiveChildren = comp.children.length > 0
       ? comp.children
-      : this.jsxChildrenPropNodes(comp.props)
+      : resolveJsxChildrenProp(comp.props)
     if (effectiveChildren.length === 0) return null
     if (this.extractTextChildren(effectiveChildren) !== null) return null
     if (this.extractHtmlChildren(effectiveChildren) !== null) return null

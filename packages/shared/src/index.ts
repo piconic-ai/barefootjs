@@ -44,6 +44,8 @@ export {
 } from './dom-prop.ts'
 export type { DOMPropKind, DOMPropClassification } from './dom-prop.ts'
 export { decodeEntities, escapeHtml } from './html-entities.ts'
+export { resolveJsxChildrenProp } from './jsx-children-prop.ts'
+export type { ChildrenSlotPropLike } from './jsx-children-prop.ts'
 
 export type {
   ProfilerEvent,

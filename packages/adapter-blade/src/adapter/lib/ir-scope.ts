@@ -2,10 +2,13 @@
  * IR traversal helpers for the Blade template adapter.
  *
  * Ported from `packages/adapter-twig/src/adapter/lib/ir-scope.ts`.
- * `resolveJsxChildrenProp` is byte-identical (adapter-agnostic IR walk)
- * across every adapter carrying a copy of this file. `collectRootScopeNodes`
- * — the "which elements are this component's own render root(s)" walk this
- * file used to duplicate too — moved into `jsx-to-ir.ts`'s `resolveRootKeyAttr`
+ * `resolveJsxChildrenProp` used to live here too (byte-identical across
+ * every adapter carrying a copy of this file); it moved to
+ * `@barefootjs/shared` (#2773) so every adapter — DSL and Go template
+ * alike — calls the one implementation instead of each keeping a copy
+ * that can silently re-diverge. `collectRootScopeNodes` — the "which
+ * elements are this component's own render root(s)" walk this file used
+ * to duplicate too — moved into `jsx-to-ir.ts`'s `resolveRootKeyAttr`
  * (#2753): the decision it fed (a `data-key` relay attribute) is resolved
  * once, onto `IRElement.keyAttr`, instead of re-derived at emit time by
  * every adapter.
@@ -26,8 +29,6 @@
  * emits is `$bf` (the runtime handle), excluded explicitly below.
  */
 
-import type { IRNode, IRProp } from '@barefootjs/jsx'
-
 /**
  * Extract the set of "top-level identifier" tokens (bare `$name` references,
  * `$bf` excluded) from a rendered Blade expression. `memo/seed.ts` uses this
@@ -47,16 +48,4 @@ export function extractTopLevelIdentifiers(bladeExpr: string): string[] {
     if (m[1] !== 'bf') out.push(m[1])
   }
   return out
-}
-
-/**
- * Find the `children` prop's `jsx-children` payload. Narrowed via the
- * AttrValue `kind` discriminator so adapter code stays type-safe if the IR
- * shape evolves.
- */
-export function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
-  const prop = props.find(p => p.name === 'children')
-  if (!prop) return []
-  if (prop.value.kind !== 'jsx-children') return []
-  return prop.value.children
 }
