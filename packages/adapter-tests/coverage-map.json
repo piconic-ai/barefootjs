@@ -1081,6 +1081,35 @@
         "text"
       ]
     },
+    "child-component-ref-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "child-component-root-scope-prefix": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "child-primitive-props": {
       "kinds": [
         "identifier",
@@ -5594,17 +5623,17 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 230,
+    "call": 232,
     "conditional": 27,
-    "identifier": 325,
+    "identifier": 327,
     "index-access": 14,
-    "literal": 261,
+    "literal": 263,
     "logical": 48,
     "member": 186,
     "object-literal": 63,
     "template-literal": 30,
     "unary": 24,
-    "unsupported": 40
+    "unsupported": 41
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -5643,7 +5672,7 @@
     "binary:>=": 1,
     "literal:boolean": 56,
     "literal:null": 23,
-    "literal:number": 107,
+    "literal:number": 109,
     "literal:string": 184,
     "logical:&&": 7,
     "logical:??": 42,
