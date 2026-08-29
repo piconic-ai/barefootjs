@@ -7452,22 +7452,32 @@ function checkBareSignalOrMemoIdentifier(
   }
 
   /**
-   * Default values inside a binding pattern (`const { x = count } = obj`) and
-   * parameter defaults (`(f = count) => …`).
+   * Visit the default VALUES in a binding pattern (`const { x = count } = obj`,
+   * `(f = count) => …`), binding each name into `bound` as it is introduced.
    *
    * `collectBindingNames` deliberately walks only NAMES — a binding name is
-   * not a reference — but a default VALUE is an ordinary expression evaluated
-   * in the enclosing scope, so a bare getter can hide there. Not hypothetical:
-   * measured, such a shape emits a module-scope `template` thunk that
-   * references a component-scope binding and throws `ReferenceError` on CSR
-   * mount, which is #2751's mechanism — the class this check exists to close.
+   * not a reference — but a default value is an ordinary expression, so a bare
+   * getter can hide there. Not hypothetical: measured, such a shape emits a
+   * module-scope `template` thunk that references a component-scope binding
+   * and throws `ReferenceError` on CSR mount, which is #2751's mechanism —
+   * the class this check exists to close.
+   *
+   * Binds as it goes because JS binds left to right WITHIN a pattern too:
+   * `({ a, b = a })` reads the already-initialized `a`, so `b`'s default must
+   * be checked against a scope that already contains `a`. Visiting every
+   * default first and binding afterwards would flag `a` as a bare signal read
+   * whenever a pattern name happens to collide with a real signal — a false
+   * positive, which is the direction that breaks working code.
    */
-  const visitBindingDefaults = (name: ts.BindingName): void => {
-    if (ts.isIdentifier(name)) return
+  const visitBindingDefaults = (name: ts.BindingName, bound: Set<string>): void => {
+    if (ts.isIdentifier(name)) {
+      bound.add(name.text)
+      return
+    }
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue
       if (el.initializer) visit(el.initializer)
-      visitBindingDefaults(el.name)
+      visitBindingDefaults(el.name, bound)
     }
   }
 
@@ -7499,6 +7509,14 @@ function checkBareSignalOrMemoIdentifier(
     ) {
       return
     }
+
+    // Type positions are not value positions. `({} as { count?: unknown })`
+    // in a rendered position would otherwise read the type literal's property
+    // name `count` as a bare reference to a signal of the same name and refuse
+    // valid code — a false positive, the direction that breaks working code.
+    // Covers every type node reachable from an expression: `as`/`satisfies`
+    // types, type assertions, and generic type arguments.
+    if (ts.isTypeNode(node)) return
 
     // Zero-arg call with bare-identifier callee (`val()`): the correct
     // form. The callee is never visited as a bare reference; there are
@@ -7536,17 +7554,17 @@ function checkBareSignalOrMemoIdentifier(
     // binding, not the signal/memo of the same name.
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
       const bound = new Set<string>()
-      // Parameter DEFAULTS are visited before the params are bound: a default
-      // is evaluated in the enclosing scope, so `(count = count) => …` reads
-      // the OUTER `count`. Binding the params first would mask it as
-      // self-shadowed.
+      // Parameters bind LEFT TO RIGHT, and each default is evaluated against
+      // the scope as it stands at that point: `(a, b = a) => …` reads the
+      // already-bound parameter `a`, never an outer binding of the same name
+      // (verified against V8). So `bound` is pushed FIRST and grows as the
+      // loop walks — each default sees only the parameters before it.
+      boundStack.push(bound)
       for (const p of node.parameters) {
         if (p.initializer) visit(p.initializer)
-        visitBindingDefaults(p.name)
+        visitBindingDefaults(p.name, bound)
       }
-      for (const p of node.parameters) collectBindingNames(p.name, bound)
       if (node.body && ts.isBlock(node.body)) collectBlockDeclarations(node.body, bound)
-      boundStack.push(bound)
       if (node.body) visit(node.body)
       boundStack.pop()
       return
@@ -7556,7 +7574,13 @@ function checkBareSignalOrMemoIdentifier(
     // only its initializer can be.
     if (ts.isVariableDeclaration(node)) {
       if (node.initializer) visit(node.initializer)
-      visitBindingDefaults(node.name)
+      // The names this declaration introduces shadow outer ones for any LATER
+      // default in the same pattern (`const { a, b = a } = obj`), so they bind
+      // into a scope of their own rather than leaking into the enclosing one.
+      const declared = new Set<string>()
+      boundStack.push(declared)
+      visitBindingDefaults(node.name, declared)
+      boundStack.pop()
       return
     }
 
