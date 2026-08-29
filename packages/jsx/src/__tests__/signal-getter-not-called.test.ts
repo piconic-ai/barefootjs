@@ -295,6 +295,7 @@ describe('Signal Getter Not Called (BF044)', () => {
       export function Counter() {
         const [count, setCount] = createSignal(0)
         const [items, setItems] = createSignal([1, 2])
+        const obj: Record<string, unknown> = {}
         return ${body}
       }
 
@@ -369,7 +370,16 @@ describe('Signal Getter Not Called (BF044)', () => {
 
       test('a later default reading an EARLIER pattern element stays silent', () => {
         // The same left-to-right rule applies WITHIN a pattern.
-        expect(bf044Of('<div className={(() => { const { count: c, x = c } = ({} as { count?: unknown; x?: unknown }); return String(x) })()} />')).toHaveLength(0)
+        //
+        // The declaration sits inside a NESTED block on purpose. At a function
+        // body's top level, `collectBlockDeclarations` pre-scans the whole
+        // `VariableStatement` and binds every name in the pattern up front,
+        // regardless of order — so a top-level version of this case passes
+        // even with the sequential threading removed, and pins nothing.
+        // `collectBlockDeclarations` does not descend into an `if` block, so
+        // here the only thing that can bind `c` before `x`'s default is read
+        // is `visitBindingDefaults` itself.
+        expect(bf044Of('<div className={(() => { if (obj) { const { count, x = count } = obj; return String(x) } return "" })()} />')).toHaveLength(0)
       })
 
       test('a literal default stays silent', () => {
