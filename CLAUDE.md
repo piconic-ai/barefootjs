@@ -108,9 +108,26 @@ one line and verified" is a reason; "I have already started writing the fix" is 
 Do not leave `main` red while a fix PR is written, reviewed and CI'd. That trades an hour of
 everyone else's red build for your convenience.
 
-Before merging anything to `main`, check the fixture-drift job (`update-expected-html`) **by
-name** on the PR's own head. A branch can be drifting on its own head before merge, and the
-unit suites will not tell you — that is exactly how #2762's regression landed.
+Before merging anything to `main`, establish the fixture-drift answer for the PR's own head.
+**On a stacked PR the job does not run at all**, so "it was not red" is not evidence:
+`update-fixtures.yml` is gated `on: pull_request: branches: [main]`, and a PR based on
+another branch never triggers it. Measured: `update-fixtures.yml` has zero runs for
+`claude/barefootjs-datakey-ir` (#2762's branch); the bottom-of-stack PRs whose base *was*
+`main` (#2752, #2761, #2772) all ran it and were green.
+
+So:
+
+- **Base is `main`** → check `update-expected-html` **by name** on the PR's own head. Green
+  elsewhere plus a missing drift job is not a pass.
+- **Base is another branch** (any stacked PR) → there is no job to check. Run
+  `bun run packages/adapter-tests/scripts/generate-expected-html.ts` yourself in a real
+  checkout and confirm `git status --short` is empty before that work reaches `main`.
+  A worktree with symlinked `node_modules` resolves `@barefootjs/*` to the primary clone's
+  compiler and measures the wrong tree — either give the worktree its own `bun install` or
+  use the primary clone.
+
+That gap is how #2762's regression reached `main`: it was a stacked PR, the drift gate
+structurally could not see it, and nobody ran the generator by hand.
 
 ## Git Commit
 
