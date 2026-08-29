@@ -73,6 +73,45 @@ Required usage:
 - Before editing a stateful component (`"use client"`): run `bf debug graph <component>` to understand its reactive structure.
 - Reading the source is only acceptable when CLI output is insufficient (e.g. class-composition patterns, internal helpers, `...props` spread behavior).
 
+## Reference Adapter
+
+`packages/adapter-hono/` is the **reference adapter**. Every fixture's `expectedHtml` is
+generated from it, so its output *is* the contract the other eight adapters are measured
+against.
+
+When two adapter families disagree about the same question, **Hono's answer is correct by
+construction** — not because it is better designed, but because it is the definition. Never
+resolve such a disagreement by taking the majority answer, and never resolve it by taking
+whichever side is easier to keep: unifying onto the DSL adapters' answer silently redefines
+the contract for every fixture at once. (#2753 → #2762 → #2772 is the worked example: a
+correct-in-intent collapse of sixteen duplicated row-key decisions took the DSL answer,
+changed the reference, and put a regression on `main` that only the fixture-drift job saw.)
+
+The one exception is where Hono is *itself* the broken side — then hand-author the fixture's
+`expectedHtml` to the correct output and register the id in `generate-expected-html.ts`'s
+`SKIP_AUTO_UPDATE` so auto-update does not overwrite the intent. Say so explicitly when you
+do; silently regenerating from a broken reference writes the bug in as the expectation.
+
+**One decision, two implementations, no test comparing them** is the defect family this
+repo keeps producing. When you find a decision answered in more than one place, the
+deliverable is a single shared implementation the sites call — not an Nth copy that happens
+to agree today. A cross-adapter test pinning both families to the same answer for the same
+input is what makes the drift visible at all.
+
+## When `main` Breaks
+
+A red `main` is an outage, not a task. **Reverting is the first option to consider**, not the
+last: `git revert` the offending merge to get `main` green immediately, then fix forward on a
+branch at normal pace. If you choose not to revert, say why in the same breath — "the fix is
+one line and verified" is a reason; "I have already started writing the fix" is not.
+
+Do not leave `main` red while a fix PR is written, reviewed and CI'd. That trades an hour of
+everyone else's red build for your convenience.
+
+Before merging anything to `main`, check the fixture-drift job (`update-expected-html`) **by
+name** on the PR's own head. A branch can be drifting on its own head before merge, and the
+unit suites will not tell you — that is exactly how #2762's regression landed.
+
 ## Git Commit
 
 Every commit MUST end with `Co-authored-by:` trailers for **all** participants other than the git author. Place them as the final lines of the message — no blank line or trailing content after them, otherwise GitHub will not recognize them.
