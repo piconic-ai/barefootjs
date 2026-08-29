@@ -1,0 +1,8 @@
+---
+"@barefootjs/jsx": patch
+"@barefootjs/vite": patch
+---
+
+Fix #2767 — a `'use client'` component nested as a static child of a plain server component (no `'use client'` on the parent) was never hydrated: `@barefootjs/vite` decided which files become Rollup client-bundle entries, and which get a `<script>` registered on the page, purely from a text scan for the `'use client'` directive — never from whether the file's compiled output actually needs to run in the browser. A plain server parent that merely renders a client child already gets a real `initChild(...)` call in its own compiled init (`@barefootjs/jsx`'s existing `childInits` collection), but that init never shipped to the browser.
+
+`packages/jsx/src/analyzer.ts` gains `scanComponentFile(source, filePath)`, a single-parse structural scan returning both a file's exported component names and the JSX tags it references. `@barefootjs/vite`'s `discoverComponents` uses it to compute `DiscoveredComponent.needsClientEntry` — a cycle-safe closure over the component-instantiation graph, seeded from every `'use client'` file and walked upward through JSX tag references — which now gates both the Vite build entry list and the per-component script-registration pass, replacing the `isClient`-only checks that missed a plain server ancestor of a client component. A fully static server tree still produces zero entries: the closure is deliberately not based on the compiler's own `needsInit` signal, which is true for almost any server component with dynamic content at all, not just ones that own a client descendant.
