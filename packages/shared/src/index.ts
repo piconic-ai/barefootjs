@@ -21,6 +21,7 @@ export {
   loopEndMarker,
   BF_KEY,
   BF_KEY_PREFIX,
+  keyAttrName,
   BF_PLACEHOLDER,
   BF_ASYNC,
   BF_ASYNC_RESOLVE,

@@ -171,6 +171,24 @@ export const BF_KEY = 'data-key'
 /** Nested loop key attribute prefix: `data-key-1`, `data-key-2` */
 export const BF_KEY_PREFIX = 'data-key-'
 
+/**
+ * The row-key attribute NAME for a `.map()` nested `loopDepth` levels deep
+ * (0 = outermost): `data-key` at depth 0, `data-key-N` at depth N > 0.
+ *
+ * Single source of truth for a derivation that used to be re-implemented at
+ * every emission site — the CSR codegen path (`ir-to-client-js/utils.ts`,
+ * pre-existing re-export), IR-build time (`IRElement.keyAttr`,
+ * `jsx-to-ir.ts`), and — before that consolidation — independently again by
+ * each of the 9 SSR adapters (a mutable stack in Hono, a `currentLoopKeyDepth`
+ * field in every DSL adapter) and by the client runtime's `mapArray`, which
+ * used to skip depth entirely and always write plain `data-key` (#2753 Shape
+ * B). Living here, in the one package every one of those consumers already
+ * depends on, is what makes "compute it once" possible instead of aspirational.
+ */
+export function keyAttrName(loopDepth: number): string {
+  return loopDepth > 0 ? `${BF_KEY_PREFIX}${loopDepth}` : BF_KEY
+}
+
 /** Component placeholder in loop templates: `data-bf-ph="s5"` */
 export const BF_PLACEHOLDER = 'data-bf-ph'
 

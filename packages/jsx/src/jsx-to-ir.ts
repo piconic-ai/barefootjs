@@ -61,7 +61,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
+import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope } from './scope/binding-scope.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 
@@ -982,9 +982,57 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
   }
 }
 
+/**
+ * Resolve #2753's "mechanism 2" `keyAttr`: the component's own possible
+ * render root(s) relay a key value an external caller supplies at runtime
+ * (a `data-key` prop / Rust `bf.data_key` field / client `createComponent`
+ * key argument) when THIS component is itself invoked as a caller's keyed
+ * loop row. Ported, once, from the byte-identical `collectRootScopeNodes`
+ * previously duplicated in each of the 9 SSR adapters' own
+ * `lib/ir-scope.ts` (mojolicious, xslate, twig, erb, blade, go-template,
+ * jinja, minijinja) plus Hono's inline equivalent — each adapter then
+ * intersected it with `element.needsScope` at EMIT time, on every compile.
+ * Resolving it here means every adapter instead reads one IR field.
+ *
+ * A plain element root is itself; an if-statement (early-return) root
+ * contributes the top element of each branch, since exactly one renders at
+ * runtime (#1297) — mirrors the ported algorithm exactly, including
+ * recursing into a fragment's children (a transparent fragment's real
+ * content can still be "the root" in this sense).
+ *
+ * A `needsScopeComment` fragment root (#2732) is handled separately, at
+ * `transformFragment` build time (`markDataKeyCarrier`): `ctx.isRoot` can be
+ * true for at most one node in a component's whole tree, so that one shape
+ * is fully resolved the moment the fragment itself is built and does not
+ * need a second, tree-wide pass to find it again. Its children carry
+ * `needsScope: false` by construction, so this walk's `n.needsScope` guard
+ * naturally skips them without double-marking.
+ */
+function resolveRootKeyAttr(root: IRNode): void {
+  const visit = (n: IRNode | null): void => {
+    if (!n) return
+    if (n.type === 'element') {
+      if (n.needsScope && !n.keyAttr) n.keyAttr = { name: BF_KEY }
+      return
+    }
+    if (n.type === 'if-statement') {
+      visit(n.consequent)
+      visit(n.alternate)
+      return
+    }
+    if (n.type === 'fragment') {
+      for (const c of n.children) visit(c)
+    }
+  }
+  visit(root)
+}
+
 export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
   const root = buildIRRoot(analyzer)
-  if (root) attachParsedExpressions(root, analyzer)
+  if (root) {
+    attachParsedExpressions(root, analyzer)
+    resolveRootKeyAttr(root)
+  }
   return root
 }
 
@@ -1946,10 +1994,12 @@ function unwrapHoistedFragment(node: IRNode): IRNode {
 
 // #2732: a `needsScopeComment` fragment's five hydration markers move to
 // the wrapping comment, but `data-key` needs to stay on an element (see
-// `IRElement.carriesDataKey`'s docstring for why). Mark the first ELEMENT
-// among `children` — immutably (`{ ...el, carriesDataKey: true }`), matching
+// `IRElement.keyAttr`'s docstring for why). Mark the first ELEMENT among
+// `children` — immutably (`{ ...el, keyAttr: { name: BF_KEY } }`), matching
 // the rest of this file's post-hoc IR tagging (e.g. `unwrapHoistedFragment`)
-// rather than mutating the child in place.
+// rather than mutating the child in place. No `value`: this fragment relays
+// whatever key its OWN caller supplies at runtime (#2753's "mechanism 2" —
+// see `IRElement.keyAttr`), not a locally-known expression.
 function markDataKeyCarrier(children: IRNode[]): IRNode[] {
   for (let i = 0; i < children.length; i++) {
     const marked = markCarrierIn(children[i])
@@ -1978,7 +2028,13 @@ function markDataKeyCarrier(children: IRNode[]): IRNode[] {
  */
 function markCarrierIn(node: IRNode): IRNode | null {
   if (node.type === 'element') {
-    return { ...(node as IRElement), carriesDataKey: true }
+    // Never overwrite an element that already resolved a LOCAL loop key
+    // (mechanism 1, `resolveLoopKeyAttr` below) — that can only happen if
+    // this same element is simultaneously a `.map()` row root AND this
+    // fragment's relay carrier, and the local, concretely-known expression
+    // is strictly more useful than the relay marker.
+    if ((node as IRElement).keyAttr) return null
+    return { ...(node as IRElement), keyAttr: { name: BF_KEY } }
   }
   if (node.type === 'conditional') {
     const cond = node as IRConditional
@@ -4107,6 +4163,46 @@ function tagLoopItemRootComponents(nodes: readonly IRNode[]): void {
   }
 }
 
+/**
+ * Attach the loop's resolved key ATTRIBUTE (name + value) to the element(s)
+ * that will actually render it — the write-side twin of `extractLoopKey`,
+ * which reads the SAME `key={}` JSX attribute (#2753: the SSR-side row-key
+ * decision is resolved once here, so the 9 SSR adapters stop re-deriving the
+ * attribute name from their own depth tracking, and stop disagreeing about
+ * whether an unkeyed row gets one at all).
+ *
+ * Mutates in place — `tagLoopItemRootComponents`'s style, run immediately
+ * after `key`/`depth` resolve, on the same node objects `children` already
+ * owns — rather than rebuilding the tree immutably: unlike `markCarrierIn`
+ * (which hands a fresh tree back to a caller holding the old one), this runs
+ * on IR this same function just built and is about to return, so there is
+ * no stale external reference to protect.
+ *
+ * Deliberately does NOT remove the literal `key` entry from `.attrs`: the
+ * CSR/client-JS codegen path (`ir-to-client-js/html-template.ts`'s
+ * `a.name === 'key' ? keyAttrName(loopDepth) : ...`) already reads it
+ * directly and is not part of #2753's 16-site duplication — it derives the
+ * same name from the same `keyAttrName()` single source of truth, just at a
+ * different phase (client-template bake time, not SSR emit time). Adapters
+ * skip the raw `key` attr in their generic `renderAttributes` loop instead
+ * (Hono's own JSX runtime already drops it silently either way).
+ *
+ * `component` bodies are left untouched: a `<Comp key={x}/>` row root's key
+ * is a PROP (`renderComponentProps`'s own `data-key` prop-forwarding), not
+ * an `IRElement` — a separate mechanism #2753 did not measure as broken and
+ * this change does not touch.
+ */
+function applyLoopKeyAttr(node: IRNode, name: string, value: string): void {
+  if (node.type === 'element') {
+    node.keyAttr = { name, value }
+    return
+  }
+  if (node.type === 'conditional') {
+    applyLoopKeyAttr(node.whenTrue, name, value)
+    applyLoopKeyAttr(node.whenFalse, name, value)
+  }
+}
+
 function loopBodyItemConditional(children: IRNode[]): IRConditional | null {
   const real = children.filter(
     (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
@@ -4948,6 +5044,20 @@ function transformMapCall(
   const key = bodyIsItemConditional
     ? extractItemConditionalKey(itemConditional!)
     : (children.length > 0 ? extractLoopKey(children[0]) : null)
+
+  // #2753: resolve this row's key ATTRIBUTE (name + value) here, once, and
+  // stamp it onto the element(s) that render it — `null` (unkeyed) means no
+  // `IRElement.keyAttr` at all, which is the correct final answer for every
+  // adapter and the client runtime alike, not a hint they still have to
+  // gate. See `IRElement.keyAttr` / `applyLoopKeyAttr`'s docstrings.
+  if (key !== null) {
+    const resolvedKeyAttrName = keyAttrName(depth)
+    if (bodyIsItemConditional) {
+      applyLoopKeyAttr(itemConditional!, resolvedKeyAttrName, key)
+    } else if (children.length > 0) {
+      applyLoopKeyAttr(children[0], resolvedKeyAttrName, key)
+    }
+  }
 
   // Stage 3 / D5 (spec/callback-fidelity.md) — the keyFn is hoisted: `mapArray`
   // computes it from the raw item BEFORE the callback body runs, so the key must

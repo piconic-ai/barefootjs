@@ -313,7 +313,6 @@ import {
 } from './lib/blade-naming.ts'
 import {
   resolveJsxChildrenProp,
-  collectRootScopeNodes,
 } from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { staticValueToBlade } from './lib/static-value.ts'
@@ -354,22 +353,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   templatePrimitives: TemplatePrimitiveRegistry = BLADE_PRIMITIVE_EMIT_MAP
 
   private componentName: string = ''
-  /** Component root scope element(s) — each carries `data-key` for a keyed loop
-   *  item (set by the child renderer from the JSX `key` prop). A plain element
-   *  root is one node; an `if-statement` (early-return) root contributes the
-   *  top element of every branch. */
-  private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<BladeAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
-  /**
-   * `IRLoop.depth` of the loop currently being rendered (save/restore
-   * around `renderChildren(loop.children)`, mirroring `inLoop` above).
-   * `renderAttributes` reads this to derive the `key` → `data-key`/
-   * `data-key-N` suffix — the depth is IR-computed (jsx-to-ir.ts), not
-   * re-derived here (#2168 nested-loop-outer-binding).
-   */
-  private currentLoopKeyDepth = 0
   /**
    * SolidJS-style props identifier (`function(props: P)`) and the
    * analyzer-extracted prop names. Stashed at `generate()` entry so the
@@ -494,7 +480,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
     }
 
-    this.rootScopeNodes = collectRootScopeNodes(ir.root)
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
       : this.renderNode(ir.root)
@@ -724,18 +709,30 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('')}`
     }
-    // A root scope element carries `data-key` for a keyed loop item (set on the
-    // bf instance by the child renderer from the JSX `key` prop); non-keyed
-    // renders add nothing. Mirrors Hono stamping data-key on each loop item's
-    // root, including early-return (if-statement) roots. (#1297)
-    // `carriesDataKey` is an INDEPENDENT reason to emit, not a refinement of
-    // the root-scope test above (#2732): a fragment root clears `needsScope` on
-    // its wrapped child and moves the other hydration markers onto the
-    // `<!--bf-scope:-->` comment, but `data-key` must stay a real attribute —
-    // the client's `mapArray` adopt loop reads `primaryEl.dataset.key`, never
-    // the comment. Mirrors the same branch in hono-adapter.ts.
-    if ((this.rootScopeNodes.has(element) && element.needsScope) || element.carriesDataKey) {
-      hydrationAttrs += ` {!! $bf->data_key_attr() !!}`
+    // #2753: `element.keyAttr` is the ONE IR-resolved decision for this
+    // element's row-key attribute — replacing both the `carriesDataKey`
+    // boolean and this adapter's own `rootScopeNodes`/`needsScope` check
+    // (mechanism 2: a render-root relay, including the #2732 fragment-root
+    // case) and the separate `currentLoopKeyDepth`-driven rewrite of a
+    // literal `key` attribute this adapter used to do in `renderAttributes`
+    // (mechanism 1: a `.map()` row root compiled inline here).
+    if (element.keyAttr) {
+      if (element.keyAttr.value !== undefined) {
+        const lowered = emitAttrValue(
+          { kind: 'expression', expr: element.keyAttr.value },
+          this.elementAttrEmitter,
+          element.keyAttr.name,
+        )
+        if (lowered) hydrationAttrs += ` ${lowered}`
+      } else {
+        // Relay: this element is one of THIS component's own render roots,
+        // carrying whatever key its OWN caller supplies at runtime (the `bf`
+        // instance's `data_key` field) when this component is itself
+        // invoked as a caller's keyed loop row. Mirrors Hono stamping
+        // data-key on each loop item's root, including early-return
+        // (if-statement) roots (#1297), and #2732's fragment-root case.
+        hydrationAttrs += ` {!! $bf->data_key_attr() !!}`
+      }
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
@@ -1091,8 +1088,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
 
     const prevInLoop = this.inLoop
     this.inLoop = true
-    const prevLoopKeyDepth = this.currentLoopKeyDepth
-    this.currentLoopKeyDepth = loop.depth
     // Re-render children now that inLoop is set (so nested components use the
     // loop-child naming convention). renderedChildren above was computed with
     // the previous flag; recompute under the loop flag.
@@ -1134,7 +1129,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       d => `@php(${bladeVar(d.name)} = ${this.convertExpressionToBlade(d.raw, d.valueParsed)})`,
     )
     const childrenUnderLoop = this.renderChildren(loop.children)
-    this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
     void renderedChildren
 
@@ -1724,14 +1718,15 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // literal never reaches `refuseUnsupportedAttrExpression`'s generic
       // BF101 (which would double-report alongside the purpose-built one).
       if (isDangerousInnerHtmlAttr(attr)) continue
+      // `key` never renders as a literal HTML attribute — #2753 resolves it
+      // onto `element.keyAttr` (name AND value) at IR-build time, emitted
+      // separately in `renderElement`. A stray `key` that jsx-to-ir.ts did
+      // NOT recognize as a loop row root (so `keyAttr` was never set) has no
+      // defined rendering outside a `.map()` anyway; drop it rather than
+      // leak an invalid `key="..."` HTML attribute.
+      if (attr.name === 'key') continue
       // Rewrite JSX special-prop names to their HTML-attribute counterparts.
-      let attrName: string
-      if (attr.name === 'className') attrName = 'class'
-      else if (attr.name === 'key') {
-        const depth = this.currentLoopKeyDepth
-        attrName = depth > 0 ? `data-key-${depth}` : 'data-key'
-      }
-      else attrName = attr.name
+      const attrName = attr.name === 'className' ? 'class' : attr.name
       const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attrName)
       if (lowered) parts.push(lowered)
     }

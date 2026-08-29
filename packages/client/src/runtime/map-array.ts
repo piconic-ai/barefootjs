@@ -412,6 +412,16 @@ function createItemScope<T>(
  *                     Receives item as signal accessor: item() returns current value.
  *                     When `existing` is passed, initializes the SSR-rendered element and returns it.
  *                     When `existing` is undefined, creates a new element and returns it.
+ * @param keyAttrName - The row-key attribute NAME this loop resolved at
+ *                     compile time (`IRElement.keyAttr`/`keyAttrName(loop.depth)`,
+ *                     jsx-to-ir.ts) — `'data-key'` at the outermost loop,
+ *                     `'data-key-N'` N levels deep. Defaults to `BF_KEY`
+ *                     (plain `'data-key'`), correct for every depth-0 call
+ *                     site; only a nested loop's compiled call passes a
+ *                     depth-suffixed name (#2753 Shape B — see the "Why not
+ *                     stamp unconditionally" note below for why this
+ *                     replaced a hardcoded constant instead of just fixing
+ *                     the value).
  */
 export function mapArray<T>(
   accessor: () => T[],
@@ -420,6 +430,7 @@ export function mapArray<T>(
   renderItem: (item: () => T, index: number, existing?: HTMLElement) => HTMLElement,
   markerId?: string,
   bfId?: string,
+  keyAttrName: string = BF_KEY,
 ): void {
   if (!container) return
 
@@ -460,18 +471,46 @@ export function mapArray<T>(
             (el) => ({ startMarker: null, primaryEl: el as HTMLElement, extras: [] as HTMLElement[], scopeComments: null as ScopeCommentPair | null }),
           )
 
-      // SSR elements need initialization when they haven't been adopted into scopes yet.
-      // Check both: elements without data-key (legacy) OR elements with data-key but no scopes
-      // (component loops render data-key in SSR template but haven't been hydrated).
+      // #2753 — why not read the DOM for a hydration signal: this branch
+      // runs at most ONCE per `mapArray` call (guarded by the closure-local
+      // `hydrated` flag, set true on the line above, before anything else
+      // can run), and `scopes` is a closure-local Map that is ALWAYS empty
+      // the first time this line runs — nothing sets it earlier. So "has
+      // this container already been adopted" is already fully answered by
+      // `existingRanges.length > 0` (there is DOM here from SSR/a prior
+      // render) with no attribute read at all. The attribute the old check
+      // read (`hasAttribute('data-key')`) was never a sound signal anyway:
+      // an unkeyed loop's rows legitimately carry no key attribute at all
+      // (Shape A), and a nested loop's rows carry a depth-suffixed name
+      // (`data-key-N`, Shape B) — so the plain-name probe either
+      // misdiagnosed a correctly-unkeyed row as "not yet hydrated", or
+      // missed a correctly-keyed nested row entirely. `scopes.size === 0`
+      // is not a second, independent signal here — it is ALWAYS true at
+      // this line, so the two-part `||` reduced to the first probe being
+      // moot: this is a behavior-preserving simplification, not a new rule.
       const needsHydration = existingRanges.length > 0
-        && (!existingRanges[0]?.primaryEl.hasAttribute('data-key') || scopes.size === 0)
       if (needsHydration) {
         // Hydrate in place: tag keys, create per-item scopes with renderItem(existing)
         for (let i = 0; i < existingRanges.length && i < items.length; i++) {
           const range = existingRanges[i]
           const item = items[i]
           const key = getKey ? getKey(item, i) : String(i)
-          range.primaryEl.setAttribute(BF_KEY, key)
+          // Only a KEYED loop gets a key attribute at all (Shape A) — SSR
+          // (or the static template this row cloned from) already carries
+          // the correct, depth-aware name (Shape B) when it applies, so this
+          // is a defensive backfill for a row that arrived without one, not
+          // the primary writer. A FALSY-value check (`getAttribute`, not
+          // `hasAttribute`) — not just presence — because a compiled
+          // template can bake the attribute PRESENT but empty for a shape
+          // whose key expression isn't ready at clone time (measured on the
+          // csr-mount leg of a keyed top-level loop); `hasAttribute` would
+          // wrongly treat that empty placeholder as "already correct" and
+          // skip the backfill this line exists to make. Reads the SAME name
+          // being written (not `dataset.key`, which only ever reads the
+          // plain, undepth-suffixed name).
+          if (getKey && !range.primaryEl.getAttribute(keyAttrName)) {
+            range.primaryEl.setAttribute(keyAttrName, key)
+          }
 
           const scope = createItemScope(
             item,
@@ -493,7 +532,7 @@ export function mapArray<T>(
           // Final position is known here (append before the loop's trailing
           // anchor), so the row can be mounted at it before its init runs.
           const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, undefined, { container, anchor })
-          if (!scope.primaryEl.dataset.key) scope.primaryEl.setAttribute(BF_KEY, key)
+          if (getKey && !scope.primaryEl.getAttribute(keyAttrName)) scope.primaryEl.setAttribute(keyAttrName, key)
           scopes.set(key, scope)
           insertScope(scope, container, anchor)
         }
@@ -522,7 +561,10 @@ export function mapArray<T>(
             (el) => ({ startMarker: null, primaryEl: el as HTMLElement, extras: [] as HTMLElement[], scopeComments: null as ScopeCommentPair | null }),
           )
       for (const range of loopRanges) {
-        const existingKey = range.primaryEl.dataset?.key
+        // `getAttribute(keyAttrName)`, not `dataset.key` — `dataset` only
+        // ever reads the plain, undepth-suffixed `data-key`, which misses a
+        // nested loop's `data-key-N` rows entirely (#2753 Shape B).
+        const existingKey = range.primaryEl.getAttribute(keyAttrName)
         if (existingKey && !scopes.has(existingKey)) {
           scopes.set(existingKey, {
             startMarker: range.startMarker,
@@ -612,7 +654,7 @@ export function mapArray<T>(
         // to its final position (it participates in the walk like any other
         // attached scope, so the resulting order is unchanged).
         const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, undefined, { container, anchor })
-        if (!scope.primaryEl.dataset.key) scope.primaryEl.setAttribute(BF_KEY, key)
+        if (getKey && !scope.primaryEl.getAttribute(keyAttrName)) scope.primaryEl.setAttribute(keyAttrName, key)
         scopes.set(key, scope)
         desiredOrder.push(scope)
       }

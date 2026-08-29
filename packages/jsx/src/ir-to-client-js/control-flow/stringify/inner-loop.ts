@@ -31,7 +31,7 @@
  *     <indent>}) }
  */
 
-import { keyAttrName, profileBindingId, varSlotId } from '../../utils.ts'
+import { keyAttrName, mapArrayKeyArgs, profileBindingId, varSlotId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines, namespaceWrapForTemplate } from './template-parse.ts'
@@ -157,7 +157,11 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
     bodyIsMultiRoot: emit.bodyIsMultiRoot,
   })
   lines.push(`${indent}  return __innerEl${uid}`)
-  lines.push(`${indent}}, '${inner.markerId}'${profileBindingId(pc, inner.slotId)}) }`)
+  // #2753 Shape B: the runtime's own fallback stamp (a row whose renderItem
+  // didn't already set a key attribute — see `map-array.ts`) has no depth
+  // concept, so a nested keyed loop must tell it which name to check/write
+  // instead of the default `data-key`.
+  lines.push(`${indent}}, '${inner.markerId}'${mapArrayKeyArgs(profileBindingId(pc, inner.slotId), !!emit.wrappedKey, inner.keyDepth)}) }`)
 }
 
 function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string, pc: string | undefined): void {

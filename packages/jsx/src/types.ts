@@ -348,19 +348,43 @@ export interface IRElement {
   slotId: string | null
   needsScope: boolean
   /**
-   * Set on the first ELEMENT among a `needsScopeComment` fragment root's own
-   * top-level children (#2732) — the fragment's five hydration markers
-   * (`bf-s`/`bf-h`/`bf-m`/`bf-r`/`bf-p`) move to the wrapping
-   * `<!--bf-scope:...-->` comment instead of an element attribute, but
-   * `data-key` has to stay on an element because the client runtime's
-   * `mapArray` adopt loop reads it as a DOM attribute
-   * (`primaryEl.dataset.key`, map-array.ts). "First element, not first
-   * node" mirrors the CSR runtime's own resolution of the identical
-   * ambiguity (`component.ts`'s `roots.find(isElement)`, #2735) rather than
-   * inventing a second answer. Always `undefined` when `needsScope` is
-   * true — the two are mutually exclusive ways of carrying the same key.
+   * The row-key attribute this element carries, resolved ONCE here instead
+   * of independently by 16 emit sites (#2753 root-cause: the client
+   * runtime's `mapArray` stamping an index key onto unkeyed rows SSR never
+   * emits, and disagreeing with SSR's depth-suffixed name on nested rows —
+   * see that issue for the two measured shapes). Replaces the `carriesDataKey`
+   * boolean (#2732/#2744): a boolean was a degenerate encoding of the same
+   * decision — "does this element get a key attribute, and what is it
+   * called" — that still left the VALUE and the depth-derived NAME to be
+   * re-derived by every adapter (a mutable stack in Hono, a
+   * `currentLoopKeyDepth` field in every DSL adapter) and by the client
+   * runtime. Absent means "this element carries no key attribute" — the
+   * correct, final answer for an unkeyed loop's row, not a hint adapters
+   * still have to gate further.
+   *
+   * Two disjoint sources, both resolved at IR-build time
+   * (`resolveKeyAttrs`/loop construction in `jsx-to-ir.ts`):
+   *
+   *   - `value` present: this element is DIRECTLY a `.map()` row root
+   *     compiled inline in this same component (`IRLoop.key`/`.depth`
+   *     already resolved the expression and nesting depth) — adapters lower
+   *     `value` exactly like any other attribute-value expression.
+   *   - `value` absent: this element is one of the component's own possible
+   *     render roots (a plain element/if-statement-branch root, or — when
+   *     `needsScope` is false because hydration markers moved to a wrapping
+   *     `<!--bf-scope:...-->` comment (#2732) — the first eligible element
+   *     of a `needsScopeComment` fragment root) that RELAYS a key an
+   *     external caller supplies at runtime, when THIS component is itself
+   *     invoked as a caller's keyed loop row (the `data-key` prop / Rust
+   *     `bf.data_key` field, or client `createComponent`'s `key` argument).
+   *     There is no local expression to lower here, only a name.
+   *
+   * "First element, not first node" (for the fragment-root shape) mirrors
+   * the CSR runtime's own resolution of the identical ambiguity
+   * (`component.ts`'s `roots.find(isElement)`, #2735) rather than inventing
+   * a second answer.
    */
-  carriesDataKey?: boolean
+  keyAttr?: { name: string; value?: string }
   /**
    * Page-lifecycle boundary id for an element lowered from `<Region>`
    * (spec/router.md). Set only on region host elements; adapters emit it as

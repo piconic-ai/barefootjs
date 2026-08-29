@@ -138,8 +138,6 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * components.
    */
   private rewriteRelativeImport?: (importPath: string) => string
-  /** Stack of loop keys for generating data-key / data-key-1 attributes on loop items */
-  private loopKeyStack: Array<{ key: string | null; param: string }> = []
   /**
    * Per-call `AdapterGenerateOptions.scriptAssets`, stashed for the
    * duration of one `generate()` call (same lifecycle as
@@ -759,25 +757,32 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       if (this.currentComponentHasProps) {
         hydrationAttrs += ` {...(!__bfChild && __bfPropsJson ? { "${BF_PROPS}": __bfPropsJson } : {})}`
       }
-      // Add data-key for list reconciliation (only on root elements with scope)
-      hydrationAttrs += ' {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}'
-    } else if (element.carriesDataKey) {
-      // Fragment-root scope (#2732): the other four hydration markers live
-      // on the wrapping `<!--bf-scope:...-->` comment (`wrapWithScopeComment`
-      // below) since `needsScope` is false for every child of a fragment
-      // root — but `data-key` still needs to land on an element, because
-      // the client runtime's `mapArray` adopt loop reads it as a DOM
-      // attribute (`primaryEl.dataset.key`, map-array.ts), not out of the
-      // comment. `carriesDataKey` (jsx-to-ir.ts) marks the one child this
-      // belongs on.
-      hydrationAttrs += ' {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}'
     }
-    // Add data-key-N for loop items so event delegation can identify inner items
-    if (ctx?.isLoopItemRoot && this.loopKeyStack.length > 0) {
-      const loop = this.loopKeyStack[this.loopKeyStack.length - 1]
-      if (loop.key) {
-        const keyAttrName = this.loopKeyStack.length === 1 ? 'data-key' : `data-key-${this.loopKeyStack.length - 1}`
-        hydrationAttrs += ` ${keyAttrName}={String(${loop.key})}`
+    // #2753: `element.keyAttr` is the ONE IR-resolved decision for this
+    // row's key attribute — name AND value already worked out once in
+    // `jsx-to-ir.ts`, replacing this adapter's own `loopKeyStack` (a mutated
+    // stack of "how deep am I" the client runtime had no matching concept
+    // of at all) and the separate `carriesDataKey` boolean.
+    if (element.keyAttr) {
+      if (element.keyAttr.value !== undefined) {
+        // Mechanism 1: this element is directly a `.map()` row root compiled
+        // inline here — the key is a concrete expression, spliced verbatim
+        // exactly like `loopKeyStack`'s old `${loop.key}` did (it is already
+        // valid TS source text, lifted straight from the JSX `key={}` attr).
+        hydrationAttrs += ` ${element.keyAttr.name}={String(${element.keyAttr.value})}`
+      } else {
+        // Mechanism 2: this element is one of THIS component's own render
+        // roots, relaying a key its OWN caller supplies at runtime (when
+        // this component is itself invoked as a caller's keyed loop row) —
+        // `__dataKey` is destructured from `__allProps` at the top of every
+        // component for exactly this. Fragment-root scope (#2732): the other
+        // four hydration markers live on the wrapping `<!--bf-scope:...-->`
+        // comment (`wrapWithScopeComment` below) since `needsScope` is false
+        // for every child of a fragment root — but `data-key` still needs to
+        // land on an element, because the client runtime's `mapArray` adopt
+        // loop reads it as a DOM attribute (`primaryEl.dataset.key`,
+        // map-array.ts), not out of the comment.
+        hydrationAttrs += ` {...(__dataKey !== undefined ? { "${element.keyAttr.name}": __dataKey } : {})}`
       }
     }
     if (element.slotId) {
@@ -996,14 +1001,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const paramAnnotation = loop.paramType ? `: ${loop.paramType}` : ''
     const indexAnnotation = loop.indexType ? `: ${loop.indexType}` : ''
     const indexParam = loop.index ? `, ${loop.index}${indexAnnotation}` : ''
-    // Push loop key info for data-key attribute generation on loop items
-    this.loopKeyStack.push({ key: loop.key, param: loop.param })
     // Render children with isLoopItemRoot so a DIRECT component member gets
     // its own randomized scope id (matching `IRComponent.loopItemRoot`,
     // #2444) rather than deriving from parent scope + slot like an
-    // ordinarily-slotted child.
+    // ordinarily-slotted child. The row's own `data-key`/`data-key-N`
+    // attribute is no longer tracked here at all — `jsx-to-ir.ts` already
+    // resolved it onto the row-root element's `keyAttr` (#2753).
     const children = this.renderChildrenInLoop(loop.children)
-    this.loopKeyStack.pop()
 
     let mapExpr: string
     // Raw TSX preamble text (types + JSX intact) for the JSX-runtime output

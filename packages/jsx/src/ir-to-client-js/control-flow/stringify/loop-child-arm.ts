@@ -11,7 +11,7 @@
  * every nesting depth.
  */
 
-import { varSlotId, DATA_BF_PH, keyAttrName, profileBindingId } from '../../utils.ts'
+import { varSlotId, DATA_BF_PH, keyAttrName, mapArrayKeyArgs, profileBindingId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { namespaceWrapForTemplate } from './template-parse.ts'
@@ -180,7 +180,10 @@ export function stringifyBranchInnerLoops(
       stringifyLoopChildConditionals(lines, inner.nestedConditionals, `${indent}  `, pc)
     }
     lines.push(`${indent}  return __bel${uid}`)
-    lines.push(`${indent}}, '${inner.markerId}'${profileBindingId(pc, inner.slotId)}) }`)
+    // #2753 Shape B: see the identical comment in `inner-loop.ts` —
+    // `keyDepth` is always 1 for a branch-arm inner loop, so this only ever
+    // widens the trailing args when the loop is also keyed.
+    lines.push(`${indent}}, '${inner.markerId}'${mapArrayKeyArgs(profileBindingId(pc, inner.slotId), !!inner.wrappedKey, inner.keyDepth)}) }`)
   }
 }
 

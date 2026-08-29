@@ -4,9 +4,16 @@
  * Ported from the Mojolicious adapter's `lib/ir-scope.ts` (issue #2018
  * track D lineage). Pure functions over the IR tree — no adapter instance
  * state.
+ *
+ * This file used to also carry `collectRootScopeNodes` — the "which
+ * elements are this component's own render root(s)" walk, byte-identical
+ * across every one of these per-adapter copies. It moved into
+ * `jsx-to-ir.ts`'s `resolveRootKeyAttr` (#2753): the decision it fed (a
+ * `data-key` relay attribute) is resolved once, onto `IRElement.keyAttr`,
+ * instead of re-derived at emit time by every adapter.
  */
 
-import type { IRNode, IRProp, IRIfStatement, IRFragment } from '@barefootjs/jsx'
+import type { IRNode, IRProp } from '@barefootjs/jsx'
 
 /**
  * Find the `children` prop's `jsx-children` payload (#1326). Narrowed
@@ -20,32 +27,4 @@ export function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
   if (!prop) return []
   if (prop.value.kind !== 'jsx-children') return []
   return prop.value.children
-}
-
-/**
- * Collect the component's root scope element node(s) — the elements that
- * become the rendered root and so carry `data-key` for a keyed loop item. A
- * plain element root is itself; an `if-statement` (early-return) root
- * contributes the top element of each branch (`consequent` + the `alternate`
- * chain), since exactly one branch renders at runtime. Non-element branch
- * tops (fragments / nested shapes) are walked one level so an
- * `if (…) return <A/>` still resolves to `<A>`. (#1297)
- */
-export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
-  const out = new Set<IRNode>()
-  const visit = (n: IRNode | null): void => {
-    if (!n) return
-    if (n.type === 'element') { out.add(n); return }
-    if (n.type === 'if-statement') {
-      const s = n as IRIfStatement
-      visit(s.consequent)
-      visit(s.alternate)
-      return
-    }
-    if (n.type === 'fragment') {
-      for (const c of (n as IRFragment).children) visit(c)
-    }
-  }
-  visit(node)
-  return out
 }
