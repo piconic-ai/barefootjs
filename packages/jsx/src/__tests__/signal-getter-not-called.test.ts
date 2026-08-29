@@ -358,11 +358,32 @@ describe('Signal Getter Not Called (BF044)', () => {
         expect(bf044Of('<div className={((f = count) => String(f))()} />')).toHaveLength(1)
       })
 
+      test('a later default reading an EARLIER parameter stays silent', () => {
+        // JS binds parameters left to right: `(count, x = count) => …` reads
+        // the already-bound parameter, not the signal it shadows (verified
+        // against V8). Visiting every default before binding any parameter
+        // would flag this — a false positive on working code.
+        expect(bf044Of('<div className={((count2: unknown, x = count2) => String(x))(1)} />')).toHaveLength(0)
+        expect(bf044Of('<div className={((count: unknown, x = count) => String(x))(1)} />')).toHaveLength(0)
+      })
+
+      test('a later default reading an EARLIER pattern element stays silent', () => {
+        // The same left-to-right rule applies WITHIN a pattern.
+        expect(bf044Of('<div className={(() => { const { count: c, x = c } = ({} as { count?: unknown; x?: unknown }); return String(x) })()} />')).toHaveLength(0)
+      })
+
       test('a literal default stays silent', () => {
         // The overwhelmingly common shape (`{ size = 'md' }`): the default is
         // not a reactive name, so widening the walk must not touch it.
         expect(bf044Of(`<div className={(({ size = 'md' }: { size?: string }) => size)({})} />`)).toHaveLength(0)
       })
+    })
+
+    test('does not misfire on a TYPE position', () => {
+      // A type is not a value. `({} as { count?: unknown })` in a rendered
+      // position used to read the type literal's property name as a bare
+      // reference to the same-named signal and refuse valid code.
+      expect(bf044Of('<div className={String(({} as { count?: unknown }).count)} />')).toHaveLength(0)
     })
 
     test('does not misfire on a nested element ATTRIBUTE NAME', () => {
