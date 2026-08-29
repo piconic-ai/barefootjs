@@ -91,6 +91,25 @@ describe('mergeCompiledClientJsImports', () => {
     expect((merged.match(/@bf-child:Shared/g) ?? []).length).toBe(1)
   })
 
+  // pullfrog[bot] review of #2769: a combined `import Default, * as NS
+  // from '…'` line has a default clause AND a namespace binding — a
+  // naive "has a default clause" check would route it into the fold
+  // branch and silently drop the namespace half, since only named
+  // bindings are read there. No current producer emits this combined
+  // shape (`renderUsedImportLines` always splits a used default+namespace
+  // pair into two lines), but the classification must stay correct
+  // independent of that invariant.
+  test('keeps a combined default+namespace import verbatim, not silently dropping the namespace half', () => {
+    const componentA = [
+      "import Default, * as NS from './combined'",
+      "hydrate('A', (el) => {})",
+    ].join('\n')
+
+    const merged = mergeCompiledClientJsImports([componentA])
+
+    expect(merged).toContain("import Default, * as NS from './combined'")
+  })
+
   test('preserves a namespace import on its own line, deduped by exact source+name across components', () => {
     const componentA = [
       "import * as util from './util'",

@@ -256,9 +256,22 @@ export function mergeCompiledClientJsImports(codeBlobs: string[]): string {
       const clause = stmt.importClause
       const bindings = clause?.namedBindings
       const specifier = ts.isStringLiteral(stmt.moduleSpecifier) ? stmt.moduleSpecifier.text : ''
+      const isNamespace = !!bindings && ts.isNamespaceImport(bindings)
       const isNamed = !!bindings && ts.isNamedImports(bindings)
 
-      if (clause?.name || isNamed) {
+      // A namespace binding (`import * as NS from '…'`, or a combined
+      // `import Default, * as NS from '…'`) is never folded — it always
+      // falls through to the verbatim-keep branch below, same as
+      // `parseAndMerge`'s. Checking `isNamespace` FIRST (not just `!isNamed`)
+      // matters for the combined-with-default shape specifically: a naive
+      // `clause?.name || isNamed` would route it into the fold branch below
+      // on the strength of the default clause alone and silently drop the
+      // namespace half, since only `isNamed` is read there. No current
+      // producer of `clientJs` output emits that combined shape
+      // (`renderUsedImportLines` always splits a used default+namespace
+      // pair into two separate lines), but the classification must stay
+      // correct independent of that invariant.
+      if (!isNamespace && (clause?.name || isNamed)) {
         // Default and/or named specifiers — fold by source.
         const set = ensureSource(specifier)
         if (clause?.name && !defaultBySource.has(specifier)) {
