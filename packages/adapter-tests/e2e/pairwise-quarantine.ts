@@ -84,23 +84,30 @@ function key(caseId: string, oracle: OracleKind): string {
 
 const ENTRIES: readonly PairwiseQuarantineEntry[] = [
 
-  // --- #2753 ---------------------------------------------------------
+  // --- #2753: fully graduated, no entries remain -----------------------
   // 系統2 root-cause fix (`IRElement.keyAttr`, see jsx-to-ir.ts): both
-  // shapes graduated. 18 of the 24 rows below went stale (the case now
-  // agrees on `data-key` for every oracle exercised) and were deleted.
-  // 4 rows stay quarantined verbatim — the SAME row also carries an
-  // independent #2714 divergence (a ref-callback `data-mounted` stamp SSR
-  // never emits) inside the SAME structural-HTML `toBe` comparison, so the
-  // row is still red for that unrelated reason. 2 rows (three-point only)
-  // were REWRITTEN, not deleted: fixing `data-key` unmasked a SECOND,
-  // previously-hidden divergence `assertSnapshotsAgree` never reached
-  // before (structural HTML compares once, first-diff-wins) — #2750 and
-  // #2756 respectively, both already-filed issues unrelated to this one.
-  { caseId: "state-memo__structure-fragment-row-loop__binding-controlled-select__event-ref-callback__callback-flatmap-callback", oracle: "snap", reason: "Hydration stamps a positional-index `data-key` on every row of this unkeyed `fragment-row-loop` that SSR never emits (#2753, Shape A) AND stamps a `data-mounted` attribute from a ref-callback mount effect that never runs at SSR (#2714) — both differences land in the same single structural-HTML `toBe` comparison, so both must be fixed for this row to pass. Filed under #2753 (the larger, better-characterized group); #2714 covers the `data-mounted` half.", issue: "https://github.com/piconic-ai/barefootjs/issues/2753" },
-  { caseId: "state-memo__structure-fragment-row-loop__binding-controlled-select__event-ref-callback__callback-flatmap-callback", oracle: "three-point", reason: "Hydration stamps a positional-index `data-key` on every row of this unkeyed `fragment-row-loop` that SSR never emits (#2753, Shape A) AND stamps a `data-mounted` attribute from a ref-callback mount effect that never runs at SSR (#2714) — both differences land in the same single structural-HTML `toBe` comparison, so both must be fixed for this row to pass. Filed under #2753 (the larger, better-characterized group); #2714 covers the `data-mounted` half.", issue: "https://github.com/piconic-ai/barefootjs/issues/2753" },
+  // shapes graduated. 18 of the 24 rows went stale (the case now agrees on
+  // the row-key attribute for every oracle exercised) and were deleted.
+  // The 6 rows below survive the sweep but NOT for #2753 — each was
+  // re-measured by un-quarantining it and reading the raw diff, and each
+  // is re-attributed to the issue that actually keeps it red. Two distinct
+  // mechanisms, both of which `assertSnapshotsAgree` could not reach while
+  // the `data-key` difference sorted first (structural HTML compares once,
+  // first-diff-wins):
+  //   - 4 rows (2 caseIds x snap/three-point): the residue is #2714's
+  //     ref-callback `data-mounted` stamp, which SSR cannot produce. The
+  //     unkeyed `fragment-row-loop` now emits NO row-key attribute in
+  //     either leg, which is the correct output for an unkeyed loop.
+  //   - 2 rows (three-point only): a second divergence that was genuinely
+  //     hidden until now — #2750 and #2756 respectively.
+  // Nothing here is filed under #2753 any more; a rot-check that still
+  // found #2753 rows would be reading a stale ledger, which is the exact
+  // failure this file exists to prevent.
+  { caseId: "state-memo__structure-fragment-row-loop__binding-controlled-select__event-ref-callback__callback-flatmap-callback", oracle: "snap", reason: "#2753's own divergence is fixed (this unkeyed `fragment-row-loop` now emits no row-key attribute in EITHER leg, which is the correct output for an unkeyed loop). What remains is the #2714 half alone, measured directly by un-quarantining this row: the sole structural difference is `data-mounted=\"0\"`, present in the hydrated leg and absent from SSR, because a ref-callback mount effect cannot run at SSR. No `data-key` appears in either leg.", issue: "https://github.com/piconic-ai/barefootjs/issues/2714" },
+  { caseId: "state-memo__structure-fragment-row-loop__binding-controlled-select__event-ref-callback__callback-flatmap-callback", oracle: "three-point", reason: "#2753's own divergence is fixed (this unkeyed `fragment-row-loop` now emits no row-key attribute in EITHER leg, which is the correct output for an unkeyed loop). What remains is the #2714 half alone, measured directly by un-quarantining this row: the sole structural difference is `data-mounted=\"0\"`, present in the hydrated leg and absent from SSR, because a ref-callback mount effect cannot run at SSR. No `data-key` appears in either leg.", issue: "https://github.com/piconic-ai/barefootjs/issues/2714" },
   { caseId: "state-prop-shadowing-signal__structure-nested-loop-depth-2__binding-controlled-textarea__event-delegated-handler-in-row__callback-filter-predicate", oracle: "three-point", reason: "#2753's own divergence is fixed (both legs now agree on `data-key`/`data-key-1`) — this row stays red for an UNRELATED, previously-masked reason `assertSnapshotsAgree`'s first-diff-wins structural compare never reached until now: a csr-mount-freshly-built `<textarea>` row's row builder embeds the value into its HTML template string (a literal `value=\"...\"` attribute); a hydration-reused row keeps SSR's attribute-free markup (#2756, textarea sub-mechanism).", issue: "https://github.com/piconic-ai/barefootjs/issues/2756" },
-  { caseId: "state-signal__structure-fragment-row-loop__binding-class__event-ref-callback__callback-filter-predicate", oracle: "snap", reason: "Hydration stamps a positional-index `data-key` on every row of this unkeyed `fragment-row-loop` that SSR never emits (#2753, Shape A) AND stamps a `data-mounted` attribute from a ref-callback mount effect that never runs at SSR (#2714) — both differences land in the same single structural-HTML `toBe` comparison, so both must be fixed for this row to pass. Filed under #2753 (the larger, better-characterized group); #2714 covers the `data-mounted` half.", issue: "https://github.com/piconic-ai/barefootjs/issues/2753" },
-  { caseId: "state-signal__structure-fragment-row-loop__binding-class__event-ref-callback__callback-filter-predicate", oracle: "three-point", reason: "Hydration stamps a positional-index `data-key` on every row of this unkeyed `fragment-row-loop` that SSR never emits (#2753, Shape A) AND stamps a `data-mounted` attribute from a ref-callback mount effect that never runs at SSR (#2714) — both differences land in the same single structural-HTML `toBe` comparison, so both must be fixed for this row to pass. Filed under #2753 (the larger, better-characterized group); #2714 covers the `data-mounted` half.", issue: "https://github.com/piconic-ai/barefootjs/issues/2753" },
+  { caseId: "state-signal__structure-fragment-row-loop__binding-class__event-ref-callback__callback-filter-predicate", oracle: "snap", reason: "#2753's own divergence is fixed (this unkeyed `fragment-row-loop` now emits no row-key attribute in EITHER leg, which is the correct output for an unkeyed loop). What remains is the #2714 half alone, measured directly by un-quarantining this row: the sole structural difference is `data-mounted=\"0\"`, present in the hydrated leg and absent from SSR, because a ref-callback mount effect cannot run at SSR. No `data-key` appears in either leg.", issue: "https://github.com/piconic-ai/barefootjs/issues/2714" },
+  { caseId: "state-signal__structure-fragment-row-loop__binding-class__event-ref-callback__callback-filter-predicate", oracle: "three-point", reason: "#2753's own divergence is fixed (this unkeyed `fragment-row-loop` now emits no row-key attribute in EITHER leg, which is the correct output for an unkeyed loop). What remains is the #2714 half alone, measured directly by un-quarantining this row: the sole structural difference is `data-mounted=\"0\"`, present in the hydrated leg and absent from SSR, because a ref-callback mount effect cannot run at SSR. No `data-key` appears in either leg.", issue: "https://github.com/piconic-ai/barefootjs/issues/2714" },
   { caseId: "state-signal__structure-nested-loop-depth-2__binding-boolean-attr__event-ref-callback__callback-function-reference", oracle: "three-point", reason: "#2753's own divergence is fixed (both legs now agree on `data-key`/`data-key-1`) — this row stays red for an UNRELATED, previously-masked reason `assertSnapshotsAgree`'s first-diff-wins structural compare never reached until now: this case's nested-loop `ref` const (`handleMount`) has its call site emitted but its declaration dropped from the module (#2750), so csr-mount throws `ReferenceError: handleMount is not defined` before rendering anything (hydrated: full markup; csr-mount: empty string) — confirmed directly (page console).", issue: "https://github.com/piconic-ai/barefootjs/issues/2750" },
 
   // --- #2754 ---------------------------------------------------------
