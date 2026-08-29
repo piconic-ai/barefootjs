@@ -266,4 +266,153 @@ describe('Signal Getter Not Called (BF044)', () => {
       expect(bf044[0].severity).toBe('error')
     })
   })
+
+  /**
+   * Nested descent (#2755 / #2751 upstream fix).
+   *
+   * The gate used to open with `if (!ts.isIdentifier(expr)) return`, so it saw
+   * only an expression's TOP-LEVEL node. Every shape below reaches a rendered
+   * position through some wrapper, and every one of them used to compile
+   * silently and then miscompile downstream — the accessor stringified into a
+   * DOM property (#2755) or referenced from a module-scope template thunk that
+   * cannot see it (#2751).
+   *
+   * The negative cases are the load-bearing half: descending EVERYWHERE would
+   * break the Context-Provider idiom, where handing a descendant an uncalled
+   * accessor is the whole point. The rule is "rendered position", not "nested".
+   */
+  describe('nested descent into rendered positions', () => {
+    // `Child` is declared AFTER `Counter` deliberately: `analyzeComponent`
+    // analyzes the FIRST function in the module, so hoisting the child above
+    // would silently analyze `Child` instead and make every case below report
+    // zero diagnostics — the negative cases would then pass for the wrong
+    // reason. The positive block is the control that proves the walk is
+    // actually live in this exact module shape.
+    const wrap = (body: string) => `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Counter() {
+        const [count, setCount] = createSignal(0)
+        const [items, setItems] = createSignal([1, 2])
+        const obj: Record<string, unknown> = {}
+        return ${body}
+      }
+
+      function Child(props: { value?: unknown }) { return <span /> }
+    `
+    const bf044Of = (body: string) =>
+      compileToIR(wrap(body)).errors.filter(e => e.code === ErrorCodes.SIGNAL_GETTER_NOT_CALLED)
+
+    describe('fires — the getter reaches a rendered position', () => {
+      test.each([
+        ['ternary condition', '<div className={count ? "on" : "off"} />'],
+        ['template literal span', '<div className={`x-${count}`} />'],
+        ['call argument', '<div className={String(count)} />'],
+        ['array literal member', '<div className={[count].join("")} />'],
+        ['style object property value', '<div style={{ color: count }} />'],
+        ['JSX text child', '<div>{count ? "a" : "b"}</div>'],
+      ])('%s', (_label, body) => {
+        const bf044 = bf044Of(body)
+        expect(bf044).toHaveLength(1)
+        expect(bf044[0].message).toContain("'count'")
+      })
+    })
+
+    describe('stays silent — the getter is handed onward, not rendered', () => {
+      test.each([
+        // The `<SelectContext.Provider value={{ open, ... }}>` shape: every
+        // member is an accessor BY CONTRACT. Calling it here would freeze the
+        // value at provider-render time and break every consumer.
+        ['component prop, object literal member', '<Child value={{ x: count }} />'],
+        ['component prop, ternary', '<Child value={count ? 1 : 2} />'],
+        ['component prop, call argument', '<Child value={String(count)} />'],
+      ])('%s', (_label, body) => {
+        expect(bf044Of(body)).toHaveLength(0)
+      })
+
+      test('a loop-row param shadowing a same-named signal', () => {
+        // `count` here is the row item, not the signal — resolved through the
+        // ambient `BindingScope`, which sees bindings introduced OUTSIDE the
+        // checked expression.
+        expect(bf044Of('<ul>{items().map(count => <li className={count ? "a" : "b"} />)}</ul>')).toHaveLength(0)
+      })
+
+      test('correctly called getter in every nested shape', () => {
+        expect(bf044Of('<div className={count() ? "on" : "off"} />')).toHaveLength(0)
+        expect(bf044Of('<div style={{ color: count() }} />')).toHaveLength(0)
+      })
+    })
+
+    describe('binding and parameter defaults', () => {
+      // A default VALUE is an ordinary expression in the enclosing scope, but
+      // the walk used to visit only binding NAMES. Measured before the fix:
+      // both shapes compiled silently and emitted a module-scope `template`
+      // thunk referencing a component-scope binding — `ReferenceError` on CSR
+      // mount, i.e. #2751's mechanism surviving inside the very check meant to
+      // close it.
+      test('destructuring default in a rendered position', () => {
+        expect(bf044Of('<div className={(() => { const { x = count } = ({} as { x?: unknown }); return String(x) })()} />')).toHaveLength(1)
+      })
+
+      test('parameter default in a rendered position', () => {
+        expect(bf044Of('<div className={((f = count) => String(f))()} />')).toHaveLength(1)
+      })
+
+      test('a later default reading an EARLIER parameter stays silent', () => {
+        // JS binds parameters left to right: `(count, x = count) => …` reads
+        // the already-bound parameter, not the signal it shadows (verified
+        // against V8). Visiting every default before binding any parameter
+        // would flag this — a false positive on working code.
+        expect(bf044Of('<div className={((count2: unknown, x = count2) => String(x))(1)} />')).toHaveLength(0)
+        expect(bf044Of('<div className={((count: unknown, x = count) => String(x))(1)} />')).toHaveLength(0)
+      })
+
+      test('a later default reading an EARLIER pattern element stays silent', () => {
+        // The same left-to-right rule applies WITHIN a pattern.
+        //
+        // The declaration sits inside a NESTED block on purpose. At a function
+        // body's top level, `collectBlockDeclarations` pre-scans the whole
+        // `VariableStatement` and binds every name in the pattern up front,
+        // regardless of order — so a top-level version of this case passes
+        // even with the sequential threading removed, and pins nothing.
+        // `collectBlockDeclarations` does not descend into an `if` block, so
+        // here the only thing that can bind `c` before `x`'s default is read
+        // is `visitBindingDefaults` itself.
+        expect(bf044Of('<div className={(() => { if (obj) { const { count, x = count } = obj; return String(x) } return "" })()} />')).toHaveLength(0)
+      })
+
+      test('a literal default stays silent', () => {
+        // The overwhelmingly common shape (`{ size = 'md' }`): the default is
+        // not a reactive name, so widening the walk must not touch it.
+        expect(bf044Of(`<div className={(({ size = 'md' }: { size?: string }) => size)({})} />`)).toHaveLength(0)
+      })
+    })
+
+    test('does not misfire on a TYPE position', () => {
+      // A type is not a value. `({} as { count?: unknown })` in a rendered
+      // position used to read the type literal's property name as a bare
+      // reference to the same-named signal and refuse valid code.
+      expect(bf044Of('<div className={String(({} as { count?: unknown }).count)} />')).toHaveLength(0)
+    })
+
+    test('does not misfire on a nested element ATTRIBUTE NAME', () => {
+      // The walk stops at a nested JSX boundary. Without that guard, descending
+      // into a `.map()` body that returns JSX read the nested element's own
+      // attribute NAME (`checked=`) as a bare reference to the same-named
+      // signal — `transformNode` re-walks that element independently anyway.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Boxes() {
+          const [checked, setChecked] = createSignal(false)
+          const [items, setItems] = createSignal([1, 2])
+          return <ul>{items().map(n => <li><input checked={checked()} /></li>)}</ul>
+        }
+      `
+      const bf044 = compileToIR(source).errors.filter(e => e.code === ErrorCodes.SIGNAL_GETTER_NOT_CALLED)
+      expect(bf044).toHaveLength(0)
+    })
+  })
 })
