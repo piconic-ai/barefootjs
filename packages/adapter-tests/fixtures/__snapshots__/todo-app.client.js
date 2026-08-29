@@ -191,7 +191,7 @@ export function initTodoApp(__scope, _p = {}) {
   })
 
   insert(__scope, 's1', () => todos().length > 0, {
-    template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1--><input id="toggle-all" class="toggle-all" type="checkbox" ${todos().every(t => t.done) ? 'checked' : ''} bf="s2" /><label for="toggle-all">Mark all as complete</label><!--bf-cond-end:s1-->`, slots: __slots } },
+    template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1--><input id="toggle-all" class="toggle-all" type="checkbox" bf="s2" /><label for="toggle-all">Mark all as complete</label><!--bf-cond-end:s1-->`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const [_s2] = $(__branchScope, 's2')
       if (_s2) _s2.addEventListener('change', handleToggleAll)
