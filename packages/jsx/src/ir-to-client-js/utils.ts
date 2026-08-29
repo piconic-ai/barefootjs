@@ -25,6 +25,7 @@ import {
   loopEndMarker,
   loopItemMarker,
   toHTMLAttrName as toHtmlAttrName,
+  keyAttrName as sharedKeyAttrName,
 } from '@barefootjs/shared'
 
 export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loopStartMarker, loopEndMarker, loopItemMarker, toHtmlAttrName }
@@ -39,9 +40,36 @@ export const PROPS_PARAM = '_p'
  * Get the data-key attribute name for a given loop depth.
  * Outer loop (depth 0): 'data-key'
  * Nested loops (depth N): 'data-key-N'
+ *
+ * Re-exported from `@barefootjs/shared` (the single source of truth also
+ * used by `jsx-to-ir.ts`'s `IRElement.keyAttr` resolution) so existing
+ * imports of this module keep working.
  */
-export function keyAttrName(loopDepth: number): string {
-  return loopDepth > 0 ? `${DATA_KEY_PREFIX}${loopDepth}` : DATA_KEY
+export const keyAttrName = sharedKeyAttrName
+
+/**
+ * Build the trailing `, <bfId>, <keyAttrName>` arguments for a NESTED
+ * (`loopDepth > 0`) `mapArray(...)` call — `inner-loop.ts` / `loop-child-arm.ts`,
+ * the only two stringify sites whose loop can be nested (#2753 Shape B: the
+ * runtime otherwise has no way to know it isn't the outermost loop, and
+ * always stamped the plain `data-key` name).
+ *
+ * A depth-0 (or unkeyed) loop needs no change at all: `mapArray`'s own
+ * default (`BF_KEY`, `'data-key'`) is already correct there, and an unkeyed
+ * loop's runtime never stamps a key attribute regardless of the name — so
+ * this returns `bfIdArg` UNCHANGED, keeping every other call site (and every
+ * existing depth-0 call here) byte-identical.
+ *
+ * `bfIdArg` is the existing profiling-id suffix (e.g. `profileBindingId(...)`,
+ * either `''` or `, "<id>"`) already threaded through these two call sites —
+ * an empty one is widened to an explicit `, undefined` placeholder so the
+ * name lands in the right positional slot (`mapArray`'s 6th parameter is
+ * `bfId`, not `keyAttrName`).
+ */
+export function mapArrayKeyArgs(bfIdArg: string, keyed: boolean, loopDepth: number): string {
+  if (!keyed || loopDepth <= 0) return bfIdArg
+  const bfIdSlot = bfIdArg || ', undefined'
+  return `${bfIdSlot}, ${JSON.stringify(keyAttrName(loopDepth))}`
 }
 
 /**

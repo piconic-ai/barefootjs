@@ -166,6 +166,11 @@ export interface LazyRowPlan<T> {
  * @param plan - Compiler-emitted row plan (see {@link LazyRowPlan})
  * @param markerId - Scoped loop marker id (`<!--bf-loop:<id>-->`), see #1087
  * @param bfId - Profiler attribution id for the reconciler effect
+ * @param keyAttrName - The row-key attribute NAME this loop resolved at
+ *                     compile time (`IRElement.keyAttr`/`keyAttrName(loop.depth)`,
+ *                     jsx-to-ir.ts). Defaults to `BF_KEY` (plain `'data-key'`),
+ *                     correct at the outermost loop; only a nested loop's
+ *                     compiled call passes a depth-suffixed name (#2753).
  */
 export function mapArrayLazy<T>(
   accessor: () => T[],
@@ -174,6 +179,7 @@ export function mapArrayLazy<T>(
   plan: LazyRowPlan<T>,
   markerId?: string,
   bfId?: string,
+  keyAttrName: string = BF_KEY,
 ): void {
   if (!container) return
 
@@ -249,8 +255,11 @@ export function mapArrayLazy<T>(
    * so it is wrapped in `untrack()`: it writes outer-involving bindings
    * with current values (contract), and those signal reads must not
    * subscribe the reconciler. The returned element is assigned to
-   * `entry.primaryEl`; `data-key` is stamped if `createRow` didn't
-   * (mirrors `mapArray`'s create path).
+   * `entry.primaryEl`; the row's key attribute is stamped if `createRow`
+   * didn't (mirrors `mapArray`'s create path) — only for a KEYED loop
+   * (#2753 Shape A: an unkeyed loop's rows carry no key attribute at all),
+   * using `keyAttrName` (Shape B: a nested loop's name is depth-suffixed,
+   * never the plain default `BF_KEY`).
    */
   const createEntry = (item: T, index: number, key: string): LazyRowEntry<T> => {
     const entry: LazyRowEntry<T> = {
@@ -263,7 +272,7 @@ export function mapArrayLazy<T>(
       last: null,
     }
     entry.primaryEl = untrack(() => plan.createRow(entry, index))
-    if (!entry.primaryEl.dataset.key) entry.primaryEl.setAttribute(BF_KEY, key)
+    if (getKey && !entry.primaryEl.getAttribute(keyAttrName)) entry.primaryEl.setAttribute(keyAttrName, key)
     markStranded()
     return entry
   }
@@ -294,7 +303,9 @@ export function mapArrayLazy<T>(
           const el = doms[i]
           // READ the SSR-rendered key (never write it on adopted rows);
           // positional item pairing is sound by the §9.3(2) eligibility gate.
-          const ssrKey = el.getAttribute(BF_KEY)
+          // `keyAttrName`, not the plain `BF_KEY` default — a nested loop's
+          // rows carry a depth-suffixed name (#2753 Shape B).
+          const ssrKey = el.getAttribute(keyAttrName)
           const key = ssrKey !== null ? ssrKey : getKey ? getKey(items[i], i) : String(i)
           const entry: LazyRowEntry<T> = { key, primaryEl: el, item: items[i], refs: null, last: null }
           entries.set(key, entry)

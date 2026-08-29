@@ -2,8 +2,13 @@
  * IR traversal helpers for the Blade template adapter.
  *
  * Ported from `packages/adapter-twig/src/adapter/lib/ir-scope.ts`.
- * `resolveJsxChildrenProp` and `collectRootScopeNodes` are byte-identical
- * (adapter-agnostic IR walks).
+ * `resolveJsxChildrenProp` is byte-identical (adapter-agnostic IR walk)
+ * across every adapter carrying a copy of this file. `collectRootScopeNodes`
+ * — the "which elements are this component's own render root(s)" walk this
+ * file used to duplicate too — moved into `jsx-to-ir.ts`'s `resolveRootKeyAttr`
+ * (#2753): the decision it fed (a `data-key` relay attribute) is resolved
+ * once, onto `IRElement.keyAttr`, instead of re-derived at emit time by
+ * every adapter.
  *
  * `extractTopLevelIdentifiers` is SIMPLER than the Twig port's. Twig
  * identifiers have no sigil, so that port had to strip quoted strings first,
@@ -21,7 +26,7 @@
  * emits is `$bf` (the runtime handle), excluded explicitly below.
  */
 
-import type { IRNode, IRProp, IRIfStatement, IRFragment } from '@barefootjs/jsx'
+import type { IRNode, IRProp } from '@barefootjs/jsx'
 
 /**
  * Extract the set of "top-level identifier" tokens (bare `$name` references,
@@ -54,30 +59,4 @@ export function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
   if (!prop) return []
   if (prop.value.kind !== 'jsx-children') return []
   return prop.value.children
-}
-
-/**
- * Collect the component's root scope element node(s) — the elements that
- * become the rendered root and so carry `data-key` for a keyed loop item. A
- * plain element root is itself; an `if-statement` (early-return) root
- * contributes the top element of each branch, since exactly one renders at
- * runtime. (#1297)
- */
-export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
-  const out = new Set<IRNode>()
-  const visit = (n: IRNode | null): void => {
-    if (!n) return
-    if (n.type === 'element') { out.add(n); return }
-    if (n.type === 'if-statement') {
-      const s = n as IRIfStatement
-      visit(s.consequent)
-      visit(s.alternate)
-      return
-    }
-    if (n.type === 'fragment') {
-      for (const c of (n as IRFragment).children) visit(c)
-    }
-  }
-  visit(node)
-  return out
 }

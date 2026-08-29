@@ -118,7 +118,6 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { collectRootScopeNodes } from "./lib/ir-scope.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
@@ -313,15 +312,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * everywhere except the accessor lookup itself.
    */
   private scope: BindingScope = BindingScope.EMPTY
-  /**
-   * Stack of `IRLoop.depth` values (innermost last), pushed/popped around
-   * `renderChildren(loop.children)` in `renderLoop`. `renderAttributes`
-   * reads the top of this stack to derive the `key` → `data-key`/
-   * `data-key-N` suffix — the depth is IR-computed (jsx-to-ir.ts), not
-   * re-derived here; this stack only threads that value down to the
-   * loop body's root element (#2168 nested-loop-outer-binding).
-   */
-  private loopKeyDepthStack: number[] = []
   /**
    * Per-loop: true when the body renders the bare range value (scalar-item
    * inline-literal loop), so the `bf_tmpl` companion is fed `.BfLoopItem` (the
@@ -521,7 +511,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const isRootComponent = ir.root.type === 'component'
     const isIfStatement = ir.root.type === 'if-statement'
 
-    this.state.rootScopeNodes = collectRootScopeNodes(ir.root)
     // Map each array memo backing a loop (`<memo>().map(...)`) to that loop's
     // handler-filled slice field, so `<memo>().length` lowers to the slice's
     // length. Built before rendering — `.length` can precede the loop in source.
@@ -3212,7 +3201,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *
    * `ctx.isRoot` leaks into a JSX-valued prop's subtree, so such a fragment
    * is already tagged `needsScopeComment` as if it were a component root —
-   * which is why `carriesDataKey` reaches this path at all.
+   * which is why a relay `element.keyAttr` (#2753; `carriesDataKey` before
+   * it) reaches this path at all.
    */
   private bakingStaticChildren = false
 
@@ -4140,21 +4130,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('.ScopeID')}`
     }
-    // A root scope element carries `data-key` for a keyed loop item — the
-    // parent's loop init stamped `.BfDataKey`, so a non-keyed render emits
-    // nothing. Applies to early-return (if-statement) roots too, where every
-    // branch's top element qualifies.
-    // `carriesDataKey` is an INDEPENDENT reason to emit, not a refinement of
-    // the root-scope test above (#2732): a fragment root clears `needsScope` on
-    // its wrapped child and moves the other hydration markers onto the
-    // `<!--bf-scope:-->` comment, but `data-key` must stay a real attribute —
-    // the client's `mapArray` adopt loop reads `primaryEl.dataset.key`, never
-    // the comment. Mirrors the same branch in hono-adapter.ts.
-    if (
-      (this.state.rootScopeNodes.has(element) && element.needsScope) ||
-      (element.carriesDataKey && !this.bakingStaticChildren)
-    ) {
-      hydrationAttrs += `{{if .BfDataKey}} data-key="{{.BfDataKey}}"{{end}}`
+    // #2753: `element.keyAttr` is the ONE IR-resolved decision for this
+    // element's row-key attribute — replacing both the `carriesDataKey`
+    // boolean and this adapter's own `rootScopeNodes`/`needsScope` check
+    // (mechanism 2: a render-root relay, including the #2732 fragment-root
+    // case) and the separate `loopKeyDepthStack`-driven rewrite of a literal
+    // `key` attribute this adapter used to do in `renderAttributes`
+    // (mechanism 1: a `.map()` row root compiled inline here).
+    if (element.keyAttr) {
+      if (element.keyAttr.value !== undefined) {
+        const lowered = emitAttrValue(
+          { kind: 'expression', expr: element.keyAttr.value },
+          this.elementAttrEmitter,
+          element.keyAttr.name,
+        )
+        if (lowered) hydrationAttrs += ` ${lowered}`
+      } else if (!this.bakingStaticChildren) {
+        // Relay: this element is one of THIS component's own render roots,
+        // carrying whatever key its OWN caller supplies at runtime (the
+        // parent's loop init stamped `.BfDataKey`), when this component is
+        // itself invoked as a caller's keyed loop row. Applies to
+        // early-return (if-statement) roots too, where every branch's top
+        // element qualifies, and to #2732's fragment-root case.
+        // `bakingStaticChildren` (see its docstring) excludes a hoisted
+        // children value baked into a static Go string at compile time —
+        // by construction not a loop row, and a surviving `{{if}}` action
+        // there gets silently dropped by the caller rather than rendered.
+        hydrationAttrs += `{{if .BfDataKey}} data-key="{{.BfDataKey}}"{{end}}`
+      }
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
@@ -7170,7 +7173,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null,
     )
     this.loopWrapperStack.push(!!loop.childComponent)
-    this.loopKeyDepthStack.push(loop.depth)
     // Rendered inside the pushed loop scope so each initializer resolves
     // against the range item (`.Done`), in source order so a later
     // initializer sees an earlier `$` variable — same as the source block.
@@ -7178,7 +7180,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       .map(d => `{{$${d.name} := ${this.renderParsedExpr(d.valueParsed)}}}`)
       .join('')
     const children = this.renderChildren(loop.children)
-    this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
     this.loopScalarItemStack.pop()
     // Build the per-item anchor marker while the row scope is still active,
@@ -7270,7 +7271,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const wasInLoopOuter = this.inLoop
     this.inLoop = true
     this.loopWrapperStack.push(false)
-    this.loopKeyDepthStack.push(loop.depth)
     this.loopScalarItemStack.push(this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null)
     // The bake gate (`analyzeBakeableStaticElementLoop`) already refused a
     // destructured or `.keys()`-shape param, so `loop` binds via `enterLoopRow`
@@ -7303,7 +7303,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.scope = prevScope
     this.loopScalarItemStack.pop()
-    this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
     this.inLoop = wasInLoopOuter
 
@@ -7749,19 +7748,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // literal never reaches the generic object-literal BF101 refusal
       // (which would double-report alongside the purpose-built one).
       if (isDangerousInnerHtmlAttr(attr)) continue
-      // Rewrite JSX special-prop names to their HTML-attribute counterparts. The
-      // Go template adapter has no JSX runtime to strip `key` / emit `data-key`,
-      // so the rewrite happens at attribute-emit time. Mirror of the `key`
-      // branch in `ir-to-client-js/html-template.ts`. The depth-suffix (plain
-      // `data-key` at the outermost loop, `data-key-N` N levels deep) comes
-      // from `IRLoop.depth` via `loopKeyDepthStack`, not re-derived here.
-      let attrName: string
-      if (attr.name === 'className') attrName = 'class'
-      else if (attr.name === 'key') {
-        const depth = this.loopKeyDepthStack.at(-1) ?? 0
-        attrName = depth > 0 ? `data-key-${depth}` : 'data-key'
-      }
-      else attrName = attr.name
+      // `key` never renders as a literal HTML attribute — #2753 resolves it
+      // onto `element.keyAttr` (name AND value) at IR-build time, emitted
+      // separately in `renderElement`. A stray `key` that jsx-to-ir.ts did
+      // NOT recognize as a loop row root (so `keyAttr` was never set) has no
+      // defined rendering outside a `.map()` anyway; drop it rather than
+      // leak an invalid `key="..."` HTML attribute.
+      if (attr.name === 'key') continue
+      // Rewrite JSX special-prop names to their HTML-attribute counterparts.
+      const attrName = attr.name === 'className' ? 'class' : attr.name
       const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attrName)
       if (lowered) parts.push(lowered)
     }

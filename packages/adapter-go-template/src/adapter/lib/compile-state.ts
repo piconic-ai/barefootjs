@@ -19,7 +19,6 @@ import type {
   ContextConsumer,
   EnvSignalReader,
   IRMetadata,
-  IRNode,
   LoweringMatcher,
   MemoInfo,
   ParsedExpr,
@@ -204,10 +203,6 @@ export class CompileState {
    * addition — see `collectStringValueNames` (`props/prop-classes.ts`).
    */
   stringValueNames: Set<string> = new Set()
-
-  /** Component root scope element(s) — each carries `data-key` for a keyed loop
-   *  item. */
-  rootScopeNodes: Set<IRNode> = new Set()
 
   /** Array-memo name → the handler-filled loop slice field its `.map()` feeds
    *  (e.g. `visible` → `PostListItems`). Lets `<memo>().length` lower to the

@@ -178,6 +178,7 @@ export function createComponent(
   key: string | number | undefined,
   slot: CreateComponentSlotInfo | undefined,
   mountAt: Element,
+  keyAttrName?: string,
 ): HTMLElement
 export function createComponent(
   nameOrDef: string | ComponentDef,
@@ -185,6 +186,7 @@ export function createComponent(
   key?: string | number,
   slot?: CreateComponentSlotInfo,
   mountAt?: Element | null,
+  keyAttrName?: string,
 ): HTMLElement | DocumentFragment
 export function createComponent(
   nameOrDef: string | ComponentDef,
@@ -192,8 +194,9 @@ export function createComponent(
   key?: string | number,
   slot?: CreateComponentSlotInfo,
   mountAt?: Element | null,
+  keyAttrName: string = BF_KEY,
 ): HTMLElement | DocumentFragment {
-  const element = materializeComponent(nameOrDef, props, key, slot, mountAt)
+  const element = materializeComponent(nameOrDef, props, key, slot, mountAt, keyAttrName)
   // `mountAt` is an unconditional obligation: callers used to run
   // `ph.replaceWith(comp)` themselves on every outcome, so every path that
   // did NOT consume the placeholder still owes the replacement — a missing or
@@ -224,6 +227,7 @@ function materializeComponent(
   key?: string | number,
   slot?: CreateComponentSlotInfo,
   mountAt?: Element | null,
+  keyAttrName: string = BF_KEY,
 ): HTMLElement | DocumentFragment {
   // A bare callable shim invoked from user code (e.g. an object-literal
   // value `LOGOS[id]()` whose arrow the compiler hoisted into a component)
@@ -235,7 +239,7 @@ function materializeComponent(
   const rowMount = mountAt ? null : takeRowMountPoint()
   // ComponentDef mode: use def directly instead of registry lookup
   if (typeof nameOrDef !== 'string') {
-    return createComponentFromDef(nameOrDef, props, key, mountAt, rowMount)
+    return createComponentFromDef(nameOrDef, props, key, mountAt, rowMount, keyAttrName)
   }
 
   const name = nameOrDef
@@ -244,7 +248,7 @@ function materializeComponent(
   const templateFn = getTemplate(name)
   if (!templateFn) {
     console.warn(`[BarefootJS] Template not found for component: ${name}`)
-    return createPlaceholder(name, key)
+    return createPlaceholder(name, key, keyAttrName)
   }
 
   // 2. Check for getter children.
@@ -385,12 +389,12 @@ function materializeComponent(
       `[BarefootJS] Fragment-root component ${name} rendered no element root; ` +
         'a scope needs at least one element to attach to. Wrap the content in an element.',
     )
-    return createPlaceholder(name, key)
+    return createPlaceholder(name, key, keyAttrName)
   }
 
   if (!element) {
     console.warn(`[BarefootJS] Template returned empty HTML for component: ${name}`)
-    return createPlaceholder(name, key)
+    return createPlaceholder(name, key, keyAttrName)
   }
 
   // 7. Set scope ID and key attributes.
@@ -408,7 +412,7 @@ function materializeComponent(
     element.setAttribute(BF_AT, slot.mount)
   }
   if (key !== undefined) {
-    element.setAttribute(BF_KEY, String(key))
+    element.setAttribute(keyAttrName, String(key))
   }
 
   // 7a. Fragment-root boundary comments + registry (#2722).
@@ -722,8 +726,8 @@ export function renderChild(
     const hostSuffix = (_parentScopeId && slotSuffix) ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
     // #2732: `data-key` for a fragment-root loop row lands on the row's own
     // first element — the same "first element, not first node" convention
-    // `IRElement.carriesDataKey` uses on the SSR side (jsx-to-ir.ts) — not
-    // on the comment above, which carries scope identity only. This keeps
+    // `IRElement.keyAttr` uses on the SSR side (jsx-to-ir.ts) — not on the
+    // comment above, which carries scope identity only. This keeps
     // `mapArray`'s existing `primaryEl.dataset.key` read (map-array.ts)
     // working unchanged for markup this function pre-builds (the pure-CSR
     // `materializeComponent` template-string path, used when there is no
@@ -769,11 +773,11 @@ function generateId(): string {
 /**
  * Create a placeholder element when template is not found
  */
-function createPlaceholder(name: string, key?: string | number): HTMLElement {
+function createPlaceholder(name: string, key?: string | number, keyAttrName: string = BF_KEY): HTMLElement {
   const el = document.createElement('div')
   el.setAttribute(BF_SCOPE, `${name}_placeholder`)
   if (key !== undefined) {
-    el.setAttribute(BF_KEY, String(key))
+    el.setAttribute(keyAttrName, String(key))
   }
   el.textContent = `[${name}]`
   el.style.cssText = 'color: red; border: 1px dashed red; padding: 4px;'
@@ -1073,6 +1077,7 @@ function createComponentFromDef(
   key?: string | number,
   mountAt?: Element | null,
   rowMount?: { container: Node; anchor: Node | null } | null,
+  keyAttrName: string = BF_KEY,
 ): HTMLElement {
   if (!def.template) {
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
@@ -1097,7 +1102,7 @@ function createComponentFromDef(
   const scopeId = `${name}_${generateId()}`
   element.setAttribute(BF_SCOPE, scopeId)
   if (key !== undefined) {
-    element.setAttribute(BF_KEY, String(key))
+    element.setAttribute(keyAttrName, String(key))
   }
 
   // Connect before init, for the same reason the registry path does (see
