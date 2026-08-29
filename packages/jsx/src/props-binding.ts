@@ -68,3 +68,54 @@ export function buildPropAliasMap(params: readonly ParamInfo[]): Map<string, str
   }
   return map
 }
+
+/**
+ * The two component bindings that forward the caller's leftover props:
+ * the destructured `...rest` binding and a whole undestructured `(props)`
+ * parameter. Both phases carry these names — the analyzer context in
+ * Phase 1, the client-JS context in Phase 2 — so the resolver below takes
+ * them as data rather than binding to either context type.
+ */
+export interface RestSpreadBindings {
+  restPropsName: string | null
+  propsObjectName: string | null
+}
+
+/**
+ * Which of `bindings` the name `name` ultimately reaches, walking through
+ * any bare `const x__alias = <name>` hop recorded in `constantValues`
+ * (name → initializer text). `'rest'` for the destructured rest binding,
+ * `'props'` for the whole props object, `null` for anything else.
+ *
+ * The single definition of "this `{...spread}` forwards the caller's
+ * leftover props", shared by the two phases that must agree on it: Phase 1
+ * decides whether the host element gets a slot id (#2754 — without one the
+ * spread has no client-side patch point at all, so a pure CSR mount drops
+ * every caller-supplied attribute), and Phase 2 decides whether to route
+ * the spread to `applyRestAttrs` and filter it out of the template's
+ * `spreadAttrs({...})` merge. Two copies of the rule would let an element
+ * qualify for one and not the other, which is exactly the silent-drop
+ * shape #2754 reports.
+ *
+ * Walks hop by hop (not a precomputed set) so a multi-hop alias
+ * (`const p2 = props; const p3 = p2`) resolves through every link;
+ * `visited` guards a constant cycle (`const a = b; const b = a`). A
+ * constant whose value isn't a bare identifier on the chain (a real
+ * computed object) stops the walk, so a genuinely different spread
+ * expression is never mistaken for the rest object.
+ */
+export function resolveRestSpreadOriginCore(
+  bindings: RestSpreadBindings,
+  constantValues: ReadonlyMap<string, string | undefined>,
+  name: string,
+): 'rest' | 'props' | null {
+  const visited = new Set<string>()
+  let current: string | undefined = name.trim()
+  while (current !== undefined && !visited.has(current)) {
+    if (bindings.restPropsName && current === bindings.restPropsName) return 'rest'
+    if (bindings.propsObjectName && current === bindings.propsObjectName) return 'props'
+    visited.add(current)
+    current = constantValues.get(current)?.trim()
+  }
+  return null
+}

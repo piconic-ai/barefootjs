@@ -42,6 +42,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // #2131: same `applyRestAttrs`-not-modeled class as `input`; per-adapter
   // render conformance pins the SSR contract.
   'rest-spread-child-attrs',
+  // #2754: the stateless sibling of `rest-spread-child-attrs`, and the same
+  // harness limitation — the CSR path here evaluates only the `template`
+  // lambda, and `data-probe` arrives through `applyRestAttrs` in `init`,
+  // which the harness stubs against a scopeless object. Per-adapter render
+  // conformance pins the SSR contract (including the `bf` slot the fix
+  // allocates); the client half is pinned by
+  // `packages/jsx/src/__tests__/issue-2754-rest-spread-needs-slot.test.ts`.
+  'stateless-rest-spread-forward',
   // #1467: same multi-export limitation as `kbd` — `__lastComponent` renders
   // the last demo export instead of the pinned basic demo (radio-group,
   // accordion, tabs, dialog, popover, tooltip, select, dropdown-menu,

@@ -49,7 +49,7 @@ import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
 } from './prop-rewrite.ts'
-import { buildPropAliasMap } from './props-binding.ts'
+import { buildPropAliasMap, resolveRestSpreadOriginCore } from './props-binding.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -93,6 +93,8 @@ interface TransformContext {
   _reactiveGetterNames?: Set<string>
   /** Cached set of module-scope @client signal/memo names. */
   _moduleClientSignalNames?: Set<string>
+  /** Cached `localConstants` index for `forwardsCallerRestProps`'s alias walk */
+  _restSpreadConstantValues?: ReadonlyMap<string, string | undefined>
   /** Cached set of destructured prop names for AST-based rewriting */
   _destructuredPropNames?: Set<string> | null
   /**
@@ -1519,7 +1521,7 @@ function transformHtmlElement(
 
   // Determine if this element needs a slot ID
   // Elements need slotIds if they have: events, dynamic children, reactive attributes, or refs
-  const needsSlot = events.length > 0 || hasDynamicContent(children) || hasReactiveAttributes(attrs, ctx) || ref !== null
+  const needsSlot = events.length > 0 || hasDynamicContent(children) || hasReactiveAttributes(attrs, ctx) || ref !== null || forwardsCallerRestProps(attrs, ctx)
   const slotId = needsSlot ? generateSlotId(ctx) : null
 
   // Propagate slotId to loop children (they need to use parent's marker)
@@ -1575,7 +1577,7 @@ function transformSelfClosingElement(
   lowerFormControlValueSsr(tagName, attrs, selfClosingChildren)
 
   // Elements need slotIds if they have events, reactive attributes, or refs
-  const needsSlot = events.length > 0 || hasReactiveAttributes(attrs, ctx) || ref !== null
+  const needsSlot = events.length > 0 || hasReactiveAttributes(attrs, ctx) || ref !== null || forwardsCallerRestProps(attrs, ctx)
   const slotId = needsSlot ? generateSlotId(ctx) : null
 
   const needsScope = ctx.isRoot
@@ -7889,6 +7891,49 @@ function isPropsReference(expr: string, ctx: TransformContext, visited?: Set<str
   }
 
   return false
+}
+
+/**
+ * Does this element carry a `{...spread}` that forwards the caller's
+ * leftover props (the destructured `...rest` binding or a whole `(props)`
+ * parameter, through any alias hop)?
+ *
+ * Such a spread is the one attribute source whose keys are unknowable at
+ * compile time, so neither template can carry it: the SSR adapters render
+ * it through their own spread helper against real request data, and the
+ * client's registration template drops it entirely, leaving the runtime's
+ * `applyRestAttrs` as the only thing that can apply it after a pure CSR
+ * mount. `applyRestAttrs` addresses its element by slot id, so an element
+ * whose only dynamic attribute source is this spread still needs one —
+ * otherwise `init` has no patch point, and every caller-supplied attribute
+ * is silently absent under `createComponent` while SSR and hydration look
+ * correct (#2754).
+ *
+ * Deliberately narrower than "has any spread": a spread of an ordinary
+ * object (`{...extra}`) IS statically emitted into both templates, needs
+ * no runtime application, and must not start allocating slot ids.
+ */
+function forwardsCallerRestProps(attrs: IRAttribute[], ctx: TransformContext): boolean {
+  for (const attr of attrs) {
+    if (attr.value.kind !== 'spread') continue
+    const constants = restSpreadConstantValues(ctx)
+    for (const name of new Set([attr.value.expr, attr.value.templateExpr])) {
+      if (!name) continue
+      if (resolveRestSpreadOriginCore(ctx.analyzer, constants, name) !== null) return true
+    }
+  }
+  return false
+}
+
+/** `ctx.analyzer.localConstants` indexed by name, memoized per component walk. */
+function restSpreadConstantValues(ctx: TransformContext): ReadonlyMap<string, string | undefined> {
+  if (ctx._restSpreadConstantValues) return ctx._restSpreadConstantValues
+  const byName = new Map<string, string | undefined>()
+  for (const constant of ctx.analyzer.localConstants) {
+    if (!byName.has(constant.name)) byName.set(constant.name, constant.value)
+  }
+  ctx._restSpreadConstantValues = byName
+  return byName
 }
 
 /**

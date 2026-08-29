@@ -3125,6 +3125,23 @@
         "text"
       ]
     },
+    "loop-row-controlled-textarea": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-static-conditional": {
       "kinds": [
         "call",
@@ -4655,6 +4672,16 @@
         "text"
       ]
     },
+    "stateless-rest-spread-forward": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "static-array-children": {
       "kinds": [
         "array-literal",
@@ -5563,15 +5590,15 @@
     }
   },
   "kindCounts": {
-    "array-literal": 80,
+    "array-literal": 81,
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 229,
+    "call": 230,
     "conditional": 27,
-    "identifier": 323,
+    "identifier": 325,
     "index-access": 14,
-    "literal": 260,
+    "literal": 261,
     "logical": 48,
     "member": 186,
     "object-literal": 63,
@@ -5616,8 +5643,8 @@
     "binary:>=": 1,
     "literal:boolean": 56,
     "literal:null": 23,
-    "literal:number": 106,
-    "literal:string": 183,
+    "literal:number": 107,
+    "literal:string": 184,
     "logical:&&": 7,
     "logical:??": 42,
     "logical:||": 14,

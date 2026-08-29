@@ -757,13 +757,21 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
   switch (node.type) {
     case 'element': {
       // Merge context shared with `irToComponentTemplate` /
-      // `generateCsrTemplate`. `irToHtmlTemplate` does not honour
-      // `clientOnly` (templates here are for conditionals / loops only),
-      // and its spread rest-name detector uses `v.expr` directly (no
-      // `templateExpr` fallback — those live on the SSR template path).
+      // `generateCsrTemplate`. Its spread rest-name detector uses
+      // `v.expr` directly (no `templateExpr` fallback — those live on
+      // the SSR template path).
+      //
+      // Why not path-local `clientOnly`: this builder emits the row /
+      // branch markup that a freshly built row gets, while a row REUSED
+      // by hydration carries the SSR adapter's markup instead. So the
+      // two representations must agree, and `clientOnly` ("SSR omits it;
+      // the effect owns it") is the same statement on both sides. Baking
+      // the attribute in here made a rebuilt row carry an attribute an
+      // SSR-reused row never has — visible the moment a row-count change
+      // makes reused and rebuilt rows coexist in one list (#2756).
       const mergeCtx: MergeContext = {
         isFilteredSpread: (v) => !!restSpreadNames?.has(v.expr),
-        honorClientOnly: false,
+        honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)
       const firstMergeableIdx = useMerge
@@ -780,6 +788,12 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
 
       const attrParts = node.attrs
         .map((a, idx) => {
+          // Deferred to the row's own `createEffect`, which the loop-row
+          // reactive-attr collector already registers for every
+          // `clientOnly` attr (`collect-elements.ts`). Emitting it here
+          // too would be redundant on a rebuilt row and absent on a
+          // hydrate-reused one (#2756).
+          if (a.clientOnly) return ''
           if (useMerge && isMergeableAttr(a, mergeCtx)) {
             // Only the first mergeable attr emits the merge call; the
             // others are already represented inside the merge object.
@@ -1381,6 +1395,10 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
     case 'element': {
       const attrParts = node.attrs
         .map((a) => {
+          // Same deferral as `irToHtmlTemplate` — this builder is the
+          // composite-row twin of it, so a row it builds must carry the
+          // same attributes a hydration-reused row does (#2756).
+          if (a.clientOnly) return ''
           const attrName = a.name === '...'
             ? '...'
             : (a.name === 'key' ? keyAttrName(loopDepth) : toHtmlAttrName(a.name))

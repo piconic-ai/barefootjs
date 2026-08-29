@@ -217,6 +217,11 @@ function needsClientJs(ctx: ClientJsContext): boolean {
     ctx.conditionalElements.length > 0 ||
     ctx.loopElements.length > 0 ||
     ctx.refElements.length > 0 ||
+    // An element forwarding the caller's leftover props needs `init` to
+    // run `applyRestAttrs` against it — that call is the ONLY thing that
+    // applies those attributes on a pure CSR mount, since neither template
+    // can carry a bag whose keys are unknown at compile time (#2754).
+    ctx.restAttrElements.length > 0 ||
     ctx.childInits.length > 0 ||
     ctx.reactiveAttrs.length > 0 ||
     ctx.clientOnlyElements.length > 0 ||
