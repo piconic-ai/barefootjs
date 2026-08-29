@@ -989,18 +989,29 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
  * render root(s) relay a key value an external caller supplies at runtime
  * (a `data-key` prop / Rust `bf.data_key` field / client `createComponent`
  * key argument) when THIS component is itself invoked as a caller's keyed
- * loop row. Ported, once, from the byte-identical `collectRootScopeNodes`
- * previously duplicated in each of the 9 SSR adapters' own
- * `lib/ir-scope.ts` (mojolicious, xslate, twig, erb, blade, go-template,
- * jinja, minijinja) plus Hono's inline equivalent — each adapter then
- * intersected it with `element.needsScope` at EMIT time, on every compile.
- * Resolving it here means every adapter instead reads one IR field.
+ * loop row. Ported, once, from the `element.needsScope` test each of the 10
+ * SSR adapters previously applied at EMIT time, on every compile. Resolving
+ * it here means every adapter instead reads one IR field.
  *
- * A plain element root is itself; an if-statement (early-return) root
- * contributes the top element of each branch, since exactly one renders at
- * runtime (#1297) — mirrors the ported algorithm exactly, including
- * recursing into a fragment's children (a transparent fragment's real
- * content can still be "the root" in this sense).
+ * The relay belongs on exactly the elements carrying `needsScope` — the
+ * elements that also carry `bf-s`, i.e. this component's rendered root(s).
+ * That is the same predicate, evaluated at the same set of elements, as the
+ * reference (Hono) adapter applied before #2762, and it matches what the
+ * client runtime does for the CSR half of the contract: `renderChild` /
+ * `materializeComponent` splice `data-key` onto the rendered markup's FIRST
+ * element (component.ts), whatever wrapper nodes stand above it. A walk
+ * that stops at the first non-element node instead of testing `needsScope`
+ * throughout answers differently for every component whose root is a
+ * `<Ctx.Provider>` — `transformProviderElement` passes `ctx.isRoot` through
+ * to its children, so the provider's inner element is a rendered root and
+ * gets `needsScope`, but the walk never reaches it (#2753 regression).
+ *
+ * `needsScope` is `ctx.isRoot` at element-transform time, and `ctx.isRoot`
+ * is consumed by the first element/component/scope-comment fragment on the
+ * way down, so nothing inside a loop body or a child component's slot
+ * children can be true here. Visiting the whole tree therefore costs
+ * nothing in reach but cannot go stale the way an enumeration of
+ * "`isRoot`-transparent constructs" can.
  *
  * A `needsScopeComment` fragment root (#2732) is handled separately, at
  * `transformFragment` build time (`markDataKeyCarrier`): `ctx.isRoot` can be
@@ -1009,24 +1020,38 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
  * need a second, tree-wide pass to find it again. Its children carry
  * `needsScope: false` by construction, so this walk's `n.needsScope` guard
  * naturally skips them without double-marking.
+ *
+ * The `!keyAttr` guard keeps mechanism 1 (`applyLoopKeyAttr`, an inline
+ * `.map()` row root's own concretely-known key expression, resolved during
+ * the transform) — strictly more useful than a relay marker — from being
+ * overwritten.
  */
-function resolveRootKeyAttr(root: IRNode): void {
-  const visit = (n: IRNode | null): void => {
-    if (!n) return
-    if (n.type === 'element') {
-      if (n.needsScope && !n.keyAttr) n.keyAttr = { name: BF_KEY }
+function resolveRootKeyAttr(node: IRNode | null): void {
+  if (!node) return
+  switch (node.type) {
+    case 'element':
+      if (node.needsScope && !node.keyAttr) node.keyAttr = { name: BF_KEY }
+      for (const c of node.children) resolveRootKeyAttr(c)
       return
-    }
-    if (n.type === 'if-statement') {
-      visit(n.consequent)
-      visit(n.alternate)
+    case 'fragment':
+    case 'component':
+    case 'provider':
+    case 'loop':
+      for (const c of node.children) resolveRootKeyAttr(c)
       return
-    }
-    if (n.type === 'fragment') {
-      for (const c of n.children) visit(c)
-    }
+    case 'async':
+      resolveRootKeyAttr(node.fallback)
+      for (const c of node.children) resolveRootKeyAttr(c)
+      return
+    case 'conditional':
+      resolveRootKeyAttr(node.whenTrue)
+      resolveRootKeyAttr(node.whenFalse)
+      return
+    case 'if-statement':
+      resolveRootKeyAttr(node.consequent)
+      resolveRootKeyAttr(node.alternate)
+      return
   }
-  visit(root)
 }
 
 export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
