@@ -5,6 +5,7 @@
 import type { ParamInfo, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
+import { resolveRestSpreadOriginCore } from '../props-binding.ts'
 
 /**
  * Which of the component's two "forwards the caller's leftover props"
@@ -29,25 +30,13 @@ import type { BindingScope } from '../scope/binding-scope.ts'
  * `spreadAttrs({...})` call keyed by the alias name instead of the
  * runtime-visible one.
  *
- * Walks the chain hop by hop (not a precomputed set) so a multi-hop alias
- * (`const p2 = props; const p3 = p2`) resolves through every link; `visited`
- * guards a constant cycle (`const a = b; const b = a`) the same way
- * `free-refs.ts`'s `resolveConstantInitializerRefs` does. A constant whose
- * value isn't a bare identifier already on the chain (e.g. a real computed
- * object) stops the walk, so a genuinely different spread expression is
- * never mistaken for the rest object.
+ * The walk itself lives in `props-binding.ts`'s `resolveRestSpreadOriginCore`,
+ * shared with Phase 1's slot-id decision so both phases agree on which
+ * spreads forward the caller's leftover props (#2754). This wrapper only
+ * supplies the `ClientJsContext`-shaped inputs.
  */
 export function resolveRestSpreadOrigin(ctx: ClientJsContext, name: string): 'rest' | 'props' | null {
-  const byName = localConstantValues(ctx)
-  const visited = new Set<string>()
-  let current: string | undefined = name.trim()
-  while (current !== undefined && !visited.has(current)) {
-    if (ctx.restPropsName && current === ctx.restPropsName) return 'rest'
-    if (ctx.propsObjectName && current === ctx.propsObjectName) return 'props'
-    visited.add(current)
-    current = byName.get(current)?.trim()
-  }
-  return null
+  return resolveRestSpreadOriginCore(ctx, localConstantValues(ctx), name)
 }
 
 /**

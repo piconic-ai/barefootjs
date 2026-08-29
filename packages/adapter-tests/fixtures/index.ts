@@ -515,6 +515,14 @@ import { fixture as selectValueSsr } from './select-value-ssr'
 // machinery `applyItem`/`applyOuter` already use.
 import { fixture as selectLoopSelected } from './select-loop-selected'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
+// #2756: the keyed-loop-row form of the same controlled-textarea SSR
+// projection — the shape whose CLIENT row builder used to bake back the
+// `value` attribute the shared IR marks `clientOnly`.
+import { fixture as loopRowControlledTextarea } from './loop-row-controlled-textarea'
+// #2754: a stateless `{...props}` forwarder — no reactive attribute on the
+// host element, so the rest spread alone has to earn the slot id
+// `applyRestAttrs` addresses.
+import { fixture as statelessRestSpreadForward } from './stateless-rest-spread-forward'
 import { fixture as signalEarlyReturn } from './signal-early-return'
 // #2477: Record[key] class lookup keyed by a prop forwarded from a parent
 // signal, on an if/else early-return branch's own root element — the
@@ -906,4 +914,6 @@ export const jsxFixtures: JSXFixture[] = [
   destructuredObjectPropNested,
   loopPreambleConditionalReactive,
   fragmentRootKeyedLoopRow,
+  loopRowControlledTextarea,
+  statelessRestSpreadForward,
 ]

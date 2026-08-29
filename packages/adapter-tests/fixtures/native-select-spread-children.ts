@@ -56,7 +56,7 @@ export function NativeSelect({ children, ...props }: SelectHTMLAttributes) {
 `,
   },
   expectedHtml: `
-    <select bf-s="test_s0" data-slot="native-select">
+    <select bf-s="test_s0" bf="s0" data-slot="native-select">
       <option data-slot="native-select-option" value="1">Option 1</option>
       <option data-slot="native-select-option" value="2">Option 2</option>
     </select>
