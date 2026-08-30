@@ -13,7 +13,6 @@
     "./lib/theme-init": "./lib/theme-init.ts",
     "./lib/docs-tabs-init": "./lib/docs-tabs-init.ts",
     "./lib/og-image": "./lib/og-image.ts",
-    "./lib/cache-control": "./lib/cache-control.ts",
     "./fonts/inter-bold": "./fonts/inter-bold.ts",
     "./tokens": "./tokens/index.ts"
   },
