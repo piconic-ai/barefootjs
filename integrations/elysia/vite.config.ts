@@ -29,7 +29,7 @@ async function componentAssets(): Promise<Record<string, string>> {
   const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
   const assets: Record<string, string> = {}
   for (const c of discovered) {
-    if (!c.isClient) continue
+    if (!c.needsClientEntry) continue
     assets[basename(c.absPath, '.tsx')] = c.absPath
   }
   return assets

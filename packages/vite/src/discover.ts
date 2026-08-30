@@ -11,7 +11,7 @@
  */
 import { readdir } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
-import { listExportedComponents } from '@barefootjs/jsx'
+import { scanComponentFile } from '@barefootjs/jsx'
 
 /** Does `content` start with a `'use client'` / `"use client"` directive
  * (after skipping leading block/line comments)? */
@@ -96,13 +96,39 @@ export interface DiscoveredComponent {
   /** Whether the file's content starts with a `'use client'` directive. */
   isClient: boolean
   /**
+   * `isClient`, OR this file transitively instantiates a component that
+   * needs one — the property `computeClientEntryPaths` computes over the
+   * whole discovered corpus. This, not `isClient`, is the signal for
+   * "does this file need its own client bundle and a `<script>` on the
+   * page": a plain server component that merely renders a `'use client'`
+   * descendant still needs an `initChild(...)` call to run in the
+   * browser, and that call lives in ITS OWN compiled init, not the
+   * child's (issue #2767 — `hydrateElementScope` in
+   * `@barefootjs/client`'s `runtime/hydrate.ts` explicitly skips any
+   * element carrying the child marker, deferring to the parent's
+   * `initChild`; if the parent's own bundle never ships, that call never
+   * happens and the child never hydrates, silently).
+   */
+  needsClientEntry: boolean
+  /**
    * Every component this file exports, from `@barefootjs/jsx`'s TS-AST
    * walk (`listExportedComponents`) — never a regex, and never the
    * basename standing in for the name. A file exporting more than one
    * component (`icon/index.tsx` → `CopyIcon` + `CheckIcon`) is why this
-   * exists; see `buildChildNameIndex`.
+   * exists; see `buildChildNameIndex`. Populated for EVERY file, not just
+   * client ones — `computeClientEntryPaths` resolves JSX tag references
+   * by name across the whole corpus, so a server file must be indexable
+   * too (it may itself be someone else's `referencedComponents` target).
    */
   exportedComponents: string[]
+  /**
+   * PascalCase JSX tag identifiers this file's JSX instantiates (its
+   * component-instantiation out-edges), from `@barefootjs/jsx`'s
+   * `scanComponentFile`. Feeds `computeClientEntryPaths` — never used for
+   * anything import-resolution-shaped, so an unresolved or aliased tag
+   * name is simply not an edge (see that function's docstring).
+   */
+  referencedComponents: string[]
   /**
    * `CompileOptions.cssLayerPrefix` this file should compile with, carried
    * over unchanged from whichever `components` entry's `dir` this file was
@@ -151,7 +177,7 @@ export async function discoverComponents(
   readFile: (absPath: string) => Promise<string>,
 ): Promise<DiscoveredComponent[]> {
   const seen = new Set<string>()
-  const out: DiscoveredComponent[] = []
+  const out: Omit<DiscoveredComponent, 'needsClientEntry'>[] = []
   for (const raw of entries) {
     const entry: ResolvedComponentDirEntry = typeof raw === 'string' ? { dir: raw } : raw
     for (const absPath of await discoverComponentFiles(entry.dir, { skipDirs: entry.skipDirs })) {
@@ -159,19 +185,132 @@ export async function discoverComponents(
       seen.add(absPath)
       const content = await readFile(absPath)
       const isClient = hasUseClientDirective(content)
-      // Only client files can be `@bf-child:` targets, so only they need
-      // their export list parsed — this is a `ts.createSourceFile` per
-      // file and server-only components are the majority in most trees.
+      // One parse gets both the export list AND the JSX tags this file
+      // references — every file needs both now, not just client ones:
+      // `computeClientEntryPaths` walks the instantiation graph across
+      // the whole corpus, so a server file must carry its out-edges (and
+      // be indexable by name) too.
+      const scan = scanComponentFile(content, absPath)
       out.push({
         absPath,
         content,
         isClient,
-        exportedComponents: isClient ? listExportedComponents(content, absPath) : [],
+        exportedComponents: scan.exports,
+        referencedComponents: scan.referencedComponents,
         cssLayerPrefix: entry.cssLayerPrefix,
       })
     }
   }
-  return out
+  const clientEntryPaths = computeClientEntryPaths(out)
+  return out.map(row => ({ ...row, needsClientEntry: clientEntryPaths.has(row.absPath) }))
+}
+
+/**
+ * The component-name → absolute-path index shared by `computeClientEntryPaths`
+ * (resolving JSX-tag out-edges to the file that exports them) and
+ * `buildChildNameIndex` (resolving `@bf-child:<Name>` markers) — both need
+ * the identical "exported names, falling back to the basename when the AST
+ * walk found none; first writer wins on a duplicate name" rule, so it lives
+ * in exactly one place. `include` lets each caller restrict which rows are
+ * indexable: `computeClientEntryPaths` indexes every row (a server file can
+ * be another file's out-edge target), `buildChildNameIndex` only rows that
+ * ended up needing a client entry (a marker can only ever resolve to a file
+ * that actually ships a bundle).
+ */
+function nameIndexOver<T extends Pick<DiscoveredComponent, 'absPath' | 'exportedComponents'>>(
+  rows: readonly T[],
+  include: (row: T) => boolean,
+): Map<string, string> {
+  const index = new Map<string, string>()
+  for (const c of rows) {
+    if (!include(c)) continue
+    const names = c.exportedComponents.length > 0
+      ? c.exportedComponents
+      : [basename(c.absPath).replace(/\.tsx?$/, '')]
+    for (const name of names) {
+      if (!index.has(name)) index.set(name, c.absPath)
+    }
+  }
+  return index
+}
+
+/**
+ * Which discovered files need their OWN client bundle and `<script>` tag on
+ * the page: every `'use client'` file (the seed set), plus every file that
+ * transitively instantiates one — a plain server component nested between
+ * the SSR root and a `'use client'` descendant still needs its own compiled
+ * `init` to run in the browser, because that's the ONLY place the
+ * `initChild(...)` call reaching the client descendant is emitted (issue
+ * #2767; see `DiscoveredComponent.needsClientEntry`'s docstring). A nested
+ * component can't self-hydrate to make up for a missing parent bundle: its
+ * SSR root carries the child marker (`bf-h`), which `hydrateElementScope`
+ * (`@barefootjs/client`'s `runtime/hydrate.ts`) unconditionally skips,
+ * deferring to a parent's `initChild` call that only exists if the parent's
+ * own bundle shipped.
+ *
+ * Deliberately NOT `analyzeClientNeeds(ir).needsInit` (the compiler's
+ * per-file "does this file's compiled init do anything nontrivial" signal)
+ * — that's true for almost any server component with dynamic content at
+ * all (a prop interpolation, a conditional, a `.map()`, a plain
+ * `onClick`...), not just ones that own a client descendant. Gating Vite
+ * entries on it would bundle huge swaths of purely-server trees that have
+ * nothing to hydrate. The property this function computes — "is there a
+ * `'use client'` file reachable via component-instantiation edges" — is
+ * inherently cross-file, so it can only be answered here, with the whole
+ * discovered corpus in hand, not by any single-file compiler analysis.
+ *
+ * Pure structural closure over JSX tag references — no compile. Resolves
+ * each file's `referencedComponents` (JSX tag names) to the file that
+ * exports that name via the shared `nameIndexOver` index, then walks the
+ * REVERSE edges breadth-first from the `isClient` seed set. Cycle-safe (a
+ * visited-set) and runs in O(files + edges); on this repo's real
+ * `ui`/`site` component corpus (~260 files) the whole discovery pass
+ * (parse + this closure) costs low-single-digit milliseconds.
+ *
+ * The closure only ever needs to walk upward from a `'use client'` seed:
+ * a client file cannot legally import a server component in the first
+ * place (`analyzer.ts`'s `validateClientImports` raises BF003, a hard
+ * compile error), so there is no "server child of a client parent needing
+ * its own entry" shape to account for.
+ */
+export function computeClientEntryPaths(
+  rows: readonly Pick<DiscoveredComponent, 'absPath' | 'isClient' | 'exportedComponents' | 'referencedComponents'>[],
+): Set<string> {
+  const nameToPath = nameIndexOver(rows, () => true)
+
+  // Reverse edges: referencers.get(g) = every file that references a name
+  // resolving to g.
+  const referencers = new Map<string, Set<string>>()
+  for (const row of rows) {
+    for (const name of row.referencedComponents) {
+      const target = nameToPath.get(name)
+      if (!target || target === row.absPath) continue
+      let set = referencers.get(target)
+      if (!set) {
+        set = new Set()
+        referencers.set(target, set)
+      }
+      set.add(row.absPath)
+    }
+  }
+
+  const visited = new Set<string>()
+  const queue: string[] = []
+  for (const row of rows) {
+    if (row.isClient && !visited.has(row.absPath)) {
+      visited.add(row.absPath)
+      queue.push(row.absPath)
+    }
+  }
+  while (queue.length > 0) {
+    const current = queue.shift() as string
+    for (const referencer of referencers.get(current) ?? []) {
+      if (visited.has(referencer)) continue
+      visited.add(referencer)
+      queue.push(referencer)
+    }
+  }
+  return visited
 }
 
 /**
@@ -182,10 +321,16 @@ export async function discoverComponents(
  * `resolveId` needs a name→file lookup built from a full discovery pass.
  *
  * Keyed by each exported component NAME, which is what the marker
- * carries. Server-only files are excluded: a `@bf-child:` marker only
- * ever names another component this one instantiates at runtime
- * (`initChild`/`createComponent`), which requires an `init` function only
- * a `'use client'` file has.
+ * carries. Files that don't need their own client entry are excluded: a
+ * `@bf-child:` marker only ever names another component this one
+ * instantiates at runtime (`initChild`/`createComponent`), which requires
+ * a REAL `init` — and a file with `needsClientEntry: false` compiles to a
+ * no-op template-only mount (`generateTemplateOnlyMount` in
+ * `@barefootjs/jsx`'s `ir-to-client-js`), nothing to jump to. This is
+ * `needsClientEntry`, not `isClient` — a plain server file that owns a
+ * `'use client'` descendant is a legitimate marker target too (issue
+ * #2767: it's the file whose compiled init actually contains the
+ * `initChild(...)` call reaching that descendant).
  *
  * This used to key on the file's basename, which worked only because the
  * one-component-per-file convention makes the two coincide
@@ -211,20 +356,7 @@ export function buildChildNameIndex(
   // Only the fields the index actually reads — callers with a full
   // `DiscoveredComponent[]` pass it as-is, and tests can construct rows
   // without dragging in `content`.
-  discovered: readonly Pick<DiscoveredComponent, 'absPath' | 'isClient' | 'exportedComponents'>[],
+  discovered: readonly Pick<DiscoveredComponent, 'absPath' | 'needsClientEntry' | 'exportedComponents'>[],
 ): Map<string, string> {
-  const index = new Map<string, string>()
-  for (const c of discovered) {
-    if (!c.isClient) continue
-    // Fall back to the basename when the AST walk found no exports: a
-    // file can still be a marker target through the old convention, and
-    // losing that would be a regression rather than a fix.
-    const names = c.exportedComponents.length > 0
-      ? c.exportedComponents
-      : [basename(c.absPath).replace(/\.tsx?$/, '')]
-    for (const name of names) {
-      if (!index.has(name)) index.set(name, c.absPath)
-    }
-  }
-  return index
+  return nameIndexOver(discovered, c => c.needsClientEntry)
 }
