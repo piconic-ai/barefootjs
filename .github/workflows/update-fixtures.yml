@@ -11,6 +11,7 @@ on:
       - 'packages/client/**'
       - 'packages/adapter-tests/src/**'
       - 'packages/adapter-tests/scripts/**'
+      - '.github/workflows/update-fixtures.yml'
       # Shared-component fixture sources (fixture-hydrate corpus inputs).
       # Editing a `*.tsx` here regenerates the `__snapshots__/<id>.{html,client.js}` pair.
       - 'integrations/shared/components/**'
