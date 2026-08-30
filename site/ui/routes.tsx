@@ -8,6 +8,7 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
 import { createOgRoute } from './og-route'
+import { cacheControl } from '@barefootjs/site-shared/lib/cache-control'
 
 // Component pages
 import { AspectRatioRefPage } from './pages/components/aspect-ratio'
@@ -152,6 +153,11 @@ function blockMeta(slug: string): { title: string; description: string } {
  */
 export function createApp() {
   const app = new Hono()
+
+  // Sets Cache-Control on every route below that doesn't set its own, so
+  // Workers Cache (wrangler.toml's `[cache] enabled = true`) can serve
+  // repeat requests without re-running this Worker.
+  app.use('*', cacheControl)
 
   app.use(renderer)
 
