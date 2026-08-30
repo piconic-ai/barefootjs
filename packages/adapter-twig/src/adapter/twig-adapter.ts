@@ -206,14 +206,11 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { TwigRenderCtx } from './lib/types.ts'
 import { TWIG_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { twigHashKey, twigIdent, escapeTwigSingleQuoted, twigLoopBindingAccessor } from './lib/twig-naming.ts'
-import {
-  resolveJsxChildrenProp,
-} from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { staticValueToTwig } from './lib/static-value.ts'
 import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest } from './expr/emitters.ts'

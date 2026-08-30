@@ -70,14 +70,11 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
 import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { perlHashKey, perlIdentifierFromMarkerId } from './lib/perl-naming.ts'
-import {
-  resolveJsxChildrenProp,
-} from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { staticValueToPerl } from './lib/static-value.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'

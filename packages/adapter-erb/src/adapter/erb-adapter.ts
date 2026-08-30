@@ -99,7 +99,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
 import { ERB_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -110,9 +110,6 @@ import {
   rubySymbolLiteral,
   rubyIdentifierFromMarkerId,
 } from './lib/ruby-naming.ts'
-import {
-  resolveJsxChildrenProp,
-} from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { staticValueToRuby } from './lib/static-value.ts'
 import { ErbFilterEmitter, ErbTopLevelEmitter } from './expr/emitters.ts'

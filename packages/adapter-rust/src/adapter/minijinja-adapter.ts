@@ -176,14 +176,11 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
 import { JINJA_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { minijinjaHashKey, minijinjaIdent, escapeMinijinjaSingleQuoted } from './lib/minijinja-naming.ts'
-import {
-  resolveJsxChildrenProp,
-} from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { staticValueToMinijinja } from './lib/static-value.ts'
 import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest } from './expr/emitters.ts'

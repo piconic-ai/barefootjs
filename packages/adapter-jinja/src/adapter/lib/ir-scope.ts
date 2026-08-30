@@ -2,10 +2,13 @@
  * IR traversal helpers for the Jinja2 template adapter.
  *
  * Ported from `packages/adapter-xslate/src/adapter/lib/ir-scope.ts`.
- * `resolveJsxChildrenProp` is byte-identical (adapter-agnostic IR walk)
- * across every adapter carrying a copy of this file. `collectRootScopeNodes`
- * — the "which elements are this component's own render root(s)" walk this
- * file used to duplicate too — moved into `jsx-to-ir.ts`'s `resolveRootKeyAttr`
+ * `resolveJsxChildrenProp` used to live here too (byte-identical across
+ * every adapter carrying a copy of this file); it moved to
+ * `@barefootjs/shared` (#2773) so every adapter — DSL and Go template
+ * alike — calls the one implementation instead of each keeping a copy
+ * that can silently re-diverge. `collectRootScopeNodes` — the "which
+ * elements are this component's own render root(s)" walk this file used
+ * to duplicate too — moved into `jsx-to-ir.ts`'s `resolveRootKeyAttr`
  * (#2753): the decision it fed (a `data-key` relay attribute) is resolved
  * once, onto `IRElement.keyAttr`, instead of re-derived at emit time by
  * every adapter.
@@ -30,8 +33,6 @@
  * AVAILABILITY itself is now the shared `computeSsrSeedPlan`'s job
  * (packages/jsx/src/ssr-seed-plan.ts), not this module's (#2075).
  */
-
-import type { IRNode, IRProp } from '@barefootjs/jsx'
 
 /** Tokens this adapter's own codegen can emit that are never context vars. */
 const NON_VAR_TOKENS = new Set([
@@ -59,16 +60,4 @@ export function extractTopLevelIdentifiers(jinjaExpr: string): string[] {
     if (!NON_VAR_TOKENS.has(m[1])) out.push(m[1])
   }
   return out
-}
-
-/**
- * Find the `children` prop's `jsx-children` payload. Narrowed via the
- * AttrValue `kind` discriminator so adapter code stays type-safe if the IR
- * shape evolves.
- */
-export function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
-  const prop = props.find(p => p.name === 'children')
-  if (!prop) return []
-  if (prop.value.kind !== 'jsx-children') return []
-  return prop.value.children
 }

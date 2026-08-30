@@ -300,7 +300,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { BladeRenderCtx } from './lib/types.ts'
 import { BLADE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -311,9 +311,6 @@ import {
   escapeBladeSingleQuoted,
   bladeLoopBindingAccessor,
 } from './lib/blade-naming.ts'
-import {
-  resolveJsxChildrenProp,
-} from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { staticValueToBlade } from './lib/static-value.ts'
 import { BladeFilterEmitter, BladeTopLevelEmitter, truthyTest } from './expr/emitters.ts'
