@@ -31,6 +31,16 @@ a component IR test, template HTML asserted outside adapter conformance fixtures
 behavior asserted outside CSR conformance fixtures, and hydration-correctness fixes not verified
 with an E2E test.
 
+## Reachability claims (must-verify)
+
+Don't accept an unreachable-branch / dead-code argument — yours or the author's — without checking
+it. Trace every producer that can drive the branch, not just the one you started from: a
+`conditional` case in a dispatch, for example, is not proven unreachable by ruling out the loop
+producer alone if a `component`-rooted producer can also select that case. Prefer writing and
+running a small script or test that actually exercises the path over reasoning from the code in
+isolation. If you can't execute one, say plainly what you checked and what you didn't, instead of
+stating the conclusion as settled.
+
 ## Priorities
 
 The cardinal failure mode of this compiler is **silent divergence** — output that differs from the
