@@ -220,6 +220,8 @@ import { fixture as staticArrayFromPropsWithComponentPrecomputed } from './stati
 // Priority 8: CSR conformance
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
+import { fixture as childComponentRefProp } from './child-component-ref-prop'
+import { fixture as childComponentRootScopePrefix } from './child-component-root-scope-prefix'
 import { fixture as reactivePropBinding } from './reactive-prop-binding'
 import { fixture as localRecordUnionIndex } from './local-record-union-index'
 import { fixture as recordIndexLookup } from './record-index-lookup'
@@ -694,6 +696,8 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 8: CSR conformance
   booleanDynamicAttr,
   childComponentInit,
+  childComponentRefProp,
+  childComponentRootScopePrefix,
   reactivePropBinding,
   localRecordUnionIndex,
   recordIndexLookup,

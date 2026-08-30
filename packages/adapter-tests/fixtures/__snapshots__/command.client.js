@@ -3580,12 +3580,6 @@ export function initCommandDialogDemo(__scope, _p = {}) {
 
   // Reactive child component props
   createEffect(() => {
-    const [__Button_s1El] = $c(__scope, 's1')
-    if (__Button_s1El) {
-      { const __v = (el) => {
-          el.addEventListener('click', () => setOpen(true))
-        }; if (__v != null) __Button_s1El.setAttribute('ref', String(__v)); else __Button_s1El.removeAttribute('ref') }
-    }
     const [__CommandDialog_s17El] = $c(__scope, 's17')
     if (__CommandDialog_s17El) {
       __CommandDialog_s17El.open = !!(open())

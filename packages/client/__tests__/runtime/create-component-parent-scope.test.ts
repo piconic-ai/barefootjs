@@ -79,7 +79,7 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
     expect(span!.getAttribute('bf-s')).toBe(parentScopeId)
   })
 
-  test('strips the placeholder when no slot.parent is provided (top-level mount)', async () => {
+  test('resolves the placeholder to the wrapper-derived scope on a top-level mount (#2757)', async () => {
     const { hydrate, createComponent, renderChild } = await import('../../src/runtime')
 
     hydrate('TopBox_test1320', {
@@ -94,17 +94,64 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
       comment: true,
     })
 
-    // No slot — top-level / standalone mount. No outer scope exists,
-    // so the placeholder strips and the span renders without a
-    // `bf-s`. (The alternative — emitting `bf-s=""` — produces an
-    // empty attribute the hydration runtime treats as a malformed
-    // scope, worse than no attribute at all.)
+    // No slot — top-level / standalone mount. Until #2757 no outer scope
+    // existed for this shape at all (`scopeId` is null by design for a
+    // root-is-a-child-call wrapper, and there is no `slot.parent`), so the
+    // placeholder stripped and the span rendered without a `bf-s`.
+    //
+    // That was a CSR-only divergence. The source this hand-written shape
+    // models — a hoisted JSX-element PROP under a root-is-a-child-call
+    // wrapper — is:
+    //
+    //   // Box.tsx
+    //   export function Box({ children }: { children?: unknown }) {
+    //     return <div>{children}</div>
+    //   }
+    //
+    //   // Outer.tsx
+    //   'use client'
+    //   import { createSignal } from '@barefootjs/client'
+    //   import { Box } from './Box'
+    //   export function Outer() {
+    //     const [n, setN] = createSignal(1)
+    //     return <Box children={<span>{n()}</span>} />
+    //   }
+    //
+    // which compiles to exactly this call shape (note `comment: true` and the
+    // placeholder under the `children` key):
+    //
+    //   hydrate('Outer', { init: initOuter, comment: true, template: (_p) =>
+    //     `${renderChild('Box', { children:
+    //        `<span bf-s="__BF_PARENT_SCOPE__" bf="^s1">…</span>` },
+    //        undefined, 's2')}` })
+    //
+    // and whose Hono reference render is:
+    //
+    //   <!--bf-scope:test--><div bf-s="test_s2" bf-h="test" bf-m="s2" bf-r=""
+    //     bf-p="{}" bf="s1"><!--bf:s0--><!--/--><span bf-s="test" bf-r=""
+    //     bf="^s1"><!--bf:^s0-->1<!--/--></span></div><!--bf-/scope:test-->
+    //
+    // i.e. SSR stamps the hoisted span with the OUTER component's scope id
+    // (`bf-s="test"`) beside the child root's `bf-s="test_s2"`. #2757 derives a
+    // scope id for this shape, so the placeholder now resolves to it — the same
+    // relationship, with a generated id standing in for the SSR instance id.
+    //
+    // The distinction matters when re-measuring: the placeholder is emitted
+    // only for a HOISTED element (`children={<jsx/>}`, or any named JSX-element
+    // prop such as `header={<span/>}`). Ordinary nested children
+    // (`<Box><span/></Box>`) compile to `children: \`<span bf="^s1">…\`` with no
+    // `bf-s` and no placeholder at all, so that shape never reaches this branch
+    // and is not a counter-example to the above.
+    //
+    // The empty-`bf-s=""` outcome the strip branch exists to avoid is still
+    // unreachable; that branch now only covers a wrapper materialized with no
+    // ambient scope AND no derivable name.
     const el = createComponent('TopOuter_test1320', {})
     document.body.appendChild(el)
 
     const span = el.querySelector('span')
     expect(span).not.toBeNull()
-    expect(span!.hasAttribute('bf-s')).toBe(false)
+    expect(span!.getAttribute('bf-s')).toMatch(/^TopOuter_test1320_[a-z0-9]+$/)
   })
 
   test('restores _parentScopeId after the template call (re-entrant safety)', async () => {

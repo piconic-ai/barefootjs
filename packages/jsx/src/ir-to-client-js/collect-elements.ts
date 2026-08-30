@@ -13,6 +13,7 @@ import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
+import { classifyDOMProp } from '@barefootjs/shared'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
 const EMPTY_RENDER_EXPRS = new Set(['null', 'undefined', 'false', "''", '""', '``'])
@@ -581,11 +582,32 @@ function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): voi
   for (const prop of node.props) {
     if (prop.name === '...' || prop.name.startsWith('...')) continue
     if (prop.value.kind === 'jsx-children') continue
-    const isEventHandler =
-      prop.name.startsWith('on') &&
-      prop.name.length > 2 &&
-      prop.name[2] === prop.name[2].toUpperCase()
-    if (isEventHandler) continue
+    // `classifyDOMProp` is the single source of truth for "how does this prop
+    // reach the DOM?" (`packages/shared/src/dom-prop.ts`). `applyRestAttrs`
+    // reads it to build its own attribute set — everything whose kind is NOT
+    // `ref` / `event` / `skip`. This mirror is the compile-time twin of that
+    // loop, so it takes the same three exclusions from the same classifier
+    // rather than re-deciding them by hand (#2749: the hand-rolled `on[A-Z]`
+    // check covered events but not `ref`, so a `ref` on a child-component
+    // call site was mirrored as `setAttribute('ref', String(<fn source>))` —
+    // an attribute SSR never emits, failing the SSR-vs-hydrated snapshot and
+    // shadowing the real binding `initChild` was already passing correctly).
+    //
+    // Two small widenings come with reading the shared classifier, both
+    // intended. `skip` also covers a `children` prop reaching here as an
+    // expression rather than as the `jsx-children` variant handled above —
+    // `setAttribute('children', …)` was never a sensible mirror. And the
+    // classifier's event test requires an actual A-Z at index 2, where the
+    // old `name[2] === name[2].toUpperCase()` also matched non-letters
+    // (`on-foo`, `on1x`), which are not DOM events and now mirror normally.
+    //
+    // Why not also exclude `innerHTML` here: `dangerouslySetInnerHTML` as a
+    // reactive CHILD-COMPONENT prop is a separate, unmeasured shape — the
+    // element-level path is what the `dangerous-inner-html*` fixtures cover.
+    // Narrowing this mirror to the three kinds `applyRestAttrs` excludes keeps
+    // the change to the classification `ref` was already missing.
+    const domKind = classifyDOMProp(prop.name).kind
+    if (domKind === 'ref' || domKind === 'event' || domKind === 'skip') continue
     // Only `expression` / `template` variants drive reactive prop forwarding.
     if (prop.value.kind !== 'expression' && prop.value.kind !== 'template') continue
     const valueExpr = attrValueToString(prop.value)!

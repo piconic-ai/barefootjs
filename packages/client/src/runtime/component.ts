@@ -332,11 +332,32 @@ function materializeComponent(
   // #2444's `grandchild-composition` case). A comment wrapper keeps
   // `scopeId === null` and falls through to `slot?.parent`, preserving the
   // hoisted-children placeholder resolution (#1320).
+  //
+  // Third branch (#2757): a root-is-a-child-call wrapper mounted at the TOP
+  // LEVEL has neither. `scopeId` is null by design (step 4 — the parsed
+  // firstChild is the child's own already-scoped element, so we must not
+  // stamp over it) and a top-level `createComponent(name, {})` is passed no
+  // `slot`, so pre-#2757 `_parentScopeId` stayed null for the whole template
+  // eval and `renderChild` fell back to naming the child after ITSELF
+  // (`PairwiseRow_xyz_s2` where SSR and hydration both produce
+  // `PairwiseCase_xyz_s2`, and with no `bf-h`/`bf-m` at all). The wrapper
+  // still HAS a scope identity in the SSR convention — it just has no
+  // element of its own to carry it — so derive one here for threading only.
+  // Same split #2722 made for a genuine fragment root, which keeps a
+  // non-null `scopeId` purely so this threading works and skips only the
+  // ATTRIBUTE write in step 7.
+  //
+  // Why not derive unconditionally: guarded on `!_parentScopeId` so a
+  // wrapper materialized while an OUTER template eval is in flight keeps
+  // inheriting that caller's ambient scope rather than being renamed under a
+  // fresh random id. Only the genuinely-rootless mount is affected.
   const prevParentScopeId = _parentScopeId
   if (scopeId) {
     _parentScopeId = scopeId
   } else if (slot?.parent) {
     _parentScopeId = slot.parent
+  } else if (!_parentScopeId) {
+    _parentScopeId = `${def?.name ?? name}_${generateId()}`
   }
   let html: string
   try {
