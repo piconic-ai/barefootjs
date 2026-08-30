@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -18,7 +18,7 @@ export function initTable(__scope, _p = {}) {
 
 }
 
-hydrate('Table', { init: initTable, template: (_p) => `<div data-slot="table-container" ${(`relative w-full overflow-x-auto`) != null ? 'class="' + escapeAttr(`relative w-full overflow-x-auto`) + '"' : ''}><table data-slot="table" ${(`${('w-full caption-bottom border-collapse text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('w-full caption-bottom border-collapse text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</table></div>` })
+hydrate('Table', { init: initTable, template: (_p) => `<div data-slot="table-container" ${(`relative w-full overflow-x-auto`) != null ? 'class="' + escapeAttr(`relative w-full overflow-x-auto`) + '"' : ''}><table data-slot="table" ${(`${('w-full caption-bottom border-collapse text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('w-full caption-bottom border-collapse text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</table></div>` })
 export function Table(_p, __bfKey) { return createComponent('Table', _p, __bfKey) }
 export function initTableHeader(__scope, _p = {}) {
   if (!__scope) return
@@ -38,7 +38,7 @@ export function initTableHeader(__scope, _p = {}) {
 
 }
 
-hydrate('TableHeader', { init: initTableHeader, template: (_p) => `<thead data-slot="table-header" ${(`${('[&_tr]:border-b')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('[&_tr]:border-b')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</thead>` })
+hydrate('TableHeader', { init: initTableHeader, template: (_p) => `<thead data-slot="table-header" ${(`${('[&_tr]:border-b')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('[&_tr]:border-b')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</thead>` })
 export function TableHeader(_p, __bfKey) { return createComponent('TableHeader', _p, __bfKey) }
 export function initTableBody(__scope, _p = {}) {
   if (!__scope) return
@@ -58,7 +58,7 @@ export function initTableBody(__scope, _p = {}) {
 
 }
 
-hydrate('TableBody', { init: initTableBody, template: (_p) => `<tbody data-slot="table-body" ${(`${('[&_tr:last-child]:border-0')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('[&_tr:last-child]:border-0')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</tbody>` })
+hydrate('TableBody', { init: initTableBody, template: (_p) => `<tbody data-slot="table-body" ${(`${('[&_tr:last-child]:border-0')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('[&_tr:last-child]:border-0')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</tbody>` })
 export function TableBody(_p, __bfKey) { return createComponent('TableBody', _p, __bfKey) }
 export function initTableFooter(__scope, _p = {}) {
   if (!__scope) return
@@ -78,7 +78,7 @@ export function initTableFooter(__scope, _p = {}) {
 
 }
 
-hydrate('TableFooter', { init: initTableFooter, template: (_p) => `<tfoot data-slot="table-footer" ${(`${('bg-muted/50 border-t font-medium [&>tr]:last:border-b-0')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('bg-muted/50 border-t font-medium [&>tr]:last:border-b-0')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</tfoot>` })
+hydrate('TableFooter', { init: initTableFooter, template: (_p) => `<tfoot data-slot="table-footer" ${(`${('bg-muted/50 border-t font-medium [&>tr]:last:border-b-0')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('bg-muted/50 border-t font-medium [&>tr]:last:border-b-0')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</tfoot>` })
 export function TableFooter(_p, __bfKey) { return createComponent('TableFooter', _p, __bfKey) }
 export function initTableRow(__scope, _p = {}) {
   if (!__scope) return
@@ -98,7 +98,7 @@ export function initTableRow(__scope, _p = {}) {
 
 }
 
-hydrate('TableRow', { init: initTableRow, template: (_p) => `<tr data-slot="table-row" ${(`${('hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</tr>` })
+hydrate('TableRow', { init: initTableRow, template: (_p) => `<tr data-slot="table-row" ${(`${('hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</tr>` })
 export function TableRow(_p, __bfKey) { return createComponent('TableRow', _p, __bfKey) }
 export function initTableHead(__scope, _p = {}) {
   if (!__scope) return
@@ -118,7 +118,7 @@ export function initTableHead(__scope, _p = {}) {
 
 }
 
-hydrate('TableHead', { init: initTableHead, template: (_p) => `<th data-slot="table-head" ${(`${('text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</th>` })
+hydrate('TableHead', { init: initTableHead, template: (_p) => `<th data-slot="table-head" ${(`${('text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</th>` })
 export function TableHead(_p, __bfKey) { return createComponent('TableHead', _p, __bfKey) }
 export function initTableCell(__scope, _p = {}) {
   if (!__scope) return
@@ -138,7 +138,7 @@ export function initTableCell(__scope, _p = {}) {
 
 }
 
-hydrate('TableCell', { init: initTableCell, template: (_p) => `<td data-slot="table-cell" ${(`${('p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</td>` })
+hydrate('TableCell', { init: initTableCell, template: (_p) => `<td data-slot="table-cell" ${(`${('p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</td>` })
 export function TableCell(_p, __bfKey) { return createComponent('TableCell', _p, __bfKey) }
 export function initTableCaption(__scope, _p = {}) {
   if (!__scope) return
@@ -158,7 +158,7 @@ export function initTableCaption(__scope, _p = {}) {
 
 }
 
-hydrate('TableCaption', { init: initTableCaption, template: (_p) => `<caption data-slot="table-caption" ${(`${('text-muted-foreground mt-4 text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-muted-foreground mt-4 text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</caption>` })
+hydrate('TableCaption', { init: initTableCaption, template: (_p) => `<caption data-slot="table-caption" ${(`${('text-muted-foreground mt-4 text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-muted-foreground mt-4 text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</caption>` })
 export function TableCaption(_p, __bfKey) { return createComponent('TableCaption', _p, __bfKey) }
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2953,7 +2953,7 @@ export function initDataTablePagination(__scope, _p = {}) {
   initChild('ChevronRightIcon', _s2, { size: "sm" })
 }
 
-hydrate('DataTablePagination', { init: initDataTablePagination, template: (_p) => `<div data-slot="data-table-pagination" ${(`${('flex items-center justify-between px-2 py-4')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex items-center justify-between px-2 py-4')} ${_p.className}`) + '"' : ''} bf="s4"><div class="text-sm text-muted-foreground">${_p.children}</div><div class="flex items-center gap-2"><button type="button" ${(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) != null ? 'class="' + escapeAttr(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) + '"' : ''} ${!_p.canPrev ? 'disabled' : ''} bf="s1">${renderChild('ChevronLeftIcon', {size: "sm"}, undefined, 's0')} Previous </button><button type="button" ${(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) != null ? 'class="' + escapeAttr(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) + '"' : ''} ${!_p.canNext ? 'disabled' : ''} bf="s3"> Next ${renderChild('ChevronRightIcon', {size: "sm"}, undefined, 's2')}</button></div></div>` })
+hydrate('DataTablePagination', { init: initDataTablePagination, template: (_p) => `<div data-slot="data-table-pagination" ${(`${('flex items-center justify-between px-2 py-4')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex items-center justify-between px-2 py-4')} ${_p.className}`) + '"' : ''} bf="s4"><div class="text-sm text-muted-foreground">${markupOrEmpty(_p.children)}</div><div class="flex items-center gap-2"><button type="button" ${(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) != null ? 'class="' + escapeAttr(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) + '"' : ''} ${!_p.canPrev ? 'disabled' : ''} bf="s1">${renderChild('ChevronLeftIcon', {size: "sm"}, undefined, 's0')} Previous </button><button type="button" ${(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) != null ? 'class="' + escapeAttr(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 px-3 has-[>svg]:px-2`) + '"' : ''} ${!_p.canNext ? 'disabled' : ''} bf="s3"> Next ${renderChild('ChevronRightIcon', {size: "sm"}, undefined, 's2')}</button></div></div>` })
 export function DataTablePagination(_p, __bfKey) { return createComponent('DataTablePagination', _p, __bfKey) }
 export function initCheckbox(__scope, _p = {}) {
   if (!__scope) return

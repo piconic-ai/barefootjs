@@ -392,6 +392,13 @@ const escapeTextOrMarkup = (value) => isBfMarkup(value) ? value.__bfMarkup : esc
 const escapeTextOrNode = (value) =>
   isBfMarkup(value) ? value.__bfMarkup :
   (typeof Node !== 'undefined' && value instanceof Node) ? value : escapeText(value)
+// Mirror @barefootjs/client/runtime markupOrEmpty (#2775): the bare
+// \`{children}\` passthrough splice's nullish guard. The value is
+// already-stringified markup by the time the template lambda sees it
+// (materializeComponent joins children into an HTML string before the
+// template runs), so this never escapes — only a nullish (no children
+// passed) value becomes \`''\` instead of the literal "undefined"/"null".
+const markupOrEmpty = (value) => value == null ? '' : value
 // Mirror @barefootjs/client/runtime/spread-attrs.ts: format a record of
 // attributes as an HTML attribute string for use inside template literals.
 // The real runtime helper is imported by generated client JS, but the

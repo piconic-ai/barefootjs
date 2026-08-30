@@ -1,4 +1,4 @@
-import { $, createComponent, createEffect, createMemo, createSignal, escapeAttr, hydrate } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createMemo, createSignal, escapeAttr, hydrate, markupOrEmpty } from '@barefootjs/client/runtime'
 
 
 export function initToggle(__scope, _p = {}) {
@@ -89,5 +89,5 @@ hydrate('Toggle', { init: initToggle, template: (_p) => `<button data-slot="togg
   sm: 'h-8 px-1.5 min-w-8',
   lg: 'h-10 px-2.5 min-w-10',
 })[size]} ${_p.className ?? ''}`
-  })())) + '"' : ''} bf="s0">${_p.children}</button>` })
+  })())) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>` })
 export function Toggle(_p, __bfKey) { return createComponent('Toggle', _p, __bfKey) }

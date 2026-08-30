@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, isSSRPortal, lazySlots, markupOrEmpty, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2711,7 +2711,7 @@ export function initSelect(__scope, _p = {}) {
     })
 }
 
-hydrate('Select', { init: initSelect, template: (_p) => `<div data-slot="select" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`relative inline-block ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`relative inline-block ${_p.className ?? ''}`) + '"' : ''}>${_p.children}</div>` })
+hydrate('Select', { init: initSelect, template: (_p) => `<div data-slot="select" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`relative inline-block ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`relative inline-block ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function Select(_p, __bfKey) { return createComponent('Select', _p, __bfKey) }
 var SelectContext = SelectContext ?? createContext()
 
@@ -2764,7 +2764,7 @@ export function initSelectTrigger(__scope, _p = {}) {
   initChild('ChevronDownIcon', _s0, { className: "size-4 opacity-50" })
 }
 
-hydrate('SelectTrigger', { init: initSelectTrigger, template: (_p) => `<button data-slot="select-trigger" type="button" role="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="none" data-state="closed" ${(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) + '"' : ''} bf="s1">${_p.children}${renderChild('ChevronDownIcon', {className: "size-4 opacity-50"}, undefined, 's0')}</button>` })
+hydrate('SelectTrigger', { init: initSelectTrigger, template: (_p) => `<button data-slot="select-trigger" type="button" role="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="none" data-state="closed" ${(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) + '"' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {className: "size-4 opacity-50"}, undefined, 's0')}</button>` })
 export function SelectTrigger(_p, __bfKey) { return createComponent('SelectTrigger', _p, __bfKey) }
 var SelectContext = SelectContext ?? createContext()
 
@@ -2992,7 +2992,7 @@ export function initSelectContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('SelectContent', { init: initSelectContent, template: (_p) => `<div data-slot="select-content" data-state="closed" role="listbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('SelectContent', { init: initSelectContent, template: (_p) => `<div data-slot="select-content" data-state="closed" role="listbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-y-auto rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function SelectContent(_p, __bfKey) { return createComponent('SelectContent', _p, __bfKey) }
 var SelectContext = SelectContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
@@ -3053,7 +3053,7 @@ export function initSelectItem(__scope, _p = {}) {
   initChild('CheckIcon', _s0, { className: "size-4" })
 }
 
-hydrate('SelectItem', { init: initSelectItem, template: (_p) => `<div data-slot="select-item" ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} data-state="unchecked" role="option" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-selected="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="select-item-indicator" ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} style="display:none">${renderChild('CheckIcon', {className: "size-4"}, undefined, 's0')}</span>${_p.children}</div>` })
+hydrate('SelectItem', { init: initSelectItem, template: (_p) => `<div data-slot="select-item" ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} data-state="unchecked" role="option" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-selected="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="select-item-indicator" ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} style="display:none">${renderChild('CheckIcon', {className: "size-4"}, undefined, 's0')}</span>${markupOrEmpty(_p.children)}</div>` })
 export function SelectItem(_p, __bfKey) { return createComponent('SelectItem', _p, __bfKey) }
 export function initSelectGroup(__scope, _p = {}) {
   if (!__scope) return
@@ -3071,7 +3071,7 @@ export function initSelectGroup(__scope, _p = {}) {
 
 }
 
-hydrate('SelectGroup', { init: initSelectGroup, template: (_p) => `<div data-slot="select-group" role="group" ${(_p.className) != null ? 'class="' + escapeAttr(_p.className) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('SelectGroup', { init: initSelectGroup, template: (_p) => `<div data-slot="select-group" role="group" ${(_p.className) != null ? 'class="' + escapeAttr(_p.className) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function SelectGroup(_p, __bfKey) { return createComponent('SelectGroup', _p, __bfKey) }
 export function initSelectLabel(__scope, _p = {}) {
   if (!__scope) return
@@ -3091,7 +3091,7 @@ export function initSelectLabel(__scope, _p = {}) {
 
 }
 
-hydrate('SelectLabel', { init: initSelectLabel, template: (_p) => `<div data-slot="select-label" ${(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('SelectLabel', { init: initSelectLabel, template: (_p) => `<div data-slot="select-label" ${(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function SelectLabel(_p, __bfKey) { return createComponent('SelectLabel', _p, __bfKey) }
 export function initSelectSeparator(__scope, _p = {}) {
   if (!__scope) return

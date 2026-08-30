@@ -1,4 +1,4 @@
-import { $, applyRestAttrs, createComponent, createEffect, escapeAttr, hydrate } from '@barefootjs/client/runtime'
+import { $, applyRestAttrs, createComponent, createEffect, escapeAttr, hydrate, markupOrEmpty } from '@barefootjs/client/runtime'
 
 
 export function initLabel(__scope, _p = {}) {
@@ -19,5 +19,5 @@ export function initLabel(__scope, _p = {}) {
 
 }
 
-hydrate('Label', { init: initLabel, template: (_p) => `<label data-slot="label" ${(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</label>` })
+hydrate('Label', { init: initLabel, template: (_p) => `<label data-slot="label" ${(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</label>` })
 export function Label(_p, __bfKey) { return createComponent('Label', _p, __bfKey) }

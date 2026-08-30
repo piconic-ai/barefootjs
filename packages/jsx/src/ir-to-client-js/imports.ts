@@ -30,6 +30,9 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // the compiler-built HTML at the producer (renderChild / initChild props);
   // `escapeTextOrMarkup` unwraps it at the claim-plan-'markup' template slot.
   'bfMarkup', 'escapeTextOrMarkup',
+  // Nullish guard for a bare `{children}` passthrough splice (#2775) — the
+  // value is already-stringified markup, never escaped, just nullish-safe.
+  'markupOrEmpty',
   'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
   // — the "one claim mechanism" that replaced `patchSlotRange` and

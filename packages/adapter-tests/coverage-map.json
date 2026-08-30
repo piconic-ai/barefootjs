@@ -1134,6 +1134,16 @@
         "text"
       ]
     },
+    "children-passthrough-no-children": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "class-vs-classname": {
       "kinds": [],
       "axes": [],
@@ -1296,13 +1306,10 @@
         "call",
         "identifier",
         "literal",
-        "logical",
         "member"
       ],
       "axes": [
-        "literal:number",
-        "literal:string",
-        "logical:??"
+        "literal:number"
       ],
       "contexts": [
         "attribute",
@@ -2689,14 +2696,9 @@
     "jsx-element-prop-no-children": {
       "kinds": [
         "identifier",
-        "literal",
-        "logical",
         "member"
       ],
-      "axes": [
-        "literal:string",
-        "logical:??"
-      ],
+      "axes": [],
       "contexts": [
         "text"
       ]
@@ -5650,11 +5652,11 @@
     "binary": 94,
     "call": 232,
     "conditional": 27,
-    "identifier": 329,
+    "identifier": 330,
     "index-access": 14,
-    "literal": 264,
-    "logical": 49,
-    "member": 188,
+    "literal": 263,
+    "logical": 47,
+    "member": 189,
     "object-literal": 63,
     "template-literal": 30,
     "unary": 24,
@@ -5698,9 +5700,9 @@
     "literal:boolean": 56,
     "literal:null": 23,
     "literal:number": 109,
-    "literal:string": 185,
+    "literal:string": 183,
     "logical:&&": 7,
-    "logical:??": 43,
+    "logical:??": 41,
     "logical:||": 14,
     "lowering:date": 4,
     "lowering:formatDate": 1,

@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, hydrate, initChild, isSSRPortal, onCleanup, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, hydrate, initChild, isSSRPortal, markupOrEmpty, onCleanup, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var DialogContext = DialogContext ?? createContext()
 
@@ -14,7 +14,7 @@ export function initDialog(__scope, _p = {}) {
     })
 }
 
-hydrate('Dialog', { init: initDialog, template: (_p) => `<div style="display:contents">${_p.children}</div>` })
+hydrate('Dialog', { init: initDialog, template: (_p) => `<div style="display:contents">${markupOrEmpty(_p.children)}</div>` })
 export function Dialog(_p, __bfKey) { return createComponent('Dialog', _p, __bfKey) }
 var DialogContext = DialogContext ?? createContext()
 
@@ -65,7 +65,7 @@ export function initDialogTrigger(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DialogTrigger', { init: initDialogTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="dialog-trigger" style="display:contents" bf="s1">${_p.children}</span>` : `<button data-slot="dialog-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} bf="s0">${_p.children}</button>`}` })
+hydrate('DialogTrigger', { init: initDialogTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="dialog-trigger" style="display:contents" bf="s1">${markupOrEmpty(_p.children)}</span>` : `<button data-slot="dialog-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>`}` })
 export function DialogTrigger(_p, __bfKey) { return createComponent('DialogTrigger', _p, __bfKey) }
 var DialogContext = DialogContext ?? createContext()
 
@@ -206,7 +206,7 @@ export function initDialogContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DialogContent', { init: initDialogContent, template: (_p) => `<div data-slot="dialog-content" data-state="closed" role="dialog" aria-modal="true" ${(_p.ariaLabelledby) != null ? 'aria-labelledby="' + escapeAttr(_p.ariaLabelledby) + '"' : ''} ${(_p.ariaDescribedby) != null ? 'aria-describedby="' + escapeAttr(_p.ariaDescribedby) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DialogContent', { init: initDialogContent, template: (_p) => `<div data-slot="dialog-content" data-state="closed" role="dialog" aria-modal="true" ${(_p.ariaLabelledby) != null ? 'aria-labelledby="' + escapeAttr(_p.ariaLabelledby) + '"' : ''} ${(_p.ariaDescribedby) != null ? 'aria-describedby="' + escapeAttr(_p.ariaDescribedby) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DialogContent(_p, __bfKey) { return createComponent('DialogContent', _p, __bfKey) }
 export function initDialogHeader(__scope, _p = {}) {
   if (!__scope) return
@@ -226,7 +226,7 @@ export function initDialogHeader(__scope, _p = {}) {
 
 }
 
-hydrate('DialogHeader', { init: initDialogHeader, template: (_p) => `<div data-slot="dialog-header" ${(`${('flex flex-col gap-2 text-center sm:text-left')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 text-center sm:text-left')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DialogHeader', { init: initDialogHeader, template: (_p) => `<div data-slot="dialog-header" ${(`${('flex flex-col gap-2 text-center sm:text-left')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 text-center sm:text-left')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DialogHeader(_p, __bfKey) { return createComponent('DialogHeader', _p, __bfKey) }
 export function initDialogTitle(__scope, _p = {}) {
   if (!__scope) return
@@ -247,7 +247,7 @@ export function initDialogTitle(__scope, _p = {}) {
 
 }
 
-hydrate('DialogTitle', { init: initDialogTitle, template: (_p) => `<h2 data-slot="dialog-title" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-lg leading-none font-semibold')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-lg leading-none font-semibold')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</h2>` })
+hydrate('DialogTitle', { init: initDialogTitle, template: (_p) => `<h2 data-slot="dialog-title" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-lg leading-none font-semibold')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-lg leading-none font-semibold')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</h2>` })
 export function DialogTitle(_p, __bfKey) { return createComponent('DialogTitle', _p, __bfKey) }
 export function initDialogDescription(__scope, _p = {}) {
   if (!__scope) return
@@ -268,7 +268,7 @@ export function initDialogDescription(__scope, _p = {}) {
 
 }
 
-hydrate('DialogDescription', { init: initDialogDescription, template: (_p) => `<p data-slot="dialog-description" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-muted-foreground text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-muted-foreground text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</p>` })
+hydrate('DialogDescription', { init: initDialogDescription, template: (_p) => `<p data-slot="dialog-description" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-muted-foreground text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-muted-foreground text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</p>` })
 export function DialogDescription(_p, __bfKey) { return createComponent('DialogDescription', _p, __bfKey) }
 export function initDialogFooter(__scope, _p = {}) {
   if (!__scope) return
@@ -288,7 +288,7 @@ export function initDialogFooter(__scope, _p = {}) {
 
 }
 
-hydrate('DialogFooter', { init: initDialogFooter, template: (_p) => `<div data-slot="dialog-footer" ${(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DialogFooter', { init: initDialogFooter, template: (_p) => `<div data-slot="dialog-footer" ${(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DialogFooter(_p, __bfKey) { return createComponent('DialogFooter', _p, __bfKey) }
 var DialogContext = DialogContext ?? createContext()
 
@@ -317,7 +317,7 @@ export function initDialogClose(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DialogClose', { init: initDialogClose, template: (_p) => `<button data-slot="dialog-close" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</button>` })
+hydrate('DialogClose', { init: initDialogClose, template: (_p) => `<button data-slot="dialog-close" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>` })
 export function DialogClose(_p, __bfKey) { return createComponent('DialogClose', _p, __bfKey) }
 export function initDialogBasicDemo(__scope, _p = {}) {
   if (!__scope) return

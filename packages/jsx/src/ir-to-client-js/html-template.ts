@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, FlatMapCallback, IRAttribute, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
+import type { AttrValue, FlatMapCallback, IRAttribute, IRExpression, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -319,6 +319,16 @@ function escapeAttrValueExpr(valExpr: string): string {
  * bytes. Bare `${...}` interpolations — `{children}` passthrough and
  * `renderChild(...)` output — are pre-rendered HTML and must NOT be
  * escaped, so this is applied only at the four text-marker emit sites.
+ * The no-`slotId` fallthrough (every `case 'expression'` branch's final
+ * `return` in this file) is shared by several unrelated shapes besides
+ * `{children}` passthrough — an `escapeLeafTextExpressions`-wrapped
+ * preamble leaf, `lowerFormControlValueSsr`'s textarea initial value, an
+ * inlined constant, a `''`/`undefined` deferred placeholder — every one of
+ * which is either already escaped or a literal, and must reach the
+ * template untouched. `bareSpliceExpr` below is that branch's single door
+ * — the one place the fallthrough's decision is made — and it is what
+ * picks the genuine `{children}` reference back out for `markupOrEmpty`'s
+ * nullish guard (#2775); see its own docstring.
  * Hono escapes text content with the same set as attribute values
  * (`& " ' < >`), so `escapeText` delegates to the same operation.
  *
@@ -337,6 +347,62 @@ function escapeAttrValueExpr(valExpr: string): string {
  */
 function escapeTextSlotExpr(innerExpr: string, isMarkup = false): string {
   return `${isMarkup ? 'escapeTextOrMarkup' : 'escapeText'}(${innerExpr})`
+}
+
+/**
+ * Recognizes a JSX child-position expression that is exactly a reference to
+ * the reserved `children` prop — bare `children` (destructured) or
+ * `<receiver>.children` for any single-identifier receiver (`props.children`,
+ * a custom props-param name, a loop-scoped alias closing over props, ...).
+ * Checked against `node.expr` — the ORIGINAL source text, never a
+ * transformed/wrapped form — so it stays accurate regardless of which
+ * builder is asking, and regardless of any earlier pass
+ * (`escapeLeafTextExpressions`, `lowerFormControlValueSsr`) that may have
+ * wrapped an unrelated leaf.
+ *
+ * Deliberately LOOSER than `isTransparentFragment` (`jsx-to-ir.ts`), which
+ * answers the same underlying question one level up. That function runs on
+ * the TS AST and compares the expression text against an EXACT set —
+ * `children`, `props.children`, and the analyzer-resolved
+ * `${ctx.analyzer.propsObjectName}.children`. This layer works on IR and has
+ * no analyzer, so the resolved props name is not reachable here; matching any
+ * single-identifier receiver is the available approximation, chosen — not an
+ * inherited convention.
+ *
+ * That looseness is why the following argument is load-bearing rather than
+ * incidental. A false positive — an unrelated `.children` field, a tree
+ * node's own `children` array say, reaching this bare-splice branch with no
+ * `slotId` — changes nothing harmful: the branch never escaped its value
+ * either way, a non-nullish value is returned untouched, and a nullish one
+ * rendering `''` instead of the literal `"undefined"` is an improvement in
+ * its own right. A destructured-and-renamed children
+ * (`const { children: kids } = props`) is NOT recognized — the same known
+ * gap `isTransparentFragment` has.
+ */
+function isChildrenPassthroughExpr(expr: string): boolean {
+  return /^([A-Za-z_$][\w$]*\.)?children$/.test(expr.trim())
+}
+
+/**
+ * The single door for the bare (no-`slotId`) expression splice — the
+ * counterpart to `escapeTextSlotExpr` for the branch that must NOT escape.
+ * All four `case 'expression'` builders in this file route through here so
+ * this decision exists in exactly one place: four copies that agree today
+ * are four that can drift apart tomorrow, and this file is where that has
+ * already happened (#2753 -> #2762).
+ *
+ * Only a genuine `{children}` passthrough gets `markupOrEmpty`'s nullish
+ * guard (#2775). Everything else this fallthrough hosts — an
+ * `escapeLeafTextExpressions`-wrapped preamble leaf,
+ * `lowerFormControlValueSsr`'s textarea initial value, an inlined constant,
+ * a `''`/`undefined` deferred placeholder — reaches the template exactly as
+ * it arrived, already escaped or a literal. Escaping is never correct here:
+ * the value is pre-rendered HTML, per `escapeTextSlotExpr`'s docstring.
+ */
+function bareSpliceExpr(node: IRExpression, valueExpr: string): string {
+  return !node.joinArrayChild && isChildrenPassthroughExpr(node.expr)
+    ? `markupOrEmpty(${valueExpr})`
+    : valueExpr
 }
 
 /**
@@ -890,7 +956,8 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
         const slotted = branchSlotsVar || node.joinArrayChild ? valueExpr : escapeTextSlotExpr(valueExpr)
         return `<!--bf:${node.slotId}-->\${${slotted}}<!--/-->`
       }
-      return `\${${valueExpr}}`
+      // Bare-splice fallthrough (no `slotId`, not an array-child join).
+      return `\${${bareSpliceExpr(node, valueExpr)}}`
     }
 
     case 'conditional': {
@@ -1434,7 +1501,8 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       if (node.slotId) {
         return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      return `\${${value}}`
+      // Bare-splice fallthrough (no `slotId`).
+      return `\${${bareSpliceExpr(node, value)}}`
     }
 
     case 'conditional': {
@@ -1921,7 +1989,8 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
         const isMarkup = opts.markupSlotIds?.has(node.slotId) ?? false
         return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped, isMarkup)}}<!--/-->`
       }
-      return `\${${value}}`
+      // Bare-splice fallthrough (no `slotId`).
+      return `\${${bareSpliceExpr(node, value)}}`
     }
 
     case 'conditional': {
@@ -2545,7 +2614,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           const isMarkup = opts.markupSlotIds?.has(node.slotId) ?? false
           return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr, isMarkup)}}<!--/-->`
         }
-        return `\${${value}}`
+        // Bare-splice fallthrough (no `slotId`).
+        return `\${${bareSpliceExpr(node, value)}}`
       }
 
     case 'conditional': {

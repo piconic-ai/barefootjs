@@ -1,4 +1,4 @@
-import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, markupOrEmpty, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var RadioGroupContext = RadioGroupContext ?? createContext()
 
@@ -36,7 +36,7 @@ export function initRadioGroup(__scope, _p = {}) {
     })
 }
 
-hydrate('RadioGroup', { init: initRadioGroup, template: (_p) => `<div data-slot="radio-group" role="radiogroup" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`grid gap-3 ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`grid gap-3 ${_p.className ?? ''}`) + '"' : ''}>${_p.children}</div>` })
+hydrate('RadioGroup', { init: initRadioGroup, template: (_p) => `<div data-slot="radio-group" role="radiogroup" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`grid gap-3 ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`grid gap-3 ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function RadioGroup(_p, __bfKey) { return createComponent('RadioGroup', _p, __bfKey) }
 var RadioGroupContext = RadioGroupContext ?? createContext()
 

@@ -23,7 +23,7 @@ export function Page() {
     './card.tsx': `
 'use client'
 export function Card(props: { children?: unknown }) {
-  return <section>{props.children ?? ''}</section>
+  return <section>{props.children}</section>
 }
 `,
   },

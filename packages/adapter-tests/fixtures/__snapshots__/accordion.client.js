@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, forwardProps, hydrate, initChild, insert, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, forwardProps, hydrate, initChild, insert, markupOrEmpty, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2701,7 +2701,7 @@ export function initAccordion(__scope, _p = {}) {
 
 }
 
-hydrate('Accordion', { init: initAccordion, template: (_p) => `<div data-slot="accordion" ${(`${('w-full')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('w-full')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('Accordion', { init: initAccordion, template: (_p) => `<div data-slot="accordion" ${(`${('w-full')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('w-full')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function Accordion(_p, __bfKey) { return createComponent('Accordion', _p, __bfKey) }
 var AccordionItemContext = AccordionItemContext ?? createContext()
 
@@ -2730,7 +2730,7 @@ export function initAccordionItem(__scope, _p = {}) {
     })
 }
 
-hydrate('AccordionItem', { init: initAccordionItem, template: (_p) => `<div data-slot="accordion-item" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${_p.open ? 'open' : 'closed'}`) != null ? 'data-state="' + escapeAttr(`${_p.open ? 'open' : 'closed'}`) + '"' : ''} ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} ${(`${('border-b last:border-b-0')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('border-b last:border-b-0')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('AccordionItem', { init: initAccordionItem, template: (_p) => `<div data-slot="accordion-item" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${_p.open ? 'open' : 'closed'}`) != null ? 'data-state="' + escapeAttr(`${_p.open ? 'open' : 'closed'}`) + '"' : ''} ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} ${(`${('border-b last:border-b-0')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('border-b last:border-b-0')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function AccordionItem(_p, __bfKey) { return createComponent('AccordionItem', _p, __bfKey) }
 var AccordionItemContext = AccordionItemContext ?? createContext()
 
@@ -2825,7 +2825,7 @@ export function initAccordionTrigger(__scope, _p = {}) {
   initChild('ChevronDownIcon', _s0, { size: "sm", get className() { return `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal` } })
 }
 
-hydrate('AccordionTrigger', { init: initAccordionTrigger, template: (_p) => `${_p.asChild ? `<h3 class="flex"><span data-slot="accordion-trigger" style="display:contents" aria-expanded="false" bf="s2">${_p.children}</span></h3>` : `<h3 class="flex"><button data-slot="accordion-trigger" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) + '"' : ''} ${_p.disabled ? 'disabled' : ''} aria-expanded="false" ${_p.disabled ? 'aria-disabled' : ''} bf="s1">${_p.children}${renderChild('ChevronDownIcon', {size: "sm", className: `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`}, undefined, 's0')}</button></h3>`}` })
+hydrate('AccordionTrigger', { init: initAccordionTrigger, template: (_p) => `${_p.asChild ? `<h3 class="flex"><span data-slot="accordion-trigger" style="display:contents" aria-expanded="false" bf="s2">${markupOrEmpty(_p.children)}</span></h3>` : `<h3 class="flex"><button data-slot="accordion-trigger" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) + '"' : ''} ${_p.disabled ? 'disabled' : ''} aria-expanded="false" ${_p.disabled ? 'aria-disabled' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {size: "sm", className: `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`}, undefined, 's0')}</button></h3>`}` })
 export function AccordionTrigger(_p, __bfKey) { return createComponent('AccordionTrigger', _p, __bfKey) }
 var AccordionItemContext = AccordionItemContext ?? createContext()
 
@@ -2864,7 +2864,7 @@ export function initAccordionContent(__scope, _p = {}) {
   if (_s1) (handleMount)(_s1)
 }
 
-hydrate('AccordionContent', { init: initAccordionContent, template: (_p) => `<div data-slot="accordion-content" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="region" data-state="closed" ${(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${('grid-rows-[0fr] invisible')}`) != null ? 'class="' + escapeAttr(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${('grid-rows-[0fr] invisible')}`) + '"' : ''} bf="s1"><div ${(`overflow-hidden text-sm`) != null ? 'class="' + escapeAttr(`overflow-hidden text-sm`) + '"' : ''}><div ${(`pt-0 pb-4 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`pt-0 pb-4 ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${_p.children}</div></div></div>` })
+hydrate('AccordionContent', { init: initAccordionContent, template: (_p) => `<div data-slot="accordion-content" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="region" data-state="closed" ${(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${('grid-rows-[0fr] invisible')}`) != null ? 'class="' + escapeAttr(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${('grid-rows-[0fr] invisible')}`) + '"' : ''} bf="s1"><div ${(`overflow-hidden text-sm`) != null ? 'class="' + escapeAttr(`overflow-hidden text-sm`) + '"' : ''}><div ${(`pt-0 pb-4 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`pt-0 pb-4 ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div></div></div>` })
 export function AccordionContent(_p, __bfKey) { return createComponent('AccordionContent', _p, __bfKey) }
 export function initAccordionSingleOpenDemo(__scope, _p = {}) {
   if (!__scope) return

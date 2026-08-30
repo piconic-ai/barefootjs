@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -16,7 +16,7 @@ export function initPopover(__scope, _p = {}) {
     })
 }
 
-hydrate('Popover', { init: initPopover, template: (_p) => `<div data-slot="popover" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('relative inline-block')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative inline-block')} ${_p.className ?? ''}`) + '"' : ''}>${_p.children}</div>` })
+hydrate('Popover', { init: initPopover, template: (_p) => `<div data-slot="popover" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('relative inline-block')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative inline-block')} ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function Popover(_p, __bfKey) { return createComponent('Popover', _p, __bfKey) }
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -71,7 +71,7 @@ export function initPopoverTrigger(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('PopoverTrigger', { init: initPopoverTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="popover-trigger" aria-expanded="false" style="display:contents" bf="s1">${_p.children}</span>` : `<button data-slot="popover-trigger" type="button" aria-expanded="false" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</button>`}` })
+hydrate('PopoverTrigger', { init: initPopoverTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="popover-trigger" aria-expanded="false" style="display:contents" bf="s1">${markupOrEmpty(_p.children)}</span>` : `<button data-slot="popover-trigger" type="button" aria-expanded="false" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>`}` })
 export function PopoverTrigger(_p, __bfKey) { return createComponent('PopoverTrigger', _p, __bfKey) }
 var PopoverContext = PopoverContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
@@ -184,7 +184,7 @@ export function initPopoverContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('PopoverContent', { init: initPopoverContent, template: (_p) => `<div data-slot="popover-content" data-state="closed" ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('PopoverContent', { init: initPopoverContent, template: (_p) => `<div data-slot="popover-content" data-state="closed" ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function PopoverContent(_p, __bfKey) { return createComponent('PopoverContent', _p, __bfKey) }
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -212,7 +212,7 @@ export function initPopoverClose(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('PopoverClose', { init: initPopoverClose, template: (_p) => `<button data-slot="popover-close" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(_p.className ?? '') != null ? 'class="' + escapeAttr(_p.className ?? '') + '"' : ''} bf="s0">${_p.children}</button>` })
+hydrate('PopoverClose', { init: initPopoverClose, template: (_p) => `<button data-slot="popover-close" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(_p.className ?? '') != null ? 'class="' + escapeAttr(_p.className ?? '') + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>` })
 export function PopoverClose(_p, __bfKey) { return createComponent('PopoverClose', _p, __bfKey) }
 export function initPopoverPreviewDemo(__scope, _p = {}) {
   if (!__scope) return
