@@ -5,9 +5,7 @@
   "description": "Shared components, styles, and tests for BarefootJS integrations",
   "exports": {
     "./components/*": "./components/*",
-    "./styles/*": "./styles/*",
-    "./lib/*": "./lib/*",
-    "./lib/cache-control": "./lib/cache-control.ts"
+    "./styles/*": "./styles/*"
   },
   "devDependencies": {
     "@barefootjs/client": "workspace:*",

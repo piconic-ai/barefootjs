@@ -23,7 +23,6 @@
     "@playwright/test": "^1.41.0",
     "bun-types": "^1.1.0",
     "vite": "^6.0.0",
-    "wrangler": "^4",
-    "barefootjs-integrations-shared": "workspace:*"
+    "wrangler": "^4"
   }
 }
