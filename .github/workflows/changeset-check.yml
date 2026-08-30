@@ -3,6 +3,17 @@ name: Changeset check
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+    # Kept gated, unlike the three drift jobs (#2780): those diff the
+    # head tree against itself, so a stacked base is not an input to
+    # the question they ask. This check is different — it diffs
+    # `base.sha...head.sha` for both published source and added
+    # changesets. On a stack where the base PR carries the changeset
+    # and the upper PR carries the source change, `BASE_SHA` already
+    # contains that changeset, so the added-changeset diff comes back
+    # empty while the source diff doesn't — a false failure on a stack
+    # that is collectively fine. Making this stack-correct means
+    # deciding what "a stacked PR inherits its base's changeset"
+    # should mean, which is a separate design question. See #2780.
     branches: [main]
 
 permissions:

@@ -1,8 +1,10 @@
 name: Update Fixtures
 
+# No `branches` filter: a stacked PR's head can carry the same
+# undetected fixture drift as a main-based one, and this is the only
+# check that would catch it. See #2780.
 on:
   pull_request:
-    branches: [main]
     paths:
       - 'packages/jsx/**'
       - 'packages/adapter-hono/**'

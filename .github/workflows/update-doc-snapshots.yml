@@ -15,10 +15,13 @@ name: Update Doc Snapshots
 # inspect the bot's diff in the same way they inspect `update-fixtures`
 # bot commits — an unintended snap drift is a compiler regression
 # disguised as a passing test, not a "fix forward" signal.
+#
+# No `branches` filter: a stacked PR's head can drift from the
+# doc-examples snapshot the same as a main-based one, and this is the
+# only check that would catch it. See #2780.
 
 on:
   pull_request:
-    branches: [main]
     paths:
       - 'docs/core/**'
       - 'packages/jsx/**'
