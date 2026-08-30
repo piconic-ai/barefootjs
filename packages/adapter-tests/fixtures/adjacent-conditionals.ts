@@ -24,6 +24,6 @@ export function AdjacentConditionals() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf="s2"><!--bf-cond-start:s0--><!--bf-cond-end:s0--><span bf-c="s1">B</span></div>
+    <div bf-s="test" bf="s2"><!--bf-cond-start:s0--><!--bf-cond-end:s0--><span bf-c="s1">DELIBERATELY-WRONG-FOR-2780-DEMO</span></div>
   `,
 })
