@@ -64,10 +64,20 @@ describe('config hook', () => {
     if (dir) await rm(dir, { recursive: true, force: true })
   })
 
-  test('sets appType custom, forces build.manifest, and keys rollupOptions.input by ONLY "use client" files', async () => {
+  test('sets appType custom, forces build.manifest, and keys rollupOptions.input by "use client" files AND the server components that own them (#2767)', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-config-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
     await writeFile(join(dir, 'src/components/Counter.tsx'), '\'use client\'\nexport function Counter() { return <div/> }')
+    // Server component (no 'use client') that renders the client Counter —
+    // it must ALSO become an entry, since its own compiled init is the only
+    // place the `initChild('Counter', ...)` call reaching Counter lives.
+    await writeFile(
+      join(dir, 'src/components/Parent.tsx'),
+      "import { Counter } from './Counter'\nexport function Parent() { return <div><Counter/></div> }",
+    )
+    // Plain server leaf with no client descendant anywhere — must stay OUT
+    // of the entry list. This is the anti-regression: an all-server tree
+    // must not start shipping spurious empty bundles.
     await writeFile(join(dir, 'src/components/Greeting.tsx'), 'export function Greeting() { return <div/> }')
 
     const plugin = makePlugin('src/components', 'internal/views')
@@ -76,7 +86,10 @@ describe('config hook', () => {
     expect(result.appType).toBe('custom')
     expect(result.build.manifest).toBe(true)
     const inputPaths = Object.values(result.build.rollupOptions.input) as string[]
-    expect(inputPaths).toEqual([resolve(dir, 'src/components/Counter.tsx')])
+    expect(inputPaths.sort()).toEqual(
+      [resolve(dir, 'src/components/Counter.tsx'), resolve(dir, 'src/components/Parent.tsx')].sort(),
+    )
+    expect(inputPaths).not.toContain(resolve(dir, 'src/components/Greeting.tsx'))
   })
 
   test('produces no entries when nothing under components has "use client"', async () => {
@@ -258,6 +271,13 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
       join(dir, 'src/components/Counter.tsx'),
       '\'use client\'\nimport { createSignal } from \'@barefootjs/client\'\nexport function Counter() {\n  const [count, setCount] = createSignal(0)\n  return <button onClick={() => setCount(count() + 1)}>{count()}</button>\n}\n',
     )
+    // #2767: a plain server component that merely RENDERS Counter must get
+    // its own script registration too — it owns the `initChild('Counter', ...)`
+    // call, not Counter itself.
+    await writeFile(
+      join(dir, 'src/components/Parent.tsx'),
+      "import { Counter } from './Counter'\nexport function Parent() { return <div><Counter/></div> }",
+    )
     await writeFile(
       join(dir, 'src/components/Greeting.tsx'),
       'export function Greeting() { return <p>Hi</p> }',
@@ -288,17 +308,22 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
       join(dir, 'dist/.vite/manifest.json'),
       JSON.stringify({
         'src/components/Counter.tsx': { file: 'assets/Counter-abc123.js', isEntry: true },
+        'src/components/Parent.tsx': { file: 'assets/Parent-def456.js', isEntry: true },
       }),
     )
 
     await plugin.writeBundle()
 
     const counterTpl = await readFile(join(templatesDir, `Counter${adapter.extension}`), 'utf8')
+    const parentTpl = await readFile(join(templatesDir, `Parent${adapter.extension}`), 'utf8')
     const greetingTpl = await readFile(join(templatesDir, `Greeting${adapter.extension}`), 'utf8')
 
     expect(counterTpl).toContain('{{.Scripts.Register "/static/build/assets/Counter-abc123.js"}}')
-    // Server-only: never in the manifest → scriptAssets resolves to [] →
-    // no script registration text at all.
+    // The server parent needed a bundle too (#2767) and gets its own
+    // registration, from its OWN manifest entry — not Counter's.
+    expect(parentTpl).toContain('{{.Scripts.Register "/static/build/assets/Parent-def456.js"}}')
+    // Genuinely server-only, no client descendant: never in the manifest →
+    // scriptAssets resolves to [] → no script registration text at all.
     expect(greetingTpl).not.toContain('Scripts.Register')
     expect(greetingTpl).toContain('Hi')
   })

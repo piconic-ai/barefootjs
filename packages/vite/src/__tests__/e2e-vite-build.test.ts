@@ -65,8 +65,32 @@ describe('e2e: vite build', () => {
     expect(keys.some(k => k.endsWith('Counter.tsx'))).toBe(true)
     expect(keys.some(k => k.endsWith('SharedCounter.tsx'))).toBe(true)
     expect(keys.some(k => k.endsWith('counterState.tsx'))).toBe(true)
-    // Greeting.tsx has no 'use client' directive — never an entry.
+    // Greeting.tsx has no 'use client' directive AND no client descendant
+    // anywhere — the anti-regression guard: an all-server file must never
+    // become a spurious Rollup entry. See the `needsClientEntry` false case.
     expect(keys.some(k => k.endsWith('Greeting.tsx'))).toBe(false)
+  })
+
+  // #2767: ServerParent/ServerGrandparent carry NO 'use client' directive at
+  // all — they're plain server components whose only reason to become
+  // entries is that they transitively render `Counter`. See
+  // `e2e-fixture/src/components/ServerParent.tsx` and
+  // `ServerGrandparent.tsx`.
+  test('a server component that renders a client descendant also becomes a Rollup entry, transitively', async () => {
+    const manifest = JSON.parse(await readFile(resolve(outDir, '.vite/manifest.json'), 'utf8'))
+    const keys = Object.keys(manifest)
+    const serverParentKey = keys.find(k => k.endsWith('ServerParent.tsx'))
+    const serverGrandparentKey = keys.find(k => k.endsWith('ServerGrandparent.tsx'))
+    expect(serverParentKey).toBeDefined()
+    expect(serverGrandparentKey).toBeDefined()
+
+    const counterKey = keys.find(k => k.endsWith('Counter.tsx') && !k.includes('Shared'))!
+
+    // Proof `@bf-child:` resolved through the fixed `buildChildNameIndex`
+    // to the REAL entry-to-entry import, not the no-op module — mirrors the
+    // LoopParent→LoopChild assertion below, one level deeper.
+    expect(manifest[serverParentKey!].imports).toContain(counterKey)
+    expect(manifest[serverGrandparentKey!].imports).toContain(serverParentKey)
   })
 
   test('the runtime collapses into one shared chunk imported by every client entry', async () => {
@@ -147,6 +171,26 @@ describe('e2e: vite build', () => {
     expect(parentContent).not.toContain('bf-child')
   })
 
+  // #2767: each server component on the path to Counter owns the
+  // `initChild(...)` call reaching the NEXT link in the chain, so each one
+  // needs its OWN `Scripts.Register` — not just Counter's.
+  test('server components that transitively render a client descendant get their own script registration', async () => {
+    const manifest = JSON.parse(await readFile(resolve(outDir, '.vite/manifest.json'), 'utf8'))
+    const serverParentKey = Object.keys(manifest).find(k => k.endsWith('ServerParent.tsx'))!
+    const serverGrandparentKey = Object.keys(manifest).find(k => k.endsWith('ServerGrandparent.tsx'))!
+
+    const serverParentTemplate = await readFile(resolve(templatesDir, 'ServerParent.tmpl'), 'utf8')
+    const serverGrandparentTemplate = await readFile(resolve(templatesDir, 'ServerGrandparent.tmpl'), 'utf8')
+
+    expect(serverParentTemplate).toContain(`{{.Scripts.Register "/static/build/${manifest[serverParentKey].file}"}}`)
+    expect(serverGrandparentTemplate).toContain(
+      `{{.Scripts.Register "/static/build/${manifest[serverGrandparentKey].file}"}}`,
+    )
+  })
+
+  // Anti-regression guard, unchanged by #2767: a component with genuinely
+  // no client descendant anywhere must stay OUT of the Rollup graph and
+  // carry no script registration at all.
   test('emits a template for the server-only component (never in the Rollup graph) with NO script registration', async () => {
     const manifest = JSON.parse(await readFile(resolve(outDir, '.vite/manifest.json'), 'utf8'))
     expect(Object.keys(manifest).some(k => k.endsWith('Greeting.tsx'))).toBe(false)

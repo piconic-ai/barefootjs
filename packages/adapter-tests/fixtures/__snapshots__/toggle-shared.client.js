@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createEffect, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, insert, lazySlots, mapArray, renderChild, styleToCss } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createEffect, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, lazySlots, styleToCss, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initToggleItem(__scope, _p = {}) {
   if (!__scope) return

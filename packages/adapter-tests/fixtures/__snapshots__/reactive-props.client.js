@@ -1,4 +1,4 @@
-import { $, $c, createComponent, createEffect, createMemo, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createMemo, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $c, initChild, renderChild } from '@barefootjs/client/runtime'
 
 export function initReactiveChild(__scope, _p = {}) {
   if (!__scope) return

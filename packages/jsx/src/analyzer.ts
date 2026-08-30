@@ -4237,6 +4237,42 @@ export function listComponentFunctions(
     ts.ScriptKind.TSX
   )
 
+  return listComponentFunctionsFromSourceFile(sourceFile)
+}
+
+/**
+ * One parse, two structural facts about a component file — the component
+ * names it exports (today's `listComponentFunctions` result) and the
+ * PascalCase JSX tags it instantiates (`collectJsxComponentTags`'s
+ * out-edges). Used by `@barefootjs/vite`'s `discoverComponents` to build the
+ * component-instantiation graph that decides which SERVER files also need a
+ * client bundle because they transitively own a `'use client'` descendant
+ * (issue #2767) — a property no single-file compile can answer, since it
+ * depends on the whole discovered corpus.
+ */
+export interface ComponentFileScan {
+  /** Component names this file exports (same result as `listComponentFunctions`). */
+  exports: string[]
+  /** PascalCase JSX tag identifiers this file references. */
+  referencedComponents: string[]
+}
+
+export function scanComponentFile(source: string, filePath: string): ComponentFileScan {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  )
+
+  return {
+    exports: listComponentFunctionsFromSourceFile(sourceFile),
+    referencedComponents: [...collectJsxComponentTags(sourceFile)],
+  }
+}
+
+function listComponentFunctionsFromSourceFile(sourceFile: ts.SourceFile): string[] {
   const componentNames: string[] = []
 
   // 'use client' directive detection (controls whether multi-return JSX
