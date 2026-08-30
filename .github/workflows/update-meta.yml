@@ -8,10 +8,13 @@ name: Update Meta
 # regenerations. Issue #1435 was the visible symptom — `bf add
 # checkbox` lost its `icon` dependency because `ui/meta/checkbox.json`
 # still said `dependencies.internal: []`.
+#
+# No `branches` filter: a stacked PR's head can drift from
+# `ui/components/ui/` the same as a main-based one, and this is the
+# only check that would catch it. See #2780.
 
 on:
   pull_request:
-    branches: [main]
     paths:
       - 'packages/cli/**'
       - 'packages/jsx/**'
