@@ -16,6 +16,15 @@ import { createFixture } from '../src/types'
  * `children-passthrough-no-children` pins the `props.children` spelling, so
  * only this one exercises the alias path. Hono is correct for both, so
  * `expectedHtml` is generated from it unmodified.
+ *
+ * Adding this fixture surfaced a SECOND defect, on the SSR side:
+ * https://github.com/piconic-ai/barefootjs/issues/2788 — Mojo interpolates
+ * the local alias (`$kids`) into the `.html.ep` while the stash carries
+ * only `children`, so the Perl render dies. Seven adapters resolve the
+ * alias; Mojo is declared in
+ * `packages/adapter-mojolicious/src/render-divergences.ts` and skips this
+ * fixture until #2788 is fixed. `expectedHtml` below is the CORRECT output
+ * either way, so the skip is what graduates — not this expectation.
  */
 export const fixture = createFixture({
   id: 'children-passthrough-renamed',

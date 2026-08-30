@@ -15,4 +15,17 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // at value position and the runtime evaluator's `object-literal` case
 // now merges it, so the seed classifies `derived` and SSRs identically
 // to Hono.
-export const renderDivergences: RenderDivergences = {}
+// https://github.com/piconic-ai/barefootjs/issues/2788 — a renamed
+// `children` destructure (`const { children: kids } = props`) interpolates
+// the LOCAL alias into the `.html.ep`, and the stash only carries the
+// caller-facing `children`, so Perl dies inside `Mojo::Template::process`
+// at render time rather than at build. Seven adapters resolve the alias;
+// only Mojo does not. Same family as `aliased-destructured-prop`'s
+// `{ n: count }` shape, one level in — the reserved children slot.
+// Delete this entry when #2788 is fixed: `children-passthrough-renamed`
+// already asserts the correct (Hono-generated) output, so it becomes the
+// regression test the moment the skip comes off.
+export const renderDivergences: RenderDivergences = {
+  'children-passthrough-renamed':
+    'A renamed `children` destructure emits the local alias as a template variable; the stash defines only `children`, so the Perl render dies (#2788).',
+}
