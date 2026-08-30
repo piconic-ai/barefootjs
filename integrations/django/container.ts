@@ -4,6 +4,7 @@
  */
 
 import { Container } from '@cloudflare/containers'
+import { withCacheControl } from 'barefootjs-integrations-shared/lib/cache-control'
 
 type Env = {
   DJANGO_CONTAINER: DurableObjectNamespace
@@ -22,6 +23,6 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const id = env.DJANGO_CONTAINER.idFromName('singleton')
     const stub = env.DJANGO_CONTAINER.get(id) as unknown as { fetch: typeof fetch }
-    return stub.fetch(request)
+    return withCacheControl(request, await stub.fetch(request))
   },
 } satisfies ExportedHandler<Env>
