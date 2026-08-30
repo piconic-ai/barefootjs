@@ -8,7 +8,6 @@
  */
 
 import { Container } from '@cloudflare/containers'
-import { withCacheControl } from 'barefootjs-integrations-shared/lib/cache-control'
 
 type Env = {
   CHI_CONTAINER: DurableObjectNamespace
@@ -27,6 +26,6 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const id = env.CHI_CONTAINER.idFromName('singleton')
     const stub = env.CHI_CONTAINER.get(id) as unknown as { fetch: typeof fetch }
-    return withCacheControl(request, await stub.fetch(request))
+    return stub.fetch(request)
   },
 } satisfies ExportedHandler<Env>

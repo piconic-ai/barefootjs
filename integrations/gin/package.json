@@ -23,7 +23,6 @@
     "vite": "^6.0.0",
     "wrangler": "^4",
     "@barefootjs/client": "workspace:*",
-    "@barefootjs/router": "workspace:*",
-    "barefootjs-integrations-shared": "workspace:*"
+    "@barefootjs/router": "workspace:*"
   }
 }

@@ -14,8 +14,7 @@
   },
   "dependencies": {
     "@barefootjs/client": "workspace:*",
-    "@barefootjs/router": "workspace:*",
-    "barefootjs-integrations-shared": "workspace:*"
+    "@barefootjs/router": "workspace:*"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",

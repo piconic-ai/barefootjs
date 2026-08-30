@@ -1,10 +1,7 @@
 name = "barefootjs-php-example"
 main = "container.ts"
-compatibility_date = "2026-08-29"
+compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
-
-[cache]
-enabled = true
 
 [[containers]]
 class_name = "PhpContainer"
