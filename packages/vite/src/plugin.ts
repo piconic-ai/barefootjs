@@ -395,7 +395,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       reportErrors(canonical, content, projectDir)
 
       let result = canonical
-      if (component.isClient) {
+      if (component.needsClientEntry) {
         const { scriptAssets, preloadAssets } = resolveAssetsFor(component)
         if (scriptAssets.length > 0) {
           result = compileJSX(content, component.absPath, {
@@ -559,7 +559,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
       const input: Record<string, string> = {}
       for (const c of found) {
-        if (!c.isClient) continue
+        if (!c.needsClientEntry) continue
         // The object KEY only names the output chunk (Rollup's `[name]`) —
         // it must be safe even for a `components` dir outside `root` (see
         // `safeRollupEntryName`). It is NOT the manifest lookup key
