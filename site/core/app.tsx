@@ -13,6 +13,7 @@ import { createLandingApp } from './landing/routes'
 import { createPlaygroundApp } from './playground/routes'
 import { createIntegrationsApp } from './integrations/routes'
 import { createOgRoute } from './og-route'
+import { cacheControl } from '@barefootjs/site-shared/lib/cache-control'
 import type { Page, ContentMap, MdxContentMap } from './lib/content'
 
 /**
@@ -24,6 +25,11 @@ import type { Page, ContentMap, MdxContentMap } from './lib/content'
  */
 export async function createApp(content: ContentMap, pages: Page[], mdx: MdxContentMap = {}): Promise<Hono> {
   const app = new Hono()
+
+  // Sets Cache-Control on every route below that doesn't set its own, so
+  // Workers Cache (wrangler.toml's `[cache] enabled = true`) can serve
+  // repeat requests without re-running this Worker.
+  app.use('*', cacheControl)
 
   // Landing page (GET /)
   const landingApp = await createLandingApp()
