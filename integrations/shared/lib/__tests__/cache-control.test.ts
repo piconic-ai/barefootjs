@@ -30,6 +30,17 @@ describe('withCacheControl', () => {
     expect(res.headers.get('Cache-Control')).toBe('no-store')
   })
 
+  test('leaves untouched a response minting a session cookie (e.g. GET /todos on first visit)', () => {
+    const backendResponse = new Response('<html></html>', { headers: { 'Set-Cookie': 'bf_session=abc; Path=/integrations/flask; HttpOnly' } })
+    const res = withCacheControl(req('/integrations/flask/todos'), backendResponse)
+    expect(res.headers.has('Cache-Control')).toBe(false)
+  })
+
+  test('leaves untouched a request that already carries a session cookie (e.g. GET /api/todos on a return visit)', () => {
+    const res = withCacheControl(req('/integrations/flask/api/todos', { headers: { Cookie: 'bf_session=abc' } }), new Response('[]'))
+    expect(res.headers.has('Cache-Control')).toBe(false)
+  })
+
   test('preserves status and body', async () => {
     const res = withCacheControl(req('/integrations/flask/'), new Response('hello', { status: 200 }))
     expect(res.status).toBe(200)

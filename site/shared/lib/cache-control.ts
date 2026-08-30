@@ -18,7 +18,11 @@ const CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=3600'
 /**
  * Sets `Cache-Control` on cacheable GET/HEAD 2xx responses that don't
  * already carry one (e.g. `/og`'s hand-tuned image cache header is left
- * alone).
+ * alone). Also leaves alone anything carrying a session cookie — neither
+ * app sets one today, but caching a `Set-Cookie` response (or a request
+ * that already has a `Cookie`) as `public` would replay one visitor's
+ * cookie or personalized response to everyone else, so the guard stays
+ * even though it's currently a no-op.
  */
 export const cacheControl: MiddlewareHandler = async (c, next) => {
   await next()
@@ -26,6 +30,8 @@ export const cacheControl: MiddlewareHandler = async (c, next) => {
   if (c.req.method !== 'GET' && c.req.method !== 'HEAD') return
   if (!c.res.ok) return
   if (c.res.headers.has('Cache-Control')) return
+  if (c.req.header('Cookie')) return
+  if (c.res.headers.has('Set-Cookie')) return
 
   c.res.headers.set('Cache-Control', CACHE_CONTROL)
 }

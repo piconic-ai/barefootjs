@@ -9,6 +9,8 @@ function buildApp() {
   app.get('/og', (c) => c.body('png', 200, { 'Cache-Control': 'public, max-age=86400, immutable' }))
   app.get('/missing', (c) => c.body('not found', 404))
   app.post('/api/echo', (c) => c.body('ok'))
+  app.get('/login', (c) => c.body('<html></html>', 200, { 'Set-Cookie': 'session=abc; HttpOnly' }))
+  app.get('/account', (c) => c.body('<html></html>'))
   return app
 }
 
@@ -30,6 +32,16 @@ describe('cacheControl middleware', () => {
 
   test('does not cache non-GET/HEAD responses', async () => {
     const res = await buildApp().request('/api/echo', { method: 'POST' })
+    expect(res.headers.has('Cache-Control')).toBe(false)
+  })
+
+  test('does not cache a response that sets a session cookie', async () => {
+    const res = await buildApp().request('/login')
+    expect(res.headers.has('Cache-Control')).toBe(false)
+  })
+
+  test('does not cache a request that already carries a session cookie', async () => {
+    const res = await buildApp().request('/account', { headers: { Cookie: 'session=abc' } })
     expect(res.headers.has('Cache-Control')).toBe(false)
   })
 })

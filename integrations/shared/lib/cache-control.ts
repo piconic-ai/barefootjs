@@ -7,10 +7,15 @@
  * response through here before returning it. One shared decision instead of
  * fifteen copies that could quietly drift.
  *
- * The demo pages are static per route (no auth, no per-visitor server
- * state — interactivity is client-side signals over a fixed SSR shell), so
- * caching them is safe. `max-age` is tuned long: the whole point is to stop
- * a repeat visitor from waking the Container at all.
+ * Most demo pages are static per route (no auth — interactivity is
+ * client-side signals over a fixed SSR shell), so caching them as `public`
+ * is safe. But several integrations also serve a cookie-backed Todo demo
+ * (`/todos`, `/api/todos/*`) scoped to that integration's own path, where
+ * the response body and any `Set-Cookie` genuinely differ per visitor.
+ * Caching those as `public` would replay one visitor's todo list — or
+ * worse, their session cookie — to every other visitor for the TTL window.
+ * `max-age` is tuned long for the routes we DO cache: the whole point is to
+ * stop a repeat visitor from waking the Container at all.
  */
 
 const ASSET_EXTENSION = /\.(?:js|mjs|css|woff2?|ttf|svg|png|jpe?g|gif|webp|ico)$/
@@ -22,13 +27,18 @@ const ASSET_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 
 /**
  * Adds a `Cache-Control` header to a Container response so Workers Cache
- * will store it. Leaves the response alone when it isn't safely cacheable
- * (non-GET/HEAD, non-2xx, or the backend already set its own directive).
+ * will store it. Leaves the response alone when it isn't safely cacheable:
+ * non-GET/HEAD, non-2xx, the backend already set its own directive, or
+ * either side of the exchange carries a session cookie (a `Cookie` on the
+ * request — the visitor already has a session, so the body is theirs — or a
+ * `Set-Cookie` on the response — a new session is being minted for them).
  */
 export function withCacheControl(request: Request, response: Response): Response {
   if (request.method !== 'GET' && request.method !== 'HEAD') return response
   if (!response.ok) return response
   if (response.headers.has('Cache-Control')) return response
+  if (request.headers.has('Cookie')) return response
+  if (response.headers.has('Set-Cookie')) return response
 
   const { pathname } = new URL(request.url)
   const headers = new Headers(response.headers)
