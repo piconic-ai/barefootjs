@@ -135,6 +135,7 @@ describe('e2e: vite dev server', () => {
     // for its output to actually land on disk before asserting on it.
     await waitFor(async () => (await readIfExists(join(templatesDir, 'Counter.tmpl'))) !== null)
     await waitFor(async () => (await readIfExists(join(templatesDir, 'Greeting.tmpl'))) !== null)
+    await waitFor(async () => (await readIfExists(join(templatesDir, 'ServerParent.tmpl'))) !== null)
   }, 30_000)
 
   afterAll(async () => {
@@ -174,6 +175,25 @@ describe('e2e: vite dev server', () => {
     const template = await readFile(join(templatesDir, 'Greeting.tmpl'), 'utf8')
     expect(template).not.toContain('Scripts.Register')
     expect(template).toContain('Hello')
+  })
+
+  // #2767: ServerParent has no 'use client' directive but renders Counter —
+  // it must get its OWN dev-origin script registration (the `@vite/client`
+  // entry plus its own `/@fs/…` module URL), mirroring the client-component
+  // assertion above, and that module URL must actually serve compiled JS
+  // whose init calls `initChild('Counter', ...)`.
+  test('a server component that renders a client descendant also gets dev-origin script registration', async () => {
+    const serverParentPath = join(COMPONENTS_DIR, 'ServerParent.tsx')
+    const requestPath = devRequestPath({ root: APP_ROOT }, serverParentPath)
+    const template = await readFile(join(templatesDir, 'ServerParent.tmpl'), 'utf8')
+
+    expect(template).toContain(`{{.Scripts.Register "${baseUrl}/@vite/client"}}`)
+    expect(template).toContain(`{{.Scripts.Register "${baseUrl}/${requestPath}"}}`)
+
+    const res = await fetch(`${baseUrl}/${requestPath}`)
+    expect(res.status).toBe(200)
+    const body = await res.text()
+    expect(body).toContain('initChild("Counter"')
   })
 
   test('the templates dir carries the dev-artifact marker while the dev server is running', async () => {
