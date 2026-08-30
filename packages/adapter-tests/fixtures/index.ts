@@ -421,6 +421,10 @@ import { fixture as jsxElementPropNoChildren } from './jsx-element-prop-no-child
 // the bare `${_p.children}` client-template splice must not stringify
 // `undefined` on CSR mount.
 import { fixture as childrenPassthroughNoChildren } from './children-passthrough-no-children'
+// #2786: the same passthrough spelled through a renamed destructure
+// (`const { children: kids } = props`), which the source-text recognizer
+// alone does not match.
+import { fixture as childrenPassthroughRenamed } from './children-passthrough-renamed'
 import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
@@ -858,6 +862,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxElementPropExplicitChildren,
   jsxElementPropNoChildren,
   childrenPassthroughNoChildren,
+  childrenPassthroughRenamed,
   jsxElementPropFragmentConditional,
   grandchildComposition,
   compositeRowChildComponent,
