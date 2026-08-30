@@ -975,6 +975,34 @@ export function escapeTextOrMarkup(value: unknown): string {
 }
 
 /**
+ * Nullish guard for a bare `${children}` passthrough splice
+ * (`ir-to-client-js/html-template.ts`'s no-`slotId` `'expression'` branches
+ * — the "bare `${...}` interpolations" the docstring above `escapeTextSlotExpr`
+ * describes) — #2775. The value here is ALREADY-STRINGIFIED MARKUP, not an
+ * arbitrary prop: `materializeComponent` (this file, "Template functions
+ * expect children as an HTML string, not an array") joins a component's
+ * `children` into an HTML string before the template lambda ever runs, so by
+ * the time this function sees the value it is either that HTML string or,
+ * when the caller passed none, simply `undefined` (the key is absent from
+ * the props object entirely). This function's ENTIRE job is that one
+ * nullish case: turn the absent/`null` value into `''`, same as SSR's
+ * `{props.children}` and the DSL adapters' `bf.string(children)` render it.
+ *
+ * Deliberately NOT `escapeTextOrMarkup`: that function falls back to
+ * `escapeText` for anything not `bfMarkup()`-branded, and a `children`
+ * string is never branded (it is a plain string built by
+ * `materializeComponent`, not compiler-escaped piece-by-piece the way a
+ * `bfMarkup()` value is) — routing `children` through it would HTML-escape
+ * real markup into visible `&lt;span&gt;`-style text on every call that
+ * actually has children, trading the no-children bug for a strictly worse
+ * with-children one. So: nullish becomes `''`; every other value is
+ * returned completely unescaped, exactly as it arrived.
+ */
+export function markupOrEmpty(value: unknown): string {
+  return value == null ? '' : (value as string)
+}
+
+/**
  * `escapeText`'s counterpart for a claimed 'markup' slot's REACTIVE write
  * (slot unification A3 follow-up), where the value is a plain-JS expression
  * that may resolve to either a string or a live `Node` (e.g. `{cond &&

@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2699,7 +2699,7 @@ export function initDropdownMenu(__scope, _p = {}) {
     })
 }
 
-hydrate('DropdownMenu', { init: initDropdownMenu, template: (_p) => `<div data-slot="dropdown-menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('relative inline-block')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative inline-block')} ${_p.className ?? ''}`) + '"' : ''}>${_p.children}</div>` })
+hydrate('DropdownMenu', { init: initDropdownMenu, template: (_p) => `<div data-slot="dropdown-menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('relative inline-block')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative inline-block')} ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenu(_p, __bfKey) { return createComponent('DropdownMenu', _p, __bfKey) }
 var DropdownMenuContext = DropdownMenuContext ?? createContext()
 
@@ -2754,7 +2754,7 @@ export function initDropdownMenuTrigger(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DropdownMenuTrigger', { init: initDropdownMenuTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="dropdown-menu-trigger" aria-expanded="false" aria-haspopup="menu" style="display:contents" bf="s1">${_p.children}</span>` : `<button data-slot="dropdown-menu-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="menu" ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</button>`}` })
+hydrate('DropdownMenuTrigger', { init: initDropdownMenuTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="dropdown-menu-trigger" aria-expanded="false" aria-haspopup="menu" style="display:contents" bf="s1">${markupOrEmpty(_p.children)}</span>` : `<button data-slot="dropdown-menu-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="menu" ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>`}` })
 export function DropdownMenuTrigger(_p, __bfKey) { return createComponent('DropdownMenuTrigger', _p, __bfKey) }
 var DropdownMenuContext = DropdownMenuContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
@@ -2920,7 +2920,7 @@ export function initDropdownMenuContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DropdownMenuContent', { init: initDropdownMenuContent, template: (_p) => `<div data-slot="dropdown-menu-content" data-state="closed" role="menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DropdownMenuContent', { init: initDropdownMenuContent, template: (_p) => `<div data-slot="dropdown-menu-content" data-state="closed" role="menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuContent(_p, __bfKey) { return createComponent('DropdownMenuContent', _p, __bfKey) }
 var DropdownMenuContext = DropdownMenuContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
@@ -2978,7 +2978,7 @@ hydrate('DropdownMenuItem', { init: initDropdownMenuItem, template: (_p) => `<di
     ? ('pointer-events-none opacity-50')
     : (_p.variant === 'destructive')
       ? ('text-destructive hover:bg-accent/50 focus:bg-accent focus:text-destructive')
-      : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+      : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuItem(_p, __bfKey) { return createComponent('DropdownMenuItem', _p, __bfKey) }
 export function initDropdownMenuCheckboxItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3031,7 +3031,7 @@ export function initDropdownMenuCheckboxItem(__scope, _p = {}) {
   initChild('CheckIcon', _s1, { className: "size-4" })
 }
 
-hydrate('DropdownMenuCheckboxItem', { init: initDropdownMenuCheckboxItem, template: (_p) => `<div data-slot="dropdown-menu-item" role="menuitemcheckbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(String(_p.checked ?? false)) != null ? 'aria-checked="' + escapeAttr(String(_p.checked ?? false)) + '"' : ''} ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s3"><span ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} bf="s2">${(_p.checked ?? false) ? `<!--bf-cond-start:s0-->${renderChild('CheckIcon', {className: "size-4"}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}</span>${_p.children}</div>` })
+hydrate('DropdownMenuCheckboxItem', { init: initDropdownMenuCheckboxItem, template: (_p) => `<div data-slot="dropdown-menu-item" role="menuitemcheckbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(String(_p.checked ?? false)) != null ? 'aria-checked="' + escapeAttr(String(_p.checked ?? false)) + '"' : ''} ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s3"><span ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} bf="s2">${(_p.checked ?? false) ? `<!--bf-cond-start:s0-->${renderChild('CheckIcon', {className: "size-4"}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}</span>${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuCheckboxItem(_p, __bfKey) { return createComponent('DropdownMenuCheckboxItem', _p, __bfKey) }
 var DropdownMenuRadioGroupContext = DropdownMenuRadioGroupContext ?? createContext()
 
@@ -3047,7 +3047,7 @@ export function initDropdownMenuRadioGroup(__scope, _p = {}) {
     })
 }
 
-hydrate('DropdownMenuRadioGroup', { init: initDropdownMenuRadioGroup, template: (_p) => `<div data-slot="dropdown-menu-radio-group" role="group" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(_p.className ?? '') != null ? 'class="' + escapeAttr(_p.className ?? '') + '"' : ''}>${_p.children}</div>` })
+hydrate('DropdownMenuRadioGroup', { init: initDropdownMenuRadioGroup, template: (_p) => `<div data-slot="dropdown-menu-radio-group" role="group" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(_p.className ?? '') != null ? 'class="' + escapeAttr(_p.className ?? '') + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuRadioGroup(_p, __bfKey) { return createComponent('DropdownMenuRadioGroup', _p, __bfKey) }
 var DropdownMenuRadioGroupContext = DropdownMenuRadioGroupContext ?? createContext()
 
@@ -3087,7 +3087,7 @@ export function initDropdownMenuRadioItem(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DropdownMenuRadioItem', { init: initDropdownMenuRadioItem, template: (_p) => `<div data-slot="dropdown-menu-item" role="menuitemradio" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-checked="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s0"><span ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} data-slot="dropdown-menu-radio-indicator"></span>${_p.children}</div>` })
+hydrate('DropdownMenuRadioItem', { init: initDropdownMenuRadioItem, template: (_p) => `<div data-slot="dropdown-menu-item" role="menuitemradio" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-checked="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s0"><span ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} data-slot="dropdown-menu-radio-indicator"></span>${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuRadioItem(_p, __bfKey) { return createComponent('DropdownMenuRadioItem', _p, __bfKey) }
 var DropdownMenuSubContext = DropdownMenuSubContext ?? createContext()
 
@@ -3105,7 +3105,7 @@ export function initDropdownMenuSub(__scope, _p = {}) {
     })
 }
 
-hydrate('DropdownMenuSub', { init: initDropdownMenuSub, template: (_p) => `<div data-slot="dropdown-menu-sub" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`relative ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`relative ${_p.className ?? ''}`) + '"' : ''}>${_p.children}</div>` })
+hydrate('DropdownMenuSub', { init: initDropdownMenuSub, template: (_p) => `<div data-slot="dropdown-menu-sub" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`relative ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`relative ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuSub(_p, __bfKey) { return createComponent('DropdownMenuSub', _p, __bfKey) }
 var DropdownMenuSubContext = DropdownMenuSubContext ?? createContext()
 
@@ -3164,7 +3164,7 @@ export function initDropdownMenuSubTrigger(__scope, _p = {}) {
   initChild('ChevronRightIcon', _s0, { className: "ml-auto size-4" })
 }
 
-hydrate('DropdownMenuSubTrigger', { init: initDropdownMenuSubTrigger, template: (_p) => `<div data-slot="dropdown-menu-item" data-sub-trigger="true" role="menuitem" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-haspopup="menu" aria-expanded="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s1">${_p.children}${renderChild('ChevronRightIcon', {className: "ml-auto size-4"}, undefined, 's0')}</div>` })
+hydrate('DropdownMenuSubTrigger', { init: initDropdownMenuSubTrigger, template: (_p) => `<div data-slot="dropdown-menu-item" data-sub-trigger="true" role="menuitem" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-haspopup="menu" aria-expanded="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${((_p.disabled ?? false) ? -1 : 0) != null ? 'tabindex="' + escapeAttr((_p.disabled ?? false) ? -1 : 0) + '"' : ''} ${(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden')} ${(_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 focus:bg-accent focus:text-accent-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronRightIcon', {className: "ml-auto size-4"}, undefined, 's0')}</div>` })
 export function DropdownMenuSubTrigger(_p, __bfKey) { return createComponent('DropdownMenuSubTrigger', _p, __bfKey) }
 var DropdownMenuSubContext = DropdownMenuSubContext ?? createContext()
 
@@ -3245,7 +3245,7 @@ export function initDropdownMenuSubContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('DropdownMenuSubContent', { init: initDropdownMenuSubContent, template: (_p) => `<div data-slot="dropdown-menu-sub-content" data-state="closed" role="menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} style="display:none" ${(`${('absolute z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md')} left-full top-0 ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('absolute z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md')} left-full top-0 ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DropdownMenuSubContent', { init: initDropdownMenuSubContent, template: (_p) => `<div data-slot="dropdown-menu-sub-content" data-state="closed" role="menu" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} style="display:none" ${(`${('absolute z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md')} left-full top-0 ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('absolute z-50 min-w-[8rem] rounded-md border bg-popover p-1 shadow-md')} left-full top-0 ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuSubContent(_p, __bfKey) { return createComponent('DropdownMenuSubContent', _p, __bfKey) }
 export function initDropdownMenuLabel(__scope, _p = {}) {
   if (!__scope) return
@@ -3265,7 +3265,7 @@ export function initDropdownMenuLabel(__scope, _p = {}) {
 
 }
 
-hydrate('DropdownMenuLabel', { init: initDropdownMenuLabel, template: (_p) => `<div data-slot="dropdown-menu-label" ${(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DropdownMenuLabel', { init: initDropdownMenuLabel, template: (_p) => `<div data-slot="dropdown-menu-label" ${(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('px-2 py-1.5 text-sm font-semibold text-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuLabel(_p, __bfKey) { return createComponent('DropdownMenuLabel', _p, __bfKey) }
 export function initDropdownMenuSeparator(__scope, _p = {}) {
   if (!__scope) return
@@ -3305,7 +3305,7 @@ export function initDropdownMenuShortcut(__scope, _p = {}) {
 
 }
 
-hydrate('DropdownMenuShortcut', { init: initDropdownMenuShortcut, template: (_p) => `<span data-slot="dropdown-menu-shortcut" ${(`${('ml-auto text-xs tracking-widest text-muted-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('ml-auto text-xs tracking-widest text-muted-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</span>` })
+hydrate('DropdownMenuShortcut', { init: initDropdownMenuShortcut, template: (_p) => `<span data-slot="dropdown-menu-shortcut" ${(`${('ml-auto text-xs tracking-widest text-muted-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('ml-auto text-xs tracking-widest text-muted-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</span>` })
 export function DropdownMenuShortcut(_p, __bfKey) { return createComponent('DropdownMenuShortcut', _p, __bfKey) }
 export function initDropdownMenuGroup(__scope, _p = {}) {
   if (!__scope) return
@@ -3323,7 +3323,7 @@ export function initDropdownMenuGroup(__scope, _p = {}) {
 
 }
 
-hydrate('DropdownMenuGroup', { init: initDropdownMenuGroup, template: (_p) => `<div data-slot="dropdown-menu-group" role="group" ${(_p.className) != null ? 'class="' + escapeAttr(_p.className) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('DropdownMenuGroup', { init: initDropdownMenuGroup, template: (_p) => `<div data-slot="dropdown-menu-group" role="group" ${(_p.className) != null ? 'class="' + escapeAttr(_p.className) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DropdownMenuGroup(_p, __bfKey) { return createComponent('DropdownMenuGroup', _p, __bfKey) }
 export function initDropdownMenuBasicDemo(__scope, _p = {}) {
   if (!__scope) return

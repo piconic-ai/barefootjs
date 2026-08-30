@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, markupOrEmpty, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2733,7 +2733,7 @@ export function initCarousel(__scope, _p = {}) {
     })
 }
 
-hydrate('Carousel', { init: initCarousel, template: (_p) => `<div data-slot="carousel" role="region" aria-roledescription="carousel" ${(`${('relative')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative')} ${_p.className ?? ''}`) + '"' : ''} ${(0) != null ? 'tabindex="' + escapeAttr(0) + '"' : ''} ${((_p.orientation ?? 'horizontal')) != null ? 'data-orientation="' + escapeAttr((_p.orientation ?? 'horizontal')) + '"' : ''} ${(_p.opts ? JSON.stringify(_p.opts) : undefined) != null ? 'data-opts="' + escapeAttr(_p.opts ? JSON.stringify(_p.opts) : undefined) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('Carousel', { init: initCarousel, template: (_p) => `<div data-slot="carousel" role="region" aria-roledescription="carousel" ${(`${('relative')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative')} ${_p.className ?? ''}`) + '"' : ''} ${(0) != null ? 'tabindex="' + escapeAttr(0) + '"' : ''} ${((_p.orientation ?? 'horizontal')) != null ? 'data-orientation="' + escapeAttr((_p.orientation ?? 'horizontal')) + '"' : ''} ${(_p.opts ? JSON.stringify(_p.opts) : undefined) != null ? 'data-opts="' + escapeAttr(_p.opts ? JSON.stringify(_p.opts) : undefined) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function Carousel(_p, __bfKey) { return createComponent('Carousel', _p, __bfKey) }
 var CarouselContext = CarouselContext ?? createContext()
 
@@ -2792,7 +2792,7 @@ export function initCarouselContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('CarouselContent', { init: initCarouselContent, template: (_p) => `<div data-slot="carousel-viewport" class="overflow-hidden"><div data-slot="carousel-content" ${(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div></div>` })
+hydrate('CarouselContent', { init: initCarouselContent, template: (_p) => `<div data-slot="carousel-viewport" class="overflow-hidden"><div data-slot="carousel-content" ${(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div></div>` })
 export function CarouselContent(_p, __bfKey) { return createComponent('CarouselContent', _p, __bfKey) }
 export function initCarouselItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2811,7 +2811,7 @@ export function initCarouselItem(__scope, _p = {}) {
 
 }
 
-hydrate('CarouselItem', { init: initCarouselItem, template: (_p) => `<div data-slot="carousel-item" role="group" aria-roledescription="slide" ${(`${('min-w-0 shrink-0 grow-0 basis-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('min-w-0 shrink-0 grow-0 basis-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</div>` })
+hydrate('CarouselItem', { init: initCarouselItem, template: (_p) => `<div data-slot="carousel-item" role="group" aria-roledescription="slide" ${(`${('min-w-0 shrink-0 grow-0 basis-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('min-w-0 shrink-0 grow-0 basis-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function CarouselItem(_p, __bfKey) { return createComponent('CarouselItem', _p, __bfKey) }
 var CarouselContext = CarouselContext ?? createContext()
 

@@ -112,6 +112,7 @@ export {
   bfMarkup,
   isBfMarkup,
   escapeTextOrMarkup,
+  markupOrEmpty,
   type BfMarkup,
 } from './component.ts'
 

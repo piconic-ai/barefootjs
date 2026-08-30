@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, lazySlots, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, lazySlots, markupOrEmpty, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2699,7 +2699,7 @@ export function initPagination(__scope, _p = {}) {
 
 }
 
-hydrate('Pagination', { init: initPagination, template: (_p) => `<nav role="navigation" aria-label="pagination" data-slot="pagination" ${(`mx-auto flex w-full justify-center ${_p.className}`) != null ? 'class="' + escapeAttr(`mx-auto flex w-full justify-center ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</nav>` })
+hydrate('Pagination', { init: initPagination, template: (_p) => `<nav role="navigation" aria-label="pagination" data-slot="pagination" ${(`mx-auto flex w-full justify-center ${_p.className}`) != null ? 'class="' + escapeAttr(`mx-auto flex w-full justify-center ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</nav>` })
 export function Pagination(_p, __bfKey) { return createComponent('Pagination', _p, __bfKey) }
 export function initPaginationContent(__scope, _p = {}) {
   if (!__scope) return
@@ -2717,7 +2717,7 @@ export function initPaginationContent(__scope, _p = {}) {
 
 }
 
-hydrate('PaginationContent', { init: initPaginationContent, template: (_p) => `<ul data-slot="pagination-content" ${(`flex flex-row items-center gap-1 ${_p.className}`) != null ? 'class="' + escapeAttr(`flex flex-row items-center gap-1 ${_p.className}`) + '"' : ''} bf="s0">${_p.children}</ul>` })
+hydrate('PaginationContent', { init: initPaginationContent, template: (_p) => `<ul data-slot="pagination-content" ${(`flex flex-row items-center gap-1 ${_p.className}`) != null ? 'class="' + escapeAttr(`flex flex-row items-center gap-1 ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</ul>` })
 export function PaginationContent(_p, __bfKey) { return createComponent('PaginationContent', _p, __bfKey) }
 export function initPaginationItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2735,7 +2735,7 @@ export function initPaginationItem(__scope, _p = {}) {
 
 }
 
-hydrate('PaginationItem', { init: initPaginationItem, template: (_p) => `<li data-slot="pagination-item" ${(_p.className) != null ? 'class="' + escapeAttr(_p.className) + '"' : ''} bf="s0">${_p.children}</li>` })
+hydrate('PaginationItem', { init: initPaginationItem, template: (_p) => `<li data-slot="pagination-item" ${(_p.className) != null ? 'class="' + escapeAttr(_p.className) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</li>` })
 export function PaginationItem(_p, __bfKey) { return createComponent('PaginationItem', _p, __bfKey) }
 export function initPaginationLink(__scope, _p = {}) {
   if (!__scope) return
@@ -2774,7 +2774,7 @@ hydrate('PaginationLink', { init: initPaginationLink, template: (_p) => `<a ${(_
 }).outline : ({
   outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
   ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-}).ghost} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "icon": "size-9"})[(_p.size ?? 'icon')]} ${_p.className ?? ''}`) + '"' : ''} ${(_p.href) != null ? 'href="' + escapeAttr(_p.href) + '"' : ''} bf="s0">${_p.children}</a>` })
+}).ghost} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "icon": "size-9"})[(_p.size ?? 'icon')]} ${_p.className ?? ''}`) + '"' : ''} ${(_p.href) != null ? 'href="' + escapeAttr(_p.href) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</a>` })
 export function PaginationLink(_p, __bfKey) { return createComponent('PaginationLink', _p, __bfKey) }
 export function initPaginationPrevious(__scope, _p = {}) {
   if (!__scope) return
