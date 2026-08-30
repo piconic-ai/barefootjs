@@ -1,9 +1,16 @@
 name = "barefootjs-ui"
 main = "worker.ts"
-compatibility_date = "2026-08-29"
+compatibility_date = "2024-01-01"
 
 [assets]
 directory = "./dist"
 
-[cache]
-enabled = true
+# Workers Cache ([cache] enabled = true) is intentionally NOT turned on here yet.
+# Per Cloudflare's own docs, enabling it bills every request to this Worker at
+# the standard rate, including requests to `[assets]` above that are normally
+# free — for an asset-heavy component gallery site like this one, that could
+# be a net cost INCREASE, the opposite of why this file was touched (piconic-
+# ai/barefootjs#2784). The `cacheControl` middleware (site/shared/lib/cache-
+# control.ts) is still mounted and sets Cache-Control on HTML responses, so
+# flipping this on later is a one-line change once the asset-vs-HTML request
+# ratio and actual billing impact are verified against a live account.
