@@ -1144,6 +1144,16 @@
         "text"
       ]
     },
+    "children-passthrough-renamed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "class-vs-classname": {
       "kinds": [],
       "axes": [],
@@ -5652,11 +5662,11 @@
     "binary": 94,
     "call": 232,
     "conditional": 27,
-    "identifier": 330,
+    "identifier": 331,
     "index-access": 14,
     "literal": 263,
     "logical": 47,
-    "member": 189,
+    "member": 190,
     "object-literal": 63,
     "template-literal": 30,
     "unary": 24,

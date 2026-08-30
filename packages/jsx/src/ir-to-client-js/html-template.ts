@@ -369,15 +369,23 @@ function escapeTextSlotExpr(innerExpr: string, isMarkup = false): string {
  * single-identifier receiver is the available approximation, chosen — not an
  * inherited convention.
  *
- * That looseness is why the following argument is load-bearing rather than
- * incidental. A false positive — an unrelated `.children` field, a tree
- * node's own `children` array say, reaching this bare-splice branch with no
- * `slotId` — changes nothing harmful: the branch never escaped its value
- * either way, a non-nullish value is returned untouched, and a nullish one
- * rendering `''` instead of the literal `"undefined"` is an improvement in
- * its own right. A destructured-and-renamed children
- * (`const { children: kids } = props`) is NOT recognized — the same known
- * gap `isTransparentFragment` has.
+ * The looseness costs nothing measurable. An unrelated `.children` member —
+ * a tree node's own `children` array, say — does not even arrive here: a
+ * reactive member expression is given a `slotId` and takes the escaped
+ * text-slot branch above, so it never reaches the bare-splice fallthrough
+ * this gates. And were one to arrive, the outcome is still benign: the
+ * branch never escaped its value either way, a non-nullish value is
+ * returned untouched, and a nullish one rendering `''` instead of the
+ * literal `"undefined"` is an improvement in its own right.
+ *
+ * Both the ORIGINAL source text and the RESOLVED expression are tested,
+ * because either one alone misses a shape. `node.expr` is the only form
+ * that does not vary between the four builders, so it stays the primary
+ * test; but it is the pre-substitution text, which for a
+ * destructured-and-renamed children (`const { children: kids } = props`)
+ * reads `kids` and matches nothing — while the resolved expression the
+ * emitter is about to splice already reads `(_p.children)`. Testing both
+ * closes that (#2786) without giving up `node.expr`'s stability.
  */
 function isChildrenPassthroughExpr(expr: string): boolean {
   return /^([A-Za-z_$][\w$]*\.)?children$/.test(expr.trim())
@@ -400,9 +408,12 @@ function isChildrenPassthroughExpr(expr: string): boolean {
  * the value is pre-rendered HTML, per `escapeTextSlotExpr`'s docstring.
  */
 function bareSpliceExpr(node: IRExpression, valueExpr: string): string {
-  return !node.joinArrayChild && isChildrenPassthroughExpr(node.expr)
-    ? `markupOrEmpty(${valueExpr})`
-    : valueExpr
+  // Strip the parens the emitter wraps a substituted expression in, so the
+  // resolved form is comparable to the bare source text.
+  const resolved = valueExpr.trim().replace(/^\(+|\)+$/g, '')
+  const isChildren =
+    isChildrenPassthroughExpr(node.expr) || isChildrenPassthroughExpr(resolved)
+  return !node.joinArrayChild && isChildren ? `markupOrEmpty(${valueExpr})` : valueExpr
 }
 
 /**
