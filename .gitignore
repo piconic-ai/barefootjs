@@ -103,8 +103,12 @@ packages/adapter-*/blib/
 packages/adapter-*/Makefile
 packages/adapter-*/MYMETA.*
 
-# Perl integration runtime libs (assembled by scripts/assemble-deps.ts)
+# Perl integration runtime libs (assembled by scripts/assemble-deps.ts).
+# integrations/shared isn't a backend integration and has no assemble-deps
+# step — its lib/ is committed source (e.g. lib/cache-control.ts), not a
+# build artifact, so it's excluded from this wildcard.
 integrations/*/lib
+!integrations/shared/lib
 
 # Python
 __pycache__/
