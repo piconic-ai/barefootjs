@@ -4,3 +4,16 @@ compatibility_date = "2024-01-01"
 
 [assets]
 directory = "./dist"
+
+# Workers Cache ([cache] enabled = true) is intentionally NOT turned on here yet.
+# Verified against developers.cloudflare.com/workers/cache/#pricing: "When
+# caching is enabled, every request to your Worker is charged at the standard
+# Workers request rate, including requests that are normally free: static
+# asset requests..." — this is unconditional, not something `exports`-based
+# per-entrypoint caching can scope around, because `[assets]` static-file
+# serving isn't a WorkerEntrypoint. For an asset-heavy docs/gallery site like
+# this one, that's a real net cost INCREASE, the opposite of why this file
+# was touched (piconic-ai/barefootjs#2789). The `cacheControl` middleware
+# (site/shared/lib/cache-control.ts) is still mounted and sets Cache-Control
+# on HTML responses, so flipping this on later is a one-line change once the
+# asset-vs-HTML request volume against a live account justifies it.
