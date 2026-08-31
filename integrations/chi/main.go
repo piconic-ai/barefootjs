@@ -326,6 +326,7 @@ func main() {
 }
 
 func indexHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	body := fmt.Sprintf(`
     <h1>BarefootJS + Chi Example</h1>
     <p>This example demonstrates server-side rendering with Go Chi and BarefootJS.</p>
@@ -356,6 +357,7 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func counterHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewCounterProps(CounterInput{Initial: 0})
 	render(w, http.StatusOK, "Counter", bf.RenderOptions{
 		Props:   &props,
@@ -365,6 +367,7 @@ func counterHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func toggleHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewToggleProps(ToggleInput{
 		ToggleItems: []ToggleItemInput{
 			{Label: "Setting 1", DefaultOn: true},
@@ -428,6 +431,7 @@ func todosSSRHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func reactivePropsHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewReactivePropsProps(ReactivePropsInput{})
 	render(w, http.StatusOK, "ReactiveProps", bf.RenderOptions{
 		Props:   &props,
@@ -437,6 +441,7 @@ func reactivePropsHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func propsReactivityHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewPropsReactivityComparisonProps(PropsReactivityComparisonInput{})
 	render(w, http.StatusOK, "PropsReactivityComparison", bf.RenderOptions{
 		Props:   &props,
@@ -446,6 +451,7 @@ func propsReactivityHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func formHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewFormProps(FormInput{})
 	render(w, http.StatusOK, "Form", bf.RenderOptions{
 		Props:   &props,
@@ -455,6 +461,7 @@ func formHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func portalHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewPortalExampleProps(PortalExampleInput{})
 	render(w, http.StatusOK, "PortalExample", bf.RenderOptions{
 		Props:   &props,
@@ -464,6 +471,7 @@ func portalHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func conditionalReturnHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewConditionalReturnProps(ConditionalReturnInput{})
 	render(w, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -473,6 +481,7 @@ func conditionalReturnHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func conditionalReturnLinkHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: "link"})
 	render(w, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -589,6 +598,7 @@ var fakeResponses = []string{
 }
 
 func aiChatHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewAIChatInteractiveProps(AIChatInteractiveInput{})
 	render(w, http.StatusOK, "AIChatInteractive", bf.RenderOptions{
 		Props:   &props,

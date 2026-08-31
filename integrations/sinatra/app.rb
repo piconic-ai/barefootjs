@@ -357,7 +357,15 @@ class SinatraApp < Sinatra::Base
   # Rack::Builder `map`.
   # -----------------------------------------------------------------------
 
+  # Set on every session-free demo route below (confirmed: none of them call
+  # get_session / read request.cookies) so Workers Cache can serve repeat
+  # visits without waking the Container, even if the browser still carries a
+  # stale bf_session cookie from a prior /todos visit (that cookie's Path is
+  # the whole integration, not /todos — see ../shared/lib/cache-control.ts).
+  CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
+
   get '/' do
+    headers 'cache-control' => CACHE_CONTROL
     layout(title: 'BarefootJS + Sinatra Example', heading: 'BarefootJS + Sinatra Example', back: '', scripts: '', body: <<~HTML)
       <p>This example renders the same shared JSX components with Sinatra (ERB)
       under a plain Rack app — Sinatra's routing DSL is the only framework
@@ -374,10 +382,12 @@ class SinatraApp < Sinatra::Base
   end
 
   get '/counter' do
+    headers 'cache-control' => CACHE_CONTROL
     render_component('Counter', heading: 'Counter Component')
   end
 
   get '/toggle' do
+    headers 'cache-control' => CACHE_CONTROL
     items = [
       { label: 'Setting 1', defaultOn: true },
       { label: 'Setting 2', defaultOn: false },
@@ -392,10 +402,12 @@ class SinatraApp < Sinatra::Base
   end
 
   get '/form' do
+    headers 'cache-control' => CACHE_CONTROL
     render_component('Form', heading: 'Form Example', props: {}, stash: { accepted: false })
   end
 
   get '/reactive-props' do
+    headers 'cache-control' => CACHE_CONTROL
     render_component('ReactiveProps',
                       heading: 'Reactive Props Test',
                       children: { 'reactive_child' => 'ReactiveChild' },
@@ -403,6 +415,7 @@ class SinatraApp < Sinatra::Base
   end
 
   get %r{/conditional-return(-link)?} do
+    headers 'cache-control' => CACHE_CONTROL
     variant = params[:captures]&.first == '-link' ? 'link' : ''
     render_component('ConditionalReturn',
                       heading: "Conditional Return Example#{variant.empty? ? '' : ' (Link)'}",
@@ -411,6 +424,7 @@ class SinatraApp < Sinatra::Base
   end
 
   get '/props-reactivity' do
+    headers 'cache-control' => CACHE_CONTROL
     mk = ->(p) { { displayValue: (p[:value] || 0) * 10 } }
     render_component('PropsReactivityComparison',
                       heading: 'Props Reactivity Comparison',
@@ -420,10 +434,12 @@ class SinatraApp < Sinatra::Base
   end
 
   get '/portal' do
+    headers 'cache-control' => CACHE_CONTROL
     render_component('PortalExample', heading: 'Portal Example', props: {}, stash: { open: false })
   end
 
   get '/ai-chat' do
+    headers 'cache-control' => CACHE_CONTROL
     render_component('AIChatInteractive',
                       title: 'AI Chat — SSE Streaming (Sinatra)',
                       heading: 'AI Chat — SSE Streaming',
@@ -521,6 +537,7 @@ class SinatraApp < Sinatra::Base
 
   # --- blog routes ---
   get '/blog' do
+    headers 'cache-control' => CACHE_CONTROL
     root = BarefootJS::Context.new(BACKEND)
     base = "#{BASE}/blog"
     sort = params[:sort] || 'date'
@@ -559,6 +576,11 @@ class SinatraApp < Sinatra::Base
     i = posts.index { |p| p[:slug] == params[:slug] }
     halt 404, 'Not Found' unless i
 
+    # Only the found (200) path is cacheable — set it here, not before the
+    # halt above, so a bad slug's 404 doesn't get pinned `public` for an hour
+    # (withCacheControl leaves an explicit Cache-Control alone regardless of
+    # status once the backend sets one itself).
+    headers 'cache-control' => CACHE_CONTROL
     p = posts[i]
     prev_post = i.positive? ? posts[i - 1] : nil
     next_post = i < posts.length - 1 ? posts[i + 1] : nil

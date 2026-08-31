@@ -30,7 +30,7 @@
 //! app.py`'s `blog_index_route` exactly (down to `as_sort_key`).
 
 use crate::render::{empty_obj, jarr, jn, jobj, js, new_session, render_component_with_raw_children, render_island, scripts_html};
-use crate::{html_response, AppState};
+use crate::{html_response_cached, AppState};
 use axum::extract::{Path, RawQuery, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -243,7 +243,7 @@ pub async fn index_route(State(state): State<AppState>, RawQuery(query): RawQuer
 
     let title = if tag.is_empty() { "Barefoot Blog \u{2014} Latest posts".to_string() } else { format!("#{tag} \u{2014} Barefoot Blog") };
     match blog_page(&state, &session, &title, &format!("{post_list}{now_playing}")) {
-        Ok(html) => html_response(html),
+        Ok(html) => html_response_cached(html),
         Err(e) => crate::render_error(e),
     }
 }
@@ -291,7 +291,7 @@ pub async fn post_route(State(state): State<AppState>, Path(slug): Path<String>)
         Err(e) => return crate::render_error(e),
     };
     match blog_page(&state, &session, &format!("{} \u{2014} Barefoot Blog", post.title), &content) {
-        Ok(html) => html_response(html),
+        Ok(html) => html_response_cached(html),
         Err(e) => crate::render_error(e),
     }
 }

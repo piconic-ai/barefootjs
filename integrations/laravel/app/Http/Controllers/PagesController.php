@@ -16,6 +16,14 @@ use Illuminate\Http\Response;
  */
 final class PagesController extends Controller
 {
+    /**
+     * Session-free demo route: cacheable at the Workers Cache layer
+     * regardless of a stale bf_session cookie the visitor's browser may
+     * still be sending from an earlier /todos visit (see
+     * integrations/shared/lib/cache-control.ts).
+     */
+    private const CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400';
+
     public function index(): Response
     {
         $base = ExampleApp::base();
@@ -39,12 +47,13 @@ HTML;
             body: $body,
             scripts: '',
             back: '',
-        ));
+        ))->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function counter(): Response
     {
-        return response($this->renderComponent('Counter', heading: 'Counter Component'));
+        return response($this->renderComponent('Counter', heading: 'Counter Component'))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function toggle(): Response
@@ -60,12 +69,13 @@ HTML;
             children: ['toggle_item' => 'ToggleItem'],
             props: ['toggleItems' => $items],
             stash: ['toggleItems' => $items],
-        ));
+        ))->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function form(): Response
     {
-        return response($this->renderComponent('Form', heading: 'Form Example', props: [], stash: ['accepted' => false]));
+        return response($this->renderComponent('Form', heading: 'Form Example', props: [], stash: ['accepted' => false]))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function reactiveProps(): Response
@@ -76,7 +86,7 @@ HTML;
             children: ['reactive_child' => 'ReactiveChild'],
             props: [],
             stash: ['count' => 0, 'doubled' => 0],
-        ));
+        ))->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     /**
@@ -98,7 +108,7 @@ HTML;
             ],
             props: [],
             stash: ['count' => 1],
-        ));
+        ))->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function conditionalReturn(Request $request): Response
@@ -109,12 +119,13 @@ HTML;
             heading: 'Conditional Return Example' . ($variant !== '' ? ' (Link)' : ''),
             props: ['variant' => $variant],
             stash: ['variant' => $variant, 'count' => 0],
-        ));
+        ))->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function portal(): Response
     {
-        return response($this->renderComponent('PortalExample', heading: 'Portal Example', props: [], stash: ['open' => false]));
+        return response($this->renderComponent('PortalExample', heading: 'Portal Example', props: [], stash: ['open' => false]))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function aiChat(): Response
@@ -126,6 +137,6 @@ HTML;
             heading: 'AI Chat -- SSE Streaming',
             stash: ['messages' => [], 'input' => '', 'streamingText' => '', 'isStreaming' => false],
             extraCss: "<link rel=\"stylesheet\" href=\"{$base}/styles/ai-chat.css\">",
-        ));
+        ))->header('Cache-Control', self::CACHE_CONTROL);
     }
 }

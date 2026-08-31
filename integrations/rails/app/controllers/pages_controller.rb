@@ -3,7 +3,15 @@
 # The static-ish page group: the example index plus every non-todo, non-blog
 # component demo. Each action is a 1:1 port of the matching Sinatra route.
 class PagesController < ApplicationController
+  # Cache-Control set explicitly on every action here (all confirmed
+  # session-free — no cookies/session reads) so Workers Cache can serve
+  # repeat visits without waking the Container, even if the browser still
+  # carries a stale bf_session cookie from a prior /todos visit (that cookie's
+  # Path is the whole integration, not /todos — see cache-control.ts).
+  CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
+
   def index
+    response.headers['Cache-Control'] = CACHE_CONTROL
     base = ExampleApp::BASE
     body = <<~HTML
       <p>This example renders the same shared JSX components on Ruby on Rails
@@ -23,10 +31,12 @@ class PagesController < ApplicationController
   end
 
   def counter
+    response.headers['Cache-Control'] = CACHE_CONTROL
     render_component('Counter', heading: 'Counter Component')
   end
 
   def toggle
+    response.headers['Cache-Control'] = CACHE_CONTROL
     items = [
       { label: 'Setting 1', defaultOn: true },
       { label: 'Setting 2', defaultOn: false },
@@ -41,10 +51,12 @@ class PagesController < ApplicationController
   end
 
   def form
+    response.headers['Cache-Control'] = CACHE_CONTROL
     render_component('Form', heading: 'Form Example', props: {}, stash: { accepted: false })
   end
 
   def reactive_props
+    response.headers['Cache-Control'] = CACHE_CONTROL
     render_component('ReactiveProps',
                      heading: 'Reactive Props Test',
                      children: { 'reactive_child' => 'ReactiveChild' },
@@ -52,6 +64,7 @@ class PagesController < ApplicationController
   end
 
   def conditional_return
+    response.headers['Cache-Control'] = CACHE_CONTROL
     variant = params[:link] ? 'link' : ''
     render_component('ConditionalReturn',
                      heading: "Conditional Return Example#{variant.empty? ? '' : ' (Link)'}",
@@ -60,6 +73,7 @@ class PagesController < ApplicationController
   end
 
   def props_reactivity
+    response.headers['Cache-Control'] = CACHE_CONTROL
     mk = ->(p) { { displayValue: (p[:value] || 0) * 10 } }
     render_component('PropsReactivityComparison',
                      heading: 'Props Reactivity Comparison',
@@ -69,10 +83,12 @@ class PagesController < ApplicationController
   end
 
   def portal
+    response.headers['Cache-Control'] = CACHE_CONTROL
     render_component('PortalExample', heading: 'Portal Example', props: {}, stash: { open: false })
   end
 
   def ai_chat
+    response.headers['Cache-Control'] = CACHE_CONTROL
     render_component('AIChatInteractive',
                      title: 'AI Chat — SSE Streaming (Rails)',
                      heading: 'AI Chat — SSE Streaming',

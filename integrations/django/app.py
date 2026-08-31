@@ -367,12 +367,27 @@ AI_RESPONSES = [
 # ---------------------------------------------------------------------------
 
 
+# These routes never touch SESSIONS / the bf_session cookie, but a visitor
+# who has EVER hit /todos in this integration still sends that cookie on
+# every later request here (its Path is the whole integration base, not
+# scoped to /todos -- see cache-control.ts). Setting Cache-Control explicitly
+# opts them back into Workers Cache regardless of a stale session cookie,
+# without weakening the shared helper's default for any route that doesn't
+# opt in. Must match HTML_CACHE_CONTROL in
+# integrations/shared/lib/cache-control.ts verbatim.
+CACHEABLE_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400"
+
+
 def home_route(request):
-    return html_response(home_page())
+    response = html_response(home_page())
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def counter_route(request):
-    return html_response(render_component("Counter", heading="Counter Component"))
+    response = html_response(render_component("Counter", heading="Counter Component"))
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def toggle_route(request):
@@ -381,7 +396,7 @@ def toggle_route(request):
         {"label": "Setting 2", "defaultOn": False},
         {"label": "Setting 3", "defaultOn": False},
     ]
-    return html_response(
+    response = html_response(
         render_component(
             "Toggle",
             heading="Toggle Component",
@@ -390,14 +405,18 @@ def toggle_route(request):
             stash={"toggleItems": items},
         )
     )
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def form_route(request):
-    return html_response(render_component("Form", heading="Form Example", props={}, stash={"accepted": False}))
+    response = html_response(render_component("Form", heading="Form Example", props={}, stash={"accepted": False}))
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def reactive_props_route(request):
-    return html_response(
+    response = html_response(
         render_component(
             "ReactiveProps",
             heading="Reactive Props Test",
@@ -406,6 +425,8 @@ def reactive_props_route(request):
             stash={"count": 0, "doubled": 0},
         )
     )
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def props_reactivity_route(request):
@@ -417,7 +438,7 @@ def props_reactivity_route(request):
     # override is needed here (unlike app.psgi's Kolon port): PropsStyleChild
     # / DestructuredStyleChild's compiled templates already derive
     # `displayValue` in-template (`{% set displayValue = value * 10 %}`).
-    return html_response(
+    response = html_response(
         render_component(
             "PropsReactivityComparison",
             heading="Props Reactivity Comparison",
@@ -429,11 +450,13 @@ def props_reactivity_route(request):
             stash={"count": 1},
         )
     )
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def conditional_return_route(request):
     variant = "link" if request.path.endswith("-link") else ""
-    return html_response(
+    response = html_response(
         render_component(
             "ConditionalReturn",
             heading="Conditional Return Example" + (" (Link)" if variant else ""),
@@ -441,14 +464,18 @@ def conditional_return_route(request):
             stash={"variant": variant, "count": 0},
         )
     )
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def portal_route(request):
-    return html_response(render_component("PortalExample", heading="Portal Example", props={}, stash={"open": False}))
+    response = html_response(render_component("PortalExample", heading="Portal Example", props={}, stash={"open": False}))
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def ai_chat_route(request):
-    return html_response(
+    response = html_response(
         render_component(
             "AIChatInteractive",
             title="AI Chat -- SSE Streaming (Django)",
@@ -457,6 +484,8 @@ def ai_chat_route(request):
             extra_css=f'<link rel="stylesheet" href="{BASE}/styles/ai-chat.css">',
         )
     )
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def todos_route(request):
@@ -767,7 +796,9 @@ def blog_index_route(request):
     )
     now = blog_island(root, "NowPlaying", {}, {"Math": {"min": 0}})
     title = f"#{tag} — Barefoot Blog" if tag else "Barefoot Blog — Latest posts"
-    return html_response(blog_page(root, title, base, post_list + now))
+    response = html_response(blog_page(root, title, base, post_list + now))
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def blog_post_route(request, slug: str):
@@ -803,7 +834,9 @@ def blog_post_route(request, slug: str):
             "now_playing": ("NowPlaying", {"Math": {"min": 0}}),
         },
     )
-    return html_response(blog_page(root, f"{p['title']} — Barefoot Blog", base, content))
+    response = html_response(blog_page(root, f"{p['title']} — Barefoot Blog", base, content))
+    response["Cache-Control"] = CACHEABLE_CACHE_CONTROL
+    return response
 
 
 def home_page() -> str:

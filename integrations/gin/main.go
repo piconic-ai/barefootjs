@@ -302,6 +302,7 @@ func main() {
 }
 
 func indexHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	body := fmt.Sprintf(`
     <h1>BarefootJS + Gin Example</h1>
     <p>This example demonstrates server-side rendering with Go Gin and BarefootJS.</p>
@@ -331,6 +332,7 @@ func indexHandler(c *gin.Context) {
 }
 
 func counterHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewCounterProps(CounterInput{Initial: 0})
 	render(c, http.StatusOK, "Counter", bf.RenderOptions{
 		Props:   &props,
@@ -340,6 +342,7 @@ func counterHandler(c *gin.Context) {
 }
 
 func toggleHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewToggleProps(ToggleInput{
 		ToggleItems: []ToggleItemInput{
 			{Label: "Setting 1", DefaultOn: true},
@@ -403,6 +406,7 @@ func todosSSRHandler(c *gin.Context) {
 }
 
 func reactivePropsHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewReactivePropsProps(ReactivePropsInput{})
 	render(c, http.StatusOK, "ReactiveProps", bf.RenderOptions{
 		Props:   &props,
@@ -412,6 +416,7 @@ func reactivePropsHandler(c *gin.Context) {
 }
 
 func propsReactivityHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewPropsReactivityComparisonProps(PropsReactivityComparisonInput{})
 	render(c, http.StatusOK, "PropsReactivityComparison", bf.RenderOptions{
 		Props:   &props,
@@ -421,6 +426,7 @@ func propsReactivityHandler(c *gin.Context) {
 }
 
 func formHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewFormProps(FormInput{})
 	render(c, http.StatusOK, "Form", bf.RenderOptions{
 		Props:   &props,
@@ -430,6 +436,7 @@ func formHandler(c *gin.Context) {
 }
 
 func portalHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewPortalExampleProps(PortalExampleInput{})
 	render(c, http.StatusOK, "PortalExample", bf.RenderOptions{
 		Props:   &props,
@@ -439,6 +446,7 @@ func portalHandler(c *gin.Context) {
 }
 
 func conditionalReturnHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewConditionalReturnProps(ConditionalReturnInput{})
 	render(c, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -448,6 +456,7 @@ func conditionalReturnHandler(c *gin.Context) {
 }
 
 func conditionalReturnLinkHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: "link"})
 	render(c, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -564,6 +573,7 @@ var fakeResponses = []string{
 }
 
 func aiChatHandler(c *gin.Context) {
+	c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewAIChatInteractiveProps(AIChatInteractiveInput{})
 	render(c, http.StatusOK, "AIChatInteractive", bf.RenderOptions{
 		Props:   &props,

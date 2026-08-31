@@ -6,7 +6,7 @@
 //! of a blocking one, so other in-flight requests aren't stalled).
 
 use crate::render::{empty_obj, jarr, jb, jobj, js, new_session, render_component};
-use crate::{app_static_href, html_response, layout, render_error, AppState, LayoutOpts};
+use crate::{app_static_href, html_response_cached, layout, render_error, AppState, LayoutOpts};
 use axum::extract::State;
 use axum::response::sse::{Event, Sse};
 use axum::response::Response;
@@ -32,7 +32,7 @@ pub async fn page_route(State(state): State<AppState>) -> Response {
     ]);
     let extra_css = format!(r#"<link rel="stylesheet" href="{}">"#, app_static_href(&state, "styles/ai-chat.css"));
     match render_component(&state, &session, "AIChatInteractive", empty_obj(), stash) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "AI Chat -- SSE Streaming (Axum)".to_string(),

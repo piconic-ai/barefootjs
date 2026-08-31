@@ -5,7 +5,14 @@
 # all sharing one request-scoped script collector (`root`). Direct port of the
 # Sinatra example's blog routes.
 class BlogController < ApplicationController
+  # Both actions here are confirmed session-free (no cookies/session reads),
+  # so set Cache-Control explicitly — otherwise a stale bf_session cookie from
+  # a prior /todos visit (Path is the whole integration, not /todos) would
+  # make withCacheControl treat these as private (see cache-control.ts).
+  CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
+
   def index
+    response.headers['Cache-Control'] = CACHE_CONTROL
     root = BarefootJS::Context.new(ExampleApp::BACKEND)
     base = "#{ExampleApp::BASE}/blog"
     sort = params[:sort] || 'date'
@@ -44,6 +51,11 @@ class BlogController < ApplicationController
     i = posts.index { |p| p[:slug] == params[:slug] }
     return render plain: 'Not Found', status: :not_found unless i
 
+    # Only the found (200) path is cacheable — set it here, not before the
+    # not-found guard above, so a bad slug's 404 doesn't get pinned `public`
+    # for an hour (withCacheControl leaves an explicit Cache-Control alone
+    # regardless of status once the backend sets one itself).
+    response.headers['Cache-Control'] = CACHE_CONTROL
     p = posts[i]
     prev_post = i.positive? ? posts[i - 1] : nil
     next_post = i < posts.length - 1 ? posts[i + 1] : nil

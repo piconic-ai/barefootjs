@@ -18,6 +18,14 @@ use Illuminate\Http\Response;
  */
 final class BlogController extends Controller
 {
+    /**
+     * Session-free demo route: cacheable at the Workers Cache layer
+     * regardless of a stale bf_session cookie the visitor's browser may
+     * still be sending from an earlier /todos visit (see
+     * integrations/shared/lib/cache-control.ts).
+     */
+    private const CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400';
+
     public function index(Request $request): Response
     {
         $backend = ExampleApp::backend();
@@ -46,7 +54,8 @@ final class BlogController extends Controller
         );
         $now = ExampleApp::blogIsland($root, 'NowPlaying', [], ['Math' => ['min' => 0]]);
         $title = $tag !== '' ? "#{$tag} \u{2014} Barefoot Blog" : 'Barefoot Blog \u{2014} Latest posts';
-        return response(ExampleApp::blogPage($root, $title, $base, $postList . $now));
+        return response(ExampleApp::blogPage($root, $title, $base, $postList . $now))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function post(string $slug): Response
@@ -95,6 +104,7 @@ final class BlogController extends Controller
                 'now_playing' => ['NowPlaying', ['Math' => ['min' => 0]]],
             ],
         );
-        return response(ExampleApp::blogPage($root, "{$p['title']} \u{2014} Barefoot Blog", $base, $content));
+        return response(ExampleApp::blogPage($root, "{$p['title']} \u{2014} Barefoot Blog", $base, $content))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 }

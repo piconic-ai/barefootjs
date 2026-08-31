@@ -303,6 +303,7 @@ func main() {
 }
 
 func indexHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	body := fmt.Sprintf(`
     <h1>BarefootJS + Echo Example</h1>
     <p>This example demonstrates server-side rendering with Go Echo and BarefootJS.</p>
@@ -332,6 +333,7 @@ func indexHandler(c echo.Context) error {
 }
 
 func counterHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewCounterProps(CounterInput{Initial: 0})
 	return c.Render(http.StatusOK, "Counter", bf.RenderOptions{
 		Props:   &props,
@@ -341,6 +343,7 @@ func counterHandler(c echo.Context) error {
 }
 
 func toggleHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewToggleProps(ToggleInput{
 		ToggleItems: []ToggleItemInput{
 			{Label: "Setting 1", DefaultOn: true},
@@ -385,6 +388,7 @@ func todosHandler(c echo.Context) error {
 }
 
 func reactivePropsHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewReactivePropsProps(ReactivePropsInput{})
 	return c.Render(http.StatusOK, "ReactiveProps", bf.RenderOptions{
 		Props:   &props,
@@ -394,6 +398,7 @@ func reactivePropsHandler(c echo.Context) error {
 }
 
 func propsReactivityHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewPropsReactivityComparisonProps(PropsReactivityComparisonInput{})
 	return c.Render(http.StatusOK, "PropsReactivityComparison", bf.RenderOptions{
 		Props:   &props,
@@ -403,6 +408,7 @@ func propsReactivityHandler(c echo.Context) error {
 }
 
 func formHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewFormProps(FormInput{})
 	return c.Render(http.StatusOK, "Form", bf.RenderOptions{
 		Props:   &props,
@@ -412,6 +418,7 @@ func formHandler(c echo.Context) error {
 }
 
 func portalHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewPortalExampleProps(PortalExampleInput{})
 	return c.Render(http.StatusOK, "PortalExample", bf.RenderOptions{
 		Props:   &props,
@@ -421,6 +428,7 @@ func portalHandler(c echo.Context) error {
 }
 
 func conditionalReturnHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewConditionalReturnProps(ConditionalReturnInput{})
 	return c.Render(http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -430,6 +438,7 @@ func conditionalReturnHandler(c echo.Context) error {
 }
 
 func conditionalReturnLinkHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: "link"})
 	return c.Render(http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -571,6 +580,7 @@ var fakeResponses = []string{
 }
 
 func aiChatHandler(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	props := NewAIChatInteractiveProps(AIChatInteractiveInput{})
 	return c.Render(http.StatusOK, "AIChatInteractive", bf.RenderOptions{
 		Props:   &props,
