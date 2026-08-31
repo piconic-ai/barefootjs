@@ -216,6 +216,34 @@ function completeComboGreedy(
 }
 
 /**
+ * Drives the greedy set-cover: repeatedly takes the FIRST still-uncovered
+ * target in `uncovered` (plain `Map` insertion order — see the module
+ * docstring), completes a combo around its seed via `completeComboGreedy`,
+ * and lets `markFn` remove whatever that combo covered. Shared by the t=2
+ * floor and the t=3 promotion — same driver loop, parameterized by what
+ * "covered" means (`scoreFn`/`markFn` close over the caller's own
+ * `uncovered` map and target arity).
+ */
+function buildGreedyCoveringCases(
+  uncovered: Map<string, Partial<AxisCombo>>,
+  scoreFn: (combo: AxisCombo) => number,
+  markFn: (combo: Readonly<AxisCombo>) => void,
+  startCaseIndex: number,
+): AxisCombo[] {
+  const cases: AxisCombo[] = []
+  let caseIndex = startCaseIndex
+  while (uncovered.size > 0) {
+    const [, seed] = uncovered.entries().next().value as [string, Partial<AxisCombo>]
+    const rng = makeRng(caseIndex)
+    const combo = assertValidCombo(completeComboGreedy(seed, rng, scoreFn))
+    cases.push(combo)
+    markFn(combo)
+    caseIndex++
+  }
+  return cases
+}
+
+/**
  * Builds the case list. Every uncovered valid pair is targeted by SOME
  * case (the coverage floor `pairwise-covering-array.test.ts` asserts
  * mechanically); no invalid pair is ever placed in a case (enforced by
@@ -224,22 +252,23 @@ function completeComboGreedy(
  */
 export function buildCoveringArray(): CoveringArrayResult {
   const axisPairs = allAxisPairs()
-  const uncovered = new Map<string, { pair: AxisPair; valueA: string; valueB: string }>()
+  // Deterministic iteration order: `Map` preserves insertion order, and
+  // entries are populated in a fixed order below (axis-pair order ×
+  // AXIS_VALUES order), so `buildGreedyCoveringCases` visits pairs in the
+  // same sequence every time.
+  const uncovered = new Map<string, Partial<AxisCombo>>()
   let totalValidPairs = 0
   for (const pair of axisPairs) {
     for (const { valueA, valueB } of validValuePairs(pair)) {
-      uncovered.set(pairKey(pair, valueA, valueB), { pair, valueA, valueB })
+      uncovered.set(pairKey(pair, valueA, valueB), { [pair.a]: valueA, [pair.b]: valueB } as Partial<AxisCombo>)
       totalValidPairs++
     }
   }
 
-  const cases: AxisCombo[] = []
-
   function countNewlyCoveredPairs(combo: Readonly<AxisCombo>): number {
     let n = 0
     for (const pair of axisPairs) {
-      const key = pairKey(pair, combo[pair.a], combo[pair.b])
-      if (uncovered.has(key)) n++
+      if (uncovered.has(pairKey(pair, combo[pair.a], combo[pair.b]))) n++
     }
     return n
   }
@@ -250,20 +279,7 @@ export function buildCoveringArray(): CoveringArrayResult {
     }
   }
 
-  let caseIndex = 0
-  // Deterministic iteration order over the pair table: `Map` preserves
-  // insertion order, and `uncovered` was populated in a fixed order above
-  // (axis-pair order × AXIS_VALUES order), so re-running this function
-  // visits pairs in the same sequence every time.
-  while (uncovered.size > 0) {
-    const [, target] = uncovered.entries().next().value as [string, { pair: AxisPair; valueA: string; valueB: string }]
-    const rng = makeRng(caseIndex)
-    const seed: Partial<AxisCombo> = { [target.pair.a]: target.valueA, [target.pair.b]: target.valueB } as Partial<AxisCombo>
-    const combo = assertValidCombo(completeComboGreedy(seed, rng, countNewlyCoveredPairs))
-    cases.push(combo)
-    markCovered(combo)
-    caseIndex++
-  }
+  const cases = buildGreedyCoveringCases(uncovered, countNewlyCoveredPairs, markCovered, 0)
 
   return { cases, totalValidPairs }
 }
@@ -326,10 +342,6 @@ export interface VariableStrengthResult extends CoveringArrayResult {
   floorCases: AxisCombo[]
   /** Cases appended beyond the t=2 floor purely to reach t=3 coverage on the fragile subset. */
   additionalCases: AxisCombo[]
-  /** Total valid value-triples across the 7 promoted axis-triples — the t=3 coverage denominator. */
-  totalValidTriples: number
-  /** How many t=3 targets the t=2 floor already covered incidentally, with no case added for them. */
-  triplesCoveredByFloor: number
 }
 
 /**
@@ -355,12 +367,14 @@ export function buildVariableStrengthArray(): VariableStrengthResult {
   const floor = buildCoveringArray()
   const triples = promotedTriples()
 
-  const uncovered = new Map<string, { triple: AxisTriple; valueA: string; valueB: string; valueC: string }>()
-  let totalValidTriples = 0
+  const uncovered = new Map<string, Partial<AxisCombo>>()
   for (const triple of triples) {
     for (const { valueA, valueB, valueC } of validValueTriples(triple)) {
-      uncovered.set(tripleKey(triple, valueA, valueB, valueC), { triple, valueA, valueB, valueC })
-      totalValidTriples++
+      uncovered.set(tripleKey(triple, valueA, valueB, valueC), {
+        [triple.a]: valueA,
+        [triple.b]: valueB,
+        [triple.c]: valueC,
+      } as Partial<AxisCombo>)
     }
   }
 
@@ -371,7 +385,6 @@ export function buildVariableStrengthArray(): VariableStrengthResult {
   }
 
   for (const combo of floor.cases) markCoveredByCombo(combo)
-  const triplesCoveredByFloor = totalValidTriples - uncovered.size
 
   function countNewlyCoveredTriples(combo: Readonly<AxisCombo>): number {
     let n = 0
@@ -381,28 +394,12 @@ export function buildVariableStrengthArray(): VariableStrengthResult {
     return n
   }
 
-  const additionalCases: AxisCombo[] = []
-  let caseIndex = floor.cases.length
-  while (uncovered.size > 0) {
-    const [, target] = uncovered.entries().next().value as [string, { triple: AxisTriple; valueA: string; valueB: string; valueC: string }]
-    const rng = makeRng(caseIndex)
-    const seed: Partial<AxisCombo> = {
-      [target.triple.a]: target.valueA,
-      [target.triple.b]: target.valueB,
-      [target.triple.c]: target.valueC,
-    } as Partial<AxisCombo>
-    const combo = assertValidCombo(completeComboGreedy(seed, rng, countNewlyCoveredTriples))
-    additionalCases.push(combo)
-    markCoveredByCombo(combo)
-    caseIndex++
-  }
+  const additionalCases = buildGreedyCoveringCases(uncovered, countNewlyCoveredTriples, markCoveredByCombo, floor.cases.length)
 
   return {
     cases: [...floor.cases, ...additionalCases],
     floorCases: floor.cases,
     additionalCases,
     totalValidPairs: floor.totalValidPairs,
-    totalValidTriples,
-    triplesCoveredByFloor,
   }
 }
