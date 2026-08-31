@@ -1,5 +1,94 @@
 # @barefootjs/client
 
+## 0.33.3
+
+### Patch Changes
+
+- be0b2c6: Stop an unguarded `{props.children}` from rendering the literal text
+  `undefined` on a pure-CSR mount when the caller passes no children.
+  
+  The client template emitted `children` as a bare `${_p.children}` splice, and a
+  caller that passes no children leaves the key absent from the props object
+  entirely — so the splice stringified `undefined` into the DOM. SSR and
+  SSR+hydration both rendered an empty body, which broke the three-way contract on
+  the SSR-equals-CSR-mount leg, and only there: an SSR-first check could not see
+  it. The shape is ordinary component code, and seventeen fixtures in the corpus
+  (kbd, dialog, tooltip, select, tabs, popover, combobox, …) were emitting it.
+  
+  The new `markupOrEmpty` runtime helper does exactly one thing: a nullish value
+  becomes the empty string, every other value passes through completely
+  unescaped. It is deliberately not `escapeTextOrMarkup`, which its sibling props
+  use — that helper only lets a value through unescaped when it carries the
+  `bfMarkup()` brand, and a children payload never does, since
+  `materializeComponent` joins children into a plain HTML string before the
+  template lambda runs. Routing children through it would HTML-escape real markup
+  into visible `&lt;span&gt;` text on every call that actually has children. The
+  guard matches how the other two families already render the same source: Hono's
+  JSX runtime renders `undefined` as nothing, and the DSL adapters route through
+  `bf.string(children)`.
+  
+  On the compiler side the decision lives in one place. `bareSpliceExpr` is the
+  single door for the no-`slotId` splice — the counterpart to `escapeTextSlotExpr`
+  for the branch that must not escape — and all four `case 'expression'` template
+  builders call it rather than each carrying its own copy.
+  
+  The fixture corpus had been routing around this rather than pinning it:
+  `jsx-element-prop-no-children` and `component-with-jsx-children` both guarded
+  their source with `?? ''`, which is why no conformance layer reported it. Both
+  guards are dropped and a dedicated fixture with the unguarded source is added.
+- da77d25: Collapse the row-key attribute (`data-key` / `data-key-N`) onto one IR-resolved field, `IRElement.keyAttr`, fixing #2753's two measured shapes: the client runtime stamping a positional-index `data-key` onto an unkeyed loop's rows that SSR never emits (Shape A), and the client stamping a second, plain `data-key` alongside SSR's depth-suffixed `data-key-N` on a nested loop's rows (Shape B).
+  
+  `IRElement.keyAttr` replaces the `carriesDataKey` boolean (#2732/#2744) and is now the single decision every adapter and the client runtime reads, resolved once in `jsx-to-ir.ts`:
+  
+  - Mechanism 1 (`applyLoopKeyAttr`): an element directly inside a `.map()` this component compiles inline gets `{ name: keyAttrName(loop.depth), value: <the key expression> }` — absent entirely for an unkeyed loop.
+  - Mechanism 2 (`resolveRootKeyAttr` + the existing `markDataKeyCarrier`): one of this component's own possible render roots (a plain element/if-statement-branch root, or a `needsScopeComment` fragment's first eligible element) gets `{ name: 'data-key' }` (no local value) to relay a key its OWN caller supplies at runtime.
+  
+  All 9 SSR adapters now emit from `element.keyAttr` alone. Deleted per-adapter duplication this replaces: Hono's `loopKeyStack` (a mutated stack of loop keys) and its parallel `carriesDataKey`/`__dataKey` branch; every one of the other 8 adapters' `currentLoopKeyDepth` field (Go template: `loopKeyDepthStack`) and their `attr.name === 'key'` rewrite in `renderAttributes`; and the `rootScopeNodes`/`collectRootScopeNodes` duplication (byte-identical across 8 `lib/ir-scope.ts` copies) that fed each adapter's own `carriesDataKey` gate — that walk now lives once, in `jsx-to-ir.ts`'s `resolveRootKeyAttr`.
+  
+  On the client runtime side (`map-array.ts`, `map-array-lazy.ts`, `component.ts`), every `data-key` stamp is now gated on the loop actually being keyed (`getKey` non-null) and reads/writes the SAME compiler-resolved attribute NAME (a new `keyAttrName` parameter, defaulting to `'data-key'` so every depth-0 call site is unchanged) instead of a hardcoded `BF_KEY`. An unkeyed loop's rows are never touched at all — `mapArray` keeps positional identity in its own `scopes` Map. The stale hydration-detection check this replaced (`!existingRanges[0]?.primaryEl.hasAttribute('data-key') || scopes.size === 0`) was already vacuous (`scopes` is always empty the one time that line runs); the new signal is simply `existingRanges.length > 0`.
+- d886f4e: Stop the child-component reactive-prop mirror from turning a `ref` into a DOM
+  attribute, and give a top-level root-is-a-child-call component a scope id to
+  thread into its nested `renderChild`.
+  
+  Both are cases where the correct answer already existed elsewhere in the
+  pipeline and one path did not consult it.
+  
+  **`ref` on a child-component call site (#2749).** `collectReactiveChildProps`
+  (`ir-to-client-js/collect-elements.ts`) decided "is this prop a DOM attribute?"
+  with a hand-rolled `on[A-Z]` test and no `ref` case, so a reactive `ref` prop
+  fell through to the generic dynamic-prop mirror and the emitted `init` ran
+  `__scope.setAttribute('ref', String(__v))` — the callback's SOURCE TEXT as an
+  attribute value. SSR never emits a `ref` attribute, so only the hydrate leg
+  grew one and the SSR-vs-hydrated snapshot diverged. The same prop was always
+  passed correctly to `initChild` as `get ref() { … }`; the runtime child then
+  routes it through `applyRestAttrs`, which reads `classifyDOMProp` — documented
+  as "the single source of truth for how should this prop reach the DOM" — gets
+  `kind: 'ref'` back, and invokes the callback. The mirror now reads that same
+  classifier and takes the same three exclusions (`ref` / `event` / `skip`) that
+  `applyRestAttrs` takes, so the two sides can no longer disagree. With the
+  attribute leak gone the callback runs; what a `ref` still cannot do is run
+  during SSR at all, which is the separate capability gap tracked in #2714.
+  
+  **Top-level root-is-a-child-call scope (#2757).** `materializeComponent`
+  (`client/runtime/component.ts`) threaded `_parentScopeId` from its own
+  `scopeId`, or from `slot.parent`. A `comment: true` / `fragmentRoot: false`
+  wrapper has neither at a top-level mount: `scopeId` is null by design (the
+  parsed firstChild is the child's own already-scoped element, so stamping over
+  it would break the wrapper's own `$c` lookups) and a top-level
+  `createComponent(name, {})` is passed no slot. `renderChild` therefore fell
+  through to its "no parent known" fallback and named the child after ITSELF
+  (`Row_xyz_s2` where SSR and hydration both produce `Wrapper_xyz_s2`), with no
+  `bf-h`/`bf-m` pair. It now derives a scope id for threading only — the same
+  split #2722 made for a genuine fragment root, which keeps a non-null `scopeId`
+  purely so this threading works and skips only the attribute write. Guarded on
+  there being no ambient scope, so a wrapper materialized during an outer
+  template eval still inherits that caller's scope. A hoisted-children
+  `bf-s="__BF_PARENT_SCOPE__"` placeholder under such a wrapper now resolves to
+  that derived scope instead of stripping, which is what the Hono reference
+  already emitted for the same source.
+- Updated dependencies [da77d25]
+  - @barefootjs/shared@0.33.3
+
 ## 0.33.2
 
 ### Patch Changes
