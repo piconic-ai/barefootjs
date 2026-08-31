@@ -428,6 +428,9 @@ import { fixture as childrenPassthroughRenamed } from './children-passthrough-re
 // #2765: browser observation of the loop-row builder's raw interpolation
 // of a controlled textarea's lowered value.
 import { fixture as textareaRowBreakout } from './textarea-row-breakout'
+// Composite-row twin: same defect, `irToPlaceholderTemplate` instead of
+// `irToHtmlTemplate` (found by review on #2792, PR fix in the same file).
+import { fixture as textareaRowBreakoutComposite } from './textarea-row-breakout-composite'
 import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
@@ -867,6 +870,7 @@ export const jsxFixtures: JSXFixture[] = [
   childrenPassthroughNoChildren,
   childrenPassthroughRenamed,
   textareaRowBreakout,
+  textareaRowBreakoutComposite,
   jsxElementPropFragmentConditional,
   grandchildComposition,
   compositeRowChildComponent,

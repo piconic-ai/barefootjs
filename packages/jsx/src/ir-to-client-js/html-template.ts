@@ -1520,8 +1520,11 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       if (node.slotId) {
         return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      // Bare-splice fallthrough (no `slotId`).
-      return `\${${bareSpliceExpr(node, value)}}`
+      // Bare-splice fallthrough (no `slotId`) — this builder's composite-row
+      // twin of `irToHtmlTemplate`'s `escapeForClient`, same "why not
+      // templateExpr" reasoning (#2765).
+      const spliced = bareSpliceExpr(node, value)
+      return `\${${node.escapeInClientTemplate ? `escapeText(${spliced})` : spliced}}`
     }
 
     case 'conditional': {
