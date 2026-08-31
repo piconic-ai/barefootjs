@@ -407,6 +407,16 @@ export interface IRExpression {
   /** Pre-transformed expr with destructured prop refs rewritten to _p.xxx (for client JS templates). */
   templateExpr?: string
   /**
+   * Marks a VALUE moved into element content by a lowering (today only
+   * `lowerFormControlValueSsr`'s `<textarea>`, #2765) — client builders
+   * must escape it, unlike the normal pre-rendered-HTML `${...}` case.
+   *
+   * Not read via `templateExpr` instead: that field also rebinds to
+   * `_p.xxx`, which drops a destructured prop's `?? {}` default when the
+   * builder's output lives in init scope (`client-js-generation.test.ts`).
+   */
+  escapeInClientTemplate?: boolean
+  /**
    * Structured parse of `expr` (`parseExpression(expr.trim())`), attached once
    * during IR construction so SSR adapters emit from the tree instead of each
    * re-parsing the string at emit time (and so a multi-adapter build parses it

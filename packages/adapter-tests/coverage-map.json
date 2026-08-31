@@ -5414,6 +5414,40 @@
         "text"
       ]
     },
+    "textarea-row-breakout": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "textarea-row-breakout-composite": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "textarea-value-ssr": {
       "kinds": [
         "call",
@@ -5656,15 +5690,15 @@
     }
   },
   "kindCounts": {
-    "array-literal": 81,
+    "array-literal": 83,
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 232,
+    "call": 234,
     "conditional": 27,
-    "identifier": 331,
+    "identifier": 333,
     "index-access": 14,
-    "literal": 263,
+    "literal": 265,
     "logical": 47,
     "member": 190,
     "object-literal": 63,
@@ -5709,8 +5743,8 @@
     "binary:>=": 1,
     "literal:boolean": 56,
     "literal:null": 23,
-    "literal:number": 109,
-    "literal:string": 183,
+    "literal:number": 111,
+    "literal:string": 185,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,

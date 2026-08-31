@@ -944,11 +944,19 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // separate rather than collapsed into a shared helper precisely
       // because their `clientOnly` semantics differ — see that function's
       // own comment (#2617).
+
+      // Escape only when the IR says so (`escapeInClientTemplate`) — most
+      // `${...}` here is already pre-rendered HTML. Never take
+      // `templateExpr` wholesale instead: it rebinds to `_p.xxx`, dropping
+      // the `?? {}` prop-defaulting guard in this builder's init scope
+      // (`client-js-generation.test.ts`).
+      const escapeForClient = (e: string): string =>
+        node.escapeInClientTemplate ? `escapeText(${e})` : e
       if (node.markerless) {
-        const bare = wrapInterpolation(wrapExpr(node.expr))
+        const bare = escapeForClient(wrapInterpolation(wrapExpr(node.expr)))
         return `\${${bare}}`
       }
-      const inner = wrapInterpolation(wrapExpr(node.expr))
+      const inner = escapeForClient(wrapInterpolation(wrapExpr(node.expr)))
       // Stage 3 / D4 — an element-array child ({out}) built by an arbitrary
       // .map() preamble is an array of HTML strings; join it rather than let
       // `${[...]}` `String`-comma-collapse it. Only reached on a JS-runtime
@@ -1512,8 +1520,11 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       if (node.slotId) {
         return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      // Bare-splice fallthrough (no `slotId`).
-      return `\${${bareSpliceExpr(node, value)}}`
+      // Bare-splice fallthrough (no `slotId`) — this builder's composite-row
+      // twin of `irToHtmlTemplate`'s `escapeForClient`, same "why not
+      // templateExpr" reasoning (#2765).
+      const spliced = bareSpliceExpr(node, value)
+      return `\${${node.escapeInClientTemplate ? `escapeText(${spliced})` : spliced}}`
     }
 
     case 'conditional': {
