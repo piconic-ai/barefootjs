@@ -1463,16 +1463,11 @@ function lowerFormControlValueSsr(
     children.push({
       type: 'expression',
       expr,
-      // The client-side registration template interpolates slotless
-      // expression children RAW (no text-slot `escapeText` wrapper), so a
-      // value containing `</textarea>` would break out of the element on
-      // CSR mount. Escape in the client-only template variant; `expr`
-      // stays clean for the SSR adapters, whose template engines (and
-      // hono/jsx) already escape text children natively.
+      // Escaped for client string-building; `expr` stays raw since SSR
+      // engines escape text children natively.
       templateExpr: `escapeText(${templateExpr ?? expr})`,
-      // …and the same obligation for the builders that emit into init
-      // scope, where the `_p.`-prefixed `templateExpr` binding cannot be
-      // substituted for `expr` (#2765).
+      // Init-scope builders can't just swap in `templateExpr` (its `_p.`
+      // binding differs) — see `escapeInClientTemplate`'s docstring.
       escapeInClientTemplate: true,
       typeInfo: null,
       reactive: false,
