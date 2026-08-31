@@ -8,6 +8,7 @@
 import { Hono } from 'hono'
 import { renderer } from './renderer'
 import { createOgRoute } from './og-route'
+import { cacheControl } from '@barefootjs/site-shared/lib/cache-control'
 
 // Component pages
 import { AspectRatioRefPage } from './pages/components/aspect-ratio'
@@ -152,6 +153,12 @@ function blockMeta(slug: string): { title: string; description: string } {
  */
 export function createApp() {
   const app = new Hono()
+
+  // Sets Cache-Control on every route below that doesn't set its own. Inert
+  // today — wrangler.toml deliberately leaves `[cache]` off (see the
+  // comment there) — but mounted first so enabling it later is a one-line
+  // wrangler.toml change with the middleware already wired and tested.
+  app.use('*', cacheControl)
 
   app.use(renderer)
 
