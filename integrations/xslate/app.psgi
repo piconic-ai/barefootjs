@@ -46,6 +46,15 @@ use constant {
     SESSION_TTL_SEC   => 60 * 60 * 24 * 30,
     SESSION_STORE_MAX => 1000,
 };
+
+# Explicit Cache-Control for routes confirmed session-free (no cookie/session
+# access anywhere in the handler). Setting this here makes the route
+# cacheable by integrations/shared/lib/cache-control.ts's withCacheControl
+# regardless of whether the visitor's browser happens to still be sending a
+# stale bf_session cookie (its Path is $BASE, not scoped to /todos, so once a
+# visitor has ever hit /todos it rides along on every request to this
+# integration). Must match HTML_CACHE_CONTROL there verbatim.
+use constant CACHEABLE_CACHE_CONTROL => 'public, max-age=3600, stale-while-revalidate=86400';
 my %sessions;
 my @session_order;
 
@@ -218,10 +227,11 @@ my @ai_responses = (
 # Routes — PATH_INFO here is already stripped of $BASE by Plack::Builder mount.
 # ---------------------------------------------------------------------------
 # --- page handlers: one sub per route, each returns a PSGI response ---
-sub home_route ($req) { html_response(home_page()) }
+sub home_route ($req) { html_response(home_page(), 'Cache-Control' => CACHEABLE_CACHE_CONTROL) }
 
 sub counter_route ($req) {
-    html_response(render_component('Counter', heading => 'Counter Component'));
+    html_response(render_component('Counter', heading => 'Counter Component'),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub toggle_route ($req) {
@@ -236,19 +246,21 @@ sub toggle_route ($req) {
         signal_init => { toggle_item => sub ($p) { (on => ($p->{defaultOn} ? 1 : 0)) } },
         props       => { toggleItems => $items },
         stash       => { toggleItems => $items },
-    ));
+    ), 'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub form_route ($req) {
     html_response(render_component('Form',
-        heading => 'Form Example', props => {}, stash => { accepted => 0 }));
+        heading => 'Form Example', props => {}, stash => { accepted => 0 }),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub reactive_props_route ($req) {
     html_response(render_component('ReactiveProps',
         heading  => 'Reactive Props Test',
         children => { reactive_child => 'ReactiveChild' },
-        props    => {}, stash => { count => 0, doubled => 0 }));
+        props    => {}, stash => { count => 0, doubled => 0 }),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub conditional_return_route ($req, $suffix = '') {
@@ -256,7 +268,8 @@ sub conditional_return_route ($req, $suffix = '') {
     html_response(render_component('ConditionalReturn',
         heading => 'Conditional Return Example' . ($variant ? ' (Link)' : ''),
         props   => { variant => $variant },
-        stash   => { variant => $variant, count => 0 }));
+        stash   => { variant => $variant, count => 0 }),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub props_reactivity_route ($req) {
@@ -265,12 +278,14 @@ sub props_reactivity_route ($req) {
         heading     => 'Props Reactivity Comparison',
         children    => { props_style_child => 'PropsStyleChild', destructured_style_child => 'DestructuredStyleChild' },
         signal_init => { props_style_child => $mk, destructured_style_child => $mk },
-        props => {}, stash => { count => 1 }));
+        props => {}, stash => { count => 1 }),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub portal_route ($req) {
     html_response(render_component('PortalExample',
-        heading => 'Portal Example', props => {}, stash => { open => 0 }));
+        heading => 'Portal Example', props => {}, stash => { open => 0 }),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub ai_chat_route ($req) {
@@ -278,7 +293,8 @@ sub ai_chat_route ($req) {
         title     => 'AI Chat — SSE Streaming (Text::Xslate)',
         heading   => 'AI Chat — SSE Streaming',
         stash     => { messages => [], input => '', streamingText => '', isStreaming => 0 },
-        extra_css => qq{<link rel="stylesheet" href="$BASE/styles/ai-chat.css">}));
+        extra_css => qq{<link rel="stylesheet" href="$BASE/styles/ai-chat.css">}),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub todos_route ($req, $suffix = '') {
@@ -512,7 +528,8 @@ sub blog_index_route ($req) {
         { post_list_item => 'PostListItem' });
     my $now = blog_island($root, 'NowPlaying', {}, { Math => { min => 0 } });
     my $title = length $tag ? "#$tag \x{2014} Barefoot Blog" : "Barefoot Blog \x{2014} Latest posts";
-    html_response(blog_page($root, $title, $base, $post_list . $now));
+    html_response(blog_page($root, $title, $base, $post_list . $now),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 sub blog_post_route ($req, $slug) {
@@ -544,7 +561,8 @@ sub blog_post_route ($req, $slug) {
             reading_timer => 'ReadingTimer',
             now_playing   => [ 'NowPlaying', { Math => { min => 0 } } ],
         });
-    html_response(blog_page($root, "$p->{title} \x{2014} Barefoot Blog", $base, $content));
+    html_response(blog_page($root, "$p->{title} \x{2014} Barefoot Blog", $base, $content),
+        'Cache-Control' => CACHEABLE_CACHE_CONTROL);
 }
 
 # Route table: [ METHOD, path pattern, handler ]. First match wins; any regex

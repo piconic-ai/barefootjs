@@ -55,6 +55,15 @@ use constant {
     SESSION_STORE_MAX  => 1000,
 };
 
+# Explicit Cache-Control for routes confirmed session-free (no cookie/session
+# access anywhere in the handler). Setting this here makes the route
+# cacheable by integrations/shared/lib/cache-control.ts's withCacheControl
+# regardless of whether the visitor's browser happens to still be sending a
+# stale bf_session cookie (its Path is the whole $BASE_PATH, not scoped to
+# /todos, so once a visitor has ever hit /todos it rides along on every
+# request to this integration). Must match HTML_CACHE_CONTROL there verbatim.
+use constant CACHEABLE_CACHE_CONTROL => 'public, max-age=3600, stale-while-revalidate=86400';
+
 my %sessions;          # id => { todos => [...], next_id => N }
 my @session_order;     # ids in access order, oldest at index 0
 
@@ -190,6 +199,7 @@ $r->get('/styles/*asset' => sub ($c) {
 });
 
 $r->get('/' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->stash(
         title     => 'BarefootJS + Mojolicious Example',
         heading   => 'BarefootJS + Mojolicious Example',
@@ -199,11 +209,13 @@ $r->get('/' => sub ($c) {
 });
 
 $r->get('/counter' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->stash(heading => 'Counter Component');
     $c->render(template => 'Counter', layout => 'default');
 });
 
 $r->get('/toggle' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     my $items = [
         { label => 'Setting 1', defaultOn => \1 },
         { label => 'Setting 2', defaultOn => \0 },
@@ -224,6 +236,7 @@ $r->get('/toggle' => sub ($c) {
 });
 
 $r->get('/form' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('Form',
         props   => {},
         stash   => { accepted => 0 },
@@ -232,6 +245,7 @@ $r->get('/form' => sub ($c) {
 });
 
 $r->get('/reactive-props' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('ReactiveProps',
         children => { reactive_child => 'ReactiveChild' },
         props    => {},
@@ -241,6 +255,7 @@ $r->get('/reactive-props' => sub ($c) {
 });
 
 $r->get('/conditional-return' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('ConditionalReturn',
         props => { variant => '' },
         stash => { variant => '', count => 0 },
@@ -249,6 +264,7 @@ $r->get('/conditional-return' => sub ($c) {
 });
 
 $r->get('/conditional-return-link' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('ConditionalReturn',
         props => { variant => 'link' },
         stash => { variant => 'link', count => 0 },
@@ -291,6 +307,7 @@ $r->get('/todos-ssr' => sub ($c) {
 });
 
 $r->get('/props-reactivity' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('PropsReactivityComparison',
         children => {
             props_style_child        => 'PropsStyleChild',
@@ -313,6 +330,7 @@ $r->get('/props-reactivity' => sub ($c) {
 });
 
 $r->get('/portal' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('PortalExample',
         props   => {},
         stash   => { open => 0 },
@@ -333,6 +351,7 @@ my @ai_responses = (
 );
 
 $r->get('/ai-chat' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     $c->render_component('AIChatInteractive',
         title   => 'AI Chat — SSE Streaming (Mojolicious)',
         heading => 'AI Chat — SSE Streaming',
@@ -588,6 +607,7 @@ my $r_blog = $r;
 # index too (data-bf-permanent) so the router moves the same live node between
 # the list and a post.
 $r_blog->get('/blog' => sub ($c) {
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     my $sort  = $c->param('sort') // 'date';
     my $tag   = $c->param('tag')  // '';
     my $base  = "$BASE_PATH/blog";
@@ -635,6 +655,7 @@ $r_blog->get('/blog/posts/:slug' => sub ($c) {
     my $posts = [ sort { $b->{date} cmp $a->{date} } @{ $BLOG_DATA->{posts} } ];
     my ($i) = grep { $posts->[$_]{slug} eq $slug } 0 .. $#$posts;
     return $c->reply->not_found unless defined $i;
+    $c->res->headers->cache_control(CACHEABLE_CACHE_CONTROL);
     my $p    = $posts->[$i];
     my $prev = $i > 0        ? $posts->[$i - 1] : undef;
     my $next = $i < $#$posts ? $posts->[$i + 1] : undef;

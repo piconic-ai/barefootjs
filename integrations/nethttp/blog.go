@@ -208,6 +208,7 @@ func validSortKey(raw string) string {
 // via searchParams() on the client; on the server the same query drives both
 // `NewPostListProps` (active highlight + hrefs) and the SSR row order/visibility.
 func blogIndexHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	sp := bf.NewSearchParams(req.URL.RawQuery)
 	sortKey := validSortKey(sp.Get("sort"))
 	tag := sp.Get("tag")
@@ -249,6 +250,7 @@ func blogPostHandler(w http.ResponseWriter, req *http.Request) {
 		http.NotFound(w, req)
 		return
 	}
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	in := PostArticleInput{
 		Slug:      a.Post.Slug,
 		Title:     a.Post.Title,

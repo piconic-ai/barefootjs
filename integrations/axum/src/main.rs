@@ -225,6 +225,27 @@ pub(crate) fn html_response(html: String) -> Response {
     (StatusCode::OK, [(header::CONTENT_TYPE, "text/html; charset=utf-8")], html).into_response()
 }
 
+/// Like [`html_response`], but for routes confirmed session-free (no cookie
+/// read, no per-visitor state) -- sets `Cache-Control` explicitly so
+/// `integrations/shared/lib/cache-control.ts`'s `withCacheControl` (which
+/// leaves a response alone once the backend has already set its own
+/// `Cache-Control`) makes this route cacheable even when the visitor's
+/// browser happens to still be carrying a stale `bf_session` cookie from an
+/// earlier `/todos` visit (that cookie's `Path` is the whole integration,
+/// not `/todos` -- see the container.ts cache-control docstring). The value
+/// MUST match `HTML_CACHE_CONTROL` in that file verbatim.
+pub(crate) fn html_response_cached(html: String) -> Response {
+    (
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, "text/html; charset=utf-8"),
+            (header::CACHE_CONTROL, "public, max-age=3600, stale-while-revalidate=86400"),
+        ],
+        html,
+    )
+        .into_response()
+}
+
 pub fn render_error(err: String) -> Response {
     eprintln!("barefoot: render error: {err}");
     (StatusCode::INTERNAL_SERVER_ERROR, [(header::CONTENT_TYPE, "text/plain; charset=utf-8")], err).into_response()
@@ -251,7 +272,7 @@ runtime crate (minijinja) as the rendering backend.</p>
     <li><a href="{base}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>"#
     );
-    html_response(layout(
+    html_response_cached(layout(
         &state,
         LayoutOpts {
             title: "BarefootJS + Axum Example".to_string(),
@@ -267,7 +288,7 @@ runtime crate (minijinja) as the rendering backend.</p>
 async fn counter_route(State(state): State<AppState>) -> Response {
     let session = new_session(&state, &Default::default());
     match render_component(&state, &session, "Counter", empty_obj(), empty_obj()) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "Counter - BarefootJS".to_string(),
@@ -288,7 +309,7 @@ async fn toggle_route(State(state): State<AppState>) -> Response {
     let props = jobj([("toggleItems", items.clone())]);
     let stash = jobj([("toggleItems", items)]);
     match render_component(&state, &session, "Toggle", props, stash) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "Toggle - BarefootJS".to_string(),
@@ -315,7 +336,7 @@ async fn form_route(State(state): State<AppState>) -> Response {
     let session = new_session(&state, &Default::default());
     let stash = jobj([("accepted", jb(false))]);
     match render_component(&state, &session, "Form", empty_obj(), stash) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "Form - BarefootJS".to_string(),
@@ -334,7 +355,7 @@ async fn portal_route(State(state): State<AppState>) -> Response {
     let session = new_session(&state, &Default::default());
     let stash = jobj([("open", jb(false))]);
     match render_component(&state, &session, "PortalExample", empty_obj(), stash) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "Portal - BarefootJS".to_string(),
@@ -353,7 +374,7 @@ async fn reactive_props_route(State(state): State<AppState>) -> Response {
     let session = new_session(&state, &Default::default());
     let stash = jobj([("count", jn(0.0)), ("doubled", jn(0.0))]);
     match render_component(&state, &session, "ReactiveProps", empty_obj(), stash) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "Reactive Props - BarefootJS".to_string(),
@@ -376,7 +397,7 @@ async fn props_reactivity_route(State(state): State<AppState>) -> Response {
     let session = new_session(&state, &Default::default());
     let stash = jobj([("count", jn(1.0))]);
     match render_component(&state, &session, "PropsReactivityComparison", empty_obj(), stash) {
-        Ok((body, scripts)) => html_response(layout(
+        Ok((body, scripts)) => html_response_cached(layout(
             &state,
             LayoutOpts {
                 title: "Props Reactivity - BarefootJS".to_string(),
@@ -415,7 +436,7 @@ async fn render_conditional_return(state: AppState, variant: &str) -> Response {
     };
     match render_component(&state, &session, "ConditionalReturn", props, stash) {
         Ok((body, scripts)) => {
-            html_response(layout(&state, LayoutOpts { title, heading, body, scripts, extra_css: String::new(), back: None }))
+            html_response_cached(layout(&state, LayoutOpts { title, heading, body, scripts, extra_css: String::new(), back: None }))
         }
         Err(e) => render_error(e),
     }

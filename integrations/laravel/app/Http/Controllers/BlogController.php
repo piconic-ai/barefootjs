@@ -18,6 +18,7 @@ use Illuminate\Http\Response;
  */
 final class BlogController extends Controller
 {
+
     public function index(Request $request): Response
     {
         $backend = ExampleApp::backend();
@@ -46,7 +47,8 @@ final class BlogController extends Controller
         );
         $now = ExampleApp::blogIsland($root, 'NowPlaying', [], ['Math' => ['min' => 0]]);
         $title = $tag !== '' ? "#{$tag} \u{2014} Barefoot Blog" : 'Barefoot Blog \u{2014} Latest posts';
-        return response(ExampleApp::blogPage($root, $title, $base, $postList . $now));
+        return response(ExampleApp::blogPage($root, $title, $base, $postList . $now))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 
     public function post(string $slug): Response
@@ -95,6 +97,7 @@ final class BlogController extends Controller
                 'now_playing' => ['NowPlaying', ['Math' => ['min' => 0]]],
             ],
         );
-        return response(ExampleApp::blogPage($root, "{$p['title']} \u{2014} Barefoot Blog", $base, $content));
+        return response(ExampleApp::blogPage($root, "{$p['title']} \u{2014} Barefoot Blog", $base, $content))
+            ->header('Cache-Control', self::CACHE_CONTROL);
     }
 }
