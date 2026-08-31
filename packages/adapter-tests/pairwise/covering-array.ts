@@ -177,6 +177,45 @@ export interface CoveringArrayResult {
 }
 
 /**
+ * Greedily fills in every axis NOT already set in `seed`, maximizing
+ * `scoreFn` at each step, honoring constraints throughout. Shared by the
+ * t=2 floor (`buildCoveringArray`, scored on newly-covered pairs) and the
+ * t=3 promotion (`buildVariableStrengthArray`, scored on newly-covered
+ * triples) — the fill strategy is identical, only what's being maximized
+ * differs.
+ */
+function completeComboGreedy(
+  seed: Partial<AxisCombo>,
+  rng: () => number,
+  scoreFn: (combo: AxisCombo) => number,
+): AxisCombo {
+  const combo: Partial<AxisCombo> = { ...seed }
+  const remainingAxes = AXIS_NAMES.filter(a => combo[a] === undefined)
+  for (const axis of remainingAxes) {
+    let bestValues: string[] = []
+    let bestScore = -1
+    for (const value of AXIS_VALUES[axis]) {
+      const candidate = { ...combo, [axis]: value } as Partial<AxisCombo>
+      if (!isValidCombo(candidate)) continue
+      const score = scoreFn(candidate as AxisCombo)
+      if (score > bestScore) {
+        bestScore = score
+        bestValues = [value]
+      } else if (score === bestScore) {
+        bestValues.push(value)
+      }
+    }
+    // `bestValues` is never empty: every axis has at least one value
+    // with no constraint pointed at it from any OTHER axis (`state`,
+    // `structure`, `event`'s two non-loop-only values, `callback`'s two
+    // non-array-decoration values are all unconstrained), so some value
+    // always keeps `candidate` valid regardless of what's chosen so far.
+    combo[axis] = pickDeterministic(bestValues, rng) as never
+  }
+  return combo as AxisCombo
+}
+
+/**
  * Builds the case list. Every uncovered valid pair is targeted by SOME
  * case (the coverage floor `pairwise-covering-array.test.ts` asserts
  * mechanically); no invalid pair is ever placed in a case (enforced by
@@ -211,34 +250,6 @@ export function buildCoveringArray(): CoveringArrayResult {
     }
   }
 
-  /** Greedily fills in every axis NOT already set in `seed`, maximizing newly-covered pairs at each step, honoring constraints throughout. */
-  function completeCombo(seed: Partial<AxisCombo>, rng: () => number): AxisCombo {
-    const combo: Partial<AxisCombo> = { ...seed }
-    const remainingAxes = AXIS_NAMES.filter(a => combo[a] === undefined)
-    for (const axis of remainingAxes) {
-      let bestValues: string[] = []
-      let bestScore = -1
-      for (const value of AXIS_VALUES[axis]) {
-        const candidate = { ...combo, [axis]: value } as Partial<AxisCombo>
-        if (!isValidCombo(candidate)) continue
-        const score = countNewlyCoveredPairs(candidate as AxisCombo)
-        if (score > bestScore) {
-          bestScore = score
-          bestValues = [value]
-        } else if (score === bestScore) {
-          bestValues.push(value)
-        }
-      }
-      // `bestValues` is never empty: every axis has at least one value
-      // with no constraint pointed at it from any OTHER axis (`state`,
-      // `structure`, `event`'s two non-loop-only values, `callback`'s two
-      // non-array-decoration values are all unconstrained), so some value
-      // always keeps `candidate` valid regardless of what's chosen so far.
-      combo[axis] = pickDeterministic(bestValues, rng) as never
-    }
-    return combo as AxisCombo
-  }
-
   let caseIndex = 0
   // Deterministic iteration order over the pair table: `Map` preserves
   // insertion order, and `uncovered` was populated in a fixed order above
@@ -248,7 +259,7 @@ export function buildCoveringArray(): CoveringArrayResult {
     const [, target] = uncovered.entries().next().value as [string, { pair: AxisPair; valueA: string; valueB: string }]
     const rng = makeRng(caseIndex)
     const seed: Partial<AxisCombo> = { [target.pair.a]: target.valueA, [target.pair.b]: target.valueB } as Partial<AxisCombo>
-    const combo = assertValidCombo(completeCombo(seed, rng))
+    const combo = assertValidCombo(completeComboGreedy(seed, rng, countNewlyCoveredPairs))
     cases.push(combo)
     markCovered(combo)
     caseIndex++
@@ -332,8 +343,8 @@ export interface VariableStrengthResult extends CoveringArrayResult {
  *
  * Deliberately NOT wired into `scripts/pairwise-generate.ts`'s default
  * output yet: that script feeds the nightly `test:pairwise` browser-oracle
- * job directly (see `packages/adapter-tests/package.json`), and the
- * estimated +150–250 new cases need the SAME real-diff triage discipline
+ * job directly (see `packages/adapter-tests/package.json`), and
+ * `additionalCases` need the SAME real-diff triage discipline
  * `pairwise-quarantine.ts`'s history required for the t=2 floor before any
  * browser leg can run against them without turning that nightly job red on
  * day one. This function is the t=3 generator on its own — compile-level
@@ -370,29 +381,6 @@ export function buildVariableStrengthArray(): VariableStrengthResult {
     return n
   }
 
-  /** Same greedy fill as `buildCoveringArray`'s `completeCombo`, maximizing newly-covered TRIPLES instead of pairs — see that function's "bestValues is never empty" note, which applies unchanged (a property of `CONSTRAINTS`, not of what's being maximized). */
-  function completeComboForTriples(seed: Partial<AxisCombo>, rng: () => number): AxisCombo {
-    const combo: Partial<AxisCombo> = { ...seed }
-    const remainingAxes = AXIS_NAMES.filter(a => combo[a] === undefined)
-    for (const axis of remainingAxes) {
-      let bestValues: string[] = []
-      let bestScore = -1
-      for (const value of AXIS_VALUES[axis]) {
-        const candidate = { ...combo, [axis]: value } as Partial<AxisCombo>
-        if (!isValidCombo(candidate)) continue
-        const score = countNewlyCoveredTriples(candidate as AxisCombo)
-        if (score > bestScore) {
-          bestScore = score
-          bestValues = [value]
-        } else if (score === bestScore) {
-          bestValues.push(value)
-        }
-      }
-      combo[axis] = pickDeterministic(bestValues, rng) as never
-    }
-    return combo as AxisCombo
-  }
-
   const additionalCases: AxisCombo[] = []
   let caseIndex = floor.cases.length
   while (uncovered.size > 0) {
@@ -403,7 +391,7 @@ export function buildVariableStrengthArray(): VariableStrengthResult {
       [target.triple.b]: target.valueB,
       [target.triple.c]: target.valueC,
     } as Partial<AxisCombo>
-    const combo = assertValidCombo(completeComboForTriples(seed, rng))
+    const combo = assertValidCombo(completeComboGreedy(seed, rng, countNewlyCoveredTriples))
     additionalCases.push(combo)
     markCoveredByCombo(combo)
     caseIndex++
