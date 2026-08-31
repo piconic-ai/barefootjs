@@ -3551,6 +3551,12 @@
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
           }
         }
+      },
+      "textarea-row-breakout": {
+        "go-template": {
+          "kind": "render",
+          "reason": "A signal seeded from a bare identifier referencing a MODULE-LEVEL const (`const PAYLOAD = '...'; createSignal(PAYLOAD)`) bakes to `nil` in the generated `New<Component>Props` constructor instead of the const's literal value: `convertInitialValue` (`value-lowering.ts`) only resolves a direct prop reference or a literal expression for a bare identifier, and the analyzer types this signal `{ kind: 'unknown' }`, so every typed branch falls through to the final `nil` fallback. `resolveModuleStringConst` exists on the adapter for exactly this resolution (used by `template-interp.ts` for live template expressions) but isn't wired into this signal-baking path. Unrelated to what this fixture exists to cover (#2765's loop-row textarea-escaping fix, verified correct here) — every other adapter renders the fixture's controlled `<textarea>` correctly. Tracked at https://github.com/piconic-ai/barefootjs/issues/2794; graduate by wiring `resolveModuleStringConst` into `convertInitialValue`'s bare-identifier case."
+        }
       }
     },
     "docs": {
@@ -3645,6 +3651,10 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
+      },
+      "textarea-row-breakout": {
+        "description": "A controlled textarea in a keyed row keeps its full value when the row is rebuilt (#2765)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/textarea-row-breakout.ts"
       },
       "every-typeof-predicate-client": {
         "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",
