@@ -158,9 +158,10 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 // visitor's list is never visible to another. LRU-bounded to keep memory
 // usage predictable.
 const (
-	sessionCookieName = "bf_session"
-	sessionTTLSeconds = 60 * 60 * 24 * 30 // 30d
-	sessionStoreMax   = 1000
+	sessionCookieName     = "bf_session"
+	sessionTTLSeconds     = 60 * 60 * 24 * 30 // 30d
+	sessionStoreMax       = 1000
+	cacheableCacheControl = "public, max-age=3600, stale-while-revalidate=86400"
 )
 
 type sessionState struct {
@@ -326,7 +327,7 @@ func main() {
 }
 
 func indexHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	body := fmt.Sprintf(`
     <h1>BarefootJS + Chi Example</h1>
     <p>This example demonstrates server-side rendering with Go Chi and BarefootJS.</p>
@@ -357,7 +358,7 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func counterHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewCounterProps(CounterInput{Initial: 0})
 	render(w, http.StatusOK, "Counter", bf.RenderOptions{
 		Props:   &props,
@@ -367,7 +368,7 @@ func counterHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func toggleHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewToggleProps(ToggleInput{
 		ToggleItems: []ToggleItemInput{
 			{Label: "Setting 1", DefaultOn: true},
@@ -431,7 +432,7 @@ func todosSSRHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func reactivePropsHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewReactivePropsProps(ReactivePropsInput{})
 	render(w, http.StatusOK, "ReactiveProps", bf.RenderOptions{
 		Props:   &props,
@@ -441,7 +442,7 @@ func reactivePropsHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func propsReactivityHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewPropsReactivityComparisonProps(PropsReactivityComparisonInput{})
 	render(w, http.StatusOK, "PropsReactivityComparison", bf.RenderOptions{
 		Props:   &props,
@@ -451,7 +452,7 @@ func propsReactivityHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func formHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewFormProps(FormInput{})
 	render(w, http.StatusOK, "Form", bf.RenderOptions{
 		Props:   &props,
@@ -461,7 +462,7 @@ func formHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func portalHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewPortalExampleProps(PortalExampleInput{})
 	render(w, http.StatusOK, "PortalExample", bf.RenderOptions{
 		Props:   &props,
@@ -471,7 +472,7 @@ func portalHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func conditionalReturnHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewConditionalReturnProps(ConditionalReturnInput{})
 	render(w, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -481,7 +482,7 @@ func conditionalReturnHandler(w http.ResponseWriter, _ *http.Request) {
 }
 
 func conditionalReturnLinkHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: "link"})
 	render(w, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
@@ -598,7 +599,7 @@ var fakeResponses = []string{
 }
 
 func aiChatHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewAIChatInteractiveProps(AIChatInteractiveInput{})
 	render(w, http.StatusOK, "AIChatInteractive", bf.RenderOptions{
 		Props:   &props,

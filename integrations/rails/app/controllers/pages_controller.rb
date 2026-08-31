@@ -6,9 +6,8 @@ class PagesController < ApplicationController
   # Cache-Control set explicitly on every action here (all confirmed
   # session-free — no cookies/session reads) so Workers Cache can serve
   # repeat visits without waking the Container, even if the browser still
-  # carries a stale bf_session cookie from a prior /todos visit (that cookie's
-  # Path is the whole integration, not /todos — see cache-control.ts).
-  CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
+  # carries a stale bf_session cookie from a prior /todos visit. CACHE_CONTROL
+  # is inherited from ApplicationController.
 
   def index
     response.headers['Cache-Control'] = CACHE_CONTROL

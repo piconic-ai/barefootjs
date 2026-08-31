@@ -16,13 +16,6 @@ use Illuminate\Http\Response;
  */
 final class PagesController extends Controller
 {
-    /**
-     * Session-free demo route: cacheable at the Workers Cache layer
-     * regardless of a stale bf_session cookie the visitor's browser may
-     * still be sending from an earlier /todos visit (see
-     * integrations/shared/lib/cache-control.ts).
-     */
-    private const CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400';
 
     public function index(): Response
     {

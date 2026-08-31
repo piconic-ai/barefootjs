@@ -331,18 +331,20 @@ bp = Blueprint("flask_example", __name__, url_prefix=BASE)
 CACHEABLE_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400"
 
 
-@bp.get("/")
-def home_route():
-    response = html_response(home_page())
+def html_response_cached(html: str, status: int = 200) -> Response:
+    response = html_response(html, status)
     response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
     return response
+
+
+@bp.get("/")
+def home_route():
+    return html_response_cached(home_page())
 
 
 @bp.get("/counter")
 def counter_route():
-    response = html_response(render_component("Counter", heading="Counter Component"))
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
+    return html_response_cached(render_component("Counter", heading="Counter Component"))
 
 
 @bp.get("/toggle")
@@ -352,7 +354,7 @@ def toggle_route():
         {"label": "Setting 2", "defaultOn": False},
         {"label": "Setting 3", "defaultOn": False},
     ]
-    response = html_response(
+    return html_response_cached(
         render_component(
             "Toggle",
             heading="Toggle Component",
@@ -361,20 +363,16 @@ def toggle_route():
             stash={"toggleItems": items},
         )
     )
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
 
 
 @bp.get("/form")
 def form_route():
-    response = html_response(render_component("Form", heading="Form Example", props={}, stash={"accepted": False}))
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
+    return html_response_cached(render_component("Form", heading="Form Example", props={}, stash={"accepted": False}))
 
 
 @bp.get("/reactive-props")
 def reactive_props_route():
-    response = html_response(
+    return html_response_cached(
         render_component(
             "ReactiveProps",
             heading="Reactive Props Test",
@@ -383,8 +381,6 @@ def reactive_props_route():
             stash={"count": 0, "doubled": 0},
         )
     )
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
 
 
 @bp.get("/props-reactivity")
@@ -397,7 +393,7 @@ def props_reactivity_route():
     # override is needed here (unlike app.psgi's Kolon port): PropsStyleChild
     # / DestructuredStyleChild's compiled templates already derive
     # `displayValue` in-template (`{% set displayValue = value * 10 %}`).
-    response = html_response(
+    return html_response_cached(
         render_component(
             "PropsReactivityComparison",
             heading="Props Reactivity Comparison",
@@ -409,15 +405,13 @@ def props_reactivity_route():
             stash={"count": 1},
         )
     )
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
 
 
 @bp.get("/conditional-return")
 @bp.get("/conditional-return-link")
 def conditional_return_route():
     variant = "link" if request.path.endswith("-link") else ""
-    response = html_response(
+    return html_response_cached(
         render_component(
             "ConditionalReturn",
             heading="Conditional Return Example" + (" (Link)" if variant else ""),
@@ -425,20 +419,16 @@ def conditional_return_route():
             stash={"variant": variant, "count": 0},
         )
     )
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
 
 
 @bp.get("/portal")
 def portal_route():
-    response = html_response(render_component("PortalExample", heading="Portal Example", props={}, stash={"open": False}))
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
+    return html_response_cached(render_component("PortalExample", heading="Portal Example", props={}, stash={"open": False}))
 
 
 @bp.get("/ai-chat")
 def ai_chat_route():
-    response = html_response(
+    return html_response_cached(
         render_component(
             "AIChatInteractive",
             title="AI Chat -- SSE Streaming (Flask)",
@@ -447,8 +437,6 @@ def ai_chat_route():
             extra_css=f'<link rel="stylesheet" href="{BASE}/styles/ai-chat.css">',
         )
     )
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
 
 
 @bp.get("/todos")
@@ -743,9 +731,7 @@ def blog_index_route():
     )
     now = blog_island(root, "NowPlaying", {}, {"Math": {"min": 0}})
     title = f"#{tag} — Barefoot Blog" if tag else "Barefoot Blog — Latest posts"
-    response = html_response(blog_page(root, title, base, post_list + now))
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
+    return html_response_cached(blog_page(root, title, base, post_list + now))
 
 
 @bp.get("/blog/posts/<slug>")
@@ -782,9 +768,7 @@ def blog_post_route(slug: str):
             "now_playing": ("NowPlaying", {"Math": {"min": 0}}),
         },
     )
-    response = html_response(blog_page(root, f"{p['title']} — Barefoot Blog", base, content))
-    response.headers["Cache-Control"] = CACHEABLE_CACHE_CONTROL
-    return response
+    return html_response_cached(blog_page(root, f"{p['title']} — Barefoot Blog", base, content))
 
 
 def home_page() -> str:

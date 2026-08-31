@@ -172,6 +172,7 @@ function stash_from_ssr_defaults(string $component, array $props): array
 // ---------------------------------------------------------------------------
 const SESSION_COOKIE = 'bf_session';
 const SESSION_TTL_SEC = 60 * 60 * 24 * 30;
+const CACHE_CONTROL_HEADER = 'Cache-Control: public, max-age=3600, stale-while-revalidate=86400';
 
 function seed_todos(): array
 {
@@ -675,7 +676,7 @@ function blog_index_route(): void
     );
     $now = blog_island($root, 'NowPlaying', [], ['Math' => ['min' => 0]]);
     $title = $tag !== '' ? "#{$tag} \u{2014} Barefoot Blog" : 'Barefoot Blog \u{2014} Latest posts';
-    header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+    header(CACHE_CONTROL_HEADER);
     html_response(blog_page($root, $title, $base, $postList . $now));
 }
 
@@ -727,7 +728,7 @@ function blog_post_route(string $slug): void
             'now_playing' => ['NowPlaying', ['Math' => ['min' => 0]]],
         ],
     );
-    header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+    header(CACHE_CONTROL_HEADER);
     html_response(blog_page($root, "{$p['title']} \u{2014} Barefoot Blog", $base, $content));
 }
 
@@ -932,12 +933,12 @@ if ($method === 'GET') {
             // regardless of a stale bf_session cookie the visitor's browser
             // may still be sending from an earlier /todos visit (see
             // integrations/shared/lib/cache-control.ts).
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(home_page());
             exit;
 
         case $route === '/counter':
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component('Counter', heading: 'Counter Component'));
             exit;
 
@@ -947,7 +948,7 @@ if ($method === 'GET') {
                 ['label' => 'Setting 2', 'defaultOn' => false],
                 ['label' => 'Setting 3', 'defaultOn' => false],
             ];
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component(
                 'Toggle',
                 heading: 'Toggle Component',
@@ -958,12 +959,12 @@ if ($method === 'GET') {
             exit;
 
         case $route === '/form':
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component('Form', heading: 'Form Example', props: [], stash: ['accepted' => false]));
             exit;
 
         case $route === '/reactive-props':
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component(
                 'ReactiveProps',
                 heading: 'Reactive Props Test',
@@ -982,7 +983,7 @@ if ($method === 'GET') {
             // signal_init override needed here: PropsStyleChild /
             // DestructuredStyleChild's compiled templates already derive
             // `displayValue` in-template (`{% set displayValue = value * 10 %}`).
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component(
                 'PropsReactivityComparison',
                 heading: 'Props Reactivity Comparison',
@@ -997,7 +998,7 @@ if ($method === 'GET') {
 
         case $route === '/conditional-return' || $route === '/conditional-return-link':
             $variant = str_ends_with($route, '-link') ? 'link' : '';
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component(
                 'ConditionalReturn',
                 heading: 'Conditional Return Example' . ($variant !== '' ? ' (Link)' : ''),
@@ -1007,12 +1008,12 @@ if ($method === 'GET') {
             exit;
 
         case $route === '/portal':
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component('PortalExample', heading: 'Portal Example', props: [], stash: ['open' => false]));
             exit;
 
         case $route === '/ai-chat':
-            header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
+            header(CACHE_CONTROL_HEADER);
             html_response(render_component(
                 'AIChatInteractive',
                 title: 'AI Chat -- SSE Streaming (Blade)',

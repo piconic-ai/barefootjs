@@ -7,9 +7,8 @@
 class BlogController < ApplicationController
   # Both actions here are confirmed session-free (no cookies/session reads),
   # so set Cache-Control explicitly — otherwise a stale bf_session cookie from
-  # a prior /todos visit (Path is the whole integration, not /todos) would
-  # make withCacheControl treat these as private (see cache-control.ts).
-  CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
+  # a prior /todos visit would make withCacheControl treat these as private.
+  # CACHE_CONTROL is inherited from ApplicationController.
 
   def index
     response.headers['Cache-Control'] = CACHE_CONTROL
