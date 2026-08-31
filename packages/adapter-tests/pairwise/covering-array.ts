@@ -353,15 +353,12 @@ export interface VariableStrengthResult extends CoveringArrayResult {
  * that whole ledger. Only new cases are appended, continuing the floor's
  * case-index sequence so seeds (and therefore case ids) stay deterministic.
  *
- * Deliberately NOT wired into `scripts/pairwise-generate.ts`'s default
- * output yet: that script feeds the nightly `test:pairwise` browser-oracle
- * job directly (see `packages/adapter-tests/package.json`), and
- * `additionalCases` need the SAME real-diff triage discipline
- * `pairwise-quarantine.ts`'s history required for the t=2 floor before any
- * browser leg can run against them without turning that nightly job red on
- * day one. This function is the t=3 generator on its own — compile-level
- * sweep + browser-oracle leg + quarantine triage land as the follow-up,
- * mirroring how the t=2 floor itself staged across separate landings.
+ * Wired into `scripts/pairwise-generate.ts`'s default output, which feeds
+ * the nightly `test:pairwise` browser-oracle job directly (see
+ * `packages/adapter-tests/package.json`) — only after `additionalCases`
+ * went through the SAME real-diff triage discipline `pairwise-quarantine.ts`'s
+ * history required for the t=2 floor (see that file's "#2481 t=3 sweep"
+ * section), so the nightly job doesn't run untriaged cases unattended.
  */
 export function buildVariableStrengthArray(): VariableStrengthResult {
   const floor = buildCoveringArray()
