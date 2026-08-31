@@ -5414,6 +5414,23 @@
         "text"
       ]
     },
+    "textarea-row-breakout": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "textarea-value-ssr": {
       "kinds": [
         "call",
@@ -5656,15 +5673,15 @@
     }
   },
   "kindCounts": {
-    "array-literal": 81,
+    "array-literal": 82,
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 232,
+    "call": 233,
     "conditional": 27,
-    "identifier": 331,
+    "identifier": 332,
     "index-access": 14,
-    "literal": 263,
+    "literal": 264,
     "logical": 47,
     "member": 190,
     "object-literal": 63,
@@ -5709,8 +5726,8 @@
     "binary:>=": 1,
     "literal:boolean": 56,
     "literal:null": 23,
-    "literal:number": 109,
-    "literal:string": 183,
+    "literal:number": 110,
+    "literal:string": 184,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,

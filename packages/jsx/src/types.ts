@@ -407,6 +407,27 @@ export interface IRExpression {
   /** Pre-transformed expr with destructured prop refs rewritten to _p.xxx (for client JS templates). */
   templateExpr?: string
   /**
+   * Set when this expression is a VALUE that a lowering moved into element
+   * content, rather than pre-rendered HTML — today only
+   * `lowerFormControlValueSsr`'s controlled `<textarea>` child (#2765).
+   *
+   * The bare `${...}` interpolations a client-side builder emits are
+   * normally pre-rendered HTML and must NOT be escaped (see
+   * `escapeTextSlotExpr`'s docstring in `ir-to-client-js/html-template.ts`).
+   * This flag marks the exception: the value reaches an `innerHTML` string,
+   * so a payload containing `</textarea>` would close the element early and
+   * promote its markup into live DOM. SSR needs no such wrapper — those
+   * template engines escape text children natively, which is why `expr`
+   * stays clean and this is a flag rather than a second expression.
+   *
+   * It is deliberately NOT expressed by reading `templateExpr` instead:
+   * that field also carries the `_p.`-prefixed BINDING, and a client
+   * builder emitting into init scope must keep referencing the init-scope
+   * local. Swapping the binding there drops the `?? {}` prop-defaulting
+   * guard (caught by `client-js-generation.test.ts`).
+   */
+  escapeInClientTemplate?: boolean
+  /**
    * Structured parse of `expr` (`parseExpression(expr.trim())`), attached once
    * during IR construction so SSR adapters emit from the tree instead of each
    * re-parsing the string at emit time (and so a multi-adapter build parses it

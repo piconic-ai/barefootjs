@@ -944,11 +944,26 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // separate rather than collapsed into a shared helper precisely
       // because their `clientOnly` semantics differ — see that function's
       // own comment (#2617).
+      // A bare `${...}` here is normally pre-rendered HTML and must not be
+      // escaped. `escapeInClientTemplate` marks the one exception the IR
+      // knows about: a VALUE a lowering moved into element content, which
+      // this builder splices into an `innerHTML` string. Without the
+      // wrapper a controlled `<textarea>` whose value contains
+      // `</textarea>` closed the element early on a REBUILT row and
+      // promoted its markup into live DOM — observed in Chromium (#2765).
+      //
+      // Only the escape is taken from the IR, never `templateExpr` wholesale:
+      // that field also carries the `_p.`-prefixed BINDING, and this
+      // builder's output lives in init scope where the init-scope local is
+      // the right reference. Swapping it drops the `?? {}` prop-defaulting
+      // guard, which `client-js-generation.test.ts` pins.
+      const escapeForClient = (e: string): string =>
+        node.escapeInClientTemplate ? `escapeText(${e})` : e
       if (node.markerless) {
-        const bare = wrapInterpolation(wrapExpr(node.expr))
+        const bare = escapeForClient(wrapInterpolation(wrapExpr(node.expr)))
         return `\${${bare}}`
       }
-      const inner = wrapInterpolation(wrapExpr(node.expr))
+      const inner = escapeForClient(wrapInterpolation(wrapExpr(node.expr)))
       // Stage 3 / D4 — an element-array child ({out}) built by an arbitrary
       // .map() preamble is an array of HTML strings; join it rather than let
       // `${[...]}` `String`-comma-collapse it. Only reached on a JS-runtime

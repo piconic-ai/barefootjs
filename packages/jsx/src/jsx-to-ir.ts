@@ -1470,6 +1470,10 @@ function lowerFormControlValueSsr(
       // stays clean for the SSR adapters, whose template engines (and
       // hono/jsx) already escape text children natively.
       templateExpr: `escapeText(${templateExpr ?? expr})`,
+      // …and the same obligation for the builders that emit into init
+      // scope, where the `_p.`-prefixed `templateExpr` binding cannot be
+      // substituted for `expr` (#2765).
+      escapeInClientTemplate: true,
       typeInfo: null,
       reactive: false,
       slotId: null,

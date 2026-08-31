@@ -425,6 +425,9 @@ import { fixture as childrenPassthroughNoChildren } from './children-passthrough
 // (`const { children: kids } = props`), which the source-text recognizer
 // alone does not match.
 import { fixture as childrenPassthroughRenamed } from './children-passthrough-renamed'
+// #2765: browser observation of the loop-row builder's raw interpolation
+// of a controlled textarea's lowered value.
+import { fixture as textareaRowBreakout } from './textarea-row-breakout'
 import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
@@ -863,6 +866,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxElementPropNoChildren,
   childrenPassthroughNoChildren,
   childrenPassthroughRenamed,
+  textareaRowBreakout,
   jsxElementPropFragmentConditional,
   grandchildComposition,
   compositeRowChildComponent,
