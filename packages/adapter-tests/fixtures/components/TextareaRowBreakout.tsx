@@ -23,10 +23,16 @@
 
 import { createSignal } from '@barefootjs/client'
 
-const PAYLOAD = 'a</textarea><b class="broke">X</b>'
+// The literal is inlined at both call sites rather than shared through a
+// module-level const: a signal seeded from a bare identifier reference (vs.
+// a literal expression) is a distinct, unrelated gap in the Go template
+// adapter's SSR constructor baking (`convertInitialValue`, `value-lowering.ts`
+// — it has no `resolveModuleStringConst` fallback for a signal's initial
+// value, unlike the text/attribute-expression paths that do), and pulling
+// that in here would conflate two different defects in one fixture.
 
 export function TextareaRowBreakout() {
-  const [value, setValue] = createSignal(PAYLOAD)
+  const [value, setValue] = createSignal('a</textarea><b class="broke">X</b>')
   const [ids, setIds] = createSignal([1])
 
   return (
@@ -35,7 +41,7 @@ export function TextareaRowBreakout() {
       <ul>
         {ids().map((id) => (
           <li key={id}>
-            <textarea className="ta" value={value()} onInput={() => setValue(PAYLOAD)} />
+            <textarea className="ta" value={value()} onInput={() => setValue('a</textarea><b class="broke">X</b>')} />
           </li>
         ))}
       </ul>

@@ -5,8 +5,7 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const PAYLOAD = 'a</textarea><b class="broke">X</b>'
-  const [value, setValue] = createSignal(PAYLOAD)
+  const [value, setValue] = createSignal('a</textarea><b class="broke">X</b>')
   const [ids, setIds] = createSignal([1])
 
   const [_s0, _s2] = $(__scope, 's0', 's2')
@@ -56,7 +55,7 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
         const key = li.getAttribute('data-key')
         const id = ids().find(item => String(item) === key)
         if (id) {
-          ;(() => setValue(PAYLOAD))(__bfEvt)
+          ;(() => setValue('a</textarea><b class="broke">X</b>'))(__bfEvt)
         }
       }
       return
@@ -65,5 +64,5 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
 
 }
 
-hydrate('TextareaRowBreakout', { init: initTextareaRowBreakout, template: (_p) => `<div><button class="add" bf="s0">add</button><ul bf="s2"><!--bf-loop:l0-->${([1]).map((id) => `<li data-key="${escapeAttr(id)}"><textarea class="ta" bf="s1">${escapeText((('a</textarea><b class="broke">X</b>')))}</textarea></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+hydrate('TextareaRowBreakout', { init: initTextareaRowBreakout, template: (_p) => `<div><button class="add" bf="s0">add</button><ul bf="s2"><!--bf-loop:l0-->${([1]).map((id) => `<li data-key="${escapeAttr(id)}"><textarea class="ta" bf="s1">${escapeText(('a</textarea><b class="broke">X</b>'))}</textarea></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function TextareaRowBreakout(_p, __bfKey) { return createComponent('TextareaRowBreakout', _p, __bfKey) }
