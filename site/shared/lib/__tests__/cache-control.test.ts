@@ -25,9 +25,9 @@ describe('cacheControl middleware', () => {
     expect(res.headers.get('Cache-Control')).toBe('public, max-age=86400, immutable')
   })
 
-  test('does not cache error responses', async () => {
+  test('explicitly opts error responses out of caching', async () => {
     const res = await buildApp().request('/missing')
-    expect(res.headers.has('Cache-Control')).toBe(false)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
   test('does not cache non-GET/HEAD responses', async () => {
@@ -35,13 +35,18 @@ describe('cacheControl middleware', () => {
     expect(res.headers.has('Cache-Control')).toBe(false)
   })
 
-  test('does not cache a response that sets a session cookie', async () => {
+  test('explicitly opts out a response that sets a session cookie', async () => {
     const res = await buildApp().request('/login')
-    expect(res.headers.has('Cache-Control')).toBe(false)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
-  test('does not cache a request that already carries a session cookie', async () => {
+  test('explicitly opts out a request that already carries a session cookie (regression pin for barefootjs#2784/#2790)', async () => {
+    // Same shape that leaked in production for the integrations' copy of
+    // this helper: a repeat visit sends Cookie but the response has no
+    // fresh Set-Cookie and no Cache-Control, so Cloudflare's
+    // heuristic-freshness default would cache it. Must come back explicitly
+    // no-store, never merely headerless.
     const res = await buildApp().request('/account', { headers: { Cookie: 'session=abc' } })
-    expect(res.headers.has('Cache-Control')).toBe(false)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
   })
 })
