@@ -1,7 +1,9 @@
 /**
- * Pairwise sweep generator (#2481 step 5, "Pairwise generator (t=2 floor)").
- * Mirrors `mutation-generate.ts`'s driver shape closely: builds the t=2
- * covering array (`pairwise/covering-array.ts`), composes each case
+ * Pairwise sweep generator (#2481 step 5, "Pairwise generator (t=2 floor)",
+ * step 6 "Variable-strength promotion" — the t=2 floor now runs alongside
+ * the t=3 promotion over the fragile axis subset, `buildVariableStrengthArray()`).
+ * Mirrors `mutation-generate.ts`'s driver shape closely: builds the covering
+ * array (`pairwise/covering-array.ts`), composes each case
  * (`pairwise/compose.ts`), compiles it, and sorts the outcome into the
  * SAME four-way classification the mutation sweep uses:
  *
@@ -37,7 +39,7 @@ import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { compileJSX } from '@barefootjs/jsx'
-import { buildCoveringArray } from '../pairwise/covering-array'
+import { buildVariableStrengthArray } from '../pairwise/covering-array'
 import { composeCase } from '../pairwise/compose'
 import type { AxisCombo } from '../pairwise/axes'
 import { generateSharedComponentSnapshotCore, seedFromId } from '../src/snapshot-generator'
@@ -140,7 +142,7 @@ async function main(): Promise<void> {
   rmSync(PAIRWISE_DIR, { recursive: true, force: true })
   mkdirSync(PAIRWISE_DIR, { recursive: true })
 
-  const { cases, totalValidPairs } = buildCoveringArray()
+  const { cases, totalValidPairs } = buildVariableStrengthArray()
   const manifest: PairwiseManifestEntry[] = []
   const counts: Record<PairwiseStatus, number> = { ok: 0, refused: 0, broken: 0, inapplicable: 0 }
 
@@ -159,8 +161,8 @@ async function main(): Promise<void> {
 
   writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n')
   console.log(
-    `\n${cases.length} pairwise cases (t=2 floor over ${totalValidPairs} valid axis-value pairs) — ` +
-      `ok=${counts.ok} refused=${counts.refused} broken=${counts.broken} inapplicable=${counts.inapplicable}`,
+    `\n${cases.length} pairwise cases (t=2 floor over ${totalValidPairs} valid axis-value pairs, ` +
+      `plus the t=3 fragile-axis promotion) — ok=${counts.ok} refused=${counts.refused} broken=${counts.broken} inapplicable=${counts.inapplicable}`,
   )
   console.log(`Manifest written to ${MANIFEST_PATH}`)
 }
