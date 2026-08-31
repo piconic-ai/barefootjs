@@ -54,12 +54,14 @@ describe('pairwise variable-strength array — t=3 floor over the fragile subset
     }
 
     const missing: string[] = []
+    let validCount = 0
     for (const t of triples) {
       for (const valueA of AXIS_VALUES[t.a]) {
         for (const valueB of AXIS_VALUES[t.b]) {
           for (const valueC of AXIS_VALUES[t.c]) {
             const partial = { [t.a]: valueA, [t.b]: valueB, [t.c]: valueC } as Partial<AxisCombo>
             if (!isValidCombo(partial)) continue
+            validCount++
             const key = `${t.a}=${valueA}&${t.b}=${valueB}&${t.c}=${valueC}`
             if (!covered.has(key)) missing.push(key)
           }
@@ -68,6 +70,10 @@ describe('pairwise variable-strength array — t=3 floor over the fragile subset
     }
 
     expect(missing).toEqual([])
+    // `missing` alone wouldn't catch `covered` picking up extra/bogus
+    // entries (e.g. an invalid triple slipping in) that happen to still
+    // leave every real target covered — pin the count too.
+    expect(covered.size).toBe(validCount)
   })
 
   test('the t=2 floor is preserved byte-for-byte as a prefix — no floor case is regenerated, reordered, or dropped', () => {
