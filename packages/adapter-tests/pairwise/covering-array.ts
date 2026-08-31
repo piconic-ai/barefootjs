@@ -256,3 +256,165 @@ export function buildCoveringArray(): CoveringArrayResult {
 
   return { cases, totalValidPairs }
 }
+
+// =============================================================================
+// Variable-strength promotion: t=3 over the fragile axis subset (#2481 step 6)
+// =============================================================================
+
+/**
+ * #2481's "Fragile axes: variable-strength coverage" subset F — the
+ * tracker-history clusters overwhelmingly on loop structure, event
+ * delegation/param resolution, and callback-shape lowering. Every
+ * axis-TRIPLE with ≥2 members in F is promoted from t=2 to t=3 (every
+ * valid VALUE-triple covered by some case, not just every pair) — see
+ * `promotedTriples()`.
+ */
+const FRAGILE_AXES: ReadonlySet<AxisName> = new Set(['structure', 'event', 'callback'])
+
+interface AxisTriple {
+  a: AxisName
+  b: AxisName
+  c: AxisName
+}
+
+/** The 7 (of 10 total) axis-triples with ≥2 members in `FRAGILE_AXES`. */
+function promotedTriples(): AxisTriple[] {
+  const triples: AxisTriple[] = []
+  for (let i = 0; i < AXIS_NAMES.length; i++) {
+    for (let j = i + 1; j < AXIS_NAMES.length; j++) {
+      for (let k = j + 1; k < AXIS_NAMES.length; k++) {
+        const [a, b, c] = [AXIS_NAMES[i], AXIS_NAMES[j], AXIS_NAMES[k]]
+        const fragileCount = [a, b, c].filter(axis => FRAGILE_AXES.has(axis)).length
+        if (fragileCount >= 2) triples.push({ a, b, c })
+      }
+    }
+  }
+  return triples
+}
+
+function tripleKey(triple: AxisTriple, valueA: string, valueB: string, valueC: string): string {
+  return `${triple.a}=${valueA}&${triple.b}=${valueB}&${triple.c}=${valueC}`
+}
+
+/** Every VALID (axisA=valueA, axisB=valueB, axisC=valueC) triple for one `AxisTriple`. */
+function validValueTriples(triple: AxisTriple): Array<{ valueA: string; valueB: string; valueC: string }> {
+  const out: Array<{ valueA: string; valueB: string; valueC: string }> = []
+  for (const valueA of AXIS_VALUES[triple.a]) {
+    for (const valueB of AXIS_VALUES[triple.b]) {
+      for (const valueC of AXIS_VALUES[triple.c]) {
+        const partial = { [triple.a]: valueA, [triple.b]: valueB, [triple.c]: valueC } as Partial<AxisCombo>
+        if (isValidCombo(partial)) out.push({ valueA, valueB, valueC })
+      }
+    }
+  }
+  return out
+}
+
+export interface VariableStrengthResult extends CoveringArrayResult {
+  /** The unmodified t=2 floor — same cases, same ids, same order as `buildCoveringArray()`. */
+  floorCases: AxisCombo[]
+  /** Cases appended beyond the t=2 floor purely to reach t=3 coverage on the fragile subset. */
+  additionalCases: AxisCombo[]
+  /** Total valid value-triples across the 7 promoted axis-triples — the t=3 coverage denominator. */
+  totalValidTriples: number
+  /** How many t=3 targets the t=2 floor already covered incidentally, with no case added for them. */
+  triplesCoveredByFloor: number
+}
+
+/**
+ * Extends `buildCoveringArray()`'s t=2 floor with additional cases so every
+ * valid value-triple on the 7 fragile axis-triples is also covered (#2481
+ * step 6). The floor's own cases are NEVER regenerated, reordered, or
+ * otherwise disturbed here — `pairwise-quarantine.ts` keys its triage
+ * entries on exact case id, so touching the floor would silently orphan
+ * that whole ledger. Only new cases are appended, continuing the floor's
+ * case-index sequence so seeds (and therefore case ids) stay deterministic.
+ *
+ * Deliberately NOT wired into `scripts/pairwise-generate.ts`'s default
+ * output yet: that script feeds the nightly `test:pairwise` browser-oracle
+ * job directly (see `packages/adapter-tests/package.json`), and the
+ * estimated +150–250 new cases need the SAME real-diff triage discipline
+ * `pairwise-quarantine.ts`'s history required for the t=2 floor before any
+ * browser leg can run against them without turning that nightly job red on
+ * day one. This function is the t=3 generator on its own — compile-level
+ * sweep + browser-oracle leg + quarantine triage land as the follow-up,
+ * mirroring how the t=2 floor itself staged across separate landings.
+ */
+export function buildVariableStrengthArray(): VariableStrengthResult {
+  const floor = buildCoveringArray()
+  const triples = promotedTriples()
+
+  const uncovered = new Map<string, { triple: AxisTriple; valueA: string; valueB: string; valueC: string }>()
+  let totalValidTriples = 0
+  for (const triple of triples) {
+    for (const { valueA, valueB, valueC } of validValueTriples(triple)) {
+      uncovered.set(tripleKey(triple, valueA, valueB, valueC), { triple, valueA, valueB, valueC })
+      totalValidTriples++
+    }
+  }
+
+  function markCoveredByCombo(combo: Readonly<AxisCombo>): void {
+    for (const triple of triples) {
+      uncovered.delete(tripleKey(triple, combo[triple.a], combo[triple.b], combo[triple.c]))
+    }
+  }
+
+  for (const combo of floor.cases) markCoveredByCombo(combo)
+  const triplesCoveredByFloor = totalValidTriples - uncovered.size
+
+  function countNewlyCoveredTriples(combo: Readonly<AxisCombo>): number {
+    let n = 0
+    for (const triple of triples) {
+      if (uncovered.has(tripleKey(triple, combo[triple.a], combo[triple.b], combo[triple.c]))) n++
+    }
+    return n
+  }
+
+  /** Same greedy fill as `buildCoveringArray`'s `completeCombo`, maximizing newly-covered TRIPLES instead of pairs — see that function's "bestValues is never empty" note, which applies unchanged (a property of `CONSTRAINTS`, not of what's being maximized). */
+  function completeComboForTriples(seed: Partial<AxisCombo>, rng: () => number): AxisCombo {
+    const combo: Partial<AxisCombo> = { ...seed }
+    const remainingAxes = AXIS_NAMES.filter(a => combo[a] === undefined)
+    for (const axis of remainingAxes) {
+      let bestValues: string[] = []
+      let bestScore = -1
+      for (const value of AXIS_VALUES[axis]) {
+        const candidate = { ...combo, [axis]: value } as Partial<AxisCombo>
+        if (!isValidCombo(candidate)) continue
+        const score = countNewlyCoveredTriples(candidate as AxisCombo)
+        if (score > bestScore) {
+          bestScore = score
+          bestValues = [value]
+        } else if (score === bestScore) {
+          bestValues.push(value)
+        }
+      }
+      combo[axis] = pickDeterministic(bestValues, rng) as never
+    }
+    return combo as AxisCombo
+  }
+
+  const additionalCases: AxisCombo[] = []
+  let caseIndex = floor.cases.length
+  while (uncovered.size > 0) {
+    const [, target] = uncovered.entries().next().value as [string, { triple: AxisTriple; valueA: string; valueB: string; valueC: string }]
+    const rng = makeRng(caseIndex)
+    const seed: Partial<AxisCombo> = {
+      [target.triple.a]: target.valueA,
+      [target.triple.b]: target.valueB,
+      [target.triple.c]: target.valueC,
+    } as Partial<AxisCombo>
+    const combo = assertValidCombo(completeComboForTriples(seed, rng))
+    additionalCases.push(combo)
+    markCoveredByCombo(combo)
+    caseIndex++
+  }
+
+  return {
+    cases: [...floor.cases, ...additionalCases],
+    floorCases: floor.cases,
+    additionalCases,
+    totalValidPairs: floor.totalValidPairs,
+    totalValidTriples,
+    triplesCoveredByFloor,
+  }
+}
