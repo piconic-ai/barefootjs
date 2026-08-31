@@ -32,15 +32,23 @@
  * cacheable case must explicitly earn its way into a longer TTL. A new
  * response shape nobody has reasoned about yet inherits "not cached" —
  * unsafe-by-default instead of cached-by-default.
+ *
+ * Both cacheable cases below still require `response.ok && !Set-Cookie` —
+ * asset-extension path matching is a heuristic on the URL, not proof the
+ * response actually IS a safe static asset. Without that shared gate, a
+ * 404/error on an asset-shaped path gets pinned `immutable` for a year
+ * (purge-only recovery), and a response that happens to carry `Set-Cookie`
+ * on an asset-shaped path gets cached and replayed — the exact #2784 leak
+ * class, just reached through the asset branch instead of the HTML one.
  */
 
 const ASSET_EXTENSION = /\.(?:js|mjs|css|woff2?|ttf|svg|png|jpe?g|gif|webp|ico)$/
 
 const HTML_CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400'
 // Vite fingerprints build output (content-hashed filenames), so an asset
-// URL either changes or never changes — safe to cache for a year, and this
-// holds regardless of Cookie/Set-Cookie state (no backend ever varies a
-// static asset's bytes by visitor).
+// URL either changes or never changes — safe to cache for a year, PROVIDED
+// the response is actually a successful, cookie-free asset response (see
+// the gate in withCacheControl below, not just the extension match here).
 const ASSET_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 // The default. Must be set explicitly (not just "no Cache-Control") because
 // an absent header still gets Cloudflare's heuristic-freshness default TTL.
@@ -66,12 +74,20 @@ export function withCacheControl(request: Request, response: Response): Response
   // Default: do not cache. Every case below must explicitly opt in.
   let cacheControl = PRIVATE_CACHE_CONTROL
 
-  if (ASSET_EXTENSION.test(pathname)) {
-    cacheControl = ASSET_CACHE_CONTROL
-  } else if (response.ok && !request.headers.has('Cookie') && !response.headers.has('Set-Cookie')) {
-    // A clean 2xx exchange with no session cookie on either side. This is
-    // the one non-asset case presumed safe: no auth, no per-visitor state.
-    cacheControl = HTML_CACHE_CONTROL
+  // Shared gate for both cacheable cases: a non-2xx or Set-Cookie response
+  // is never cached, whether or not its path happens to look like an asset.
+  if (response.ok && !response.headers.has('Set-Cookie')) {
+    if (ASSET_EXTENSION.test(pathname)) {
+      cacheControl = ASSET_CACHE_CONTROL
+    } else if (!request.headers.has('Cookie')) {
+      // A clean 2xx exchange with no session cookie on either side. This is
+      // the one non-asset case presumed safe: no auth, no per-visitor state.
+      // (Assets don't need this extra Cookie check: a returning visitor's
+      // browser attaches the session cookie to every same-origin request,
+      // asset requests included, so gating assets on it too would defeat
+      // asset caching for exactly the repeat visits this exists to help.)
+      cacheControl = HTML_CACHE_CONTROL
+    }
   }
 
   headers.set('Cache-Control', cacheControl)

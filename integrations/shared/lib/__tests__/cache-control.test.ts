@@ -55,6 +55,26 @@ describe('withCacheControl', () => {
     expect(res.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
+  test('does not cache a 404 at an asset-shaped path (regression pin: the asset branch must not bypass the response.ok gate)', () => {
+    // The asset-extension check is a heuristic on the URL, not proof the
+    // response IS a real static asset. A missed/deleted build artifact
+    // returns 404 at a path that still matches ASSET_EXTENSION — if that
+    // gets cached `immutable`, the 404 is pinned for a year (purge-only
+    // recovery).
+    const res = withCacheControl(req('/integrations/flask/client/router-entry-abc123.js'), new Response('not found', { status: 404 }))
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  test('does not cache a Set-Cookie response at an asset-shaped path (regression pin: same leak class, reached via the asset branch)', () => {
+    // If a response at an asset-shaped path ever carries Set-Cookie, caching
+    // it `immutable` would replay that Set-Cookie to every other visitor for
+    // a year — the #2784 leak class, just reached through the asset branch
+    // instead of the HTML one.
+    const backendResponse = new Response('', { headers: { 'Set-Cookie': 'bf_session=abc; Path=/integrations/flask; HttpOnly' } })
+    const res = withCacheControl(req('/integrations/flask/client/router-entry-abc123.js'), backendResponse)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
   test('preserves status and body', async () => {
     const res = withCacheControl(req('/integrations/flask/'), new Response('hello', { status: 200 }))
     expect(res.status).toBe(200)
