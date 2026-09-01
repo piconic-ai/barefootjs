@@ -34,6 +34,14 @@ import { createFixture } from '../src/types'
  * (`Cannot find name 'trackMount'`); post-fix it passes with no changes
  * needed to that test file. Verified both directions directly (reverting the
  * one-line `build-references.ts` fix reproduces the pre-fix failure here).
+ *
+ * Skipped on the Go template adapter (`render-divergences.ts`'s
+ * `nested-loop-ref-const` entry) for an UNRELATED, pre-existing reason: this
+ * shape's `items` signal has a nested array-of-objects field (`children`),
+ * which the Go adapter's struct synthesis can't bake at all (every property
+ * must be a scalar literal) — the whole `Items` field seeds `nil` and the
+ * loop body renders empty regardless of this fixture's own fix. Tracked at
+ * https://github.com/piconic-ai/barefootjs/issues/2800.
  */
 export const fixture = createFixture({
   id: 'nested-loop-ref-const',
