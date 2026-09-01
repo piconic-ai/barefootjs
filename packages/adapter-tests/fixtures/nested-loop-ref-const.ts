@@ -12,6 +12,14 @@ import { createFixture } from '../src/types'
  * site regardless, so the compiled module throws `ReferenceError` the moment
  * the first inner row constructs.
  *
+ * `items` MUST be signal-backed, not a plain literal array: a literal array
+ * routes through the hoisted static-array fast path, which never splices in
+ * a ref call site at ANY depth (a separate, pre-existing gap — see #2798) —
+ * that path would make this fixture pass regardless of whether #2750's fix
+ * is present, defeating the whole point. Only the dynamic `mapArray`/
+ * row-construction path (taken for a signal-backed array) emits the ref call
+ * site this fixture exists to pin.
+ *
  * `ref` is deliberately DOM-serialization-neutral here (pushes to an array,
  * no `setAttribute`) so this fixture stays clear of #2714 (a `ref` callback's
  * DOM mutation can never run during SSR, a separate and still-open gap) —
@@ -23,7 +31,8 @@ import { createFixture } from '../src/types'
  * `client-js-scope.test.ts`'s automatic TS scope check over the whole fixture
  * corpus: pre-fix this fixture's emitted client JS fails to typecheck
  * (`Cannot find name 'trackMount'`); post-fix it passes with no changes
- * needed to that test file.
+ * needed to that test file. Verified both directions directly (reverting the
+ * one-line `build-references.ts` fix reproduces the pre-fix failure here).
  */
 export const fixture = createFixture({
   id: 'nested-loop-ref-const',
@@ -33,16 +42,16 @@ export const fixture = createFixture({
 import { createSignal } from '@barefootjs/client'
 export function NestedRefConst() {
   const [mounted, setMounted] = createSignal<number[]>([])
-  const items = [
+  const [items] = createSignal([
     { id: 1, label: 'Alpha', children: [{ id: 10, label: 'Alpha-child' }] },
     { id: 2, label: 'Beta', children: [{ id: 20, label: 'Beta-child' }] },
-  ]
+  ])
   const trackMount = (el: Element) => {
     setMounted(prev => [...prev, Number(el.getAttribute('data-child-id'))])
   }
   return (
     <ul>
-      {items.map(row => (
+      {items().map(row => (
         <li key={row.id}>
           {row.children.map(child => (
             <span key={child.id} ref={trackMount} data-child-id={child.id}>{child.label}</span>
