@@ -20,11 +20,12 @@ import { createFixture } from '../src/types'
  * row-construction path (taken for a signal-backed array) emits the ref call
  * site this fixture exists to pin.
  *
- * `ref` is deliberately DOM-serialization-neutral here (pushes to an array,
- * no `setAttribute`) so this fixture stays clear of #2714 (a `ref` callback's
- * DOM mutation can never run during SSR, a separate and still-open gap) —
- * this fixture's only concern is that the referenced const is DECLARED and
- * CALLABLE, not what it does once called.
+ * `ref` is a no-op here — this fixture's only concern is that the referenced
+ * const is DECLARED and CALLABLE, not what it does once called, so no body
+ * content (a DOM mutation, a signal write) does anything for the pin. A
+ * `setAttribute`-mutating body would also entangle this with #2714 (a `ref`
+ * callback's DOM mutation can never run during SSR, a separate and
+ * still-open gap) for no benefit.
  *
  * `expectedHtml` is unaffected by the fix (the bug is client-JS-emission-only
  * — SSR never runs the ref at all). The regression pin is
@@ -41,20 +42,17 @@ export const fixture = createFixture({
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function NestedRefConst() {
-  const [mounted, setMounted] = createSignal<number[]>([])
   const [items] = createSignal([
     { id: 1, label: 'Alpha', children: [{ id: 10, label: 'Alpha-child' }] },
     { id: 2, label: 'Beta', children: [{ id: 20, label: 'Beta-child' }] },
   ])
-  const trackMount = (el: Element) => {
-    setMounted(prev => [...prev, Number(el.getAttribute('data-child-id'))])
-  }
+  const trackMount = (_el: Element) => {}
   return (
     <ul>
       {items().map(row => (
         <li key={row.id}>
           {row.children.map(child => (
-            <span key={child.id} ref={trackMount} data-child-id={child.id}>{child.label}</span>
+            <span key={child.id} ref={trackMount}>{child.label}</span>
           ))}
         </li>
       ))}
@@ -64,8 +62,8 @@ export function NestedRefConst() {
 `,
   expectedHtml: `
     <ul bf-s="test" bf="s3">
-      <li bf="s2" data-key="1"><span bf="s1" data-child-id="10" data-key-1="10"><!--bf:s0-->Alpha-child<!--/--></span></li>
-      <li bf="s2" data-key="2"><span bf="s1" data-child-id="20" data-key-1="20"><!--bf:s0-->Beta-child<!--/--></span></li>
+      <li bf="s2" data-key="1"><span bf="s1" data-key-1="10"><!--bf:s0-->Alpha-child<!--/--></span></li>
+      <li bf="s2" data-key="2"><span bf="s1" data-key-1="20"><!--bf:s0-->Beta-child<!--/--></span></li>
     </ul>
   `,
 })
