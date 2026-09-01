@@ -2460,7 +2460,9 @@
             },
             {
               "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2703"
+              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -3222,7 +3224,9 @@
             },
             {
               "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2703"
+              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -3988,7 +3992,9 @@
             },
             {
               "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2703"
+              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -7784,7 +7790,9 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2703"
+              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",

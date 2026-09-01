@@ -68,5 +68,16 @@ export const conformancePins: ConformancePins = {
   // (`extractTextChildren`/`extractHtmlChildren`/`extractScopedHtmlChildren`)
   // can't reduce to a literal now refuses with BF101 instead of silently
   // omitting the field.
-  'jsx-element-prop-fragment-conditional': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2703' }],
+  // `unescapable`: a follow-up (#2703 itself) already extends the reserved
+  // `children` slot's dynamic-delivery route to named props, which removes
+  // this refusal entirely rather than working around it with a `/* @client */`
+  // twin — so no escape fixture is authored here. Self-declared per the
+  // escape-coverage floor test's own guidance
+  // (`packages/compat/src/escape-coverage.ts`).
+  'jsx-element-prop-fragment-conditional': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2703',
+    unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2703' },
+  }],
 }
