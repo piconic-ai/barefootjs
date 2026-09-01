@@ -408,6 +408,7 @@ import { fixture as mapIndexHandler } from './map-index-handler'
 import { fixture as nestedMapIndexKey } from './nested-map-index-key'
 import { fixture as nestedLoopOuterBinding } from './nested-loop-outer-binding'
 import { fixture as nestedLoopTripleDepth } from './nested-loop-triple-depth'
+import { fixture as nestedLoopRefConst } from './nested-loop-ref-const'
 import { fixture as svgInnerLoop } from './svg-inner-loop'
 import { fixture as siblingLoopsKeyIsolation } from './sibling-loops-key-isolation'
 import { fixture as conditionalReturnNull } from './conditional-return-null'
@@ -858,6 +859,7 @@ export const jsxFixtures: JSXFixture[] = [
   nestedMapIndexKey,
   nestedLoopOuterBinding,
   nestedLoopTripleDepth,
+  nestedLoopRefConst,
   svgInnerLoop,
   siblingLoopsKeyIsolation,
   conditionalReturnNull,

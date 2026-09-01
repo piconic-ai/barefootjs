@@ -302,6 +302,13 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
         if (v && attr.value.kind !== 'literal') addExprEdges(ROOT_SOURCE, v, 'template-closure')
       }
       for (const ev of el.events) addExprEdges(ROOT_SOURCE, ev.handler, 'init-body')
+      // A `ref` callback runs in `initX`'s closure, same context as an event
+      // handler — not the template closure. Without this edge, a ref inside
+      // a loop nested past the top level (`elem.innerLoops`, never walked by
+      // Phase 1's dedicated ref traces) is invisible to reachability, so
+      // `computeDeclarationScopes` (compute-scope.ts) drops its declaration
+      // as dead code while the emitter still emits the call site (#2750).
+      if (el.ref) addExprEdges(ROOT_SOURCE, el.ref, 'init-body')
       descend()
     },
     component: ({ node: c, descend, descendJsxChildren }) => {
