@@ -1820,6 +1820,10 @@
         "go-template": {
           "kind": "render",
           "reason": "A `children` prop destructured under a different name (`const { children: kids } = props`) does not reach the SSR template on Go, tracked as https://github.com/piconic-ai/barefootjs/issues/2788. The same fixture also fails on Mojolicious, where the mechanism IS isolated: the `.html.ep` interpolates the LOCAL alias (`$kids`) while the stash defines only the caller-facing `children`, so the Perl render dies inside `Mojo::Template::process`. Go's own failure mode has NOT been read — `go` is not reachable from the local test process (the conformance case prints \"go command not found\" and skips), so this entry is declared from the CI failure on #2787 alone, not from a local reproduction. Whoever graduates this should read Go's actual output first rather than assume it shares Mojo's mechanism. Same alias family as `aliased-destructured-prop` (`{ n: count }`), whose Go half graduated in #2525 — worth checking whether the reserved `children` slot bypasses that fix or never had it. `children-passthrough-renamed` asserts the CORRECT (Hono-generated) output, so deleting this entry is the graduation."
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "A renamed `children` destructure emits the local alias as a template variable; the stash defines only `children`, so the Perl render dies (#2788)."
         }
       },
       "date-method-uncatalogued": {
@@ -2837,6 +2841,12 @@
           }
         }
       },
+      "nested-loop-ref-const": {
+        "go-template": {
+          "kind": "render",
+          "reason": "A signal-backed object array whose elements have a NESTED array-of-objects field (`children: [{...}]`, producing this fixture's depth-2 `.map()`) bakes to `nil` in `New<Component>Props`, leaving the whole `{{range .Items}}` body empty on real Go — `synthesizeStructFromSignal` (`go-template-adapter.ts`) only synthesizes a struct when EVERY property value is a scalar literal (`scalarParsedGoType`), so a `children` array property aborts synthesis for the entire signal; `parsedLiteralToGo` then has no named struct to bake an object-literal element against and falls through to `nil`. Reproduced identically with #2750's fix reverted, confirming this predates and is independent of #2750 (which only touches client-JS reachability, never SSR baking) — every other adapter (confirmed: Hono) renders the nested loop correctly. Tracked at https://github.com/piconic-ai/barefootjs/issues/2800; graduate by teaching `synthesizeStructFromSignal` to recursively synthesize a nested struct for an array-valued property instead of bailing to `null`."
+        }
+      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -3611,6 +3621,10 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
+      },
+      "nested-loop-ref-const": {
+        "description": "a ref callback referenced inside a nested (depth-2) loop row has its declaration emitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-ref-const.ts"
       },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",

@@ -131,7 +131,7 @@
           ]
         },
         "go-template": {
-          "pass": 71,
+          "pass": 70,
           "total": 84,
           "gaps": [
             {
@@ -164,6 +164,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -1583,7 +1587,7 @@
           ]
         },
         "go-template": {
-          "pass": 218,
+          "pass": 217,
           "total": 235,
           "gaps": [
             {
@@ -1622,6 +1626,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -2399,7 +2407,7 @@
           ]
         },
         "go-template": {
-          "pass": 311,
+          "pass": 310,
           "total": 334,
           "gaps": [
             {
@@ -2466,6 +2474,10 @@
             },
             {
               "fixture": "map-array-builder-escaping",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -2703,9 +2715,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 316,
+          "pass": 315,
           "total": 334,
           "gaps": [
+            {
+              "fixture": "children-passthrough-renamed",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3181,7 +3197,7 @@
           ]
         },
         "go-template": {
-          "pass": 251,
+          "pass": 250,
           "total": 266,
           "gaps": [
             {
@@ -3213,6 +3229,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2667"
               ]
+            },
+            {
+              "fixture": "nested-loop-ref-const",
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3915,7 +3935,7 @@
           ]
         },
         "go-template": {
-          "pass": 169,
+          "pass": 168,
           "total": 191,
           "gaps": [
             {
@@ -3982,6 +4002,10 @@
             },
             {
               "fixture": "map-array-builder-escaping",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -4215,9 +4239,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 173,
+          "pass": 172,
           "total": 191,
           "gaps": [
+            {
+              "fixture": "children-passthrough-renamed",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4557,9 +4585,13 @@
           ]
         },
         "go-template": {
-          "pass": 60,
+          "pass": 59,
           "total": 64,
           "gaps": [
+            {
+              "fixture": "nested-loop-ref-const",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -5083,7 +5115,7 @@
           ]
         },
         "go-template": {
-          "pass": 32,
+          "pass": 31,
           "total": 42,
           "gaps": [
             {
@@ -5100,6 +5132,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -7970,11 +8006,15 @@
           ]
         },
         "go-template": {
-          "pass": 106,
+          "pass": 105,
           "total": 112,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -8230,7 +8270,7 @@
           ]
         },
         "go-template": {
-          "pass": 176,
+          "pass": 175,
           "total": 186,
           "gaps": [
             {
@@ -8251,6 +8291,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
