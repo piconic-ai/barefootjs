@@ -118,11 +118,13 @@ runAdapterConformanceTests({
     'todo-app',
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
-    // Real-render divergence (see `render-divergences.ts` for the full
-    // description): Go's real SSR output drops the `header` prop's
-    // content entirely for this shape, so its rendered template has no
-    // `^s0` marker for the IR's conditional to match against. Paired
-    // with the `renderDivergences` entry, not an independent gap.
+    // #2703: this shape now refuses with BF101 at compile time (see
+    // `conformance-pins.ts`) rather than silently rendering divergent
+    // markup — `expectedDiagnostics` covers the diagnostic contract, and
+    // marker comparison can't apply to a fixture that produces no
+    // complete template (`generate()` still returns partial output rather
+    // than throwing, so this stays on the explicit skip list rather than
+    // relying on the try/catch above).
     'jsx-element-prop-fragment-conditional',
   ]),
   skipDataPoints: new Set<string>([
