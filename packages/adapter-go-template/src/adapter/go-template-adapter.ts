@@ -2341,6 +2341,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
                   if (scopedHtml !== null) {
                     this.state.usesHtmlTemplate = true
                     emitChildField(prop.name, `template.HTML(${scopedHtml})`)
+                  } else {
+                    // None of the three bake attempts produced a static Go
+                    // string — the value contains a template action that
+                    // survived (#2746) or is otherwise genuinely dynamic
+                    // (#2703). Named jsx-children props have no dynamic
+                    // delivery route yet (only the reserved `children` slot
+                    // does, via `queueDynamicChildrenDefine` + `bf_with_children`
+                    // below) — refuse loudly rather than silently omitting
+                    // the field, per the sound-or-loud trichotomy.
+                    this.state.errors.push({
+                      code: 'BF101',
+                      severity: 'error',
+                      message: `JSX-valued prop '${prop.name}' on <${child.name}> could not be baked into a static Go template value — it is dynamic and named jsx-children props have no dynamic-delivery route on this adapter yet`,
+                      loc: prop.loc,
+                    })
                   }
                 }
               }

@@ -13,13 +13,21 @@
  * the same way it already seeded a signal-backed dynamic one: the adapter's
  * own `emission` was never the bug, only this harness's route-handler
  * stand-in was missing the prop-derived case.)
+ *
+ * (#2703's `jsx-element-prop-fragment-conditional` divergence graduated by
+ * reclassification, not a lowering fix: the underlying gap — a named
+ * jsx-children prop whose value can't be baked into a static Go string
+ * silently got no field at all, no diagnostic — is now a loud `BF101`
+ * refusal (see `conformance-pins.ts`) instead of a silent wrong render.
+ * "Compiles clean but renders divergent" no longer describes this fixture on
+ * Go, so it moved off this table. Dynamic delivery for named jsx-children
+ * props (the actual capability gap) is tracked separately at
+ * https://github.com/piconic-ai/barefootjs/issues/2703.)
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'jsx-element-prop-fragment-conditional':
-    'Go-specific half of the fragment-wrapped-conditional prop shape, tracked as https://github.com/piconic-ai/barefootjs/issues/2703 (distinct from #2702, the cross-adapter hydrate-time bug). #2702 is a hydrate-time-only bug (SSR is correct on every adapter, confirmed for Go by direct `adapter.generate()` inspection of the raw template TEXT, which does contain `{{if .Cond}}<a bf-c="^s0">x</a>{{else}}...{{end}}`-shaped markup). But the REAL Go render of this exact fixture (`go-template-adapter.test.ts`, real `go run`) produces an EMPTY `<header>` — `<header bf="s1"><!--bf:s0--><!--/--></header>` instead of the reference `<a>x</a>` — i.e. the `header` prop\'s jsx-children payload never reaches the child (`Card`) component\'s slot construction (`.CardSlot1`) at all for this NAMED-prop shape, even though the same conditional-in-fragment payload renders correctly when passed via `children` instead (`jsx-element-prop-children-escape`). Root cause not yet isolated to a specific emitter function — only the reproducible symptom is pinned here. Every other adapter (Hono, ERB, Jinja, Mojolicious, MiniJinja, Twig, Xslate, Blade) renders this fixture correctly; verified by running each adapter\'s own JSX Conformance Tests for this fixture id.',
   'children-passthrough-renamed':
     'A `children` prop destructured under a different name (`const { children: kids } = props`) does not reach the SSR template on Go, tracked as https://github.com/piconic-ai/barefootjs/issues/2788. The same fixture also fails on Mojolicious, where the mechanism IS isolated: the `.html.ep` interpolates the LOCAL alias (`$kids`) while the stash defines only the caller-facing `children`, so the Perl render dies inside `Mojo::Template::process`. Go\'s own failure mode has NOT been read — `go` is not reachable from the local test process (the conformance case prints "go command not found" and skips), so this entry is declared from the CI failure on #2787 alone, not from a local reproduction. Whoever graduates this should read Go\'s actual output first rather than assume it shares Mojo\'s mechanism. Same alias family as `aliased-destructured-prop` (`{ n: count }`), whose Go half graduated in #2525 — worth checking whether the reserved `children` slot bypasses that fix or never had it. `children-passthrough-renamed` asserts the CORRECT (Hono-generated) output, so deleting this entry is the graduation.',
   'signal-object-spread-init':

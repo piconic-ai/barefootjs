@@ -59,4 +59,25 @@ export const conformancePins: ConformancePins = {
   // `rich-prop-client-read` above.
   'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
   'jsx-element-prop-array': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
+  // #2703: graduated from a silent render-divergence (`render-divergences.ts`)
+  // to a loud refusal. A named jsx-children prop (any JSX-valued prop other
+  // than the reserved `children`) has no dynamic-delivery route on this
+  // adapter yet — only the reserved `children` slot gets one, via
+  // `queueDynamicChildrenDefine` + `bf_with_children`/`bf_tmpl`. Until that
+  // route is extended to named props, a value the static bake chain
+  // (`extractTextChildren`/`extractHtmlChildren`/`extractScopedHtmlChildren`)
+  // can't reduce to a literal now refuses with BF101 instead of silently
+  // omitting the field.
+  // `unescapable`: a follow-up (#2703 itself) already extends the reserved
+  // `children` slot's dynamic-delivery route to named props, which removes
+  // this refusal entirely rather than working around it with a `/* @client */`
+  // twin — so no escape fixture is authored here. Self-declared per the
+  // escape-coverage floor test's own guidance
+  // (`packages/compat/src/escape-coverage.ts`).
+  'jsx-element-prop-fragment-conditional': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2703',
+    unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2703' },
+  }],
 }
