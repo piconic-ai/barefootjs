@@ -77,6 +77,8 @@ interface DynamicLoopCommon extends LoopPlanCommon {
   paramHead: string
   /** Statement to unwrap a destructured param at body entry. Empty when not needed. */
   paramUnwrap: string
+  /** Pre-render preamble line (already wrapped with loop param accessor). Empty when none. */
+  mapPreambleWrapped: string
 }
 
 /**
@@ -117,8 +119,6 @@ export interface LoopChildRefBinding {
  */
 interface PlainLoopVariant extends DynamicLoopCommon {
   kind: 'plain'
-  /** Pre-render preamble line (already wrapped with loop param accessor). Empty when none. */
-  mapPreambleWrapped: string
   /** HTML template string for one item. */
   template: string
   /**
@@ -225,8 +225,6 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
  */
 interface CompositeLoopVariant extends DynamicLoopCommon {
   kind: 'composite'
-  /** Wrapped mapPreamble line, hoisted before the SSR/CSR split. Empty when none. */
-  mapPreambleWrapped: string
   /** Inner template HTML for the loop body (single item). */
   template: string
   /** Outer-level child components (depth 0), with `insideConditional` ones already filtered out. */

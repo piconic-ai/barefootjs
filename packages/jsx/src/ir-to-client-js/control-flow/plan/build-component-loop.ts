@@ -26,9 +26,10 @@ import {
   isTextOnlyConditional,
   buildChildRefBindings,
 } from '../shared.ts'
-import { irChildrenToJsExpr } from '../../html-template.ts'
+import { irChildrenToJsExpr, renderPreamble } from '../../html-template.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from './types.ts'
+import { internalInvariant } from '../../../errors.ts'
 
 /** @internal — prefer `buildLoopPlan`. */
 export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?: string): ComponentLoopPlan {
@@ -36,6 +37,22 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
   const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param)
   const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param, elem.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
+
+  // A component-root loop's preamble is JS-only by construction: Phase 1
+  // (jsx-to-ir.ts) already refuses and strips any preamble with a JSX leaf
+  // (`builderNames.length > 0`) on this shape, because a lowered HTML-string
+  // leaf passed as a prop would diverge from SSR's real JSX elements — see
+  // `rowConstruction: 'dom-ops'` below. `renderLeaf` is therefore never
+  // reachable here; if it ever fires, a Phase-1 refusal for the new shape
+  // that let a JSX-bearing preamble through is missing, not this line.
+  const mapPreambleWrapped = elem.preamble
+    ? renderPreamble(elem.preamble, {
+        transformJs: text => wrapLoopParamAsAccessor(text, elem.param, elem.paramBindings),
+        renderLeaf: () => {
+          internalInvariant(false, 'component-root loop received a JSX-bearing preamble — Phase 1 should have refused it')
+        },
+      })
+    : ''
 
   // Only init components at loopDepth 0 — inner-loop components are handled by their own loop
   const outerNestedComps = (elem.nestedComponents ?? []).filter(c => !c.loopDepth)
@@ -64,6 +81,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     // prop would diverge from SSR (which passes real JSX elements). The plan
     // dispatcher refuses a JSX-bearing preamble on this variant.
     rowConstruction: 'dom-ops',
+    mapPreambleWrapped,
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     arrayExpr: buildChainedArrayExpr(elem),

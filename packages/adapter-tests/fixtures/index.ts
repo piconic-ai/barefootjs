@@ -221,6 +221,7 @@ import { fixture as staticArrayFromPropsWithComponentPrecomputed } from './stati
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
 import { fixture as childComponentRefProp } from './child-component-ref-prop'
+import { fixture as componentRowLoopPreambleHandler } from './component-row-loop-preamble-handler'
 import { fixture as childComponentRootScopePrefix } from './child-component-root-scope-prefix'
 import { fixture as reactivePropBinding } from './reactive-prop-binding'
 import { fixture as localRecordUnionIndex } from './local-record-union-index'
@@ -714,6 +715,7 @@ export const jsxFixtures: JSXFixture[] = [
   booleanDynamicAttr,
   childComponentInit,
   childComponentRefProp,
+  componentRowLoopPreambleHandler,
   childComponentRootScopePrefix,
   reactivePropBinding,
   localRecordUnionIndex,
