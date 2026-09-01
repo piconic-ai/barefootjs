@@ -86,6 +86,18 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLoc
       !(elem.preamble && elem.preamble.builderNames.length > 0 && plan.rowConstruction === 'dom-ops'),
       `loop variant '${plan.kind}' declares dom-ops row construction but received a JSX-bearing preamble — add a Phase-1 refusal (or wire renderPreamble support) for this shape`,
     )
+    // #2797's hole, generalized: a JS-only preamble (no JSX leaf, so the
+    // check above doesn't fire) can still be silently dropped if a variant
+    // just never reads `elem.preamble` at all — which is exactly what
+    // happened to the 'component' variant before it grew
+    // `mapPreambleWrapped`. A variant that doesn't declare that field can't
+    // be checked here (nothing to read), so this only catches a variant
+    // that declares it but leaves it unpopulated for a preamble that has
+    // names to declare.
+    internalInvariant(
+      !(elem.preamble && elem.preamble.declaredNames.length > 0 && 'mapPreambleWrapped' in plan && plan.mapPreambleWrapped === ''),
+      `loop variant '${plan.kind}' has a preamble with declared names (${elem.preamble?.declaredNames.join(', ')}) but its plan's mapPreambleWrapped is empty — wire it up or the emitted call site references a name nothing declares`,
+    )
     stringifyLoop(lines, plan)
     emitLoopEventDelegation(lines, elem, plan.kind, ctx.profile ? ctx.componentName : undefined)
   }

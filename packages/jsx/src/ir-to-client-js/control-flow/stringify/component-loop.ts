@@ -49,11 +49,18 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     nestedComps,
     childConditionalEffects,
     profileLoopId,
+    mapPreambleWrapped,
   } = plan
 
   const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
   lines.push(`  mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   if (paramUnwrap) lines.push(`    ${paramUnwrap}`)
+  // The preamble's consts are referenced by componentPropsExpr's getters
+  // below, in BOTH the `initChild` (hydration-reuse) and `createComponent`
+  // (fresh row) branches — a row rebuild and a hydration-reused row must
+  // read the same preamble-computed value, so it can't be hoisted into only
+  // one branch.
+  if (mapPreambleWrapped) lines.push(`    ${mapPreambleWrapped}`)
 
   const scopedComp = nameForRegistryRef(componentName)
 
