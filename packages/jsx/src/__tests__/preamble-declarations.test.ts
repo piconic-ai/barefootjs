@@ -205,3 +205,45 @@ export function Rows(props: { rows: Row[] }) {
     expect(dslErrors(source)).toEqual([])
   })
 })
+
+describe('preamble value declarations — function-literal elision (#2797)', () => {
+  // An event handler hoisted into the preamble (rather than written inline in
+  // the JSX attribute) has no template-expression form on any DSL backend —
+  // but every adapter's own SSR prop-builder already skips an event-handler
+  // prop outright, so a name read ONLY that way needs no SSR representation
+  // at all. Elided, not refused: `declarations` legally ends up `[]`.
+  test('a handler read only as an event-handler prop value elides clean, no refusal', () => {
+    const source = ROWS(`const handleClick = () => {}`, `<li key={r.id} onClick={handleClick}>{r.label}</li>`)
+    expect(loopOf(source).preamble?.declarations).toEqual([])
+    expect(dslErrors(source)).toEqual([])
+  })
+
+  test('an elided handler coexists with a genuinely lowered declaration', () => {
+    const loop = loopOf(
+      ROWS(
+        `const cls = r.done ? 'done' : 'open'\n        const handleClick = () => {}`,
+        `<li key={r.id} class={cls} onClick={handleClick}>{r.label}</li>`,
+      ),
+    )
+    // Only the lowerable declaration survives — the elided one contributes no entry.
+    expect(loop.preamble?.declarations?.map(d => d.name)).toEqual(['cls'])
+  })
+
+  // Soundness: a function-valued local read ANYWHERE other than an
+  // event-handler prop value still refuses — elision only widens what's
+  // SAFE, it never lets an SSR-relevant function read through unassigned.
+  test('a handler also read in a non-event position still refuses', () => {
+    const errors = dslErrors(
+      ROWS(`const handleClick = () => {}`, `<li key={r.id}>{handleClick.name}</li>`),
+    )
+    expect(errors.length).toBeGreaterThan(0)
+    expect(errors[0]).toMatch(/not a sequence of value declarations/)
+  })
+
+  test('a handler passed to a NON-event child prop still refuses', () => {
+    const errors = dslErrors(
+      ROWS(`const handleClick = () => {}`, `<li key={r.id} data-fn={handleClick}>{r.label}</li>`),
+    )
+    expect(errors.length).toBeGreaterThan(0)
+  })
+})

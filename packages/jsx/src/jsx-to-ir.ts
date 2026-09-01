@@ -4108,7 +4108,7 @@ function leafIsWirelessElement(el: ts.JsxElement | ts.JsxSelfClosingElement): bo
         if (ts.isJsxSpreadAttribute(attr)) { ok = false; return }
         if (ts.isJsxAttribute(attr)) {
           const name = attr.name.getText()
-          if (/^on[A-Z]/.test(name)) { ok = false; return }
+          if (isEventHandlerAttrName(name)) { ok = false; return }
         }
       }
     }
@@ -4667,7 +4667,7 @@ function transformMapCall(
           // the conditional — the same carrier the single-return path uses. A
           // JS-runtime adapter (and the browser under /* @client */) runs it
           // verbatim.
-          preamble = preambleFromValueStatements(pre, ctx)
+          preamble = preambleFromValueStatements(pre, ctx, body.statements)
 
           // Stage 2 of spec/callback-fidelity.md, narrowed by #2447. This used
           // to refuse EVERY branch preamble on a DSL target, on the premise
@@ -4874,7 +4874,7 @@ function transformMapCall(
             valueStmts.push(stmt)
           }
           if (valueStmts.length > 0) {
-            preamble = preambleFromValueStatements(valueStmts, ctx)
+            preamble = preambleFromValueStatements(valueStmts, ctx, body.statements)
 
             // #2447. A DSL adapter cannot execute `preamble.segments` (JS
             // text), so it lowers `declarations` — one per-row local each —
@@ -5844,6 +5844,7 @@ function computePreambleReactiveNames(
 function preambleFromValueStatements(
   statements: readonly ts.Statement[],
   ctx: TransformContext,
+  bodyStatements: readonly ts.Statement[],
 ): MapCallbackPreamble {
   const segments: PreambleSegment[] = []
   const typedParts: string[] = []
@@ -5865,7 +5866,7 @@ function preambleFromValueStatements(
     declaredNames: [...declared],
     // Value-only preambles accumulate no JSX, so no child needs the array join.
     builderNames: [],
-    declarations: neutralPreambleDeclarations(statements, ctx) ?? undefined,
+    declarations: neutralPreambleDeclarations(statements, ctx, bodyStatements) ?? undefined,
     reactiveNames: reactiveNames.size > 0 ? [...reactiveNames] : undefined,
   }
 }
@@ -5882,6 +5883,7 @@ function preambleFromValueStatements(
 function neutralPreambleDeclarations(
   statements: readonly ts.Statement[],
   ctx: TransformContext,
+  bodyStatements: readonly ts.Statement[],
 ): PreambleValueDeclaration[] | null {
   const out: PreambleValueDeclaration[] = []
   for (const stmt of statements) {
@@ -5893,6 +5895,20 @@ function neutralPreambleDeclarations(
       // no adapter has a single per-row local form for that.
       if (!ts.isIdentifier(decl.name)) return null
       if (!decl.initializer) return null
+      // #2797: a function-valued local (an event handler hoisted out of the
+      // JSX attribute position, e.g. `const handleClick = () => {...}`) has
+      // no template-expression form on any backend — no DSL here has a
+      // callable value. But every adapter's own SSR component-prop builder
+      // already skips an event-handler prop (`isEventHandlerAttrName`)
+      // outright, so a name read ONLY that way needs no SSR representation
+      // at all — elide the declaration instead of refusing the whole
+      // preamble. The client-JS preamble (`segments`, not `declarations`)
+      // still carries the real closure; this only concerns what the DSL
+      // SSR template sees.
+      if (isFunctionLiteral(decl.initializer)) {
+        if (everyReadIsEventHandlerPropValue(decl.name.text, bodyStatements)) continue
+        return null
+      }
       const valueParsed = tsNodeToParsedExpr(decl.initializer)
       // The same subset gate every other DSL-lowered expression passes
       // through. An adapter that additionally cannot emit a supported shape
@@ -5907,7 +5923,74 @@ function neutralPreambleDeclarations(
       })
     }
   }
-  return out.length > 0 ? out : null
+  // Not `out.length > 0 ? out : null` — an all-elided preamble legitimately
+  // has zero declarations to emit (see MapCallbackPreamble.declarations'
+  // docstring); `[]` is what tells the Phase-1 gate "fully declared."
+  return out
+}
+
+/** `const x = () => {...}` / `const x = function () {...}` — a callable value, never a template-expression shape. */
+function isFunctionLiteral(node: ts.Expression): boolean {
+  return ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+}
+
+/**
+ * Whether every read of `name` in `bodyStatements`, other than its own
+ * binding site, sits inside an event-handler `JsxAttribute`'s
+ * (`onClick`/`onInput`/...) value — i.e. `name={<ident>}` where the
+ * attribute's own name passes {@link isEventHandlerAttrName}, the exact
+ * predicate every DSL adapter's own SSR prop-builder already uses to skip an
+ * event-handler prop (e.g. `packages/adapter-jinja/src/adapter/
+ * jinja-adapter.ts`'s `renderComponent`, `packages/adapter-go-template/...`'s
+ * `prop.isEventHandler` check).
+ *
+ * Walks the raw preamble+return syntax rather than the already-built row IR
+ * (`children`) deliberately: `neutralPreambleDeclarations` runs on the
+ * PREAMBLE statements specifically, and the IR built from the return
+ * expression doesn't retain a per-occurrence link back to which SOURCE
+ * identifier fed a given `IREvent`/`IRProp` — re-deriving from syntax here
+ * keeps the safety check self-contained rather than threading that link
+ * through the IR builder for one caller.
+ *
+ * Conservative: a property-access name (`x.name`), a nested declaration's own
+ * binding, or any other read shape (a text/attr expression, a NON-event
+ * child prop, a call) fails this and falls through to the ordinary refusal —
+ * this only widens the shapes that are SAFE to elide, never narrows what was
+ * already accepted. Uses `ts.forEachChild`'s own short-circuit (a truthy
+ * return stops the walk) rather than a separate mutable flag.
+ */
+function everyReadIsEventHandlerPropValue(name: string, bodyStatements: readonly ts.Statement[]): boolean {
+  const findDisallowedRead = (node: ts.Node): true | undefined => {
+    if (ts.isIdentifier(node) && node.text === name) {
+      const isBindingName = ts.isVariableDeclaration(node.parent) && node.parent.name === node
+      const isPropertyName = ts.isPropertyAccessExpression(node.parent) && node.parent.name === node
+      if (!isBindingName && !isPropertyName) {
+        const jsxExpr = node.parent
+        const attr = jsxExpr.parent
+        const isEventHandlerAttrValue =
+          ts.isJsxExpression(jsxExpr) &&
+          ts.isJsxAttribute(attr) &&
+          attr.initializer === jsxExpr &&
+          ts.isIdentifier(attr.name) &&
+          isEventHandlerAttrName(attr.name.text)
+        if (!isEventHandlerAttrValue) return true
+      }
+    }
+    return ts.forEachChild(node, findDisallowedRead)
+  }
+  return !bodyStatements.some(findDisallowedRead)
+}
+
+/**
+ * Whether a JSX attribute name is an event handler (`onClick`, `onInput`,
+ * ...) rather than a plain attribute/prop. Shared by every site in this file
+ * that needs the same call: native-element attribute extraction (routes into
+ * `IREvent`, never rendered HTML), the preamble-verbatim-leaf wiring guard,
+ * and {@link everyReadIsEventHandlerPropValue}'s elision safety check — one
+ * decision, one implementation, per CLAUDE.md.
+ */
+function isEventHandlerAttrName(name: string): boolean {
+  return /^on[A-Z]/.test(name)
 }
 
 /** Drop the trailing separator space from the final js segment. */
@@ -6261,7 +6344,7 @@ function processAttributes(
     // they're wired up at hydration time (delegated event registration) and
     // must not leak into rendered HTML. The DOM event name is lowercase
     // (`click`, not `Click`), so strip the `on` prefix and downcase.
-    if (/^on[A-Z]/.test(rawName)) {
+    if (isEventHandlerAttrName(rawName)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         const eventName = rawName.slice(2).toLowerCase()
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)

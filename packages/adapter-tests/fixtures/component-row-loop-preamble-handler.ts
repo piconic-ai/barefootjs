@@ -31,6 +31,24 @@ import { createFixture } from '../src/types'
  * name 'handleRowClick'`); post-fix it passes with no changes needed to
  * that test file. Verified directly (reverting the fix reproduces the
  * pre-fix failure here).
+ *
+ * This fixture ALSO doubles as the cross-adapter conformance pin for a
+ * second, unrelated fix landed alongside it: `handleRowClick`'s value is a
+ * function literal, which has no per-row template-expression form on any of
+ * the 8 non-Hono (template-DSL) adapters — a naive compiler would have to
+ * refuse this whole shape with `BF021` on all of them. Instead
+ * `neutralPreambleDeclarations` (jsx-to-ir.ts) ELIDES a function-valued
+ * preamble declaration from the SSR side when every read of it is an
+ * event-handler `JsxAttribute` value (`onClick={handleRowClick}` here) —
+ * every DSL adapter's own SSR prop-builder already skips an event-handler
+ * prop outright, so the elided name never needed an SSR representation in
+ * the first place. Because this fixture is part of the shared `jsxFixtures`
+ * corpus, EVERY adapter's own `runJSXConformanceTests` run (real Go/Jinja/
+ * ERB/Blade/Mojolicious/Rust(minijinja)/Twig/Xslate SSR + `expectedHtml`
+ * diff) already exercises this — no separate fixture needed. Verified
+ * directly: reverting the elision reproduces `BF021` on all 8 (confirmed on
+ * jinja and erb via real `jinja2`/Ruby renders); restoring it, this fixture
+ * renders `expectedHtml` correctly on all 9 adapters.
  */
 export const fixture = createFixture({
   id: 'component-row-loop-preamble-handler',

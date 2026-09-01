@@ -936,6 +936,19 @@ export interface MapCallbackPreamble {
    * expression subset cannot model leaves this `undefined`, and the Phase-1
    * DSL gate refuses the whole loop with `/* @client *\/` guidance.
    *
+   * ONE exception (#2797): a declaration whose initializer is a function
+   * literal is ELIDED (contributes no entry here) rather than refusing the
+   * preamble, when EVERY read of that name outside its own binding sits
+   * inside an event-handler `JsxAttribute` (`/^on[A-Z]/`) value position —
+   * see `neutralPreambleDeclarations`'s `everyReadIsEventHandlerPropValue`
+   * check. Every DSL adapter's own SSR component-prop builder already skips
+   * an event-handler prop outright, so a name read only that way never needs
+   * an SSR representation; the client-JS preamble (`segments`) still carries
+   * the real closure. This can leave `declarations` a legally EMPTY array
+   * (all-declared names elided) rather than `undefined` — the Phase-1 gate
+   * checks falsiness, and `[]` is truthy, so an empty array reads as "fully
+   * declared, nothing to emit," not a refusal.
+   *
    * Declarations appear in source order and may read earlier ones; adapters
    * emit them in order, so an earlier local is in scope for a later
    * initializer, exactly as in the source.
