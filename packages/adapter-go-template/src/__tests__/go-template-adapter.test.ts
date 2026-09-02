@@ -118,14 +118,10 @@ runAdapterConformanceTests({
     'todo-app',
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
-    // #2703: this shape now refuses with BF101 at compile time (see
-    // `conformance-pins.ts`) rather than silently rendering divergent
-    // markup — `expectedDiagnostics` covers the diagnostic contract, and
-    // marker comparison can't apply to a fixture that produces no
-    // complete template (`generate()` still returns partial output rather
-    // than throwing, so this stays on the explicit skip list rather than
-    // relying on the try/catch above).
-    'jsx-element-prop-fragment-conditional',
+    // `jsx-element-prop-fragment-conditional` (#2703) no longer skipped —
+    // renders correctly since named jsx-children props got the same
+    // `bf_with_props`/`bf_tmpl` dynamic-delivery route reserved `children`
+    // already had.
   ]),
   skipDataPoints: new Set<string>([
     // #2743: html/template's URL-context autoescape percent-encodes the
