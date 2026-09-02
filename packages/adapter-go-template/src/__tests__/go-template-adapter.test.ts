@@ -122,6 +122,11 @@ runAdapterConformanceTests({
     // renders correctly since named jsx-children props got the same
     // `bf_with_props`/`bf_tmpl` dynamic-delivery route reserved `children`
     // already had.
+    // #2805: this shape refuses with BF101 at compile time (see
+    // `conformance-pins.ts`) — `expectedDiagnostics` covers the diagnostic
+    // contract, and marker comparison can't apply to a fixture that
+    // produces no complete template.
+    'jsx-element-prop-rest-bag-dynamic',
   ]),
   skipDataPoints: new Set<string>([
     // #2743: html/template's URL-context autoescape percent-encodes the

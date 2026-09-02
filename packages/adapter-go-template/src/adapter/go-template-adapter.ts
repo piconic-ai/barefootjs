@@ -7375,12 +7375,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private queueDynamicPropDefine(comp: IRComponent): string | null {
     const args: string[] = []
+    const childShape = this.childComponentShapes.get(comp.name)
     for (const prop of comp.props) {
       if (prop.value.kind !== 'jsx-children' || prop.name === 'children') continue
       const children = prop.value.children
       if (this.extractTextChildren(children) !== null) continue
       if (this.extractHtmlChildren(children) !== null) continue
       if (this.extractScopedHtmlChildren(children) !== null) continue
+      // A prop routed into the child's rest bag (no declared param —
+      // `loopRowChildPropOverrides`'s identical guard, above) has no named
+      // Go field for `bf_with_props`/`WithProps` to target at all; `WithProps`
+      // silently no-ops on an unmatched field name. Refuse loudly instead of
+      // delivering the value against a field name that can never land —
+      // this shape had no dynamic-delivery route before this method existed
+      // either (the blanket BF101 this method's caller replaced was
+      // unconditional for any unbakeable named prop), so this keeps it loud
+      // rather than trading that refusal for a silent dropped render.
+      if (childShape?.restBagField && !childShape.paramNames.has(prop.name)) {
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `JSX-valued prop '${prop.name}' on <${comp.name}> is dynamic and routes into the child's rest-bag prop ('${childShape.restBagField}') rather than a declared field — there is no named Go struct field for 'bf_with_props' to target`,
+          loc: prop.loc,
+        })
+        continue
+      }
       const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
         this.state.pendingChildrenDefines.push({

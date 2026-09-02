@@ -63,4 +63,17 @@ export const conformancePins: ConformancePins = {
   // renders correctly since `queueDynamicPropDefine` (go-template-adapter.ts)
   // extended the reserved `children` slot's `bf_with_children`/`bf_tmpl`
   // dynamic-delivery route to named jsx-children props.
+  // #2805: a named jsx-children prop routed into the child's rest bag (no
+  // declared param — only reachable via the child's `...rest` spread) has
+  // no named Go struct field for `bf_with_props`/`WithProps` to target at
+  // all. `queueDynamicPropDefine` refuses loudly with BF101 rather than
+  // silently no-op through `WithProps`'s unmatched-field passthrough.
+  // `unescapable`: the capability gap (a rest-bag delivery route) is #2805
+  // itself, not authored yet, so no `/* @client */` escape twin exists.
+  'jsx-element-prop-rest-bag-dynamic': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2805',
+    unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2805' },
+  }],
 }

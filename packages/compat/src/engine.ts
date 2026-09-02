@@ -1,10 +1,25 @@
 // @barefootjs/compat — pure compile+reduce logic. No console output here;
 // the command layer (src/cli.ts) owns all user-facing text.
 
-import type { CompilerError, ConformancePins, EscapeKind, TemplateAdapter } from '@barefootjs/jsx'
+import type { ComponentIR, CompilerError, ConformancePins, EscapeKind, TemplateAdapter } from '@barefootjs/jsx'
 import { compileJSX } from '@barefootjs/jsx'
 
 export type CompatMode = 'build' | 'conformance'
+
+/**
+ * Register a child/sibling component's cross-component shape on the adapter
+ * when it supports the optional `registerChildComponentShape` hook (Go
+ * template — #checkbox). A no-op on adapters without it. Mirrors
+ * `packages/adapter-tests/src/jsx-runner.ts`'s identically-named helper and
+ * `test-render.ts`'s original: `compileJSX` alone never calls this hook, so
+ * a diagnostic that depends on it (a prop routed into a child's rest bag
+ * rather than a declared field, #2805) would silently never fire under
+ * `compileForCompat`'s conformance-mode compile-only path without this.
+ */
+function registerChildShape(adapter: TemplateAdapter, ir: ComponentIR): void {
+  const hook = (adapter as { registerChildComponentShape?: (ir: ComponentIR) => void }).registerChildComponentShape
+  if (typeof hook === 'function') hook.call(adapter, ir)
+}
 
 export interface CompatDiagnostic {
   code: string
@@ -76,6 +91,9 @@ export function compileForCompat(
             siblingTemplatesRegistered,
           })
           all.push(...childResult.errors)
+          for (const irFile of childResult.files.filter(f => f.type === 'ir')) {
+            registerChildShape(adapter, JSON.parse(irFile.content) as ComponentIR)
+          }
         }
       }
       const result = compileJSX(source.trimStart(), filePath, {
