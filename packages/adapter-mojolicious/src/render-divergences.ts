@@ -28,4 +28,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   'children-passthrough-renamed':
     'A renamed `children` destructure emits the local alias as a template variable; the stash defines only `children`, so the Perl render dies (#2788).',
+  'aliased-loop-source':
+    'A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) dies inside `Mojo::Template::process` on real Mojolicious — the seeded loop data is keyed by the signal\'s real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker.',
 }

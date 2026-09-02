@@ -32,7 +32,7 @@ import type { RelocateEnv, RelocateDecision } from '../relocate.ts'
 import { createError, ErrorCodes } from '../errors.ts'
 import { attrValueToString } from './utils.ts'
 import { walkIR, type IRVisitor } from './walker.ts'
-import { buildSignalMemoEnv, csrSubstitute, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
+import { buildSignalMemoEnv, csrSubstitute, resolveGetterAliases, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
 
 /**
  * Build a `RelocateEnv` from a live `ClientJsContext`. The IR-keyed env
@@ -237,6 +237,13 @@ export function computeInlinability(
   const signalGetters = new Set(ctx.signals.map(s => s.getter))
   const signalSetters = new Set(ctx.signals.filter(s => s.setter).map(s => s.setter!))
   const memoNames = new Set(ctx.memos.map(m => m.name))
+  // A bare alias-hop chain that ultimately names a signal/memo getter
+  // (`const items__alias = items`, #2778) is `reactive-read` the same as
+  // a direct reference — computed once here and threaded to both the
+  // per-const classification below AND `populateCsrInlinable`, so the
+  // two passes can't independently reach different verdicts for the
+  // same alias.
+  const getterAliases = resolveGetterAliases(ctx.localConstants, (n) => signalGetters.has(n) || memoNames.has(n))
 
   // RelocateEnv is built once per component from the live ClientJsContext.
   // The adapter capabilities (`templatePrimitives` / `acceptsTemplateCall`)
@@ -253,6 +260,7 @@ export function computeInlinability(
       signalSetters,
       memoNames,
       env,
+      getterAliases,
     )
     constants.set(c.name, status)
     decisionsByName.set(c.name, decisions)
@@ -267,7 +275,7 @@ export function computeInlinability(
   // transformation. The map lives on `ClientJsContext` — not on the
   // cross-adapter `ConstantInfo` IR — so SSR adapters don't see CSR
   // substitution semantics they have no use for.
-  populateCsrInlinable(ctx, env)
+  populateCsrInlinable(ctx, env, getterAliases)
 
   return { constants, functions, decisionsByName, templateRiskyNames }
 }
@@ -289,20 +297,26 @@ export function computeInlinability(
  *   - the value contains an arrow / function expression (identity per render)
  *   - it's a system construct (`createContext`, `new WeakMap`)
  *   - it's a JSX literal (handled by jsx-inline routing)
+ *   - it's a bare alias-hop chain naming a signal/memo getter (`getterAliases`)
  *   - the substituted form fails `isInlinableInTemplate` (would re-execute
  *     a non-pure call at template-eval time — #1138)
  */
-function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv): void {
+function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv, getterAliases: ReadonlyMap<string, string>): void {
   if (ctx.localConstants.length === 0) return
 
-  // Base env: signal getters + memo calls in raw (props.X) form. We
-  // keep the substitution map raw so the post-substitution
-  // `isInlinableInTemplate` check sees bridged prop references (the
-  // form `useYjs(props.X)`) and rejects them via
-  // `hasCallWithBridgedArg` (#1138). The final `_p.X` rewrite happens
+  // Base env: signal getters + memo calls in raw (props.X) form, PLUS
+  // `getterAliases`'s call-kind entries (`buildSignalMemoEnv`'s own
+  // `localConstants` param, #2778) — the same call-kind entry an
+  // alias's origin already has, so `items__alias()` substitutes exactly
+  // like `items()` rather than through this function's generic
+  // identifier-inlining path below (see the pre-mark loop's comment for
+  // why that path must never see these names). We keep the substitution
+  // map raw so the post-substitution `isInlinableInTemplate` check sees
+  // bridged prop references (the form `useYjs(props.X)`) and rejects them
+  // via `hasCallWithBridgedArg` (#1138). The final `_p.X` rewrite happens
   // when the template emitter calls `csrSubstitute` on the IR text —
   // by then it's safe because we already know the form is inline-safe.
-  const baseEnv = buildSignalMemoEnv(ctx.signals, ctx.memos, ctx.propsObjectName)
+  const baseEnv = buildSignalMemoEnv(ctx.signals, ctx.memos, ctx.propsObjectName, ctx.localConstants)
   const constSubs = new Map<string, CsrSubstitution>()
   const finalised = new Set<string>()
 
@@ -314,8 +328,18 @@ function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv): v
   // Pre-mark consts that are structurally ineligible — they record
   // `null` in `ctx.csrInlinable`. Mirrors `classifyConstantInitial`
   // for the kinds that have no value to substitute.
+  //
+  // A `getterAliases` name is pre-marked `null` here too — NOT because
+  // it can't be substituted (it already IS, as a call-kind entry in
+  // `baseEnv` above) but because this function's generic path below
+  // would otherwise resolve it through `isInlinableInTemplate`, whose
+  // signal-getter FALLBACK verdict (`rewrittenAs: 'undefined'`, meant
+  // for a getter referenced bare and uncalled) would freeze in as an
+  // identifier-kind override that wins over `baseEnv`'s correct
+  // call-kind entry (`buildEnvWithConsts`'s Map spread puts `constSubs`
+  // last) — the literal `(undefined)()` this issue is about (#2778).
   for (const c of ctx.localConstants) {
-    if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind) {
+    if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind || getterAliases.has(c.name)) {
       ctx.csrInlinable.set(c.name, null)
       finalised.add(c.name)
     }
@@ -598,11 +622,22 @@ function classifyConstantInitial(
   signalSetters: Set<string>,
   memoNames: Set<string>,
   env: RelocateEnv,
+  getterAliases: ReadonlyMap<string, string>,
 ): { status: ConstantInlinability; decisions: RelocateDecision[] } {
   if (c.isJsx) return { status: { kind: 'jsx-inline' }, decisions: [] }
   if (!c.value) return { status: { kind: 'placeholder-let' }, decisions: [] }
   if (c.containsArrow) return { status: { kind: 'arrow-literal' }, decisions: [] }
   if (c.systemConstructKind) return { status: { kind: 'system-construct' }, decisions: [] }
+  // A multi-hop alias chain to a getter (`const a = items; const b = a`)
+  // has `b`'s OWN free id as `a` — an `init-local`, not a getter — so the
+  // direct free-id check just below only catches the one-hop case. Without
+  // this, `b` falls through to the stage-2 `isInlinableInTemplate` check,
+  // which resolves `a` to `init-local fallback` and (since `b` is
+  // template-risky) turns a now-correctly-substituted reference into a
+  // spurious BF061 error (#2778). `getterAliases` already walked the full
+  // chain, so checking it here makes every hop agree with the one-hop case
+  // without re-deriving the walk.
+  if (getterAliases.has(c.name)) return { status: { kind: 'reactive-read' }, decisions: [] }
 
   const freeIds = c.freeIdentifiers
   if (freeIds) {

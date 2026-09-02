@@ -27,8 +27,9 @@
 import ts from 'typescript'
 import { inferDefaultValue } from './utils.ts'
 import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
-import type { MemoInfo, SignalInfo } from '../types.ts'
+import type { ConstantInfo, MemoInfo, SignalInfo } from '../types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
+import { resolveAliasOrigin } from '../props-binding.ts'
 
 /**
  * CSR-substituted const value: the const's initializer with every
@@ -424,6 +425,50 @@ export function extractMemoBodyExpr(computation: string): string {
 }
 
 /**
+ * Which local consts are bare alias-hop chains that ultimately name a
+ * substitutable signal/memo getter (`isGetter`) — e.g. `const
+ * items__alias = items` where `items` is a signal getter. Returns
+ * alias name → origin getter name (the alias itself is never a key of
+ * its own map, so `origin !== alias` always holds for entries returned).
+ *
+ * A bare identifier alias of a getter is NOT an "inlinable const" in the
+ * ordinary sense (#2778): `populateCsrInlinable`'s generic path resolves
+ * a const's initializer through `csrSubstitute`/relocate, and `items`
+ * used bare (not called) is a `signal-getter` there, which relocate can
+ * only answer with its own `undefined` FALLBACK (correct when `items`
+ * itself appears bare, wrong once frozen as `items__alias`'s permanent
+ * value — a wrong substitution, not a missing one, so the #2468 scope
+ * gate can't see it either since `undefined` is a real in-scope global).
+ * Resolving the alias to its origin BEFORE that generic path runs, and
+ * registering it as the origin's own call-kind entry, means
+ * `items__alias()` is substituted by the exact mechanism that already
+ * substitutes `items()` correctly — one call-kind entry, not a second
+ * "identifier that means undefined-unless-called" special case.
+ *
+ * Reuses `resolveAliasOrigin` (`props-binding.ts`) — the same hop-walker
+ * `resolveRestSpreadOriginCore` uses for the props/rest alias question —
+ * rather than a second alias-chain walker for this different terminal
+ * set (a signal/memo NAME here, `restPropsName`/`propsObjectName` there).
+ */
+export function resolveGetterAliases(
+  localConstants: readonly ConstantInfo[],
+  isGetter: (name: string) => boolean,
+): Map<string, string> {
+  const constantValues = new Map<string, string | undefined>()
+  for (const c of localConstants) {
+    if (c.isModule) continue
+    constantValues.set(c.name, c.value)
+  }
+  const aliases = new Map<string, string>()
+  for (const c of localConstants) {
+    if (c.isModule || isGetter(c.name)) continue
+    const origin = resolveAliasOrigin(constantValues, c.name, (current) => (isGetter(current) ? current : null))
+    if (origin !== null && origin !== c.name) aliases.set(c.name, origin)
+  }
+  return aliases
+}
+
+/**
  * Build the CSR substitution env from the live `ClientJsContext`.
  *
  * Signals contribute call-kind entries (`count()` → `(initialValue)`).
@@ -435,11 +480,18 @@ export function extractMemoBodyExpr(computation: string): string {
  * in `compute-inlinability.ts`). Inlinable-const substitutions are
  * layered into a copy of this env at `generateCsrTemplate`'s entry,
  * reading from `ClientJsContext.csrInlinable`.
+ *
+ * `localConstants` is consulted ONLY to resolve bare getter aliases
+ * (`resolveGetterAliases`, #2778) — a name that is itself a signal/memo
+ * getter always wins the `substitutions.has` check there, so `signals`/
+ * `memos` stay the single source of truth for what a getter name means;
+ * this just extends which SOURCE NAMES reach that same meaning.
  */
 export function buildSignalMemoEnv(
   signals: readonly SignalInfo[],
   memos: readonly MemoInfo[],
   propsObjectName: string | null,
+  localConstants: readonly ConstantInfo[] = [],
 ): CsrEnv {
   const substitutions = new Map<string, CsrSubstitution>()
   for (const s of signals) {
@@ -466,6 +518,9 @@ export function buildSignalMemoEnv(
       replacement: extractMemoBodyExpr(m.templateComputation ?? m.computation),
       freeIdentifiers: m.computationFreeIdentifiers ?? new Set(),
     })
+  }
+  for (const [alias, origin] of resolveGetterAliases(localConstants, (n) => substitutions.has(n))) {
+    substitutions.set(alias, substitutions.get(origin)!)
   }
   return { substitutions, propsObjectName }
 }

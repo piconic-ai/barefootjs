@@ -82,10 +82,45 @@ export interface RestSpreadBindings {
 }
 
 /**
- * Which of `bindings` the name `name` ultimately reaches, walking through
- * any bare `const x__alias = <name>` hop recorded in `constantValues`
- * (name → initializer text). `'rest'` for the destructured rest binding,
- * `'props'` for the whole props object, `null` for anything else.
+ * Walks a bare `const x__alias = <name>` hop chain recorded in
+ * `constantValues` (name → initializer text) until `terminal` recognizes
+ * the current name, returning what it recognized. `null` when the chain
+ * runs out (a constant whose value isn't a bare identifier — a real
+ * computed object — stops the walk) or degenerates into a cycle.
+ *
+ * The one alias-hop walker in the compiler, shared by every caller that
+ * needs "does this name ultimately reach some fixed binding" rather than
+ * a bespoke copy per caller — `resolveRestSpreadOriginCore` below and
+ * `resolveGetterAliases` (`csr-substitute.ts`, #2778) are its two
+ * instances, differing only in what `terminal` recognizes as a hit.
+ * `terminal` is checked BEFORE the constant-value lookup so a name that is
+ * itself a target take priority over any same-named local shadowing it
+ * (preserves `resolveRestSpreadOriginCore`'s original hop order).
+ *
+ * `visited` guards a constant cycle (`const a = b; const b = a`); walking
+ * hop by hop (not a precomputed set) is what lets a multi-hop alias
+ * (`const p2 = props; const p3 = p2`) resolve through every link.
+ */
+export function resolveAliasOrigin<T>(
+  constantValues: ReadonlyMap<string, string | undefined>,
+  name: string,
+  terminal: (name: string) => T | null,
+): T | null {
+  const visited = new Set<string>()
+  let current: string | undefined = name.trim()
+  while (current !== undefined && !visited.has(current)) {
+    const hit = terminal(current)
+    if (hit !== null) return hit
+    visited.add(current)
+    current = constantValues.get(current)?.trim()
+  }
+  return null
+}
+
+/**
+ * Which of `bindings` the name `name` ultimately reaches. `'rest'` for the
+ * destructured rest binding, `'props'` for the whole props object, `null`
+ * for anything else.
  *
  * The single definition of "this `{...spread}` forwards the caller's
  * leftover props", shared by the two phases that must agree on it: Phase 1
@@ -96,26 +131,15 @@ export interface RestSpreadBindings {
  * `spreadAttrs({...})` merge. Two copies of the rule would let an element
  * qualify for one and not the other, which is exactly the silent-drop
  * shape #2754 reports.
- *
- * Walks hop by hop (not a precomputed set) so a multi-hop alias
- * (`const p2 = props; const p3 = p2`) resolves through every link;
- * `visited` guards a constant cycle (`const a = b; const b = a`). A
- * constant whose value isn't a bare identifier on the chain (a real
- * computed object) stops the walk, so a genuinely different spread
- * expression is never mistaken for the rest object.
  */
 export function resolveRestSpreadOriginCore(
   bindings: RestSpreadBindings,
   constantValues: ReadonlyMap<string, string | undefined>,
   name: string,
 ): 'rest' | 'props' | null {
-  const visited = new Set<string>()
-  let current: string | undefined = name.trim()
-  while (current !== undefined && !visited.has(current)) {
+  return resolveAliasOrigin(constantValues, name, (current) => {
     if (bindings.restPropsName && current === bindings.restPropsName) return 'rest'
     if (bindings.propsObjectName && current === bindings.propsObjectName) return 'props'
-    visited.add(current)
-    current = constantValues.get(current)?.trim()
-  }
-  return null
+    return null
+  })
 }
