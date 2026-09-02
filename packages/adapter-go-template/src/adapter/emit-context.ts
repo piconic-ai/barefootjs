@@ -79,4 +79,18 @@ export interface GoEmitContext {
    * outer-loop params are excluded).
    */
   resolveModuleStringConst(name: string): string | null
+
+  /**
+   * Inline a module numeric const by name as its Go literal text (e.g.
+   * `8`, `-3.5`), or null when the name is not such a const (loop vars and
+   * outer-loop params are excluded, same as `resolveModuleStringConst`).
+   */
+  resolveModuleNumericConst(name: string): string | null
+
+  /**
+   * Inline a module boolean const by name as its Go literal text
+   * (`true`/`false`), or null when the name is not such a const (same
+   * exclusions as `resolveModuleNumericConst`).
+   */
+  resolveModuleBooleanConst(name: string): string | null
 }

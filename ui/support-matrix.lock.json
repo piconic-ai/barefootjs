@@ -139,7 +139,7 @@
           ]
         },
         "go-template": {
-          "pass": 72,
+          "pass": 73,
           "total": 87,
           "gaps": [
             {
@@ -200,10 +200,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-row-breakout",
               "issues": []
             }
           ]
@@ -1627,7 +1623,7 @@
           ]
         },
         "go-template": {
-          "pass": 220,
+          "pass": 221,
           "total": 239,
           "gaps": [
             {
@@ -1710,10 +1706,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-row-breakout",
               "issues": []
             }
           ]
@@ -2479,7 +2471,7 @@
           ]
         },
         "go-template": {
-          "pass": 315,
+          "pass": 316,
           "total": 340,
           "gaps": [
             {
@@ -2592,10 +2584,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-row-breakout",
               "issues": []
             }
           ]
@@ -3303,7 +3291,7 @@
           ]
         },
         "go-template": {
-          "pass": 254,
+          "pass": 255,
           "total": 271,
           "gaps": [
             {
@@ -3374,10 +3362,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-row-breakout",
               "issues": []
             }
           ]
@@ -8214,7 +8198,7 @@
           ]
         },
         "go-template": {
-          "pass": 107,
+          "pass": 108,
           "total": 115,
           "gaps": [
             {
@@ -8243,10 +8227,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-row-breakout",
               "issues": []
             }
           ]
@@ -8510,7 +8490,7 @@
           ]
         },
         "go-template": {
-          "pass": 177,
+          "pass": 178,
           "total": 189,
           "gaps": [
             {
@@ -8558,10 +8538,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-row-breakout",
-              "issues": []
             }
           ]
         },
