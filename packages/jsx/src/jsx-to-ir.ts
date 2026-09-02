@@ -4219,12 +4219,12 @@ function tagLoopItemRootComponents(nodes: readonly IRNode[]): void {
  *
  * Deliberately does NOT remove the literal `key` entry from `.attrs`: the
  * CSR/client-JS codegen path (`ir-to-client-js/html-template.ts`'s
- * `a.name === 'key' ? keyAttrName(loopDepth) : ...`) already reads it
- * directly and is not part of #2753's 16-site duplication — it derives the
- * same name from the same `keyAttrName()` single source of truth, just at a
- * different phase (client-template bake time, not SSR emit time). Adapters
- * skip the raw `key` attr in their generic `renderAttributes` loop instead
- * (Hono's own JSX runtime already drops it silently either way).
+ * `resolvedKeyAttrName` helper, #2763) reads it back off `.attrs` too, but
+ * only emits `data-key` when THIS field — `node.keyAttr` — is actually set;
+ * a raw `key` attribute the SSR side didn't recognize as a row key (e.g. a
+ * fragment-bodied row before #2763's fix) no longer gets baked client-side
+ * either. Adapters skip the raw `key` attr in their generic `renderAttributes`
+ * loop instead (Hono's own JSX runtime already drops it silently either way).
  *
  * `component` bodies are left untouched: a `<Comp key={x}/>` row root's key
  * is a PROP (`renderComponentProps`'s own `data-key` prop-forwarding), not
