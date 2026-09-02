@@ -1,5 +1,5 @@
 package BarefootJS::SearchParams;
-our $VERSION = "0.33.3";
+our $VERSION = "0.33.4";
 use strict;
 use warnings;
 use utf8;
