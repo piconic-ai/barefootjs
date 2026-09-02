@@ -8,7 +8,8 @@ import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_
 import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
-import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } from './csr-substitute.ts'
+import { buildSignalMemoEnv, csrSubstitute, type CsrEnv } from './csr-substitute.ts'
+import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import type { ClientJsContext } from './types.ts'
 import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
@@ -1904,15 +1905,22 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       }
     }
 
-    // Normalize source-level props object access (e.g., props.xxx → _p.xxx)
-    if (propsObjectName && propsObjectName !== PROPS_PARAM) {
-      result = result.replace(
-        new RegExp(`\\b${propsObjectName}\\.`, 'g'),
-        `${PROPS_PARAM}.`,
-      )
-    }
-
-    return restore(result)
+    // Normalize source-level props object access (e.g., props.xxx → _p.xxx).
+    // Restore FIRST: `rewritePropsObjectRef` parses `result` as real
+    // TypeScript, and a still-protected string/template-literal span would
+    // parse as an opaque placeholder token instead of the source text it
+    // stands for (harmless for the placeholder itself, but it must not be
+    // mistaken for unparsed leftover input by a caller reading `result`
+    // before this point). Regex-based `\b${propsObjectName}\.` (removed
+    // here) required the name to be immediately followed by `.`, so a
+    // parenthesised receiver — `(props).label`, produced by this same
+    // function's own constant-inlining step just above when the inlined
+    // value is itself `props` (a local alias of the whole props object) —
+    // silently kept the pre-rewrite name instead of `_p`.
+    const restored = restore(result)
+    return propsObjectName && propsObjectName !== PROPS_PARAM
+      ? rewritePropsObjectRef(restored, propsObjectName, null, { enclosingScope: opts.scope })
+      : restored
   }
 
   switch (node.type) {
@@ -2535,7 +2543,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // after the unsafe-name check because the check used raw form
     // (consistent with `populateCsrInlinable`'s `isInlinableInTemplate`
     // gate — #1138).
-    return applyPropsRewrite(rewritten, propsObjectName ?? null)
+    return rewritePropsObjectRef(rewritten, propsObjectName ?? null, null, { enclosingScope: opts.scope })
   }
 
   // `recurse` preserves `inHoistedChildren` for structural pass-through
@@ -2856,7 +2864,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // its own props context via recurseInLoopBody.
         const body = renderPreamble(node.flatMapCallback, {
           textVariant: 'template',
-          transformJs: (t) => applyPropsRewrite(t, propsObjectName ?? null),
+          transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, null, { enclosingScope: childScope }),
           // Leaf `key` stripped — see the irToHtmlTemplate site above.
           renderLeaf: (ir) => recurseInLoopBody(stripLeafKeyAttr(ir)),
         })
@@ -2864,7 +2872,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       } else if (node.preamble) {
         // Stage 3 / D4 — template-variant js text with the props rewrite
         // applied per segment; JSX leaves render via the loop-body recursion.
-        const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => applyPropsRewrite(t, propsObjectName ?? null), renderLeaf: (ir) => recurseInLoopBody(ir) })
+        const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, null, { enclosingScope: childScope }), renderLeaf: (ir) => recurseInLoopBody(ir) })
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`

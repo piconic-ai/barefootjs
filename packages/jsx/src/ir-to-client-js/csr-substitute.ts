@@ -25,7 +25,7 @@
  */
 
 import ts from 'typescript'
-import { PROPS_PARAM, inferDefaultValue } from './utils.ts'
+import { inferDefaultValue } from './utils.ts'
 import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
 import type { MemoInfo, SignalInfo } from '../types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -321,23 +321,16 @@ function csrSubstituteOnce(
   // lets `isInlinableInTemplate` see bridged prop references and
   // reject calls like `useYjs(props.X)` from the inline path (#1138).
   // Callers that want the emit-form (`_p.X`) apply the rewrite via
-  // `applyPropsRewrite` after the inline-safety check.
+  // `rewritePropsObjectRef` (rewrite-props-object.ts) after the
+  // inline-safety check — an AST walk, not a regex, so it survives a
+  // parenthesised receiver (`(props).label`, produced when `props`
+  // itself was just constant-inlined under a local alias) and skips
+  // non-value positions a regex can't distinguish (#2737).
 
   // Compute free identifiers of the rewritten form by re-parsing. Avoids
   // having to track analytically through nested substitutions, which is
   // exactly the bookkeeping that made the legacy code drift from emission.
   return { rewritten, freeIdentifiers: extractFreeIdentifiersFromText(rewritten) }
-}
-
-/**
- * Apply the source-level `propsObjectName.X → _p.X` rewrite. Runs as
- * a separate step (not inside `csrSubstitute`) so the substitution
- * output stays in raw form long enough for `isInlinableInTemplate`
- * to detect bridged-arg calls (#1138).
- */
-export function applyPropsRewrite(text: string, propsObjectName: string | null): string {
-  if (!propsObjectName || propsObjectName === PROPS_PARAM) return text
-  return text.replace(new RegExp(`\\b${propsObjectName}\\.`, 'g'), `${PROPS_PARAM}.`)
 }
 
 export function extractFreeIdentifiersFromText(text: string): Set<string> {
@@ -481,7 +474,7 @@ export function buildSignalMemoEnv(
  * Add the `?? <default>` SSR fallback to a signal's initial value when
  * the value is a bare `propsName.X` reference. Returns the value in raw
  * (props.X) form — the `propsObjectName → _p` rewrite is deferred to
- * `applyPropsRewrite` at emit time so the post-substitution
+ * `rewritePropsObjectRef` at emit time so the post-substitution
  * `isInlinableInTemplate` check still sees bridged-arg shapes (#1138).
  *
  * The `??` fallback prevents literal `undefined` from leaking into the
