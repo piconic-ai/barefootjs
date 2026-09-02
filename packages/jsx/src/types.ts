@@ -1548,10 +1548,9 @@ export interface SignalInfo {
    * `templateCondition` fields on other IR positions. Destructured mode
    * only (`propsObjectName === null`); undefined when no rewrite was
    * needed (no destructured prop referenced) or the component is in
-   * object-props mode (there, `rewritePropsObjectRef`/`applyPropsRewrite`
-   * handle `props.x` → `_p.x` on the final joined/substituted string
-   * instead, since a bare `props.x` textual match works without an
-   * AST-level pre-rewrite).
+   * object-props mode (there, `rewritePropsObjectRef` handles `props.x` →
+   * `_p.x` on the final joined/substituted string instead, since a bare
+   * `props.x` textual match works without an AST-level pre-rewrite).
    */
   templateInitialValue?: string
   /**

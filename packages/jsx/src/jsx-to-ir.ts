@@ -5479,8 +5479,8 @@ function buildFlatMapCallback(
     // Template variant per segment, like buildPreambleSegments: the hydrate
     // registration template is module scope (`template: (_p) => ...`), so a
     // bare destructured-prop reference must rewrite to `_p.xxx` there —
-    // `applyPropsRewrite` can't do it (destructured components have no props
-    // object name).
+    // `rewritePropsObjectRef` can't do it (destructured components have no
+    // props object name to rewrite from).
     const tpl = rewriteBarePropRefs(piece.js, body, ctx)
     return tpl !== undefined && tpl !== piece.js
       ? { kind: 'js', text: piece.js, templateText: tpl }
