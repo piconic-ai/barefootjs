@@ -48,7 +48,11 @@ export function Edges() {
     const { markedTemplate, clientJs } = compile(source, 'Edges.tsx')
 
     // SSR: per-item start marker is emitted inside the .map() body.
-    expect(markedTemplate.content).toContain(`bfComment('bf-loop-i')`)
+    // `bfComment(k)` itself prepends `bf-`, so the call argument is
+    // `'loop-i'`, yielding `<!--bf-loop-i-->` (#2763 fixed a stray extra
+    // `bf-` prefix here that had gone unexercised until that issue's
+    // fixture was the first `bodyIsMultiRoot` case rendered on this adapter).
+    expect(markedTemplate.content).toContain(`bfComment('loop-i')`)
     // Loop boundary markers also still present.
     expect(markedTemplate.content).toMatch(/bfComment\('loop:[^']+'\)/)
     expect(markedTemplate.content).toMatch(/bfComment\('\/loop:[^']+'\)/)
@@ -79,7 +83,7 @@ export function Items() {
     const { markedTemplate, clientJs } = compile(source, 'Items.tsx')
 
     // No per-item markers in the single-root case (zero-cost).
-    expect(markedTemplate.content).not.toContain(`bfComment('bf-loop-i')`)
+    expect(markedTemplate.content).not.toContain(`bfComment('loop-i')`)
     expect(clientJs).toBeDefined()
     expect(clientJs!.content).not.toContain('__bfExtras')
   })
@@ -104,7 +108,7 @@ export function Items() {
 }
 `
     const { markedTemplate, clientJs } = compile(source, 'NestedFrag.tsx')
-    expect(markedTemplate.content).not.toContain(`bfComment('bf-loop-i')`)
+    expect(markedTemplate.content).not.toContain(`bfComment('loop-i')`)
     expect(clientJs).toBeDefined()
     expect(clientJs!.content).not.toContain('__bfExtras')
   })

@@ -7319,7 +7319,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `mapArrayAnchored` can hydrate items that render no element.
    */
   private loopItemMarker(loop: { bodyIsMultiRoot?: boolean; bodyIsItemConditional?: boolean; key?: string | null }): string {
-    if (loop.bodyIsMultiRoot) return `{{bfComment "bf-loop-i"}}`
+    // `bfComment` prepends `bf-`, so the argument is `"loop-i"`, not
+    // `"bf-loop-i"` (which would double the prefix to `<!--bf-bf-loop-i-->`
+    // — the same latent bug #2763's fixture caught on the Hono adapter).
+    if (loop.bodyIsMultiRoot) return `{{bfComment "loop-i"}}`
     if (loop.bodyIsItemConditional && loop.key) {
       // `bfComment` prepends `bf-`, so `printf "loop-i:%v"` yields
       // `<!--bf-loop-i:KEY-->`. The key expression resolves against the current

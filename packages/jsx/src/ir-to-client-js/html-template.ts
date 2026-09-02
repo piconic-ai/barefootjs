@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, FlatMapCallback, IRAttribute, IRExpression, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
+import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -547,6 +547,25 @@ export interface MergeContext {
   honorClientOnly: boolean
 }
 
+/**
+ * The client-template twin of `IRElement.keyAttr`'s SSR-side decision
+ * (`jsx-to-ir.ts`'s `extractLoopKey`/`applyLoopKeyAttr`) — #2763. A raw
+ * `key={}` JSX attribute survives on `.attrs` regardless of whether the
+ * loop/relay actually recognized it as a row key (a fragment-bodied loop
+ * row before #2763's fix, or heterogeneous keys across conditional
+ * branches) — baking `data-key` from the mere presence of that attribute
+ * would disagree with every SSR adapter, which all gate on `keyAttr`
+ * instead. Returns the resolved attribute name only when `node.keyAttr` is
+ * actually set; `null` otherwise, so the caller drops the raw `key`
+ * attribute entirely rather than emitting a `data-key` no SSR adapter
+ * agrees with. `keyAttr.name` and `keyAttrName(loopDepth)` are already the
+ * same value (both derive from `@barefootjs/shared`'s `keyAttrName`, see
+ * `IRElement.keyAttr`'s docstring) — this only decides WHETHER to use it.
+ */
+function resolvedKeyAttrName(node: IRElement, loopDepth: number): string | null {
+  return node.keyAttr ? keyAttrName(loopDepth) : null
+}
+
 /** Return true if this attribute should participate in the merge object. */
 function isMergeableAttr(a: IRAttribute, ctx: MergeContext): boolean {
   if (ctx.honorClientOnly && a.clientOnly) return false
@@ -876,10 +895,11 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
             // others are already represented inside the merge object.
             return idx === firstMergeableIdx ? mergeCall! : ''
           }
-          const attrName = a.name === '...'
-            ? '...'
-            : (a.name === 'key' ? keyAttrName(loopDepth) : toHtmlAttrName(a.name))
-          return renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames)
+          if (a.name === 'key') {
+            const attrName = resolvedKeyAttrName(node, loopDepth)
+            return attrName ? renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames) : ''
+          }
+          return renderTemplateAttrPart(a, toHtmlAttrName(a.name), wrapExpr, restSpreadNames)
         })
         .filter(Boolean)
 
@@ -1189,7 +1209,9 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
         if (a.name === '...') return null
         if (a.name === 'dangerouslySetInnerHTML') return null
         if (a.name === 'key') {
-          attrParts.push(`${keyAttrName(0)}=""`)
+          if (resolvedKeyAttrName(node, 0)) {
+            attrParts.push(`${keyAttrName(0)}=""`)
+          }
           continue
         }
         const v = a.value
@@ -1485,9 +1507,11 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
           // composite-row twin of it, so a row it builds must carry the
           // same attributes a hydration-reused row does (#2756).
           if (a.clientOnly) return ''
-          const attrName = a.name === '...'
-            ? '...'
-            : (a.name === 'key' ? keyAttrName(loopDepth) : toHtmlAttrName(a.name))
+          if (a.name === 'key') {
+            const attrName = resolvedKeyAttrName(node, loopDepth)
+            return attrName ? renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames) : ''
+          }
+          const attrName = a.name === '...' ? '...' : toHtmlAttrName(a.name)
           return renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames)
         })
         .filter(Boolean)
@@ -2550,9 +2574,26 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
             if (mergeCtx.isFilteredSpread(v)) return ''
             return `\${spreadAttrs(${transformExpr(v.expr, v.templateExpr)})}`
           }
-          const attrName = a.name === 'key'
-            ? keyAttrName(loopDepth)
-            : toHtmlAttrName(a.name)
+          if (a.name === 'key') {
+            const keyName = resolvedKeyAttrName(node, loopDepth)
+            if (!keyName) return ''
+            switch (v.kind) {
+              case 'boolean-attr':
+                return keyName
+              case 'literal':
+                return `${keyName}="${escapeHtml(v.value)}"`
+              case 'expression':
+                return templateAttrExpr(keyName, transformExpr(v.expr, v.templateExpr), v.presenceOrUndefined)
+              case 'template': {
+                const valueStr = attrValueToString(v, { useTemplate: true })
+                return valueStr ? templateAttrExpr(keyName, transformExpr(valueStr)) : ''
+              }
+              case 'boolean-shorthand':
+              case 'jsx-children':
+                return ''
+            }
+          }
+          const attrName = toHtmlAttrName(a.name)
           switch (v.kind) {
             case 'boolean-attr':
               return attrName

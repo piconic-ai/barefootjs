@@ -1394,6 +1394,14 @@
       }
     }
   ],
+  "fragment-body-keyed-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "fragment-root-conditional-loop-row": [
     {
       "name": "gen:items:empty",

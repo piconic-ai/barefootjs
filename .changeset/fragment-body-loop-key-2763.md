@@ -1,0 +1,5 @@
+---
+"@barefootjs/jsx": patch
+---
+
+Fix #2763: a `.map()` whose callback body returns a fragment (`<><li key={..}/><li/></>`) now resolves its row key instead of silently losing it. `extractLoopKey` and its write-side twin `applyLoopKeyAttr` gained a `fragment` case that reads/stamps the key on the fragment's first ELEMENT child (skipping whitespace-only text), matching the "first element, not first node" rule `IRElement.keyAttr`'s docstring already documents for the render-root relay case. Previously `extractLoopKey` returned `null` for a fragment body, so every SSR adapter omitted the row-key attribute and `mapArray` reconciled positionally — while `ir-to-client-js/html-template.ts`'s client row builders kept baking `data-key` from the raw `key` JSX attribute independently of that decision, a silent SSR/CSR divergence with no diagnostic. Those builders now read `IRElement.keyAttr` (via a new `resolvedKeyAttrName` helper) instead of the raw attribute, so a row the SSR side doesn't recognize as keyed no longer gets a `data-key` baked into it client-side either.

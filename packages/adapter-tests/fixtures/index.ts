@@ -477,6 +477,7 @@ import { fixture as filterWrapperPropsReachable } from './filter-wrapper-props-r
 // `ErbFilterEmitter` ID-matching bug that naming previously routed around.
 import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 import { fixture as fragmentRootKeyedLoopRow } from './fragment-root-keyed-loop-row'
+import { fixture as fragmentBodyKeyedLoopRow } from './fragment-body-keyed-loop-row'
 // #2237 (PR #2241): a `.map()` callback param shadows a module-scope
 // object const; every Twig-family adapter used to bake the const's
 // literal into each iteration instead of reading the loop's own item.
@@ -948,6 +949,7 @@ export const jsxFixtures: JSXFixture[] = [
   destructuredObjectPropNested,
   loopPreambleConditionalReactive,
   fragmentRootKeyedLoopRow,
+  fragmentBodyKeyedLoopRow,
   loopRowControlledTextarea,
   statelessRestSpreadForward,
 ]

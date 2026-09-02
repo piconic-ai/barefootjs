@@ -3793,6 +3793,19 @@ function extractLoopKey(node: IRNode): string | null {
     if (b === null) return null
     return normalizeKeyExpr(a) === normalizeKeyExpr(b) ? a : null
   }
+  if (node.type === 'fragment') {
+    // #2763: a `.map()` body returning a fragment (`<><li key={..}/><li/></>`)
+    // reads the key off its FIRST element, not first node — same "first
+    // element, not first node" rule as `IRElement.keyAttr`'s docstring and
+    // `markCarrierIn`'s relay case, skipping whitespace-only text the way
+    // `branchHasNoElement` does. Recursing through `extractLoopKey` (rather
+    // than requiring `type === 'element'` directly) lets a nested
+    // conditional/fragment first child resolve too.
+    const first = node.children.find(
+      (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
+    )
+    return first ? extractLoopKey(first) : null
+  }
   return null
 }
 
@@ -4226,6 +4239,16 @@ function applyLoopKeyAttr(node: IRNode, name: string, value: string): void {
   if (node.type === 'conditional') {
     applyLoopKeyAttr(node.whenTrue, name, value)
     applyLoopKeyAttr(node.whenFalse, name, value)
+    return
+  }
+  if (node.type === 'fragment') {
+    // Write-side twin of `extractLoopKey`'s fragment case: stamp the SAME
+    // first-real-child this key was read from, not every child, matching
+    // the "first element, not first node" rule.
+    const first = node.children.find(
+      (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
+    )
+    if (first) applyLoopKeyAttr(first, name, value)
   }
 }
 
