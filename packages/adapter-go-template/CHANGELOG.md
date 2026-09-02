@@ -1,5 +1,15 @@
 # @barefootjs/go-template
 
+## 0.33.4
+
+### Patch Changes
+
+- 64167d2: Fix #2746/#2703: a named jsx-children prop (a JSX-valued prop other than the reserved `children`, e.g. `header={<strong>Title</strong>}`) whose value contained a template action that couldn't be baked into a static Go string was silently dropped — no struct field, no diagnostic. The bake chain (`extractTextChildren` → `extractHtmlChildren` → `extractScopedHtmlChildren`) now raises `BF101` when all three attempts fail, since named jsx-children props have no dynamic-delivery route on this adapter yet (only the reserved `children` slot does).
+- 8687fe3: Fix #2703: a named jsx-children prop (a JSX-valued prop other than the reserved `children`, e.g. `header={<strong>Title</strong>}`) whose value couldn't be baked into a static Go string now renders correctly instead of refusing with `BF101` — the dynamic-delivery route the reserved `children` slot already had (`bf_with_props` + `bf_tmpl` companion defines) is extended to named props.
+- c8b598d: Fix two review-caught gaps in the named-prop dynamic-delivery route added for #2703: `bf_with_props` now targets the child's LOCAL destructured field name instead of the bare JSX attribute name (a child that aliases the prop, e.g. `function Card({ header: h })`, would otherwise silently drop the dynamic value), and a prop routed into the child's rest bag (no declared param at all) now refuses loudly with `BF101` instead of silently no-op'ing through `bf_with_props`'s unmatched-field passthrough (tracked as a capability gap in #2805).
+- 12a3b3b: Fix a latent SSR-emission bug in the per-item start marker for multi-root Fragment loop bodies (#1212): both adapters called `bfComment('bf-loop-i')` / `` {{bfComment "bf-loop-i"}} `` even though `bfComment` itself already prepends `bf-`, doubling the prefix to `<!--bf-bf-loop-i-->` instead of the correct `<!--bf-loop-i-->` the client runtime and every other adapter's whole-item-conditional anchor (`bf-loop-i:KEY`) already use. No prior fixture exercised `bodyIsMultiRoot` on either adapter, so this went unexercised until #2763's fragment-bodied-keyed-loop fixture was the first to combine a multi-root Fragment row with an SSR render on these adapters, surfacing it as a byte-for-byte `expectedHtml` mismatch.
+- @barefootjs/shared@0.33.4
+
 ## 0.33.3
 
 ### Patch Changes

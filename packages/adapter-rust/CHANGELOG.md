@@ -1,5 +1,11 @@
 # @barefootjs/rust
 
+## 0.33.4
+
+### Patch Changes
+
+- @barefootjs/shared@0.33.4
+
 ## 0.33.3
 
 ### Patch Changes

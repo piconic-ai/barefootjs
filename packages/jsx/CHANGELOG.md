@@ -1,5 +1,14 @@
 # @barefootjs/jsx
 
+## 0.33.4
+
+### Patch Changes
+
+- 89f4350: Fix #2797: a loop-row preamble local (e.g. `const handleRowClick = () => {...}` declared inside a `.map()` callback) referenced only as a prop value on a child-component-per-row loop had its declaration dropped from the emitted module while the call site survived — a guaranteed `ReferenceError` at runtime. The `'component'` loop-plan variant now declares its preamble the same way the `'plain'` and `'composite'` variants already do, hoisted once before the hydration-reuse/fresh-row split so both branches read the same value.
+- 12a3b3b: Fix #2763: a `.map()` whose callback body returns a fragment (`<><li key={..}/><li/></>`) now resolves its row key instead of silently losing it. `extractLoopKey` and its write-side twin `applyLoopKeyAttr` gained a `fragment` case that reads/stamps the key on the fragment's first ELEMENT child (skipping whitespace-only text), matching the "first element, not first node" rule `IRElement.keyAttr`'s docstring already documents for the render-root relay case. Previously `extractLoopKey` returned `null` for a fragment body, so every SSR adapter omitted the row-key attribute and `mapArray` reconciled positionally — while `ir-to-client-js/html-template.ts`'s client row builders kept baking `data-key` from the raw `key` JSX attribute independently of that decision, a silent SSR/CSR divergence with no diagnostic. Those builders now read `IRElement.keyAttr` (via a new `resolvedKeyAttrName` helper) instead of the raw attribute, so a row the SSR side doesn't recognize as keyed no longer gets a `data-key` baked into it client-side either.
+- dea130f: Fix #2750: a `ref` callback's referenced `const`, when the element carrying `ref` sat inside a nested (depth-2+) `.map()` loop, had its call site emitted but its declaration dropped as dead code — a guaranteed `ReferenceError` at runtime. The Phase 3 reference-graph safety net now traces `ref` the same way it already traces `attrs`/`events` on every element, so a nested-loop ref's declaration is correctly kept alive.
+- @barefootjs/shared@0.33.4
+
 ## 0.33.3
 
 ### Patch Changes
