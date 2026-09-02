@@ -55,6 +55,16 @@ const KNOWN_UNDECLARED: Record<string, KnownHole> = {
   // map-index-handler, reactive-props, props-reactivity-comparison)
   // graduated with the memo/`templateExpr`/getter-elided-signal emission
   // fixes; see the issue for the closing PR.
+  'jsx-element-prop-rest-bag-dynamic': {
+    // #2806: a component reading its own rest-bag spread directly in JSX
+    // (`{rest.header}`) emits a CSR template referencing `rest`, which is
+    // never bound in that scope — the same `applyRestAttrs`-not-modeled
+    // class as the CSR_SKIP_FIXTURES entries above it, manifesting here as
+    // a genuine undeclared-identifier compile hole rather than a harness
+    // limitation.
+    names: ['rest'],
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2806',
+  },
 }
 
 /** One virtual .ts file per emitted client-JS artifact. */

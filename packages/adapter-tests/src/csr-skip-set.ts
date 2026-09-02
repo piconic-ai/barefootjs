@@ -90,4 +90,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // child needs no `$c` lookup at all (it IS `__scope`) — see
   // `ClientJsContext.commentScopeRootSlotId` and
   // `comment-wrapper-grandchild-slot-collision.test.ts`.
+  // #2806: same `applyRestAttrs`-not-modeled class as `jsx-spread-props-object`
+  // / `rest-spread-child-attrs` / `stateless-rest-spread-forward` above, but
+  // reading the rest bag directly in JSX (`{rest.header}`) rather than
+  // spreading it onto an element's attrs — the emitted CSR template
+  // references `rest` without ever binding it, a guaranteed
+  // `ReferenceError` (also pinned in `client-js-scope.test.ts`'s
+  // `KNOWN_UNDECLARED`). SSR is correct on every adapter; go-template's own
+  // orthogonal refusal for this shape is #2805.
+  'jsx-element-prop-rest-bag-dynamic',
 ])
