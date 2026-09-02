@@ -7388,7 +7388,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           content: this.renderChildren(children),
         })
       }
-      args.push(`${JSON.stringify(capitalizeFieldName(prop.name))} (bf_tmpl ${JSON.stringify(name)} .)`)
+      // `bf_with_props`/`WithProps` patches the child's Props struct, keyed
+      // by the child's own LOCAL destructured field name — not necessarily
+      // the caller's JSX attribute name (`function Card({ header: h })`
+      // reads `h`, whose field is `H`, not `Header`). `WithProps` silently
+      // no-ops on an unmatched field name, so skipping this lookup would
+      // turn an aliased prop's dynamic delivery into a silent dropped
+      // render. `childPropFieldNames` resolves this exact hazard for the
+      // sibling `bf_with_props` call site (`loopRowChildPropOverrides`,
+      // below) — mirrored here.
+      const fieldName = this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      args.push(`${JSON.stringify(fieldName)} (bf_tmpl ${JSON.stringify(name)} .)`)
     }
     return args.length > 0 ? args.join(' ') : null
   }
