@@ -1788,6 +1788,21 @@ export interface TemplateOptions {
   restSpreadNames?: ReadonlySet<string>
   propsObjectName?: string | null
   /**
+   * The rest-bag binding's source name (`ctx.restPropsName` — `'rest'` in
+   * `{ children, ...rest }`), threaded alongside `propsObjectName` into
+   * `rewritePropsObjectRef` so a component that reads the rest binding
+   * directly in its own body (`{rest.header}`, not just spread onto an
+   * element via `applyRestAttrs`) resolves to `_p` here too (#2806).
+   * Not folded into `restSpreadNames`: that set is spread-filter
+   * membership keyed by raw expression text (`isFilteredSpread`,
+   * `collect-elements.ts`'s exclude-key resolution) and must keep seeing
+   * the untouched name; this field is the separate "identifier to rewrite"
+   * input `rewritePropsObjectRef` already accepts for the init body
+   * (`generate-init.ts`) — the four template builders below were the only
+   * callers still passing `null` for it.
+   */
+  restPropsName?: string | null
+  /**
    * Names that exist only in the init-body scope (or were demoted to unsafe
    * during chained-ref resolution). The CSR template runs at module scope
    * via `render()` / `renderChild()`, so any expression that reaches one
@@ -1878,13 +1893,14 @@ export function irToComponentTemplate(
   inlinableConstants?: Map<string, string>,
   restSpreadNames?: ReadonlySet<string>,
   propsObjectName?: string | null,
-  markupSlotIds?: ReadonlySet<string>
+  markupSlotIds?: ReadonlySet<string>,
+  restPropsName?: string | null
 ): string {
-  return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds })
+  return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName })
 }
 
 function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { inlinableConstants, restSpreadNames, propsObjectName, loopDepth = 0 } = opts
+  const { inlinableConstants, restSpreadNames, propsObjectName, restPropsName, loopDepth = 0 } = opts
   // `recurse` preserves `inHoistedChildren` for structural pass-through
   // (fragment / conditional); `childrenRecurse` clears it so element
   // descendants don't re-emit the placeholder. (#1320)
@@ -1917,9 +1933,18 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
     // function's own constant-inlining step just above when the inlined
     // value is itself `props` (a local alias of the whole props object) —
     // silently kept the pre-rewrite name instead of `_p`.
+    //
+    // The gate stays keyed on `propsObjectName` for the destructured-prop
+    // case (unconditionally rewriting here would also change static-path
+    // output for components with neither a props object nor a rest binding
+    // — a separate alignment, not this fix) but widens to fire when only
+    // a rest binding exists (`{ children, ...rest }` with no whole-props
+    // param), so `rest.header` resolves to `_p.header` here the same way
+    // it already does in the init body (`generate-init.ts`, #2723) instead
+    // of reaching the template as a bare, undeclared `rest` (#2806).
     const restored = restore(result)
-    return propsObjectName && propsObjectName !== PROPS_PARAM
-      ? rewritePropsObjectRef(restored, propsObjectName, null, { enclosingScope: opts.scope })
+    return (propsObjectName && propsObjectName !== PROPS_PARAM) || restPropsName
+      ? rewritePropsObjectRef(restored, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
       : restored
   }
 
@@ -2315,7 +2340,7 @@ export function generateCsrTemplate(
   // by construction (`collectElements`'s `expression` visitor only pushes
   // here). Reused as-is, not re-derived.
   const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds })
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName })
 }
 
 /**
@@ -2510,7 +2535,7 @@ export function computeDeferredChildSlots(
 }
 
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames, loopDepth = 0 } = opts
+  const { restSpreadNames, propsObjectName, restPropsName, csrEnv, unsafeLocalNames, loopDepth = 0 } = opts
   const env: CsrEnv = csrEnv ?? { substitutions: new Map(), propsObjectName: propsObjectName ?? null }
   const transformExpr = (expr: string, templateExpr?: string): string => {
     // Single AST substitution pass: replaces signal getter calls
@@ -2539,11 +2564,16 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     if (unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIdentifiers, unsafeLocalNames)) {
       return UNSAFE_TEMPLATE_EXPR
     }
-    // Final emit-form: rewrite `propsName.X → _p.X`. Deferred until
-    // after the unsafe-name check because the check used raw form
+    // Final emit-form: rewrite `propsName.X → _p.X` (and a direct
+    // rest-bag read, `restName.X → _p.X` — the rest binding IS `_p` at
+    // runtime, same as the init body's `rewritePropsObjectRef` call and
+    // `applyRestAttrs`'s exclude-key filtering both already assume; a
+    // computed "props minus consumed keys" object here would be a second,
+    // divergent implementation of that same decision, #2806). Deferred
+    // until after the unsafe-name check because the check used raw form
     // (consistent with `populateCsrInlinable`'s `isInlinableInTemplate`
     // gate — #1138).
-    return rewritePropsObjectRef(rewritten, propsObjectName ?? null, null, { enclosingScope: opts.scope })
+    return rewritePropsObjectRef(rewritten, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
   }
 
   // `recurse` preserves `inHoistedChildren` for structural pass-through
@@ -2864,7 +2894,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // its own props context via recurseInLoopBody.
         const body = renderPreamble(node.flatMapCallback, {
           textVariant: 'template',
-          transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, null, { enclosingScope: childScope }),
+          transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: childScope }),
           // Leaf `key` stripped — see the irToHtmlTemplate site above.
           renderLeaf: (ir) => recurseInLoopBody(stripLeafKeyAttr(ir)),
         })
@@ -2872,7 +2902,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       } else if (node.preamble) {
         // Stage 3 / D4 — template-variant js text with the props rewrite
         // applied per segment; JSX leaves render via the loop-body recursion.
-        const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, null, { enclosingScope: childScope }), renderLeaf: (ir) => recurseInLoopBody(ir) })
+        const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: childScope }), renderLeaf: (ir) => recurseInLoopBody(ir) })
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`

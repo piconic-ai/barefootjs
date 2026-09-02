@@ -275,7 +275,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
     // matches `emitRegistrationAndHydration`'s derivation byte-for-byte
     // rather than special-casing "no markup slots here" (#2651).
     const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
-    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds)
+    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
   }
 
   // CSR fallback: when static template generation fails (e.g., components with

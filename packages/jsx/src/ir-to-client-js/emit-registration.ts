@@ -223,7 +223,7 @@ export function emitRegistrationAndHydration(
     // (#2651) — see `generateCsrTemplate`'s identical derivation below
     // for why this is reused as-is rather than re-derived.
     const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
-    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds)
+    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
     if (templateHtml) {
       defParts.push(buildTemplateDefPart(ctx, templateHtml))
     }
