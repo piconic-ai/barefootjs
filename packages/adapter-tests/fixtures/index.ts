@@ -542,6 +542,7 @@ import { fixture as textareaValueSsr } from './textarea-value-ssr'
 // projection — the shape whose CLIENT row builder used to bake back the
 // `value` attribute the shared IR marks `clientOnly`.
 import { fixture as loopRowControlledTextarea } from './loop-row-controlled-textarea'
+import { fixture as loopRowControlledInput } from './loop-row-controlled-input'
 // #2754: a stateless `{...props}` forwarder — no reactive attribute on the
 // host element, so the rest spread alone has to earn the slot id
 // `applyRestAttrs` addresses.
@@ -951,5 +952,6 @@ export const jsxFixtures: JSXFixture[] = [
   fragmentRootKeyedLoopRow,
   fragmentBodyKeyedLoopRow,
   loopRowControlledTextarea,
+  loopRowControlledInput,
   statelessRestSpreadForward,
 ]
