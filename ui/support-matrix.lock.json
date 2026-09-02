@@ -2407,7 +2407,7 @@
           ]
         },
         "go-template": {
-          "pass": 311,
+          "pass": 312,
           "total": 335,
           "gaps": [
             {
@@ -2457,10 +2457,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2667"
               ]
-            },
-            {
-              "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -3197,7 +3193,7 @@
           ]
         },
         "go-template": {
-          "pass": 251,
+          "pass": 252,
           "total": 267,
           "gaps": [
             {
@@ -3218,10 +3214,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "jsx-element-prop-fragment-conditional",
               "issues": []
             },
             {
@@ -3935,7 +3927,7 @@
           ]
         },
         "go-template": {
-          "pass": 169,
+          "pass": 170,
           "total": 192,
           "gaps": [
             {
@@ -3985,10 +3977,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2667"
               ]
-            },
-            {
-              "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -7779,13 +7767,9 @@
           ]
         },
         "go-template": {
-          "pass": 52,
+          "pass": 53,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "jsx-element-prop-fragment-conditional",
-              "issues": []
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": [
