@@ -139,7 +139,7 @@
           ]
         },
         "go-template": {
-          "pass": 73,
+          "pass": 74,
           "total": 87,
           "gaps": [
             {
@@ -176,10 +176,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -1623,7 +1619,7 @@
           ]
         },
         "go-template": {
-          "pass": 221,
+          "pass": 222,
           "total": 239,
           "gaps": [
             {
@@ -1666,10 +1662,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -2471,7 +2463,7 @@
           ]
         },
         "go-template": {
-          "pass": 316,
+          "pass": 317,
           "total": 340,
           "gaps": [
             {
@@ -2544,10 +2536,6 @@
             },
             {
               "fixture": "map-array-builder-escaping",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -3291,7 +3279,7 @@
           ]
         },
         "go-template": {
-          "pass": 255,
+          "pass": 256,
           "total": 271,
           "gaps": [
             {
@@ -3329,10 +3317,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2667"
               ]
-            },
-            {
-              "fixture": "nested-loop-ref-const",
-              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -4059,7 +4043,7 @@
           ]
         },
         "go-template": {
-          "pass": 171,
+          "pass": 172,
           "total": 195,
           "gaps": [
             {
@@ -4132,10 +4116,6 @@
             },
             {
               "fixture": "map-array-builder-escaping",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -4743,15 +4723,11 @@
           ]
         },
         "go-template": {
-          "pass": 60,
+          "pass": 61,
           "total": 66,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -5297,7 +5273,7 @@
           ]
         },
         "go-template": {
-          "pass": 31,
+          "pass": 32,
           "total": 42,
           "gaps": [
             {
@@ -5314,10 +5290,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -8198,7 +8170,7 @@
           ]
         },
         "go-template": {
-          "pass": 108,
+          "pass": 109,
           "total": 115,
           "gaps": [
             {
@@ -8207,10 +8179,6 @@
             },
             {
               "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {
@@ -8490,7 +8458,7 @@
           ]
         },
         "go-template": {
-          "pass": 178,
+          "pass": 179,
           "total": 189,
           "gaps": [
             {
@@ -8515,10 +8483,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "nested-loop-ref-const",
               "issues": []
             },
             {

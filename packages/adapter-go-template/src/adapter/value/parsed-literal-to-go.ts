@@ -28,13 +28,17 @@ import { goFieldNameForKey } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
- * Look up a struct property's declared `TypeInfo` by source key, from the
- * user's own `TypeDefinition` (not a synthesized struct — those only arise
- * from an UNTYPED literal, which never carries nested object/array elements
- * because `synthesizeStructFromSignal` requires every property value to be a
- * scalar literal). Returns undefined when the struct name isn't a user type
- * or the key isn't declared — callers treat that as "nested type unknown"
- * and fall back to the generic/inline lowering.
+ * Look up a struct property's declared `TypeInfo` by source key. Resolves
+ * against ANY registered `TypeDefinition` — a user-written type, a #2674
+ * anonymous-object synthesis, or (#2800) an untyped-literal signal struct
+ * synthesized by `synthesizeStructFromSignal`, which pushes one
+ * `TypeDefinition` per struct (top-level and nested) via the same
+ * `registerSynthStruct` door #2674 uses, specifically so a nested
+ * array-of-objects field's declared element type is findable here exactly
+ * like a user-declared nested property's is. Returns undefined when the
+ * struct name isn't registered or the key isn't declared — callers treat
+ * that as "nested type unknown" and fall back to the generic/inline
+ * lowering.
  */
 function structPropertyType(ctx: GoEmitContext, structGoType: string, key: string): TypeInfo | undefined {
   const td = ctx.state.currentTypeDefinitions.find((t: TypeDefinition) => t.name === structGoType)

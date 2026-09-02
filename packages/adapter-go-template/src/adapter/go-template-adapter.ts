@@ -1334,17 +1334,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Synthesise a Go struct from an untyped object-array signal's inline initial
-   * value, or `null` (caller keeps `[]interface{}`/`nil`). Requires: untyped
-   * array type; a non-empty array literal of object literals; every element
-   * sharing the same Go-identifier key set; every value a scalar literal with a
-   * per-key-consistent Go type (mixed int/float64 widens to float64). Any
-   * deviation, or a name collision with an existing type, returns `null`.
+   * Synthesise a Go struct (plus, per #2800, one nested struct for each
+   * array-of-objects field, recursively) from an untyped object-array
+   * signal's inline initial value, or `null` (caller keeps
+   * `[]interface{}`/`nil`). Requires: untyped array type; a non-empty array
+   * literal of object literals; every element sharing the same
+   * Go-identifier key set; every value EITHER a scalar literal with a
+   * per-key-consistent Go type (mixed int/float64 widens to float64) OR an
+   * array of object literals (recursed the same way). Any deviation, or a
+   * name collision with an existing type, returns `null` for the WHOLE
+   * signal — `parsedLiteralToGo` (`value-lowering.ts`) already defers the
+   * whole array the moment one element fails to bake, so a partial struct
+   * (e.g. only the scalar fields) would synthesize a type nothing could
+   * ever fully populate; not worth a second, more permissive code path.
+   *
+   * Returns the synthesized structs in DEPENDENCY ORDER — nested structs
+   * before the struct(s) that reference them by name — so a caller
+   * registering them in list order never references an undeclared Go type.
+   * The signal's own top-level struct is always the LAST entry.
    */
   private synthesizeStructFromSignal(
     signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
     componentName: string,
-  ): { name: string; fields: Array<{ tsName: string; goName: string; goType: string }> } | null {
+  ): Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> | null {
     // Only untyped arrays: typed (`Item[]`) / scalar (`string[]`) elements bake
     // through the normal path.
     if (signal.type.kind !== 'array') return null
@@ -1354,12 +1366,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const node = signal.parsed
     if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
 
-    // Field order + per-key Go types from the first element; every other element
-    // must match exactly.
+    const name = `${componentName}${capitalizeFieldName(signal.getter)}Item`
+    return this.synthesizeStructsFromElements(node.elements, name)
+  }
+
+  /**
+   * The recursive core of `synthesizeStructFromSignal`: given a list of
+   * object-literal elements known to share ONE shape, and the Go struct
+   * name to assign that shape, returns the synthesized struct(s) — this
+   * shape's own struct last, any nested array-of-objects field's struct(s)
+   * before it — or `null` on any shape this fast path doesn't bake.
+   *
+   * A nested array-of-objects field is validated and shaped from the FLAT
+   * concatenation of that key's elements across every row (not just the
+   * first row) — a later row's own object shape for that key must still
+   * agree, but the nested struct's field set is inferred from every row's
+   * contribution so no row's data is silently dropped from the type.
+   */
+  private synthesizeStructsFromElements(
+    elements: ParsedExpr[],
+    name: string,
+  ): Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> | null {
+    // Don't shadow an existing (user-defined or already-synthesised) type.
+    if (this.state.localTypeNames.has(name)) return null
+
+    type PropShape = { kind: 'scalar'; goType: string } | { kind: 'nested-array' }
+
+    // Field order + per-key shape from the first element; every other
+    // element must match exactly (same keys, same shape KIND per key).
     const order: string[] = []
-    const goTypes = new Map<string, string>()
-    for (let i = 0; i < node.elements.length; i++) {
-      const el = node.elements[i]
+    const shapes = new Map<string, PropShape>()
+    const nestedElements = new Map<string, ParsedExpr[]>()
+
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i]
       if (el.kind !== 'object-literal') return null
       const seen = new Set<string>()
       for (const prop of el.properties) {
@@ -1370,36 +1410,124 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (prop.shorthand) return null
         const key = prop.key
         if (!GO_IDENTIFIER.test(key)) return null
+        seen.add(key)
+
+        const isNestedArray =
+          prop.value.kind === 'array-literal' &&
+          prop.value.elements.every(e => e.kind === 'object-literal')
+
+        if (isNestedArray) {
+          const prevShape = shapes.get(key)
+          if (prevShape === undefined) {
+            if (i !== 0) return null // key absent from the first element → shape differs
+            order.push(key)
+            shapes.set(key, { kind: 'nested-array' })
+            nestedElements.set(key, [])
+          } else if (prevShape.kind !== 'nested-array') {
+            return null // this key is a scalar in some rows, a nested array in others
+          }
+          nestedElements.get(key)!.push(...(prop.value as { elements: ParsedExpr[] }).elements)
+          continue
+        }
+
         const goType = this.scalarParsedGoType(prop.value)
         if (!goType) return null
-        seen.add(key)
-        const prev = goTypes.get(key)
-        if (prev === undefined) {
-          if (i !== 0) return null // key absent from the first element → shape differs
+        const prevShape = shapes.get(key)
+        if (prevShape === undefined) {
+          if (i !== 0) return null
           order.push(key)
-          goTypes.set(key, goType)
+          shapes.set(key, { kind: 'scalar', goType })
+        } else if (prevShape.kind !== 'scalar') {
+          return null
         } else {
-          const merged = this.mergeScalarGoType(prev, goType)
+          const merged = this.mergeScalarGoType(prevShape.goType, goType)
           if (!merged) return null
-          goTypes.set(key, merged)
+          shapes.set(key, { kind: 'scalar', goType: merged })
         }
       }
       // A first-element key missing here → shape differs.
       if (seen.size !== order.length) return null
     }
 
-    const name = `${componentName}${capitalizeFieldName(signal.getter)}Item`
-    // Don't shadow an existing (user-defined or already-synthesised) type.
-    if (this.state.localTypeNames.has(name)) return null
+    const nestedStructs: Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> = []
+    const fields: Array<{ tsName: string; goName: string; goType: string }> = []
+    const properties: PropertyInfo[] = []
 
-    return {
-      name,
-      fields: order.map(key => ({
-        tsName: key,
-        goName: capitalizeFieldName(key),
-        goType: goTypes.get(key)!,
-      })),
+    for (const key of order) {
+      const shape = shapes.get(key)!
+      if (shape.kind === 'scalar') {
+        fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: shape.goType })
+        properties.push({ name: key, type: this.scalarGoTypeToTypeInfo(shape.goType), optional: false, readonly: false })
+        continue
+      }
+      const nestedList = nestedElements.get(key)!
+      // Every row's array for this key was empty — no row's data to infer
+      // a shape from (distinct from a MISSING key, already ruled out
+      // above); matches the top-level empty-array rule this function
+      // already applies to the signal's own outer array.
+      if (nestedList.length === 0) return null
+      const nestedName = `${name}${capitalizeFieldName(key)}Item`
+      const nested = this.synthesizeStructsFromElements(nestedList, nestedName)
+      if (!nested) return null
+      nestedStructs.push(...nested)
+      fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: `[]${nestedName}` })
+      properties.push({ name: key, type: this.synthSliceTypeInfo(nestedName), optional: false, readonly: false })
     }
+
+    return [...nestedStructs, { name, fields, properties }]
+  }
+
+  /** `PropertyInfo.type` for a scalar Go field type — consumed only as a
+   * defensive/consistent fill; `parsedLiteralToGo`'s object branch never
+   * looks up a SCALAR property's declared type (only array/object ones),
+   * so this never actually gates a bake, unlike `synthSliceTypeInfo`. */
+  private scalarGoTypeToTypeInfo(goType: string): TypeInfo {
+    if (goType === 'string') return { kind: 'primitive', raw: 'string', primitive: 'string' }
+    if (goType === 'bool') return { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
+    return { kind: 'primitive', raw: 'number', primitive: 'number' }
+  }
+
+  /**
+   * `TypeInfo` for "an array of the named synthesized struct" — the exact
+   * shape both `emitSynthStructs`'s `synthStructTypes` entry (the signal's
+   * OWN field type) and a nested array-of-objects field's `PropertyInfo`
+   * need, so `parsed-literal-to-go.ts`'s `structPropertyType` resolves a
+   * nested array property the identical way it resolves the signal's own
+   * top-level type.
+   */
+  private synthSliceTypeInfo(name: string): TypeInfo {
+    return { kind: 'array', raw: `${name}[]`, elementType: { kind: 'interface', raw: name } }
+  }
+
+  /**
+   * Register a synthesized struct (fields as Go source lines, `properties`
+   * for `structPropertyType`'s nested-type lookups) and emit its
+   * declaration — the one register+emit sequence shared by
+   * `emitSynthPropStructs.visitObject` (anonymous TS object types, #2674)
+   * and `emitSynthStructs` (untyped object-array signals, #2800), so
+   * localTypeNames/localStructFields/currentTypeDefinitions registration
+   * can't drift between the two synthesis call sites.
+   */
+  private registerSynthStruct(
+    lines: string[],
+    name: string,
+    fields: Array<{ tsName: string; goName: string; goType: string }>,
+    properties: PropertyInfo[],
+    comment: string,
+  ): void {
+    this.state.localTypeNames.add(name)
+    this.state.localStructFields.set(name, new Map(fields.map(f => [f.tsName, f.goName])))
+    this.state.currentTypeDefinitions.push({
+      kind: 'type',
+      name,
+      definition: '',
+      properties,
+      loc: SYNTH_TYPE_LOC,
+    })
+    const goFields = fields.map(f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``)
+    lines.push(comment)
+    lines.push(`type ${name} struct {\n${goFields.join('\n')}\n}`)
+    lines.push('')
   }
 
   /**
@@ -2718,20 +2846,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         visit(prop.type, desiredName, prop.name)
       }
       const fields = this.structFieldsFor(typeInfo)
-      this.state.localStructFields.set(desiredName, new Map(fields.map(f => [f.tsName, f.goName])))
-      this.state.currentTypeDefinitions.push({
-        kind: 'type',
-        name: desiredName,
-        definition: '',
-        properties: typeInfo.properties ?? [],
-        loc: SYNTH_TYPE_LOC,
-      })
-      const goFields = fields.map(
-        f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``,
+      this.registerSynthStruct(
+        lines,
+        desiredName,
+        fields,
+        typeInfo.properties ?? [],
+        `// ${desiredName} is a synthesised type for an anonymous object type (#2674).`,
       )
-      lines.push(`// ${desiredName} is a synthesised type for an anonymous object type (#2674).`)
-      lines.push(`type ${desiredName} struct {\n${goFields.join('\n')}\n}`)
-      lines.push('')
     }
 
     const visitArrayElem = (elemType: TypeInfo | undefined, parentName: string, propName: string): void => {
@@ -2784,28 +2905,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   private emitSynthStructs(lines: string[], ir: ComponentIR, componentName: string): void {
-    // Synthesise a struct for each untyped object-array signal and emit it, so
-    // the signal field can be typed `[]Synth` and its inline items baked (the
-    // loop body reaches each item via struct field access). Registered in
-    // localTypeNames/localStructFields so the baker resolves the element type.
+    // Synthesise a struct for each untyped object-array signal (plus, per
+    // #2800, one nested struct per array-of-objects field, recursively) and
+    // emit them, so the signal field can be typed `[]Synth` and its inline
+    // items baked (the loop body reaches each item via struct field
+    // access). Registered via `registerSynthStruct` so the baker resolves
+    // every level's element type the same way it resolves a #2674
+    // anonymous-type struct.
     this.state.synthStructTypes = new Map<string, TypeInfo>()
     for (const signal of ir.metadata.signals) {
       if (signal.envReader) continue // env signal has no bakeable initial shape (#2057)
       const synth = this.synthesizeStructFromSignal(signal, componentName)
       if (!synth) continue
-      this.state.localTypeNames.add(synth.name)
-      this.state.localStructFields.set(synth.name, new Map(synth.fields.map(f => [f.tsName, f.goName])))
-      this.state.synthStructTypes.set(signal.getter, {
-        kind: 'array',
-        raw: `${synth.name}[]`,
-        elementType: { kind: 'interface', raw: synth.name },
-      })
-      const goFields = synth.fields.map(
-        f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``,
-      )
-      lines.push(`// ${synth.name} is a synthesised element type for the ${signal.getter} signal.`)
-      lines.push(`type ${synth.name} struct {\n${goFields.join('\n')}\n}`)
-      lines.push('')
+      // Nested-first order (`synthesizeStructFromSignal`'s contract): a
+      // struct referencing an earlier entry by name is always registered
+      // after it, so no declaration ever forward-references an
+      // undeclared Go type.
+      for (const s of synth) {
+        this.registerSynthStruct(
+          lines,
+          s.name,
+          s.fields,
+          s.properties,
+          `// ${s.name} is a synthesised element type for the ${signal.getter} signal.`,
+        )
+      }
+      const top = synth[synth.length - 1]
+      this.state.synthStructTypes.set(signal.getter, this.synthSliceTypeInfo(top.name))
     }
   }
 

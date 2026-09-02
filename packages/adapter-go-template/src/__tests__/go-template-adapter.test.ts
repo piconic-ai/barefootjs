@@ -987,7 +987,9 @@ export function List() {
 
     test('keeps nil for an untyped object array with non-scalar values (#1680)', () => {
       // A nested object/array value has no scalar Go type to infer, so the
-      // shape can't be synthesised — bail to nil.
+      // shape can't be synthesised — bail to nil. `tags` is a nested array
+      // of SCALARS (not objects) — #2800 only teaches synthesis to recurse
+      // into an array of OBJECT literals, so this shape is unchanged.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -996,6 +998,85 @@ import { createSignal } from "@barefootjs/client"
 export function List() {
   const [items] = createSignal([{ id: "a", tags: ["x"] }])
   return <ul>{items().map((t) => <li key={t.id}>{t.id}</li>)}</ul>
+}
+`)
+      expect(adapter.generate(ir).types!).toContain('Items: nil,')
+    })
+
+    // #2800: a nested array-of-objects field (`children: [{...}]`) recurses
+    // into its own synthesized struct instead of aborting the whole
+    // signal's synthesis.
+    test('synthesises a nested struct for a nested array-of-objects field and bakes it (#2800)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function NestedRefConst() {
+  const [items] = createSignal([
+    { id: 1, label: 'Alpha', children: [{ id: 10, label: 'Alpha-child' }] },
+    { id: 2, label: 'Beta', children: [{ id: 20, label: 'Beta-child' }] },
+  ])
+  return <ul>{items().map((row) => <li key={row.id}>{row.label}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('type NestedRefConstItemsItemChildrenItem struct')
+      expect(types).toContain('Children []NestedRefConstItemsItemChildrenItem')
+      expect(types).not.toContain('Items: nil,')
+      expect(types).toContain(
+        'Items: []NestedRefConstItemsItem{NestedRefConstItemsItem{ID: 1, Label: "Alpha", Children: []NestedRefConstItemsItemChildrenItem{NestedRefConstItemsItemChildrenItem{ID: 10, Label: "Alpha-child"}}}, NestedRefConstItemsItem{ID: 2, Label: "Beta", Children: []NestedRefConstItemsItemChildrenItem{NestedRefConstItemsItemChildrenItem{ID: 20, Label: "Beta-child"}}}}',
+      )
+    })
+
+    test('recurses to arbitrary depth, widening a numeric field at the innermost level (#2800)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Depth3() {
+  const [items] = createSignal([
+    { id: 1, kids: [{ id: 10, grand: [{ id: 100, n: 1 }, { id: 101, n: 2.5 }] }] },
+  ])
+  return <ul>{items().map((row) => <li key={row.id}>{row.id}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('type Depth3ItemsItemKidsItemGrandItem struct')
+      expect(types).toMatch(/type Depth3ItemsItemKidsItemGrandItem struct \{\n\tID int[\s\S]*\tN float64/)
+      expect(types).toContain('Kids []Depth3ItemsItemKidsItem')
+      expect(types).toContain('Grand []Depth3ItemsItemKidsItemGrandItem')
+      expect(types).not.toContain('Items: nil,')
+    })
+
+    test('keeps nil when a nested struct name collides with a user type (#2800)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type ListItemsItemChildrenItem = { id: string }
+export function List() {
+  const [items] = createSignal([{ id: 1, children: [{ id: 2 }] }])
+  return <ul>{items().map((row) => <li key={row.id}>{row.id}</li>)}</ul>
+}
+`)
+      expect(adapter.generate(ir).types!).toContain('Items: nil,')
+    })
+
+    test('keeps nil when a key is a nested array in some rows and scalar in others (#2800)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function List() {
+  const [items] = createSignal([
+    { id: 1, children: [{ id: 2 }] },
+    { id: 3, children: 'not-an-array' },
+  ])
+  return <ul>{items().map((row) => <li key={row.id}>{row.id}</li>)}</ul>
 }
 `)
       expect(adapter.generate(ir).types!).toContain('Items: nil,')
