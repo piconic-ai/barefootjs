@@ -3247,6 +3247,22 @@
         "text"
       ]
     },
+    "loop-row-controlled-input": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "loop-row-controlled-textarea": {
       "kinds": [
         "array-literal",
@@ -5766,15 +5782,15 @@
     }
   },
   "kindCounts": {
-    "array-literal": 85,
+    "array-literal": 86,
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 237,
+    "call": 238,
     "conditional": 27,
-    "identifier": 338,
+    "identifier": 339,
     "index-access": 14,
-    "literal": 269,
+    "literal": 270,
     "logical": 47,
     "member": 194,
     "object-literal": 65,
@@ -5819,8 +5835,8 @@
     "binary:>=": 1,
     "literal:boolean": 58,
     "literal:null": 23,
-    "literal:number": 113,
-    "literal:string": 187,
+    "literal:number": 114,
+    "literal:string": 188,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,

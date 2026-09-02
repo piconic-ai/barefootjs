@@ -10,7 +10,7 @@ import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } from './csr-substitute.ts'
 import type { ClientJsContext } from './types.ts'
-import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, escapeHtml } from '@barefootjs/shared'
+import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { derivesScopeFromSlot } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
@@ -1230,6 +1230,21 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
           case 'template': {
             const attrKey = node.slotId ? `${node.slotId}::${a.name}` : null
             if (!attrKey || !safe.reactiveAttrKeys.has(attrKey)) return null
+            // #2756 (input sub-mechanism): "omit and let the effect's eager
+            // first run fill it in" only holds for attribute-reflected
+            // binds — the effect calls `setAttribute`, so a freshly-cloned
+            // row ends up byte-identical to an SSR-baked/hydrated one. A
+            // property-only bind (`value`/`checked`, `classifyDOMProp`)
+            // never does: `emitAttrUpdate`'s value/boolean-attr branches
+            // deliberately write only the DOM PROPERTY (#2716), never the
+            // attribute. SSR still bakes the attribute (`clientOnly` is
+            // false here — `clientOnly` binds, e.g. textarea/select's
+            // `value`, take neither path since SSR omits their attribute
+            // too, so omitting stays correct for them). Refuse the whole
+            // skeleton fast path instead of just this attribute; the
+            // caller falls back to `irToHtmlTemplate`, which already bakes
+            // this attribute correctly.
+            if (!a.clientOnly && classifyDOMProp(a.name).kind === 'property') return null
             // Covered by a loop-child createEffect — omit from the skeleton
             // entirely; the effect's eager first run fills it in.
             break

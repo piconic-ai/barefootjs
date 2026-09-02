@@ -28,16 +28,12 @@ export function initSelectNative(__scope, _p = {}) {
   })
 
   if (_s2) _s2.addEventListener('change', (e) => { setPicked(e.target.value) })
-  const __tpl_l0 = document.createElement('template')
-  __tpl_l0.innerHTML = `<option data-key="" bf="s1"><!--bf:s0--><!--/--></option>`
-  const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
-  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   mapArrayLazy(() => fruits(), _s2, (f, i) => String(i), {
     createRow: (__e, i) => {
       const f = () => __e.item
-      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [__el, lazySlots(__el, __lzsc_l0)]
+      const __el = (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<option data-key="${escapeAttr(i)}" ${(f().id) != null ? 'value="' + escapeAttr(f().id) + '"' : ''} ${(picked()) === (f().id) ? 'selected' : ''} bf="s1"><!--bf:s0-->${escapeText(f().label)}<!--/--></option>`; return __tpl.content.firstElementChild.cloneNode(true) })()
+      const __r = __e.refs = [qsa(__el, '[bf="s1"]'), lazySlots(__el, __lzs_l0)]
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {
