@@ -1023,10 +1023,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // in a Fragment so the prefix and the existing children share an arrow
     // expression body.
     if (loop.bodyIsMultiRoot) {
-      // Per-item start marker: BF_LOOP_ITEM ('bf-loop-i'). Hardcoded
-      // literal here to match the adapter's existing convention of
-      // emitting comment-marker strings directly.
-      safeChildren = `<>{bfComment('bf-loop-i')}${children}</>`
+      // Per-item start marker: BF_LOOP_ITEM ('bf-loop-i'). `bfComment(k)`
+      // emits `<!--bf-${k}-->`, so the argument here is `'loop-i'`, not
+      // `'bf-loop-i'` (which would double the prefix to `<!--bf-bf-loop-i-->`
+      // — a genuine SSR-emission bug this fixed, caught by #2763's fixture
+      // being the first `bodyIsMultiRoot` case exercised on this adapter).
+      safeChildren = `<>{bfComment('loop-i')}${children}</>`
     } else if (loop.bodyIsItemConditional && loop.key) {
       // Whole-item conditional (#1665): a per-item `<!--bf-loop-i:KEY-->`
       // anchor that is ALWAYS present (even when the item's conditional

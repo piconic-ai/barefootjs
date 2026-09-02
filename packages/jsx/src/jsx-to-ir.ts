@@ -3793,6 +3793,19 @@ function extractLoopKey(node: IRNode): string | null {
     if (b === null) return null
     return normalizeKeyExpr(a) === normalizeKeyExpr(b) ? a : null
   }
+  if (node.type === 'fragment') {
+    // #2763: a `.map()` body returning a fragment (`<><li key={..}/><li/></>`)
+    // reads the key off its FIRST element, not first node — same "first
+    // element, not first node" rule as `IRElement.keyAttr`'s docstring and
+    // `markCarrierIn`'s relay case, skipping whitespace-only text the way
+    // `branchHasNoElement` does. Recursing through `extractLoopKey` (rather
+    // than requiring `type === 'element'` directly) lets a nested
+    // conditional/fragment first child resolve too.
+    const first = node.children.find(
+      (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
+    )
+    return first ? extractLoopKey(first) : null
+  }
   return null
 }
 
@@ -4206,12 +4219,12 @@ function tagLoopItemRootComponents(nodes: readonly IRNode[]): void {
  *
  * Deliberately does NOT remove the literal `key` entry from `.attrs`: the
  * CSR/client-JS codegen path (`ir-to-client-js/html-template.ts`'s
- * `a.name === 'key' ? keyAttrName(loopDepth) : ...`) already reads it
- * directly and is not part of #2753's 16-site duplication — it derives the
- * same name from the same `keyAttrName()` single source of truth, just at a
- * different phase (client-template bake time, not SSR emit time). Adapters
- * skip the raw `key` attr in their generic `renderAttributes` loop instead
- * (Hono's own JSX runtime already drops it silently either way).
+ * `resolvedKeyAttrName` helper, #2763) reads it back off `.attrs` too, but
+ * only emits `data-key` when THIS field — `node.keyAttr` — is actually set;
+ * a raw `key` attribute the SSR side didn't recognize as a row key (e.g. a
+ * fragment-bodied row before #2763's fix) no longer gets baked client-side
+ * either. Adapters skip the raw `key` attr in their generic `renderAttributes`
+ * loop instead (Hono's own JSX runtime already drops it silently either way).
  *
  * `component` bodies are left untouched: a `<Comp key={x}/>` row root's key
  * is a PROP (`renderComponentProps`'s own `data-key` prop-forwarding), not
@@ -4226,6 +4239,16 @@ function applyLoopKeyAttr(node: IRNode, name: string, value: string): void {
   if (node.type === 'conditional') {
     applyLoopKeyAttr(node.whenTrue, name, value)
     applyLoopKeyAttr(node.whenFalse, name, value)
+    return
+  }
+  if (node.type === 'fragment') {
+    // Write-side twin of `extractLoopKey`'s fragment case: stamp the SAME
+    // first-real-child this key was read from, not every child, matching
+    // the "first element, not first node" rule.
+    const first = node.children.find(
+      (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
+    )
+    if (first) applyLoopKeyAttr(first, name, value)
   }
 }
 
