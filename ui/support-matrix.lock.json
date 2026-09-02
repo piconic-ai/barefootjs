@@ -1678,7 +1678,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             },
             {
               "fixture": "some-typeof-predicate",
@@ -2552,7 +2554,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             },
             {
               "fixture": "some-typeof-predicate",
@@ -3332,7 +3336,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             },
             {
               "fixture": "some-typeof-predicate",
@@ -4132,7 +4138,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             },
             {
               "fixture": "some-typeof-predicate",
@@ -4736,7 +4744,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             },
             {
               "fixture": "static-array-from-props",
@@ -7954,7 +7964,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             }
           ]
         },
@@ -8491,7 +8503,9 @@
             },
             {
               "fixture": "signal-object-spread-init",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2700"
+              ]
             },
             {
               "fixture": "some-typeof-predicate",

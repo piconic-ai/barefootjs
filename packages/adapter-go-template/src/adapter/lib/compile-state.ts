@@ -38,6 +38,24 @@ export class CompileState {
    *  that's resolvable and non-colliding. */
   referencedDerivedConsts: Set<string> = new Set()
 
+  /**
+   * Root-scope field names (signal getters, memo names, props, derived
+   * consts) the SSR template actually READ while rendering — recorded by
+   * `rootFieldRef`, the single door every such read passes through
+   * (`identifier`/`call`/`member`'s zero-arg-getter and bare-name lowering,
+   * plus the typed-expression emitter). `generateTypes` (#2700) consults
+   * this AFTER `generate()` has rendered the template to decide whether a
+   * signal whose object-literal initializer the constructor-time baker
+   * can't reproduce (`convertInitialValue` returning null) needs a loud
+   * BF101 refusal: a deferred bake that is NEVER read by the template (e.g.
+   * only feeds a spread-attrs bag, which routes through its own
+   * `.Spread_<slot>` field, never this set) silently keeping its Go zero
+   * value is harmless, so refusing it would be a false positive — see
+   * `refuseUnbakeableDerivedObjectLiteral`'s docstring for why the check is
+   * call-site-aware instead of firing at the bake site itself.
+   */
+  templateReadRootFields: Set<string> = new Set()
+
   templateVarCounter: number = 0
 
   /**

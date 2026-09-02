@@ -497,6 +497,7 @@ import { fixture as mapObjectLiteralBody } from './map-object-literal-body'
 // directly, in value position (not nested in a `.map()` body) — see the
 // fixture file header.
 import { fixture as signalObjectSpreadInit } from './signal-object-spread-init'
+import { fixture as signalObjectSpreadInitClient } from './signal-object-spread-init-client'
 import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
 // #2482 audit follow-ups, adapter-side (pinned known limitations):
 // Go condition-position destructured bindings, Go nested-loop `inLoop`
@@ -918,6 +919,7 @@ export const jsxFixtures: JSXFixture[] = [
   callbackParamShadowsProp,
   mapObjectLiteralBody,
   signalObjectSpreadInit,
+  signalObjectSpreadInitClient,
   loopParamShadowsRecordTemplateSpan,
   loopDestructuredParamCondition,
   nestedLoopTailContent,

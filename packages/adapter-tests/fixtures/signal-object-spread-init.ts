@@ -13,6 +13,14 @@ import { createFixture } from '../src/types'
  * `dict(…, **…)` / `bf_merge` / …, #2696 Step 2), not just a static default.
  * Overriding a field the spread source ALSO sets (`done`) exercises JS
  * object-spread's override direction: the trailing prop wins.
+ *
+ * The Go template adapter has no such live-expression lowering (it bakes an
+ * object-typed signal/memo into Go SOURCE at constructor time, and that
+ * baker is static-only) — it now refuses this shape loudly with BF101
+ * (https://github.com/piconic-ai/barefootjs/issues/2700) instead of
+ * silently seeding a Go zero value, pinned in its own `conformance-pins.ts`.
+ * `signal-object-spread-init-client` is the verified-working `/* @client *\/`
+ * escape twin.
  */
 export const fixture = createFixture({
   id: 'signal-object-spread-init',
@@ -40,4 +48,5 @@ export function SignalObjectSpreadInit({ base }: { base: Item }) {
       <span bf="s3"><!--bf-cond-start:s2-->yes<!--bf-cond-end:s2--></span>
     </div>
   `,
+  escapes: [{ kind: 'client-directive', fixture: 'signal-object-spread-init-client' }],
 })

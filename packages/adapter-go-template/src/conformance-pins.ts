@@ -76,4 +76,16 @@ export const conformancePins: ConformancePins = {
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2805',
     unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2805' },
   }],
+  // #2700: a `derived` signal/memo (non-empty free set) seeded from an
+  // object literal the constructor-time baker can't reproduce (identifier/
+  // member/call operands defer, `parsed-literal-to-go.ts`) now refuses
+  // loudly instead of silently keeping the Go zero value — this fixture's
+  // `merged().id` / `merged().done` reads are exactly that shape. A working
+  // `/* @client */` escape twin exists (`signal-object-spread-init-client`),
+  // verified to render correctly, so no `unescapable`.
+  'signal-object-spread-init': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2700',
+  }],
 }
