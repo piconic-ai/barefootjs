@@ -2341,22 +2341,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
                   if (scopedHtml !== null) {
                     this.state.usesHtmlTemplate = true
                     emitChildField(prop.name, `template.HTML(${scopedHtml})`)
-                  } else {
-                    // None of the three bake attempts produced a static Go
-                    // string — the value contains a template action that
-                    // survived (#2746) or is otherwise genuinely dynamic
-                    // (#2703). Named jsx-children props have no dynamic
-                    // delivery route yet (only the reserved `children` slot
-                    // does, via `queueDynamicChildrenDefine` + `bf_with_children`
-                    // below) — refuse loudly rather than silently omitting
-                    // the field, per the sound-or-loud trichotomy.
-                    this.state.errors.push({
-                      code: 'BF101',
-                      severity: 'error',
-                      message: `JSX-valued prop '${prop.name}' on <${child.name}> could not be baked into a static Go template value — it is dynamic and named jsx-children props have no dynamic-delivery route on this adapter yet`,
-                      loc: prop.loc,
-                    })
                   }
+                  // Else: none of the three bake attempts produced a static
+                  // Go string — the value contains a template action that
+                  // survived (#2746) or is otherwise genuinely dynamic
+                  // (#2703). No field is emitted here; `queueDynamicPropDefine`
+                  // (called from `renderComponent`'s static-call-site branch)
+                  // detects the SAME unbakeable shape and delivers it at
+                  // template-execution time via `bf_with_props` + `bf_tmpl`,
+                  // mirroring how the reserved `children` field's null case
+                  // just above is filled in by `bf_with_children`. A
+                  // component nested in a loop row never reaches this
+                  // function (`collectStaticChildInstancesRecursive` only
+                  // collects `!inLoop` components), so there is no dynamic
+                  // named-prop delivery for that shape yet — out of scope
+                  // here, tracked separately if it turns up.
                 }
               }
             }
@@ -7358,6 +7357,72 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * #2703/B2: extend `queueDynamicChildrenDefine`'s companion-define delivery
+   * from the reserved `children` slot to NAMED jsx-children props (any
+   * JSX-valued prop other than `children`, e.g. `header={<strong>Title</strong>}`).
+   * A named prop whose value can't be baked into a static Go string by
+   * `emitStaticChildInstances`'s bake chain (`extractTextChildren` /
+   * `extractHtmlChildren` / `extractScopedHtmlChildren`, all null) is queued
+   * here instead, the same way; the caller composes the result into
+   * `bf_with_props` + `bf_tmpl` at the STATIC (non-loop) call site — the one
+   * shape `emitStaticChildInstances` bakes for at all (a component nested in
+   * a loop row never reaches `collectStaticChildInstances`).
+   *
+   * Returns the flat `"FieldName" (bf_tmpl "name" .) ...` argument list ready
+   * to splice into `bf_with_props`, or null when no named prop needs it —
+   * batches every prop that needs dynamic delivery into ONE `bf_with_props`
+   * call rather than nesting one per prop.
+   */
+  private queueDynamicPropDefine(comp: IRComponent): string | null {
+    const args: string[] = []
+    const childShape = this.childComponentShapes.get(comp.name)
+    for (const prop of comp.props) {
+      if (prop.value.kind !== 'jsx-children' || prop.name === 'children') continue
+      const children = prop.value.children
+      if (this.extractTextChildren(children) !== null) continue
+      if (this.extractHtmlChildren(children) !== null) continue
+      if (this.extractScopedHtmlChildren(children) !== null) continue
+      // A prop routed into the child's rest bag (no declared param —
+      // `loopRowChildPropOverrides`'s identical guard, above) has no named
+      // Go field for `bf_with_props`/`WithProps` to target at all; `WithProps`
+      // silently no-ops on an unmatched field name. Refuse loudly instead of
+      // delivering the value against a field name that can never land —
+      // this shape had no dynamic-delivery route before this method existed
+      // either (the blanket BF101 this method's caller replaced was
+      // unconditional for any unbakeable named prop), so this keeps it loud
+      // rather than trading that refusal for a silent dropped render.
+      if (childShape?.restBagField && !childShape.paramNames.has(prop.name)) {
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `JSX-valued prop '${prop.name}' on <${comp.name}> is dynamic and routes into the child's rest-bag prop ('${childShape.restBagField}') rather than a declared field — there is no named Go struct field for 'bf_with_props' to target`,
+          loc: prop.loc,
+        })
+        continue
+      }
+      const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
+      if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
+        this.state.pendingChildrenDefines.push({
+          name,
+          content: this.renderChildren(children),
+        })
+      }
+      // `bf_with_props`/`WithProps` patches the child's Props struct, keyed
+      // by the child's own LOCAL destructured field name — not necessarily
+      // the caller's JSX attribute name (`function Card({ header: h })`
+      // reads `h`, whose field is `H`, not `Header`). `WithProps` silently
+      // no-ops on an unmatched field name, so skipping this lookup would
+      // turn an aliased prop's dynamic delivery into a silent dropped
+      // render. `childPropFieldNames` resolves this exact hazard for the
+      // sibling `bf_with_props` call site (`loopRowChildPropOverrides`,
+      // below) — mirrored here.
+      const fieldName = this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      args.push(`${JSON.stringify(fieldName)} (bf_tmpl ${JSON.stringify(name)} .)`)
+    }
+    return args.length > 0 ? args.join(' ') : null
+  }
+
+  /**
    * Queue a companion define for a loop body component's JSX children. Like
    * `queueDynamicChildrenDefine` but temporarily exits the `inLoop` context so
    * nested component calls render with the normal `.NameSlotN` field-access
@@ -7462,9 +7527,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Static children with slotId: unique field name based on slotId.
       const suffix = slotIdToFieldSuffix(comp.slotId)
       const childrenDefine = this.queueDynamicChildrenDefine(comp)
+      // #2703/B2: a NAMED jsx-children prop (any JSX-valued prop other than
+      // `children`) that couldn't be baked into the constructor gets the
+      // same treatment `children` already has — delivered at the call site
+      // via a companion define. Props helper stays INNER, same ordering
+      // rule as the loop-nested branch above: `bf_with_children` applies
+      // last, on the props-patched value.
+      const propArgs = this.queueDynamicPropDefine(comp)
+      const base = propArgs
+        ? `(bf_with_props .${comp.name}${suffix} ${propArgs})`
+        : `.${comp.name}${suffix}`
       templateCall = childrenDefine
-        ? `{{template "${comp.name}" (bf_with_children .${comp.name}${suffix} (bf_tmpl "${childrenDefine}" .))}}`
-        : `{{template "${comp.name}" .${comp.name}${suffix}}}`
+        ? `{{template "${comp.name}" (bf_with_children ${base} (bf_tmpl "${childrenDefine}" .))}}`
+        : `{{template "${comp.name}" ${base}}}`
     } else {
       // Static children without slotId: fall back to .ComponentName.
       templateCall = `{{template "${comp.name}" .${comp.name}}}`

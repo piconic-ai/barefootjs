@@ -59,25 +59,21 @@ export const conformancePins: ConformancePins = {
   // `rich-prop-client-read` above.
   'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
   'jsx-element-prop-array': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
-  // #2703: graduated from a silent render-divergence (`render-divergences.ts`)
-  // to a loud refusal. A named jsx-children prop (any JSX-valued prop other
-  // than the reserved `children`) has no dynamic-delivery route on this
-  // adapter yet — only the reserved `children` slot gets one, via
-  // `queueDynamicChildrenDefine` + `bf_with_children`/`bf_tmpl`. Until that
-  // route is extended to named props, a value the static bake chain
-  // (`extractTextChildren`/`extractHtmlChildren`/`extractScopedHtmlChildren`)
-  // can't reduce to a literal now refuses with BF101 instead of silently
-  // omitting the field.
-  // `unescapable`: a follow-up (#2703 itself) already extends the reserved
-  // `children` slot's dynamic-delivery route to named props, which removes
-  // this refusal entirely rather than working around it with a `/* @client */`
-  // twin — so no escape fixture is authored here. Self-declared per the
-  // escape-coverage floor test's own guidance
-  // (`packages/compat/src/escape-coverage.ts`).
-  'jsx-element-prop-fragment-conditional': [{
+  // `jsx-element-prop-fragment-conditional` (#2703) is NOT pinned here — it
+  // renders correctly since `queueDynamicPropDefine` (go-template-adapter.ts)
+  // extended the reserved `children` slot's `bf_with_children`/`bf_tmpl`
+  // dynamic-delivery route to named jsx-children props.
+  // #2805: a named jsx-children prop routed into the child's rest bag (no
+  // declared param — only reachable via the child's `...rest` spread) has
+  // no named Go struct field for `bf_with_props`/`WithProps` to target at
+  // all. `queueDynamicPropDefine` refuses loudly with BF101 rather than
+  // silently no-op through `WithProps`'s unmatched-field passthrough.
+  // `unescapable`: the capability gap (a rest-bag delivery route) is #2805
+  // itself, not authored yet, so no `/* @client */` escape twin exists.
+  'jsx-element-prop-rest-bag-dynamic': [{
     code: 'BF101',
     severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2703',
-    unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2703' },
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2805',
+    unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2805' },
   }],
 }

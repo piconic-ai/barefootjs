@@ -47,8 +47,8 @@ describe('compileForCompat', () => {
     // this adapter (buildCompatCell attributes by code, not by fixture —
     // see its docstring) — #2320 (this shape, nested filter callback,
     // successor to #2038), #2321 (static-array-from-props computed loop
-    // source), and #2703 (a named jsx-children prop with no dynamic-delivery
-    // route, `jsx-element-prop-fragment-conditional`) surface here even
+    // source), and #2805 (a named jsx-children prop routed into a child's
+    // rest bag, `jsx-element-prop-rest-bag-dynamic`) surface here even
     // though this test only exercises the nested-filter-callback shape.
     // Three pins are no longer among them, each because the shape got a
     // real lowering rather than a narrower refusal: #2319
@@ -64,7 +64,7 @@ describe('compileForCompat', () => {
         issues: [
           'https://github.com/piconic-ai/barefootjs/issues/2320',
           'https://github.com/piconic-ai/barefootjs/issues/2321',
-          'https://github.com/piconic-ai/barefootjs/issues/2703',
+          'https://github.com/piconic-ai/barefootjs/issues/2805',
         ],
       },
     ])

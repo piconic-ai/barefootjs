@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import type { CompilerError, TemplateAdapter } from '@barefootjs/jsx'
+import type { ComponentIR, CompilerError, TemplateAdapter } from '@barefootjs/jsx'
 import { compileJSX } from '@barefootjs/jsx'
 import { jsxFixtures } from '../fixtures'
 import type { ExpectedDiagnostic } from './types'
@@ -81,6 +81,23 @@ export { normalizeHTML, stripConditionalMarkersForCrossAdapter }
  * surface adapter-emitted diagnostics without going through the
  * adapter's `render()` (which typically throws on errors).
  */
+/**
+ * Register a child/sibling component's cross-component shape on the adapter
+ * when it supports the optional `registerChildComponentShape` hook (Go
+ * template — #checkbox). A no-op on adapters without it. Mirrors
+ * `test-render.ts`'s identically-named helper: `compileJSX` alone never
+ * calls this hook, so a diagnostic that depends on it (a prop routed into
+ * a child's rest bag rather than a declared field, #2805) would silently
+ * never fire under `collectFixtureDiagnostics`'s compile-only path without
+ * this — the exact gap that let `jsx-element-prop-rest-bag-dynamic`'s
+ * pinned BF101 go unreproduced in this runner despite reproducing correctly
+ * under the real-render harness.
+ */
+function registerChildShape(adapter: TemplateAdapter, ir: ComponentIR): void {
+  const hook = (adapter as { registerChildComponentShape?: (ir: ComponentIR) => void }).registerChildComponentShape
+  if (typeof hook === 'function') hook.call(adapter, ir)
+}
+
 function collectFixtureDiagnostics(args: {
   source: string
   components?: Record<string, string>
@@ -106,6 +123,14 @@ function collectFixtureDiagnostics(args: {
         siblingTemplatesRegistered,
       })
       all.push(...r.errors)
+      // Register every child's shape before the parent compiles below —
+      // same ordering `test-render.ts` uses, and for the same reason (a
+      // child that itself renders a sibling needs every shape registered
+      // first, though this diagnostics-only path never reaches that
+      // two-hop case in practice).
+      for (const irFile of r.files.filter(f => f.type === 'ir')) {
+        registerChildShape(args.adapter, JSON.parse(irFile.content) as ComponentIR)
+      }
     }
   }
   const result = compileJSX(args.source.trimStart(), 'component.tsx', {

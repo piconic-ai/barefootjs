@@ -2731,6 +2731,31 @@
         "text"
       ]
     },
+    "jsx-element-prop-renamed-destructure": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-element-prop-rest-bag-dynamic": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "jsx-element-prop-ternary": {
       "kinds": [
         "identifier",
@@ -5734,11 +5759,11 @@
     "binary": 94,
     "call": 236,
     "conditional": 27,
-    "identifier": 335,
+    "identifier": 337,
     "index-access": 14,
-    "literal": 267,
+    "literal": 269,
     "logical": 47,
-    "member": 192,
+    "member": 193,
     "object-literal": 65,
     "template-literal": 30,
     "unary": 24,
@@ -5779,7 +5804,7 @@
     "binary:===": 49,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 56,
+    "literal:boolean": 58,
     "literal:null": 23,
     "literal:number": 113,
     "literal:string": 187,

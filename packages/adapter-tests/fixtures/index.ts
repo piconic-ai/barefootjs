@@ -434,6 +434,8 @@ import { fixture as textareaRowBreakout } from './textarea-row-breakout'
 // `irToHtmlTemplate` (found by review on #2792, PR fix in the same file).
 import { fixture as textareaRowBreakoutComposite } from './textarea-row-breakout-composite'
 import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
+import { fixture as jsxElementPropRenamedDestructure } from './jsx-element-prop-renamed-destructure'
+import { fixture as jsxElementPropRestBagDynamic } from './jsx-element-prop-rest-bag-dynamic'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
@@ -876,6 +878,8 @@ export const jsxFixtures: JSXFixture[] = [
   textareaRowBreakout,
   textareaRowBreakoutComposite,
   jsxElementPropFragmentConditional,
+  jsxElementPropRenamedDestructure,
+  jsxElementPropRestBagDynamic,
   grandchildComposition,
   compositeRowChildComponent,
   compositeRowChildDerivedProp,
