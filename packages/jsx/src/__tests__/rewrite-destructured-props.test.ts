@@ -71,3 +71,56 @@ export { Btn }
     expect(js).not.toMatch(/\(_p\.size[^)]*\)-[0-9]/)
   })
 })
+
+// #2741: `rewriteDestructuredPropsInExpr` (the reactive `createEffect`
+// update path) used to run a bare `\b<prop>\b` regex over the whole
+// expression text, so an object-literal property whose KEY happened to
+// share a prop's name (`{ tag: tag }`) had the KEY rewritten too
+// (`{ _p.tag: _p.tag }`), which is not valid JS — the whole client module
+// failed to parse, silently (no diagnostic). Now delegates to the same
+// AST-based `rewriteBarePropRefs` (`prop-rewrite.ts`) the hydrate template
+// lambda already used, which distinguishes a key from a value reference.
+describe('reactive-effect prop rewrite does not touch object-literal keys (#2741)', () => {
+  test('an explicit-key object literal used in a reactive attribute keeps its keys', () => {
+    const source = `
+"use client"
+import { queryHref } from '@barefootjs/client'
+function Comp({ base, tag, page }: { base: string; tag: string; page: string }) {
+  return <a href={queryHref(base, { tag: tag, page: page ? page : '' })}>filter</a>
+}
+export { Comp }
+`
+    const js = compileClientJs(source)
+    expect(js).toContain("{ tag: _p.tag, page: _p.page ? _p.page : '' }")
+    expect(js).not.toContain('_p.tag:')
+    expect(js).not.toContain('_p.page:')
+  })
+
+  test('a keyed prop with a destructure default still gets the (_p.x ?? default) wrap only in value position', () => {
+    const source = `
+"use client"
+import { queryHref } from '@barefootjs/client'
+function Comp({ base, tag = 'all', page }: { base: string; tag?: string; page: string }) {
+  return <a href={queryHref(base, { tag: tag, page: page ? page : '' })}>filter</a>
+}
+export { Comp }
+`
+    const js = compileClientJs(source)
+    expect(js).toContain("{ tag: (_p.tag ?? 'all'), page: _p.page ? _p.page : '' }")
+    expect(js).not.toContain("(_p.tag ?? 'all'):")
+  })
+
+  test('a prop name shadowed by an inner callback parameter is not rewritten inside that callback', () => {
+    const source = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+function Comp({ tag, items }: { tag: string; items: { a: string }[] }) {
+  const [n] = createSignal(0)
+  return <div data-x={n() + items.map((tag) => tag.a).join(',') + tag}></div>
+}
+export { Comp }
+`
+    const js = compileClientJs(source)
+    expect(js).toContain("items.map((tag) => tag.a).join(',') + _p.tag")
+  })
+})

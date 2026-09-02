@@ -15,6 +15,7 @@ import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from '../to-locale-date-lowering.ts'
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
+import { rewriteBarePropRefs } from '../prop-rewrite.ts'
 
 /**
  * Profile mode (#1690, SR3/SR4): the id appended to a DOM-binding effect so the
@@ -127,28 +128,43 @@ export function emitAttrUpdate(target: string, attrName: string, expression: str
 /**
  * Rewrite destructured prop names in an expression to `(props.xxx ?? default)`.
  * Only applies when the component uses destructured props (not props.xxx style).
+ *
+ * Delegates the actual walk to `rewriteBarePropRefs` (`prop-rewrite.ts`) — the
+ * one AST walk in the compiler that already distinguishes a VALUE reference
+ * from an object-literal key, a property-access name, a shorthand property,
+ * or a name shadowed by an inner binding (`items.map((tag) => tag.x)`).
+ * This function used to run its own `\btag\b`-style regex over the raw
+ * expression text with no such distinction, so `queryHref(base, { tag: tag })`
+ * rewrote the KEY too (`{ _p.tag: _p.tag }`, a syntax error) — #2741. Only
+ * the default-value `(_p.x ?? <default>)` wrapping is specific to this call
+ * site, supplied via `replacementFor` rather than a second copy of the walk.
  */
 export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContext): string {
   if (ctx.propsObjectName) return expr
 
-  const { protect, restore } = createTemplateAwareStringProtector()
-  let result = protect(expr)
-
+  const propNames = new Set<string>()
+  const propAliases = new Map<string, string>()
+  const propsByName = new Map<string, ClientJsContext['propsParams'][number]>()
   for (const prop of ctx.propsParams) {
     if (prop.name === 'children') continue
-    const pattern = new RegExp(`(?<![-.])\\b${prop.name}\\b`, 'g')
-    if (!pattern.test(result)) continue
-
+    propNames.add(prop.name)
+    propsByName.set(prop.name, prop)
     // `_p` is always keyed by the caller-facing name (#2524 CSR half).
-    const callerKey = prop.sourceName ?? prop.name
-    const defaultVal = prop.defaultValue
-    const replacement = defaultVal
-      ? `(${PROPS_PARAM}.${callerKey} ?? ${prop.defaultContainsArrow ? `(${defaultVal})` : defaultVal})`
-      : `${PROPS_PARAM}.${callerKey}`
-    result = result.replace(new RegExp(`(?<![-.])\\b${prop.name}\\b`, 'g'), replacement)
+    if (prop.sourceName && prop.sourceName !== prop.name) propAliases.set(prop.name, prop.sourceName)
+  }
+  if (propNames.size === 0) return expr
+
+  const replacementFor = (localName: string, callerKey: string): string => {
+    const defaultVal = propsByName.get(localName)?.defaultValue
+    if (!defaultVal) return `${PROPS_PARAM}.${callerKey}`
+    const defaultContainsArrow = propsByName.get(localName)?.defaultContainsArrow
+    return `(${PROPS_PARAM}.${callerKey} ?? ${defaultContainsArrow ? `(${defaultVal})` : defaultVal})`
   }
 
-  return restore(result)
+  // Parenthesized so an object-literal or arrow-function expression parses
+  // standalone — same convention `applyScopedPropRefRewrite` itself uses.
+  const sourceFile = ts.createSourceFile('__bf_reactive_expr.ts', `(${expr}\n)`, ts.ScriptTarget.Latest, true)
+  return rewriteBarePropRefs(expr, sourceFile, propNames, undefined, propAliases, replacementFor) ?? expr
 }
 
 /**

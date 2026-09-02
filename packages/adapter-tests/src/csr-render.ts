@@ -491,6 +491,24 @@ function formatDate(dateArg, pattern, timeZone = 'UTC', names = []) {
       : nameAt(31 + weekday),
   )
 }
+// Mirror @barefootjs/client's queryHref (#2741 graduation): a pure
+// base-path + query-params URL builder. Same stripped-imports reasoning
+// as \`date\`/\`formatDate\` above — the user's own
+// \`import { queryHref } from '@barefootjs/client'\` is stripped with
+// every other import, so a call in template/effect code needs this
+// mirror or the fixture fails with "queryHref is not defined".
+function queryHref(base, params) {
+  const u = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const member of value) if (member) u.append(key, member)
+    } else if (value) {
+      u.set(key, value)
+    }
+  }
+  const qs = u.toString()
+  return qs ? \`\${base}?\${qs}\` : base
+}
 
 // --- Execute client JS (registers templates via hydrate()) ---
 ${strippedCode}
