@@ -18,7 +18,7 @@ import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate }
 import { PROPS_PARAM } from './utils.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
-import { nameForRegistryRef } from './component-scope.ts'
+import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from './component-scope.ts'
 import { resolveRestSpreadNames } from './prop-handling.ts'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
@@ -85,32 +85,43 @@ export function generateClientJsWithSourceMap(
   adapterCapabilities?: AdapterCapabilities,
   profile?: boolean,
 ): ClientJsResult {
-  const ctx = createContext(ir, scope, adapterCapabilities, profile)
-  const siblingOffsets = computeLoopSiblingOffsets(ir.root)
-  collectElements(ir.root, ctx, siblingOffsets)
+  // #2777 — installed for the whole body (not just via `compiler.ts`'s
+  // `setActiveComponentScope`) because this function is also called
+  // directly, bypassing `compiler.ts` entirely: the CSR-conformance
+  // harness (`csr-render.ts`) and `analyzeClientNeeds` both do. Cleared
+  // in `finally` so a thrown error never leaks the alias map into an
+  // unrelated later compile.
+  setActiveImportAliases(buildImportAliasMap(ir.metadata.imports))
+  try {
+    const ctx = createContext(ir, scope, adapterCapabilities, profile)
+    const siblingOffsets = computeLoopSiblingOffsets(ir.root)
+    collectElements(ir.root, ctx, siblingOffsets)
 
-  // Both `generateTemplateOnlyMount` and `generateInitFunction` run inline
-  // analysis passes (buildInlinableConstants → computeInlinability) that
-  // can add to `ctx.warnings` — most notably the BF060/BF061 stage-violation
-  // diagnostics. Flush warnings to `ir.errors` AFTER those passes so the
-  // diagnostics survive to the caller.
-  if (!needsClientJs(ctx)) {
-    const code = generateTemplateOnlyMount(ir, ctx)
+    // Both `generateTemplateOnlyMount` and `generateInitFunction` run inline
+    // analysis passes (buildInlinableConstants → computeInlinability) that
+    // can add to `ctx.warnings` — most notably the BF060/BF061 stage-violation
+    // diagnostics. Flush warnings to `ir.errors` AFTER those passes so the
+    // diagnostics survive to the caller.
+    if (!needsClientJs(ctx)) {
+      const code = generateTemplateOnlyMount(ir, ctx)
+      ir.errors.push(...ctx.warnings)
+      return { code }
+    }
+
+    const code = generateInitFunction(ir, ctx, siblingComponents, localImportPrefixes)
     ir.errors.push(...ctx.warnings)
+
+    if (options?.sourceMaps && code) {
+      const fileName = options.generatedFileName ?? `${ir.metadata.componentName}.client.js`
+      const sourceMap = buildSourceMapFromIR(code, ir, fileName)
+      const codeWithUrl = code + `\n//# sourceMappingURL=${fileName}.map`
+      return { code: codeWithUrl, sourceMap }
+    }
+
     return { code }
+  } finally {
+    setActiveImportAliases(null)
   }
-
-  const code = generateInitFunction(ir, ctx, siblingComponents, localImportPrefixes)
-  ir.errors.push(...ctx.warnings)
-
-  if (options?.sourceMaps && code) {
-    const fileName = options.generatedFileName ?? `${ir.metadata.componentName}.client.js`
-    const sourceMap = buildSourceMapFromIR(code, ir, fileName)
-    const codeWithUrl = code + `\n//# sourceMappingURL=${fileName}.map`
-    return { code: codeWithUrl, sourceMap }
-  }
-
-  return { code }
 }
 
 /**

@@ -1,3 +1,5 @@
+import type { ImportInfo } from '../types.ts'
+
 /**
  * File-scoped component name disambiguation for the runtime registry.
  *
@@ -63,8 +65,66 @@ export function setActiveComponentScope(scope: { fileScope: string; nonExportedS
   _activeScope = scope
 }
 
+/**
+ * #2777 — a client component referenced under an import alias
+ * (`import { Foo as Bar } from './Foo'`, `<Bar/>`) must resolve its
+ * registry key to the DECLARED/exported name (`Foo`, what the child's own
+ * module registers under via `hydrate('Foo', ...)`), not the caller-local
+ * binding (`Bar`) — the registry is keyed by string name, so a mismatch
+ * here left `initChild('Bar', ...)` unable to find `Foo`'s registration
+ * and hydration silently never ran.
+ *
+ * A local alias → exported name map, active per client-JS generation the
+ * same way `_activeScope` is (module-level state, installed/cleared by
+ * `generateClientJsWithSourceMap`) rather than threaded through every
+ * recursive emitter — same rationale as `_activeScope` above.
+ */
+let _activeImportAliases: ReadonlyMap<string, string> | null = null
+
+/**
+ * Build a local-alias → exported-name map from a component's parsed
+ * imports. Only VALUE, non-default, non-namespace, ALIASED specifiers
+ * produce an entry — a bare `import { Foo }` needs no rewrite (`name`
+ * already equals what's registered), and default/namespace imports can't
+ * be resolved this way (a default's exported name isn't recorded here,
+ * and a namespace member reference isn't an aliased specifier at all).
+ */
+export function buildImportAliasMap(imports: readonly ImportInfo[]): Map<string, string> {
+  const aliases = new Map<string, string>()
+  for (const imp of imports) {
+    if (imp.isTypeOnly) continue
+    for (const spec of imp.specifiers) {
+      if (spec.isTypeOnly || spec.isDefault || spec.isNamespace || spec.alias === null) continue
+      aliases.set(spec.alias, spec.name)
+    }
+  }
+  return aliases
+}
+
+export function setActiveImportAliases(aliases: ReadonlyMap<string, string> | null): void {
+  _activeImportAliases = aliases
+}
+
+/**
+ * Resolve a local JSX tag name to the name the referenced component's own
+ * module registers under (`hydrate(<name>, ...)`) — the caller-facing
+ * alias if imported under one, otherwise the name unchanged. Used
+ * anywhere a name needs to reach the runtime registry WITHOUT also going
+ * through the non-exported-sibling rewrite below (the `@bf-child:` marker
+ * comment, which must never carry a same-file sibling's hash).
+ */
+export function resolveImportedComponentName(name: string): string {
+  return _activeImportAliases?.get(name) ?? name
+}
+
 /** Resolve a component name to its registry key under the active file scope. */
 export function nameForRegistryRef(name: string): string {
+  // An aliased IMPORT always wins over the non-exported-sibling rewrite:
+  // `import { Foo as Bar } from './Foo'` plus a private same-file
+  // `function Foo() {}` must still resolve `<Bar/>` to the imported
+  // `Foo`, not hash the sibling's `Foo` key onto it.
+  const imported = _activeImportAliases?.get(name)
+  if (imported !== undefined) return imported
   if (!_activeScope) return name
   if (!_activeScope.fileScope) return name
   if (!_activeScope.nonExportedSiblings.has(name)) return name
