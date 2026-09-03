@@ -15,6 +15,12 @@ export { extractSsrDefaults, deriveStashFromDefaults } from './ssr-defaults.ts'
 export { propsDestructureBinding, buildPropAliasMap, isIdentifierName } from './props-binding.ts'
 export type { SsrDefault } from './ssr-defaults.ts'
 
+// Import-alias resolution (#2777 client-JS registry key; #2822 SSR cross-template
+// call names) — a local alias -> declared/exported name map built from
+// `ir.metadata.imports`. DSL adapters build this once per compile and look up
+// `aliasMap.get(comp.name) ?? comp.name` at each cross-template-call-name site.
+export { buildImportAliasMap } from './ir-to-client-js/component-scope.ts'
+
 // Backend-neutral SSR seed plan (in-template derived signal/memo seeding)
 export { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 export type { SsrSeedPlan, SsrSeedStep } from './ssr-seed-plan.ts'
@@ -63,6 +69,7 @@ export type {
   ConformancePin,
   ConformancePins,
   RenderDivergences,
+  ImportInfo,
 } from './types.ts'
 
 // Analyzer

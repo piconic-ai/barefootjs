@@ -79,6 +79,7 @@ import {
   collectLoopBoundNames,
   evaluateStaticLiteral,
   BindingScope,
+  buildImportAliasMap,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -389,6 +390,44 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
+  /**
+   * Local alias -> declared/exported name for imported components (#2822,
+   * the SSR-side counterpart of #2777's client-JS registry-key fix). A
+   * child referenced under an import alias (`import { Foo as Bar }`,
+   * `<Bar/>`) has an `IRComponent.name` of `Bar` (the caller-local JSX tag
+   * name), but every cross-file lookup this adapter does against the
+   * child's OWN registered identity — `childComponentShapes` /
+   * `childContextConsumers` / `childDerivedFieldDeps` / `childPropFieldNames`
+   * / `childRepropsReady` (all populated from the CHILD's own
+   * `ir.metadata.componentName` via `registerChildComponentShape` or the
+   * child's own `generate()`/`generateTypes()` pass), the `New<Name>Props`
+   * constructor + `<Name>Input`/`<Name>Props` TYPE names, and the
+   * `{{template "<Name>" ...}}` cross-template call — must resolve through
+   * to `Foo`, the declared name, or they silently miss (a Go compile error
+   * for the constructor/type case, a `no such template` render error for
+   * the `{{template}}` case). Built once per compile from
+   * `ir.metadata.imports` via the shared `buildImportAliasMap`
+   * (`@barefootjs/jsx`) and read through `resolveChildName`.
+   *
+   * Deliberately NOT applied to a component's own PARENT-PRIVATE struct
+   * field name (`${comp.name}${suffix}`, `.${comp.name}` field access) —
+   * that field is declared and read using the SAME `comp.name` expression
+   * within this one parent's own generated code, so it stays internally
+   * consistent under the caller-local alias with no cross-file identity to
+   * match.
+   */
+  private importAliases: Map<string, string> = new Map()
+
+  /**
+   * Resolve a component reference's `IRComponent.name` (the caller-local
+   * JSX tag / import alias) to the name the referenced child's OWN module
+   * registers its Go template/type/constructor under. Identity for an
+   * un-aliased reference. See `importAliases`.
+   */
+  private resolveChildName(name: string): string {
+    return this.importAliases.get(name) ?? name
+  }
+
 
   constructor(options: GoTemplateAdapterOptions = {}) {
     super()
@@ -408,6 +447,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private primeCompileState(ir: ComponentIR): void {
     this.state.propsObjectName = ir.metadata.propsObjectName
     this.state.restPropsName = ir.metadata.restPropsName ?? null
+    // #2822: this component's OWN import-alias map (local alias -> declared
+    // name), read by `resolveChildName` at every cross-file lookup/codegen
+    // site below. Re-primed on every `generate()`/`generateTypes()` call —
+    // harmless per this method's own docstring, since what matters is that
+    // the LAST prime before a given `ir`'s template body actually renders is
+    // that same `ir`'s own imports (true here: `generate(ir)` primes then
+    // renders `ir`'s body synchronously before any other IR is primed).
+    this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     // Inline-object-typed props (`cfg: { id: number }`) bake as
     // `map[string]interface{}`; `member()` routes a nested access on them
     // through `bf_get` rather than an exact-case dot path (#2299).
@@ -1758,7 +1805,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\tBfLoopItem ${scalarLoopType} \`json:"-"\``)
     }
     for (const child of bodyChildInstances) {
-      lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
+      // #2822: field NAME stays alias-keyed (parent-private); the TYPE must
+      // name the child's own declared Go type — see `importAliases`.
+      lines.push(`\t${child.fieldName} ${this.resolveChildName(child.name)}Props \`json:"-"\``)
     }
     lines.push('}')
     lines.push('')
@@ -2346,7 +2395,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private emitStaticChildInstances(lines: string[], ir: ComponentIR): void {
     const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
-      lines.push(`\t\t${child.fieldName}: New${child.name}Props(${child.name}Input{`)
+      // #2822: the constructor/type names and every cross-file shape lookup
+      // below must resolve to the child's own DECLARED name — `New<Name>Props`
+      // / `<Name>Input` are types/functions the child's OWN generated Go file
+      // defines under that name, not the caller-local alias. `child.fieldName`
+      // (this PARENT's own struct field) stays keyed by the alias — declared
+      // and read consistently within this one parent's generated code.
+      const declaredName = this.resolveChildName(child.name)
+      lines.push(`\t\t${child.fieldName}: New${declaredName}Props(${declaredName}Input{`)
       lines.push(`\t\t\tScopeID: scopeID + "_${child.slotId}",`)
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
@@ -2354,7 +2410,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // consumes gets the provider value set on its consumer field (else its own
       // NewProps applies the `createContext` default).
       if (child.contextBindings) {
-        for (const consumer of this.childContextConsumers.get(child.name) ?? []) {
+        for (const consumer of this.childContextConsumers.get(declaredName) ?? []) {
           const goVal = child.contextBindings.get(consumer.contextName)
           if (goVal !== undefined) {
             lines.push(`\t\t\t${this.contextFieldName(consumer)}: ${goVal},`)
@@ -2364,7 +2420,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Non-param attrs route into the child's rest bag (see
       // `childComponentShapes`); `restBagEntries` collects `"jsx-attr-name":
       // goValue` pairs for that map.
-      const childShape = this.childComponentShapes.get(child.name)
+      const childShape = this.childComponentShapes.get(declaredName)
       const restBagEntries: string[] = []
       const emitChildField = (jsxName: string, goValue: string): void => {
         if (
@@ -2637,7 +2693,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       for (const child of bodyChildInstances) {
         const childVar = `child_${child.fieldName}`
-        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
+        const childDeclaredName = this.resolveChildName(child.name)
+        lines.push(`\t${childVar} := New${childDeclaredName}Props(${childDeclaredName}Input{`)
         lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
         lines.push(`\t\tBfParent: scopeID,`)
         lines.push(`\t\tBfMount: "${child.slotId}",`)
@@ -2732,7 +2789,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Child sub-component instances created once (identical scope IDs per row).
       for (const child of bodyChildInstances) {
         const childVar = `child_${child.fieldName}`
-        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
+        const childDeclaredName = this.resolveChildName(child.name)
+        lines.push(`\t${childVar} := New${childDeclaredName}Props(${childDeclaredName}Input{`)
         lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
         lines.push(`\t\tBfParent: scopeID,`)
         lines.push(`\t\tBfMount: "${child.slotId}",`)
@@ -3291,7 +3349,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
-      lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
+      // #2822: the field's NAME stays keyed by the caller-local alias
+      // (`child.fieldName`, declared and read consistently within this
+      // parent's own generated code — see `importAliases`'s docstring), but
+      // its TYPE is a real Go type only the child's own file defines, under
+      // the child's DECLARED name.
+      lines.push(`\t${child.fieldName} ${this.resolveChildName(child.name)}Props \`json:"-"\``)
     }
 
     // Top-level intrinsic-element spreads: each gets a `Spread_<slotId>
@@ -6458,7 +6521,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private loopRowChildPropOverrides(
     comp: IRComponent,
   ): { args: string; helper: 'bf_with_props' | 'bf_reprops' } | null {
-    const childShape = this.childComponentShapes.get(comp.name)
+    // #2822: every cross-file map below is keyed by the child's own
+    // declared name, not the caller-local alias — see `importAliases`.
+    // Diagnostics still name `comp.name` (what the user actually wrote in
+    // the JSX) since that's the more useful reference for the reader.
+    const declaredName = this.resolveChildName(comp.name)
+    const childShape = this.childComponentShapes.get(declaredName)
     const args: string[] = []
     // Set by the derived-field check below when at least one overridden prop
     // feeds a constructor-derived field AND the child can rebuild itself.
@@ -6489,12 +6557,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // one-shot value on every row. Re-run the constructor per row when the
       // child has a rebuilder; refuse when it doesn't.
       {
-        const derived = this.childDerivedFieldDeps.get(comp.name)
+        const derived = this.childDerivedFieldDeps.get(declaredName)
         const overriddenField = capitalizeFieldName(prop.name)
         const staleField = derived
           ? [...derived].find(([, deps]) => deps.has(overriddenField))?.[0]
           : undefined
-        if (staleField && !this.childRepropsReady.has(comp.name)) {
+        if (staleField && !this.childRepropsReady.has(declaredName)) {
           this.state.errors.push({
             code: 'BF101',
             severity: 'error',
@@ -6511,9 +6579,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // The rebuilder is emitted into THIS component's type block, not the
           // child's — only here do we know it is actually needed. First parent
           // to claim a child owns the registration, so two parents overriding
-          // the same child don't both emit an `init()` for it.
-          if (!this.repropsOwner.has(comp.name)) {
-            this.repropsOwner.set(comp.name, this.state.componentName)
+          // the same child don't both emit an `init()` for it. Keyed by the
+          // child's DECLARED name (#2822) — `emitRepropsRegistration` below
+          // builds Go type references (`<Name>Props`/`<Name>Input`) from this
+          // same key, and only the declared name has real types to match.
+          if (!this.repropsOwner.has(declaredName)) {
+            this.repropsOwner.set(declaredName, this.state.componentName)
           }
         }
       }
@@ -6578,7 +6649,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // (#2457). Stays LOCAL even though the child's Input field is
       // caller-facing. Falls back to the capitalized attribute for a
       // cross-file child this run's pre-pass never registered.
-      const fieldName = this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      const fieldName = this.childPropFieldNames.get(declaredName)?.get(prop.name) ?? capitalizeFieldName(prop.name)
       args.push(`${JSON.stringify(fieldName)} ${wrapIfMultiToken(go)}`)
     }
     if (args.length === 0) return null
@@ -7632,7 +7703,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private queueDynamicPropDefine(comp: IRComponent): string | null {
     const args: string[] = []
-    const childShape = this.childComponentShapes.get(comp.name)
+    // #2822: cross-file shapes/field-name maps are keyed by the child's own
+    // declared name, not the caller-local alias — see `importAliases`.
+    const declaredName = this.resolveChildName(comp.name)
+    const childShape = this.childComponentShapes.get(declaredName)
     for (const prop of comp.props) {
       if (prop.value.kind !== 'jsx-children' || prop.name === 'children') continue
       const children = prop.value.children
@@ -7673,7 +7747,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // render. `childPropFieldNames` resolves this exact hazard for the
       // sibling `bf_with_props` call site (`loopRowChildPropOverrides`,
       // below) — mirrored here.
-      const fieldName = this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      const fieldName = this.childPropFieldNames.get(declaredName)?.get(prop.name) ?? capitalizeFieldName(prop.name)
       args.push(`${JSON.stringify(fieldName)} (bf_tmpl ${JSON.stringify(name)} .)`)
     }
     return args.length > 0 ? args.join(' ') : null
@@ -7724,6 +7798,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // In Go templates, components are rendered via {{template "name" data}}.
+    // #2822: the STRING passed to `{{template "..."}}` (and the `bf_reprops`
+    // registry-key argument below) must be the child's own DECLARED name —
+    // that's what the child's own compiled Go file registers its
+    // `{{define "..."}}` block under. A field-access expression like
+    // `.${comp.name}${suffix}` stays keyed by `comp.name` (the caller-local
+    // alias) — it names THIS parent's own struct field, declared and read
+    // consistently within this one parent's generated code, with no
+    // cross-file identity to match.
+    const declaredName = this.resolveChildName(comp.name)
     let templateCall: string
     if (this.inLoop && (this.loopWrapperStack[this.loopWrapperStack.length - 1] ?? false)) {
       // Wrapper-slice loop (body IS this component): `.` is the wrapper struct
@@ -7742,9 +7825,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const bodyData = this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
           ? '.BfLoopItem'
           : '.'
-        templateCall = `{{template "${comp.name}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
+        templateCall = `{{template "${declaredName}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
       } else {
-        templateCall = `{{template "${comp.name}" .}}`
+        templateCall = `{{template "${declaredName}" .}}`
       }
     } else if (this.inLoop && comp.slotId) {
       // Non-wrapper loop (component nested inside an element item, #2130):
@@ -7770,16 +7853,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // the row's children last, on the rebuilt value.
       const base = overrides
         ? overrides.helper === 'bf_reprops'
-          ? `(bf_reprops ${JSON.stringify(comp.name)} $.${comp.name}${suffix} ${overrides.args})`
+          ? `(bf_reprops ${JSON.stringify(declaredName)} $.${comp.name}${suffix} ${overrides.args})`
           : `(bf_with_props $.${comp.name}${suffix} ${overrides.args})`
         : `$.${comp.name}${suffix}`
       templateCall = loopBodyDefine
-        ? `{{template "${comp.name}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`
-        : `{{template "${comp.name}" ${base}}}`
+        ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`
+        : `{{template "${declaredName}" ${base}}}`
     } else if (this.inLoop) {
       // Loop-nested component without a slotId: no parent field to route
       // through — legacy passthrough of the current dot.
-      templateCall = `{{template "${comp.name}" .}}`
+      templateCall = `{{template "${declaredName}" .}}`
     } else if (comp.slotId) {
       // Static children with slotId: unique field name based on slotId.
       const suffix = slotIdToFieldSuffix(comp.slotId)
@@ -7795,11 +7878,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ? `(bf_with_props .${comp.name}${suffix} ${propArgs})`
         : `.${comp.name}${suffix}`
       templateCall = childrenDefine
-        ? `{{template "${comp.name}" (bf_with_children ${base} (bf_tmpl "${childrenDefine}" .))}}`
-        : `{{template "${comp.name}" ${base}}}`
+        ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${childrenDefine}" .))}}`
+        : `{{template "${declaredName}" ${base}}}`
     } else {
       // Static children without slotId: fall back to .ComponentName.
-      templateCall = `{{template "${comp.name}" .${comp.name}}}`
+      templateCall = `{{template "${declaredName}" .${comp.name}}}`
     }
 
     // A root component in a client component needs a scope comment for the

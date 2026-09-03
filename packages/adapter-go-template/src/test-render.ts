@@ -514,11 +514,17 @@ function collectImportedComponentNames(
     if (!imp.source.startsWith('.') && !childSpecifiers?.has(imp.source)) continue
     for (const spec of imp.specifiers ?? []) {
       if (spec.isNamespace) continue
-      // Imported binding name (the local alias is what JSX references, but the
-      // generated `{{define}}`/types are keyed by the exported component name —
-      // which equals the specifier name when un-aliased; aliased component
-      // imports aren't exercised by the UI fixtures).
-      names.push(spec.alias ?? spec.name)
+      // #2822: `childArtifacts` (the caller's map of compiled children) is
+      // keyed by each child's OWN declared name
+      // (`childIR.metadata.componentName`), not the caller-local JSX/import
+      // binding — `spec.name` IS that declared name (`spec.alias` is only
+      // the local binding, non-null for `import { Foo as Bar }`). This
+      // harness previously pushed `spec.alias ?? spec.name` here, which for
+      // an aliased import never matched `childArtifacts`' declared-name
+      // keys, silently dropping the child from the reachable set (and so
+      // from the combined output) even once the adapter itself resolved
+      // the alias correctly.
+      names.push(spec.name)
     }
   }
   return names

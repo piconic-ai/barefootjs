@@ -81,6 +81,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  buildImportAliasMap,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -258,6 +259,20 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   private nullableOptionalProps: Set<string> = new Set()
 
+  /**
+   * Local alias -> declared/exported name for imported components (#2822,
+   * the SSR-side counterpart of #2777's client-JS registry-key fix). A
+   * child referenced under an import alias (`import { Foo as Bar }`,
+   * `<Bar/>`) must build its cross-template call against the child's own
+   * declared name (`Foo`, what `foo.tsx` registers its Kolon partial as) —
+   * never the caller-local binding. Xslate's unresolved-reference case
+   * silently drops the child rather than raising, so this was the worst
+   * variant of the bug class. Built once per compile from
+   * `ir.metadata.imports` via the shared `buildImportAliasMap`
+   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   */
+  private importAliases: Map<string, string> = new Map()
+
   constructor(options: XslateAdapterOptions = {}) {
     super()
     this.options = {
@@ -287,6 +302,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
+    this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -1229,8 +1245,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private presenceVarCounter = 0
 
   private toTemplateName(componentName: string): string {
+    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
+    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
+    // has no `foo.tsx`-registered partial; only `Foo` does. Xslate's
+    // unresolved-reference case silently drops the child rather than
+    // raising, so this mismatch was the worst variant of the bug class.
+    const declaredName = this.importAliases.get(componentName) ?? componentName
     // Convert PascalCase to snake_case for template naming.
-    return componentName
+    return declaredName
       .replace(/([A-Z])/g, '_$1')
       .toLowerCase()
       .replace(/^_/, '')

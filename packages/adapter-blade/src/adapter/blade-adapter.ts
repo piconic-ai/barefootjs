@@ -297,6 +297,7 @@ import {
   resolveStaticLoopSource,
   derivesScopeFromSlot,
   BindingScope,
+  buildImportAliasMap,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -436,6 +437,18 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
    */
   private nullableOptionalProps: Set<string> = new Set()
 
+  /**
+   * Local alias -> declared/exported name for imported components (#2822,
+   * the SSR-side counterpart of #2777's client-JS registry-key fix). A
+   * child referenced under an import alias (`import { Foo as Bar }`,
+   * `<Bar/>`) must build its cross-template call against the child's own
+   * declared name (`Foo`, what `foo.tsx` registers its Blade partial as) —
+   * never the caller-local binding. Built once per compile from
+   * `ir.metadata.imports` via the shared `buildImportAliasMap`
+   * (`@barefootjs/jsx`) and read by `toTemplateName`.
+   */
+  private importAliases: Map<string, string> = new Map()
+
   constructor(options: BladeAdapterOptions = {}) {
     super()
     this.options = {
@@ -464,6 +477,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
+    this.importAliases = buildImportAliasMap(ir.metadata.imports ?? [])
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -1424,8 +1438,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   private presenceVarCounter = 0
 
   private toTemplateName(componentName: string): string {
+    // Resolve an import alias (`import { Foo as Bar }`, `<Bar/>`) back to
+    // the child's own declared name BEFORE snake-casing (#2822) — `Bar`
+    // has no `foo.tsx`-registered partial; only `Foo` does.
+    const declaredName = this.importAliases.get(componentName) ?? componentName
     // Convert PascalCase to snake_case for template naming.
-    return componentName
+    return declaredName
       .replace(/([A-Z])/g, '_$1')
       .toLowerCase()
       .replace(/^_/, '')
