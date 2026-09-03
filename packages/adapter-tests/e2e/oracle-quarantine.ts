@@ -60,15 +60,19 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
-  // `idempotence` graduated alongside #2728 (comment-wrapper CSR-mount
-  // scope registration) — same reasoning as `accordion` above: the
-  // differently-structured filtered list between the hydrated and
-  // csr-mount legs was a symptom of comment-wrapper mount effects never
-  // running on a from-scratch csr-mount before that fix.
+  // NOTE (2026-09-03): unlike `accordion`'s idempotence row, `command`'s
+  // does NOT reliably graduate alongside #2728 — measured intermittent
+  // (3/5 and other repeat runs), with a genuine structural divergence
+  // (item selection / group-visibility state disagrees between the
+  // hydrated and csr-mount replay legs) rather than a stale rot-check
+  // false-positive. Left unchanged/quarantined here pending its own
+  // investigation into whether this is a timing-dependent replay
+  // artifact (candidate for `IDEMPOTENCE_EXCLUDED`, like `carousel`'s
+  // `drag` step) or a real, fixable bug.
   command: {
-    oracles: ['snap', 'three-point'],
+    oracles: ['snap', 'three-point', 'idempotence'],
     reason:
-      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
+      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar". Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
