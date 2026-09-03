@@ -20,7 +20,7 @@
 import type { IRLoopChildComponent, MapCallbackPreamble } from '../../types.ts'
 import type { ClientJsContext, NestedLoop, TopLevelLoop } from '../types.ts'
 import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
-import { irChildrenToJsExpr, renderPreamble, irToHtmlTemplate } from '../html-template.ts'
+import { jsxChildrenPropGetterExpr, renderPreamble, irToHtmlTemplate } from '../html-template.ts'
 
 /**
  * Render a loop preamble for the static-array init context. Static `forEach`
@@ -232,7 +232,12 @@ function buildStaticPropsExpr(props: readonly LoopChildCompProp[]): PropsExpr {
       case 'boolean-attr':
         return `${quotePropName(p.name)}: true`
       case 'jsx-children':
-        return `get ${quotePropName(p.name)}() { return ${irChildrenToJsExpr(p.value.children)} }`
+        // Brand via the shared door (#2651/#2702) — see
+        // `jsxChildrenPropGetterExpr`'s docstring. A named jsx-children
+        // prop on a component instantiated inside a static-array `.map()`
+        // loop used to reach its getter unbranded (pullfrog review, PR
+        // #2820).
+        return `get ${quotePropName(p.name)}() { return ${jsxChildrenPropGetterExpr(p.value.children, p.name)} }`
       case 'expression':
       case 'template':
       case 'spread':

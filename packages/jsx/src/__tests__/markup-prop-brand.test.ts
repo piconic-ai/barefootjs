@@ -261,6 +261,45 @@ describe('markup-prop brand (#2651)', () => {
   // An explicit `children={<jsx/>}` prop stays unbranded regardless of
   // shape — its consumer is a bare `{children}` passthrough with no
   // unwrap call (test (b)'s comment above explains the same exclusion).
+  // pullfrog review, PR #2820: `jsxChildrenPropGetterExpr` (the shared
+  // brand-decision door test (h)-(k) pin) wasn't wired into EVERY builder
+  // that constructs the identical `get <propName>() { return <expr> }`
+  // getter — `buildComponentPropsExpr` (`control-flow/shared.ts`, shared by
+  // loop AND conditional-branch component reconciliation) and
+  // `buildStaticPropsExpr` (`build-static-array-child-init.ts`) both still
+  // called the plain, unbranded `irChildrenToJsExpr` directly. The same
+  // conditional-in-fragment shape test (h) pins for a top-level component
+  // corrupted the DOM at hydrate time when the component was instead
+  // instantiated inside a `.map()` loop.
+  test('(m) a conditional-in-fragment jsx-children prop is branded for a component instantiated inside a .map() loop', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any }) {
+        return <header>{props.header}</header>
+      }
+      export function List() {
+        const [items, setItems] = createSignal([{ id: 1 }])
+        return (
+          <div>
+            {items().map(item => (
+              <Card key={item.id} header={<>{item.id > 0 ? <a>x</a> : <b>y</b>}</>} />
+            ))}
+          </div>
+        )
+      }
+    `
+    const clientJs = clientJsFor(source)
+    // Both the reactive-patch (initChild) and initial-mount (createComponent)
+    // paths through mapArray's callback must brand each element branch.
+    expect(clientJs).toMatch(
+      /initChild\('Card', __existing, \{ get header\(\) \{ return item\(\)\.id > 0 \? bfMarkup\(`<a>x<\/a>`\) : bfMarkup\(`<b>y<\/b>`\) \} \}\)/,
+    )
+    expect(clientJs).toMatch(
+      /createComponent\('Card', \{ get header\(\) \{ return item\(\)\.id > 0 \? bfMarkup\(`<a>x<\/a>`\) : bfMarkup\(`<b>y<\/b>`\) \} \}, item\(\)\.id\)/,
+    )
+  })
+
   test('(l) an explicit children prop with a conditional stays unbranded', () => {
     const source = `
       'use client'
