@@ -105,6 +105,22 @@
         "text"
       ]
     },
+    "aliased-import-child-component-loop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "aliased-loop-source": {
       "kinds": [
         "array-literal",
@@ -5854,18 +5870,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 87,
+    "array-literal": 88,
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
     "call": 243,
     "conditional": 27,
-    "identifier": 344,
+    "identifier": 345,
     "index-access": 14,
-    "literal": 274,
+    "literal": 275,
     "logical": 47,
-    "member": 196,
-    "object-literal": 67,
+    "member": 197,
+    "object-literal": 68,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 42
@@ -5908,7 +5924,7 @@
     "literal:boolean": 59,
     "literal:null": 23,
     "literal:number": 116,
-    "literal:string": 191,
+    "literal:string": 192,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,

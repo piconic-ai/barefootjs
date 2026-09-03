@@ -1719,7 +1719,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         nested.loopParam,
         nested.loopKey,
       )) continue
-      lines.push(`\t${nested.name}s []${nested.name}Input`)
+      // #2822 follow-up: field NAME stays alias-keyed (parent-private, this
+      // Input struct's own field — read as `in.${nested.name}s` throughout
+      // this file), but the element TYPE is the child's own cross-file
+      // `<Name>Input` struct — see `importAliases`.
+      lines.push(`\t${nested.name}s []${this.resolveChildName(nested.name)}Input`)
     }
 
     // `useContext` consumer fields — settable by an enclosing provider; default
@@ -1790,11 +1794,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const wrapperName = this.loopBodyWrapperName(parentComponentName, nested)
     const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
     const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+    // #2822 follow-up: this is a Go EMBEDDED (anonymous) field — its field
+    // name IS its type name, so unlike `child.fieldName` the alias-keyed
+    // field name can't be kept separate from the type here. The whole
+    // token must be the child's own cross-file DECLARED name everywhere
+    // this embedded field is declared or literal-initialized (below, and
+    // every `${declaredName}Props: New${declaredName}Props(...)` composite
+    // literal site) — see `importAliases`.
+    const declaredName = this.resolveChildName(nested.name)
 
-    lines.push(`// ${wrapperName} wraps ${nested.name}Props with per-row loop datum`)
+    lines.push(`// ${wrapperName} wraps ${declaredName}Props with per-row loop datum`)
     lines.push(`// fields and child component slots for the loop body children. (#1897)`)
     lines.push(`type ${wrapperName} struct {`)
-    lines.push(`\t${nested.name}Props`)
+    lines.push(`\t${declaredName}Props`)
     for (const f of datumFields) {
       lines.push(`\t${f.goName} ${f.goType} \`json:"-"\``)
     }
@@ -1956,6 +1968,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Static nested WITHOUT body children.
     for (const nested of staticWithoutBody) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      // #2822 follow-up: the constructor/type names below are cross-file
+      // (the child's own `New<Name>Props`/`<Name>Props`/`<Name>Input`) and
+      // must resolve to the child's declared name; `varName` (this local)
+      // and `in.${nested.name}s` (this parent's own Input field, read
+      // below) stay alias-keyed — see `importAliases`.
+      const declaredName = this.resolveChildName(nested.name)
       // #2208: a static loop whose ARRAY SOURCE is itself fully-static
       // (`const items = [{ label: 'Alpha' }, ...]`) has no caller input to
       // wait for — every item's props/data-key are already known at
@@ -1973,10 +1991,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           )
         : null
       if (baked) {
-        lines.push(`\t${varName} := make([]${nested.name}Props, ${baked.items.length})`)
+        lines.push(`\t${varName} := make([]${declaredName}Props, ${baked.items.length})`)
         baked.items.forEach((item, i) => {
           const fields = item.inputFields.map(f => `${f.goField}: ${f.goValue}`).join(', ')
-          lines.push(`\t${varName}[${i}] = New${nested.name}Props(${nested.name}Input{${fields}})`)
+          lines.push(`\t${varName}[${i}] = New${declaredName}Props(${declaredName}Input{${fields}})`)
           lines.push(`\t${varName}[${i}].BfParent = scopeID`)
           lines.push(`\t${varName}[${i}].BfMount = "${nested.slotId}"`)
           if (item.dataKey !== null) {
@@ -1986,9 +2004,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push('')
         continue
       }
-      lines.push(`\t${varName} := make([]${nested.name}Props, len(in.${nested.name}s))`)
+      lines.push(`\t${varName} := make([]${declaredName}Props, len(in.${nested.name}s))`)
       lines.push(`\tfor i, item := range in.${nested.name}s {`)
-      lines.push(`\t\t${varName}[i] = New${nested.name}Props(item)`)
+      lines.push(`\t\t${varName}[i] = New${declaredName}Props(item)`)
       lines.push(`\t\t${varName}[i].BfParent = scopeID`)
       lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
       const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
@@ -2618,6 +2636,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`// New${componentName}Props creates ${propsTypeName} from ${inputTypeName}.`)
     for (const nested of signalDynamicNested) {
       const arrayField = `${nested.name}s`
+      // #2822 follow-up: `arrayField` names THIS parent's own field
+      // (alias-keyed, stays as-is); the constructor/type names in the
+      // example below are the child's own cross-file symbols — resolve
+      // for doc accuracy (cosmetic; not compiled) — see `importAliases`.
+      const declaredName = this.resolveChildName(nested.name)
       lines.push(`//`)
       lines.push(`// NOTE: \`${arrayField}\` is populated by the route handler, not by`)
       lines.push(`// New${componentName}Props — the SSR template iterates over it`)
@@ -2625,9 +2648,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`// assign it before passing the props to your renderer. Example:`)
       lines.push(`//`)
       lines.push(`//   props := New${componentName}Props(${inputTypeName}{ /* ... */ })`)
-      lines.push(`//   props.${arrayField} = make([]${nested.name}Props, len(items))`)
+      lines.push(`//   props.${arrayField} = make([]${declaredName}Props, len(items))`)
       lines.push(`//   for i, item := range items {`)
-      lines.push(`//     props.${arrayField}[i] = New${nested.name}Props(${nested.name}Input{ /* fields */ })`)
+      lines.push(`//     props.${arrayField}[i] = New${declaredName}Props(${declaredName}Input{ /* fields */ })`)
       lines.push(`//     props.${arrayField}[i].BfParent = props.ScopeID`)
       lines.push(`//     props.${arrayField}[i].BfMount = "${nested.slotId}"`)
       lines.push(`//   }`)
@@ -2690,6 +2713,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
       const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams)
+      // #2822 follow-up: matches `generateLoopBodyWrapperStruct`'s embedded
+      // field — the composite-literal key here must be the SAME declared
+      // name the wrapper struct's embedded field was declared under.
+      const declaredName = this.resolveChildName(nested.name)
 
       for (const child of bodyChildInstances) {
         const childVar = `child_${child.fieldName}`
@@ -2714,7 +2741,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${varName} := make([]${wrapperType}, len(${dataVar}))`)
       lines.push(`\tfor i, item := range ${dataVar} {`)
       lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
-      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
+      lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
       lines.push(`\t\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
       // Loop-body component's own static props. `key` → BfDataKey below; children
@@ -2785,6 +2812,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
       const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams)
+      // #2822 follow-up: matches `generateLoopBodyWrapperStruct`'s embedded
+      // field — see the identical comment in `emitStaticBodyWrappers`.
+      const declaredName = this.resolveChildName(nested.name)
 
       // Child sub-component instances created once (identical scope IDs per row).
       for (const child of bodyChildInstances) {
@@ -2809,7 +2839,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${varName} := make([]${wrapperType}, len(bakedData))`)
       lines.push(`\tfor i, item := range bakedData {`)
       lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
-      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
+      lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
       lines.push(`\t\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
       lines.push(`\t\t\t}),`)
@@ -3302,10 +3332,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // real — a second same-named field here is a Go compile error
       // ("redeclared"), not just dead code.
       if (this.isOrphanedClientOnlyNested(nested)) continue
-      // Loop body with JSX children → use the wrapper struct type.
+      // Loop body with JSX children → use the wrapper struct type (a
+      // parent-private name — the child's own Props type only appears
+      // INSIDE it as the embedded field, already resolved in
+      // `generateLoopBodyWrapperStruct`). Loop body IS just the bare child
+      // component → this element type IS the child's own cross-file Props
+      // type directly — #2822 follow-up: resolve to the declared name.
       const elemType = nested.bodyChildren?.length
         ? this.loopBodyWrapperName(componentName, nested)
-        : `${nested.name}Props`
+        : `${this.resolveChildName(nested.name)}Props`
       if (nested.isDynamic && !nested.isPropDerived) {
         // Dynamic signal-array loops are template-only.
         lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)

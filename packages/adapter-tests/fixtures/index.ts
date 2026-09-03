@@ -223,6 +223,7 @@ import { fixture as staticArrayFromPropsWithComponentPrecomputed } from './stati
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
 import { fixture as aliasedImportChildComponent } from './aliased-import-child-component'
+import { fixture as aliasedImportChildComponentLoop } from './aliased-import-child-component-loop'
 import { fixture as childComponentRefProp } from './child-component-ref-prop'
 import { fixture as componentRowLoopPreambleHandler } from './component-row-loop-preamble-handler'
 import { fixture as childComponentRootScopePrefix } from './child-component-root-scope-prefix'
@@ -729,6 +730,7 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 8: CSR conformance
   booleanDynamicAttr,
   aliasedImportChildComponent,
+  aliasedImportChildComponentLoop,
   childComponentInit,
   childComponentRefProp,
   componentRowLoopPreambleHandler,
