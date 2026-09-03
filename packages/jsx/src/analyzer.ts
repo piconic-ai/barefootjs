@@ -5909,7 +5909,7 @@ function validateNamespaceQualifiedPrimitives(ctx: AnalyzerContext): void {
         if (init && ts.isCallExpression(init)) calls.push(init)
       }
     } else if (ts.isExpressionStatement(stmt) && ts.isCallExpression(stmt.expression)) {
-      calls.push(stmt.expression) // `bf.createEffect(...)`, `bf.onMount(...)`
+      calls.push(stmt.expression)
     }
 
     for (const call of calls) {
@@ -5943,7 +5943,6 @@ function validateNamespaceQualifiedPrimitives(ctx: AnalyzerContext): void {
   }
 }
 
-/** Is `name` bound to a namespace import of `@barefootjs/client` (`import * as name from '@barefootjs/client'`)? */
 function isClientNamespaceImportName(name: string, ctx: AnalyzerContext): boolean {
   return ctx.imports.some(
     imp =>
