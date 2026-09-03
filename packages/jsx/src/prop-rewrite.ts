@@ -132,6 +132,16 @@ export function collectAstPropRefs(
  * (`{ org }` → `{ org: _p.org }`) so the result stays syntactically
  * valid.
  *
+ * `replacementFor` overrides the substitution text for a value
+ * reference (default `${PROPS_PARAM}.<callerKey>`) — e.g. the reactive
+ * client-JS emit path (`emit-reactive.ts`'s `rewriteDestructuredPropsInExpr`)
+ * wraps it in a `(_p.x ?? <default>)` fallback for a prop with a
+ * destructure default. Kept as a caller override rather than a
+ * duplicate AST walk in that module, per the "one decision, one
+ * implementation" rule (CLAUDE.md) — this walk is already the one place
+ * that correctly distinguishes a value reference from an object-literal
+ * key / property-access name / shorthand property / binding name.
+ *
  * Returns null when `text` does not parse cleanly as an expression —
  * the caller falls back to the legacy regex rewrite.
  */
@@ -139,6 +149,7 @@ function applyScopedPropRefRewrite(
   text: string,
   propRefs: Set<string>,
   propAliases?: ReadonlyMap<string, string>,
+  replacementFor?: (localName: string, callerKey: string) => string,
 ): string | null {
   // Wrap in parens so object literals and arrows parse as expressions.
   const prefix = '('
@@ -157,11 +168,12 @@ function applyScopedPropRefRewrite(
     // — #2524 CSR half); the local binding (`n.text`) only survives on the
     // left of a shorthand expansion.
     const callerKey = propAliases?.get(n.text) ?? n.text
+    const value = replacementFor ? replacementFor(n.text, callerKey) : `${PROPS_PARAM}.${callerKey}`
     if (parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n) {
-      edits.push({ start, end, replacement: `${n.text}: ${PROPS_PARAM}.${callerKey}` })
+      edits.push({ start, end, replacement: `${n.text}: ${value}` })
       return
     }
-    edits.push({ start, end, replacement: `${PROPS_PARAM}.${callerKey}` })
+    edits.push({ start, end, replacement: value })
   })
 
   if (edits.length === 0) return text
@@ -186,6 +198,7 @@ export function applyRegexPropRefRewrite(
   text: string,
   propRefs: Iterable<string>,
   propAliases?: ReadonlyMap<string, string>,
+  replacementFor?: (localName: string, callerKey: string) => string,
 ): string {
   const { protect, restore } = createTemplateAwareStringProtector()
   let result = protect(text)
@@ -193,6 +206,7 @@ export function applyRegexPropRefRewrite(
   for (const propName of propRefs) {
     // `_p` is always keyed by the caller-facing name (#2524 CSR half).
     const callerKey = propAliases?.get(propName) ?? propName
+    const value = replacementFor ? replacementFor(propName, callerKey) : `${PROPS_PARAM}.${callerKey}`
     const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
     result = result.replace(pattern, (match, offset, str) => {
       // Skip object literal keys: preceded by { or , and followed by :
@@ -201,7 +215,7 @@ export function applyRegexPropRefRewrite(
         const before = str.slice(0, offset)
         if (/[{,]\s*$/.test(before)) return match
       }
-      return `${PROPS_PARAM}.${callerKey}`
+      return value
     })
   }
 
@@ -225,6 +239,9 @@ export function applyRegexPropRefRewrite(
  *   `_p` is always keyed by the caller-facing name (#2524 CSR half); a name
  *   absent from this map emits `_p.<name>` unchanged (the un-aliased case,
  *   where `sourceName ?? name` is an identity).
+ * @param replacementFor - Override the substitution text for a value
+ *   reference (default `${PROPS_PARAM}.<callerKey>`) — see
+ *   `applyScopedPropRefRewrite`'s docstring.
  */
 export function rewriteBarePropRefs(
   text: string,
@@ -232,6 +249,7 @@ export function rewriteBarePropRefs(
   propNames: Set<string>,
   extraPropRefs?: ReadonlySet<string>,
   propAliases?: ReadonlyMap<string, string>,
+  replacementFor?: (localName: string, callerKey: string) => string,
 ): string | undefined {
   // Walk AST to find which prop names are actually used as value references
   const foundPropRefs = new Set<string>()
@@ -243,7 +261,7 @@ export function rewriteBarePropRefs(
   }
   if (foundPropRefs.size === 0) return undefined
   return (
-    applyScopedPropRefRewrite(text, foundPropRefs, propAliases) ??
-    applyRegexPropRefRewrite(text, foundPropRefs, propAliases)
+    applyScopedPropRefRewrite(text, foundPropRefs, propAliases, replacementFor) ??
+    applyRegexPropRefRewrite(text, foundPropRefs, propAliases, replacementFor)
   )
 }
