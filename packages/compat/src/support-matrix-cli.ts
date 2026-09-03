@@ -12,13 +12,24 @@
 import { writeFileSync } from 'fs'
 import { fileURLToPath } from 'node:url'
 import path from 'path'
+import { MissingCompatAdaptersError } from './adapter-registry'
 import { computeSupportMatrix, formatSupportMatrixJson } from './support-matrix'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const OUT_PATH = path.join(REPO_ROOT, 'ui/support-matrix.lock.json')
 
 async function main(): Promise<void> {
-  const report = await computeSupportMatrix()
+  let report: Awaited<ReturnType<typeof computeSupportMatrix>>
+  try {
+    report = await computeSupportMatrix()
+  } catch (err) {
+    if (err instanceof MissingCompatAdaptersError) {
+      console.error(err.message)
+      process.exit(1)
+      return
+    }
+    throw err
+  }
   writeFileSync(OUT_PATH, formatSupportMatrixJson(report))
 
   const kindCount = Object.keys(report.kinds).length

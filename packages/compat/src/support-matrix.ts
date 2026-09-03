@@ -28,7 +28,7 @@
 
 import { PARSED_EXPR_KINDS } from '@barefootjs/jsx'
 import coverageMapJson from '../../adapter-tests/coverage-map.json' with { type: 'json' }
-import { loadCompatAdapters } from './adapter-registry'
+import { loadAllCompatAdapters } from './adapter-registry'
 import { computeConstructExamples, type ConstructExample } from './construct-examples'
 import { computeConstructSourceLinks, resolveAxisLink, resolveKindLink, type SourceLink } from './construct-source-links'
 import { compareAdapterIds, KNOWN_LIMITATION_LABEL } from './report'
@@ -191,13 +191,17 @@ export function buildSupportMatrix(
 
 /**
  * Real-input entry point: the committed `coverage-map.json` joined
- * against every adapter `loadCompatAdapters()` resolves. Adapters it
- * can't resolve are silently skipped (same degrade-to-skip contract as
- * `loadCompatAdapters` itself) — the monorepo always has all 9
- * installed, so a run from this repo covers every adapter.
+ * against every registered adapter. This is a lock generator (its output
+ * is committed to `ui/support-matrix.lock.json`), so it uses
+ * `loadAllCompatAdapters` rather than `loadCompatAdapters` directly: a
+ * matrix computed from a subset of adapters would silently drop those
+ * adapters' columns from the committed lock, and the freshness test would
+ * then compare against that wrong lock instead of catching it (#2785).
+ * Throws `MissingCompatAdaptersError` if any registered adapter fails to
+ * load.
  */
 export async function computeSupportMatrix(): Promise<SupportMatrixReport> {
-  const { loaded } = await loadCompatAdapters()
+  const loaded = await loadAllCompatAdapters()
   const coverage = coverageMapJson as SupportMatrixCoverageMap
   const report = buildSupportMatrix(coverage, loaded)
   return attachConstructDocs(report, coverage)
