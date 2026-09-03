@@ -1633,6 +1633,32 @@ export function Widget({ base }: { base: Item }) {
       expect(bf101[0].message).not.toContain("Signal 'merged' is seeded")
     })
 
+    // A signal read ONLY from inside a `.filter()` predicate (never a plain
+    // `{merged()}` text read) must still register in `templateReadRootFields`
+    // and trip #2700's refusal — `renderFilterExprNode`'s zero-arg-call arm
+    // used to build the `$.Merged` field reference by hand instead of
+    // through `rootFieldRef`, so this exact shape was a false negative
+    // (pullfrog review, PR #2818).
+    test('a signal reachable only through a .filter() predicate still refuses with BF101 (#2700, #2818 pullfrog review)', () => {
+      const adapter = new GoTemplateAdapter()
+      compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Item = { id: string; done: boolean }
+export function Widget({ base, items }: { base: Item; items: Item[] }) {
+  const [merged] = createSignal({ ...base, done: true })
+  return (
+    <ul>
+      {items().filter(i => i.id === merged().id).map(i => <li key={i.id}>{i.id}</li>)}
+    </ul>
+  )
+}
+`, adapter)
+      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
+      expect(bf101.length).toBe(1)
+      expect(bf101[0].message).toContain("Signal 'merged'")
+    })
+
     // A destructured prop sharing the module const's name must still win
     // (shadowing) — the const resolver is checked AFTER the prop lookup.
     test('a destructured prop shadows a same-named module const', () => {

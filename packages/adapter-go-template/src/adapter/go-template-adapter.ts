@@ -536,7 +536,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const d of this.state.pendingChildrenDefines) {
       template += `{{define "${d.name}"}}${d.content}{{end}}\n`
     }
-    const types = this.generateTypes(ir)
+    const types = this.generateTypes(ir, true)
 
     if (this.state.errors.length > 0) {
       ir.errors.push(...this.state.errors)
@@ -1074,9 +1074,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return desired
   }
 
-  generateTypes(ir: ComponentIR): string | null {
+  /**
+   * `preserveTemplateReadRootFields` is set ONLY by `generate()`'s own
+   * internal call below — `templateReadRootFields` is an observation log
+   * `renderNode` populated moments ago while rendering THIS SAME
+   * component's template body, and this call needs to read that log back,
+   * not a freshly emptied one. Every other caller (the standalone public
+   * entry point `test-render.ts` calls directly on an already-`generate()`d
+   * adapter for a sibling/child IR, and this file's own unit tests) omits
+   * it and gets the set reset fresh — otherwise a stale log left over from
+   * whichever OTHER component `generate()` rendered last would silently
+   * narrow #2700's BF101 refusal to a false negative (pullfrog review, PR
+   * #2818).
+   */
+  generateTypes(ir: ComponentIR, preserveTemplateReadRootFields = false): string | null {
     this.state.usesHtmlTemplate = false
     this.state.usesFmt = false
+    if (!preserveTemplateReadRootFields) {
+      this.state.templateReadRootFields = new Set()
+    }
     // Prime identically to `generate()` so the standalone `generateTypes` entry
     // can't drift the structs (e.g. a `{...props}` bag field in one entry only).
     this.primeCompileState(ir)
@@ -6020,8 +6036,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // A local variable mapped to a signal.
         const signal = localVarMap.get(expr.name)
         if (signal) {
+          // Root-scope read (#2700's BF101 gate needs it in
+          // `templateReadRootFields`) — `$.` is hardcoded rather than
+          // routed through `rootFieldRef`'s `this.inLoop`-conditional
+          // prefix because a filter predicate must always escape back to
+          // root regardless of loop nesting; call it only for its
+          // registration side effect and keep the prefix here (pullfrog
+          // review, PR #2818).
+          this.rootFieldRef(signal)
           return `$.${capitalizeFieldName(signal)}`
         }
+        this.rootFieldRef(expr.name)
         return `.${capitalizeFieldName(expr.name)}`
       }
 
@@ -6066,8 +6091,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
           return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
         }
-        // Signal calls: `filter()` -> `$.Filter`
+        // Signal calls: `filter()` -> `$.Filter`. Same registration-only
+        // `rootFieldRef` call as the `identifier` case above, for the same
+        // reason (#2700's BF101 gate; pullfrog review, PR #2818).
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
+          this.rootFieldRef(expr.callee.name)
           return `$.${capitalizeFieldName(expr.callee.name)}`
         }
         // A nested callback method call (`other.some(r => …)`) reaching this
