@@ -60,19 +60,20 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
-  // NOTE (2026-09-03): unlike `accordion`'s idempotence row, `command`'s
-  // does NOT reliably graduate alongside #2728 — measured intermittent
-  // (3/5 and other repeat runs), with a genuine structural divergence
-  // (item selection / group-visibility state disagrees between the
-  // hydrated and csr-mount replay legs) rather than a stale rot-check
-  // false-positive. Left unchanged/quarantined here pending its own
-  // investigation into whether this is a timing-dependent replay
-  // artifact (candidate for `IDEMPOTENCE_EXCLUDED`, like `carousel`'s
-  // `drag` step) or a real, fixable bug.
+  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` (#2827): unlike
+  // `accordion`'s idempotence row, `command`'s does NOT reliably graduate
+  // alongside #2728 — measured intermittent (2/5 and other repeat runs),
+  // with a genuine structural divergence (item selection / group-visibility
+  // state disagrees between the hydrated and csr-mount replay legs) some of
+  // the time and agreement the rest. That bimodality broke the quarantine
+  // ledger's "reliably fails" assumption in both directions on CI (the
+  // structural-divergence failure on one run, the stale-entry rot-check on
+  // another, same pair) — see `oracle.playwright.ts`'s `IDEMPOTENCE_EXCLUDED`
+  // for the skip and #2827 for the root-cause investigation.
   command: {
-    oracles: ['snap', 'three-point', 'idempotence'],
+    oracles: ['snap', 'three-point'],
     reason:
-      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar". Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
+      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
