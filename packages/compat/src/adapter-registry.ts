@@ -14,6 +14,15 @@
 // (e.g. unbuilt dist) degrades to a reported skip instead of a hard
 // crash, keeping the loader total. The monorepo always has all 9
 // installed, so a run from this repo loads every adapter.
+//
+// `loadCompatAdapters` itself stays total (see above) because an ad-hoc
+// `bun run compat <component>` run should still cover every adapter it
+// CAN load. A generator that WRITES a committed lock artifact
+// (`support-matrix:lock`, `compat:lock`) must not: a lock computed from a
+// subset silently drops those adapters' columns, and the committed lock
+// then becomes the (wrong) expectation the freshness test compares
+// against (#2785). Those callers use `loadAllCompatAdapters` below, which
+// throws instead of returning a subset.
 
 import type { ConformancePins, RenderDivergences, TemplateAdapter } from '@barefootjs/jsx'
 
@@ -106,4 +115,51 @@ export async function loadCompatAdapters(): Promise<{
   }
 
   return { loaded, skipped }
+}
+
+/** Thrown by {@link loadAllCompatAdapters} when a lock generator would otherwise emit output missing registered adapter columns. */
+export class MissingCompatAdaptersError extends Error {
+  readonly skipped: readonly SkippedCompatAdapter[]
+
+  constructor(skipped: readonly SkippedCompatAdapter[], total: number) {
+    super(formatMissingCompatAdapters(skipped, total))
+    this.name = 'MissingCompatAdaptersError'
+    this.skipped = skipped
+  }
+}
+
+function formatMissingCompatAdapters(skipped: readonly SkippedCompatAdapter[], total: number): string {
+  const filters = skipped.map(s => `--filter '${s.pkg}'`).join(' ')
+  return [
+    `Refusing to write: ${skipped.length} of ${total} registered adapter packages did not load, so the output would silently drop their columns.`,
+    ...skipped.map(s => `  - ${s.pkg}: ${s.reason}`),
+    `Build them first:`,
+    `  bun run ${filters} build`,
+    `(or \`bun run build\` for every workspace package), then re-run.`,
+  ].join('\n')
+}
+
+/**
+ * Pure gate over a {@link loadCompatAdapters} result: returns `loaded` when
+ * nothing was skipped, otherwise throws {@link MissingCompatAdaptersError}.
+ * Split out from {@link loadAllCompatAdapters} so the refusal is
+ * unit-testable without an actual unbuilt package on disk.
+ */
+export function requireAllCompatAdapters(result: {
+  loaded: LoadedCompatAdapter[]
+  skipped: SkippedCompatAdapter[]
+}): LoadedCompatAdapter[] {
+  if (result.skipped.length > 0) {
+    throw new MissingCompatAdaptersError(result.skipped, result.loaded.length + result.skipped.length)
+  }
+  return result.loaded
+}
+
+/**
+ * {@link loadCompatAdapters} for lock generators: all registered adapters or
+ * a thrown {@link MissingCompatAdaptersError}, never a silently truncated
+ * subset (#2785).
+ */
+export async function loadAllCompatAdapters(): Promise<LoadedCompatAdapter[]> {
+  return requireAllCompatAdapters(await loadCompatAdapters())
 }

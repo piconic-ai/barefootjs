@@ -30,7 +30,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { glob as fsGlob } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'path'
-import { loadCompatAdapters } from './adapter-registry'
+import { loadCompatAdapters, MissingCompatAdaptersError, requireAllCompatAdapters } from './adapter-registry'
 import { computeComponentDocs, computeFixtureDocs } from './component-docs'
 import { buildCompatCell, compileForCompat, type CompatCell } from './engine'
 import { buildCompatReport, buildFixtureDivergences, formatCompatJson, formatCompatMarkdown, type CompatReport } from './report'
@@ -197,14 +197,33 @@ async function main(): Promise<void> {
     return
   }
 
-  const { loaded, skipped } = await loadCompatAdapters()
-  for (const s of skipped) {
-    console.error(`Skipping ${s.pkg}: ${s.reason}`)
-  }
-  if (loaded.length === 0) {
-    console.error('No adapters resolved — cannot build a compat matrix.')
-    process.exit(1)
-    return
+  const loadResult = await loadCompatAdapters()
+  let loaded: typeof loadResult.loaded
+  if (outPath) {
+    // Writing a committed lock artifact (compat:lock = --all --json --out):
+    // a subset lock silently drops the missing adapters' columns, and the
+    // committed lock then becomes the (wrong) expectation the freshness
+    // test compares against (#2785) — refuse instead of warning.
+    try {
+      loaded = requireAllCompatAdapters(loadResult)
+    } catch (err) {
+      if (err instanceof MissingCompatAdaptersError) {
+        console.error(err.message)
+        process.exit(1)
+        return
+      }
+      throw err
+    }
+  } else {
+    for (const s of loadResult.skipped) {
+      console.error(`Skipping ${s.pkg}: ${s.reason}`)
+    }
+    loaded = loadResult.loaded
+    if (loaded.length === 0) {
+      console.error('No adapters resolved — cannot build a compat matrix.')
+      process.exit(1)
+      return
+    }
   }
 
   const cells: Record<string, Record<string, CompatCell>> = {}
