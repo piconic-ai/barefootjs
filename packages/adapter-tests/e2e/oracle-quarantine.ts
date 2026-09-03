@@ -41,10 +41,17 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // client effect pass CORRECTS it. The snap/three-point failures record
   // that pre-hydration state genuinely differs from post-hydration state;
   // the side that is wrong is the SSR markup, not hydration.
+  // `idempotence` graduated alongside #2728 (comment-wrapper CSR-mount
+  // scope registration): the second item's trigger is itself reached
+  // through a comment-wrapper composition, so its mount effects never ran
+  // on a from-scratch csr-mount before that fix — the [data-value] locator
+  // timeout was a symptom of the same missing-comment-scope bug, not a
+  // separate one. `snap`/`three-point` are unrelated (an SSR-literal-vs-
+  // hydration-correction divergence, see reason below) and stay quarantined.
   accordion: {
-    oracles: ['snap', 'three-point', 'idempotence'],
+    oracles: ['snap', 'three-point'],
     reason:
-      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly). Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches on the leg whose mount effects haven't stamped it yet.",
+      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly).",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   'radio-group': {
@@ -53,10 +60,15 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
+  // `idempotence` graduated alongside #2728 (comment-wrapper CSR-mount
+  // scope registration) — same reasoning as `accordion` above: the
+  // differently-structured filtered list between the hydrated and
+  // csr-mount legs was a symptom of comment-wrapper mount effects never
+  // running on a from-scratch csr-mount before that fix.
   command: {
-    oracles: ['snap', 'three-point', 'idempotence'],
+    oracles: ['snap', 'three-point'],
     reason:
-      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar". Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
+      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
