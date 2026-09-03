@@ -300,6 +300,37 @@ describe('markup-prop brand (#2651)', () => {
     )
   })
 
+  // pullfrog review, PR #2820: test (m) covers the SIGNAL-driven `.map()`
+  // loop (`buildComponentPropsExpr`); `buildStaticPropsExpr`
+  // (`build-static-array-child-init.ts`) — the sibling builder for a
+  // STATIC, non-signal array `.map()` — got the identical fix but no
+  // dedicated test, which is exactly the untested-call-site pattern that
+  // let #2702's original corruption go uncaught. Pins the hydrate-time
+  // `initChild` path this builder feeds.
+  test('(n) a conditional-in-fragment jsx-children prop is branded for a component instantiated inside a static (non-signal) array .map()', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any }) {
+        return <header>{props.header}</header>
+      }
+      export function List() {
+        const [cond, setCond] = createSignal(true)
+        return (
+          <div>
+            {[{ id: 1 }].map(item => (
+              <Card key={item.id} header={<>{cond() ? <a>x</a> : <b>y</b>}</>} />
+            ))}
+          </div>
+        )
+      }
+    `
+    const clientJs = clientJsFor(source)
+    expect(clientJs).toMatch(
+      /initChild\('Card', childScope, \{ get header\(\) \{ return cond\(\) \? bfMarkup\(`<a>x<\/a>`\) : bfMarkup\(`<b>y<\/b>`\) \} \}\)/,
+    )
+  })
+
   test('(l) an explicit children prop with a conditional stays unbranded', () => {
     const source = `
       'use client'
