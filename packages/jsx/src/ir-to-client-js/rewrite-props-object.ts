@@ -26,6 +26,18 @@
 import ts from 'typescript'
 import { PROPS_PARAM } from './utils.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
+import type { BindingScope } from '../scope/binding-scope.ts'
+
+export interface PropsObjectRewriteOptions {
+  /**
+   * SHADOW GUARD (CLAUDE.md's `BindingScope` distinction — `isBound()`,
+   * not `valueBoundNames()`): a `.map(props => ...)` row whose callback
+   * PARAMETER happens to be named the same as the outer `propsObjectName`
+   * must not have that parameter rewritten to `_p` — it shadows the outer
+   * props object inside its own row, same as any other bound name would.
+   */
+  enclosingScope?: BindingScope
+}
 
 /**
  * Rename every value-position reference to `propsObjectName` — and,
@@ -64,11 +76,13 @@ export function rewritePropsObjectRef(
   code: string,
   propsObjectName: string | null,
   restPropsName: string | null = null,
+  opts?: PropsObjectRewriteOptions,
 ): string {
   let result = code
   const seen = new Set<string>()
   for (const srcPropsName of [propsObjectName ?? 'props', restPropsName]) {
     if (srcPropsName === null || srcPropsName === PROPS_PARAM || seen.has(srcPropsName)) continue
+    if (opts?.enclosingScope?.isBound(srcPropsName)) continue
     seen.add(srcPropsName)
     result = rewriteOneName(result, srcPropsName)
   }

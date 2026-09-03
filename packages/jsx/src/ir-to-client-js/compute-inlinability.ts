@@ -371,7 +371,7 @@ function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv): v
       // stay out of the template lambda. The relocate output
       // (`rewrittenValue`) is the bridged form (bare destructured prop
       // refs lifted to `_p.X`); we store that so the emit-time
-      // `applyPropsRewrite` doesn't need to redo the AST work. The
+      // `rewritePropsObjectRef` doesn't need to redo the AST work. The
       // free identifiers are re-extracted from the bridged form so
       // the post-substitution unsafe-name check stays exact.
       const inlineResult = isInlinableInTemplate(rewritten, relocateEnv)

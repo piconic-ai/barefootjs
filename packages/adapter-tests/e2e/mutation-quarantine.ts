@@ -165,23 +165,41 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // `reactive-props` still fails `three-point` — see G7 below, now #2737 —
   // a DIFFERENT divergence this fix does not reach.
 
+  // --- G5/G7 graduated (#2737 fix, this PR) ----------------------------------
+  // `rewritePropsObjectRef` (rewrite-props-object.ts) — already the correct
+  // AST-based device for the INIT body — is now also what html-template.ts's
+  // four template-builder `transformExpr`/`transformJs` closures call,
+  // replacing each one's own `\bpropsObjectName\.` regex copy (and
+  // csr-substitute.ts's now-deleted `applyPropsRewrite`, its CSR-path twin).
+  // The regex form required the props name to be immediately followed by
+  // `.`, so a PARENTHESISED receiver — `(props).label`, which is exactly
+  // what constant-inlining produces for a local alias of the whole props
+  // object (`const props__alias = props`) — silently kept the pre-rewrite
+  // name instead of becoming `(_p).label`. Both rows below were this same
+  // leak surfacing through the same fixture on two oracles; confirmed via
+  // `mutation.playwright.ts`'s own rot-check (each now throws its "stale —
+  // delete the entry" error instead of matching the quarantined failure):
+  //   - G5 (reactive-props × alias-props × idempotence, no issue filed):
+  //     the `.btn-parent-increment` timeout was `ReactiveChild`'s child
+  //     template throwing on the bare `props` identifier before the
+  //     click handler ever ran.
+  //   - G7 (reactive-props × alias-props × three-point, #2737): the
+  //     issue this fix directly targets — see its body for the full
+  //     `(props).label` repro.
+  // G4 below (toggle-shared × alias-props, #2724) does NOT graduate here —
+  // re-run and confirmed still failing (deterministically, not a flake:
+  // `--repeat-each=5 --workers=1` reproduced the identical shuffled-state
+  // diff every time) — so it is a distinct, still-open defect despite the
+  // shared `alias-props` mutation and superficially similar symptom.
+
   // --- G4 -------------------------------------------------------------------
   {
     fixtureId: 'toggle-shared',
     mutationId: 'alias-props',
     oracle: 'idempotence',
     reason:
-      "Distinct from the G3 empty-render pattern above: toggle-shared's ToggleItem list renders fully on both legs, but after replaying the two click actions the ON/OFF state lands on different rows between the hydrated and csr-mount legs (values are shuffled, not missing) — confirmed directly by diffing the two captures. Likely the alias-props indirection inside the `.map()` row body interacting with per-row closure capture.",
+      "Distinct from the G3 empty-render pattern above: toggle-shared's ToggleItem list renders fully on both legs, but after replaying the two click actions the ON/OFF state lands on different rows between the hydrated and csr-mount legs (values are shuffled, not missing) — confirmed directly by diffing the two captures. Likely the alias-props indirection inside the `.map()` row body interacting with per-row closure capture. Re-confirmed still failing, identically, after #2737's props-object-alias template fix (that fix graduated the reactive-props×alias-props rows below, which shared its `(props).label` mechanism; this row's shuffled-row-state shape is not that mechanism).",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2724',
-  },
-
-  // --- G5 -------------------------------------------------------------------
-  {
-    fixtureId: 'reactive-props',
-    mutationId: 'alias-props',
-    oracle: 'idempotence',
-    reason:
-      "Click on '.btn-parent-increment' times out on one of the two legs. Confirmed INDEPENDENT of #2716 (the live .value DOM property expando this row's reason used to implicate): #2716 is fixed and this idempotence failure persists unchanged, so it is a genuine alias-props-specific defect, not that bug compounded by the extra alias hop. Not yet isolated to a root cause of its own.",
   },
 
   // --- G6 -------------------------------------------------------------------
@@ -192,29 +210,6 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
     reason:
       "Click on '[data-slot=\"carousel-next\"]' times out (button stays disabled). The base fixture's idempotence oracle is already excluded (not merely quarantined) in oracle.playwright.ts's IDEMPOTENCE_EXCLUDED map for the same reason: embla's drag steps are pointer-position-dependent on a CSS-less host page (#1971), so replaying the SAME drag sequence twice is inherently flaky independent of any real bug. This mutant reproduces that known flakiness rather than a new fragment-wrap-specific defect; kept here (mutation.playwright.ts has no equivalent exclusion map, only the ORACLE_QUARANTINE skip) rather than silently passing.",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/1971',
-  },
-
-  // --- G7 -----------------------------------------------------------------
-  // Unmasked by the #2716 fix: `props-reactivity-comparison` and
-  // `reactive-props` were entirely quarantined in oracle-quarantine.ts
-  // (the .value expando) before this PR, so mutation.playwright.ts's
-  // `baseAlreadyQuarantined` skip (this file's docstring) skipped EVERY
-  // mutation triple for these two fixtures outright — none of them had
-  // ever actually run. With that quarantine gone, they ran for the first
-  // time and hit the SAME already-documented mutation-tool artifacts G2/G3
-  // already catalogue for other fixtures — not new bugs, just newly-run
-  // triples that happen to reproduce them. The `fragment-wrap` × `three-point`
-  // rows this group used to carry (the #2722 scope-id bug, above) graduated
-  // with the rest of G2. The `alias-props` row below was originally
-  // attributed to the (since-fixed, #2723) G3 mechanism — it did NOT
-  // graduate alongside G3, and re-diagnosis (below) found a distinct cause.
-  {
-    fixtureId: 'reactive-props',
-    mutationId: 'alias-props',
-    oracle: 'three-point',
-    reason:
-      "NOT the G3 mechanism (#2723's fix graduated button/input/kbd/label/textarea; this fixture alone did not, and the divergence shape differs — hydrated renders empty while csr-mount renders the full correct DOM, the reverse of G3's csr-mount-empty pattern). Confirmed a DIFFERENT defect: `ReactiveChild(props: ChildProps)`, a SolidJS-style (non-destructured) component with an event handler, has its whole `props` parameter aliased (`const props__alias = props`); its compiled CSR template still reads the bare identifier `props` (`${escapeTextOrMarkup((props).label)}`) instead of `_p.label` — `props` is not in scope in that closure, so building it from scratch throws. A sibling non-destructured component in the same file WITHOUT an event handler (`PropsStyleChild`) does not reproduce, suggesting the gap is specific to whichever template-generation path (`generateCsrTemplate` vs `irToComponentTemplate`) an event handler routes a component through — each has its own copy of the `propsObjectName` → `_p.` access-prefix rewrite in `html-template.ts`'s `transformExpr`, and only one of them resolves through a `const` alias hop onto `propsObjectName` the way `resolveRestSpreadOrigin` (#2723) now does for the rest-spread case. Not yet fixed.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2737',
   },
 ]
 
