@@ -175,10 +175,23 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // attribute is corrected) and not #2715 (no named-prop mirror). Stays
   // quarantined as the executable record: this oracle cannot tell an
   // explicit @client placeholder fill apart from a hydration defect.
+  //
+  // Not an exhaustive @client inventory (pullfrog review, PR #2824):
+  // TodoApp.tsx has a FIFTH `/* @client */` site — the toggle-all
+  // checkbox's `checked={/* @client */ todos().every(t => t.done)}`
+  // (line ~177) — that this list and the reason string below don't name.
+  // It doesn't currently widen the divergence: SSR omits the `checked`
+  // attribute entirely rather than emitting a wrong value, and this
+  // fixture's `initialTodos` has 2 of 3 items undone, so `every()`
+  // evaluates `false` — coincidentally the same as the absent-attribute
+  // default. If `initialTodos` ever becomes all-done, `every()` would
+  // evaluate `true` and this fifth region would start diverging too,
+  // which the "four regions and nothing else" framing above would then
+  // misdescribe.
   'todo-app': {
     oracles: ['snap', 'three-point'],
     reason:
-      'SSR emits the four /* @client */ placeholders empty (<ul class="todo-list"> loop l0, <strong bf="s7"> count, cond s8 \'item\'/\'items\', cond s13 clear-completed button); hydration materializes them. Everything outside those regions is byte-identical, and the three-point\'s hydrated-vs-csr-mount leg agrees — by-design client-only rendering, not a hydration defect.',
+      'SSR emits the four /* @client */ placeholders empty (<ul class="todo-list"> loop l0, <strong bf="s7"> count, cond s8 \'item\'/\'items\', cond s13 clear-completed button); hydration materializes them. Everything outside those regions is byte-identical, and the three-point\'s hydrated-vs-csr-mount leg agrees — by-design client-only rendering, not a hydration defect. (A fifth /* @client */ site, the toggle-all checkbox\'s `checked` binding, is untouched by this masking — SSR omits the attribute entirely and the fixture\'s seeded data happens to match that default; see the module comment above.)',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2719',
   },
 }
