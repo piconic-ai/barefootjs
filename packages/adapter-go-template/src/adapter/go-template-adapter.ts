@@ -34,6 +34,7 @@ import type {
   TemplatePrimitiveRegistry,
   LoopBindingPathSegment,
   LoopBindingSource,
+  ConstantInfo,
 } from '@barefootjs/jsx'
 import {
   BaseAdapter,
@@ -257,6 +258,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
+    resolveModuleNumericConst: (name) => this.resolveModuleNumericConst(name),
+    resolveModuleBooleanConst: (name) => this.resolveModuleBooleanConst(name),
   }
 
   /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
@@ -4588,6 +4591,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * The single module-const lookup shared by `resolveModuleNumericConst`
+   * and `resolveModuleBooleanConst` — they differ only in which literal
+   * SHAPE they accept from the same "plain module-level const" search, not
+   * in how that search is performed. A second inline lookup per resolver
+   * would grow `binding-scope-ratchet.test.ts`'s shrink-only floor for this
+   * file (already at 5) for a shape variance the callers can express
+   * themselves instead.
+   */
+  private findModuleConst(name: string): ConstantInfo | undefined {
+    return this.state.localConstants.find(
+      (k) => k.name === name && k.isModule && !k.containsArrow,
+    )
+  }
+
+  /**
    * Inline a module-level numeric const (`const TRACK = 8`) as its literal
    * value. Only a plain numeric initializer qualifies — anything computed or
    * non-numeric falls through to the normal field/ident resolution. Scoped to
@@ -4598,15 +4616,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.isCurrentLoopItem(name)) return null
     if (this.loopVarRefCount.has(name)) return null
     if (this.isOuterLoopParam(name)) return null
-    const c = this.state.localConstants.find(
-      (k) => k.name === name && k.isModule && !k.containsArrow,
-    )
+    const c = this.findModuleConst(name)
     if (!c || c.value === undefined) return null
     // `value` is reconstructed from source text, so a valid TS literal may carry
     // numeric separators (`100_000`). Strip them between digits, then accept a
     // plain decimal / float; Go template numeric literals don't allow `_`.
     const v = c.value.trim().replace(/(?<=\d)_(?=\d)/g, '')
     return /^-?\d+(\.\d+)?$/.test(v) ? v : null
+  }
+
+  /**
+   * Inline a module-level boolean const (`const OPEN = true`) as its Go
+   * literal (`true`/`false`). Only a plain `true`/`false` initializer
+   * qualifies (#2815) — mirrors `resolveModuleNumericConst`'s shape, sharing
+   * its lookup rather than adding a second `.find(` (see
+   * `findModuleConst`'s docstring).
+   */
+  private resolveModuleBooleanConst(name: string): string | null {
+    if (this.isCurrentLoopItem(name)) return null
+    if (this.loopVarRefCount.has(name)) return null
+    if (this.isOuterLoopParam(name)) return null
+    const c = this.findModuleConst(name)
+    if (!c || c.value === undefined) return null
+    const v = c.value.trim()
+    return v === 'true' || v === 'false' ? v : null
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {

@@ -1407,6 +1407,73 @@ export function Widget(props: P) {
       expect(types).toContain('Classes: "a b" + " " + "c d" + " " + in.ClassName + " tail"')
     })
 
+    // A signal seeded from a bare identifier referencing a module-level
+    // const (`const PAYLOAD = '...'; createSignal(PAYLOAD)`) used to bake
+    // to `nil` — the analyzer types it `unknown` since it never chases an
+    // identifier to its declaration, so none of convertInitialValue's typed
+    // branches saw it (#2794). Now resolved via the same
+    // resolveModuleStringConst/resolveModuleNumericConst the adapter
+    // already used for live template expressions (template-interp.ts).
+    test('signal seeded from a module-level const bakes its literal value, not nil', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+const PAYLOAD = 'hello'
+const WIDTH = 8
+export function Demo() {
+  const [value] = createSignal(PAYLOAD)
+  const [width] = createSignal(WIDTH)
+  return <textarea value={value()} data-w={width()} />
+}
+`
+      const types = adapter.generateTypes(compileToIR(source, adapter))!
+      expect(types).toContain('Value: "hello"')
+      expect(types).toContain('Width: 8')
+    })
+
+    // Same family, boolean shape (#2815 — filed and fixed in the same PR
+    // as #2794 above, since it's the identical resolver-not-wired gap on
+    // a third literal kind rather than a new mechanism).
+    test('signal seeded from a module-level boolean const bakes true/false, not nil', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+const OPEN = true
+export function Demo() {
+  const [open] = createSignal(OPEN)
+  return <div>{open() ? 'y' : 'n'}</div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(source, adapter))!
+      expect(types).toContain('Open: true')
+    })
+
+    // A destructured prop sharing the module const's name must still win
+    // (shadowing) — the const resolver is checked AFTER the prop lookup.
+    test('a destructured prop shadows a same-named module const', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+const PAYLOAD = 'const-value'
+interface P { PAYLOAD?: string }
+export function Demo({ PAYLOAD }: P) {
+  const [value] = createSignal(PAYLOAD)
+  return <textarea value={value()} />
+}
+`
+      const types = adapter.generateTypes(compileToIR(source, adapter))!
+      expect(types).not.toContain('Value: "const-value"')
+      // Positive pin (pullfrog review, #2816): the absence check above
+      // would pass just as well if the value fell through to `nil`
+      // instead of resolving to the prop — assert the actual expected
+      // shadowing output too, matching the `Value: in.Value,` convention
+      // used elsewhere in this file.
+      expect(types).toContain('Value: in.PAYLOAD,')
+    })
+
     // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) types its
     // SSR field as `bool` (not `int`), so `aria-checked={isChecked()}`
     // matches Hono's `aria-checked="false"` shape. Since #2260, `checked`'s
