@@ -1466,6 +1466,12 @@ export function Demo({ PAYLOAD }: P) {
 `
       const types = adapter.generateTypes(compileToIR(source, adapter))!
       expect(types).not.toContain('Value: "const-value"')
+      // Positive pin (pullfrog review, #2816): the absence check above
+      // would pass just as well if the value fell through to `nil`
+      // instead of resolving to the prop — assert the actual expected
+      // shadowing output too, matching the `Value: in.Value,` convention
+      // used elsewhere in this file.
+      expect(types).toContain('Value: in.PAYLOAD,')
     })
 
     // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) types its
