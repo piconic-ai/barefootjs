@@ -331,7 +331,25 @@ function csrSubstituteOnce(
   // Compute free identifiers of the rewritten form by re-parsing. Avoids
   // having to track analytically through nested substitutions, which is
   // exactly the bookkeeping that made the legacy code drift from emission.
-  return { rewritten, freeIdentifiers: extractFreeIdentifiersFromText(rewritten) }
+  //
+  // `extractFreeIdentifiersFromText` only sees `rewritten` in isolation —
+  // it has no way to know about `enclosingScope`, the loop-row bindings
+  // introduced OUTSIDE this expression's own AST (`isBound`'s second half,
+  // above). Without filtering by it too, a name legitimately shadowed by
+  // the enclosing loop row (never substituted, since `isBound` already
+  // skipped it during `visit`) still comes back as "free" here and trips
+  // the caller's `unsafeLocalNames` check — the exact same identifier the
+  // substitution step correctly left alone gets the UNSAFE sentinel
+  // anyway. Filtering by the same `enclosingScope.isBound` predicate keeps
+  // the two checks in agreement, matching this function's own docstring
+  // contract above (#2814 review).
+  const freeIdentifiers = extractFreeIdentifiersFromText(rewritten)
+  if (enclosingScope) {
+    for (const name of freeIdentifiers) {
+      if (enclosingScope.isBound(name)) freeIdentifiers.delete(name)
+    }
+  }
+  return { rewritten, freeIdentifiers }
 }
 
 export function extractFreeIdentifiersFromText(text: string): Set<string> {

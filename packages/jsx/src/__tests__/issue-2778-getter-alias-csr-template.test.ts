@@ -76,18 +76,38 @@ describe('#2778 — signal/memo getter alias resolves in the CSR template', () =
   })
 
   test('a `.map()` row PARAMETER literally named after the alias is not rewritten (shadow guard)', () => {
+    // A REAL component-scope alias must exist for this to exercise
+    // anything — `resolveGetterAliases` only registers a substitution
+    // entry for `items__alias` because of the `const [items] =
+    // createSignal(...); const items__alias = items` pair below. Without
+    // it (the original version of this test), the row parameter of the
+    // SAME name in `rows.map(items__alias => ...)` shadows nothing, and
+    // the assertion would pass identically whether or not the fix exists
+    // (pullfrog review, PR #2814).
     const { errors, clientJs } = compile(`
       "use client";
+      import { createSignal } from '@barefootjs/client'
       export function List() {
+        const [items] = createSignal([{ id: 1, label: 'x' }])
+        const items__alias = items
         const rows = [{ id: 1, name: 'a' }]
         return (
           <ul>
+            <li>{items__alias().length}</li>
             {rows.map(items__alias => <li key={items__alias.id}>{items__alias.name}</li>)}
           </ul>
         )
       }
     `)
     expect(errors).toHaveLength(0)
+    // Outside the loop, the component-scope alias substitutes correctly...
+    expect(clientJs).toContain(`[{ id: 1, label: 'x' }]).length`)
+    // ...but inside the loop, the SAME name is the row parameter and must
+    // stay untouched — not rewritten to the origin signal's array, and not
+    // flagged UNSAFE by the outer alias's unsafe-name bookkeeping either
+    // (the two bugs this construction actually exercises).
     expect(clientJs).toContain('items__alias.name')
+    expect(clientJs).toContain('escapeAttr(items__alias.id)')
+    expect(clientJs).not.toContain('escapeAttr(undefined)')
   })
 })
