@@ -70,6 +70,29 @@ function stripModuleExports(code: string): string {
     .replace(/\bexport\s+(default\s+)?/g, '')
 }
 
+/**
+ * A single named-import line for a child that's being INLINED (its
+ * declarations are spliced in verbatim, see `stripModuleExports` above) —
+ * returns `const <local> = <declared>` for every aliased specifier
+ * (`{ Label as AliasedLabel }`), or `null` when every specifier is a bare,
+ * non-aliased name (nothing left to bind; dropping the whole line is
+ * correct). A default-import specifier (`import Label from …`) has no
+ * declared name to alias against and is left unhandled — dropped like
+ * before, matching what a bare inlined child needs.
+ */
+function aliasDeclarationsFor(importLine: string): string | null {
+  const namedMatch = importLine.match(/\{([^}]*)\}/)
+  if (!namedMatch) return null
+  const aliases = namedMatch[1]
+    .split(',')
+    .map(spec => spec.trim())
+    .filter(Boolean)
+    .map(spec => spec.match(/^(\w+)\s+as\s+(\w+)$/))
+    .filter((m): m is RegExpMatchArray => m !== null)
+    .map(([, declared, local]) => `const ${local} = ${declared};`)
+  return aliases.length > 0 ? aliases.join(' ') : null
+}
+
 export async function renderHonoComponent(options: RenderOptions): Promise<string> {
   const { source, adapter, props, components, componentModules, componentName: requestedName } = options
 
@@ -171,7 +194,22 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
         const [, prefix, importPath, suffix] = importMatch
         const moduleKey = matchKey(importPath, moduleTempPaths.keys())
         if (moduleKey) return `${prefix}${moduleTempPaths.get(moduleKey)}${suffix}`
-        if (matchKey(importPath, componentKeys)) return null
+        if (matchKey(importPath, componentKeys)) {
+          // The inlined child keeps its OWN declared name (`stripModuleExports`
+          // only removes `export `, it doesn't rename), but the parent's
+          // JSX still references whatever LOCAL name it imported the child
+          // under (#2777 — Hono correctly keeps the caller's local binding
+          // rather than the declared name). Dropping the import line
+          // unconditionally is only safe for a non-aliased specifier
+          // (`import { Label } from './label'`, where local === declared);
+          // an aliased one (`import { Label as AliasedLabel } from
+          // './label'`) needs a `const AliasedLabel = Label` left behind, or
+          // the parent's JSX throws `ReferenceError: AliasedLabel is not
+          // defined` — this harness inlines the child by literal source
+          // splice, not through a real module boundary, so there's no
+          // `import … as …` left to do the binding for us.
+          return aliasDeclarationsFor(line)
+        }
         return line
       })
       .filter((line): line is string => line !== null)

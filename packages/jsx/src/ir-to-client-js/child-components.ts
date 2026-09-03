@@ -10,6 +10,7 @@
 
 import type { IRNode } from '../types.ts'
 import type { ClientJsContext, ConditionalElement } from './types.ts'
+import { resolveImportedComponentName } from './component-scope.ts'
 
 /** Emit child-component import marker lines for every component name
  *  reachable from the current component's IR (minus siblings). */
@@ -39,7 +40,13 @@ export function emitChildComponentImports(
   }
   for (const childName of childComponentNames) {
     if (!siblingSet.has(childName)) {
-      lines.push(`import '/* @bf-child:${childName} */'`)
+      // #2777 — resolve an import alias (`import { Foo as Bar }`, `<Bar/>`)
+      // to the declared name (`Foo`) the child's own module registers
+      // under, so `packages/vite`'s child-name index (keyed by exported
+      // names) and `combine-client-js.ts`'s `hydrate('Name')` scan both
+      // find it. `siblingSet` is checked against the LOCAL name above —
+      // a same-file sibling is never reached through an import alias.
+      lines.push(`import '/* @bf-child:${resolveImportedComponentName(childName)} */'`)
     }
   }
 }

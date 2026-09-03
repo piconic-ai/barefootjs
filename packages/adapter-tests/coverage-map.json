@@ -92,6 +92,19 @@
         "text"
       ]
     },
+    "aliased-import-child-component": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "aliased-loop-source": {
       "kinds": [
         "array-literal",
@@ -5822,11 +5835,11 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 240,
+    "call": 241,
     "conditional": 27,
-    "identifier": 341,
+    "identifier": 342,
     "index-access": 14,
-    "literal": 272,
+    "literal": 273,
     "logical": 47,
     "member": 196,
     "object-literal": 67,
@@ -5872,7 +5885,7 @@
     "literal:boolean": 59,
     "literal:null": 23,
     "literal:number": 115,
-    "literal:string": 190,
+    "literal:string": 191,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,
