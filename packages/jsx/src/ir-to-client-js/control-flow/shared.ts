@@ -16,7 +16,7 @@ import type { LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedL
 import type { IRLoopChildComponent, LoopParamBinding } from '../../types.ts'
 import { preambleAnalysisText } from '../../types.ts'
 import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
-import { irChildrenToJsExpr } from '../html-template.ts'
+import { irChildrenToJsExpr, jsxChildrenPropGetterExpr } from '../html-template.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
@@ -285,7 +285,13 @@ export function buildComponentPropsExpr(
       case 'boolean-attr':
         return `get ${quotePropName(p.name)}() { return true }`
       case 'jsx-children': {
-        const childExpr = irChildrenToJsExpr(p.value.children)
+        // Brand via the shared door (#2651/#2702) — see
+        // `jsxChildrenPropGetterExpr`'s docstring. This builder is shared
+        // by loop and conditional-branch component reconciliation, so a
+        // named jsx-children prop on a component instantiated in either
+        // context used to reach its getter unbranded (pullfrog review, PR
+        // #2820).
+        const childExpr = jsxChildrenPropGetterExpr(p.value.children, p.name)
         return `get ${quotePropName(p.name)}() { return ${wrap(childExpr)} }`
       }
       case 'expression':

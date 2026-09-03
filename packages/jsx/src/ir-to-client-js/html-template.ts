@@ -1644,34 +1644,52 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
  * - IRConditional → ternary expression
  * - Single child → single expression; multiple → array literal
  */
-export function irChildrenToJsExpr(children: IRNode[]): string {
+export function irChildrenToJsExpr(children: IRNode[], brandMarkup = false): string {
   // Flatten fragments and filter empty text nodes
-  const exprs = children.flatMap(c => irNodeToJsExprs(c)).filter(Boolean)
+  const exprs = children.flatMap(c => irNodeToJsExprs(c, brandMarkup)).filter(Boolean)
   if (exprs.length === 0) return "''"
   if (exprs.length === 1) return exprs[0]
   return `[${exprs.join(', ')}]`
 }
 
 /**
- * Narrow gate for branding a nested `jsx-children` getter's value with
- * `bfMarkup()` (#2651) — the `irNodeToJsExprs` counterpart of
- * `collect-elements.ts`'s `isSingleElementJsxChildren` (duplicated rather
- * than imported: `collect-elements.ts` already imports FROM this file, so
- * the reverse import would cycle). Same shape, same reasoning: a
- * `jsx-children` prop's value is always a single stored node
- * (`AttrValueOf.jsxChildren([...])`); only when that node is a lone
- * `'element'` does `irChildrenToJsExpr` reduce it to ONE HTML-string
- * template literal — the shape `bfMarkup` + `escapeTextOrNode` /
- * `escapeTextOrMarkup` have a proven contract for. A `'fragment'` (multiple
- * children) or `'conditional'` node reduces to an array literal or a
- * nested ternary instead — left unbranded here for the same reason as the
- * `collect-elements.ts` twin.
+ * Build the getter-body expression for a `jsx-children` prop value —
+ * `collect-elements.ts`'s `buildComponentPropsExpr` and this file's
+ * `irNodeToJsExprs` 'component' case both hand a child component this exact
+ * value through `get <propName>() { return <expr> }`. The ONE place that
+ * decides whether (and how) to brand it with `bfMarkup()` (#2651, #2702).
+ *
+ * `children` itself is never branded — its consumer is a bare
+ * `{children}` passthrough interpolation with no unwrap call, so a branded
+ * object there would stringify to `[object Object]`.
+ *
+ * Otherwise, brand every `'element'` LEAF (`irNodeToJsExprs(..., true)`),
+ * not the whole assembled value: `escapeTextOrNode`/`escapeTextOrMarkup`
+ * (`@barefootjs/client/runtime`) unwrap a `bfMarkup()`-branded STRING, so a
+ * lone element (`header={<strong/>}`), a fragment wrapping one (`header={<>
+ * <strong/></>}`), and a conditional/nested-conditional between elements
+ * (`header={<>{cond ? <a/> : <b/>}</>}`, #2702) all reduce, after flattening,
+ * to exactly ONE branded expression — brand-at-the-leaf makes this sound
+ * even when a branch is plain text or an arbitrary expression
+ * (`cond ? <a/> : label()`): `irNodeToJsExprs`'s 'text'/'expression' cases
+ * never brand, so `label()` still reaches `escapeTextOrNode` unescaped-HTML-free
+ * and gets escaped normally, while the `<a/>` branch is trusted.
+ *
+ * A multi-child fragment (`header={<>text<strong/></>}`) flattens to MORE
+ * than one expression — an array, per `irChildrenToJsExpr`'s own contract —
+ * and neither runtime unwrapper has an array contract, so that shape stays
+ * exactly as it rendered before this function existed: unbranded, via the
+ * plain (unbranded) `irChildrenToJsExpr` call below. This is a pre-existing,
+ * separate gap (tracked apart from #2702), not something this function
+ * silently "fixes" by guessing at a new consumer contract.
  */
-function isSingleElementJsxChildren(nodes: IRNode[]): boolean {
-  return nodes.length === 1 && nodes[0].type === 'element'
+export function jsxChildrenPropGetterExpr(children: IRNode[], propName: string): string {
+  if (propName === 'children') return irChildrenToJsExpr(children)
+  const brandedExprs = children.flatMap(c => irNodeToJsExprs(c, true)).filter(Boolean)
+  return brandedExprs.length === 1 ? brandedExprs[0] : irChildrenToJsExpr(children)
 }
 
-function irNodeToJsExprs(node: IRNode): string[] {
+function irNodeToJsExprs(node: IRNode, brandMarkup = false): string[] {
   switch (node.type) {
     case 'component': {
       const propsEntries: string[] = node.props
@@ -1682,17 +1700,10 @@ function irNodeToJsExprs(node: IRNode): string[] {
           }
           switch (p.value.kind) {
             case 'jsx-children': {
-              // Brand (#2651) only the lone-'element' shape, and never an
-              // explicit `children={<jsx/>}` prop — see
-              // `isSingleElementJsxChildren` (this file) for the shape
-              // argument and the `collect-elements.ts` twin for the
-              // `children`-exclusion argument (bare-passthrough consumer,
-              // no unwrap call).
-              const jsxExpr = irChildrenToJsExpr(p.value.children)
-              const wrapped = (p.name !== 'children' && isSingleElementJsxChildren(p.value.children))
-                ? `bfMarkup(${jsxExpr})`
-                : jsxExpr
-              return `get ${quotePropName(p.name)}() { return ${wrapped} }`
+              // Brand (#2651/#2702) via the shared door — see
+              // `jsxChildrenPropGetterExpr`'s docstring.
+              const jsxExpr = jsxChildrenPropGetterExpr(p.value.children, p.name)
+              return `get ${quotePropName(p.name)}() { return ${jsxExpr} }`
             }
             case 'literal':
               return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value.value)} }`
@@ -1723,14 +1734,16 @@ function irNodeToJsExprs(node: IRNode): string[] {
       if (!node.value.trim()) return []
       return [JSON.stringify(node.value)]
 
-    case 'element':
-      return [`\`${irToHtmlTemplate(node)}\``]
+    case 'element': {
+      const html = `\`${irToHtmlTemplate(node)}\``
+      return [brandMarkup ? `bfMarkup(${html})` : html]
+    }
 
     case 'fragment':
-      return node.children.flatMap(c => irNodeToJsExprs(c))
+      return node.children.flatMap(c => irNodeToJsExprs(c, brandMarkup))
 
     case 'conditional':
-      return [`${node.condition} ? ${irChildrenToJsExpr([node.whenTrue])} : ${irChildrenToJsExpr([node.whenFalse])}`]
+      return [`${node.condition} ? ${irChildrenToJsExpr([node.whenTrue], brandMarkup)} : ${irChildrenToJsExpr([node.whenFalse], brandMarkup)}`]
 
     // The kinds below previously fell through to `default: return []` and so
     // were silently dropped when used as a component child. The explicit

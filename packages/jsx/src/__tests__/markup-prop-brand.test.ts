@@ -159,27 +159,18 @@ describe('markup-prop brand (#2651)', () => {
     expect(clientJs).toMatch(/get header\(\)\s*\{\s*return __slot\(/)
   })
 
-  // KNOWN BUG (#2702) — pins the CURRENT (broken) emission, not the
-  // correct one. `isSingleElementJsxChildren` (`ir-to-client-js/collect-
-  // elements.ts`) only brands the single-element jsx-children shape;
-  // #2651's PR body enumerated "conditional-in-fragment" as deliberately
-  // out of that PR's scope, and #2702 confirms it is actually broken, not
-  // merely unbranded-but-harmless: the child's own `escapeTextOrNode`
-  // reactive effect re-escapes the chosen branch's HTML as literal text
-  // the moment it first runs (real DOM corruption, verified directly —
-  // see `jsx-element-prop-fragment-conditional`'s fixture docstring,
-  // `packages/adapter-tests/fixtures/`, for the full mechanism and why no
-  // other shared conformance suite observes it: SSR is genuinely correct,
-  // and CSR conformance's `createEffect` mock never runs the effect).
-  //
-  // Graduation: once `bfMarkup()` branding is extended to this multi-part
-  // shape, this assertion starts failing — replace it with a positive
-  // `bfMarkup(...)`-wrapped assertion (mirroring test (b) above) and
-  // delete this comment block; that is the fixture's own graduation
-  // trigger too (its `expectedHtml` is already the correct SSR output, so
-  // no fixture change is needed, only this pin's removal and #2667's
-  // BF021 suggestion regaining the fragment-wrap escape).
-  test('(h) KNOWN BUG (#2702): a conditional-in-fragment jsx-children prop reaches initChild UNbranded', () => {
+  // #2702: a conditional-in-fragment jsx-children prop now brands EACH
+  // element branch with `bfMarkup()` (`jsxChildrenPropGetterExpr`,
+  // `ir-to-client-js/html-template.ts`) — the shape `isSingleElementJsx
+  // Children`'s narrower single-element gate (#2651) left unbranded,
+  // which corrupted the DOM the moment the child's own `escapeTextOrNode`
+  // reactive effect first ran (re-escaped the chosen branch's HTML as
+  // literal text; see `jsx-element-prop-fragment-conditional`'s fixture
+  // docstring for the full mechanism). Branding each LEAF rather than the
+  // whole ternary keeps a non-element branch (text/expression/`&&`'s
+  // `''`) unbranded and thus still escaped normally — see the sibling
+  // tests below.
+  test('(h) a conditional-in-fragment jsx-children prop brands each element branch with bfMarkup()', () => {
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -201,10 +192,158 @@ describe('markup-prop brand (#2651)', () => {
       }
     `
     const clientJs = clientJsFor(source)
-    // Bug: the getter returns a bare template-literal ternary — NOT
-    // wrapped in bfMarkup(...). If this ever starts matching bfMarkup(...)
-    // the bug is fixed; see the graduation note above.
-    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return cond\(\)\s*\?\s*`<a>x<\/a>`\s*:\s*`<b>y<\/b>`\s*\}/)
-    expect(clientJs).not.toMatch(/get header\(\)\s*\{\s*return bfMarkup\(/)
+    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return cond\(\)\s*\?\s*bfMarkup\(`<a>x<\/a>`\)\s*:\s*bfMarkup\(`<b>y<\/b>`\)\s*\}/)
+  })
+
+  test('(i) a conditional-in-fragment jsx-children prop leaves a non-element branch unbranded', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any }) {
+        return <section><header>{props.header}</header></section>
+      }
+      export function label() { return 'x' }
+      export function TextBranch() {
+        const [cond, setCond] = createSignal(true)
+        return <Card header={<>{cond() ? <a>x</a> : 'plain'}</>} />
+      }
+      export function ExpressionBranch() {
+        const [cond, setCond] = createSignal(true)
+        return <Card header={<>{cond() ? <a>x</a> : label()}</>} />
+      }
+      export function LogicalAnd() {
+        const [cond, setCond] = createSignal(true)
+        return <Card header={<>{cond() && <a>x</a>}</>} />
+      }
+    `
+    const clientJs = clientJsFor(source)
+    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return cond\(\)\s*\?\s*bfMarkup\(`<a>x<\/a>`\)\s*:\s*'plain'\s*\}/)
+    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return cond\(\)\s*\?\s*bfMarkup\(`<a>x<\/a>`\)\s*:\s*label\(\)\s*\}/)
+    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return cond\(\)\s*\?\s*bfMarkup\(`<a>x<\/a>`\)\s*:\s*''\s*\}/)
+  })
+
+  test('(j) nested conditionals brand every element branch', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any }) {
+        return <section><header>{props.header}</header></section>
+      }
+      export function P() {
+        const [a, setA] = createSignal(true)
+        const [b, setB] = createSignal(true)
+        return <Card header={<>{a() ? (b() ? <a>x</a> : <c>z</c>) : <b>y</b>}</>} />
+      }
+    `
+    const clientJs = clientJsFor(source)
+    expect(clientJs).toMatch(
+      /get header\(\)\s*\{\s*return a\(\)\s*\?\s*b\(\)\s*\?\s*bfMarkup\(`<a>x<\/a>`\)\s*:\s*bfMarkup\(`<c>z<\/c>`\)\s*:\s*bfMarkup\(`<b>y<\/b>`\)\s*\}/,
+    )
+  })
+
+  // A multi-child fragment (more than one flattened part) has no `bfMarkup`/
+  // `escapeTextOrNode` array contract — stays unbranded, unchanged from
+  // before #2702 (a separate, pre-existing gap, not this fix's scope).
+  test('(k) a multi-child fragment jsx-children prop stays unbranded', () => {
+    const source = `
+      'use client'
+      export function Card(props: { header?: any }) {
+        return <section><header>{props.header}</header></section>
+      }
+      export function P() {
+        return <Card header={<>text<strong>x</strong></>} />
+      }
+    `
+    const clientJs = clientJsFor(source)
+    expect(clientJs).toMatch(/get header\(\)\s*\{\s*return \["text", `<strong>x<\/strong>`\]\s*\}/)
+  })
+
+  // An explicit `children={<jsx/>}` prop stays unbranded regardless of
+  // shape — its consumer is a bare `{children}` passthrough with no
+  // unwrap call (test (b)'s comment above explains the same exclusion).
+  // pullfrog review, PR #2820: `jsxChildrenPropGetterExpr` (the shared
+  // brand-decision door test (h)-(k) pin) wasn't wired into EVERY builder
+  // that constructs the identical `get <propName>() { return <expr> }`
+  // getter — `buildComponentPropsExpr` (`control-flow/shared.ts`, shared by
+  // loop AND conditional-branch component reconciliation) and
+  // `buildStaticPropsExpr` (`build-static-array-child-init.ts`) both still
+  // called the plain, unbranded `irChildrenToJsExpr` directly. The same
+  // conditional-in-fragment shape test (h) pins for a top-level component
+  // corrupted the DOM at hydrate time when the component was instead
+  // instantiated inside a `.map()` loop.
+  test('(m) a conditional-in-fragment jsx-children prop is branded for a component instantiated inside a .map() loop', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any }) {
+        return <header>{props.header}</header>
+      }
+      export function List() {
+        const [items, setItems] = createSignal([{ id: 1 }])
+        return (
+          <div>
+            {items().map(item => (
+              <Card key={item.id} header={<>{item.id > 0 ? <a>x</a> : <b>y</b>}</>} />
+            ))}
+          </div>
+        )
+      }
+    `
+    const clientJs = clientJsFor(source)
+    // Both the reactive-patch (initChild) and initial-mount (createComponent)
+    // paths through mapArray's callback must brand each element branch.
+    expect(clientJs).toMatch(
+      /initChild\('Card', __existing, \{ get header\(\) \{ return item\(\)\.id > 0 \? bfMarkup\(`<a>x<\/a>`\) : bfMarkup\(`<b>y<\/b>`\) \} \}\)/,
+    )
+    expect(clientJs).toMatch(
+      /createComponent\('Card', \{ get header\(\) \{ return item\(\)\.id > 0 \? bfMarkup\(`<a>x<\/a>`\) : bfMarkup\(`<b>y<\/b>`\) \} \}, item\(\)\.id\)/,
+    )
+  })
+
+  // pullfrog review, PR #2820: test (m) covers the SIGNAL-driven `.map()`
+  // loop (`buildComponentPropsExpr`); `buildStaticPropsExpr`
+  // (`build-static-array-child-init.ts`) — the sibling builder for a
+  // STATIC, non-signal array `.map()` — got the identical fix but no
+  // dedicated test, which is exactly the untested-call-site pattern that
+  // let #2702's original corruption go uncaught. Pins the hydrate-time
+  // `initChild` path this builder feeds.
+  test('(n) a conditional-in-fragment jsx-children prop is branded for a component instantiated inside a static (non-signal) array .map()', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { header?: any }) {
+        return <header>{props.header}</header>
+      }
+      export function List() {
+        const [cond, setCond] = createSignal(true)
+        return (
+          <div>
+            {[{ id: 1 }].map(item => (
+              <Card key={item.id} header={<>{cond() ? <a>x</a> : <b>y</b>}</>} />
+            ))}
+          </div>
+        )
+      }
+    `
+    const clientJs = clientJsFor(source)
+    expect(clientJs).toMatch(
+      /initChild\('Card', childScope, \{ get header\(\) \{ return cond\(\) \? bfMarkup\(`<a>x<\/a>`\) : bfMarkup\(`<b>y<\/b>`\) \} \}\)/,
+    )
+  })
+
+  test('(l) an explicit children prop with a conditional stays unbranded', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Card(props: { children?: any }) {
+        return <section>{props.children}</section>
+      }
+      export function P() {
+        const [cond, setCond] = createSignal(true)
+        return <Card children={<>{cond() ? <a>x</a> : <b>y</b>}</>} />
+      }
+    `
+    const clientJs = clientJsFor(source)
+    expect(clientJs).toMatch(/get children\(\)\s*\{\s*return cond\(\)\s*\?\s*`<a>x<\/a>`\s*:\s*`<b>y<\/b>`\s*\}/)
   })
 })
