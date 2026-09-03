@@ -1,18 +1,18 @@
 import { createFixture } from '../src/types'
 
 /**
- * #2822 follow-up (Pullfrog review on PR #2829): the original
- * `aliased-import-child-component` fixture only covers a component
- * referenced DIRECTLY (a single static child instance). A `.map()` loop
- * whose body is a single aliased child component (`import { Label as
- * AliasedLabel } from './label'`, `items.map(item => <AliasedLabel .../>)`)
- * is a structurally different codegen path on adapters that generate a
- * cross-file compile-time TYPE for the child (only the Go template
- * adapter, among the DSL adapters — the others resolve a child purely by
- * the cross-template CALL NAME, whether static or loop-nested, through
- * the same site already fixed for #2822) — modeled on `static-array-children`
- * (plain static array, single child-component body, no destructuring/props
- * complications) with the import aliased.
+ * #2822 follow-up: the original `aliased-import-child-component` fixture
+ * only covers a component referenced DIRECTLY (a single static child
+ * instance). A `.map()` loop whose body is a single aliased child
+ * component (`import { Label as AliasedLabel } from './label'`,
+ * `items.map(item => <AliasedLabel .../>)`) is a structurally different
+ * codegen path on adapters that generate a cross-file compile-time TYPE
+ * for the child (only the Go template adapter, among the DSL adapters —
+ * the others resolve a child purely by the cross-template CALL NAME,
+ * whether static or loop-nested, through the same site already fixed for
+ * #2822) — modeled on `static-array-children` (plain static array,
+ * single child-component body, no destructuring/props complications)
+ * with the import aliased.
  */
 export const fixture = createFixture({
   id: 'aliased-import-child-component-loop',
