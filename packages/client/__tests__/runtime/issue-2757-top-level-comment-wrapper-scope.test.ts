@@ -45,8 +45,13 @@ describe('top-level root-is-a-child-call scope threading (#2757)', () => {
       comment: true,
     })
 
-    const el = createComponent('Case2757', {}) as HTMLElement
-    document.body.appendChild(el)
+    // #2728: this bare top-level comment-wrapper mount now returns a
+    // DocumentFragment carrying its own `<!--bf-scope:-->` boundary
+    // comments (mirroring a genuine fragment root, #2722) — append first,
+    // then re-acquire the child element from the document.
+    const result = createComponent('Case2757', {})
+    document.body.appendChild(result)
+    const el = document.body.querySelector('div')!
 
     const scope = el.getAttribute('bf-s')!
     expect(scope).toMatch(/^Case2757_[a-z0-9]+_s2$/)
@@ -64,9 +69,14 @@ describe('top-level root-is-a-child-call scope threading (#2757)', () => {
       comment: true,
     })
 
-    const a = createComponent('CaseB2757', {}) as HTMLElement
-    const b = createComponent('CaseB2757', {}) as HTMLElement
-    expect(a.getAttribute('bf-s')).not.toBe(b.getAttribute('bf-s'))
+    // #2728: bare top-level mounts of this comment-wrapper now return a
+    // DocumentFragment (detached DocumentFragments still support
+    // querySelector, so no need to append to the live document here).
+    const a = createComponent('CaseB2757', {}) as DocumentFragment
+    const b = createComponent('CaseB2757', {}) as DocumentFragment
+    const divA = a.querySelector('div')!
+    const divB = b.querySelector('div')!
+    expect(divA.getAttribute('bf-s')).not.toBe(divB.getAttribute('bf-s'))
   })
 
   test('a wrapper mounted WITH a slot still inherits slot.parent (#1320 unchanged)', async () => {

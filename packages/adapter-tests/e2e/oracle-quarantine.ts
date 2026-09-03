@@ -146,23 +146,21 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
-  // tabs' `snap` row (the expando-.value shape, #2716) is gone — the fix
-  // there was verified with the real oracle run. `three-point`'s FIRST
-  // comparison (SSR vs hydrated) now passes for the same reason, which
-  // unmasked a SECOND, previously-hidden comparison inside the same oracle
-  // (hydrated vs csr-mount, `runThreePointOracle` in oracle-core.ts runs it
-  // only after the first passes): csr-mount's default-active TabsTrigger
-  // renders `aria-selected="false" data-state="inactive"` with no
-  // `data-value` at all, while the hydrated leg correctly shows
-  // `aria-selected="true" data-state="active" data-value="account"` — the
-  // csr-mount leg isn't computing the default active tab the same way.
-  // Unrelated to #2716's DOM-property write; filed separately as #2728.
-  tabs: {
-    oracles: ['three-point', 'idempotence'],
-    reason:
-      "three-point: csr-mount's default-active TabsTrigger disagrees with the hydrated leg on aria-selected/data-state/data-value (see module comment above) — a distinct, previously-masked divergence, not the #2716 .value shape. Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg; may or may not share a root cause with the three-point row.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2728',
-  },
+  // `tabs` graduated (#2728): `TabsBasicDemo` compiles as a root-is-a-
+  // child-call comment wrapper (#1211/#2649), and a bare top-level CSR
+  // mount of that shape never registered a `<!--bf-scope:-->` boundary-
+  // comment pair for itself the way hydration's `hydrateCommentScope`
+  // does for the SSR-rendered one — `$c()`'s dual-scope lookup then found
+  // none of the wrapper's own sibling child slots (TabsTrigger ×2,
+  // TabsContent ×2), so they were never `initChild`'d at all (dead click
+  // handlers, un-applied template-only attributes), which is what both
+  // `three-point`'s hydrated-vs-csr-mount leg and `idempotence`'s replay
+  // were catching — one shared root cause, not two. Fixed in
+  // `materializeComponent` (`packages/client/src/runtime/component.ts`):
+  // this wrapper shape now emits the same boundary comments a genuine
+  // fragment root already did (#2722), derived from the SAME id #2757
+  // already computed for thread-only purposes. Verified with the real
+  // oracle run (`three-point` and `idempotence` both pass).
   // `/* @client */` placeholders populated after hydration (#2719, narrowed):
   // TodoApp.tsx marks its filtered keyed loop, both todo-count text
   // expressions, and the clear-completed conditional `/* @client */`, so SSR

@@ -77,8 +77,14 @@ describe('createComponent + comment: true wrapper (#1222)', () => {
       comment: true,
     })
 
-    const el = createComponent('Wrapper_test1222', { id: 'src' })
-    document.body.appendChild(el)
+    // #2728: a bare top-level mount of a comment-wrapper now returns a
+    // DocumentFragment carrying its own `<!--bf-scope:-->` boundary
+    // comments (mirroring a genuine fragment root, #2722) rather than the
+    // bare inner element — append first, then re-acquire the element from
+    // the document so this test works whichever shape it gets.
+    const result = createComponent('Wrapper_test1222', { id: 'src' })
+    document.body.appendChild(result)
+    const el = document.body.querySelector('[data-id]')!
 
     expect(innerInitCalls).toHaveLength(1)
     expect(innerInitCalls[0]).toEqual({ id: 'src', sawScope: true })

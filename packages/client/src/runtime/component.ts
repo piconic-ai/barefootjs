@@ -148,9 +148,13 @@ export interface CreateComponentSlotInfo {
 }
 
 /**
- * The `HTMLElement | DocumentFragment` return covers exactly one shape: a
+ * The `HTMLElement | DocumentFragment` return covers exactly two shapes: a
  * BARE call (no `mountAt`, no ambient row-mount point) for a genuine
- * fragment-root component (#2722). Every other combination — a normal
+ * fragment-root component (#2722), or for a root-is-a-child-call comment
+ * wrapper mounted at the top level (#2728 — same rule: no single element
+ * can carry the `<!--bf-scope:-->` boundary comments to an unknown
+ * destination, so the caller gets the whole bundle back as a fragment).
+ * Every other combination — a normal
  * component, or a fragment-root one with `mountAt`/row-mount already
  * telling this function where to connect — still returns the real,
  * single `HTMLElement`, unchanged (that element stays the caller-visible
@@ -351,13 +355,28 @@ function materializeComponent(
   // wrapper materialized while an OUTER template eval is in flight keeps
   // inheriting that caller's ambient scope rather than being renamed under a
   // fresh random id. Only the genuinely-rootless mount is affected.
+  // #2728: a root-is-a-child-call wrapper mounted at the top level (no
+  // `scopeId`, no `slot.parent`, no ambient `_parentScopeId`) derives an
+  // id here purely for THREADING — captured separately as `wrapperScopeId`
+  // (rather than only living in `_parentScopeId`, which step 7a needs
+  // AFTER the template eval restores it below) so this wrapper can carry
+  // the same `<!--bf-scope:ID-->` boundary comments a genuine fragment
+  // root does (step 7a). Without them, hydration's `hydrateCommentScope`
+  // registers the SSR proxy under this id, but a bare `createComponent`
+  // CSR-mount of the same shape never registers ANY comment scope for
+  // it — `$c()`'s dual-scope lookup (`getDualScopeIds`) then can't find
+  // the wrapper's own children by their `bf-h`-prefixed selector, so they
+  // never get `initChild`'d at all (dead click handlers, unapplied
+  // template-only attributes) even though their markup is present.
   const prevParentScopeId = _parentScopeId
+  let wrapperScopeId: string | null = null
   if (scopeId) {
     _parentScopeId = scopeId
   } else if (slot?.parent) {
     _parentScopeId = slot.parent
   } else if (!_parentScopeId) {
-    _parentScopeId = `${def?.name ?? name}_${generateId()}`
+    wrapperScopeId = `${def?.name ?? name}_${generateId()}`
+    _parentScopeId = wrapperScopeId
   }
   let html: string
   try {
@@ -447,14 +466,21 @@ function materializeComponent(
   // are built now and threaded through to wherever `element` ends up
   // connected below, exactly mirroring the SSR/hydrate shape:
   //   <!--bf-scope:ID-->` + element + `<!--bf-/scope:ID-->`
-  const fragmentComments = isFragmentRoot && scopeId
+  //
+  // A root-is-a-child-call wrapper mounted at the top level (#2728) gets
+  // the same treatment under its OWN derived `wrapperScopeId` — computed
+  // above precisely so it survives to here, since `_parentScopeId` itself
+  // was already restored to `prevParentScopeId` by the template-eval
+  // `finally` block before this line runs.
+  const commentScopeId = isFragmentRoot ? scopeId : (isCommentWrapper ? wrapperScopeId : null)
+  const fragmentComments = commentScopeId
     ? {
-        start: document.createComment(`${BF_SCOPE_COMMENT_PREFIX}${scopeId}`),
-        end: document.createComment(`${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}`),
+        start: document.createComment(`${BF_SCOPE_COMMENT_PREFIX}${commentScopeId}`),
+        end: document.createComment(`${BF_SCOPE_COMMENT_END_PREFIX}${commentScopeId}`),
       }
     : null
   if (fragmentComments) {
-    commentScopeRegistry.set(element, { commentNode: fragmentComments.start, scopeId: scopeId! })
+    commentScopeRegistry.set(element, { commentNode: fragmentComments.start, scopeId: commentScopeId! })
   }
 
   // 7b. Connect before init.
