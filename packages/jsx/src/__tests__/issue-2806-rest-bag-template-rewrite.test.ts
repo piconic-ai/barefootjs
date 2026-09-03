@@ -43,6 +43,11 @@ describe('#2806 — rest-bag identifier resolves in the CSR template', () => {
   })
 
   test('a rest-bag read inside a `.map()` row still resolves', () => {
+    // NOTE: `rest.items ?? []` is classified `isStaticArray` here (no signal,
+    // no `isArrayExprDirectPropRef` match — see `jsx-to-ir.ts`'s `isStaticArray`
+    // derivation), so this row is emitted through `buildStaticLoopPlan`'s
+    // SSR-time-only `forEach`, NOT through the reactive `mapArray`/`mapArrayLazy`
+    // loop emitters. It does not exercise those two paths — the tests below do.
     const content = clientJs(`
       "use client";
       export function Row({ children, ...rest }: { children?: any; items?: Array<{ id: number }>; [key: string]: any }) {
@@ -55,6 +60,58 @@ describe('#2806 — rest-bag identifier resolves in the CSR template', () => {
         )
       }
     `)
+    expect(content).toContain('_p.suffix')
+    expect(content).not.toMatch(/[^.\w]rest\.suffix/)
+  })
+
+  test('a rest-bag read inside a lazy-eligible `.map()` row resolves (`mapArrayLazy`)', () => {
+    // Signal-backed source + a keyed, single-root, child-component-free row
+    // is lazy-eligible (`lazyRowEligibility`), so this hits the `createRow`/
+    // `applyOuter` bodies emitted by `stringify/lazy-row.ts` — a SEPARATE
+    // emitter from the whole-init-body rewrite the other tests here exercise
+    // only incidentally through the eager `mapArray` row body.
+    const content = clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      export function Row({ children, ...rest }: { children?: any; [key: string]: any }) {
+        const [items, setItems] = createSignal<{ id: number }[]>([])
+        return (
+          <ul>
+            {items().map((item: { id: number }) => (
+              <li key={item.id}>{item.id}{rest.suffix}</li>
+            ))}
+          </ul>
+        )
+      }
+    `)
+    expect(content).toContain('mapArrayLazy')
+    expect(content).toContain('_p.suffix')
+    expect(content).not.toMatch(/[^.\w]rest\.suffix/)
+  })
+
+  test('a rest-bag read inside an eager `.map()` row with a child component resolves (`mapArray`)', () => {
+    // A child component in the row forces eager `mapArray` eligibility
+    // (`lazyRowEligibility`'s `hasChildComponent` gate) — the loop-row-body
+    // emission path #2812 actually fixed (the `hydrate(... template: ...)`
+    // line and the CSR/static template builders in `html-template.ts`).
+    const content = clientJs(`
+      "use client";
+      import { createSignal } from '@barefootjs/client'
+      function Item(props: { id: number }) {
+        return <span>{props.id}</span>
+      }
+      export function Row({ children, ...rest }: { children?: any; [key: string]: any }) {
+        const [items, setItems] = createSignal<{ id: number }[]>([])
+        return (
+          <ul>
+            {items().map((item: { id: number }) => (
+              <li key={item.id}><Item id={item.id} />{rest.suffix}</li>
+            ))}
+          </ul>
+        )
+      }
+    `)
+    expect(content).toContain('mapArray(')
     expect(content).toContain('_p.suffix')
     expect(content).not.toMatch(/[^.\w]rest\.suffix/)
   })
