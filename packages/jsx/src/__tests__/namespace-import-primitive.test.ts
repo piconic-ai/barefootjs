@@ -92,6 +92,30 @@ describe('#2771 — BF013: reactive primitive called through an unresolved names
     expect(err).toBeDefined()
   })
 
+  test('bf.onCleanup(...) (expression statement) fires BF013', () => {
+    const err = bf013(`
+      'use client'
+      import * as bf from '@barefootjs/client'
+      export function Counter() {
+        bf.onCleanup(() => { console.log('cleaned up') })
+        return <div>static</div>
+      }
+    `)
+    expect(err).toBeDefined()
+  })
+
+  test('bf.createSearchParams(...) (array destructure) fires BF013', () => {
+    const err = bf013(`
+      'use client'
+      import * as bf from '@barefootjs/client'
+      export function Counter() {
+        const [searchParams] = bf.createSearchParams()
+        return <div>{searchParams().get('sort')}</div>
+      }
+    `)
+    expect(err).toBeDefined()
+  })
+
   test('bf.createSignal(0)[0] (element access) fires BF013', () => {
     const err = bf013(`
       'use client'
