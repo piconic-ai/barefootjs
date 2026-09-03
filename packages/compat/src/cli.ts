@@ -199,11 +199,14 @@ async function main(): Promise<void> {
 
   const loadResult = await loadCompatAdapters()
   let loaded: typeof loadResult.loaded
-  if (outPath) {
+  if (all && outPath) {
     // Writing a committed lock artifact (compat:lock = --all --json --out):
     // a subset lock silently drops the missing adapters' columns, and the
     // committed lock then becomes the (wrong) expectation the freshness
-    // test compares against (#2785) — refuse instead of warning.
+    // test compares against (#2785) — refuse instead of warning. An ad-hoc
+    // named-component run with `--out` (e.g. `compat Button --out
+    // /tmp/report.json`) is not this scenario — it stays best-effort, per
+    // adapter-registry.ts's header.
     try {
       loaded = requireAllCompatAdapters(loadResult)
     } catch (err) {
