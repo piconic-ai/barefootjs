@@ -565,6 +565,11 @@ import { fixture as progressMeterValue } from './progress-meter-value'
 // plain-object (non-array-wrapped) destructured prop with a nested array
 // and a nested object property.
 import { fixture as destructuredObjectPropNested } from './destructured-object-prop-nested'
+// #2778: a .map() loop source that is a local const alias of a signal
+// getter (`const items__alias = items`) rather than the getter called
+// directly — the CSR template builder resolved the alias to the literal
+// `undefined` instead of following it.
+import { fixture as aliasedLoopSource } from './aliased-loop-source'
 
 import type { JSXFixture } from '../src/types'
 
@@ -954,4 +959,5 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowControlledTextarea,
   loopRowControlledInput,
   statelessRestSpreadForward,
+  aliasedLoopSource,
 ]

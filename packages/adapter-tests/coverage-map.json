@@ -92,6 +92,25 @@
         "text"
       ]
     },
+    "aliased-loop-source": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "aliased-prop-signal-tag-collision": {
       "kinds": [
         "call",
@@ -5782,18 +5801,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 86,
+    "array-literal": 87,
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 238,
+    "call": 239,
     "conditional": 27,
-    "identifier": 339,
+    "identifier": 340,
     "index-access": 14,
-    "literal": 270,
+    "literal": 271,
     "logical": 47,
-    "member": 194,
-    "object-literal": 65,
+    "member": 195,
+    "object-literal": 66,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 42
@@ -5835,8 +5854,8 @@
     "binary:>=": 1,
     "literal:boolean": 58,
     "literal:null": 23,
-    "literal:number": 114,
-    "literal:string": 188,
+    "literal:number": 115,
+    "literal:string": 189,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,

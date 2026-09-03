@@ -2322,8 +2322,11 @@ export function generateCsrTemplate(
   // Build the substitution env once per component. Signals + memos come
   // from `buildSignalMemoEnv`; inlinable constants layer in here so
   // each call to `transformExpr` is a pure AST projection over the
-  // shared env (no per-call Map cloning).
-  const base = buildSignalMemoEnv(ctx.signals, ctx.memos, propsObjectName ?? null)
+  // shared env (no per-call Map cloning). `ctx.localConstants` lets
+  // `buildSignalMemoEnv` also resolve a bare getter-alias chain
+  // (`const items__alias = items`, #2778) to the same call-kind entry
+  // its origin has.
+  const base = buildSignalMemoEnv(ctx.signals, ctx.memos, propsObjectName ?? null, ctx.localConstants)
   const csrEnv: CsrEnv = { substitutions: new Map(base.substitutions), propsObjectName: base.propsObjectName }
   if (inlinableConstants) {
     for (const [name, value] of inlinableConstants) {
@@ -2417,7 +2420,7 @@ function buildCsrEnvForCtx(
   inlinableConstants: Map<string, string> | undefined,
   propsObjectName?: string | null,
 ): CsrEnv {
-  const base = buildSignalMemoEnv(ctx.signals, ctx.memos, propsObjectName ?? null)
+  const base = buildSignalMemoEnv(ctx.signals, ctx.memos, propsObjectName ?? null, ctx.localConstants)
   const csrEnv: CsrEnv = { substitutions: new Map(base.substitutions), propsObjectName: base.propsObjectName }
   if (inlinableConstants) {
     for (const [name, value] of inlinableConstants) {

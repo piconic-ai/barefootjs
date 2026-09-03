@@ -1814,8 +1814,42 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 361,
+    "totalFixtures": 362,
     "fixtures": {
+      "aliased-loop-source": {
+        "blade": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) SSRs an empty `<ul>` on real Blade — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) throws `undefined method 'length' for nil (NoMethodError)` on real Ruby ERB — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) fails template execution on real Go (`can't evaluate field Items__alias in type main.AliasedLoopSourceProps`) — the zero-arg-call-to-field lowering routes `items__alias()` to a `.Items__alias` struct field that was never seeded, since seeding only knows about `items`, the real signal name; the alias hop is never resolved. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not Go's field-routing/seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at field-routing time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) SSRs an empty `<ul>` on real Jinja2 — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) SSRs an empty `<ul>` through real minijinja — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) dies inside `Mojo::Template::process` on real Mojolicious — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) SSRs an empty `<ul>` on real Twig — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "A `.map()` loop whose source is a local const alias of a signal getter (`const items__alias = items`) SSRs an empty `<ul>` on real Text::Xslate — the seeded loop data is keyed by the signal's real name (`items`), and the alias hop is never resolved when deciding what to seed under `items__alias`. This is the SSR-side twin of #2778 (fixed for the CSR client-JS template in the same PR that added this fixture) — that fix only touches client-JS emission, not SSR data-seeding. Tracked at https://github.com/piconic-ai/barefootjs/issues/2813; graduate by resolving the alias hop at SSR-seeding time using the same `resolveAliasOrigin`/`resolveGetterAliases` mechanism #2778 introduced, rather than a third alias-hop walker."
+        }
+      },
       "children-passthrough-renamed": {
         "go-template": {
           "kind": "render",
@@ -3574,6 +3608,10 @@
       }
     },
     "docs": {
+      "aliased-loop-source": {
+        "description": "Keyed .map() whose source is a local const alias of a signal getter",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-loop-source.ts"
+      },
       "children-passthrough-renamed": {
         "description": "A renamed children destructure renders nothing when the caller passes no children",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-passthrough-renamed.ts"
