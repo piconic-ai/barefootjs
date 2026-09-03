@@ -176,18 +176,14 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // quarantined as the executable record: this oracle cannot tell an
   // explicit @client placeholder fill apart from a hydration defect.
   //
-  // Not an exhaustive @client inventory (pullfrog review, PR #2824):
-  // TodoApp.tsx has a FIFTH `/* @client */` site — the toggle-all
-  // checkbox's `checked={/* @client */ todos().every(t => t.done)}`
-  // (line ~177) — that this list and the reason string below don't name.
-  // It doesn't currently widen the divergence: SSR omits the `checked`
-  // attribute entirely rather than emitting a wrong value, and this
-  // fixture's `initialTodos` has 2 of 3 items undone, so `every()`
-  // evaluates `false` — coincidentally the same as the absent-attribute
-  // default. If `initialTodos` ever becomes all-done, `every()` would
-  // evaluate `true` and this fifth region would start diverging too,
-  // which the "four regions and nothing else" framing above would then
-  // misdescribe.
+  // A fifth `/* @client */` site, the toggle-all checkbox's
+  // `checked={/* @client */ todos().every(t => t.done)}`, is untouched by
+  // the masking above. It doesn't currently widen the divergence: SSR omits
+  // the `checked` attribute entirely, and this fixture's `initialTodos` has
+  // 2 of 3 items undone, so `every()` evaluates `false` — coincidentally
+  // the same as the absent-attribute default. If `initialTodos` ever became
+  // all-done, `every()` would flip `true` and this region would start
+  // diverging too.
   'todo-app': {
     oracles: ['snap', 'three-point'],
     reason:
