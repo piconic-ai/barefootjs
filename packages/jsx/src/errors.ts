@@ -19,8 +19,18 @@ export const ErrorCodes = {
   MISSING_USE_CLIENT: 'BF001',
   CLIENT_IMPORTING_SERVER: 'BF003',
 
-  // Signal/Memo errors (BF011-BF019)
+  // Signal/Memo errors (BF011-BF019). BF012 is retired (see
+  // `invalid-signal-usage.audit.test.ts`) — BF013 is the next free slot.
   SIGNAL_OUTSIDE_COMPONENT: 'BF011',
+  // A reactive primitive (createSignal/createMemo/createEffect/onMount/
+  // onCleanup/createSearchParams) called through a namespace import
+  // (`import * as bf from '@barefootjs/client'`, `bf.createSignal(...)`)
+  // that the analyzer could not resolve — no shared `ts.Program` was
+  // supplied, so `resolvePrimitiveKind`'s checker-based slow path never
+  // ran. Same failure shape as BF011: the declaration is silently dropped
+  // from the compiled output and every reference to it throws
+  // ReferenceError at hydrate. #2771.
+  PRIMITIVE_VIA_NAMESPACE_IMPORT: 'BF013',
 
   // JSX errors (BF021-BF029). BF022 was retired (see
   // `invalid-jsx-attribute.audit.test.ts`) and BF026 is reserved by
@@ -150,6 +160,9 @@ const errorMessages: Record<ErrorCode, string> = {
     'Module-level reactive declaration (createSignal / createMemo) is not allowed. ' +
     'The downstream codegen drops the declaration silently and every reference becomes a ReferenceError at SSR and at hydrate. ' +
     'Move the declaration inside a component function so each mount gets its own state.',
+  [ErrorCodes.PRIMITIVE_VIA_NAMESPACE_IMPORT]:
+    "Reactive primitive called through a namespace import of '@barefootjs/client' (import * as ns) is not recognized; " +
+    'the declaration is dropped and its references throw ReferenceError at hydrate. Import the primitive by name instead.',
 
   [ErrorCodes.UNSUPPORTED_JSX_PATTERN]: 'Unsupported JSX pattern',
   [ErrorCodes.MISSING_KEY_IN_LIST]:

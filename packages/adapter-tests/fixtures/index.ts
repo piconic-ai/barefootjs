@@ -186,6 +186,8 @@ import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
 import { fixture as untypedPropsReads } from './untyped-props-reads'
 import { fixture as bareTextOptionalScalar } from './bare-text-optional-scalar'
+import { fixture as namespaceImportPrimitive } from './namespace-import-primitive'
+import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-import-primitive-named-escape'
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
 import { fixture as nullishCoalescingDestructured } from './nullish-coalescing-destructured'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
@@ -695,6 +697,8 @@ export const jsxFixtures: JSXFixture[] = [
   defaultProps,
   untypedPropsReads,
   bareTextOptionalScalar,
+  namespaceImportPrimitive,
+  namespaceImportPrimitiveNamedEscape,
   nullishCoalescingText,
   nullishCoalescingDestructured,
   nullishCoalescingJsx,

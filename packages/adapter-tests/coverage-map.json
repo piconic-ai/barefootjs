@@ -3631,6 +3631,29 @@
         "text"
       ]
     },
+    "namespace-import-primitive": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "namespace-import-primitive-named-escape": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "native-select-spread-children": {
       "kinds": [
         "identifier"
@@ -5835,11 +5858,11 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 241,
+    "call": 243,
     "conditional": 27,
-    "identifier": 342,
+    "identifier": 344,
     "index-access": 14,
-    "literal": 273,
+    "literal": 274,
     "logical": 47,
     "member": 196,
     "object-literal": 67,
@@ -5884,7 +5907,7 @@
     "binary:>=": 1,
     "literal:boolean": 59,
     "literal:null": 23,
-    "literal:number": 115,
+    "literal:number": 116,
     "literal:string": 191,
     "logical:&&": 7,
     "logical:??": 41,

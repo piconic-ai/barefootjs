@@ -1450,23 +1450,29 @@
       }
     },
     "call": {
-      "total": 241,
+      "total": 243,
       "cells": {
         "hono": {
-          "pass": 240,
-          "total": 241,
+          "pass": 241,
+          "total": 243,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             }
           ]
         },
         "blade": {
-          "pass": 224,
-          "total": 241,
+          "pass": 225,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -1513,6 +1519,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -1549,8 +1561,8 @@
           ]
         },
         "erb": {
-          "pass": 225,
-          "total": 241,
+          "pass": 226,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -1593,6 +1605,12 @@
               "issues": []
             },
             {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -1627,8 +1645,8 @@
           ]
         },
         "go-template": {
-          "pass": 223,
-          "total": 241,
+          "pass": 224,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -1675,6 +1693,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -1717,8 +1741,8 @@
           ]
         },
         "jinja": {
-          "pass": 224,
-          "total": 241,
+          "pass": 225,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -1765,6 +1789,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -1801,8 +1831,8 @@
           ]
         },
         "minijinja": {
-          "pass": 224,
-          "total": 241,
+          "pass": 225,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -1849,6 +1879,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -1885,8 +1921,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 225,
-          "total": 241,
+          "pass": 226,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -1927,6 +1963,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -1963,8 +2005,8 @@
           ]
         },
         "twig": {
-          "pass": 224,
-          "total": 241,
+          "pass": 225,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2011,6 +2053,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -2047,8 +2095,8 @@
           ]
         },
         "xslate": {
-          "pass": 224,
-          "total": 241,
+          "pass": 225,
+          "total": 243,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2095,6 +2143,12 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -2276,11 +2330,11 @@
       }
     },
     "identifier": {
-      "total": 342,
+      "total": 344,
       "cells": {
         "hono": {
-          "pass": 339,
-          "total": 342,
+          "pass": 340,
+          "total": 344,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2299,12 +2353,18 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2667"
               ]
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             }
           ]
         },
         "blade": {
-          "pass": 321,
-          "total": 342,
+          "pass": 322,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2373,6 +2433,12 @@
               "issues": []
             },
             {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -2407,8 +2473,8 @@
           ]
         },
         "erb": {
-          "pass": 322,
-          "total": 342,
+          "pass": 323,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2471,6 +2537,12 @@
               "issues": []
             },
             {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -2505,8 +2577,8 @@
           ]
         },
         "go-template": {
-          "pass": 318,
-          "total": 342,
+          "pass": 319,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2585,6 +2657,12 @@
               "issues": []
             },
             {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -2625,8 +2703,8 @@
           ]
         },
         "jinja": {
-          "pass": 321,
-          "total": 342,
+          "pass": 322,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2693,6 +2771,12 @@
             {
               "fixture": "map-array-builder-escaping",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -2729,8 +2813,8 @@
           ]
         },
         "minijinja": {
-          "pass": 321,
-          "total": 342,
+          "pass": 322,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2799,6 +2883,12 @@
               "issues": []
             },
             {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -2833,8 +2923,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 321,
-          "total": 342,
+          "pass": 322,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -2901,6 +2991,12 @@
               "issues": []
             },
             {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -2935,8 +3031,8 @@
           ]
         },
         "twig": {
-          "pass": 321,
-          "total": 342,
+          "pass": 322,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3003,6 +3099,12 @@
             {
               "fixture": "map-array-builder-escaping",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -3039,8 +3141,8 @@
           ]
         },
         "xslate": {
-          "pass": 321,
-          "total": 342,
+          "pass": 322,
+          "total": 344,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3107,6 +3209,12 @@
             {
               "fixture": "map-array-builder-escaping",
               "issues": []
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2771"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -3208,11 +3316,11 @@
       }
     },
     "literal": {
-      "total": 273,
+      "total": 274,
       "cells": {
         "hono": {
-          "pass": 272,
-          "total": 273,
+          "pass": 273,
+          "total": 274,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -3223,8 +3331,8 @@
           ]
         },
         "blade": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3289,8 +3397,8 @@
           ]
         },
         "erb": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3355,8 +3463,8 @@
           ]
         },
         "go-template": {
-          "pass": 257,
-          "total": 273,
+          "pass": 258,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3433,8 +3541,8 @@
           ]
         },
         "jinja": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3499,8 +3607,8 @@
           ]
         },
         "minijinja": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3565,8 +3673,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3631,8 +3739,8 @@
           ]
         },
         "twig": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -3697,8 +3805,8 @@
           ]
         },
         "xslate": {
-          "pass": 259,
-          "total": 273,
+          "pass": 260,
+          "total": 274,
           "gaps": [
             {
               "fixture": "aliased-import-child-component",
@@ -8211,15 +8319,15 @@
       }
     },
     "literal:number": {
-      "total": 115,
+      "total": 116,
       "cells": {
         "hono": {
-          "pass": 115,
-          "total": 115
+          "pass": 116,
+          "total": 116
         },
         "blade": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8248,8 +8356,8 @@
           ]
         },
         "erb": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8278,8 +8386,8 @@
           ]
         },
         "go-template": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8308,8 +8416,8 @@
           ]
         },
         "jinja": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8338,8 +8446,8 @@
           ]
         },
         "minijinja": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8368,8 +8476,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8398,8 +8506,8 @@
           ]
         },
         "twig": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -8428,8 +8536,8 @@
           ]
         },
         "xslate": {
-          "pass": 109,
-          "total": 115,
+          "pass": 110,
+          "total": 116,
           "gaps": [
             {
               "fixture": "aliased-loop-source",

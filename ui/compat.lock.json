@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 364,
+    "totalFixtures": 366,
     "fixtures": {
       "aliased-import-child-component": {
         "blade": {
@@ -2917,6 +2917,89 @@
           }
         }
       },
+      "namespace-import-primitive": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2771"
+          ]
+        }
+      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -3702,6 +3785,10 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
+      },
+      "namespace-import-primitive": {
+        "description": "A reactive primitive called through a namespace import refuses with BF013",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",

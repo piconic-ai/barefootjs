@@ -3889,6 +3889,11 @@ function validateContext(ctx: AnalyzerContext): void {
   // failures before factory inlining landed (#931).
   validateReactiveFactoryCalls(ctx)
 
+  // BF013: flag a reactive primitive invoked through a namespace import
+  // that the analyzer could not resolve (#2771) — same "silently dropped,
+  // ReferenceError at hydrate" failure shape as BF011.
+  validateNamespaceQualifiedPrimitives(ctx)
+
   // BF003: a `"use client"` file may not import a component from a
   // non-`"use client"` source file (#1501). Server-side knowledge must
   // not transitively cross into the client bundle, and hydration-marker
@@ -5862,6 +5867,116 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
       }
     }
   }
+}
+
+/**
+ * BF013 (#2771): a reactive primitive called through a namespace import
+ * (`import * as bf from '@barefootjs/client'`, `bf.createSignal(...)`)
+ * that `resolvePrimitiveKind`'s checker-based slow path could not resolve
+ * — no shared `ts.Program` was supplied for this compile. Fast-path
+ * recognition only matches a bare identifier callee, so the call is
+ * silently dropped from `ctx.signals`/`ctx.memos`/etc. while every
+ * reference to its result survives in the emitted output, throwing
+ * ReferenceError at hydrate.
+ *
+ * Gated on non-recognition, not on the namespace-import shape itself:
+ * when a checker IS available (vite always supplies one via
+ * `corpus-program.ts`), `resolvePrimitiveKind` already resolves this
+ * shape soundly end-to-end, and this pass must not flag what the
+ * checker-aided path already handles correctly.
+ *
+ * Scoped to the component's own top-level statements, mirroring
+ * `validateReactiveFactoryCalls` above — a namespace-qualified call
+ * inside a handler/effect body is emitted verbatim and runs fine at
+ * hydrate (the namespace import itself is re-emitted, #2767 follow-up),
+ * so walking into nested bodies would produce false refusals.
+ */
+function validateNamespaceQualifiedPrimitives(ctx: AnalyzerContext): void {
+  if (!ctx.componentNode) return
+  const body = ts.isFunctionDeclaration(ctx.componentNode)
+    ? ctx.componentNode.body
+    : (ts.isBlock(ctx.componentNode.body) ? ctx.componentNode.body : null)
+  if (!body) return
+
+  for (const stmt of body.statements) {
+    const calls: ts.CallExpression[] = []
+    if (ts.isVariableStatement(stmt)) {
+      for (const decl of stmt.declarationList.declarations) {
+        let init = decl.initializer
+        // `const [n] = bf.createSignal(0)[0]` — vanishingly rare, but the
+        // element-access wrapper must not hide the call underneath it.
+        if (init && ts.isElementAccessExpression(init)) init = init.expression
+        if (init && ts.isCallExpression(init)) calls.push(init)
+      }
+    } else if (ts.isExpressionStatement(stmt) && ts.isCallExpression(stmt.expression)) {
+      calls.push(stmt.expression) // `bf.createEffect(...)`, `bf.onMount(...)`
+    }
+
+    for (const call of calls) {
+      const callee = call.expression
+      if (!ts.isPropertyAccessExpression(callee) || !ts.isIdentifier(callee.expression)) continue
+      const primitive = callee.name.text
+      if (!(primitive in PRIMITIVE_CANONICAL_NAMES)) continue
+      if (resolvePrimitiveKind(call, ctx) !== null) continue // checker resolved it — sound, no diagnostic
+      const ns = callee.expression.text
+      if (!isClientNamespaceImportName(ns, ctx)) continue // import identity, not the bare name
+      if (isNamespaceNameShadowedAtComponentTopLevel(ns, body, ctx)) continue
+
+      const loc = getSourceLocation(stmt, ctx.sourceFile, ctx.filePath)
+      ctx.errors.push(
+        createError(ErrorCodes.PRIMITIVE_VIA_NAMESPACE_IMPORT, loc, {
+          severity: 'error',
+          message:
+            `'${ns}.${primitive}(...)' calls a @barefootjs/client reactive primitive through the namespace ` +
+            `import 'import * as ${ns}' and was not recognized by the analyzer. The declaration is dropped ` +
+            `from the compiled output and every reference to it throws ReferenceError at hydrate.`,
+          suggestion: {
+            message:
+              `Import the primitive by name: import { ${primitive} } from '@barefootjs/client' and call ` +
+              `${primitive}(...) directly. (A shared ts.Program passed via CompileOptions.program lets the ` +
+              `analyzer resolve the namespace through the TypeChecker; without one the named form is required.)`,
+            escape: [{ kind: 'rewrite' }],
+          },
+        })
+      )
+    }
+  }
+}
+
+/** Is `name` bound to a namespace import of `@barefootjs/client` (`import * as name from '@barefootjs/client'`)? */
+function isClientNamespaceImportName(name: string, ctx: AnalyzerContext): boolean {
+  return ctx.imports.some(
+    imp =>
+      imp.source === '@barefootjs/client' &&
+      !imp.isTypeOnly &&
+      imp.specifiers.some(s => s.isNamespace && s.name === name)
+  )
+}
+
+/**
+ * A component-top-level binding that shadows the namespace import name
+ * (a local `const bf = ...`/function `bf`, or a prop param/props-object
+ * named `bf`) means `bf.createSignal` in THIS component isn't the client
+ * namespace at all — refusing would be a false positive. Does not model a
+ * shadow introduced in a nested block above the call site (same accepted
+ * posture as the checker-aided fast path).
+ */
+function isNamespaceNameShadowedAtComponentTopLevel(
+  name: string,
+  body: ts.Block,
+  ctx: AnalyzerContext
+): boolean {
+  if (ctx.propsObjectName === name) return true
+  if (ctx.propsParams.some(p => p.name === name)) return true
+  for (const stmt of body.statements) {
+    if (ts.isFunctionDeclaration(stmt) && stmt.name?.text === name) return true
+    if (ts.isVariableStatement(stmt)) {
+      for (const decl of stmt.declarationList.declarations) {
+        if (ts.isIdentifier(decl.name) && decl.name.text === name) return true
+      }
+    }
+  }
+  return false
 }
 
 /**
