@@ -163,9 +163,22 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       "three-point: csr-mount's default-active TabsTrigger disagrees with the hydrated leg on aria-selected/data-state/data-value (see module comment above) — a distinct, previously-masked divergence, not the #2716 .value shape. Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg; may or may not share a root cause with the three-point row.",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2728',
   },
+  // `/* @client */` placeholders populated after hydration (#2719, narrowed):
+  // TodoApp.tsx marks its filtered keyed loop, both todo-count text
+  // expressions, and the clear-completed conditional `/* @client */`, so SSR
+  // emits empty markers by contract (spec/callback-fidelity.md §4) and the
+  // client materializes them — the "large structural divergence" is exactly
+  // those four regions and nothing else: with them masked out of the
+  // hydrated tree it is byte-identical to SSR, hydrated ≡ csr-mount agree
+  // structurally and in DOM state, idempotence passes, and the marker-free
+  // twin `todo-app-ssr` passes all three oracles. Not #2714 (no SSR-present
+  // attribute is corrected) and not #2715 (no named-prop mirror). Stays
+  // quarantined as the executable record: this oracle cannot tell an
+  // explicit @client placeholder fill apart from a hydration defect.
   'todo-app': {
     oracles: ['snap', 'three-point'],
-    reason: 'Large structural divergence after hydration (footer/filter/count section reflow) — needs a focused diff, not yet narrowed to one attribute/element.',
+    reason:
+      'SSR emits the four /* @client */ placeholders empty (<ul class="todo-list"> loop l0, <strong bf="s7"> count, cond s8 \'item\'/\'items\', cond s13 clear-completed button); hydration materializes them. Everything outside those regions is byte-identical, and the three-point\'s hydrated-vs-csr-mount leg agrees — by-design client-only rendering, not a hydration defect.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2719',
   },
 }
