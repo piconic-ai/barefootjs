@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 362,
+    "totalFixtures": 363,
     "fixtures": {
       "aliased-loop-source": {
         "blade": {
@@ -3214,8 +3214,17 @@
       },
       "signal-object-spread-init": {
         "go-template": {
-          "kind": "render",
-          "reason": "PRE-EXISTING, unrelated to the #2696 Step 2 spread work this fixture pins: a `derived`-classified signal/memo whose value is an OBJECT literal has no live-template-expression lowering on Go — unlike the other six template-stash backends (e.g. minijinja emits `{% set merged = dict(base, done=true) %}`), Go always bakes an object-typed signal/memo field into Go SOURCE at `NewXxxProps` constructor time (`convertInitialValue`/`parsedLiteralToGo`), and that baker is STATIC-only (identifier/call/member operands defer, `parsed-literal-to-go.ts`'s own docstring) — it cannot reference a live prop at all. Reproduced identically with the spread REMOVED (`createSignal({ id: base.id, done: true })`), confirming the gap predates and is independent of spread: the signal seeds `nil` and every field read (`.Merged.ID`/`.Merged.Done`) reads the Go zero value regardless of `initialTodos`. Graduate by teaching the baker to emit prop-referencing Go expressions (https://github.com/piconic-ai/barefootjs/issues/2700)."
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2700"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-object-spread-init-client"
+          }
         }
       },
       "some-typeof-predicate": {
@@ -3731,6 +3740,10 @@
       "reduce-typeof-body-client": {
         "description": "Off-subset `.reduce()` body deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body-client.ts"
+      },
+      "signal-object-spread-init-client": {
+        "description": "Signal initializer spreads a prop-derived object, reads deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init-client.ts"
       },
       "some-typeof-predicate-client": {
         "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",

@@ -4706,6 +4706,23 @@
         "text"
       ]
     },
+    "signal-object-spread-init-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "signal-prop-same-name": {
       "kinds": [
         "call",
@@ -5805,14 +5822,14 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 239,
+    "call": 240,
     "conditional": 27,
-    "identifier": 340,
+    "identifier": 341,
     "index-access": 14,
-    "literal": 271,
+    "literal": 272,
     "logical": 47,
-    "member": 195,
-    "object-literal": 66,
+    "member": 196,
+    "object-literal": 67,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 42
@@ -5852,10 +5869,10 @@
     "binary:===": 49,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 58,
+    "literal:boolean": 59,
     "literal:null": 23,
     "literal:number": 115,
-    "literal:string": 189,
+    "literal:string": 190,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,

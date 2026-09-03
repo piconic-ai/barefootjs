@@ -1531,6 +1531,134 @@ export function Demo() {
       expect(types).toContain('Open: true')
     })
 
+    // #2700: a `derived` signal (non-empty free set, e.g. `{ ...base, done }`)
+    // whose object literal the constructor-time baker can't reproduce
+    // (identifier/member/call operands defer) used to silently keep the Go
+    // zero value for every field the SSR template reads. Loud-ified instead
+    // of taught a live-expression lowering — Go has none — since the
+    // template's `.Merged.ID` / `.Merged.Done` reads would otherwise see a
+    // wrong value with no diagnostic at all.
+    test('signal object-literal spreading a live prop refuses with BF101 when the template reads it (#2700)', () => {
+      const adapter = new GoTemplateAdapter()
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Item = { id: string; done: boolean }
+export function Widget({ base }: { base: Item }) {
+  const [merged] = createSignal({ ...base, done: true })
+  return (
+    <div>
+      <span>{merged().id}</span>
+      <span>{merged().done ? 'yes' : 'no'}</span>
+    </div>
+  )
+}
+`, adapter)
+      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
+      expect(bf101.length).toBe(1)
+      expect(bf101[0].message).toContain("Signal 'merged'")
+      expect(bf101[0].message).toContain('base')
+      expect(bf101[0].suggestion?.escape).toEqual([{ kind: 'client-directive' }])
+      expect(result.template).toBeTruthy()
+    })
+
+    // Same refusal for an EXPLICITLY typed object signal (`createSignal<Item>`)
+    // — the typed `interface` branch (`value-lowering.ts`) also defers to a
+    // struct zero value (`Item{}`) for the identical reason.
+    test('typed object signal spreading a live prop also refuses with BF101 (#2700)', () => {
+      const adapter = new GoTemplateAdapter()
+      compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Item = { id: string; done: boolean }
+export function Widget({ base }: { base: Item }) {
+  const [merged] = createSignal<Item>({ id: base.id, done: true })
+  return <span>{merged().id}</span>
+}
+`, adapter)
+      expect(adapter.errors.some(e => e.code === 'BF101')).toBe(true)
+    })
+
+    // No memo-side counterpart: the analyzer deliberately never sets
+    // `MemoInfo.parsed` to an `object-literal` for an object-returning memo
+    // body (`analyzer.ts`, "isn't lowered from the parsed tree yet") — a
+    // pre-existing, unrelated exclusion — so this refusal has no structural
+    // handle to reach a memo without re-parsing `computation` as text,
+    // which the repo's own convention rules out. #2700's own reproduction
+    // and fixture are signal-only.
+
+    // The `/* @client */` escape: wrapping every SSR read defers evaluation
+    // to the client, so the template never reaches `rootFieldRef` for this
+    // signal — no refusal, even though the constructor still bakes `nil`.
+    test('/* @client */ on every read suppresses the #2700 refusal', () => {
+      const adapter = new GoTemplateAdapter()
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Item = { id: string; done: boolean }
+export function Widget({ base }: { base: Item }) {
+  const [merged] = createSignal({ ...base, done: true })
+  return (
+    <div>
+      <span>{/* @client */ merged().id}</span>
+      <span>{/* @client */ merged().done ? 'yes' : 'no'}</span>
+    </div>
+  )
+}
+`, adapter)
+      expect(adapter.errors.filter(e => e.code === 'BF101')).toEqual([])
+      expect(result.types).toContain('Merged: nil,')
+    })
+
+    // A signal that ONLY feeds a JSX spread (`{...merged()}`) never reaches
+    // `rootFieldRef` — spread bags bake through their own `.Spread_<slot>`
+    // route (`emitSpreadBagInits`) — so it must not trip the #2700 check even
+    // though the constructor still can't bake the literal. (This shape DOES
+    // still refuse, but with the PRE-EXISTING, unrelated "JSX spread has no
+    // Go template lowering" BF101 for `{...merged()}` on an intrinsic
+    // element — not a second, redundant #2700-shaped one.)
+    test('a signal only spread into attrs does not double-refuse under #2700', () => {
+      const adapter = new GoTemplateAdapter()
+      compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Item = { id: string; done: boolean }
+export function Widget({ base }: { base: Item }) {
+  const [merged] = createSignal({ ...base, done: true })
+  return <div {...merged()} />
+}
+`, adapter)
+      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
+      expect(bf101.length).toBe(1)
+      expect(bf101[0].message).not.toContain("Signal 'merged' is seeded")
+    })
+
+    // A signal read ONLY from inside a `.filter()` predicate (never a plain
+    // `{merged()}` text read) must still register in `templateReadRootFields`
+    // and trip #2700's refusal — `renderFilterExprNode`'s zero-arg-call arm
+    // used to build the `$.Merged` field reference by hand instead of
+    // through `rootFieldRef`, so this exact shape was a false negative
+    // (pullfrog review, PR #2818).
+    test('a signal reachable only through a .filter() predicate still refuses with BF101 (#2700, #2818 pullfrog review)', () => {
+      const adapter = new GoTemplateAdapter()
+      compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Item = { id: string; done: boolean }
+export function Widget({ base, items }: { base: Item; items: Item[] }) {
+  const [merged] = createSignal({ ...base, done: true })
+  return (
+    <ul>
+      {items().filter(i => i.id === merged().id).map(i => <li key={i.id}>{i.id}</li>)}
+    </ul>
+  )
+}
+`, adapter)
+      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
+      expect(bf101.length).toBe(1)
+      expect(bf101[0].message).toContain("Signal 'merged'")
+    })
+
     // A destructured prop sharing the module const's name must still win
     // (shadowing) — the const resolver is checked AFTER the prop lookup.
     test('a destructured prop shadows a same-named module const', () => {

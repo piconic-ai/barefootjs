@@ -490,6 +490,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.componentName = ir.metadata.componentName
     this.state.errors = []
     this.state.referencedDerivedConsts = new Set()
+    this.state.templateReadRootFields = new Set()
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
     this.scope = BindingScope.EMPTY
@@ -535,7 +536,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const d of this.state.pendingChildrenDefines) {
       template += `{{define "${d.name}"}}${d.content}{{end}}\n`
     }
-    const types = this.generateTypes(ir)
+    const types = this.generateTypes(ir, true)
 
     if (this.state.errors.length > 0) {
       ir.errors.push(...this.state.errors)
@@ -1073,9 +1074,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return desired
   }
 
-  generateTypes(ir: ComponentIR): string | null {
+  /**
+   * `preserveTemplateReadRootFields` is set ONLY by `generate()`'s own
+   * internal call below — `templateReadRootFields` is an observation log
+   * `renderNode` populated moments ago while rendering THIS SAME
+   * component's template body, and this call needs to read that log back,
+   * not a freshly emptied one. Every other caller (the standalone public
+   * entry point `test-render.ts` calls directly on an already-`generate()`d
+   * adapter for a sibling/child IR, and this file's own unit tests) omits
+   * it and gets the set reset fresh — otherwise a stale log left over from
+   * whichever OTHER component `generate()` rendered last would silently
+   * narrow #2700's BF101 refusal to a false negative (pullfrog review, PR
+   * #2818).
+   */
+  generateTypes(ir: ComponentIR, preserveTemplateReadRootFields = false): string | null {
     this.state.usesHtmlTemplate = false
     this.state.usesFmt = false
+    if (!preserveTemplateReadRootFields) {
+      this.state.templateReadRootFields = new Set()
+    }
     // Prime identically to `generate()` so the standalone `generateTypes` entry
     // can't drift the structs (e.g. a `{...props}` bag field in one entry only).
     this.primeCompileState(ir)
@@ -2095,8 +2112,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Bake against the synthesised struct type if one was inferred for this
         // untyped object-array signal, else the signal's own type.
         const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
+        const resolvedParsed = this.resolvedSignalParsed(signal)
         const initialValue = convertInitialValue(this.emitCtx, signal.initialValue, bakeType, ir.metadata.propsParams, signal.parsed)
         lines.push(`\t\t${fieldName}: ${initialValue},`)
+        if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
+          const step = this.state.ssrSeedPlan.steps.find(s => s.kind === 'derived' && s.origin === 'signal' && s.name === signal.getter)
+          if (step?.kind === 'derived') this.refuseUnbakeableDerivedObjectLiteral(signal.getter, signal.loc, step.frees)
+        }
       }
     }
 
@@ -2128,6 +2150,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
       const memoValue = computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
       lines.push(`\t\t${fieldName}: ${memoValue},`)
+      // No #2700 refusal check here (unlike the signal loop above): the
+      // analyzer deliberately never sets `MemoInfo.parsed` to an
+      // `object-literal` for an object-returning memo body (`() => ({…})`,
+      // `analyzer.ts`'s own docstring — "isn't lowered from the parsed tree
+      // yet") — a pre-existing, unrelated exclusion this fix doesn't touch.
+      // Detecting the shape without `parsed` would mean re-parsing
+      // `memo.computation` as text, which the repo's own convention (see
+      // CLAUDE.md, "Never parse imports... with regex or string matching")
+      // rules out. #2700's own reproduction and fixture are signal-only;
+      // a memo-side refusal is left for whoever lands the "Roadmap A" memo
+      // object-literal `parsed` support this comment references.
     }
 
     // Computed derived-const fields (`Root: func() string { … }()`), matching
@@ -4009,6 +4042,55 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * #2700: a `derived`-classified signal (`SsrSeedPlan`'s classification —
+   * an object literal whose free identifiers ALL resolve in scope, e.g.
+   * `createSignal({ ...base, done: true })`) whose value the
+   * constructor-time baker (`convertInitialValue`) can't reproduce silently
+   * keeps the field's Go zero value — that baker is static-only
+   * (identifier/member/call operands defer, `parsed-literal-to-go.ts`'s own
+   * docstring). Signal-only: the analyzer deliberately never sets
+   * `MemoInfo.parsed` to an `object-literal` for an object-returning memo
+   * body (`analyzer.ts`'s own docstring — "isn't lowered from the parsed
+   * tree yet"), so there is no structural way to reach this check for a
+   * memo without re-parsing `computation` as text, which the repo's own
+   * convention rules out.
+   *
+   * Deferring silently is harmless UNLESS the SSR template actually reads
+   * the field: a signal that only feeds a spread-attrs bag never reaches
+   * here as a false positive because spread bags bake through their own
+   * `.Spread_<slot>` route (`emitSpreadBagInits`), never `rootFieldRef` —
+   * so `templateReadRootFields` (populated while `generate()` rendered the
+   * template, which always precedes `generateTypes`'s call into this
+   * method) is the exact structural proxy for "the zero value would
+   * actually surface," not merely "the bake failed."
+   *
+   * Scoped to a NON-EMPTY free set on purpose, not every deferred bake: a
+   * fully-static object literal (`createSignal({ id: 'row-1' })`) hits the
+   * same `nil` fallback today but is a separate, untracked silent-divergence
+   * shape with no fixture of its own — loud-ifying it here would silently
+   * widen this fix beyond #2700's actual reproduction (a literal that
+   * references a live prop/signal), so it's left for its own issue instead.
+   */
+  private refuseUnbakeableDerivedObjectLiteral(
+    name: string,
+    loc: SourceLocation,
+    frees: readonly string[],
+  ): void {
+    if (frees.length === 0) return
+    if (!this.state.templateReadRootFields.has(name)) return
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Signal '${name}' is seeded from an object literal that references live value(s) (${frees.join(', ')}) — the Go template adapter bakes object-typed signal values into Go source at New${this.state.componentName}Props time, and that baker is static-only (identifier/member/call operands defer), so the SSR template's read of it would see the Go zero value instead of the derived object.`,
+      loc,
+      suggestion: {
+        message: `Wrap each SSR read of '${name}()' in /* @client */ so it renders on the client instead, or pass the already-derived object in as a prop.`,
+        escape: [{ kind: 'client-directive' }],
+      },
+    })
+  }
+
+  /**
    * Parse a signal-time initial value of the form `props.X ?? <literal>` —
    * or, for destructured components, `x ?? <literal>` — into the source prop
    * name and the Go-formatted fallback. Returns null when the expression
@@ -4666,6 +4748,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
    */
   private rootFieldRef(name: string): string {
+    this.state.templateReadRootFields.add(name)
     const prefix = this.inLoop ? '$.' : '.'
     return `${prefix}${capitalizeFieldName(name)}`
   }
@@ -5953,8 +6036,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // A local variable mapped to a signal.
         const signal = localVarMap.get(expr.name)
         if (signal) {
+          // Root-scope read (#2700's BF101 gate needs it in
+          // `templateReadRootFields`) — `$.` is hardcoded rather than
+          // routed through `rootFieldRef`'s `this.inLoop`-conditional
+          // prefix because a filter predicate must always escape back to
+          // root regardless of loop nesting; call it only for its
+          // registration side effect and keep the prefix here (pullfrog
+          // review, PR #2818).
+          this.rootFieldRef(signal)
           return `$.${capitalizeFieldName(signal)}`
         }
+        this.rootFieldRef(expr.name)
         return `.${capitalizeFieldName(expr.name)}`
       }
 
@@ -5999,8 +6091,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
           return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
         }
-        // Signal calls: `filter()` -> `$.Filter`
+        // Signal calls: `filter()` -> `$.Filter`. Same registration-only
+        // `rootFieldRef` call as the `identifier` case above, for the same
+        // reason (#2700's BF101 gate; pullfrog review, PR #2818).
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
+          this.rootFieldRef(expr.callee.name)
           return `$.${capitalizeFieldName(expr.callee.name)}`
         }
         // A nested callback method call (`other.some(r => …)`) reaching this
