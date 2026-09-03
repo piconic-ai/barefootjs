@@ -6,7 +6,7 @@ import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
-import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
@@ -475,29 +475,6 @@ function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
   return false
 }
 
-/**
- * Narrow gate for branding a `jsx-children` getter's value with `bfMarkup()`
- * (#2651). The constructor (`jsx-to-ir.ts`'s `processComponentProps`) always
- * stores exactly one node here (`AttrValueOf.jsxChildren([...])`), so
- * `nodes[0]` is the whole payload; `irChildrenToJsExpr` (`html-template.ts`)
- * turns a single `'element'` node into ONE HTML-string template literal —
- * the same shape the `renderChild` / `irToComponentTemplateWithOpts` /
- * `generateCsrTemplateWithOpts` "jsx-children" doors always produce (they
- * join every child into one string regardless of shape), and the shape
- * this fixture's `header={<strong>Title</strong>}` exercises.
- *
- * Deliberately narrow — NOT a general "does this reduce to one string"
- * check: a `'fragment'` node (`header={<>text<strong/></>}`, multiple
- * children) or a `'conditional'` node reduces through `irChildrenToJsExpr`
- * to an array literal or a nested ternary of un-escaped-vs-escaped parts,
- * for which `escapeTextOrNode`/`escapeTextOrMarkup` have no (array) or an
- * unproven (ternary) contract. Those shapes are left unbranded — see
- * #2651's door inventory — rather than guessed at here.
- */
-function isSingleElementJsxChildren(nodes: IRNode[]): boolean {
-  return nodes.length === 1 && nodes[0].type === 'element'
-}
-
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
@@ -526,19 +503,13 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
     }
     switch (prop.value.kind) {
       case 'jsx-children': {
-        const jsxExpr = irChildrenToJsExpr(prop.value.children)
         if (jsxChildrenContainComponent(prop.value.children)) {
+          const jsxExpr = irChildrenToJsExpr(prop.value.children)
           propsForInit.push(`get ${quotePropName(prop.name)}() { return __slot(() => ${jsxExpr}) }`)
-        } else if (prop.name !== 'children' && isSingleElementJsxChildren(prop.value.children)) {
-          // Brand (#2651): `jsxExpr` is the single HTML-string template
-          // literal `irChildrenToJsExpr` builds for a lone 'element' node —
-          // see `isSingleElementJsxChildren`'s docstring for why only this
-          // shape is branded here. Excludes an explicit `children={<jsx/>}`
-          // prop (out of scope, unchanged) — the child's `{children}`
-          // interpolation is a bare passthrough with no unwrap call, so a
-          // branded object there would stringify to `[object Object]`.
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return bfMarkup(${jsxExpr}) }`)
         } else {
+          // Brand via the shared door (#2651/#2702) — see
+          // `jsxChildrenPropGetterExpr`'s docstring.
+          const jsxExpr = jsxChildrenPropGetterExpr(prop.value.children, prop.name)
           propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
         }
         break

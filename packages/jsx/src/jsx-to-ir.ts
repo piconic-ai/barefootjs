@@ -7393,10 +7393,7 @@ function expressionWrapsJsx(node: ts.Expression): boolean {
  * Refuse a component prop whose initializer is a ternary/array literally
  * wrapping JSX (#2667) — see `expressionWrapsJsx`'s docstring and the call
  * site above for why this can't fall through to the plain `expression`
- * AttrValue path (raw JSX syntax would splice into the emitted client
- * JS) and why the fragment-wrap escape is NOT offered here (BF021 message
- * below explains the unsoundness inline; see #2667's tracking issue for
- * the full door-inventory finding).
+ * AttrValue path (raw JSX syntax would splice into the emitted client JS).
  */
 function reportNakedJsxWrapperProp(
   ctx: TransformContext,
@@ -7411,15 +7408,21 @@ function reportNakedJsxWrapperProp(
         `Prop '${propName}' is ${shape} wrapping JSX (${jsxExpr.getText(ctx.sourceFile)}). ` +
         `This shape is not compiled — only a JSX element/fragment given DIRECTLY as the prop value is.`,
       suggestion: {
-        message:
-          `Move the conditional/array out of the prop position: compute it in a local ` +
-          `const and pass it as the component's children instead of a named prop ` +
-          `(e.g. const ${propName} = ${jsxExpr.getText(ctx.sourceFile)}; <Comp>{${propName}}</Comp>). ` +
-          `Wrapping the ternary/array in a fragment at the prop position ` +
-          `(${propName}={<>{${jsxExpr.getText(ctx.sourceFile)}}</>}) is NOT a safe escape here: it compiles, ` +
-          `but the child's own reactive prop getter receives the branch's HTML unbranded and re-escapes it as ` +
-          `text on the child's very next reactive run, corrupting the DOM (a narrower gap #2651's door ` +
-          `inventory left open — tracked separately).`,
+        message: ts.isConditionalExpression(jsxExpr)
+          ? `Move the conditional out of the prop position: compute it in a local const and pass it as ` +
+            `the component's children instead of a named prop ` +
+            `(e.g. const ${propName} = ${jsxExpr.getText(ctx.sourceFile)}; <Comp>{${propName}}</Comp>). ` +
+            `Wrapping the ternary in a fragment at the prop position ` +
+            `(${propName}={<>{${jsxExpr.getText(ctx.sourceFile)}}</>}) is also a safe escape (#2702): the ` +
+            `compiler brands each JSX branch individually, so the child's reactive prop getter unwraps it ` +
+            `correctly instead of re-escaping it as text.`
+          : `Move the array out of the prop position: compute it in a local const and pass it as the ` +
+            `component's children instead of a named prop ` +
+            `(e.g. const ${propName} = ${jsxExpr.getText(ctx.sourceFile)}; <Comp>{${propName}}</Comp>). ` +
+            `Wrapping the array in a fragment at the prop position is NOT a safe escape here: it compiles, ` +
+            `but flattens to more than one part, which the child's reactive prop getter has no branding ` +
+            `contract for (a multi-part jsx-children shape, tracked separately from #2702's single-` +
+            `conditional fix).`,
         escape: [{ kind: 'rewrite' }],
       },
     }),
@@ -7474,14 +7477,13 @@ function processComponentProps(
       // plain `expression` path below, which stringifies the initializer's
       // SOURCE TEXT — literal JSX syntax spliced into the emitted client
       // JS (invalid at runtime; the #2651 door inventory's discovery).
-      // Refuse loudly instead of guessing a lowering: the fragment-wrap
-      // escape this diagnostic once considered recommending turns out to
-      // be unsound for the same shape (`isSingleElementJsxChildren`'s
-      // docstring in `ir-to-client-js/collect-elements.ts` — a
-      // conditional-in-fragment reaches `initChild`'s getter UNbranded,
-      // corrupting the child's DOM the moment its own reactive effect
-      // first reads the prop), so only the children-passthrough escape is
-      // offered.
+      // Refuse loudly instead of guessing a lowering. The fragment-wrap
+      // escape IS safe for the ternary shape (#2702: `jsxChildrenPropGetterExpr`,
+      // `ir-to-client-js/html-template.ts`, brands each JSX branch after the
+      // fragment hoists the conditional) — `reportNakedJsxWrapperProp`
+      // offers it for that case. It stays unsafe for the array-literal
+      // shape (a multi-part jsx-children value has no branding contract),
+      // so only the children-passthrough escape is offered there.
       if (
         (ts.isConditionalExpression(jsxExpr) || ts.isArrayLiteralExpression(jsxExpr)) &&
         expressionWrapsJsx(jsxExpr)

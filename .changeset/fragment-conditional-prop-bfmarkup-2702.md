@@ -1,0 +1,9 @@
+---
+"@barefootjs/jsx": patch
+---
+
+Fix #2702: a conditional (ternary) inside a fragment-wrapped, non-`children` component prop (`header={<>{cond() ? <a>x</a> : <b>y</b>}</>}`) reached the child's reactive `initChild` getter door unbranded — `isSingleElementJsxChildren`'s narrow gate (#2651) only wrapped a LONE `'element'` jsx-children value in `bfMarkup()`. SSR was correct on every adapter, but the child's own `escapeTextOrNode` reactive effect re-escaped the chosen branch's HTML as literal text the moment it first ran, corrupting the DOM at hydrate time — with no diagnostic, since the shape compiled clean.
+
+`jsxChildrenPropGetterExpr` (`ir-to-client-js/html-template.ts`) replaces both duplicated single-element gates (`collect-elements.ts` and `html-template.ts`'s own twin) with one shared door that brands every `'element'` LEAF after flattening fragments and conditionals (`irNodeToJsExprs`/`irChildrenToJsExpr` gained an optional `brandMarkup` parameter, threaded recursively). This makes a lone element, a fragment wrapping one, and a conditional or nested conditional between elements all reduce to exactly one branded expression. A non-element branch (plain text, an arbitrary expression, `&&`'s `''` fallback) is never branded, so it still reaches `escapeTextOrNode` as ordinary content and gets escaped normally. A multi-child fragment (`header={<>text<strong/></>}`) still flattens to more than one part — neither runtime unwrapper has an array contract — so that shape is unchanged, a separate, pre-existing gap left for its own issue.
+
+Also corrects `reportNakedJsxWrapperProp`'s (#2667's BF021) prose, which previously told users the fragment-wrap escape was unsafe for the ternary shape; it's now offered as a safe escape there (still refused for an array-literal wrap, which reduces to the unbranded multi-part shape).
