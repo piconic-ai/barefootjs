@@ -7861,13 +7861,22 @@ function checkBareSignalOrMemoIdentifier(
  * (a) An Identifier that is a destructured prop binding (e.g. `toggleItems`),
  *     OR reaches one through a bare `const x = y` alias-hop chain (e.g.
  *     `const toggleItems__alias = toggleItems`, any number of hops, #2724)
- * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`)
+ * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`),
+ *     OR one whose object reaches the props object through the same kind of
+ *     alias-hop chain as (a) (e.g. `const p = props; p.items`, #2724 review)
  *
  * Unlike the regex-based `isPropsReference`, this avoids false positives from
  * unrelated identifiers that happen to share a prop name (e.g. `state.items`
- * when `items` is also a prop) — the alias-hop walk (a) only ever follows a
+ * when `items` is also a prop) — the alias-hop walk only ever follows a
  * constant's own bare-identifier value text or its structured `.parsed`
  * shape, never a substring/regex match against arbitrary expression text.
+ * `propAliasHopCandidates` additionally restricts which constants are
+ * eligible hop sources (see its docstring) — a name that merely COLLIDES
+ * with a prop's name without being bound to it (a module constant sharing a
+ * whole-`props`-object type's member name) can still slip through that
+ * name-only check; tracked as a separate, pre-existing imprecision
+ * (`ctx.patterns.props` itself over-includes for that component shape, not
+ * something introduced by the alias walk) rather than widened here.
  *
  * This is more than a "prop reference somewhere in the expression" check
  * (`isPropsReference`'s regex semantics): the return value also feeds
@@ -7882,13 +7891,13 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
   const propsObjName = ctx.analyzer.propsObjectName
 
   if (ts.isIdentifier(arrayExpr)) {
-    return resolveAliasOrigin(constantValuesByName(ctx), arrayExpr.text, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
+    return resolveAliasOrigin(propAliasHopCandidates(ctx), arrayExpr.text, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
   }
 
   if (ts.isPropertyAccessExpression(arrayExpr) && propsObjName) {
     const obj = arrayExpr.expression
-    if (ts.isIdentifier(obj) && obj.text === propsObjName) {
-      return true
+    if (ts.isIdentifier(obj)) {
+      return resolveAliasOrigin(propAliasHopCandidates(ctx), obj.text, name => (name === propsObjName ? true : null)) === true
     }
   }
 
@@ -7911,6 +7920,45 @@ function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
   if (!propsObjName) return false
   const parsed = constantsByName(ctx).get(name)?.parsed
   return !!parsed && parsed.kind === 'member' && !parsed.computed && parsed.object.kind === 'identifier' && parsed.object.name === propsObjName
+}
+
+/**
+ * `constantValuesByName(ctx)`, narrowed to the constants an alias-hop walk
+ * may legitimately continue into when resolving whether a loop's array (or
+ * a property access's object) ultimately denotes a prop (#2724 review
+ * finding — a second pass after the initial fix landed found two false
+ * positives the unrestricted map let through):
+ *
+ * - `const` only, never `let` — a reassignable binding doesn't promise
+ *   "this IS the prop's own data" the way a `const` alias does; matches
+ *   this file's own docstrings' "`const x = y`" description of the walk.
+ * - Never a MODULE-scope constant (`isModule`) — a module constant cannot,
+ *   by definition, be an alias of any one component instance's props, so
+ *   hopping into one can only ever be a coincidental name match. Same
+ *   exclusion `resolveGetterAliases` (csr-substitute.ts, #2778) already
+ *   makes for its own alias-hop walk.
+ * - Never a name currently SHADOWED by an active loop/callback binding
+ *   (`ctx.scope.isBound`) — `rows.map((list) => list.map(...))`'s inner
+ *   `list` must resolve to the OUTER LOOP'S ROW VALUE, never an unrelated
+ *   outer-scope `const list = someProp` the row happens to shadow. Same
+ *   shadow-guard shape as `tryResolveTemplateSpanFromConst`'s guard
+ *   (#2222-family) — `isBound()` (all binding sources), not
+ *   `valueBoundNames()`: this is that guard's consumer class, not the
+ *   reactivity/slot-ID classifier one (`BindingScope.valueBoundNames`'s
+ *   docstring, #2482 Stage 1a Commit 2).
+ *
+ * A NARROWED VIEW, not a change to `constantValuesByName` itself — that
+ * function is also `forwardsCallerRestProps`'s rest/props-spread alias
+ * walk, whose existing (wider) hop set this deliberately leaves alone.
+ */
+function propAliasHopCandidates(ctx: TransformContext): ReadonlyMap<string, string | undefined> {
+  const bound = ctx.scope.boundNames()
+  const candidates = new Map<string, string | undefined>()
+  for (const constant of ctx.analyzer.localConstants) {
+    if (constant.declarationKind !== 'const' || constant.isModule || bound.has(constant.name)) continue
+    if (!candidates.has(constant.name)) candidates.set(constant.name, constant.value)
+  }
+  return candidates
 }
 
 /**

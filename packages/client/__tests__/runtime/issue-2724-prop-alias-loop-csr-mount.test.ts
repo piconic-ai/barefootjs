@@ -112,6 +112,25 @@ describe('#2724 — CSR-mounted keyed loop wires up a stateful child through a p
     expect(text).toContain('ON')
   })
 
+  test('review finding: an alias of the WHOLE props object (property access on it) still wires up click handlers', async () => {
+    // `const p = props; p.items.map(...)` — the exact shape
+    // `packages/adapter-tests/mutation/mutations.ts`'s `alias-props`
+    // mutation produces for a `(props)`-arg component (unlike the
+    // destructured-prop case above). Found missing from the initial fix
+    // during design review: the property-access branch only checked
+    // `obj.text === propsObjName` directly, never resolving an ALIAS of
+    // the props object itself.
+    const text = await mountAndToggleFirstRow(`
+      'use client'
+      type Props = { items: Array<{ label: string; defaultOn?: boolean }> }
+      export function List(props: Props) {
+        const p = props
+        return <div>{p.items.map((item) => <ToggleItem key={item.label} label={item.label} defaultOn={item.defaultOn} />)}</div>
+      }
+    `, 'ObjectAliasList.tsx')
+    expect(text).toContain('ON')
+  })
+
   test('baseline: a direct (un-aliased) prop reference wires up click handlers', async () => {
     const text = await mountAndToggleFirstRow(`
       'use client'

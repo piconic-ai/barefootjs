@@ -3058,9 +3058,25 @@ function collectConstant(
       const value = defaultValueExpr ? `${baseValue} ?? ${defaultValueExpr}` : baseValue
       const containsArrow = el.initializer ? nodeContainsArrow(el.initializer) : false
       const freeIdentifiers = el.initializer ? extractFreeIdentifiersFromNode(el.initializer) : new Set([propsName])
+      // Structured parse of `value`, same as the plain-identifier branch
+      // below (#2724 review finding): without this, a RENAMED destructure
+      // (`const { items: rows } = props`) left `parsed` undefined forever,
+      // so `isArrayExprDirectPropRef`'s member-access recognition (which
+      // reads `.parsed`, not `.name`) never saw it — `rows` stayed
+      // classified `isStaticArray: true` even though it's `props.items`
+      // itself. An un-renamed destructure (`const { items } = props`)
+      // didn't need this to already resolve — `items` the LOCAL NAME
+      // happens to also be a `props` type-member name, so the name-only
+      // branch matched regardless — but the rename case has no such
+      // coincidence to fall back on. `parseExpression` naturally keeps a
+      // defaulted destructure (`value` ends in `?? <default>`) OUT of the
+      // `kind: 'member'` shape (it parses as a logical-or instead), which
+      // is what keeps that case correctly static per #2806.
+      const parsed = parseExpression(`(${value.trim()})`)
       ctx.localConstants.push({
         name: localName,
         value,
+        parsed,
         declarationKind,
         isExported,
         type: null,
