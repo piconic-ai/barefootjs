@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": patch
----
-
-Fix #2756 (input sub-mechanism): a keyed loop row's hoisted shared-`<template>` fast path (`buildLoopSkeletonTemplate`, perf #2143) now refuses to hoist a row carrying a non-`clientOnly` property-only bind (`value`/`checked`, per the shared `classifyDOMProp` classifier), falling back to the per-row interpolated template that already bakes the attribute correctly. Previously it omitted these attributes exactly like an ordinary reactive attribute, trusting the row's `createEffect` to restore them on its eager first run — true for attribute-reflected binds (the effect calls `setAttribute`), but false for `value`/`checked` on `<input>` (and any other tag), whose effect deliberately writes only the DOM property (#2716), never the attribute. SSR bakes a literal `value="…"`/`checked` attribute for these, so a row cloned from the skeleton after a row-count change permanently lacked it while a hydration-reused row kept it forever. The same fix also corrects the identical, previously-unmeasured divergence on `<option value={…}>` rows built through the `mapArrayLazy` lazy-row path.

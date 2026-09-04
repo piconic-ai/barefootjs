@@ -1,5 +1,37 @@
 # @barefootjs/go-template
 
+## 0.33.5
+
+### Patch Changes
+
+- 651659a: Fix #2822: on every DSL (non-JSX-runtime) adapter, a client component referenced under an import alias (`import { Foo as Bar } from './Foo'`, `<Bar/>`) compiled with no diagnostics, but the SSR cross-template/partial call was built from the caller-LOCAL alias name (`Bar`) instead of the child's own DECLARED/exported name (`Foo`, what the child's own module registers its template under). This broke the call at runtime — confirmed on real Ruby ERB, Python Jinja2, Perl Mojolicious, PHP Twig, PHP Blade, Perl/Text::Xslate (which silently DROPPED the child, the worst variant), Rust minijinja, and Go `html/template`.
+  
+  This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in a prior PR): `initChild`/`renderChild`/`@bf-child:` emission was already correct, but each DSL adapter's own cross-template-call-name builder (`toTemplateName`-equivalent) was not.
+  
+  Exports `buildImportAliasMap` (local alias -> declared name, built from `ir.metadata.imports`) from `@barefootjs/jsx`'s public API — previously internal to the client-JS generator (`ir-to-client-js/component-scope.ts`) — so every DSL adapter package can build one alias map per compile and resolve `aliasMap.get(comp.name) ?? comp.name` at each cross-template-call-name site, rather than each adapter growing its own alias-resolution implementation (`CLAUDE.md`'s "one decision, two implementations" rule).
+  
+  The Go template adapter needed the widest set of fixes since `IRComponent.name` (the caller-local alias) also drives the parent-side `New<Name>Props`/`<Name>Input` constructor call, several cross-file shape lookups (`childComponentShapes`, `childContextConsumers`, `childDerivedFieldDeps`, `childPropFieldNames`, `childRepropsReady`), and the static-child struct field's Go TYPE (as opposed to its field NAME, which stays keyed by the alias — that field is parent-private and self-consistent). The adapter's own real-Go-backend test harness (`test-render.ts`) also had a latent bug in `collectImportedComponentNames`, which computed the "reachable child" set from the caller-local alias instead of the declared name — an aliased import's compiled artifact was silently excluded from the combined build even once the adapter itself emitted the correct declared-name reference.
+  
+  Graduates the `aliased-import-child-component` shared-corpus fixture (added alongside #2777) on all eight DSL adapters, each verified against its real backend (Ruby, Python, Perl, PHP x2, Rust/cargo, Go), closing #2822.
+- 27f0378: Fix #2794: a signal seeded from a bare identifier referencing a module-level const (`const PAYLOAD = 'hello'; createSignal(PAYLOAD)`) baked to `nil` in the generated `New<Component>Props` constructor instead of the const's literal value — the analyzer types this signal `unknown` (it never chases an identifier to its declaration), so none of `convertInitialValue`'s typed branches ever saw it. `resolveModuleStringConst` already existed on the adapter for exactly this resolution (used by `template-interp.ts` for live template expressions) but wasn't wired into the signal-baking path; it's now checked in `convertInitialValue`'s bare-identifier branch, after the destructured-prop lookup so a same-named prop still shadows the const.
+  
+  Also fixes the same gap for numeric (`resolveModuleNumericConst`, which existed but wasn't exposed on the adapter's emit-context seam) and boolean (`resolveModuleBooleanConst`, newly added) module consts — the identical resolver-not-wired shape on two more literal kinds, filed and fixed together as #2815 rather than left as a follow-up. The three-way `.find(` lookup they'd otherwise each need is shared through one `findModuleConst` helper, keeping `binding-scope-ratchet.test.ts`'s shrink-only floor for this file flat.
+  
+  Graduates the `textarea-row-breakout` render-divergence pin.
+- 43af9e7: Fix #2800: a signal seeded from an untyped array-of-objects literal only synthesized a Go struct when every property was scalar (`synthesizeStructFromSignal`) — a property that was itself an array of object literals (`children: [{ id: 10, label: 'Alpha-child' }]`) made the whole synthesis bail, so the signal baked to `nil` and the nested loop over it (`row.children.map(...)`) read a Go zero value on real Go instead of the seeded rows.
+  
+  `synthesizeStructFromSignal` is now a thin validation wrapper around a new recursive `synthesizeStructsFromElements`, which classifies each property across all rows as scalar or nested-array-of-objects, recurses on the flat concatenation of a nested-array property's elements to synthesize that level's struct first, and returns the full nested-first list of structs (each pushed through the same `registerSynthStruct` door #2674 uses for anonymous-object synthesis) — so `structPropertyType` (`parsed-literal-to-go.ts`) can resolve a nested array field's declared element type and `parsedLiteralToGo` bakes it as a properly-typed nested slice literal instead of deferring. Recursion has no depth limit; a shape inconsistency at any level (mixed scalar/nested-array across rows, a differing key set, an empty array) still bails the WHOLE synthesis to `nil`, same as before — partial synthesis buys nothing since `parsedLiteralToGo`'s array branch already defers the entire array on any one element's failure.
+  
+  Graduates the `nested-loop-ref-const` render-divergence pin.
+- 5cc2562: Fix #2700: a `derived`-classified signal seeded from an object literal that references a live prop/signal (`createSignal({ ...base, done: true })`) silently kept the field's Go zero value in the SSR template whenever the constructor-time baker (`convertInitialValue`) couldn't reproduce it — that baker is static-only (identifier/member/call operands defer, `parsed-literal-to-go.ts`'s own docstring), so `merged().id` / `merged().done` reads on real Go always saw the zero value with no diagnostic at all.
+  
+  The adapter now refuses this shape loudly with `BF101` instead: `rootFieldRef` (the single door every SSR template read of a root-scope field passes through) records which fields the template actually reads, and `generateNewPropsFunction`'s signal loop consults that record — after `generate()` has rendered the template — to fire only when the deferred bake is ACTUALLY read (a signal that only feeds a JSX spread bag, which bakes through its own `.Spread_<slot>` route, is unaffected) and only for a `derived` step with a non-empty free set (a fully-static object literal is a separate, untracked silent-divergence shape left for its own issue, not silently widened into this fix). A verified-working `/* @client */` escape twin (`signal-object-spread-init-client`) exists, so the refusal is `/* @client */`-escapable per policy.
+  
+  No memo-side counterpart: the analyzer deliberately never attaches a structured `parsed` tree to an object-returning memo body, so there's no structural handle to reach this check for a memo without re-parsing source text, which the repo's own conventions rule out — #2700's own reproduction and fixture are signal-only.
+  
+  Reclassifies #2700 from `bug` to `enhancement` (the divergence is now a loud, escapable refusal rather than a silent wrong render) and graduates the `signal-object-spread-init` render-divergence pin.
+- @barefootjs/shared@0.33.5
+
 ## 0.33.4
 
 ### Patch Changes
