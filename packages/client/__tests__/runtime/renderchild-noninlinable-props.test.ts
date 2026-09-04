@@ -83,11 +83,8 @@ describe('renderChild — non-inlinable component props are forwarded (no droppe
     await compileAndEvalClientJs(CHILD_SRC, `DropChild_${label}.tsx`)
     await compileAndEvalClientJs(parentSrc, `DropParent_${label}.tsx`)
     const { createComponent } = await import('../../src/runtime')
-    // #2728: a bare top-level mount of this comment-wrapper parent
-    // (its root is a single child-component call) now returns a
-    // DocumentFragment carrying its own boundary comments — append to
-    // the document and let `findChild` locate the child from there,
-    // rather than assuming the returned handle is the element itself.
+    // #2728: a bare mount now returns a DocumentFragment, not the
+    // element itself — append and let `findChild` search the document.
     const result = createComponent(`DropParent${label}`, {})
     document.body.appendChild(result)
     return document.body

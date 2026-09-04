@@ -45,9 +45,7 @@ describe('top-level root-is-a-child-call scope threading (#2757)', () => {
       comment: true,
     })
 
-    // #2728: this bare top-level comment-wrapper mount now returns a
-    // DocumentFragment carrying its own `<!--bf-scope:-->` boundary
-    // comments (mirroring a genuine fragment root, #2722) — append first,
+    // #2728: a bare mount now returns a DocumentFragment — append first,
     // then re-acquire the child element from the document.
     const result = createComponent('Case2757', {})
     document.body.appendChild(result)
@@ -69,9 +67,8 @@ describe('top-level root-is-a-child-call scope threading (#2757)', () => {
       comment: true,
     })
 
-    // #2728: bare top-level mounts of this comment-wrapper now return a
-    // DocumentFragment (detached DocumentFragments still support
-    // querySelector, so no need to append to the live document here).
+    // #2728: no need to append — detached DocumentFragments still
+    // support querySelector.
     const a = createComponent('CaseB2757', {}) as DocumentFragment
     const b = createComponent('CaseB2757', {}) as DocumentFragment
     const divA = a.querySelector('div')!

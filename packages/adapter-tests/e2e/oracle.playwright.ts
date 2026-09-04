@@ -80,10 +80,9 @@ const CSR_MOUNT_EXCLUDED: ReadonlyMap<string, string> = new Map([])
  * independent of any real idempotence bug — either because its action
  * steps are position/timing-dependent (`carousel`'s `drag` step, see the
  * determinism caveat already documented on `InteractionStep`'s `'drag'`
- * variant, `src/types.ts`, and #1971), or because repeated measurement
- * showed the comparison itself is bimodal (`command`, #2827: 2/5 local
- * repeats show a genuine structural divergence, the rest pass — quarantine
- * can't express "reliably fails" for a pair that isn't).
+ * variant, `src/types.ts`, and #1971), or because the comparison itself
+ * is bimodal (`command`, #2827) — the quarantine ledger can't express
+ * "reliably fails" for a pair that isn't.
  */
 const IDEMPOTENCE_EXCLUDED: ReadonlyMap<string, string> = new Map([
   [

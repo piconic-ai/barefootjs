@@ -146,10 +146,8 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
     // The empty-`bf-s=""` outcome the strip branch exists to avoid is still
     // unreachable; that branch now only covers a wrapper materialized with no
     // ambient scope AND no derivable name.
-    // #2728: a bare top-level mount of this root-is-a-child-call wrapper
-    // now returns a DocumentFragment carrying its own `<!--bf-scope:-->`
-    // boundary comments — append first, then query the document for the
-    // hoisted span rather than the (now-drained) returned handle.
+    // #2728: a bare mount now returns a DocumentFragment — append first,
+    // then query the document rather than the (now-drained) handle.
     const result = createComponent('TopOuter_test1320', {})
     document.body.appendChild(result)
 

@@ -41,13 +41,10 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // client effect pass CORRECTS it. The snap/three-point failures record
   // that pre-hydration state genuinely differs from post-hydration state;
   // the side that is wrong is the SSR markup, not hydration.
-  // `idempotence` graduated alongside #2728 (comment-wrapper CSR-mount
-  // scope registration): the second item's trigger is itself reached
-  // through a comment-wrapper composition, so its mount effects never ran
-  // on a from-scratch csr-mount before that fix — the [data-value] locator
-  // timeout was a symptom of the same missing-comment-scope bug, not a
-  // separate one. `snap`/`three-point` are unrelated (an SSR-literal-vs-
-  // hydration-correction divergence, see reason below) and stay quarantined.
+  // `idempotence` graduated alongside #2728 (same root cause: the second
+  // item's trigger sits inside the same comment-wrapper composition).
+  // `snap`/`three-point` are a separate, unrelated divergence (see reason
+  // below) and stay quarantined.
   accordion: {
     oracles: ['snap', 'three-point'],
     reason:
@@ -60,16 +57,10 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
-  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` (#2827): unlike
-  // `accordion`'s idempotence row, `command`'s does NOT reliably graduate
-  // alongside #2728 — measured intermittent (2/5 and other repeat runs),
-  // with a genuine structural divergence (item selection / group-visibility
-  // state disagrees between the hydrated and csr-mount replay legs) some of
-  // the time and agreement the rest. That bimodality broke the quarantine
-  // ledger's "reliably fails" assumption in both directions on CI (the
-  // structural-divergence failure on one run, the stale-entry rot-check on
-  // another, same pair) — see `oracle.playwright.ts`'s `IDEMPOTENCE_EXCLUDED`
-  // for the skip and #2827 for the root-cause investigation.
+  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` (#2827) instead of
+  // graduating like `accordion`'s: measured bimodal (a genuine structural
+  // divergence some runs, agreement others), so the ledger's "reliably
+  // fails" assumption doesn't hold for this pair.
   command: {
     oracles: ['snap', 'three-point'],
     reason:
@@ -163,21 +154,9 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
-  // `tabs` graduated (#2728): `TabsBasicDemo` compiles as a root-is-a-
-  // child-call comment wrapper (#1211/#2649), and a bare top-level CSR
-  // mount of that shape never registered a `<!--bf-scope:-->` boundary-
-  // comment pair for itself the way hydration's `hydrateCommentScope`
-  // does for the SSR-rendered one — `$c()`'s dual-scope lookup then found
-  // none of the wrapper's own sibling child slots (TabsTrigger ×2,
-  // TabsContent ×2), so they were never `initChild`'d at all (dead click
-  // handlers, un-applied template-only attributes), which is what both
-  // `three-point`'s hydrated-vs-csr-mount leg and `idempotence`'s replay
-  // were catching — one shared root cause, not two. Fixed in
-  // `materializeComponent` (`packages/client/src/runtime/component.ts`):
-  // this wrapper shape now emits the same boundary comments a genuine
-  // fragment root already did (#2722), derived from the SAME id #2757
-  // already computed for thread-only purposes. Verified with the real
-  // oracle run (`three-point` and `idempotence` both pass).
+  // `tabs` graduated (#2728): fixed in `materializeComponent`
+  // (`packages/client/src/runtime/component.ts`) — see the changeset for
+  // the root-cause narrative. Verified with the real oracle run.
   // `/* @client */` placeholders populated after hydration (#2719, narrowed):
   // TodoApp.tsx marks its filtered keyed loop, both todo-count text
   // expressions, and the clear-completed conditional `/* @client */`, so SSR
