@@ -7859,8 +7859,10 @@ function checkBareSignalOrMemoIdentifier(
  *
  * Returns true only when arrayExpr is:
  * (a) An Identifier that is a destructured prop binding (e.g. `toggleItems`),
- *     OR reaches one through a bare `const x = y` alias-hop chain (e.g.
- *     `const toggleItems__alias = toggleItems`, any number of hops, #2724)
+ *     OR reaches one through a bare `x = y` local-alias-hop chain (e.g.
+ *     `const toggleItems__alias = toggleItems`, any number of hops, `const`
+ *     or `let`, #2724 — see `propAliasHopCandidates`'s docstring for why
+ *     `let` stays eligible)
  * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`),
  *     OR one whose object reaches the props object through the same kind of
  *     alias-hop chain as (a) (e.g. `const p = props; p.items`, #2724 review)
@@ -7929,9 +7931,6 @@ function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
  * finding — a second pass after the initial fix landed found two false
  * positives the unrestricted map let through):
  *
- * - `const` only, never `let` — a reassignable binding doesn't promise
- *   "this IS the prop's own data" the way a `const` alias does; matches
- *   this file's own docstrings' "`const x = y`" description of the walk.
  * - Never a MODULE-scope constant (`isModule`) — a module constant cannot,
  *   by definition, be an alias of any one component instance's props, so
  *   hopping into one can only ever be a coincidental name match. Same
@@ -7947,6 +7946,22 @@ function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
  *   reactivity/slot-ID classifier one (`BindingScope.valueBoundNames`'s
  *   docstring, #2482 Stage 1a Commit 2).
  *
+ * `let` is deliberately NOT excluded, despite being reassignable — this was
+ * tried during review and reverted (second review pass): `isStaticArray`
+ * (jsx-to-ir.ts's derivation) treats "not recognized as prop-derived" as
+ * STATIC, not dynamic, so excluding `let` doesn't move a `let`-aliased prop
+ * array to the safe/over-reconciling side — it reproduces #2724's exact
+ * silent-divergence shape (the array silently stays on the static
+ * `qsaChildScopes` path, so a CSR-only mount never wires up the row's
+ * child). A `let` reassigned before use could in principle make this hop
+ * resolve against a stale declaration-time value — but that only risks the
+ * SAFE direction (an extra `mapArray` on a loop that turns out not to be
+ * prop-derived after all), matching this file's existing `hasCalls`
+ * over-reconciliation-is-cheap philosophy, and Go's `renderLoop` BF101 gate
+ * independently refuses any bare-identifier loop array that resolves to a
+ * non-module local variable (`let` or `const` alike) before
+ * `isPropDerivedArray` would ever drive real Go codegen off it.
+ *
  * A NARROWED VIEW, not a change to `constantValuesByName` itself — that
  * function is also `forwardsCallerRestProps`'s rest/props-spread alias
  * walk, whose existing (wider) hop set this deliberately leaves alone.
@@ -7955,7 +7970,7 @@ function propAliasHopCandidates(ctx: TransformContext): ReadonlyMap<string, stri
   const bound = ctx.scope.boundNames()
   const candidates = new Map<string, string | undefined>()
   for (const constant of ctx.analyzer.localConstants) {
-    if (constant.declarationKind !== 'const' || constant.isModule || bound.has(constant.name)) continue
+    if (constant.isModule || bound.has(constant.name)) continue
     if (!candidates.has(constant.name)) candidates.set(constant.name, constant.value)
   }
   return candidates

@@ -225,11 +225,18 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
     expect(clientJs).not.toMatch(/\bmapArray(Lazy)?\s*\(/)
   })
 
-  test('review finding: a `let` alias does not promote its array to mapArray', () => {
-    // The alias walk is documented (and, since this test, enforced) as
-    // following only `const` hops — a `let` can be reassigned, so a `let`
-    // alias doesn't promise "this IS the prop's own data" the way a
-    // `const` alias does.
+  test('review finding (second pass): a `let` alias of a prop still uses mapArray, not the static path', () => {
+    // A first review pass restricted the alias-hop walk to `const` only,
+    // reasoning that a reassignable `let` doesn't promise "this IS the
+    // prop's own data". That reasoning does not hold: `isStaticArray`
+    // treats "not recognized as prop-derived" as STATIC, not dynamic, so
+    // excluding `let` doesn't move a `let`-aliased prop array to the safe
+    // (over-reconciling) side — it silently reproduces #2724's own bug
+    // shape for exactly this case (the array stays on the static
+    // `qsaChildScopes` path, so a CSR-only mount never wires up the row's
+    // child). Reverted in a second review pass; see `propAliasHopCandidates`'s
+    // docstring (jsx-to-ir.ts) for the full reasoning, including why this
+    // is safe for the Go-adapter-facing `isPropDerivedArray` reading too.
     const flags = loopFlags(`
       'use client'
       ${CHILD}
@@ -239,8 +246,8 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
         return <div>{cur.map((item) => <Item key={item.label} label={item.label} />)}</div>
       }
     `, 'LetAlias.tsx')
-    expect(flags.isStaticArray).toBe(true)
-    expect(flags.isPropDerivedArray).toBeUndefined()
+    expect(flags.isStaticArray).toBe(false)
+    expect(flags.isPropDerivedArray).toBe(true)
   })
 
   test('review finding: an inner loop is not misclassified through an outer alias const its own row parameter shadows', () => {
