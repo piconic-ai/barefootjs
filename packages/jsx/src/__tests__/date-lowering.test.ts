@@ -7,12 +7,12 @@
  * also fire BF021, while an un-catalogued Date method on the same receiver
  * still does.
  */
-import { describe, test, expect, afterEach } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { compileJSX, type ComponentIR } from '../index'
 import { TestAdapter } from '../adapters/test-adapter'
 import { parseExpression, type ParsedExpr } from '../expression-parser'
 import { datePlugin, DATE_METHODS } from '../date-lowering'
-import { registerLoweringPlugin, __resetLoweringPluginsForTest, getLoweringPlugins } from '../lowering-registry'
+import { registerLoweringPlugin, __resetLoweringPluginsForTest, getLoweringPlugins, type LoweringPlugin } from '../lowering-registry'
 import { ErrorCodes } from '../errors'
 
 function metadata(src: string): ComponentIR['metadata'] {
@@ -156,8 +156,22 @@ describe('datePlugin matcher recognition (#2274)', () => {
 })
 
 describe('BF021 exemption via the real datePlugin (#2274 seam)', () => {
-  afterEach(() => {
-    __resetLoweringPluginsForTest(getLoweringPlugins().filter((p) => p.name !== 'date'))
+  // Snapshot + restore around the WHOLE describe block (not a per-test
+  // afterEach filtering 'date' out of whatever's currently registered) —
+  // `bun test` runs every file in one process, so a per-test filter leaves
+  // 'date' permanently missing from the shared registry once this block's
+  // LAST test finishes, silently breaking any later-executing test file
+  // that depends on the real built-in (e.g. client-only-date-lowering.test.ts's
+  // reactive-attribute lowering) — bun does not guarantee file execution
+  // order matches argument/discovery order, so this doesn't reliably
+  // reproduce locally but did intermittently fail in CI. Mirrors the same
+  // snapshot/restore shape `rich-type-method-refusal.test.ts` already uses.
+  let savedPlugins: readonly LoweringPlugin[]
+  beforeAll(() => {
+    savedPlugins = getLoweringPlugins()
+  })
+  afterAll(() => {
+    __resetLoweringPluginsForTest(savedPlugins)
   })
 
   function bf021Count(source: string): number {
