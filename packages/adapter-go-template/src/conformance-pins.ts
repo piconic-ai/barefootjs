@@ -88,4 +88,11 @@ export const conformancePins: ConformancePins = {
     severity: 'error',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2700',
   }],
+  // #2771: a reactive primitive invoked through a namespace import
+  // (`import * as bf from '@barefootjs/client'`, `bf.createSignal(...)`)
+  // that the analyzer's checker-less fast path cannot recognize refuses
+  // loudly (BF013) instead of silently dropping the declaration — fired
+  // in the shared analyzer pass ahead of any adapter's `adapter.generate()`,
+  // so all nine adapters (including Hono) pin this identically.
+  'namespace-import-primitive': [{ code: 'BF013', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2771' }],
 }

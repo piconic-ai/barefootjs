@@ -860,6 +860,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF001 | Missing 'use client' directive |
 | BF003 | Client component importing server component |
 | BF011 | Module-level reactive declaration without `/* @client */` |
+| BF013 | Reactive primitive (createSignal/createMemo/createEffect/onMount/onCleanup/createSearchParams) called through a namespace import of `@barefootjs/client` (`import * as ns from '@barefootjs/client'`) the analyzer could not resolve — only fires when no shared `ts.Program` was supplied (#2771) |
 | BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation; method call on a host rich-typed prop with no catalogued lowering, #2273; a ternary or array literal wrapping JSX at a non-`children` component prop position, #2667) |
 | BF023 | Missing `key` attribute in `.map()` loop — root JSX element has no `key` prop |
 | BF024 | Missing `key` attribute in nested `.map()` loop — inner loop root JSX element has no `key` prop |

@@ -58,7 +58,7 @@ export function Counter() { ... }
 
 ---
 
-## Signal Errors (BF011)
+## Signal Errors (BF011–BF013)
 
 <a id="bf011"></a>
 
@@ -101,6 +101,38 @@ export function Counter() {
   return <button onClick={() => setCount(count() + 1)}>{count()}</button>
 }
 ```
+
+---
+
+<a id="bf013"></a>
+
+### BF013 — Reactive Primitive Called Through a Namespace Import
+
+**Trigger:** A reactive primitive (`createSignal`, `createMemo`, `createEffect`, `onMount`, `onCleanup`, `createSearchParams`) invoked through a namespace import of `@barefootjs/client` (`import * as ns from '@barefootjs/client'`) that the analyzer could not resolve. Without a shared `ts.Program` (`CompileOptions.program`), the analyzer's fast path only recognizes a bare identifier callee — `ns.createSignal(...)` is dropped from the compiled output, and every reference to it throws `ReferenceError` at hydrate.
+
+```tsx
+'use client'
+// ❌ BF013 — namespace-qualified call is not recognized
+import * as bf from '@barefootjs/client'
+export function Counter() {
+  const [count, setCount] = bf.createSignal(0)
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+```
+
+**Fix:** Import the primitive by name instead of through the namespace.
+
+```tsx
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+```
+
+A shared `ts.Program` passed via `CompileOptions.program` (as `@barefootjs/vite` always supplies) lets the analyzer resolve the namespace-qualified form through the TypeScript `TypeChecker` — this diagnostic only fires when no such program is available.
 
 ---
 
@@ -451,6 +483,7 @@ function Component({ checked }: Props) {
 | BF001 | Error | Missing `"use client"` directive |
 | BF003 | Error | Client component importing server component |
 | BF011 | Error | Module-level reactive declaration without `/* @client */` |
+| BF013 | Error | Reactive primitive called through an unresolved namespace import |
 | BF021 | Error | Unsupported JSX pattern for SSR |
 | BF023 | Error | Missing key in list |
 | BF043 | Warning | Props destructuring breaks reactivity |
