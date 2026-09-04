@@ -186,21 +186,37 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   //   - G7 (reactive-props × alias-props × three-point, #2737): the
   //     issue this fix directly targets — see its body for the full
   //     `(props).label` repro.
-  // G4 below (toggle-shared × alias-props, #2724) does NOT graduate here —
-  // re-run and confirmed still failing (deterministically, not a flake:
-  // `--repeat-each=5 --workers=1` reproduced the identical shuffled-state
-  // diff every time) — so it is a distinct, still-open defect despite the
-  // shared `alias-props` mutation and superficially similar symptom.
+  // G4 (toggle-shared × alias-props × idempotence, #2724) did NOT graduate
+  // here — it stayed quarantined for a separate reason below, until its own
+  // fix.
 
-  // --- G4 -------------------------------------------------------------------
-  {
-    fixtureId: 'toggle-shared',
-    mutationId: 'alias-props',
-    oracle: 'idempotence',
-    reason:
-      "Distinct from the G3 empty-render pattern above: toggle-shared's ToggleItem list renders fully on both legs, but after replaying the two click actions the ON/OFF state lands on different rows between the hydrated and csr-mount legs (values are shuffled, not missing) — confirmed directly by diffing the two captures. Likely the alias-props indirection inside the `.map()` row body interacting with per-row closure capture. Re-confirmed still failing, identically, after #2737's props-object-alias template fix (that fix graduated the reactive-props×alias-props rows below, which shared its `(props).label` mechanism; this row's shuffled-row-state shape is not that mechanism).",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2724',
-  },
+  // --- G4 (fixed, #2724) ------------------------------------------------
+  // Not the G5/G7 `(props).label` mechanism above, despite the shared
+  // `alias-props` mutation: `toggleItems.map(...)` becoming
+  // `toggleItems__alias.map(...)` made the loop's array look, to Phase 1's
+  // `isArrayExprDirectPropRef` (jsx-to-ir.ts), like a local constant with
+  // no prop/signal origin — it checked the array expression's AST shape
+  // directly and never walked a `const x = y` alias hop the way its
+  // siblings `isPropsReference`/`isSignalOrMemoReference` already did. The
+  // loop was misclassified `isStaticArray: true` and compiled to the
+  // static `qsaChildScopes` + `forEach` init path instead of `mapArray`.
+  // That static path's `renderChild()` calls carry no `bf-h`/`bf-m`
+  // scope-relationship attributes on a pure CSR mount (no existing SSR
+  // markup to hydrate against), so the static init's `qsaChildScopes`
+  // selector never matched there — the row's `ToggleItem` never got
+  // `initChild`ed, so its own signal/click listener never wired up and the
+  // csr-mount leg's clicks were silently no-ops. Fixed by having
+  // `isArrayExprDirectPropRef` resolve a bare-identifier array expression
+  // through its alias-hop chain via `resolveAliasOrigin` (`props-binding.ts`
+  // — the same shared walker `forwardsCallerRestProps` already used for
+  // the rest/props-spread alias case), recognizing each hop as a direct
+  // prop binding either by name or by a `<propsObjName>.<key>` member
+  // access read off the constant's structured `.parsed` shape.
+  //
+  // The static `qsaChildScopes` init path's own CSR-mount gap for a
+  // GENUINELY static array of stateful child components (one that this fix
+  // does not route away from that path) is a separate, still-open defect —
+  // filed independently as #2833, not part of this graduation.
 
   // --- G6 -------------------------------------------------------------------
   {

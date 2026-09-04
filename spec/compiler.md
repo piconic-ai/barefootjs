@@ -506,6 +506,8 @@ Classification predicates are evaluated in this order (mirrors the decision tree
 3. `childComponent` → `'component'`
 4. fallthrough → `'plain'`
 
+`isStaticArray` itself is derived in Phase 1 (`jsx-to-ir.ts`) as `!isSignalOrMemoArray && !isDirectPropArray && !hasFunctionCalls && !objectIteration` — a signal/memo array, a direct prop array, an array expression containing any function call, or an `Object.entries/keys/values(...)` source all force the dynamic `mapArray` family instead. `isDirectPropArray` (`isArrayExprDirectPropRef`) recognizes a destructured prop name, a `props.<key>` member access on the whole props object, or — since #2724 — a bare `const x = y` alias-hop chain (any number of hops, resolved via the shared `resolveAliasOrigin` walker in `props-binding.ts`) whose origin is one of those two shapes. A local constant whose initializer is anything else (a `??` default, a computed expression, an object literal) stays outside this widening and keeps the loop static. The same boolean also becomes `IRLoop.isPropDerivedArray`, which the Go adapter reads to decide whether a nested component's field is literally the loop's prop-sourced data — this is why the alias resolution stays structural (`ConstantInfo.parsed`), not the regex-based `isPropsReference`/`isSignalOrMemoReference` chain walk used elsewhere in this file: a false positive here would misclassify DSL-adapter codegen, not just add a redundant `mapArray`.
+
 ### Loop param evaluation contexts
 
 A user-written `item.x` reference inside a loop body is rewritten differently depending on which of four contexts the expression lands in:

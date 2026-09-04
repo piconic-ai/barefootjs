@@ -594,16 +594,24 @@ function findBaseSignalGetter(expr: ParsedExpr | undefined, signalGetters: Reado
 /**
  * (#2630) Resolve a `isPropDerived` loop's `arrayParsed` to the JS-level
  * prop name it reads. `isArrayExprDirectPropRef` (`jsx-to-ir.ts`) is what
- * sets `isPropDerivedArray` in the first place, and it only recognizes two
- * shapes — a bare destructured-prop identifier (`entries.map(...)` inside
- * `function({ entries })`) or a direct `props.<name>` member access — so
- * unlike `findBaseSignalGetter` there is no `call`/chain walking to do; the
- * compiler already restricted the shape. Returns the prop's LOCAL binding
- * name; the caller resolves it to the CALLER-FACING field
- * (`sourceName ?? name`) via `propsParams`, matching how
- * `generateInputStruct`/`generateNewPropsFunction` key the Go field and how
- * `buildGoPropsInit` keys the harness's own prop initializer (both by the
- * JS `props` object's key, not the local destructure binding).
+ * sets `isPropDerivedArray` in the first place, and — even after #2724
+ * taught it to resolve a bare `const x = y` alias-hop chain — it only ever
+ * RESOLVES to one of two terminal shapes: a bare destructured-prop
+ * identifier (`entries.map(...)` inside `function({ entries })`) or a
+ * direct `props.<name>` member access. `arrayParsed` here is `loop.array`'s
+ * own structure, not the alias-resolved origin, but that distinction is
+ * moot for the Go adapter: `renderLoop`'s own BF101 gate (`go-template-
+ * adapter.ts`, the `arrayName`/`localConstants` check) already refuses ANY
+ * loop array that is a local computed value — including an alias hop —
+ * before this function would ever see one, so `expr` reaching here is
+ * always already one of the two terminal shapes directly. Unlike
+ * `findBaseSignalGetter` there is no `call`/chain walking to do here as a
+ * result. Returns the prop's LOCAL binding name; the caller resolves it to
+ * the CALLER-FACING field (`sourceName ?? name`) via `propsParams`,
+ * matching how `generateInputStruct`/`generateNewPropsFunction` key the Go
+ * field and how `buildGoPropsInit` keys the harness's own prop initializer
+ * (both by the JS `props` object's key, not the local destructure
+ * binding).
  */
 function findLoopPropField(expr: ParsedExpr | undefined): string | null {
   if (!expr) return null
