@@ -7915,8 +7915,24 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
  * name (against the destructured-prop set) or its own structured `.parsed`
  * (against the props-object shape) — same "structural, not regex" guarantee
  * `isArrayExprDirectPropRef`'s docstring makes.
+ *
+ * Shadow-guarded FIRST (pullfrog review finding): `propAliasHopCandidates`
+ * only keeps a shadowed name out of the map `resolveAliasOrigin` hops
+ * INTO — it does nothing for `name` itself on the very first call, which
+ * reads the separate, shadow-unaware `constantsByName(ctx)` index directly.
+ * Without this guard, `rows.map((list, ri) => list.map(...))`'s inner
+ * `list` — an arbitrary row value with no relation to props — would
+ * resolve via an unrelated, shadowed outer `const list = props.entries`
+ * the moment that outer constant's OWN value happens to be a
+ * member-access-on-props shape, defeating the shadow guard entirely
+ * (`propAliasHopCandidates`'s own `rows.map((list) => list.map(...))`
+ * docstring example, just with a member-access-valued outer const instead
+ * of an identifier-valued one — confirmed to reach real Go `isPropDerived`
+ * codegen the same way, since Go's BF101 gate explicitly skips a
+ * scope-bound array name).
  */
 function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
+  if (ctx.scope.isBound(name)) return false
   if (ctx.patterns.props.some(p => p.name === name)) return true
   const propsObjName = ctx.analyzer.propsObjectName
   if (!propsObjName) return false
@@ -7944,7 +7960,14 @@ function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
  *   (#2222-family) — `isBound()` (all binding sources), not
  *   `valueBoundNames()`: this is that guard's consumer class, not the
  *   reactivity/slot-ID classifier one (`BindingScope.valueBoundNames`'s
- *   docstring, #2482 Stage 1a Commit 2).
+ *   docstring, #2482 Stage 1a Commit 2). This map only half-delivers that
+ *   guarantee — it stops `resolveAliasOrigin` from hopping INTO a shadowed
+ *   name's value, but the FIRST call (`name` itself, before any hop) goes
+ *   straight to the terminal (`isDirectPropBindingName`), which has its own
+ *   matching `ctx.scope.isBound` check for exactly this reason (pullfrog
+ *   review finding on this PR — a shadowed outer const whose OWN value is a
+ *   member-access-on-props shape resolved as prop-derived on the very first
+ *   hop, before this map's filter ever applied).
  *
  * `let` is deliberately NOT excluded, despite being reassignable — this was
  * tried during review and reverted (second review pass): `isStaticArray`

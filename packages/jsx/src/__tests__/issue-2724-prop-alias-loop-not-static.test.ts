@@ -284,6 +284,42 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
     expect(innerLoop.isPropDerivedArray).toBeUndefined()
   })
 
+  test('pullfrog review finding: shadow guard also applies when the shadowed outer const is member-access-valued', () => {
+    // The previous test's `const list = items` is IDENTIFIER-valued, so its
+    // `.parsed` is `{kind: 'identifier'}` — that shape never satisfies
+    // `isDirectPropBindingName`'s member-access branch, so it never
+    // exercised that branch's own shadow-awareness. A MEMBER-ACCESS-valued
+    // shadowed const (`const list = props.entries`) does: `isArrayExprDirectPropRef`
+    // calls `isDirectPropBindingName("list", ctx)` as the very FIRST
+    // `resolveAliasOrigin` terminal check, before any hop — and that
+    // function used to read the shadow-unaware `constantsByName(ctx)`
+    // index directly, finding the outer `list` and recognizing its
+    // `props.entries` value as prop-derived, entirely bypassing
+    // `propAliasHopCandidates`'s shadow filter (which only ever guards hop
+    // CONTINUATION, never this first call). Fixed by adding the same
+    // `ctx.scope.isBound` guard directly to `isDirectPropBindingName`.
+    const ctx = analyzeComponent(`
+      'use client'
+      ${CHILD}
+      type Props = { rows: ItemProps[][]; entries: ItemProps[] }
+      export function List(props: Props) {
+        const list = props.entries
+        return (
+          <div>
+            {props.rows.map((list, ri) => (
+              <ul key={ri}>{list.map((item) => <Item key={item.label} label={item.label} />)}</ul>
+            ))}
+          </div>
+        )
+      }
+    `, 'ShadowedMemberAlias.tsx', 'List')
+    const ir = jsxToIR(ctx)
+    const innerLoop = findLoop(ir, (n: any) => n.array === 'list')
+    expect(innerLoop).toBeDefined()
+    expect(innerLoop.isStaticArray).toBe(true)
+    expect(innerLoop.isPropDerivedArray).toBeUndefined()
+  })
+
   test('regression guard: a chained `.filter()` alias stays static (no function call on the FINAL hop)', () => {
     const flags = loopFlags(`
       'use client'
