@@ -26,8 +26,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // already asserts the correct (Hono-generated) output, so it becomes the
 // regression test the moment the skip comes off.
 export const renderDivergences: RenderDivergences = {
-  'aliased-import-child-component':
-    'A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) dies inside `Mojo::Template::process` on real Mojolicious — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child\'s own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter\'s own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than a Mojo-local alias walker.',
   'children-passthrough-renamed':
     'A renamed `children` destructure emits the local alias as a template variable; the stash defines only `children`, so the Perl render dies (#2788).',
   'aliased-loop-source':

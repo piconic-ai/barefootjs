@@ -514,11 +514,10 @@ function collectImportedComponentNames(
     if (!imp.source.startsWith('.') && !childSpecifiers?.has(imp.source)) continue
     for (const spec of imp.specifiers ?? []) {
       if (spec.isNamespace) continue
-      // Imported binding name (the local alias is what JSX references, but the
-      // generated `{{define}}`/types are keyed by the exported component name —
-      // which equals the specifier name when un-aliased; aliased component
-      // imports aren't exercised by the UI fixtures).
-      names.push(spec.alias ?? spec.name)
+      // #2822: push `spec.name` (the child's own declared name), not
+      // `spec.alias ?? spec.name` — `childArtifacts` is keyed by each
+      // child's declared name, not the caller-local JSX/import binding.
+      names.push(spec.name)
     }
   }
   return names

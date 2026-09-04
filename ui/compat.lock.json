@@ -1814,42 +1814,8 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 366,
+    "totalFixtures": 367,
     "fixtures": {
-      "aliased-import-child-component": {
-        "blade": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) throws inside `BladeBackend->render_named()` on real PHP Blade — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than a Blade-local alias walker."
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) fails on real Ruby ERB: `No renderer registered for child component 'aliased_label'` — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder (`toTemplateName`). Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than an ERB-local alias walker."
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) is very likely broken on real Go the same way as every other DSL adapter measured — per static analysis, the aliased parent compiles to `{{template \"Bar\" .BarSlot0}}` (`childComponentShapes.get(comp.name)`/`relativeImports`, `go-template-adapter.ts`) while the child defines `{{define \"Foo\"}}`, since the SSR cross-template call is built from the caller-LOCAL alias name and never resolved to the child's own declared/registered name. **Not locally confirmed** — `go` is not reachable from the local test process (the conformance case prints \"go command not found\" and skips), so this entry is declared from static analysis, not a local reproduction; confirmed failing at runtime on ERB/Jinja/Mojolicious/Twig/Blade/Xslate/minijinja (see sibling adapters' `render-divergences.ts` entries for the same fixture). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; whoever graduates this should read Go's actual output first rather than assume it shares the other adapters' exact error shape."
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) fails on real Python jinja2: `RuntimeError: No renderer registered for child component 'aliased_label'` — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than a Jinja-local alias walker."
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) fails to render through real minijinja — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than a minijinja-local alias walker."
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) dies inside `Mojo::Template::process` on real Mojolicious — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than a Mojo-local alias walker."
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) throws inside `TwigBackend->render_named()` on real PHP Twig — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`). This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than a Twig-local alias walker."
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "A client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`) renders WITHOUT error on real Text::Xslate but silently DROPS the child entirely — the SSR cross-template call is built from the caller-LOCAL alias name, never resolved to the child's own declared/registered name (`Foo`), and Xslate's unresolved reference degrades to nothing instead of raising. This is the SSR-side counterpart of #2777 (fixed for the client-JS registry key in the same PR that added this fixture) — that fix only touches `initChild`/`renderChild`/`@bf-child:` emission, not this adapter's own template-name builder. Tracked at https://github.com/piconic-ai/barefootjs/issues/2822; graduate by resolving the alias through the same import-alias mechanism #2777 introduced, exported for adapter reuse, rather than an Xslate-local alias walker."
-        }
-      },
       "aliased-loop-source": {
         "blade": {
           "kind": "render",
@@ -3722,10 +3688,6 @@
       }
     },
     "docs": {
-      "aliased-import-child-component": {
-        "description": "#2777 — a client component referenced under an import alias (`import { Foo as Bar }`, `<Bar/>`)…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-import-child-component.ts"
-      },
       "aliased-loop-source": {
         "description": "Keyed .map() whose source is a local const alias of a signal getter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-loop-source.ts"
