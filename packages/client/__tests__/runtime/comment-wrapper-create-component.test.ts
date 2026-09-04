@@ -77,8 +77,11 @@ describe('createComponent + comment: true wrapper (#1222)', () => {
       comment: true,
     })
 
-    const el = createComponent('Wrapper_test1222', { id: 'src' })
-    document.body.appendChild(el)
+    // #2728: a bare mount now returns a DocumentFragment, not the inner
+    // element directly — append first, then re-query the document.
+    const result = createComponent('Wrapper_test1222', { id: 'src' })
+    document.body.appendChild(result)
+    const el = document.body.querySelector('[data-id]')!
 
     expect(innerInitCalls).toHaveLength(1)
     expect(innerInitCalls[0]).toEqual({ id: 'src', sawScope: true })

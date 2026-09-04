@@ -41,10 +41,14 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // client effect pass CORRECTS it. The snap/three-point failures record
   // that pre-hydration state genuinely differs from post-hydration state;
   // the side that is wrong is the SSR markup, not hydration.
+  // `idempotence` graduated alongside #2728 (same root cause: the second
+  // item's trigger sits inside the same comment-wrapper composition).
+  // `snap`/`three-point` are a separate, unrelated divergence (see reason
+  // below) and stay quarantined.
   accordion: {
-    oracles: ['snap', 'three-point', 'idempotence'],
+    oracles: ['snap', 'three-point'],
     reason:
-      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly). Idempotence: replaying the two click steps times out (10s) waiting for the second item's trigger — its [data-value] locator never matches on the leg whose mount effects haven't stamped it yet.",
+      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly).",
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   'radio-group': {
@@ -53,10 +57,14 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
+  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` (#2827) instead of
+  // graduating like `accordion`'s: measured bimodal (a genuine structural
+  // divergence some runs, agreement others), so the ledger's "reliably
+  // fails" assumption doesn't hold for this pair.
   command: {
-    oracles: ['snap', 'three-point', 'idempotence'],
+    oracles: ['snap', 'three-point'],
     reason:
-      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar". Idempotence: replayed fill steps land on a differently-structured filtered list between the hydrated and csr-mount legs.',
+      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
@@ -146,23 +154,9 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
-  // tabs' `snap` row (the expando-.value shape, #2716) is gone — the fix
-  // there was verified with the real oracle run. `three-point`'s FIRST
-  // comparison (SSR vs hydrated) now passes for the same reason, which
-  // unmasked a SECOND, previously-hidden comparison inside the same oracle
-  // (hydrated vs csr-mount, `runThreePointOracle` in oracle-core.ts runs it
-  // only after the first passes): csr-mount's default-active TabsTrigger
-  // renders `aria-selected="false" data-state="inactive"` with no
-  // `data-value` at all, while the hydrated leg correctly shows
-  // `aria-selected="true" data-state="active" data-value="account"` — the
-  // csr-mount leg isn't computing the default active tab the same way.
-  // Unrelated to #2716's DOM-property write; filed separately as #2728.
-  tabs: {
-    oracles: ['three-point', 'idempotence'],
-    reason:
-      "three-point: csr-mount's default-active TabsTrigger disagrees with the hydrated leg on aria-selected/data-state/data-value (see module comment above) — a distinct, previously-masked divergence, not the #2716 .value shape. Idempotence: replaying its two click steps times out (10s) waiting for the second tab trigger — its [data-value] locator never matches in one leg; may or may not share a root cause with the three-point row.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2728',
-  },
+  // `tabs` graduated (#2728): fixed in `materializeComponent`
+  // (`packages/client/src/runtime/component.ts`) — see the changeset for
+  // the root-cause narrative. Verified with the real oracle run.
   // `/* @client */` placeholders populated after hydration (#2719, narrowed):
   // TodoApp.tsx marks its filtered keyed loop, both todo-count text
   // expressions, and the clear-completed conditional `/* @client */`, so SSR

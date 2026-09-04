@@ -146,10 +146,12 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
     // The empty-`bf-s=""` outcome the strip branch exists to avoid is still
     // unreachable; that branch now only covers a wrapper materialized with no
     // ambient scope AND no derivable name.
-    const el = createComponent('TopOuter_test1320', {})
-    document.body.appendChild(el)
+    // #2728: a bare mount now returns a DocumentFragment — append first,
+    // then query the document rather than the (now-drained) handle.
+    const result = createComponent('TopOuter_test1320', {})
+    document.body.appendChild(result)
 
-    const span = el.querySelector('span')
+    const span = document.body.querySelector('span')
     expect(span).not.toBeNull()
     expect(span!.getAttribute('bf-s')).toMatch(/^TopOuter_test1320_[a-z0-9]+$/)
   })

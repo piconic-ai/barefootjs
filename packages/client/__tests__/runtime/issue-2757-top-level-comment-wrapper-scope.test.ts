@@ -45,8 +45,11 @@ describe('top-level root-is-a-child-call scope threading (#2757)', () => {
       comment: true,
     })
 
-    const el = createComponent('Case2757', {}) as HTMLElement
-    document.body.appendChild(el)
+    // #2728: a bare mount now returns a DocumentFragment — append first,
+    // then re-acquire the child element from the document.
+    const result = createComponent('Case2757', {})
+    document.body.appendChild(result)
+    const el = document.body.querySelector('div')!
 
     const scope = el.getAttribute('bf-s')!
     expect(scope).toMatch(/^Case2757_[a-z0-9]+_s2$/)
@@ -64,9 +67,13 @@ describe('top-level root-is-a-child-call scope threading (#2757)', () => {
       comment: true,
     })
 
-    const a = createComponent('CaseB2757', {}) as HTMLElement
-    const b = createComponent('CaseB2757', {}) as HTMLElement
-    expect(a.getAttribute('bf-s')).not.toBe(b.getAttribute('bf-s'))
+    // #2728: no need to append — detached DocumentFragments still
+    // support querySelector.
+    const a = createComponent('CaseB2757', {}) as DocumentFragment
+    const b = createComponent('CaseB2757', {}) as DocumentFragment
+    const divA = a.querySelector('div')!
+    const divB = b.querySelector('div')!
+    expect(divA.getAttribute('bf-s')).not.toBe(divB.getAttribute('bf-s'))
   })
 
   test('a wrapper mounted WITH a slot still inherits slot.parent (#1320 unchanged)', async () => {
