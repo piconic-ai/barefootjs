@@ -35,7 +35,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, trackPosition } from '@barefootjs/client'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { ChevronDownIcon } from '../icon'
@@ -370,16 +370,9 @@ function NavigationMenuContent(props: NavigationMenuContentProps) {
       el.className = `${navigationMenuContentBaseClasses} ${isOpen ? navigationMenuContentOpenClasses : navigationMenuContentClosedClasses} ${props.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
-
-        const handleScroll = () => updatePosition()
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
-
-        cleanupFns.push(
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
-        )
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
       }
     })
 

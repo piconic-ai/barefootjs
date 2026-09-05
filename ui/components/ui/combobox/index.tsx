@@ -38,7 +38,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
@@ -331,7 +331,9 @@ function ComboboxContent(props: ComboboxContentProps) {
       el.className = `${contentBaseClasses} ${isOpen ? contentOpenClasses : contentClosedClasses} ${props.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Focus the search input when opened
         setTimeout(() => {
@@ -389,19 +391,12 @@ function ComboboxContent(props: ComboboxContentProps) {
           }
         }
 
-        // Reposition on scroll and resize
-        const handleScroll = () => updatePosition()
-
         document.addEventListener('mousedown', handleClickOutside)
         document.addEventListener('keydown', handleGlobalKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => document.removeEventListener('mousedown', handleClickOutside),
           () => document.removeEventListener('keydown', handleGlobalKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

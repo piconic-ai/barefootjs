@@ -77,6 +77,9 @@ export {
   type PortalChildren,
 } from './portal.ts'
 
+// Floating-element positioning (#2848)
+export { trackPosition } from './track-position.ts'
+
 // Loop boundary marker lookup (used by mapArray/mapArrayAnchored consumers
 // and compiler-generated clearing code — see ./loop-markers.ts docstring)
 export { getLoopChildren, getLoopNodes } from './loop-markers.ts'

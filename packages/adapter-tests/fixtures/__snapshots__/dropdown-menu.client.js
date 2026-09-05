@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2810,7 +2810,9 @@ export function initDropdownMenuContent(__scope, _p = {}) {
       el.className = `${dropdownMenuContentBaseClasses} ${isOpen ? dropdownMenuContentOpenClasses : dropdownMenuContentClosedClasses} ${_p.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Close on click outside (content or trigger)
         const handleClickOutside = (e) => {
@@ -2830,24 +2832,17 @@ export function initDropdownMenuContent(__scope, _p = {}) {
           }
         }
 
-        // Reposition on scroll (capture phase for nested scrollable containers) and resize
-        const handleScroll = () => updatePosition()
-
         // Lock body scroll while menu is open
         const originalOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
 
         document.addEventListener('mousedown', handleClickOutside)
         document.addEventListener('keydown', handleGlobalKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => { document.body.style.overflow = originalOverflow },
           () => document.removeEventListener('mousedown', handleClickOutside),
           () => document.removeEventListener('keydown', handleGlobalKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

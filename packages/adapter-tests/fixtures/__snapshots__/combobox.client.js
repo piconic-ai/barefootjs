@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2878,7 +2878,9 @@ export function initComboboxContent(__scope, _p = {}) {
       el.className = `${contentBaseClasses} ${isOpen ? contentOpenClasses : contentClosedClasses} ${_p.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Focus the search input when opened
         setTimeout(() => {
@@ -2936,19 +2938,12 @@ export function initComboboxContent(__scope, _p = {}) {
           }
         }
 
-        // Reposition on scroll and resize
-        const handleScroll = () => updatePosition()
-
         document.addEventListener('mousedown', handleClickOutside)
         document.addEventListener('keydown', handleGlobalKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => document.removeEventListener('mousedown', handleClickOutside),
           () => document.removeEventListener('keydown', handleGlobalKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

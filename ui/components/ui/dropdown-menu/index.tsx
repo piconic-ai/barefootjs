@@ -46,7 +46,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
@@ -316,7 +316,9 @@ function DropdownMenuContent(props: DropdownMenuContentProps) {
       el.className = `${dropdownMenuContentBaseClasses} ${isOpen ? dropdownMenuContentOpenClasses : dropdownMenuContentClosedClasses} ${props.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Close on click outside (content or trigger)
         const handleClickOutside = (e: MouseEvent) => {
@@ -336,24 +338,17 @@ function DropdownMenuContent(props: DropdownMenuContentProps) {
           }
         }
 
-        // Reposition on scroll (capture phase for nested scrollable containers) and resize
-        const handleScroll = () => updatePosition()
-
         // Lock body scroll while menu is open
         const originalOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
 
         document.addEventListener('mousedown', handleClickOutside)
         document.addEventListener('keydown', handleGlobalKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => { document.body.style.overflow = originalOverflow },
           () => document.removeEventListener('mousedown', handleClickOutside),
           () => document.removeEventListener('keydown', handleGlobalKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

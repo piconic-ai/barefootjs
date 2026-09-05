@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -137,7 +137,9 @@ export function initPopoverContent(__scope, _p = {}) {
       el.className = `${popoverContentBaseClasses} ${isOpen ? popoverContentOpenClasses : popoverContentClosedClasses} ${_p.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Close on click outside (content or trigger)
         const handleClickOutside = (e) => {
@@ -154,19 +156,12 @@ export function initPopoverContent(__scope, _p = {}) {
           }
         }
 
-        // Reposition on scroll and resize
-        const handleScroll = () => updatePosition()
-
         document.addEventListener('mousedown', handleClickOutside)
         document.addEventListener('keydown', handleKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => document.removeEventListener('mousedown', handleClickOutside),
           () => document.removeEventListener('keydown', handleKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

@@ -52,3 +52,7 @@ export function findSiblingSlot(
 export function cleanupPortalPlaceholder(_portalId: string): void {
   return browserOnly('cleanupPortalPlaceholder')
 }
+
+export function trackPosition(_update: () => void): () => void {
+  return browserOnly('trackPosition')
+}

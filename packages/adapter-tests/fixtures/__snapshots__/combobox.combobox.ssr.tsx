@@ -1,6 +1,6 @@
 /** @jsxImportSource hono/jsx */
 import { serializeHydrationProps, bfText, bfTextEnd, bfComment } from '@barefootjs/hono/utils'
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
