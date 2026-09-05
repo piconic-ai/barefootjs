@@ -202,10 +202,11 @@ function cancelPendingPortal(element: HTMLElement): void {
  * while a CSR mount yields `[…portals, root]`, because the root is
  * appended AFTER its portals were. Child order is user-visible (paint
  * order between equal-`z-index` overlays, focus traversal, `querySelector`
- * results), so both paths converge on the hydration answer. Only an
- * `ownerScope` can carry the deferral: it is the one declared subject
- * whose connection the portal can wait for — a bare element with no owner
- * has nothing else that will ever connect it, so it must append now.
+ * results), so both paths converge on the hydration answer. The subject
+ * whose connection is awaited is the `ownerScope` when given, else the
+ * element's own (detached) tree when it already sits in one; a bare
+ * element with neither has nothing else that will ever connect it, so it
+ * must append now.
  */
 export function createPortal(
   children: PortalChildren,
@@ -242,7 +243,14 @@ export function createPortal(
     }
   }
 
-  const owner = options?.ownerScope
+  // The deferral subject: the declared owner, or — for an element that
+  // already sits in a tree — the element itself (its tree is the component
+  // under construction; `el.closest('[bf-s]')` finds no owner for a
+  // fragment-root component, whose scope lives on a comment, yet its
+  // `ref` callback runs on the same detached tree). A bare element with no
+  // parent and no owner has nothing that will ever connect it, so it
+  // appends now.
+  const owner = options?.ownerScope ?? (children instanceof HTMLElement && children.parentNode ? children : null)
   // `MutationObserver` is the deferral primitive; an environment without
   // it keeps the synchronous append (the pre-#2717 behaviour) rather than
   // losing the portal altogether.

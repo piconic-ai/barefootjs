@@ -417,6 +417,24 @@ describe('createPortal', () => {
       expect(Array.from(container.children)).toEqual([root])
     })
 
+    test('without an owner, an element already in a detached tree waits for that tree', async () => {
+      // A fragment-root component carries its scope on a comment, so the
+      // documented `el.closest('[bf-s]') ?? undefined` lookup yields no
+      // owner — the element's own tree is then the thing that connects.
+      const root = document.createElement('div')
+      const target = document.createElement('div')
+      root.appendChild(target)
+
+      createPortal(target, container)
+      expect(container.children.length).toBe(0)
+      expect(target.parentNode).toBe(root)
+
+      container.appendChild(root)
+      await settle(() => target.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([root, target])
+    })
+
     test('an owner without a scope id still defers (no bf-po, same insertion rule)', async () => {
       const root = document.createElement('div')
       const target = document.createElement('div')
