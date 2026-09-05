@@ -127,7 +127,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerRegisteredCall, lowerTernary } from "./expr/url-builder.ts"
+import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerTernary } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -8025,6 +8025,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const body = `${name}="{{${valueExpr}}}"`
           return `${preamble}{{if ${goCond}}}${body}{{end}}`
         }
+        // #2743 follow-up (pullfrog review on #2841): a `query` guard-list
+        // value (queryHref) reachable through EITHER branch of this ternary
+        // still needs the whole-attribute `bf_attr` route — otherwise the
+        // pipeline below lands inside the ordinary `name="{{...}}"` wrapper
+        // and html/template's URL-context inference still percent-encodes
+        // whichever branch wins at render time. See `lowerRegisteredAttrCall`.
+        const attrTernary = lowerRegisteredAttrCall(this.emitCtx, name, parsed)
+        if (attrTernary !== null) return attrTernary
         // #2335: the ternary lowers to the pipeline-position `(bf_ternary …)`
         // value (no longer a `{{if}}…{{end}}` fragment), so wrap it in a single
         // `{{…}}` action inside the attribute string — `name="{{bf_ternary …}}"`.
@@ -8034,6 +8042,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Inline Go template syntax with embedded `{{...}}` actions.
         return `${name}="${this.renderParsedExpr(parsed)}"`
       }
+      // #2743: a `query` guard-list value (queryHref) emits the WHOLE
+      // attribute via `bf_attr` (template.HTMLAttr) so html/template's
+      // URL-context inference on the attribute name never percent-encodes
+      // the base. See `lowerRegisteredAttrCall`.
+      const attrAction = lowerRegisteredAttrCall(this.emitCtx, name, parsed)
+      if (attrAction !== null) return attrAction
       // Nullish-attribute omission: when the attribute value is a BARE reference
       // to a nillable (`interface{}`) prop field, guard emission on `ne .X nil`
       // so an unset optional prop drops the attribute entirely instead of

@@ -176,4 +176,95 @@ export function P(props: { base: string; q: Record<string, string> }) {
     const { template } = generate(src)
     expect(template).not.toContain('bf_query')
   })
+
+  // #2743: a `queryHref` value in an ATTRIBUTE position emits the whole
+  // attribute via `bf_attr` (template.HTMLAttr) so html/template's
+  // contextual URL-context autoescape (keyed off the attribute NAME) never
+  // percent-encodes the base — see `lowerRegisteredAttrCall`.
+  test('an href-attribute queryHref value routes through bf_attr, not `href="{{...}}"`', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <a href={queryHref(props.base, { tag: props.tag })}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}')
+    expect(template).not.toContain('href="{{')
+  })
+
+  // The route is keyed on the neutral `helper === 'query'` fact, not on the
+  // attribute name `href` — any attribute (e.g. `title`) gets the same
+  // treatment, since `queryHref` returns a plain string with nothing
+  // href-specific about it.
+  test('a non-href attribute (title) with a queryHref value also routes through bf_attr', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <a title={queryHref(props.base, { tag: props.tag })}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('{{bf_attr "title" (bf_query .Base (true) "tag" .Tag)}}')
+    expect(template).not.toContain('title="{{')
+  })
+
+  // Text-position (non-attribute) use is unaffected — `bf_attr` only wraps
+  // the whole-attribute case; a queryHref value read as text still lowers
+  // to a bare `bf_query` pipeline.
+  test('a queryHref value in text position is not wrapped in bf_attr', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <span>{queryHref(props.base, { tag: props.tag })}</span>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('bf_query .Base (true) "tag" .Tag')
+    expect(template).not.toContain('bf_attr')
+  })
+
+  // #2743 follow-up (pullfrog review on #2841): a ternary attribute value
+  // with a real (non-`undefined`) alternate is syntactically valid and
+  // already lowers both branches correctly via `bf_ternary` — but was still
+  // wrapped in the ordinary `name="{{...}}"` form, leaving it exposed to
+  // html/template's URL-context percent-encoding. This must route through
+  // `bf_attr` too, wrapping the whole `bf_ternary` pipeline.
+  test('a queryHref value in a ternary branch (non-undefined alternate) routes through bf_attr', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { ok: boolean; base: string; tag: string }) {
+  return <a href={props.ok ? queryHref(props.base, { tag: props.tag }) : '/fallback'}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain(
+      '{{bf_attr "href" (bf_ternary (bf_truthy .Ok) (bf_query .Base (true) "tag" .Tag) "/fallback")}}',
+    )
+    expect(template).not.toContain('href="{{')
+  })
+
+  // The `undefined`-alternate omission shape (`cond ? queryHref(...) :
+  // undefined`) is NOT handled by the ternary bf_attr route — its
+  // consequent-only render doesn't consult the lowering registry at all and
+  // already emits invalid Go syntax independent of escaping (tracked
+  // separately as #2842). Pinning the current (broken) shape here so a
+  // future fix to #2842 is the one that changes this assertion, not an
+  // accidental side effect of a `bf_attr`-route change.
+  test('the undefined-alternate omission shape is unaffected by the ternary bf_attr route (pre-existing #2842 gap)', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { ok: boolean; base: string; tag: string }) {
+  return <a href={props.ok ? queryHref(props.base, { tag: props.tag }) : undefined}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('bf_attr')
+    expect(template).not.toContain('bf_query')
+  })
 })

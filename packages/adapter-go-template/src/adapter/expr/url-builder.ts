@@ -165,6 +165,86 @@ export function lowerRegisteredCall(
 }
 
 /**
+ * Attribute-position twin of `lowerRegisteredCall` (#2743). When an intrinsic
+ * element attribute's value is a `query` guard-list (the neutral node the
+ * `queryHref` plugin — or any plugin reusing the `query` helper — produces),
+ * emit the WHOLE attribute as one `bf_attr` action returning
+ * `template.HTMLAttr`, instead of `name="{{bf_query …}}"`. html/template
+ * infers a URL context from the attribute NAME (`href`, `src`, `action`,
+ * `data-*`, anything containing `src`/`uri`/`url`, …) and percent-encodes the
+ * entire value there; the JS reference (Hono) only HTML-escapes. Keyed on the
+ * neutral `helper` id, not the attribute name (Go's URL-context table is a
+ * heuristic we must not re-implement) and not the JS API name. Returns null
+ * for a non-call, an unmatched call, or any other node kind/helper — the
+ * caller then takes its ordinary path.
+ *
+ * Also accepts a `conditional` node directly (#2743 follow-up, pullfrog
+ * review on #2841): a ternary with a real, non-`undefined` alternate
+ * (`cond ? queryHref(...) : '/fallback'`) is syntactically valid and already
+ * lowers its branches correctly via `lowerTernary` — but the CALLER used to
+ * still wrap the resulting `(bf_ternary …)` pipeline in the ordinary
+ * `name="{{...}}"` form, which leaves it exposed to the same URL-context
+ * percent-encoding this function exists to route around. Whenever EITHER
+ * branch (recursing through a right-folded nested ternary chain, the same
+ * shape `lowerTernary` itself right-folds) is a `query` guard-list call, the
+ * whole ternary is wrapped in `bf_attr` too — matching the reference, which
+ * HTML-escapes the picked branch's value the same way regardless of which
+ * branch won. (The `undefined`-alternate omission shape, `cond ? queryHref(...)
+ * : undefined`, is NOT handled here — that shape's consequent-only render
+ * doesn't consult the lowering registry at all and emits invalid Go syntax
+ * independent of escaping, tracked separately as #2842.)
+ */
+export function lowerRegisteredAttrCall(
+  ctx: GoEmitContext,
+  attrName: string,
+  parsed: ParsedExpr,
+): string | null {
+  if (parsed.kind === 'conditional') {
+    if (!ternaryHasQueryBranch(ctx, parsed.consequent, parsed.alternate)) return null
+    // `lowerTernary` already returns a complete parenthesised `(bf_ternary …)`
+    // pipeline — pass it straight through as `bf_attr`'s value argument
+    // rather than re-wrapping it in a redundant second set of parens.
+    const rendered = lowerTernary(ctx, parsed.test, parsed.consequent, parsed.alternate)
+    return `{{bf_attr ${JSON.stringify(attrName)} ${rendered}}}`
+  }
+  if (parsed.kind !== 'call') return null
+  for (const matcher of ctx.state.loweringMatchers) {
+    const node = matcher(parsed.callee, parsed.args)
+    if (!node) continue
+    if (node.kind !== 'guard-list' || node.helper !== 'query') return null
+    const rendered = renderLoweringNode(ctx, node)
+    return rendered === null ? null : `{{bf_attr ${JSON.stringify(attrName)} (${rendered})}}`
+  }
+  return null
+}
+
+/** Whether a `call` node is a recognised `query` guard-list lowering. */
+function isQueryGuardListCall(ctx: GoEmitContext, node: ParsedExpr): boolean {
+  if (node.kind !== 'call') return false
+  for (const matcher of ctx.state.loweringMatchers) {
+    const lowered = matcher(node.callee, node.args)
+    if (!lowered) continue
+    return lowered.kind === 'guard-list' && lowered.helper === 'query'
+  }
+  return false
+}
+
+/**
+ * Whether either branch of a ternary is (or, for a right-folded chain,
+ * eventually resolves to) a `query` guard-list call — the trigger for
+ * routing the whole ternary through `bf_attr` in `lowerRegisteredAttrCall`.
+ */
+function ternaryHasQueryBranch(
+  ctx: GoEmitContext,
+  consequent: ParsedExpr,
+  alternate: ParsedExpr,
+): boolean {
+  const branchHasQuery = (n: ParsedExpr): boolean =>
+    n.kind === 'conditional' ? ternaryHasQueryBranch(ctx, n.consequent, n.alternate) : isQueryGuardListCall(ctx, n)
+  return branchHasQuery(consequent) || branchHasQuery(alternate)
+}
+
+/**
  * Render a backend-neutral lowering node to a Go template expression, or null
  * when the node's `helper` has no Go mapping — the caller then declines
  * (generic lowering → BF101), rather than emitting the raw helper id, which

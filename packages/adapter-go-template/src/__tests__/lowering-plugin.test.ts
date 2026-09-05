@@ -149,6 +149,11 @@ export function P(props: { config: object }) {
     // naming exactly — the formula generalises, it isn't a lookup table
     // limited to `query`.
     expect(template).toContain('bf_custom_serialize .Config')
+    // #2743: the whole-attribute `bf_attr` route is keyed on the neutral
+    // `guard-list` + `helper === 'query'` shape specifically — a
+    // `helper-call` node (this plugin's shape) is a different node kind and
+    // must not be routed through it.
+    expect(template).not.toContain('bf_attr')
   })
 
   test('without the plugin registered, the call falls back to the generic (unsupported) lowering', () => {

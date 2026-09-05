@@ -4093,6 +4093,35 @@
         "attribute"
       ]
     },
+    "query-href-src": {
+      "kinds": [
+        "call",
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [
+        "lowering:queryHref"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "query-href-ternary": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "lowering:queryHref"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "radio-group": {
       "kinds": [
         "arrow",
@@ -5874,14 +5903,14 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 243,
-    "conditional": 27,
-    "identifier": 345,
+    "call": 245,
+    "conditional": 28,
+    "identifier": 347,
     "index-access": 14,
-    "literal": 275,
+    "literal": 276,
     "logical": 47,
     "member": 197,
-    "object-literal": 68,
+    "object-literal": 70,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 42
@@ -5924,13 +5953,13 @@
     "literal:boolean": 59,
     "literal:null": 23,
     "literal:number": 116,
-    "literal:string": 192,
+    "literal:string": 193,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,
     "lowering:date": 4,
     "lowering:formatDate": 1,
-    "lowering:queryHref": 1,
+    "lowering:queryHref": 3,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
     "member:optional": 1,
