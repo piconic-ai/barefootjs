@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/vite",
-  "version": "0.33.6",
+  "version": "0.34.0",
   "description": "Vite plugin for BarefootJS: Vite/Rollup owns bundling, hashing, chunking, tree-shaking and minification of client assets, BarefootJS keeps only the JSX to (template, client JS) compile",
   "type": "module",
   "main": "./dist/index.js",
