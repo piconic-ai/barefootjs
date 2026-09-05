@@ -1814,16 +1814,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * condition/consequent source spans, else `null`. Used for the
    * attribute-omission rule (#1897).
    */
-  /**
-   * `testParsed`/`consequentParsed` (#2843 review) are the ACTUAL parsed
-   * sub-trees, for the caller to pass through as `preParsed` — `condition`/
-   * `consequent` are `exprToString` output, a DEBUG formatter that renders
-   * any nested `object-literal` as the non-reparseable `[UNSUPPORTED: …]`
-   * placeholder (unlike `stringifyParsedExpr`, meant for round-tripping).
-   * Re-parsing THAT string for a consequent like `queryHref(base, { tag })`
-   * would corrupt the call's args before the lowering registry — now
-   * consulted at any nesting depth (#2843) — ever sees them.
-   */
   parseUndefinedAlternateTernary(
     expr: string,
   ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
@@ -1834,10 +1824,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
       (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
     if (!isUndef) return null
-    // Serialise the parsed sub-expressions back to JS source rather than
-    // slicing `expr` text — `indexOf('?')` / `lastIndexOf(':')` would
-    // mis-split when the consequent itself contains `?` / `:` inside a
-    // string or nested ternary (`cond ? 'a:b' : undefined`).
+    // `condition`/`consequent` are DEBUG text only (`exprToString` renders an
+    // unsupported nested shape like an object literal as non-reparseable
+    // `[UNSUPPORTED: …]` text) — callers that need to re-lower the
+    // sub-expression must use `testParsed`/`consequentParsed` (the actual
+    // parsed trees) as `preParsed`, not re-parse these strings.
     return {
       condition: exprToString(parsed.test),
       consequent: exprToString(parsed.consequent),
