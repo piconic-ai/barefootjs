@@ -3048,6 +3048,92 @@
           }
         }
       },
+      "query-href-ternary": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2843"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "reduce-right-typeof-body": {
         "blade": {
           "kind": "refusal",
@@ -3755,6 +3841,10 @@
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/preamble-cells.ts"
+      },
+      "query-href-ternary": {
+        "description": "queryHref(base, {…}) inside a ternary attribute branch (non-undefined alternate) lowers through the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/query-href-ternary.ts"
       },
       "reduce-right-typeof-body": {
         "description": "Off-subset `.reduceRight()` body (typeof) — JS-runtime faithful, DSL diagnostic",
