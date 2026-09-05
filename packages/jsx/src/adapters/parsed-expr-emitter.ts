@@ -35,6 +35,7 @@
 
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
+import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -96,6 +97,22 @@ export type SortMethod = 'sort' | 'toSorted'
 export type LiteralType = 'string' | 'number' | 'boolean' | 'null'
 
 /**
+ * An adapter's registered-lowering seam for the shared `call` dispatch
+ * (#2843). `matchers` are the same `ctx.state.loweringMatchers`-style list
+ * every adapter already binds at init; `render` maps one matched neutral
+ * node to this adapter's own template syntax (its body is typically what
+ * used to live inline in the adapter's `call()` method before this seam
+ * existed — see `renderLoweringNode` in the Go adapter's `url-builder.ts`
+ * for the shape). Returning null for a `kind`/`helper` this adapter has no
+ * mapping for lets the caller fall through to the ordinary `call()`
+ * dispatch, same as an unmatched call.
+ */
+export interface LoweringEmitter {
+  readonly matchers: readonly LoweringMatcher[]
+  render(node: LoweringNode, emit: (e: ParsedExpr) => string): string | null
+}
+
+/**
  * Adapter-side ParsedExpr lowering surface. One method per
  * `ParsedExpr.kind`. The shared `emitParsedExpr` runner dispatches
  * here based on `expr.kind`.
@@ -109,6 +126,17 @@ export interface ParsedExprEmitter {
   identifier(name: string): string
   literal(value: string | number | boolean | null, literalType: LiteralType): string
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string
+  // Optional (#2843): when present, `emitParsedExpr`'s `call` case tries
+  // every matcher FIRST — before `call()` itself, and before the
+  // higher-order `callbackMethod` recognition — so a registered lowering
+  // plugin's call is recognised no matter where in an expression tree it
+  // sits (a ternary branch, a template-literal interpolation, a binary
+  // operand, …), not only when the adapter's own top-level conversion entry
+  // point happens to consult the registry directly. Omitted entirely by an
+  // adapter that hasn't adopted the seam (e.g. Go, which still consults the
+  // registry inline in its own `call()` per #2842) — behaviour is then
+  // byte-identical to before this field existed.
+  lowering?: LoweringEmitter
   // `optional` is true for a `?.`-written access (`user?.name`); see the
   // `ParsedExpr` `member` variant's docstring in `expression-parser.ts`
   // for the single-hop caveat. Every adapter's `member()` implementation
@@ -340,6 +368,21 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
     case 'literal':
       return emitter.literal(expr.value, expr.literalType)
     case 'call': {
+      // #2843: a registered lowering plugin's call wins in EVERY value
+      // position this dispatcher reaches, not only an adapter's own
+      // top-level conversion entry point — see `LoweringEmitter`'s doc.
+      // First-match-wins; a matched node whose `render` declines (helper id
+      // this adapter has no mapping for) falls through to the ordinary
+      // dispatch below, same as an unmatched call.
+      if (emitter.lowering) {
+        for (const matcher of emitter.lowering.matchers) {
+          const node = matcher(expr.callee, expr.args)
+          if (!node) continue
+          const rendered = emitter.lowering.render(node, emit)
+          if (rendered !== null) return rendered
+          break
+        }
+      }
       // A higher-order callback call (`arr.filter(p)` / `arr.sort(cmp)` / …)
       // routes to the dedicated `callbackMethod` arm; any other call is generic.
       const cb = asCallbackMethodCall(expr)

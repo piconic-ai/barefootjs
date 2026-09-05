@@ -51,6 +51,8 @@
 import { groupBinaryOperand,
   groupObjectLiteralSegments,
   type ParsedExprEmitter,
+  type LoweringEmitter,
+  type LoweringNode,
   type HigherOrderMethod,
   type ArrayMethod,
   type LiteralType,
@@ -61,6 +63,8 @@ import { groupBinaryOperand,
   identifierPath,
   matchSearchParamsMethodCall,
   sortComparatorFromArrow,
+  queryHrefArgs,
+  isValidHelperId,
 } from '@barefootjs/jsx'
 
 import type { JinjaEmitContext } from '../emit-context.ts'
@@ -321,6 +325,45 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
 
   constructor(ctx: JinjaEmitContext) {
     this.ctx = ctx
+  }
+
+  /**
+   * Registered-lowering seam (#2843): `emitParsedExpr`'s shared `call` case
+   * tries every matcher here BEFORE `call()` itself, so a registered call
+   * (the built-in `queryHref`, or any userland plugin) is recognised no
+   * matter where it sits in the tree. `render` is what used to live inline
+   * in `JinjaAdapter.convertExpressionToJinja` before the object-literal
+   * support-gate refusal (`checkSupport`'s `call` arm, now itself
+   * registry-aware) made the pre-gate special case unnecessary.
+   */
+  get lowering(): LoweringEmitter {
+    return {
+      matchers: this.ctx._loweringMatchers,
+      render: (node: LoweringNode, emit: (e: ParsedExpr) => string): string | null => {
+        // `query` guard-list — `queryHref`-shaped. The helper includes a
+        // pair iff its guard is truthy AND its value is a non-empty string
+        // (the client's `if (value)`): a plain `key: v` passes guard
+        // `true`, a conditional `key: cond ? v : undefined` passes the
+        // lowered cond. Only the `query` helper renders to `bf.query`;
+        // another guard-list helper must not be silently mis-rendered as
+        // a query.
+        if (node.kind === 'guard-list' && node.helper === 'query') {
+          const qArgs = queryHrefArgs(node, emit)
+          return `bf.query(${qArgs.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
+        // hatch for a userland `LoweringPlugin` that lowers to a single
+        // runtime-helper invocation. `bf.<helper>(args…)` mirrors the
+        // `query` helper's own naming convention exactly: the framework
+        // renders the call, the plugin author registers `<helper>` as a
+        // Jinja-callable function/filter in their own runtime — same
+        // contract as `bf.query` itself, just not built in.
+        if (node.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          return `bf.${node.helper}(${node.args.map(emit).join(', ')})`
+        }
+        return null
+      },
+    }
   }
 
   identifier(name: string): string {

@@ -142,6 +142,27 @@ export function matchLoweringCall(
 }
 
 /**
+ * The child expressions a plugin took responsibility for inside a matched
+ * call (#2843) — the base + every triple's value/guard for a `guard-list`,
+ * or the args for a `helper-call`. Shared by the support gate
+ * (`checkSupport`'s `call` arm in `expression-parser.ts`, which recurses
+ * into these instead of refusing the call's raw argument shapes — a
+ * `guard-list`'s params object literal, for instance, would otherwise be
+ * refused before any adapter ever sees the recognised node) and any future
+ * walker that needs the same "what did this plugin actually consume"
+ * answer, so the two can't drift on what counts as consumed.
+ */
+export function loweringNodeChildren(node: LoweringNode): ParsedExpr[] {
+  if (node.kind === 'helper-call') return [...node.args]
+  const children: ParsedExpr[] = [node.base]
+  for (const t of node.triples) {
+    if (t.guard) children.push(t.guard)
+    children.push(t.value)
+  }
+  return children
+}
+
+/**
  * Whether a `LoweringNode.helper` id is safe to splice directly into an
  * adapter's runtime-helper naming convention (`bf_${helper}` in Go,
  * `bf->${helper}` in Perl/Mojolicious, `$bf.${helper}` in Xslate/Kolon,
