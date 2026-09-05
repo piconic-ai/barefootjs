@@ -127,32 +127,41 @@ export function cleanupPortalPlaceholder(portalId: string): void {
 }
 
 /**
- * A portal whose `ownerScope` was not yet in the document when `createPortal`
- * ran (#2717). Its element stays wherever it is until the owner connects,
- * then moves to `container` — see `createPortal`'s insertion rule.
+ * A portal whose deferral subject (see `createPortal`'s insertion rule) was
+ * not yet in the document when `createPortal` ran (#2717). Its element is
+ * ALREADY a child of `container`; once the subject connects it is
+ * re-appended, which moves it to the container's end.
  */
 interface PendingPortal {
   element: HTMLElement
   container: HTMLElement
-  owner: Element
+  /** The node whose connection is awaited: the owner, or the element's former parent. */
+  subject: Node
 }
 
-/** Creation-ordered queue of portals waiting for their owner to connect. */
+/** Creation-ordered queue of portals waiting for their subject to connect. */
 const pendingPortals: PendingPortal[] = []
 /** Alive only while `pendingPortals` is non-empty. */
 let pendingObserver: MutationObserver | null = null
 
 /**
- * Append every pending portal whose owner has connected since the last
- * check, in creation order — the same order the hydration path produces
- * when the owner is already connected and each `createPortal` appends
- * synchronously. Pending entries whose owner is still detached are kept.
+ * Re-append every pending portal whose subject has connected since the
+ * last check, in creation order — the same order the hydration path
+ * produces when the owner is already connected and each `createPortal`
+ * appends synchronously. The element is already in `container`, so the
+ * append does not insert a new node: it moves the connected node to the
+ * container's end, after the root that connected it. Pending entries whose
+ * subject is still detached are kept; an entry whose element has left the
+ * container in the meantime (removed or moved by the caller without
+ * `unmount`) is dropped rather than re-inserted.
  */
 function flushPendingPortals(): void {
   for (const pending of pendingPortals.slice()) {
-    if (!pending.owner.isConnected) continue
+    if (!pending.subject.isConnected) continue
     pendingPortals.splice(pendingPortals.indexOf(pending), 1)
-    pending.container.appendChild(pending.element)
+    if (pending.element.parentNode === pending.container) {
+      pending.container.appendChild(pending.element)
+    }
   }
   if (pendingPortals.length === 0 && pendingObserver) {
     pendingObserver.disconnect()
@@ -163,13 +172,13 @@ function flushPendingPortals(): void {
 function enqueuePendingPortal(pending: PendingPortal): void {
   pendingPortals.push(pending)
   if (!pendingObserver) {
-    // Observe the whole document: the owner is connected by whoever holds
+    // Observe the whole document: the subject is connected by whoever holds
     // the component root (`document.body.appendChild(root)` in a CSR boot,
     // a placeholder `replaceWith` higher up the tree, …) — the runtime has
     // no hook of its own at that moment, so the DOM's own insertion
     // notification is the one signal that covers every caller. Callbacks
     // run as a microtask, before the next paint, so the element is never
-    // rendered at its pre-portal position.
+    // rendered at its pre-reorder position.
     pendingObserver = new MutationObserver(flushPendingPortals)
     pendingObserver.observe(document, { childList: true, subtree: true })
   }
@@ -186,27 +195,47 @@ function cancelPendingPortal(element: HTMLElement): void {
 
 /**
  * Insertion rule (#2717): the portal's content is appended to `container`
- * once its `ownerScope` is connected to the document.
+ * synchronously, at call time, and — when the component it belongs to is
+ * not yet in the document — re-appended once that component connects,
+ * which moves it to the container's end.
  *
  * - Owner already connected (hydration: SSR markup is in the document
- *   before `init` runs), or no `ownerScope` given: appended synchronously,
- *   at the container's end, at call time — unchanged behaviour.
+ *   before `init` runs), or nothing to wait for: a single append, at the
+ *   container's end — unchanged behaviour.
  * - Owner not yet connected (a client-side mount: `materializeComponent`
  *   runs `init` — and so the `ref` callbacks that call this — BEFORE the
- *   bare-`createComponent` caller connects the root): the append is
- *   deferred until the owner connects, and pending portals flush in
- *   creation order.
+ *   bare-`createComponent` caller connects the root): the element is
+ *   appended now all the same, and a reorder is queued; once the owner
+ *   connects, pending portals are re-appended in creation order.
  *
- * Without the deferral the two construction paths disagree on
+ * Without the reorder the two construction paths disagree on
  * `document.body`'s child order: hydration yields `[root, …portals]`
  * while a CSR mount yields `[…portals, root]`, because the root is
  * appended AFTER its portals were. Child order is user-visible (paint
  * order between equal-`z-index` overlays, focus traversal, `querySelector`
- * results), so both paths converge on the hydration answer. The subject
- * whose connection is awaited is the `ownerScope` when given, else the
- * element's own (detached) tree when it already sits in one; a bare
- * element with neither has nothing else that will ever connect it, so it
- * must append now.
+ * results), so both paths converge on the hydration answer.
+ *
+ * The append itself is never deferred: the element is connected to the
+ * document at every point in time, only its position among the
+ * container's children settles asynchronously (as a microtask, before the
+ * next paint). Portal consumers measure layout synchronously in the same
+ * tick as their `ref` callback — `createEffect`'s first run is synchronous,
+ * and the floating-position components (popover, dropdown-menu, context-
+ * menu, …) read `offsetWidth`/`offsetHeight` of the portaled element there,
+ * gated only on their open signal — so a portal that was briefly absent
+ * from the document would hand them zero-sized boxes with nothing to
+ * re-trigger the measurement once it landed.
+ *
+ * The subject whose connection is awaited is the `ownerScope` when given
+ * and it lies outside the element; otherwise the element's former parent.
+ * The self-owner shape (`ownerScope === element`: a child component whose
+ * own root carries `bf-s`, e.g. DialogOverlay/DialogContent) needs that
+ * fallback, since the immediate append connects the element — and so the
+ * owner — right away, while the component under construction is the tree
+ * it was taken from. An element in a detached tree with no owner (a
+ * fragment-root component, whose scope lives on a comment) is the same
+ * case. A bare element with neither has nothing that will ever connect
+ * it, so there is nothing to wait for.
  */
 export function createPortal(
   children: PortalChildren,
@@ -243,21 +272,22 @@ export function createPortal(
     }
   }
 
-  // The deferral subject: the declared owner, or — for an element that
-  // already sits in a tree — the element itself (its tree is the component
-  // under construction; `el.closest('[bf-s]')` finds no owner for a
-  // fragment-root component, whose scope lives on a comment, yet its
-  // `ref` callback runs on the same detached tree). A bare element with no
-  // parent and no owner has nothing that will ever connect it, so it
-  // appends now.
-  const owner = options?.ownerScope ?? (children instanceof HTMLElement && children.parentNode ? children : null)
-  // `MutationObserver` is the deferral primitive; an environment without
-  // it keeps the synchronous append (the pre-#2717 behaviour) rather than
-  // losing the portal altogether.
-  if (owner && !owner.isConnected && typeof MutationObserver !== 'undefined') {
-    enqueuePendingPortal({ element, container, owner })
-  } else {
-    container.appendChild(element)
+  // The reorder subject, resolved BEFORE the append moves the element:
+  // the declared owner when it lies outside the element, else the
+  // element's former parent (see the insertion rule above). Only a parent
+  // the caller handed us counts — the string path parses into a fragment,
+  // which never connects; the same goes for a caller-built fragment.
+  const owner = options?.ownerScope
+  const formerParent = children instanceof HTMLElement ? children.parentNode : null
+  const subject: Node | null =
+    owner && !element.contains(owner) ? owner : formerParent instanceof Element ? formerParent : null
+
+  container.appendChild(element)
+
+  // `MutationObserver` is the reorder primitive; an environment without it
+  // keeps the plain synchronous append (the pre-#2717 behaviour).
+  if (subject && !subject.isConnected && typeof MutationObserver !== 'undefined') {
+    enqueuePendingPortal({ element, container, subject })
   }
 
   return {

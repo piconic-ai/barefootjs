@@ -97,6 +97,10 @@ const IDEMPOTENCE_EXCLUDED: ReadonlyMap<string, string> = new Map([
     'combobox',
     'measured bimodal once its portal-ordering divergence was fixed (#2717): 4 of 5 repeats agree, the fifth diverges only on the `combobox-empty` row\'s `hidden` attribute (its visibility is an effect counting visible siblings after the fill/filter steps) — the same filtered-list reconciliation race class as `command` (#2827), not a portal-position difference (the portaled content sits at the same body position on every run). The ledger\'s "reliably fails" assumption does not hold for this pair, so it is excluded rather than quarantined.',
   ],
+  [
+    'dropdown-menu',
+    'measured bimodal once its portal-ordering divergence was fixed (#2717, #2848): body order agrees `[root, portal content]` on every run, pass or fail — the only difference is the portal content\'s inline `top` style. The CSS-less fixture-hydrate host renders the menu tall enough to force page scroll on item click, which races the position effect\'s capture-phase `scroll` listener against Escape\'s focus-restoring scroll-back (10/10 fail on `main` pre-#2717 with the same signature, so it predates and is unrelated to the portal-ordering fix). Excluded rather than quarantined for the same reason as `combobox`: this is not a reliably-failing pair.',
+  ],
 ])
 
 test.beforeAll(async () => {

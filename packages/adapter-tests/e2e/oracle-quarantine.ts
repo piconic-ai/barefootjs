@@ -124,8 +124,9 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // `[…portals, root]`, because a bare `createComponent()` runs `init`
   // (and the `ref` → `createPortal` calls) before its caller appends the
   // root. Fixed in `createPortal` (`packages/client/src/runtime/portal.ts`):
-  // a portal now waits for its `ownerScope` to connect before appending,
-  // so both paths land on the hydration order. Verified with the real
+  // a portal is still appended at call time, and is re-appended (moved to
+  // the container's end) once its `ownerScope` connects, so both paths
+  // land on the hydration order. Verified with the real
   // oracle run; the measured divergence was present before any action
   // step ran, so it was a mount-order defect, not an interaction one.
   dialog: {
