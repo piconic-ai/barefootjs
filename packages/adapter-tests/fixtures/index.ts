@@ -520,9 +520,11 @@ import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
+import { fixture as formatDateTernary } from './format-date-ternary'
 import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
+import { fixture as queryHrefTernaryUndefined } from './query-href-ternary-undefined'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
 import { fixture as dateToLocaleDateStyle } from './date-tolocale-datestyle'
@@ -944,9 +946,11 @@ export const jsxFixtures: JSXFixture[] = [
   richPropClientRead,
   richPropPrecompute,
   formatDate,
+  formatDateTernary,
   queryHref,
   queryHrefSrc,
   queryHrefTernary,
+  queryHrefTernaryUndefined,
   dateToLocaleLiteral,
   dateToLocaleUnion,
   dateToLocaleDateStyle,

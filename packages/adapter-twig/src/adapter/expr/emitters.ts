@@ -73,6 +73,10 @@ import { groupBinaryOperand,
   identifierPath,
   matchSearchParamsMethodCall,
   sortComparatorFromArrow,
+  type LoweringEmitter,
+  type LoweringNode,
+  queryHrefArgs,
+  isValidHelperId,
 } from '@barefootjs/jsx'
 
 import type { TwigEmitContext } from '../emit-context.ts'
@@ -337,6 +341,35 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
 
   constructor(ctx: TwigEmitContext) {
     this.ctx = ctx
+  }
+
+  /**
+   * Registered-lowering seam (#2843): `emitParsedExpr`'s shared `call` case
+   * tries every matcher here BEFORE `call()` itself, so a registered call
+   * (the built-in `queryHref`, or any userland plugin) is recognised no
+   * matter where it sits in the tree. `render` is what used to live inline
+   * in `TwigAdapter.convertExpressionToTwig` before the object-literal
+   * support-gate refusal (`checkSupport`'s `call` arm, now itself
+   * registry-aware) made the pre-gate special case unnecessary.
+   */
+  get lowering(): LoweringEmitter {
+    return {
+      matchers: this.ctx._loweringMatchers,
+      render: (node: LoweringNode, emit: (e: ParsedExpr) => string): string | null => {
+        // `query` guard-list — `queryHref`-shaped.
+        if (node.kind === 'guard-list' && node.helper === 'query') {
+          const qArgs = queryHrefArgs(node, emit)
+          return `bf.query(${qArgs.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — a userland `LoweringPlugin`'s
+        // single runtime-helper invocation; `bf.<helper>(args…)` mirrors
+        // the `query` helper's own naming convention.
+        if (node.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          return `bf.${node.helper}(${node.args.map(emit).join(', ')})`
+        }
+        return null
+      },
+    }
   }
 
   identifier(name: string): string {

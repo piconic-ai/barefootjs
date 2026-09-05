@@ -129,6 +129,44 @@ function lowerTernaryTest(ctx: GoEmitContext, test: ParsedExpr): string {
 }
 
 /**
+ * First registered matcher that recognises `callee(args)`, or null (#2842).
+ * The single registry consultation every Go lowering path shares: the
+ * top-level `lowerRegisteredCall` early return, the ParsedExpr `call()`
+ * dispatcher (`go-template-adapter.ts`, so a registered call is recognised no
+ * matter how deep it sits in an expression tree — a ternary branch, a
+ * template-literal interpolation, a binary operand — not only when the call
+ * IS the whole expression), and the attribute-position `bf_attr` route all
+ * ask this one question. First-match-wins: a malformed helper id from one
+ * plugin must not be silently masked by falling through to another.
+ */
+export function matchRegisteredCall(
+  ctx: GoEmitContext,
+  callee: ParsedExpr,
+  args: readonly ParsedExpr[],
+): LoweringNode | null {
+  for (const matcher of ctx.state.loweringMatchers) {
+    const node = matcher(callee, args)
+    if (node) return node
+  }
+  return null
+}
+
+/**
+ * Render a recognised call's neutral node to its Go pipeline (unparenthesised
+ * — same contract as `lowerRegisteredCall`), or null when no plugin matches
+ * or the matched helper has no Go mapping.
+ */
+export function lowerRegisteredCallNode(
+  ctx: GoEmitContext,
+  callee: ParsedExpr,
+  args: readonly ParsedExpr[],
+): string | null {
+  if (ctx.state.loweringMatchers.length === 0) return null
+  const node = matchRegisteredCall(ctx, callee, args)
+  return node ? renderLoweringNode(ctx, node) : null
+}
+
+/**
  * Lower a helper call to a Go template expression, or null when no registered
  * plugin recognises it (→ the generic lowering). Matchers — including the
  * built-in `queryHref` plugin (#2042) — are bound to the component metadata at
@@ -144,8 +182,7 @@ export function lowerRegisteredCall(
   jsExpr: string,
   preParsed?: ParsedExpr,
 ): string | null {
-  const matchers = ctx.state.loweringMatchers
-  if (matchers.length === 0) return null
+  if (ctx.state.loweringMatchers.length === 0) return null
 
   let call: ParsedExpr | undefined = preParsed?.kind === 'call' ? preParsed : undefined
   if (!call) {
@@ -155,13 +192,7 @@ export function lowerRegisteredCall(
     call = parsed
   }
 
-  for (const matcher of matchers) {
-    const node = matcher(call.callee, call.args)
-    if (!node) continue
-    const rendered = renderLoweringNode(ctx, node)
-    if (rendered !== null) return rendered
-  }
-  return null
+  return lowerRegisteredCallNode(ctx, call.callee, call.args)
 }
 
 /**
@@ -189,10 +220,13 @@ export function lowerRegisteredCall(
  * shape `lowerTernary` itself right-folds) is a `query` guard-list call, the
  * whole ternary is wrapped in `bf_attr` too — matching the reference, which
  * HTML-escapes the picked branch's value the same way regardless of which
- * branch won. (The `undefined`-alternate omission shape, `cond ? queryHref(...)
- * : undefined`, is NOT handled here — that shape's consequent-only render
- * doesn't consult the lowering registry at all and emits invalid Go syntax
- * independent of escaping, tracked separately as #2842.)
+ * branch won.
+ *
+ * The caller passes the CONSEQUENT ALONE (not the full ternary) for the
+ * `undefined`-alternate omission shape (`cond ? queryHref(...) : undefined`,
+ * #2842) — omission needs the `{{if}}` wrapper that shape's caller already
+ * builds; a `bf_ternary … ""` inside `bf_attr` can't express it (`Attr`
+ * renders `name=""` for an empty value, not attribute absence).
  */
 export function lowerRegisteredAttrCall(
   ctx: GoEmitContext,
@@ -208,25 +242,17 @@ export function lowerRegisteredAttrCall(
     return `{{bf_attr ${JSON.stringify(attrName)} ${rendered}}}`
   }
   if (parsed.kind !== 'call') return null
-  for (const matcher of ctx.state.loweringMatchers) {
-    const node = matcher(parsed.callee, parsed.args)
-    if (!node) continue
-    if (node.kind !== 'guard-list' || node.helper !== 'query') return null
-    const rendered = renderLoweringNode(ctx, node)
-    return rendered === null ? null : `{{bf_attr ${JSON.stringify(attrName)} (${rendered})}}`
-  }
-  return null
+  const node = matchRegisteredCall(ctx, parsed.callee, parsed.args)
+  if (!node || node.kind !== 'guard-list' || node.helper !== 'query') return null
+  const rendered = renderLoweringNode(ctx, node)
+  return rendered === null ? null : `{{bf_attr ${JSON.stringify(attrName)} (${rendered})}}`
 }
 
 /** Whether a `call` node is a recognised `query` guard-list lowering. */
 function isQueryGuardListCall(ctx: GoEmitContext, node: ParsedExpr): boolean {
   if (node.kind !== 'call') return false
-  for (const matcher of ctx.state.loweringMatchers) {
-    const lowered = matcher(node.callee, node.args)
-    if (!lowered) continue
-    return lowered.kind === 'guard-list' && lowered.helper === 'query'
-  }
-  return false
+  const lowered = matchRegisteredCall(ctx, node.callee, node.args)
+  return lowered?.kind === 'guard-list' && lowered.helper === 'query'
 }
 
 /**

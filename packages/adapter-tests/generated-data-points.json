@@ -1394,6 +1394,44 @@
       }
     }
   ],
+  "format-date-ternary": [
+    {
+      "name": "gen:createdAt:epoch",
+      "props": {
+        "ok": true,
+        "createdAt": {
+          "$date": "1970-01-01T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "gen:createdAt:pre-1970",
+      "props": {
+        "ok": true,
+        "createdAt": {
+          "$date": "1969-07-20T20:17:40.123Z"
+        }
+      }
+    },
+    {
+      "name": "gen:createdAt:leap-day",
+      "props": {
+        "ok": true,
+        "createdAt": {
+          "$date": "2024-02-29T12:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "gen:createdAt:year-9999",
+      "props": {
+        "ok": true,
+        "createdAt": {
+          "$date": "9999-12-31T23:59:59.999Z"
+        }
+      }
+    }
+  ],
   "fragment-body-keyed-loop-row": [
     {
       "name": "gen:items:empty",
@@ -2112,6 +2150,56 @@
     }
   ],
   "query-href-ternary": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "ok": true,
+        "base": "",
+        "tag": "sale"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "ok": true,
+        "base": "<b>&\"'</b>",
+        "tag": "sale"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "ok": true,
+        "base": "日本語",
+        "tag": "sale"
+      }
+    },
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "ok": true,
+        "base": "/items",
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "ok": true,
+        "base": "/items",
+        "tag": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "ok": true,
+        "base": "/items",
+        "tag": "日本語"
+      }
+    }
+  ],
+  "query-href-ternary-undefined": [
     {
       "name": "gen:base:empty",
       "props": {

@@ -101,7 +101,7 @@ export { JsxAdapter } from './adapters/jsx-adapter.ts'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
 export { rewriteImportsForTemplate, rewriteDynamicImportsInSource } from './adapters/template-imports.ts'
 export { emitParsedExpr, groupBinaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary } from './adapters/parsed-expr-emitter.ts'
-export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
+export type { ParsedExprEmitter, LoweringEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
 export { derivesScopeFromSlot } from './adapters/child-scope.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
@@ -114,6 +114,7 @@ export {
   prepareLoweringMatchers,
   matchLoweringCall,
   isValidHelperId,
+  loweringNodeChildren,
   __resetLoweringPluginsForTest,
   type LoweringPlugin,
   type LoweringNode,

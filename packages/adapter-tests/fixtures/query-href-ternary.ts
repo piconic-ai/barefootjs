@@ -3,14 +3,12 @@ import { createFixture } from '../src/types'
 /**
  * `queryHref(base, { … })` inside a ternary attribute value with a real,
  * non-`undefined` alternate (#2743 follow-up — pullfrog review on #2841).
- * This shape is syntactically valid and distinct from the `undefined`-
- * alternate omission shape (tracked separately as #2842, whose consequent-
- * only render doesn't consult the lowering registry at all): here BOTH
- * branches already lower correctly via `bf_ternary`, so the only question
- * is whether the WHOLE ternary result gets the same html/template
- * URL-context-escaping bypass a direct `queryHref` call gets (see
- * `query-href.ts` / `query-href-src.ts`), regardless of which branch a
- * given render picks.
+ * This shape is distinct from the `undefined`-alternate omission shape
+ * (`query-href-ternary-undefined.ts`, #2842): here BOTH branches already
+ * lower correctly via `bf_ternary`, so the only question is whether the
+ * WHOLE ternary result gets the same html/template URL-context-escaping
+ * bypass a direct `queryHref` call gets (see `query-href.ts` /
+ * `query-href-src.ts`), regardless of which branch a given render picks.
  */
 export const fixture = createFixture({
   id: 'query-href-ternary',

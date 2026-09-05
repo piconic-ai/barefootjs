@@ -2562,6 +2562,21 @@
         "text"
       ]
     },
+    "format-date-ternary": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string",
+        "lowering:formatDate"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "fragment": {
       "kinds": [
         "call",
@@ -4116,6 +4131,20 @@
       ],
       "axes": [
         "literal:string",
+        "lowering:queryHref"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "query-href-ternary-undefined": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [
         "lowering:queryHref"
       ],
       "contexts": [
@@ -5903,14 +5932,14 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 245,
-    "conditional": 28,
-    "identifier": 347,
+    "call": 247,
+    "conditional": 30,
+    "identifier": 349,
     "index-access": 14,
-    "literal": 276,
+    "literal": 277,
     "logical": 47,
     "member": 197,
-    "object-literal": 70,
+    "object-literal": 71,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 42
@@ -5953,13 +5982,13 @@
     "literal:boolean": 59,
     "literal:null": 23,
     "literal:number": 116,
-    "literal:string": 193,
+    "literal:string": 194,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 14,
     "lowering:date": 4,
-    "lowering:formatDate": 1,
-    "lowering:queryHref": 3,
+    "lowering:formatDate": 2,
+    "lowering:queryHref": 4,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
     "member:optional": 1,
