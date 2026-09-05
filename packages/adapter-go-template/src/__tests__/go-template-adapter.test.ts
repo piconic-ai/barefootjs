@@ -18,6 +18,7 @@ import {
 } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
 import { renderDivergences } from '../render-divergences'
+import { findNestedComponents } from '../adapter/analysis/component-tree.ts'
 
 runAdapterConformanceTests({
   name: 'go-template',
@@ -5385,6 +5386,61 @@ export function Toggle({ toggleItems }: ToggleProps) {
     // required-stays-unconditional rule as the main loop.
     expect(newProps).toContain('bfCallerProps["toggleItems"] = toggleItems')
     expect(newProps).not.toContain('if in.ToggleItems != nil {')
+  })
+})
+
+describe('GoTemplateAdapter - #2835 name collision with a whole-props type member', () => {
+  // Same-file sibling components (`Item` alongside the exported `List`) —
+  // compiled with `compileJSX` directly, like the #2445 describe block above,
+  // since `compileToIR`'s single-component IR round trip isn't set up to
+  // pick a specific sibling out of a multi-component file.
+  const collidingSource = `
+type ItemProps = { label: string }
+function Item(props: ItemProps) {
+  return <div>{props.label}</div>
+}
+const base = [{ label: 'z' }]
+type Props = { base: ItemProps[] }
+export function List(props: Props) {
+  return <div>{base.map((item) => <Item key={item.label} label={item.label} />)}</div>
+}
+`
+  const controlSource = `
+type ItemProps = { label: string }
+function Item(props: ItemProps) {
+  return <div>{props.label}</div>
+}
+const base = [{ label: 'z' }]
+type Props = { other: string }
+export function List(props: Props) {
+  return <div>{base.map((item) => <Item key={item.label} label={item.label} />)}</div>
+}
+`
+
+  test('a module const colliding with `Props.base` is not classified prop-derived — the actual input `findNestedComponents` (component-tree.ts) feeds to Go codegen', () => {
+    const ctx = analyzeComponent(collidingSource.trimStart(), 'test.tsx', 'List')
+    const ir = jsxToIR(ctx)
+    expect(ir).not.toBeNull()
+    const item = findNestedComponents(ir!).find(c => c.name === 'Item')
+    expect(item).toBeDefined()
+    expect(item!.isPropDerived).toBe(false)
+    expect(item!.isDynamic).toBe(false)
+  })
+
+  test('Items stays a real hydrated field (`json:"items"`), matching the non-colliding control — misclassification previously hid it behind `json:"-"` and fabricated an unrelated `Base` prop read', () => {
+    const collidingResult = compileJSX(collidingSource.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const controlResult = compileJSX(controlSource.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const collidingTypes = collidingResult.files.find(f => f.type === 'types')!.content
+    const controlTypes = controlResult.files.find(f => f.type === 'types')!.content
+    // `Props.base` is a real declared member independent of the loop
+    // classification, so it legitimately gets its own `Base`/`bfCallerProps`
+    // entries in BOTH cases — the loop-specific signal is the `Items` field,
+    // which a misclassified `isPropDerived: true` hides from JSON entirely.
+    expect(collidingTypes).toContain('Items []ItemProps `json:"items"`')
+    expect(collidingTypes).not.toContain('Items []ItemProps `json:"-"`')
+    const itemsFieldLine = (src: string) => src.split('\n').find(l => l.includes('[]ItemInput')) ?? ''
+    expect(itemsFieldLine(collidingTypes)).not.toBe('')
+    expect(itemsFieldLine(collidingTypes)).toBe(itemsFieldLine(controlTypes))
   })
 })
 

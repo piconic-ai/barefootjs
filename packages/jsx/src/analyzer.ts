@@ -3064,12 +3064,12 @@ function collectConstant(
       // so `isArrayExprDirectPropRef`'s member-access recognition (which
       // reads `.parsed`, not `.name`) never saw it — `rows` stayed
       // classified `isStaticArray: true` even though it's `props.items`
-      // itself. An un-renamed destructure (`const { items } = props`)
-      // didn't need this to already resolve — `items` the LOCAL NAME
-      // happens to also be a `props` type-member name, so the name-only
-      // branch matched regardless — but the rename case has no such
-      // coincidence to fall back on. `parseExpression` naturally keeps a
-      // defaulted destructure (`value` ends in `?? <default>`) OUT of the
+      // itself. Since #2835, the name-only branch reads `boundPropNames`
+      // (empty for a whole-`props`-param component) rather than the
+      // type-member-name set, so this `.parsed` is the only path for the
+      // un-renamed case too, not just the rename case. `parseExpression`
+      // naturally keeps a defaulted destructure (`value` ends in
+      // `?? <default>`) OUT of the
       // `kind: 'member'` shape (it parses as a logical-or instead), which
       // is what keeps that case correctly static per #2806.
       const parsed = parseExpression(`(${value.trim()})`)

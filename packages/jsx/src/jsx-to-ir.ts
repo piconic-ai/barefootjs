@@ -49,7 +49,7 @@ import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
 } from './prop-rewrite.ts'
-import { buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore } from './props-binding.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -73,6 +73,7 @@ import { identifierPattern, identifierCallPattern } from './identifier-pattern.t
 interface ReactivityPatterns {
   signals: { getter: string; pattern: RegExp }[]
   memos: { name: string; pattern: RegExp }[]
+  /** For regex `props.<key>` detection only — for exact-name binding checks read `TransformContext.boundPropNames` instead (#2835). */
   props: { name: string; pattern: RegExp }[]
   constants: { name: string; value: string | undefined; pattern: RegExp }[]
 }
@@ -85,6 +86,14 @@ interface TransformContext {
   isRoot: boolean
   insideComponentChildren: boolean
   patterns: ReactivityPatterns
+  /**
+   * Local names actually bound by the props parameter (#2835) — unlike
+   * `patterns.props`, which for a whole `(props: Props)` parameter holds
+   * every TYPE-MEMBER name (needed so its regex `pattern` still matches
+   * `props.<key>` accesses), this is empty in that shape since none of
+   * those names are local bindings a shadow check could ever see.
+   */
+  boundPropNames: ReadonlySet<string>
   /** Shortcut for analyzer.getJS(node) */
   getJS(node: ts.Node): string
   /** getJS + rewrite destructured prop refs for client JS templates (#807) */
@@ -680,6 +689,10 @@ function getDestructuredPropAliases(ctx: TransformContext): Map<string, string> 
 }
 
 function createTransformContext(analyzer: AnalyzerContext): TransformContext {
+  // Shared by `patterns.props` (regex matching) and `boundPropNames`
+  // (exact-name binding checks, #2835) so both agree on which prop
+  // params are in play — `children` excluded from both the same way.
+  const propsParamsForMatching = analyzer.propsParams.filter(p => p.name !== 'children')
   return {
     analyzer,
     sourceFile: analyzer.sourceFile,
@@ -693,6 +706,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     insideComponentChildren: false,
     scope: BindingScope.EMPTY,
     loopDepth: 0,
+    boundPropNames: boundPropLocalNames({ propsParams: propsParamsForMatching, propsObjectName: analyzer.propsObjectName }),
     patterns: {
       signals: analyzer.signals.map(s => ({
         getter: s.getter,
@@ -702,9 +716,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
         name: m.name,
         pattern: identifierCallPattern(m.name),
       })),
-      props: analyzer.propsParams
-        .filter(p => p.name !== 'children')
-        .map(p => ({ name: p.name, pattern: identifierPattern(p.name) })),
+      props: propsParamsForMatching.map(p => ({ name: p.name, pattern: identifierPattern(p.name) })),
       constants: analyzer.localConstants.map(c => ({
         name: c.name,
         value: c.value,
@@ -7873,12 +7885,11 @@ function checkBareSignalOrMemoIdentifier(
  * constant's own bare-identifier value text or its structured `.parsed`
  * shape, never a substring/regex match against arbitrary expression text.
  * `propAliasHopCandidates` additionally restricts which constants are
- * eligible hop sources (see its docstring) — a name that merely COLLIDES
+ * eligible hop sources (see its docstring). A name that merely COLLIDES
  * with a prop's name without being bound to it (a module constant sharing a
- * whole-`props`-object type's member name) can still slip through that
- * name-only check; tracked as a separate, pre-existing imprecision
- * (`ctx.patterns.props` itself over-includes for that component shape, not
- * something introduced by the alias walk) rather than widened here.
+ * whole-`props`-object type's member name) is excluded by the terminal
+ * (`isDirectPropBindingName` reads `ctx.boundPropNames`, not the wider
+ * `ctx.patterns.props` — #2835).
  *
  * This is more than a "prop reference somewhere in the expression" check
  * (`isPropsReference`'s regex semantics): the return value also feeds
@@ -7930,10 +7941,16 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
  * of an identifier-valued one — confirmed to reach real Go `isPropDerived`
  * codegen the same way, since Go's BF101 gate explicitly skips a
  * scope-bound array name).
+ *
+ * Reads `ctx.boundPropNames`, not `ctx.patterns.props` (#2835): for a whole
+ * `(props: Props)` parameter, `patterns.props` holds every TYPE-MEMBER name
+ * (needed so its regex still matches `props.<key>`) rather than local
+ * bindings, so a same-named module const was matching here as if it were
+ * the prop itself.
  */
 function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
   if (ctx.scope.isBound(name)) return false
-  if (ctx.patterns.props.some(p => p.name === name)) return true
+  if (ctx.boundPropNames.has(name)) return true
   const propsObjName = ctx.analyzer.propsObjectName
   if (!propsObjName) return false
   const parsed = constantsByName(ctx).get(name)?.parsed

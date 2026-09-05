@@ -30,8 +30,8 @@
  * unrestricted alias-hop walk introduced two NEW false positives of its
  * own — both covered below (the "review finding" tests) — plus one gap in
  * the same bug class the initial fix didn't reach (the destructure-rename
- * test) and one pre-existing, out-of-scope imprecision this PR does not
- * touch (see the module-const-name-collision comment at the bottom).
+ * test) and one pre-existing, out-of-scope imprecision fixed separately by
+ * #2835 (see the comment at the bottom).
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -349,19 +349,7 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
 })
 
 /**
- * NOT fixed by this PR — filed separately as #2835 (pre-existing, confirmed
- * to reproduce identically on the unmodified pre-#2724 compiler with no
- * aliasing involved at all): a `(props: Props)`-style (non-destructured)
- * component's `ctx.patterns.props` includes every one of `Props`'s
- * type-member names, whether or not that name is actually bound to
- * anything in the current component (it's used elsewhere for `props.<key>`
- * rewriting, not for this loop classifier). A local or module-level
- * identifier that happens to share a name with such a member — with NO
- * relation to the actual prop — is misclassified prop-derived purely by
- * that name collision. This alias-hop fix makes the PRE-EXISTING collision
- * reachable through one more hop, but does not introduce the underlying
- * imprecision (`ctx.patterns.props`'s own over-inclusion for this
- * component shape). Left to #2835 rather than widened here, since a proper
- * fix touches shared infrastructure several other classifiers in this file
- * also read.
+ * The pre-existing `(props: Props)`-shape name-collision imprecision noted
+ * here previously is fixed — see #2835 and
+ * `issue-2835-props-type-member-name-collision.test.ts`.
  */
