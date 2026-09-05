@@ -1,0 +1,5 @@
+---
+"@barefootjs/client": patch
+---
+
+Fix #2717: `createPortal` now appends its content once the `ownerScope` is connected to the document, instead of unconditionally at call time. Hydration is unchanged (the owner is already in the document when `init` runs, so the append stays synchronous), but a client-side mount used to portal BEFORE the root was connected — `materializeComponent` runs `init`, and so the `ref` callbacks that call `createPortal`, before a bare `createComponent()` caller appends the result — leaving `document.body` as `[…portals, root]` where hydration produces `[root, …portals]`. Child order is user-visible (paint order between equal-`z-index` overlays, focus traversal, `querySelector` results), so both paths now converge on the hydration answer: a portal whose owner is still detached waits (via a `MutationObserver` that lives only while something is pending) and pending portals flush in creation order. Portals without an `ownerScope` keep the synchronous append. Graduates the `idempotence` quarantine rows for the `dialog`, `dropdown-menu`, `popover` and `portal` oracle fixtures.

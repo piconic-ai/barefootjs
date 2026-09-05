@@ -296,4 +296,140 @@ describe('createPortal', () => {
       expect(portal.element.className).toBe('dialog-content')
     })
   })
+
+  /**
+   * Insertion rule (#2717): with an `ownerScope` that is not yet in the
+   * document, the append waits for the owner to connect. This is the CSR
+   * construction shape — `materializeComponent` runs `init` (and the
+   * `ref` callbacks that portal) before a bare `createComponent()` caller
+   * appends the root — and the deferral is what makes it land on the same
+   * `document.body` child order as hydration: `[root, …portals]`.
+   */
+  describe('deferred until the owner scope connects (#2717)', () => {
+    /** Wait for the MutationObserver flush (a microtask in browsers; happy-dom schedules its own). */
+    async function settle(until: () => boolean): Promise<void> {
+      for (let i = 0; i < 50 && !until(); i++) {
+        await new Promise(r => setTimeout(r, 1))
+      }
+    }
+
+    /** A detached component root carrying a portal target, the way a CSR `init` sees it. */
+    function detachedComponent(scopeId: string, slot: string) {
+      const root = document.createElement('div')
+      root.setAttribute('bf-s', scopeId)
+      root.className = 'component-root'
+      const target = document.createElement('div')
+      target.setAttribute('data-slot', slot)
+      root.appendChild(target)
+      return { root, target }
+    }
+
+    test('appends synchronously when the owner is already connected (hydration path)', () => {
+      const { root, target } = detachedComponent('Dialog_hyd', 'dialog-content')
+      container.appendChild(root)
+
+      createPortal(target, container, { ownerScope: root })
+
+      expect(Array.from(container.children)).toEqual([root, target])
+      expect(root.children.length).toBe(0)
+    })
+
+    test('waits for a detached owner, then lands after the root (CSR mount path)', async () => {
+      const { root, target } = detachedComponent('Dialog_csr', 'dialog-content')
+
+      const portal = createPortal(target, container, { ownerScope: root })
+
+      // Not yet moved: the element is still at its original position and
+      // the container is untouched. bf-po is stamped right away.
+      expect(container.children.length).toBe(0)
+      expect(target.parentNode).toBe(root)
+      expect(portal.element.getAttribute('bf-po')).toBe('Dialog_csr')
+
+      // The caller connects the root — a bare `createComponent()` result
+      // being appended by whoever created it.
+      container.appendChild(root)
+      await settle(() => target.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([root, target])
+      expect(root.children.length).toBe(0)
+    })
+
+    test('the owner may be the portaled element itself', async () => {
+      // A child component's own root carries `bf-s`, so `el.closest('[bf-s]')`
+      // resolves to `el` — the shape DialogOverlay/DialogContent hit.
+      const parent = document.createElement('div')
+      const self = document.createElement('div')
+      self.setAttribute('bf-s', 'DialogOverlay_self')
+      parent.appendChild(self)
+
+      createPortal(self, container, { ownerScope: self })
+      expect(container.children.length).toBe(0)
+
+      container.appendChild(parent)
+      await settle(() => self.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([parent, self])
+      expect(parent.children.length).toBe(0)
+    })
+
+    test('flushes pending portals in creation order', async () => {
+      const { root, target: overlay } = detachedComponent('Dialog_order', 'dialog-overlay')
+      const content = document.createElement('div')
+      content.setAttribute('data-slot', 'dialog-content')
+      root.appendChild(content)
+
+      createPortal(overlay, container, { ownerScope: root })
+      createPortal(content, container, { ownerScope: root })
+      container.appendChild(root)
+      await settle(() => content.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([root, overlay, content])
+    })
+
+    test('leaves a portal pending while its own owner is still detached', async () => {
+      const first = detachedComponent('Dialog_a', 'dialog-content')
+      const second = detachedComponent('Dialog_b', 'dialog-content')
+
+      createPortal(first.target, container, { ownerScope: first.root })
+      createPortal(second.target, container, { ownerScope: second.root })
+      container.appendChild(first.root)
+      await settle(() => first.target.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([first.root, first.target])
+      expect(second.target.parentNode).toBe(second.root)
+
+      container.appendChild(second.root)
+      await settle(() => second.target.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([first.root, first.target, second.root, second.target])
+    })
+
+    test('unmount before the owner connects cancels the pending append', async () => {
+      const { root, target } = detachedComponent('Dialog_cancel', 'dialog-content')
+
+      const portal = createPortal(target, container, { ownerScope: root })
+      portal.unmount()
+      expect(target.parentNode).toBeNull()
+
+      container.appendChild(root)
+      await settle(() => container.children.length > 1)
+
+      expect(Array.from(container.children)).toEqual([root])
+    })
+
+    test('an owner without a scope id still defers (no bf-po, same insertion rule)', async () => {
+      const root = document.createElement('div')
+      const target = document.createElement('div')
+      root.appendChild(target)
+
+      const portal = createPortal(target, container, { ownerScope: root })
+      expect(portal.element.hasAttribute('bf-po')).toBe(false)
+      expect(container.children.length).toBe(0)
+
+      container.appendChild(root)
+      await settle(() => target.parentNode === container)
+
+      expect(Array.from(container.children)).toEqual([root, target])
+    })
+  })
 })

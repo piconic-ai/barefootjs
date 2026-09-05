@@ -125,6 +125,13 @@ const handleMount = (el: HTMLElement) => {
 
 `bf-po` on the moved element lets scoped queries from the owner still find it.
 
+`ownerScope` also fixes *when* the element is appended. Portal content is appended to the container once its owner is connected to the document:
+
+- Owner already connected (hydration — the SSR markup is in the document before `init` runs), or no `ownerScope` given: appended immediately, at the container's end.
+- Owner not yet connected (a client-side mount — the component's `init`, and so the `ref` callback, runs before whoever called `createComponent()` appends the root): the append waits for the owner to connect. Pending portals flush in creation order.
+
+Both construction paths therefore land on the same `document.body` child order — the component root first, then its portals in the order they were created — which decides paint order between overlays with equal `z-index`, focus traversal, and `querySelector` results.
+
 
 ## Dialog Example
 

@@ -126,6 +126,87 @@ export function cleanupPortalPlaceholder(portalId: string): void {
   placeholder?.remove()
 }
 
+/**
+ * A portal whose `ownerScope` was not yet in the document when `createPortal`
+ * ran (#2717). Its element stays wherever it is until the owner connects,
+ * then moves to `container` — see `createPortal`'s insertion rule.
+ */
+interface PendingPortal {
+  element: HTMLElement
+  container: HTMLElement
+  owner: Element
+}
+
+/** Creation-ordered queue of portals waiting for their owner to connect. */
+const pendingPortals: PendingPortal[] = []
+/** Alive only while `pendingPortals` is non-empty. */
+let pendingObserver: MutationObserver | null = null
+
+/**
+ * Append every pending portal whose owner has connected since the last
+ * check, in creation order — the same order the hydration path produces
+ * when the owner is already connected and each `createPortal` appends
+ * synchronously. Pending entries whose owner is still detached are kept.
+ */
+function flushPendingPortals(): void {
+  for (const pending of pendingPortals.slice()) {
+    if (!pending.owner.isConnected) continue
+    pendingPortals.splice(pendingPortals.indexOf(pending), 1)
+    pending.container.appendChild(pending.element)
+  }
+  if (pendingPortals.length === 0 && pendingObserver) {
+    pendingObserver.disconnect()
+    pendingObserver = null
+  }
+}
+
+function enqueuePendingPortal(pending: PendingPortal): void {
+  pendingPortals.push(pending)
+  if (!pendingObserver) {
+    // Observe the whole document: the owner is connected by whoever holds
+    // the component root (`document.body.appendChild(root)` in a CSR boot,
+    // a placeholder `replaceWith` higher up the tree, …) — the runtime has
+    // no hook of its own at that moment, so the DOM's own insertion
+    // notification is the one signal that covers every caller. Callbacks
+    // run as a microtask, before the next paint, so the element is never
+    // rendered at its pre-portal position.
+    pendingObserver = new MutationObserver(flushPendingPortals)
+    pendingObserver.observe(document, { childList: true, subtree: true })
+  }
+}
+
+function cancelPendingPortal(element: HTMLElement): void {
+  const idx = pendingPortals.findIndex(p => p.element === element)
+  if (idx >= 0) pendingPortals.splice(idx, 1)
+  if (pendingPortals.length === 0 && pendingObserver) {
+    pendingObserver.disconnect()
+    pendingObserver = null
+  }
+}
+
+/**
+ * Insertion rule (#2717): the portal's content is appended to `container`
+ * once its `ownerScope` is connected to the document.
+ *
+ * - Owner already connected (hydration: SSR markup is in the document
+ *   before `init` runs), or no `ownerScope` given: appended synchronously,
+ *   at the container's end, at call time — unchanged behaviour.
+ * - Owner not yet connected (a client-side mount: `materializeComponent`
+ *   runs `init` — and so the `ref` callbacks that call this — BEFORE the
+ *   bare-`createComponent` caller connects the root): the append is
+ *   deferred until the owner connects, and pending portals flush in
+ *   creation order.
+ *
+ * Without the deferral the two construction paths disagree on
+ * `document.body`'s child order: hydration yields `[root, …portals]`
+ * while a CSR mount yields `[…portals, root]`, because the root is
+ * appended AFTER its portals were. Child order is user-visible (paint
+ * order between equal-`z-index` overlays, focus traversal, `querySelector`
+ * results), so both paths converge on the hydration answer. Only an
+ * `ownerScope` can carry the deferral: it is the one declared subject
+ * whose connection the portal can wait for — a bare element with no owner
+ * has nothing else that will ever connect it, so it must append now.
+ */
 export function createPortal(
   children: PortalChildren,
   container: HTMLElement = document.body,
@@ -161,11 +242,20 @@ export function createPortal(
     }
   }
 
-  container.appendChild(element)
+  const owner = options?.ownerScope
+  // `MutationObserver` is the deferral primitive; an environment without
+  // it keeps the synchronous append (the pre-#2717 behaviour) rather than
+  // losing the portal altogether.
+  if (owner && !owner.isConnected && typeof MutationObserver !== 'undefined') {
+    enqueuePendingPortal({ element, container, owner })
+  } else {
+    container.appendChild(element)
+  }
 
   return {
     element,
     unmount(): void {
+      cancelPendingPortal(element)
       if (element.parentNode) {
         element.parentNode.removeChild(element)
       }
