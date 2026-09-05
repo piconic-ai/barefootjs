@@ -1,5 +1,11 @@
 # @barefootjs/go-template
 
+## 0.34.1
+
+### Patch Changes
+
+- @barefootjs/shared@0.34.1
+
 ## 0.34.0
 
 ### Patch Changes
