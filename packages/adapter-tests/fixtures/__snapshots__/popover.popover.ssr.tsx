@@ -1,6 +1,6 @@
 /** @jsxImportSource hono/jsx */
 import { serializeHydrationProps } from '@barefootjs/hono/utils'
-import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 

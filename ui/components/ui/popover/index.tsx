@@ -38,7 +38,7 @@
  * ```
  */
 
-import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
@@ -271,7 +271,9 @@ function PopoverContent(props: PopoverContentProps) {
       el.className = `${popoverContentBaseClasses} ${isOpen ? popoverContentOpenClasses : popoverContentClosedClasses} ${props.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Close on click outside (content or trigger)
         const handleClickOutside = (e: MouseEvent) => {
@@ -288,19 +290,12 @@ function PopoverContent(props: PopoverContentProps) {
           }
         }
 
-        // Reposition on scroll and resize
-        const handleScroll = () => updatePosition()
-
         document.addEventListener('mousedown', handleClickOutside)
         document.addEventListener('keydown', handleKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => document.removeEventListener('mousedown', handleClickOutside),
           () => document.removeEventListener('keydown', handleKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

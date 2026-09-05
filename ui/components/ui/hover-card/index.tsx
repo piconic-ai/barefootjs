@@ -43,7 +43,7 @@
  * ```
  */
 
-import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
@@ -343,7 +343,9 @@ function HoverCardContent(props: HoverCardContentProps) {
       el.className = `${hoverCardContentBaseClasses} ${isOpen ? hoverCardContentOpenClasses : hoverCardContentClosedClasses} ${props.className ?? ''}`
 
       if (isOpen) {
-        updatePosition()
+        // Anchor to the trigger while open; re-anchors on scroll/resize and
+        // once more at close (see trackPosition, #2848).
+        cleanupFns.push(trackPosition(updatePosition))
 
         // Close on ESC
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -352,17 +354,10 @@ function HoverCardContent(props: HoverCardContentProps) {
           }
         }
 
-        // Reposition on scroll and resize
-        const handleScroll = () => updatePosition()
-
         document.addEventListener('keydown', handleKeyDown)
-        window.addEventListener('scroll', handleScroll, true)
-        window.addEventListener('resize', handleScroll)
 
         cleanupFns.push(
           () => document.removeEventListener('keydown', handleKeyDown),
-          () => window.removeEventListener('scroll', handleScroll, true),
-          () => window.removeEventListener('resize', handleScroll),
         )
       }
     })

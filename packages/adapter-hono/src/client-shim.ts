@@ -183,3 +183,13 @@ export function findSiblingSlot(_el: unknown, _slotSelector: string): null {
 export function cleanupPortalPlaceholder(_portalId: string): void {
   // no-op
 }
+
+// ---------------------------------------------------------------------------
+// Floating-element positioning — geometry exists only in the browser
+// ---------------------------------------------------------------------------
+
+export function trackPosition(_update: () => void): () => void {
+  return () => {
+    // no-op
+  }
+}

@@ -1998,6 +1998,9 @@ const CLIENT_EXPORTS = new Set([
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
   'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
+  // Floating-element position tracking (#2848) — same runtime-only shape
+  // as the portal entries above.
+  'trackPosition',
   // Request-scoped environment signal factory (router v0.5) — `createSignal`-
   // shaped, recognised structurally (#2057) so its getter is just a signal
   // getter; the compiler lowers the reader value per adapter via the signal's
@@ -4221,6 +4224,7 @@ export const BROWSER_ONLY_CLIENT_APIS = new Set([
   'isSSRPortal',
   'findSiblingSlot',
   'cleanupPortalPlaceholder',
+  'trackPosition',
 ])
 
 function importsBrowserOnlyClientApi(ctx: AnalyzerContext): boolean {
