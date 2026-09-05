@@ -10,6 +10,12 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
+  // #2843: a lowering-registry call (e.g. queryHref) inside a ternary
+  // attribute branch isn't recognized by this adapter's ternary-attribute
+  // rendering — it never consults the lowering registry for a branch the
+  // way the direct-call attribute path does, so it falls to the generic
+  // expression emitter, which refuses the params object literal.
+  'query-href-ternary': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2843' }],
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
   'map-array-builder-body': [{ code: 'BF021', severity: 'error' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error' }],
