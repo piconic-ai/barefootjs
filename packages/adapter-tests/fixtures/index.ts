@@ -522,6 +522,7 @@ import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
 import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
+import { fixture as queryHrefTernary } from './query-href-ternary'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
 import { fixture as dateToLocaleDateStyle } from './date-tolocale-datestyle'
@@ -945,6 +946,7 @@ export const jsxFixtures: JSXFixture[] = [
   formatDate,
   queryHref,
   queryHrefSrc,
+  queryHrefTernary,
   dateToLocaleLiteral,
   dateToLocaleUnion,
   dateToLocaleDateStyle,
