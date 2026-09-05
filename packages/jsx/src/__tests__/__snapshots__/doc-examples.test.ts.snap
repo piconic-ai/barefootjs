@@ -3823,7 +3823,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/portals.md doc-examples L134 — (no label) 1`] = `
+exports[`docs/core/components/portals.md doc-examples L141 — (no label) 1`] = `
 "import { $, createComponent, createEffect, createPortal, hydrate, isSSRPortal, useContext } from '@barefootjs/client/runtime'
 
 
@@ -3862,7 +3862,7 @@ hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => 
 export function DialogOverlay(_p, __bfKey) { return createComponent('DialogOverlay__b3c36eee', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/portals.md doc-examples L190 — (no label) 1`] = `
+exports[`docs/core/components/portals.md doc-examples L197 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createPortal, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 

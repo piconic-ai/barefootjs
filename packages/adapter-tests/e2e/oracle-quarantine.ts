@@ -81,10 +81,17 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
+  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` once #2717 fixed the
+  // portal-content-vs-main-content body-order divergence this row used to
+  // record (see the dialog/popover/portal group below): with the ordering
+  // agreed, the pair is bimodal on the `combobox-empty` row's `hidden`
+  // attribute (same class as `command`, #2827), so the ledger's "reliably
+  // fails" assumption no longer holds. The remaining oracles are the
+  // #2715 placeholder mirror.
   combobox: {
-    oracles: ['snap', 'three-point', 'idempotence'],
+    oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it. Idempotence: after replaying its click+fill+click sequence the two legs land on differently-ordered body content (a portal-content-vs-main-content ordering difference — see the dialog/popover/portal group below).',
+      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
   select: {
@@ -110,30 +117,36 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // plausibly the INTENDED cleanup once the portal claims its content
   // rather than a bug, but flagged since this oracle has no way to tell
   // "expected marker removal" apart from "lost attribute" on its own —
-  // worth a human look before assuming either. The idempotence leg
-  // (`oracle.playwright.ts`'s `canonicalizePortalOriginMarker` already
-  // normalizes the marker's random-hash SUFFIX away) still disagrees on
-  // where in `document.body`'s child order the portal content ends up
-  // relative to the main content — a real ordering divergence between
-  // the hydrated and csr-mount legs, not a normalization gap.
+  // worth a human look before assuming either.
+  // `idempotence` graduated (#2717): the hydrated and csr-mount legs used
+  // to disagree on where in `document.body`'s child order the portal
+  // content sits relative to the main content — `[root, …portals]` vs
+  // `[…portals, root]`, because a bare `createComponent()` runs `init`
+  // (and the `ref` → `createPortal` calls) before its caller appends the
+  // root. Fixed in `createPortal` (`packages/client/src/runtime/portal.ts`):
+  // a portal is still appended at call time, and is re-appended (moved to
+  // the container's end) once its `ownerScope` connects, so both paths
+  // land on the hydration order. Verified with the real
+  // oracle run; the measured divergence was present before any action
+  // step ran, so it was a mount-order defect, not an interaction one.
   dialog: {
-    oracles: ['snap', 'three-point', 'idempotence'],
-    reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect. Idempotence: after replaying its actions the portal content sits at a different position in body child order between the hydrated and csr-mount legs.',
+    oracles: ['snap', 'three-point'],
+    reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   'dropdown-menu': {
-    oracles: ['snap', 'three-point', 'idempotence'],
-    reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog. Idempotence: same body-child-order divergence as dialog.',
+    oracles: ['snap', 'three-point'],
+    reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   popover: {
-    oracles: ['snap', 'three-point', 'idempotence'],
-    reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog. Idempotence: same body-child-order divergence as dialog.',
+    oracles: ['snap', 'three-point'],
+    reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   portal: {
-    oracles: ['snap', 'three-point', 'idempotence'],
-    reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo). Idempotence: same body-child-order divergence as dialog.',
+    oracles: ['snap', 'three-point'],
+    reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo).',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
   },
   // Layout-dependent: embla measures real geometry, which the CSS-less
