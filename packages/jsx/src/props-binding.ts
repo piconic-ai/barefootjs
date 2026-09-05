@@ -70,6 +70,31 @@ export function buildPropAliasMap(params: readonly ParamInfo[]): Map<string, str
 }
 
 /**
+ * The props-parameter shape needed to answer "is `name` an actual local
+ * binding introduced by the props parameter" — as opposed to
+ * `ctx.patterns.props`, which for a whole `(props: Props)` parameter holds
+ * every TYPE-MEMBER name (`extractPropsFromTypeMembers`) for regex prop-
+ * access matching, not real bindings.
+ */
+export interface PropsParamBindings {
+  propsParams: readonly ParamInfo[]
+  propsObjectName: string | null
+}
+
+/**
+ * Local names actually bound by the props parameter. Empty for a whole
+ * `(props: Props)` parameter: `propsParams` there is type-member names
+ * (nothing local to shadow with), and `props` itself is `propsObjectName`,
+ * checked separately by callers.
+ */
+export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> {
+  if (b.propsObjectName !== null) return EMPTY_SET
+  return new Set(b.propsParams.filter(p => !p.isRest).map(p => p.name))
+}
+
+const EMPTY_SET: ReadonlySet<string> = new Set()
+
+/**
  * The two component bindings that forward the caller's leftover props:
  * the destructured `...rest` binding and a whole undestructured `(props)`
  * parameter. Both phases carry these names — the analyzer context in
