@@ -1,5 +1,13 @@
 # @barefootjs/go-template
 
+## 0.34.0
+
+### Patch Changes
+
+- 2dbffc8: Fix #2842: a registered lowering (`queryHref`, or any userland plugin) reached through a nested position — the `undefined`-alternate ternary attribute shape (`cond ? queryHref(...) : undefined`), a template-literal interpolation, or a nested ternary branch — now renders correctly instead of emitting invalid Go template syntax with no diagnostic. The shared ParsedExpr `call()` dispatcher now consults the lowering-plugin registry (the same registry the top-level attribute path already used), and the `undefined`-alternate omission shape additionally routes a `queryHref`-shaped consequent through the `bf_attr` whole-attribute bypass (#2743/#2841) inside its `{{if}}` wrapper, so it gets the same URL-context-escaping parity with the reference as every other `queryHref` position.
+- 5528726: Fix #2743: `<a href={queryHref(base, {…})}>` on the Go adapter no longer diverges from the JS reference (Hono) when `base` contains non-URL-safe or multibyte bytes. `html/template` infers a URL context from the attribute name and percent-encodes the whole value there; the reference only HTML-escapes. A `queryHref`-produced (`query` guard-list) attribute value now emits the whole attribute via a new `bf_attr` runtime helper (`template.HTMLAttr`), the same technique `bf_spread_attrs`/`bfHydrationAttrs` already use to bypass html/template's contextual auto-escaping — keyed on the neutral `helper === 'query'` fact rather than the attribute name, so any URL-context attribute (`src`, `title`, …), not just `href`, gets the same byte parity.
+- @barefootjs/shared@0.34.0
+
 ## 0.33.6
 
 ### Patch Changes

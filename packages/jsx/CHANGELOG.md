@@ -1,5 +1,15 @@
 # @barefootjs/jsx
 
+## 0.34.0
+
+### Minor Changes
+
+- 5761d58: Fix #2843: a registered lowering call (`queryHref`, `formatDate`, or any userland `LoweringPlugin`) reached through a NESTED value position — a ternary branch, a template-literal interpolation, an array-literal element, an object-literal property value — is now recognized everywhere a `ParsedExpr` tree is walked, not only when the adapter's own top-level `convertExpressionTo*` entry point is asked to lower the call directly. The registry consultation moved into shared core code: `checkSupport`/`isSupported`/`isSupportedValue` (`expression-parser.ts`) now accept an optional `loweringMatchers` option so the support gate itself recognizes a registered call's shape instead of refusing its arguments (e.g. `queryHref`'s object-literal params) with BF101; and `emitParsedExpr`'s shared `call` case (`adapters/parsed-expr-emitter.ts`) now tries a new optional `lowering` seam on `ParsedExprEmitter` before falling to the adapter's own `call()` method. New public exports: `LoweringEmitter` (the seam's interface) and `loweringNodeChildren` (walks a `LoweringNode`'s child expressions, used by the support gate to recurse into a matched call's arguments).
+
+### Patch Changes
+
+- @barefootjs/shared@0.34.0
+
 ## 0.33.6
 
 ### Patch Changes
