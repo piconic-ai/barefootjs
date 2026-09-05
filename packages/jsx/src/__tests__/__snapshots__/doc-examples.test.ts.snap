@@ -193,7 +193,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -252,7 +252,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).filter(t => !t.done).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).filter(t => !t.done).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -321,7 +321,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
   if (f === 'active') return !t.done
   if (f === 'completed') return t.done
   return true
-}).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+}).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -518,7 +518,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.price - b.price).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.price - b.price).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -577,7 +577,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).filter(x => x.active).toSorted((a, b) => a.name.localeCompare(b.name)).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).filter(x => x.active).toSorted((a, b) => a.name.localeCompare(b.name)).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -636,7 +636,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -695,7 +695,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.price > b.price ? 1 : -1).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.price > b.price ? 1 : -1).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1164,7 +1164,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L192 — ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja; works on Hono 1`] = `
-"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots, withParentScope } from '@barefootjs/client/runtime'
 
 
 export function initReactionBar(__scope, _p = {}) {
@@ -1181,7 +1181,7 @@ export function initReactionBar(__scope, _p = {}) {
       let __iterEl = _s2.children[__idx]
       if (!__iterEl) {
         const __tpl = document.createElement('template')
-        __tpl.innerHTML = \`<span data-key="\${escapeAttr(emoji)}"><!--bf:s0-->\${escapeText(emoji)}<!--/-->: <!--bf:s1-->\${escapeText(String(users.length))}<!--/--></span>\`
+        __tpl.innerHTML = withParentScope(__scopeId, () => \`<span data-key="\${escapeAttr(emoji)}"><!--bf:s0-->\${escapeText(emoji)}<!--/-->: <!--bf:s1-->\${escapeText(String(users.length))}<!--/--></span>\`)
         const __cloned = __tpl.content.firstElementChild
         if (__cloned) {
           const __anchor = _s2.children[__idx] ?? null
@@ -1318,7 +1318,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.name > b.name ? 1 : -1).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).toSorted((a, b) => a.name > b.name ? 1 : -1).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1377,7 +1377,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1436,7 +1436,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -1523,7 +1523,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort(byPrice).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort(byPrice).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -3334,7 +3334,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).map((todo) => \`\${renderChild('TodoItem__b3c36eee', {todo: todo}, todo.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -4793,7 +4793,7 @@ export function initTodoList(__scope, _p = {}) {
 
 }
 
-hydrate('TodoList', { init: initTodoList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.map((item) => \`\${renderChild('TodoItem', {}, item.id)}\`).join('')}<!--bf-/loop:l0--></ul>\` })
+hydrate('TodoList', { init: initTodoList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.map((item) => \`\${renderChild('TodoItem', {}, item.id, 's0', true)}\`).join('')}<!--bf-/loop:l0--></ul>\` })
 export function TodoList(_p, __bfKey) { return createComponent('TodoList', _p, __bfKey) }"
 `;
 

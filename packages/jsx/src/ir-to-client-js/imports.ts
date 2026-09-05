@@ -23,6 +23,10 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // falling through to the global store. The clone-root counterpart of the
   // mount point `createComponent` consumes for component-root rows.
   'mountRowRoot',
+  // Ambient parent-scope override for a static loop's materialize `forEach`
+  // (#2833) — that codepath runs during `init`, after the parent's own
+  // template evaluation (and its `_parentScopeId`) has already unwound.
+  'withParentScope',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',

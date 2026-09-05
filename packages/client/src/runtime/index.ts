@@ -101,6 +101,7 @@ export {
   createComponent,
   mountRowRoot,
   renderChild,
+  withParentScope,
   parseHTML,
   escapeAttr,
   escapeText,

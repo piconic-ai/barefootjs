@@ -421,7 +421,12 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
       // insert them in order. `__iterEl` is the first root (the one reactive
       // bindings attach to); the rest land alongside it via insertBefore.
       lines.push(`        const __mtpl = document.createElement('template')`)
-      lines.push(`        __mtpl.innerHTML = \`${itemHtml}\``)
+      // Materialize runs during init, after the parent's own template
+      // evaluation (and its ambient parent-scope id) has already unwound —
+      // `withParentScope` re-establishes it just for this row's HTML so
+      // `renderChild` inside it stamps `bf-h` with the same `__scopeId` the
+      // static init's own selector interpolates (#2833).
+      lines.push(`        __mtpl.innerHTML = withParentScope(__scopeId, () => \`${itemHtml}\`)`)
       lines.push(`        const __anchor = ${containerVar}.children[${childIndexExpr}] ?? null`)
       lines.push(`        let __first = null`)
       lines.push(`        let __sib = __mtpl.content${childPath}.firstElementChild`)
@@ -435,7 +440,8 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
       lines.push(`        __iterEl = __first`)
     } else {
       lines.push(`        const __tpl = document.createElement('template')`)
-      lines.push(`        __tpl.innerHTML = \`${itemHtml}\``)
+      // See the multi-root branch's comment above (#2833).
+      lines.push(`        __tpl.innerHTML = withParentScope(__scopeId, () => \`${itemHtml}\`)`)
       lines.push(`        const __cloned = __tpl.content${childPath}`)
       lines.push(`        if (__cloned) {`)
       lines.push(`          const __anchor = ${containerVar}.children[${childIndexExpr}] ?? null`)
