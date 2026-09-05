@@ -1,5 +1,19 @@
 # @barefootjs/go-template
 
+## 0.33.6
+
+### Patch Changes
+
+- 33a195f: Fix #2724: a bare `const x = y` alias hop between a prop and a keyed `.map()` of a child component (`const toggleItems__alias = toggleItems; toggleItems__alias.map(...)`) made the loop's array look, to `isArrayExprDirectPropRef` (jsx-to-ir.ts), like a local constant with no prop/signal origin. The loop was then misclassified `isStaticArray: true` and compiled to the static `qsaChildScopes`-based init path instead of `mapArray`. That static path's `renderChild()` calls carry no `bf-h`/`bf-m` scope-relationship attributes on a pure CSR mount (no existing SSR markup to hydrate against), so the row's child component never got `initChild`ed — its own signals and event listeners never wired up on the CSR-mount leg, even though hydration worked correctly.
+  
+  `isArrayExprDirectPropRef` now resolves a bare-identifier array expression through its alias-hop chain via the existing shared `resolveAliasOrigin` walker (`props-binding.ts`, already used for the rest/props-spread alias case), recognizing each hop as a direct prop binding either by name or by a `<propsObjName>.<key>` member access read off the constant's structured shape. Kept structural rather than switching to a regex-based check, since the same boolean also feeds `IRLoop.isPropDerivedArray`, which the Go adapter reads to decide whether a nested component's field is literally the loop's prop-sourced data.
+  
+  Found by the #2481 mutation sweep's `alias-props` mutation against the `toggle-shared` shared fixture.
+- d32e897: Fix #2835: for a whole, non-destructured `(props: Props)` parameter, `isArrayExprDirectPropRef`'s same-name terminal check (`isDirectPropBindingName`, jsx-to-ir.ts) read `ctx.patterns.props`, which includes every one of `Props`'s type-member names regardless of whether that name is bound to anything in the current component. An unrelated module or local identifier that happened to share a name with a `Props` member (e.g. a module `const base = [...]` alongside `type Props = { base: T[] }`) was misclassified prop-derived by that name collision alone — reproduces with zero aliasing involved, and pre-dates #2724.
+  
+  `isDirectPropBindingName` now checks a new `ctx.boundPropNames` set (`boundPropLocalNames`, `props-binding.ts`) — the names the props parameter actually binds locally, empty for a whole `(props: Props)` parameter since its `propsParams` there are type-member names, not bindings. `ctx.patterns.props` itself is unchanged: it stays the wider set `isPropsReference`'s regex matching needs for `props.<key>` detection.
+- @barefootjs/shared@0.33.6
+
 ## 0.33.5
 
 ### Patch Changes
