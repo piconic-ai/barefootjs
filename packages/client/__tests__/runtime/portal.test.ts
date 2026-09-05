@@ -376,6 +376,44 @@ describe('createPortal', () => {
       expect(document.body.contains(target)).toBe(true)
     })
 
+    test('prefers moveBefore over appendChild for the reorder, when available', async () => {
+      // appendChild/insertBefore on an ALREADY-CONNECTED node is specified
+      // to reset iframe load state, video/audio playback, CSS animation
+      // state, and focus — moveBefore() does not. The reorder must prefer
+      // it when the environment supports it (not yet true of happy-dom,
+      // hence the stub) rather than always falling back to appendChild.
+      const { root, target } = detachedComponent('Popover_moveBefore', 'popover-content')
+      const calls: string[] = []
+      const containerWithMoveBefore = container as HTMLElement & {
+        moveBefore?(node: Node, child: Node | null): void
+      }
+      const originalAppendChild = container.appendChild.bind(container)
+      containerWithMoveBefore.appendChild = ((node: Node) => {
+        calls.push('appendChild')
+        return originalAppendChild(node)
+      }) as typeof container.appendChild
+      containerWithMoveBefore.moveBefore = (node, child) => {
+        calls.push('moveBefore')
+        container.insertBefore(node, child)
+      }
+
+      try {
+        createPortal(target, container, { ownerScope: root })
+        expect(calls).toEqual(['appendChild']) // the initial append is a fresh insertion, not a move
+        calls.length = 0
+
+        // Via the unstubbed reference, so only the module's own calls are tracked.
+        originalAppendChild(root)
+        await settle(() => container.lastElementChild === target)
+
+        expect(calls).toEqual(['moveBefore']) // the reorder is a move of an already-connected node
+        expect(Array.from(container.children)).toEqual([root, target])
+      } finally {
+        delete containerWithMoveBefore.moveBefore
+        containerWithMoveBefore.appendChild = originalAppendChild
+      }
+    })
+
     test('the owner may be the portaled element itself', async () => {
       // A child component's own root carries `bf-s`, so `el.closest('[bf-s]')`
       // resolves to `el` — the shape DialogOverlay/DialogContent hit. The

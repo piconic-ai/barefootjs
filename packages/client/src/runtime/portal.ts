@@ -145,22 +145,48 @@ const pendingPortals: PendingPortal[] = []
 let pendingObserver: MutationObserver | null = null
 
 /**
+ * `Element.moveBefore()` — not yet in TS's bundled `lib.dom.d.ts` — moves an
+ * already-connected node without the side effects `appendChild`/
+ * `insertBefore` are specified to have on one: it resets `<iframe>` load
+ * state, `<video>`/`<audio>` playback position, CSS animation/transition
+ * state, `:focus`/`:active`, and native `popover`/fullscreen state. The
+ * reorder below is a genuine move of an already-connected node (the
+ * element is already `container`'s child from `createPortal`'s initial
+ * append), so it must prefer `moveBefore` and fall back to `appendChild`
+ * only where the API isn't supported yet — same fallback shape as the
+ * `MutationObserver` feature-detection above.
+ */
+interface MoveBeforeCapable {
+  moveBefore(node: Node, child: Node | null): void
+}
+
+/** Move `element` to `container`'s end, preserving any live state a plain re-`appendChild` would reset (see `MoveBeforeCapable`). */
+function moveToContainerEnd(container: HTMLElement, element: HTMLElement): void {
+  const moveBefore = (container as Partial<MoveBeforeCapable>).moveBefore
+  if (typeof moveBefore === 'function') {
+    moveBefore.call(container, element, null)
+  } else {
+    container.appendChild(element)
+  }
+}
+
+/**
  * Re-append every pending portal whose subject has connected since the
  * last check, in creation order — the same order the hydration path
  * produces when the owner is already connected and each `createPortal`
- * appends synchronously. The element is already in `container`, so the
- * append does not insert a new node: it moves the connected node to the
- * container's end, after the root that connected it. Pending entries whose
- * subject is still detached are kept; an entry whose element has left the
- * container in the meantime (removed or moved by the caller without
- * `unmount`) is dropped rather than re-inserted.
+ * appends synchronously. The element is already in `container`, so this
+ * moves the connected node to the container's end (see `moveToContainerEnd`),
+ * after the root that connected it, rather than inserting a new one.
+ * Pending entries whose subject is still detached are kept; an entry
+ * whose element has left the container in the meantime (removed or moved
+ * by the caller without `unmount`) is dropped rather than re-inserted.
  */
 function flushPendingPortals(): void {
   for (const pending of pendingPortals.slice()) {
     if (!pending.subject.isConnected) continue
     pendingPortals.splice(pendingPortals.indexOf(pending), 1)
     if (pending.element.parentNode === pending.container) {
-      pending.container.appendChild(pending.element)
+      moveToContainerEnd(pending.container, pending.element)
     }
   }
   if (pendingPortals.length === 0 && pendingObserver) {
