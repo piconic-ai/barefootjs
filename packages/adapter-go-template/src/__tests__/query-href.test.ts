@@ -248,14 +248,13 @@ export function P(props: { ok: boolean; base: string; tag: string }) {
     expect(template).not.toContain('href="{{')
   })
 
-  // The `undefined`-alternate omission shape (`cond ? queryHref(...) :
-  // undefined`) is NOT handled by the ternary bf_attr route — its
-  // consequent-only render doesn't consult the lowering registry at all and
-  // already emits invalid Go syntax independent of escaping (tracked
-  // separately as #2842). Pinning the current (broken) shape here so a
-  // future fix to #2842 is the one that changes this assertion, not an
-  // accidental side effect of a `bf_attr`-route change.
-  test('the undefined-alternate omission shape is unaffected by the ternary bf_attr route (pre-existing #2842 gap)', () => {
+  // #2842: the `undefined`-alternate omission shape used to render only the
+  // consequent via a registry-blind path, emitting invalid Go syntax
+  // (`.QueryHref .Base bf_map "tag" .Tag`) with no diagnostic. The consequent
+  // now routes through `lowerRegisteredAttrCall` (the same whole-attribute
+  // `bf_attr` bypass the direct-call and non-undefined-ternary shapes use),
+  // inside the `{{if}}` that implements the omission.
+  test('the undefined-alternate omission shape routes the consequent through bf_attr inside the {{if}} (#2842)', () => {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
@@ -264,7 +263,43 @@ export function P(props: { ok: boolean; base: string; tag: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).not.toContain('bf_attr')
-    expect(template).not.toContain('bf_query')
+    expect(template).toContain('{{if .Ok}}{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}{{end}}')
+    expect(template).not.toContain('.QueryHref')
+    expect(template).not.toContain('bf_map')
+    expect(template).not.toContain('href="{{')
+  })
+
+  // #2842: a registered call nested in a template-literal interpolation
+  // (not just a direct attribute value) is registry-lowered too — the fix
+  // lives in the shared ParsedExpr `call()` dispatcher, so any nested
+  // position benefits, not only the ternary/attribute cases above.
+  test('a queryHref call nested in a template-literal interpolation is registry-lowered (#2842)', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <a title={\`pre \${queryHref(props.base, { tag: props.tag })}\`}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('title="pre {{bf_query .Base (true) "tag" .Tag}}"')
+    expect(template).not.toContain('.QueryHref')
+  })
+
+  // #2842: a nested ternary inside the undef-alternate consequent still
+  // recurses correctly — `lowerRegisteredAttrCall`'s `conditional` arm
+  // right-folds, matching `lowerTernary`'s own recursion.
+  test('a nested ternary inside the undef-alternate consequent still routes through bf_attr (#2842)', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { a: boolean; b: boolean; base: string; tag: string }) {
+  return <a href={props.a ? (props.b ? queryHref(props.base, { tag: props.tag }) : '/x') : undefined}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain(
+      '{{if .A}}{{bf_attr "href" (bf_ternary (bf_truthy .B) (bf_query .Base (true) "tag" .Tag) "/x")}}{{end}}',
+    )
   })
 })

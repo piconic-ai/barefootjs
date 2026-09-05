@@ -1450,11 +1450,11 @@
       }
     },
     "call": {
-      "total": 245,
+      "total": 246,
       "cells": {
         "hono": {
-          "pass": 243,
-          "total": 245,
+          "pass": 244,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1472,7 +1472,7 @@
         },
         "blade": {
           "pass": 227,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1533,6 +1533,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -1564,7 +1570,7 @@
         },
         "erb": {
           "pass": 228,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1619,6 +1625,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -1649,8 +1661,8 @@
           ]
         },
         "go-template": {
-          "pass": 227,
-          "total": 245,
+          "pass": 228,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1742,7 +1754,7 @@
         },
         "jinja": {
           "pass": 227,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1798,6 +1810,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -1834,7 +1852,7 @@
         },
         "minijinja": {
           "pass": 227,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1890,6 +1908,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -1926,7 +1950,7 @@
         },
         "mojolicious": {
           "pass": 228,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1976,6 +2000,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2012,7 +2042,7 @@
         },
         "twig": {
           "pass": 227,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2073,6 +2103,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -2104,7 +2140,7 @@
         },
         "xslate": {
           "pass": 227,
-          "total": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2160,6 +2196,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2208,15 +2250,15 @@
       }
     },
     "conditional": {
-      "total": 28,
+      "total": 29,
       "cells": {
         "hono": {
-          "pass": 28,
-          "total": 28
+          "pass": 29,
+          "total": 29
         },
         "blade": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2228,6 +2270,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2236,7 +2284,7 @@
         },
         "erb": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2251,12 +2299,18 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
             }
           ]
         },
         "go-template": {
-          "pass": 26,
-          "total": 28,
+          "pass": 27,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2270,7 +2324,7 @@
         },
         "jinja": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2282,6 +2336,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2290,7 +2350,7 @@
         },
         "minijinja": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2302,6 +2362,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2310,7 +2376,7 @@
         },
         "mojolicious": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2322,6 +2388,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2330,7 +2402,7 @@
         },
         "twig": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2345,12 +2417,18 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
             }
           ]
         },
         "xslate": {
           "pass": 25,
-          "total": 28,
+          "total": 29,
           "gaps": [
             {
               "fixture": "flatmap-typeof-projection",
@@ -2362,6 +2440,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2375,18 +2459,18 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
       },
       "example": {
-        "fixture": "attr-ternary-title",
-        "description": "Ternary expressions in title and data attribute positions",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/attr-ternary-title.ts",
-        "code": "active() ? 2 : 1"
+        "fixture": "query-href-ternary-undefined",
+        "description": "queryHref(base, {…}) as a ternary consequent with an undefined alternate omits the attribute or lowers through the query helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/query-href-ternary-undefined.ts",
+        "code": "ok ? queryHref(base, { tag: tag }) : undefined"
       }
     },
     "identifier": {
-      "total": 347,
+      "total": 348,
       "cells": {
         "hono": {
-          "pass": 343,
-          "total": 347,
+          "pass": 344,
+          "total": 348,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2416,7 +2500,7 @@
         },
         "blade": {
           "pass": 325,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2497,6 +2581,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -2528,7 +2618,7 @@
         },
         "erb": {
           "pass": 326,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2603,6 +2693,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -2633,8 +2729,8 @@
           ]
         },
         "go-template": {
-          "pass": 323,
-          "total": 347,
+          "pass": 324,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2756,7 +2852,7 @@
         },
         "jinja": {
           "pass": 325,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2832,6 +2928,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -2868,7 +2970,7 @@
         },
         "minijinja": {
           "pass": 325,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2949,6 +3051,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -2980,7 +3088,7 @@
         },
         "mojolicious": {
           "pass": 325,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -3059,6 +3167,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -3090,7 +3204,7 @@
         },
         "twig": {
           "pass": 325,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -3171,6 +3285,12 @@
               ]
             },
             {
+              "fixture": "query-href-ternary-undefined",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "issues": []
             },
@@ -3202,7 +3322,7 @@
         },
         "xslate": {
           "pass": 325,
-          "total": 347,
+          "total": 348,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -3278,6 +3398,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -4952,15 +5078,15 @@
       }
     },
     "object-literal": {
-      "total": 70,
+      "total": 71,
       "cells": {
         "hono": {
-          "pass": 70,
-          "total": 70
+          "pass": 71,
+          "total": 71
         },
         "blade": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4972,6 +5098,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -4990,7 +5122,7 @@
         },
         "erb": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5002,6 +5134,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -5019,8 +5157,8 @@
           ]
         },
         "go-template": {
-          "pass": 65,
-          "total": 70,
+          "pass": 66,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5050,7 +5188,7 @@
         },
         "jinja": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5062,6 +5200,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -5080,7 +5224,7 @@
         },
         "minijinja": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5092,6 +5236,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -5110,7 +5260,7 @@
         },
         "mojolicious": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5122,6 +5272,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -5140,7 +5296,7 @@
         },
         "twig": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5152,6 +5308,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -5170,7 +5332,7 @@
         },
         "xslate": {
           "pass": 65,
-          "total": 70,
+          "total": 71,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -5182,6 +5344,12 @@
             },
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9467,18 +9635,24 @@
       }
     },
     "lowering:queryHref": {
-      "total": 3,
+      "total": 4,
       "cells": {
         "hono": {
-          "pass": 3,
-          "total": 3
+          "pass": 4,
+          "total": 4
         },
         "blade": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9487,10 +9661,16 @@
         },
         "erb": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9498,15 +9678,21 @@
           ]
         },
         "go-template": {
-          "pass": 3,
-          "total": 3
+          "pass": 4,
+          "total": 4
         },
         "jinja": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9515,10 +9701,16 @@
         },
         "minijinja": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9527,10 +9719,16 @@
         },
         "mojolicious": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9539,10 +9737,16 @@
         },
         "twig": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]
@@ -9551,10 +9755,16 @@
         },
         "xslate": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
             {
               "fixture": "query-href-ternary",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2843"
+              ]
+            },
+            {
+              "fixture": "query-href-ternary-undefined",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2843"
               ]

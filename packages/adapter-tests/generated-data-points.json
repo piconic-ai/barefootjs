@@ -2161,6 +2161,56 @@
       }
     }
   ],
+  "query-href-ternary-undefined": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "ok": true,
+        "base": "",
+        "tag": "sale"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "ok": true,
+        "base": "<b>&\"'</b>",
+        "tag": "sale"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "ok": true,
+        "base": "日本語",
+        "tag": "sale"
+      }
+    },
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "ok": true,
+        "base": "/items",
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "ok": true,
+        "base": "/items",
+        "tag": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "ok": true,
+        "base": "/items",
+        "tag": "日本語"
+      }
+    }
+  ],
   "reduce-concat": [
     {
       "name": "gen:items:empty",

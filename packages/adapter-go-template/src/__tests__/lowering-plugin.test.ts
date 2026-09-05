@@ -168,6 +168,39 @@ export function P(props: { config: object }) {
     expect(template).not.toContain('bf_custom_serialize')
   })
 
+  // #2842: a `helper-call` node (not the `query` guard-list) reached through
+  // the undef-alternate omission shape now routes through the fixed `call()`
+  // dispatcher — but NOT through `bf_attr` (only `query` needs the
+  // URL-context-escape bypass; a plain helper-call keeps the ordinary
+  // `name="{{…}}"` wrapper the `{{if}}` already builds around).
+  test('an undef-alternate helper-call consequent is registry-lowered without bf_attr (#2842)', () => {
+    registerLoweringPlugin(customSerializePlugin)
+    const src = `
+'use client'
+import { customSerialize } from './lib'
+export function P(props: { on: boolean; config: object }) {
+  return <div data-config={props.on ? customSerialize(props.config) : undefined}>x</div>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('{{if .On}}data-config="{{bf_custom_serialize .Config}}"{{end}}')
+    expect(template).not.toContain('bf_attr')
+  })
+
+  // Same shape, plugin NOT registered — pins that an unmatched call keeps the
+  // existing generic Go-method-call convention (no new BF10x refusal).
+  test('an undef-alternate helper-call consequent with no plugin registered keeps the generic convention', () => {
+    const src = `
+'use client'
+import { customSerialize } from './lib'
+export function P(props: { on: boolean; config: object }) {
+  return <div data-config={props.on ? customSerialize(props.config) : undefined}>x</div>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('{{if .On}}data-config="{{.CustomSerialize .Config}}"{{end}}')
+  })
+
   test('a CONDITIONAL helper-call arg renders as pipeline-position bf_ternary, not an {{if}} action', () => {
     // The #2324 union stage lowers a union-typed locale to a ternary
     // pattern arg. Go templates have no expression-level conditional, and

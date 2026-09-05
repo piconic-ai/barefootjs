@@ -2440,6 +2440,40 @@ func TestAttr_BypassesContextualURLEscaper(t *testing.T) {
 	}
 }
 
+// TestAttr_InsideIfOmitsAttribute (#2842) is the end-to-end assertion for the
+// `undefined`-alternate omission shape's generated form,
+// `{{if}}{{bf_attr …}}{{end}}`: html/template's context checker accepts it
+// (the if-branch ends in attr-name state, the empty else-branch in tag state
+// — they nudge-join), the attribute is emitted unescaped-by-URL-context when
+// the condition holds, and omitted entirely when it doesn't.
+func TestAttr_InsideIfOmitsAttribute(t *testing.T) {
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(
+		`<a {{if .Ok}}{{bf_attr "href" (bf_query .B true "tag" .T)}}{{end}} class="x">x</a>`,
+	))
+	type data struct {
+		Ok bool
+		B  string
+		T  string
+	}
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, data{Ok: true, B: "日本語", T: "a b"}); err != nil {
+		t.Fatalf("Execute (Ok=true): %v", err)
+	}
+	want := `<a href="日本語?tag=a+b" class="x">x</a>`
+	if got := buf.String(); got != want {
+		t.Errorf("Ok=true: got %q, want %q", got, want)
+	}
+
+	var buf2 strings.Builder
+	if err := tmpl.Execute(&buf2, data{Ok: false, B: "日本語", T: "a b"}); err != nil {
+		t.Fatalf("Execute (Ok=false): %v", err)
+	}
+	want2 := `<a  class="x">x</a>`
+	if got := buf2.String(); got != want2 {
+		t.Errorf("Ok=false: got %q, want %q", got, want2)
+	}
+}
+
 // AsMap normalizes any string-keyed map kind held in an interface{} prop
 // field into map[string]interface{} for object-valued context bindings, and
 // returns nil for every "absent" shape so the generated `?? {}` fallback

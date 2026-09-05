@@ -127,7 +127,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerTernary } from "./expr/url-builder.ts"
+import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTernary } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -4956,6 +4956,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // #2842: a registered lowering (the built-in `queryHref`, or any userland
+    // plugin) must win in EVERY position this shared dispatcher reaches — a
+    // ternary branch, a template-literal interpolation, a binary operand —
+    // not only when the call is the whole expression (`convertExpressionToGo`'s
+    // own early return). Same precedence as that top-level path, where the
+    // registry is consulted before signal-read resolution and template
+    // primitives.
+    const lowered = lowerRegisteredCallNode(this.emitCtx, callee, args)
+    if (lowered !== null) return lowered
     // Signal call: count() -> .Count (or $.Count inside a loop). An env-signal
     // binding (`searchParams()`, or an aliased `sp()`) resolves to the canonical
     // `.SearchParams` field regardless of the JS name.
@@ -8021,8 +8030,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
               ? value.expr
               : value.expr.slice(0, value.expr.indexOf('?')).trim(),
           )
-          const valueExpr = this.renderParsedExpr(parsed.consequent)
-          const body = `${name}="{{${valueExpr}}}"`
+          // #2842 / #2743: a `query` guard-list consequent (queryHref) takes
+          // the whole-attribute `bf_attr` route INSIDE the `{{if}}`, so
+          // html/template's URL-context inference never percent-encodes it —
+          // the same route the direct-call and non-undefined-ternary shapes
+          // take. The consequent is passed alone (not the ternary): omission
+          // needs this `{{if}}` wrapper, which `bf_attr` can't express on its
+          // own. Any other consequent (a `helper-call` plugin, an unmatched
+          // call, a member/literal) keeps the ordinary `name="{{…}}"` form —
+          // `call()` now consults the registry too, so a plugin call renders
+          // its `bf_<helper>` pipeline there instead of invalid Go syntax.
+          const attrConsequent = lowerRegisteredAttrCall(this.emitCtx, name, parsed.consequent)
+          const body = attrConsequent !== null
+            ? attrConsequent
+            : `${name}="{{${this.renderParsedExpr(parsed.consequent)}}}"`
           return `${preamble}{{if ${goCond}}}${body}{{end}}`
         }
         // #2743 follow-up (pullfrog review on #2841): a `query` guard-list

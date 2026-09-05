@@ -16,6 +16,7 @@ export const conformancePins: ConformancePins = {
   // way the direct-call attribute path does, so it falls to the generic
   // expression emitter, which refuses the params object literal.
   'query-href-ternary': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2843', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2843' } }],
+  'query-href-ternary-undefined': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2843', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2843' } }],
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
   'map-array-builder-body': [{ code: 'BF021', severity: 'error' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error' }],
