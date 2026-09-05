@@ -20,3 +20,26 @@ export function derivesScopeFromSlot(
 ): boolean {
   return comp.slotId != null && comp.loopItemRoot !== true
 }
+
+/**
+ * The `renderChild(name, props, key, <here>)` tail arguments — the single
+ * decision point both CSR template emitters (`html-template.ts`'s two
+ * `case 'component'` branches) share, so they can't drift on it the way
+ * #2444 happened for `derivesScopeFromSlot` itself.
+ *
+ * A loop item root (`!derivesScopeFromSlot`) still gets its `slotId` and the
+ * `loopItemRoot` flag (#2833) rather than dropping the slot argument
+ * entirely as before: Hono stamps `bf-h`/`bf-m` on a row root too (just
+ * without deriving its `bf-s` from them), and a pure-CSR mount's static
+ * `qsaChildScopes` init selector needs that same marker to find the row.
+ */
+export function renderChildScopeArgs(
+  comp: Pick<IRComponent, 'slotId' | 'loopItemRoot'>,
+  keyArg: string
+): string {
+  if (comp.slotId == null) return keyArg
+  const key = keyArg || ', undefined'
+  return derivesScopeFromSlot(comp)
+    ? `${key}, '${comp.slotId}'`
+    : `${key}, '${comp.slotId}', true`
+}

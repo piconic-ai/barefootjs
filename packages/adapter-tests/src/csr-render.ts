@@ -215,19 +215,25 @@ function __runInit(name, props) {
 // component.ts). Starts at \`__rootScope\` (the fixture root).
 let __parentScope = __rootScope
 
-function renderChild(name, props, key, suffix) {
+function renderChild(name, props, key, suffix, loopItemRoot) {
   const template = __templates.get(name)
-  // Static children (with suffix): use deterministic scope ID matching SSR pattern
-  // Loop children (no suffix): use component name + random hash
-  const scopeId = suffix
+  // Mirrors production's \`renderChild\` (@barefootjs/client/runtime,
+  // component.ts, #2833): a loop item root keeps (bf-h, bf-m) slot
+  // identity (\`hasSlot\`) but does NOT derive its scope id from the
+  // parent slot — it gets its own \`Name_<random>\` id, same as a child
+  // with no suffix at all.
+  const hasSlot = !!suffix
+  const derivesFromParent = hasSlot && !loopItemRoot
+  const scopeId = derivesFromParent
     ? __parentScope + '_' + suffix
     : '~' + name + '_' + Math.random().toString(36).slice(2, 8)
   const keyAttr = key !== undefined ? ' data-key="' + key + '"' : ''
   const isFragmentRoot = !!__fragmentRoots.get(name)
   // Slot-relationship markers (bf-h/bf-m) — mirrors the production
   // runtime renderChild in @barefootjs/client/runtime so CSR conformance
-  // output asserts the same shape SSR emits.
-  const slotAttrs = suffix ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
+  // output asserts the same shape SSR emits. Stamped regardless of
+  // \`loopItemRoot\` — see \`hasSlot\` above.
+  const slotAttrs = hasSlot ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
   if (!template) {
     // A fragment-root child with no registered template still gets its
     // comment pair instead of bf-s, matching production's empty-shell
@@ -267,7 +273,7 @@ function renderChild(name, props, key, suffix) {
   // since \`mapArray\`'s adopt loop reads it as a DOM attribute, not out of
   // the comment.
   if (isFragmentRoot) {
-    const hostSuffix = (__parentScope && suffix) ? '|h=' + __parentScope + '|m=' + suffix : ''
+    const hostSuffix = hasSlot ? '|h=' + __parentScope + '|m=' + suffix : ''
     // Search for the first tag anywhere (not anchored at index 0) —
     // templates may open with a comment marker (e.g.
     // \`<!--bf-cond-start:...-->\`) before the first real element, exactly

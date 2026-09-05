@@ -242,7 +242,7 @@ describe('#1247 — static-loop CSR self-heal', () => {
     expect(clientJs).toMatch(/if \(!__iterEl\)/)
     // The cloned template body is a single `renderChild('Tag', ...)`
     // expression — props read from the destructured forEach param.
-    const matMatch = clientJs.match(/__tpl\.innerHTML = `([^`]*)`/)
+    const matMatch = clientJs.match(/__tpl\.innerHTML = withParentScope\(__scopeId, \(\) => `([^`]*)`\)/)
     expect(matMatch).toBeTruthy()
     const inner = matMatch![1]
     expect(inner).toMatch(/\$\{renderChild\('Tag', \{[^}]*id: id[^}]*variant: t\.variant[^}]*\}, id/)
@@ -287,7 +287,7 @@ describe('#1247 — static-loop CSR self-heal', () => {
     // Materialize branch present.
     expect(clientJs).toMatch(/if \(!__iterEl\)/)
     // Per-iteration template is `<li ...>...renderChild('Cell', ...)...</li>`.
-    const matMatch = clientJs.match(/__tpl\.innerHTML = `([^`]*)`/)
+    const matMatch = clientJs.match(/__tpl\.innerHTML = withParentScope\(__scopeId, \(\) => `([^`]*)`\)/)
     expect(matMatch).toBeTruthy()
     const inner = matMatch![1]
     expect(inner).toMatch(/^<li\b/)

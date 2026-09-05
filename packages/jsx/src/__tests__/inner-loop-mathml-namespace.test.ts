@@ -129,7 +129,7 @@ describe('static-loop CSR materialize with a MathML element root (#1096, #1247 p
     // Materialize branch present (unsafe prop-derived array, #1247) ...
     expect(content).toMatch(/if \(!__iterEl\)/)
     // ... and its template parse is namespace-aware.
-    expect(content).toMatch(/__tpl\.innerHTML = `<math><mn /)
+    expect(content).toMatch(/__tpl\.innerHTML = withParentScope\(__scopeId, \(\) => `<math><mn /)
     expect(content).toContain('const __cloned = __tpl.content.firstElementChild.firstElementChild')
   })
 })

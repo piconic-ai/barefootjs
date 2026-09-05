@@ -13,7 +13,7 @@ import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import type { ClientJsContext } from './types.ts'
 import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
-import { derivesScopeFromSlot } from '../adapters/child-scope.ts'
+import { renderChildScopeArgs } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 
 /**
@@ -659,10 +659,11 @@ function buildSpreadAttrsMergeCall(args: {
  *    are wrapped with `__bfSlot(EXPR, <branchSlotsVar>)` so the runtime can
  *    splice live `Node` returns into the parsed fragment instead of
  *    stringifying them via the template literal (#1213).
- *  Component nodes omit their `slotId` from the `renderChild` call exactly
- *  when `derivesScopeFromSlot()` says so — a loop-item-root component (its
- *  own scope, identified by `data-key`) never derives from the parent slot;
- *  a component nested below the row root does (#2444). See
+ *  Component nodes always pass their `slotId` to `renderChild` (via
+ *  `renderChildScopeArgs`) — a loop-item-root component (its own scope,
+ *  identified by `data-key`) keeps `bf-h`/`bf-m` slot identity without
+ *  DERIVING its `bf-s` scope id from the parent slot (#2833); a component
+ *  nested below the row root derives from it as usual (#2444). See
  *  `IRComponent.loopItemRoot` / `./adapters/child-scope.ts`.
  */
 /**
@@ -1080,12 +1081,11 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       const keyArg = keyProp ? `, ${attrValueToString(keyProp.value) ?? 'undefined'}` : ''
       // Pass slotId as suffix so $c() can find the child component by slot
       // after branch swap. A loop-item-root component owns a separate scope
-      // per iteration (identified by `data-key`), so the parent-slot suffix
-      // is dropped to avoid anchoring it to a wrong component-wrapper scope
-      // (#1268) — a component nested BELOW the row root still derives from
-      // its slot, matching the Hono reference (#2444).
-      const slotArg = derivesScopeFromSlot(node) ? `, '${node.slotId}'` : ''
-      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
+      // per iteration (identified by `data-key`) rather than deriving from
+      // the slot — `renderChildScopeArgs` still passes its slotId with the
+      // `loopItemRoot` flag (#2833) so it keeps `bf-h`/`bf-m` slot identity,
+      // matching the Hono reference (#2444).
+      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${renderChildScopeArgs(node, keyArg)})}`
     }
 
     case 'loop': {
@@ -2841,8 +2841,10 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${transformKeyValue(keyProp.value, transformExpr)}` : ''
-      const slotArg = derivesScopeFromSlot(node) ? `, '${node.slotId}'` : ''
-      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
+      // See `renderChildScopeArgs`'s docstring — a loop item root still gets
+      // its slotId, plus the `loopItemRoot` flag (#2833), rather than no
+      // slot argument at all.
+      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${renderChildScopeArgs(node, keyArg)})}`
     }
 
     case 'loop': {

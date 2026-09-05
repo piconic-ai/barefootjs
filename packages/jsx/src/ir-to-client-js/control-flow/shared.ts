@@ -366,9 +366,10 @@ function emitEventSetup(
  * e.g. `qsa(__el, ${buildCompSelector(c)})`.
  *
  * - With `slotId`: primary `(bf-h, bf-m)` against the enclosing scope's
- *   `__scopeId`, with a `[bf-s$="_<slot>"]` fallback for `renderChild`
- *   paths that stamp only the parent-anchored bf-s. See `spec/compiler.md`
- *   "Slot identity".
+ *   `__scopeId`, with a `[bf-s$="_<slot>"]` fallback for a DSL adapter's SSR
+ *   output that doesn't stamp `(bf-h, bf-m)` on this shape (CSR's own
+ *   `renderChild` stamps both, loop item root included, since #2833). See
+ *   `spec/compiler.md` "Slot identity".
  * - Without `slotId`: `bf-s^="<Name>_"` name-prefix for top-level lookup.
  */
 export function buildCompSelector(comp: { slotId?: string | null; name: string }): string {

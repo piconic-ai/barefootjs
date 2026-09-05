@@ -191,6 +191,97 @@ describe('#1247 — createComponent on static-loop with prop-derived array', () 
     expect(items[1].textContent).toContain('B')
   })
 
+  test('#2833 — a stateful loop-item-root component wires up on a pure CSR mount (template-evaluation path)', async () => {
+    // Unlike `Tag`/`Cell` above, `ToggleItem` is STATEFUL (`createSignal` +
+    // a click handler) — the earlier materialize tests never exercised the
+    // actual bug: a loop item root rendered via `renderChild()` with no
+    // `bf-h`/`bf-m` never matched the static init's `qsaChildScopes`
+    // selector on a pure CSR mount, so `initChild` never ran and its click
+    // handler never wired up (no existing SSR markup means no hydration
+    // fallback to save it). This case takes the TEMPLATE-EVALUATION path
+    // (the array is a module-level literal, inlined directly into the
+    // registration template — `_parentScopeId` is already set from
+    // `materializeComponent`'s own template call, so only the missing
+    // `bf-h`/`bf-m` stamp was the bug).
+    const toggleItemSource = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function ToggleItem2833(props: { label: string }) {
+        const [on, setOn] = createSignal(false)
+        return <button onClick={() => setOn(!on())}>{props.label}: {on() ? 'ON' : 'OFF'}</button>
+      }
+    `
+    await compileAndEvalClientJs(toggleItemSource, 'ToggleItem2833.tsx')
+    const listSource = `
+      'use client'
+      const ITEMS = [{ label: 'Setting 1' }, { label: 'Setting 2' }]
+      export function ModuleConstList(props: {}) {
+        return <div>{ITEMS.map((item) => <ToggleItem2833 key={item.label} label={item.label} />)}</div>
+      }
+    `
+    await compileAndEvalClientJs(listSource, 'ModuleConstList.tsx')
+
+    const { createComponent } = await import('../../src/runtime')
+    const el = createComponent('ModuleConstList', {}) as Element
+    document.body.appendChild(el)
+
+    const button = el.querySelector('button')!
+    // Slot identity: `bf-h` matches the parent's own `bf-s`, `bf-m` is the
+    // loop's slot id — the static init selector these two feed.
+    expect(button.getAttribute('bf-h')).toBe(el.getAttribute('bf-s'))
+    expect(button.getAttribute('bf-m')).toBe('s0')
+    // Scope id: a loop item root does NOT derive from the parent slot — no
+    // `_sN` suffix (regression guard against the rejected "C 案" fallback
+    // shape, fable's design §2.3).
+    expect(button.getAttribute('bf-s') || '').toMatch(/^ToggleItem2833_/)
+    expect(button.getAttribute('bf-s') || '').not.toMatch(/_s\d+$/)
+
+    button.click()
+    await new Promise(r => setTimeout(r, 0))
+    expect(button.textContent).toContain('ON')
+  })
+
+  test('#2833 — a stateful loop-item-root component wires up on a pure CSR mount (materialize path)', async () => {
+    // Same bug, materialize codepath: the array is an init-scope local
+    // (`Object.entries(...)`), so the CSR template substitutes `[]` and the
+    // per-item HTML comes from the materialize `forEach`'s cloned template
+    // instead. That runs during `init`, after `_parentScopeId` has already
+    // unwound to null — `withParentScope` re-establishes it for the
+    // duration of the row's template evaluation.
+    const toggleItemSource = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function ToggleItem2833b(props: { label: string }) {
+        const [on, setOn] = createSignal(false)
+        return <button onClick={() => setOn(!on())}>{props.label}: {on() ? 'ON' : 'OFF'}</button>
+      }
+    `
+    await compileAndEvalClientJs(toggleItemSource, 'ToggleItem2833b.tsx')
+    const listSource = `
+      'use client'
+      type Props = { tags: Record<string, boolean> }
+      export function MaterializeList(props: Props) {
+        const entries = Object.entries(props.tags).filter(([, v]) => v).map(([k]) => k)
+        return <div>{entries.map((label) => <ToggleItem2833b key={label} label={label} />)}</div>
+      }
+    `
+    await compileAndEvalClientJs(listSource, 'MaterializeList.tsx')
+
+    const { createComponent } = await import('../../src/runtime')
+    const el = createComponent('MaterializeList', { tags: { a: true, b: false, c: true } }) as Element
+    document.body.appendChild(el)
+
+    const button = el.querySelector('button')!
+    expect(button.getAttribute('bf-h')).toBe(el.getAttribute('bf-s'))
+    expect(button.getAttribute('bf-m')).toBe('s0')
+    expect(button.getAttribute('bf-s') || '').toMatch(/^ToggleItem2833b_/)
+    expect(button.getAttribute('bf-s') || '').not.toMatch(/_s\d+$/)
+
+    button.click()
+    await new Promise(r => setTimeout(r, 0))
+    expect(button.textContent).toContain('ON')
+  })
+
   test('empty prop produces empty container (no spurious children)', async () => {
     const source = `
       'use client'

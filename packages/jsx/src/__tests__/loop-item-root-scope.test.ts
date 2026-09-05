@@ -185,7 +185,7 @@ describe('IRComponent.loopItemRoot (#2444)', () => {
     expect(clientJs!.content).toMatch(/renderChild\('Badge[^']*',\s*\{text:\s*row\.label\},\s*undefined,\s*'s\d+'\)/)
   })
 
-  test('CSR template: a component that IS the loop row root gets no slot suffix', () => {
+  test('CSR template: a component that IS the loop row root still passes its slot id, with the loopItemRoot flag (#2833)', () => {
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -207,7 +207,11 @@ describe('IRComponent.loopItemRoot (#2444)', () => {
     expect(result.errors).toHaveLength(0)
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // Static-array loop item root: no slot suffix — it owns its own random id.
-    expect(clientJs!.content).not.toMatch(/renderChild\('row',[^)]*'s\d+'\)/)
+    // A row root still doesn't DERIVE its scope from the slot (no `_sN`
+    // scope-id suffix elsewhere in this file's other assertions), but it
+    // must keep slot identity — a pure-CSR mount's static init selector
+    // depends on the `bf-h`/`bf-m` this renders, per `renderChild`'s
+    // `loopItemRoot` param docstring (component.ts).
+    expect(clientJs!.content).toMatch(/renderChild\('Row[^']*',\s*\{label: row\.label\},\s*row\.id,\s*'s\d+',\s*true\)/)
   })
 })

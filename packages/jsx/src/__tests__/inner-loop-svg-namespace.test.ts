@@ -164,7 +164,7 @@ describe('static-loop CSR materialize with an SVG element root (#2219, #1247 pat
     // Materialize branch present (unsafe prop-derived array, #1247) ...
     expect(content).toMatch(/if \(!__iterEl\)/)
     // ... and its template parse is namespace-aware.
-    expect(content).toMatch(/__tpl\.innerHTML = `<svg><line /)
+    expect(content).toMatch(/__tpl\.innerHTML = withParentScope\(__scopeId, \(\) => `<svg><line /)
     expect(content).toContain('const __cloned = __tpl.content.firstElementChild.firstElementChild')
   })
 
@@ -187,7 +187,7 @@ describe('static-loop CSR materialize with an SVG element root (#2219, #1247 pat
       }
     `)
 
-    expect(content).toMatch(/__mtpl\.innerHTML = `<svg><line /)
+    expect(content).toMatch(/__mtpl\.innerHTML = withParentScope\(__scopeId, \(\) => `<svg><line /)
     // Sibling iteration starts inside the synthetic wrap.
     expect(content).toContain('let __sib = __mtpl.content.firstElementChild.firstElementChild')
   })
@@ -214,7 +214,7 @@ describe('static-loop CSR materialize with an SVG element root (#2219, #1247 pat
       }
     `)
 
-    expect(content).toMatch(/__mtpl\.innerHTML = `<svg /)
+    expect(content).toMatch(/__mtpl\.innerHTML = withParentScope\(__scopeId, \(\) => `<svg /)
     expect(content).not.toContain('`<svg><svg')
     // Sibling iteration starts at the template content directly (no wrap).
     expect(content).toContain('let __sib = __mtpl.content.firstElementChild')
@@ -238,7 +238,7 @@ describe('static-loop CSR materialize with an SVG element root (#2219, #1247 pat
     `)
 
     expect(content).toMatch(/if \(!__iterEl\)/)
-    expect(content).toMatch(/__tpl\.innerHTML = `<button /)
+    expect(content).toMatch(/__tpl\.innerHTML = withParentScope\(__scopeId, \(\) => `<button /)
     expect(content).toContain('const __cloned = __tpl.content.firstElementChild')
     expect(content).not.toContain('`<svg>')
   })

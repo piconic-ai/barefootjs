@@ -36,6 +36,25 @@ export function setParentScopeId(id: string | null): void {
 }
 
 /**
+ * Run `fn` with `_parentScopeId` temporarily set to `id`, restoring the
+ * previous value afterward (even if `fn` throws). A static loop's
+ * materialize `forEach` (#2833) runs during `init`, not template
+ * evaluation, so `_parentScopeId` is null there — this lets it evaluate the
+ * row's template as if it were still inside the parent's own template, so
+ * `renderChild` stamps `bf-h` with the same `__scopeId` the static init's
+ * `qsaChildScopes` selector interpolates.
+ */
+export function withParentScope<T>(id: string | null, fn: () => T): T {
+  const prev = _parentScopeId
+  _parentScopeId = id
+  try {
+    return fn()
+  } finally {
+    _parentScopeId = prev
+  }
+}
+
+/**
  * Where `mapArray` wants a fresh loop row connected before its `init` runs.
  *
  * `mounted` is written back by `mountRowRoot` so the caller can undo the
@@ -668,16 +687,24 @@ function spliceAttrsAfterFirstTag(html: string, attrs: string): string {
  * @param name - Component name (e.g., 'Spinner')
  * @param props - Props to pass to the template
  * @param key - Optional key for list reconciliation
+ * @param slotSuffix - Slot id in the parent (e.g. 's0') this child was rendered into
+ * @param loopItemRoot - True when this child IS a keyed loop's row root
+ *   (`IRComponent.loopItemRoot`, #2833): it still gets slot identity
+ *   (`bf-h`/`bf-m`, so a pure-CSR mount's static `qsaChildScopes` init can
+ *   find it the same way it finds a slotted non-root child) but derives its
+ *   OWN scope id rather than the parent's — matching Hono, which stamps
+ *   `__bfParent`/`__bfMount` on a loop item root while still letting an
+ *   interactive child's own `__scopeId` win over `__bfScope`.
  * @returns HTML string with scope marker
  */
 export function renderChild(
   name: string,
   props: Record<string, unknown>,
   key?: string | number,
-  slotSuffix?: string
+  slotSuffix?: string,
+  loopItemRoot?: boolean
 ): string {
   const templateFn = getTemplate(name)
-  const suffix = slotSuffix ? `_${slotSuffix}` : ''
   // When inside an insert() branch template with a known parent scope,
   // use the parent scope ID so child scope IDs match the SSR convention
   // (e.g., ~ParentName_parentHash_s5 instead of ~Button_randomHash_s5).
@@ -701,14 +728,24 @@ export function renderChild(
   // `materializeComponent`'s equivalent fix) kept stamping `bf-s` onto an
   // element the SSR/hydrate reference never puts one on.
   const isFragmentRoot = def?.fragmentRoot === true
-  const scopePrefix = (_parentScopeId && slotSuffix)
+  // Slot identity (bf-h/bf-m) and scope id (bf-s) are separate questions
+  // (#2833): a loop item root has slot identity — `hasSlot` — but, unlike an
+  // ordinary slotted child, does not DERIVE its scope id from the parent, so
+  // it gets no `_<slotSuffix>` suffix either (Hono's row root is
+  // `Name_<random>`, not `Name_<random>_s0`).
+  const hasSlot = !!(_parentScopeId && slotSuffix)
+  const derivesFromParent = hasSlot && !loopItemRoot
+  const suffix = (slotSuffix && !loopItemRoot) ? `_${slotSuffix}` : ''
+  const scopePrefix = derivesFromParent
     ? _parentScopeId
     : `${displayName}_${generateId()}`
   const scopeId = `${scopePrefix}${suffix}`
   const keyAttr = key !== undefined ? ` ${BF_KEY}="${key}"` : ''
   // Slot-relationship markers — only emitted when both host and slot are
-  // known; top-level renders without parent context omit them.
-  const slotAttrs = (_parentScopeId && slotSuffix)
+  // known; top-level renders without parent context omit them. Stamped
+  // regardless of `loopItemRoot`: a loop item root keeps slot identity even
+  // though it doesn't derive its scope id from it (see `hasSlot` above).
+  const slotAttrs = hasSlot
     ? ` ${BF_HOST}="${_parentScopeId}" ${BF_AT}="${slotSuffix}"`
     : ''
   const bfsAttr = `${BF_SCOPE}="${scopeId}"`
@@ -758,7 +795,7 @@ export function renderChild(
   // `wrapWithScopeComment`'s CSR mirror, same as `materializeComponent`'s
   // fix for a top-level mount.
   if (isFragmentRoot) {
-    const hostSuffix = (_parentScopeId && slotSuffix) ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
+    const hostSuffix = hasSlot ? `|h=${_parentScopeId}|m=${slotSuffix}` : ''
     // #2732: `data-key` for a fragment-root loop row lands on the row's own
     // first element — the same "first element, not first node" convention
     // `IRElement.keyAttr` uses on the SSR side (jsx-to-ir.ts) — not on the

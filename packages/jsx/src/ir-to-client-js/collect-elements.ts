@@ -743,10 +743,11 @@ export function collectElements(
         // passed), matching the plain-element path's `staticItemTemplate`.
         if (l.isStaticArray && l.children[0]) {
           // `l.children[0]` is the loop's row-root component — already
-          // tagged `loopItemRoot` in the IR, so `derivesScopeFromSlot`
-          // drops the parent's slot suffix automatically. Each iteration
-          // owns a distinct scope identified by `data-key`, mirroring the
-          // SSR template's renderChild emit.
+          // tagged `loopItemRoot` in the IR, so `renderChildScopeArgs`
+          // passes its slotId with the `loopItemRoot` flag (#2833) instead
+          // of deriving its own scope from the parent slot. Each iteration
+          // still owns a distinct scope identified by `data-key`, mirroring
+          // the SSR template's renderChild emit.
           staticItemTemplate = irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, undefined, undefined)
         }
       } else if (l.children[0] && !projectionInner) {

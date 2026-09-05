@@ -370,6 +370,22 @@ rendered outside the compiler pipeline. See piconic-ai/barefootjs#1915.
    the scope's own addressable id used by portals (`bf-po`), context
    lookups, and the hydration walker — but **not** slot identity.
 
+   **Loop item root (#2833).** A loop item root does not DERIVE its `bf-s`
+   from its slot (see "Pass `_bf_slot` for slotted children" below), but it
+   still carries `(bf-h, bf-m)` slot identity like any other slotted child —
+   Hono stamps `__bfParent`/`__bfMount` on a row root while letting an
+   interactive child's own `__scopeId` win over `__bfScope`. The CSR
+   template emitters mirror this via `renderChild`'s `loopItemRoot`
+   parameter (`packages/client/src/runtime/component.ts`): it stamps
+   `(bf-h, bf-m)` unconditionally but skips deriving `bf-s` from them. A
+   static array's materialize `forEach` (`packages/jsx/src/ir-to-client-js/
+   control-flow/stringify/loop.ts`) runs during `init`, after the parent's
+   own template evaluation — and its ambient parent-scope id — has already
+   unwound, so it re-establishes that id via `withParentScope(__scopeId,
+   ...)` just for the row's template evaluation, so the row's `bf-h` matches
+   the same `__scopeId` the static init's own `qsaChildScopes` selector
+   interpolates.
+
    **Root distinction.** A demo's SSR entry root (mounted as a slot of
    a page but the target of its own client-side init) carries `bf-r`,
    so e2e locators of the form `[bf-s^="FooDemo_"][bf-r]` address only
