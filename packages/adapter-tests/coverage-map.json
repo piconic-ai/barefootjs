@@ -4093,6 +4093,19 @@
         "attribute"
       ]
     },
+    "query-href-src": {
+      "kinds": [
+        "call",
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [
+        "lowering:queryHref"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "radio-group": {
       "kinds": [
         "arrow",
@@ -5874,14 +5887,14 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 94,
-    "call": 243,
+    "call": 244,
     "conditional": 27,
-    "identifier": 345,
+    "identifier": 346,
     "index-access": 14,
     "literal": 275,
     "logical": 47,
     "member": 197,
-    "object-literal": 68,
+    "object-literal": 69,
     "template-literal": 30,
     "unary": 24,
     "unsupported": 42
@@ -5930,7 +5943,7 @@
     "logical:||": 14,
     "lowering:date": 4,
     "lowering:formatDate": 1,
-    "lowering:queryHref": 1,
+    "lowering:queryHref": 2,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
     "member:optional": 1,

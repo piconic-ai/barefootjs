@@ -2397,6 +2397,49 @@ func TestQuery(t *testing.T) {
 	}
 }
 
+// Attr (`bf_attr`, #2743) emits a whole `name="value"` attribute as
+// template.HTMLAttr, HTML-escaping the value and nothing else — no URL
+// normalization, no scheme filter.
+func TestAttr(t *testing.T) {
+	tests := []struct {
+		name  string
+		attr  string
+		value any
+		want  string
+	}{
+		{"markup value is HTML-escaped only", "href", `<b>&"'</b>`, `href="&lt;b&gt;&amp;&#34;&#39;&lt;/b&gt;"`},
+		{"multibyte passes through untouched", "href", "日本語", `href="日本語"`},
+		{"nil value renders empty", "href", nil, `href=""`},
+		{"composition with Query preserves + for space, drops %-encoding", "href", Query("日本語", true, "q", "a b"), `href="日本語?q=a+b"`},
+	}
+	for _, tt := range tests {
+		if got := string(Attr(tt.attr, tt.value)); got != tt.want {
+			t.Errorf("%s: Attr(%q, %v) = %q, want %q", tt.name, tt.attr, tt.value, got, tt.want)
+		}
+	}
+}
+
+// TestAttr_BypassesContextualURLEscaper is the end-to-end assertion that
+// `bf_attr` actually defeats html/template's URL-context auto-escaping
+// (#2743) — not just that the Go function returns the right string in
+// isolation, but that html/template doesn't re-escape it when the whole
+// attribute is inserted via a real template execution. A `javascript:`
+// scheme and an embedded `<z>` survive verbatim (HTML-escaped, never
+// percent-encoded, never replaced with `#ZgotmplZ`).
+func TestAttr_BypassesContextualURLEscaper(t *testing.T) {
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(
+		`<a {{bf_attr "href" .U}}>x</a>`,
+	))
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, struct{ U string }{U: "javascript:x?y=<z>"}); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	want := `<a href="javascript:x?y=&lt;z&gt;">x</a>`
+	if got := buf.String(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
 // AsMap normalizes any string-keyed map kind held in an interface{} prop
 // field into map[string]interface{} for object-valued context bindings, and
 // returns nil for every "absent" shape so the generated `?? {}` fallback

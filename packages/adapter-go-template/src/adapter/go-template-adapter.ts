@@ -127,7 +127,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerRegisteredCall, lowerTernary } from "./expr/url-builder.ts"
+import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerTernary } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -8034,6 +8034,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Inline Go template syntax with embedded `{{...}}` actions.
         return `${name}="${this.renderParsedExpr(parsed)}"`
       }
+      // #2743: a `query` guard-list value (queryHref) emits the WHOLE
+      // attribute via `bf_attr` (template.HTMLAttr) so html/template's
+      // URL-context inference on the attribute name never percent-encodes
+      // the base. See `lowerRegisteredAttrCall`.
+      const attrAction = lowerRegisteredAttrCall(this.emitCtx, name, parsed)
+      if (attrAction !== null) return attrAction
       // Nullish-attribute omission: when the attribute value is a BARE reference
       // to a nillable (`interface{}`) prop field, guard emission on `ne .X nil`
       // so an unset optional prop drops the attribute entirely instead of

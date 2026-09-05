@@ -165,6 +165,36 @@ export function lowerRegisteredCall(
 }
 
 /**
+ * Attribute-position twin of `lowerRegisteredCall` (#2743). When an intrinsic
+ * element attribute's value is a `query` guard-list (the neutral node the
+ * `queryHref` plugin — or any plugin reusing the `query` helper — produces),
+ * emit the WHOLE attribute as one `bf_attr` action returning
+ * `template.HTMLAttr`, instead of `name="{{bf_query …}}"`. html/template
+ * infers a URL context from the attribute NAME (`href`, `src`, `action`,
+ * `data-*`, anything containing `src`/`uri`/`url`, …) and percent-encodes the
+ * entire value there; the JS reference (Hono) only HTML-escapes. Keyed on the
+ * neutral `helper` id, not the attribute name (Go's URL-context table is a
+ * heuristic we must not re-implement) and not the JS API name. Returns null
+ * for a non-call, an unmatched call, or any other node kind/helper — the
+ * caller then takes its ordinary path.
+ */
+export function lowerRegisteredAttrCall(
+  ctx: GoEmitContext,
+  attrName: string,
+  parsed: ParsedExpr,
+): string | null {
+  if (parsed.kind !== 'call') return null
+  for (const matcher of ctx.state.loweringMatchers) {
+    const node = matcher(parsed.callee, parsed.args)
+    if (!node) continue
+    if (node.kind !== 'guard-list' || node.helper !== 'query') return null
+    const rendered = renderLoweringNode(ctx, node)
+    return rendered === null ? null : `{{bf_attr ${JSON.stringify(attrName)} (${rendered})}}`
+  }
+  return null
+}
+
+/**
  * Render a backend-neutral lowering node to a Go template expression, or null
  * when the node's `helper` has no Go mapping — the caller then declines
  * (generic lowering → BF101), rather than emitting the raw helper id, which

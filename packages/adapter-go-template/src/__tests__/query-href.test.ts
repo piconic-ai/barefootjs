@@ -176,4 +176,54 @@ export function P(props: { base: string; q: Record<string, string> }) {
     const { template } = generate(src)
     expect(template).not.toContain('bf_query')
   })
+
+  // #2743: a `queryHref` value in an ATTRIBUTE position emits the whole
+  // attribute via `bf_attr` (template.HTMLAttr) so html/template's
+  // contextual URL-context autoescape (keyed off the attribute NAME) never
+  // percent-encodes the base — see `lowerRegisteredAttrCall`.
+  test('an href-attribute queryHref value routes through bf_attr, not `href="{{...}}"`', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <a href={queryHref(props.base, { tag: props.tag })}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}')
+    expect(template).not.toContain('href="{{')
+  })
+
+  // The route is keyed on the neutral `helper === 'query'` fact, not on the
+  // attribute name `href` — any attribute (e.g. `title`) gets the same
+  // treatment, since `queryHref` returns a plain string with nothing
+  // href-specific about it.
+  test('a non-href attribute (title) with a queryHref value also routes through bf_attr', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <a title={queryHref(props.base, { tag: props.tag })}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('{{bf_attr "title" (bf_query .Base (true) "tag" .Tag)}}')
+    expect(template).not.toContain('title="{{')
+  })
+
+  // Text-position (non-attribute) use is unaffected — `bf_attr` only wraps
+  // the whole-attribute case; a queryHref value read as text still lowers
+  // to a bare `bf_query` pipeline.
+  test('a queryHref value in text position is not wrapped in bf_attr', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tag: string }) {
+  return <span>{queryHref(props.base, { tag: props.tag })}</span>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('bf_query .Base (true) "tag" .Tag')
+    expect(template).not.toContain('bf_attr')
+  })
 })

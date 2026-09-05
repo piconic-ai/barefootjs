@@ -215,6 +215,10 @@ func FuncMap() template.FuncMap {
 		// JSX intrinsic-element spread lowering (#1407)
 		"bf_spread_attrs": SpreadAttrs,
 
+		// Whole-attribute emission that bypasses html/template's contextual
+		// auto-escaper (#2743): see Attr's docstring.
+		"bf_attr": Attr,
+
 		// Reverse the loop-row field-access Go-casing before a whole-item
 		// spread reaches `bf_spread_attrs` (#2490): a row's dot context is
 		// necessarily keyed `ID`/`Title`/`DataKind` (the same casing that
@@ -307,6 +311,22 @@ func Query(base string, triples ...any) string {
 		b.WriteString(formEscape(p.val))
 	}
 	return base + b.String()
+}
+
+// Attr emits one complete `name="value"` HTML attribute as a
+// template.HTMLAttr, HTML-escaping value with template.HTMLEscapeString (the
+// same escaper SpreadAttrs uses) and nothing else — no URL normalization, no
+// scheme filter. (#2743) html/template infers a URL context from the
+// attribute NAME for a `name="{{pipeline}}"` action (href/src/action/
+// data-*/anything containing src|uri|url/…) and percent-encodes the whole
+// value there, which the JS reference (Hono) never does — it only
+// HTML-escapes. Returning HTMLAttr for the WHOLE attribute bypasses that
+// contextual inference by design, the same technique SpreadAttrs /
+// HydrationAttrs already use for attributes and StyleObjectToCSS uses for
+// CSS. `name` is a compiler-emitted constant, never data; `value` goes
+// through String (nil → "").
+func Attr(name string, value any) template.HTMLAttr {
+	return template.HTMLAttr(name + `="` + template.HTMLEscapeString(String(value)) + `"`)
 }
 
 // Date implements the `date` helper (spec/template-helpers.md, #2274) — the

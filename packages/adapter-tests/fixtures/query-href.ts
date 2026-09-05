@@ -25,4 +25,12 @@ export { QueryHrefLink }
   expectedHtml: `
     <a bf-s="test" bf="s0" href="/items?tag=sale&amp;page=2">filter</a>
   `,
+  dataPoints: [
+    // #2743: no adapter applies scheme filtering to a queryHref-produced
+    // href — the reference (Hono) only HTML-escapes, so a `javascript:`
+    // base passes through on every backend. Go previously replaced this
+    // with `#ZgotmplZ` via html/template's URL-context scheme filter;
+    // parity with the reference is the contract, not a regression.
+    { name: 'base-scheme-passthrough', props: { base: 'javascript:alert(1)', tag: 'sale', page: '2' } },
+  ],
 })

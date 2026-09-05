@@ -2067,6 +2067,50 @@
       }
     }
   ],
+  "query-href-src": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "w": "64"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "w": "64"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "w": "64"
+      }
+    },
+    {
+      "name": "gen:w:empty",
+      "props": {
+        "base": "/thumb",
+        "w": ""
+      }
+    },
+    {
+      "name": "gen:w:markup",
+      "props": {
+        "base": "/thumb",
+        "w": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:w:multibyte",
+      "props": {
+        "base": "/thumb",
+        "w": "日本語"
+      }
+    }
+  ],
   "reduce-concat": [
     {
       "name": "gen:items:empty",
