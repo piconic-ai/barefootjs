@@ -163,8 +163,6 @@ import {
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  queryHrefArgs,
-  isValidHelperId,
   sortComparatorFromArrow,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
@@ -1482,8 +1480,8 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       {
         const m = this.parseUndefinedAlternateTernary(value.expr)
         if (m) {
-          const cond = this.convertConditionToJinja(m.condition)
-          const val = this.convertExpressionToJinja(m.consequent)
+          const cond = this.convertConditionToJinja('', m.testParsed)
+          const val = this.convertExpressionToJinja('', m.consequentParsed)
           return `\n{% if ${cond} %}\n${name}="{{ bf.string(${val}) }}"\n{% endif %}\n`
         }
       }
@@ -1751,7 +1749,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
     if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
     const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed)
+    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
     if (parsed.kind !== 'unsupported' && support.supported) return false
     const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
     const reasonLine = reason ? `\n${reason}` : ''
@@ -1778,6 +1776,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   private get emitCtx(): JinjaEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
@@ -1832,42 +1831,16 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       parsed = parseExpression(trimmed)
     }
 
-    // Registered call lowerings (#2057) — including the built-in `queryHref`
-    // plugin (#2042), which lowers `queryHref(base, { … })` to a neutral
-    // `guard-list` on the `query` helper → `bf.query(base, <triples>)`.
-    // Recognised before the support gate because the object-literal arg is
-    // otherwise `unsupported` (BF101). The `query` helper includes a pair iff its
-    // guard is truthy AND its value is a non-empty string (the client's
-    // `if (value)`): a plain `key: v` passes guard `true`, a conditional
-    // `key: cond ? v : undefined` passes the lowered cond. Only the `query`
-    // helper renders to `bf.query`; another guard-list helper must not be
-    // silently mis-rendered as a query.
-    if (parsed.kind === 'call') {
-      for (const matcher of this._loweringMatchers) {
-        const node = matcher(parsed.callee, parsed.args)
-        if (node?.kind === 'guard-list' && node.helper === 'query') {
-          const qArgs = queryHrefArgs(node, n => this.renderParsedExprToJinja(n))
-          return `bf.query(${qArgs.join(', ')})`
-        }
-        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
-        // hatch for a userland `LoweringPlugin` that lowers to a single
-        // runtime-helper invocation. `bf.<helper>(args…)` mirrors the
-        // `query` helper's own naming convention exactly: the framework
-        // renders the call, the plugin author registers `<helper>` as a
-        // MiniJinja-callable function in their own runtime — same contract
-        // as `bf.query` itself, just not built in.
-        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
-          const argsX = node.args.map(a => this.renderParsedExprToJinja(a))
-          return `bf.${node.helper}(${argsX.join(', ')})`
-        }
-      }
-    }
-
     // `pos` distinguishes a derived-seed RHS (an assignment, checked via
     // `isSupportedValue`) from every other, genuinely rendered call site —
     // the rendered gate would otherwise re-refuse a tree the seed plan
     // already classified `derived` at value position (#2696 review).
-    const support = pos === 'value' ? isSupportedValue(parsed) : isSupported(parsed)
+    // Registered call lowerings (#2057) — including the built-in `queryHref`
+    // plugin — are consulted by this gate no matter where the call sits in
+    // the tree (`JinjaTopLevelEmitter`'s `lowering` seam does the actual
+    // rendering below, via `emitParsedExpr`'s shared `call` case).
+    const supportOpts = { loweringMatchers: this._loweringMatchers }
+    const support = pos === 'value' ? isSupportedValue(parsed, supportOpts) : isSupported(parsed, supportOpts)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',
@@ -1936,7 +1909,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    */
   parseUndefinedAlternateTernary(
     expr: string,
-  ): { condition: string; consequent: string } | null {
+  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
     const parsed = parseExpression(expr.trim())
     if (parsed?.kind !== 'conditional') return null
     const alt = parsed.alternate
@@ -1944,13 +1917,16 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
       (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
     if (!isUndef) return null
-    // Serialise the parsed sub-expressions back to JS source rather than
-    // slicing `expr` text — `indexOf('?')` / `lastIndexOf(':')` would
-    // mis-split when the consequent itself contains `?` / `:` inside a
-    // string or nested ternary (`cond ? 'a:b' : undefined`).
+    // `condition`/`consequent` are DEBUG text only (`exprToString` renders an
+    // unsupported nested shape like an object literal as non-reparseable
+    // `[UNSUPPORTED: …]` text) — callers that need to re-lower the
+    // sub-expression must use `testParsed`/`consequentParsed` (the actual
+    // parsed trees) as `preParsed`, not re-parse these strings.
     return {
       condition: exprToString(parsed.test),
       consequent: exprToString(parsed.consequent),
+      testParsed: parsed.test,
+      consequentParsed: parsed.consequent,
     }
   }
 

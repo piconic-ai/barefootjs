@@ -138,8 +138,6 @@ import {
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
   prepareLoweringMatchers,
-  queryHrefArgs,
-  isValidHelperId,
   sortComparatorFromArrow,
   isDangerousInnerHtmlAttr,
   resolveDangerousInnerHtml,
@@ -1430,8 +1428,13 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       {
         const m = this.parseUndefinedAlternateTernary(value.expr)
         if (m) {
-          const cond = this.convertConditionToJinja(m.condition)
-          const val = this.convertExpressionToJinja(m.consequent)
+          // Pass the PARSED sub-trees through as `preParsed` (#2843 review)
+          // rather than re-parsing `m.condition`/`m.consequent` — those are
+          // `exprToString` debug text, which renders any nested
+          // `object-literal` (e.g. a registered call's params, `queryHref`'s
+          // `{ tag }`) as a non-reparseable `[UNSUPPORTED: …]` placeholder.
+          const cond = this.convertConditionToJinja(m.condition, m.testParsed)
+          const val = this.convertExpressionToJinja(m.consequent, m.consequentParsed)
           return `\n{% if ${cond} %}\n${name}="{{ bf.string(${val}) }}"\n{% endif %}\n`
         }
       }
@@ -1693,7 +1696,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
     if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
     const parsed = parseExpression(expr.trim())
-    const support = isSupported(parsed)
+    const support = isSupported(parsed, { loweringMatchers: this._loweringMatchers })
     if (parsed.kind !== 'unsupported' && support.supported) return false
     const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
     const reasonLine = reason ? `\n${reason}` : ''
@@ -1720,6 +1723,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   private get emitCtx(): JinjaEmitContext {
     return {
       _searchParamsLocals: this._searchParamsLocals,
+      _loweringMatchers: this._loweringMatchers,
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
@@ -1774,42 +1778,22 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       parsed = parseExpression(trimmed)
     }
 
-    // Registered call lowerings (#2057) — including the built-in `queryHref`
-    // plugin (#2042), which lowers `queryHref(base, { … })` to a neutral
-    // `guard-list` on the `query` helper → `bf.query(base, <triples>)`.
-    // Recognised before the support gate because the object-literal arg is
-    // otherwise `unsupported` (BF101). The `query` helper includes a pair iff its
-    // guard is truthy AND its value is a non-empty string (the client's
-    // `if (value)`): a plain `key: v` passes guard `true`, a conditional
-    // `key: cond ? v : undefined` passes the lowered cond. Only the `query`
-    // helper renders to `bf.query`; another guard-list helper must not be
-    // silently mis-rendered as a query.
-    if (parsed.kind === 'call') {
-      for (const matcher of this._loweringMatchers) {
-        const node = matcher(parsed.callee, parsed.args)
-        if (node?.kind === 'guard-list' && node.helper === 'query') {
-          const qArgs = queryHrefArgs(node, n => this.renderParsedExprToJinja(n))
-          return `bf.query(${qArgs.join(', ')})`
-        }
-        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
-        // hatch for a userland `LoweringPlugin` that lowers to a single
-        // runtime-helper invocation. `bf.<helper>(args…)` mirrors the
-        // `query` helper's own naming convention exactly: the framework
-        // renders the call, the plugin author registers `<helper>` as a
-        // Jinja-callable function/filter in their own runtime — same
-        // contract as `bf.query` itself, just not built in.
-        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
-          const argsX = node.args.map(a => this.renderParsedExprToJinja(a))
-          return `bf.${node.helper}(${argsX.join(', ')})`
-        }
-      }
-    }
-
+    // #2843: a registered lowering plugin's call (the built-in `queryHref`,
+    // or any userland plugin) is recognised no matter where it sits in the
+    // tree — a ternary branch, a template-literal interpolation, … — not
+    // only when `parsed.kind === 'call'` directly. That recognition now
+    // lives in `JinjaTopLevelEmitter`'s `lowering` seam, consulted by
+    // `emitParsedExpr`'s shared `call` dispatch; the support gate below is
+    // passed `this._loweringMatchers` so a matched call's params (e.g.
+    // `queryHref`'s object literal, otherwise `unsupported` at `rendered`
+    // position) are admitted wherever the call is nested.
+    //
     // `pos` distinguishes a derived-seed RHS (an assignment, checked via
     // `isSupportedValue`) from every other, genuinely rendered call site —
     // the rendered gate would otherwise re-refuse a tree the seed plan
     // already classified `derived` at value position (#2696 review).
-    const support = pos === 'value' ? isSupportedValue(parsed) : isSupported(parsed)
+    const supportOpts = { loweringMatchers: this._loweringMatchers }
+    const support = pos === 'value' ? isSupportedValue(parsed, supportOpts) : isSupported(parsed, supportOpts)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',
@@ -1875,10 +1859,21 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
    * Parse `cond ? value : undefined` (or `: null`), returning the
    * condition/consequent source spans, else `null`. Used for the
    * attribute-omission rule (#1897).
+   *
+   * `testParsed`/`consequentParsed` (#2843 review) are the ACTUAL parsed
+   * sub-trees, for the caller to pass through as `preParsed` — `condition`/
+   * `consequent` are `exprToString` output, a DEBUG formatter that renders
+   * any nested `object-literal` as the non-reparseable `[UNSUPPORTED: …]`
+   * placeholder (unlike `stringifyParsedExpr`, meant for round-tripping).
+   * Re-parsing THAT string for a consequent like `queryHref(base, { tag })`
+   * would corrupt the call's args before the lowering registry — now
+   * consulted at any nesting depth (#2843) — ever sees them. Kept for any
+   * caller that only needs the string form; the parsed trees are the
+   * correct input wherever the caller can accept `preParsed`.
    */
   parseUndefinedAlternateTernary(
     expr: string,
-  ): { condition: string; consequent: string } | null {
+  ): { condition: string; consequent: string; testParsed: ParsedExpr; consequentParsed: ParsedExpr } | null {
     const parsed = parseExpression(expr.trim())
     if (parsed?.kind !== 'conditional') return null
     const alt = parsed.alternate
@@ -1893,6 +1888,8 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     return {
       condition: exprToString(parsed.test),
       consequent: exprToString(parsed.consequent),
+      testParsed: parsed.test,
+      consequentParsed: parsed.consequent,
     }
   }
 

@@ -7,6 +7,7 @@
  */
 
 import ts from 'typescript'
+import { loweringNodeChildren, type LoweringMatcher } from './lowering-registry.ts'
 
 // =============================================================================
 // Parsed Expression Types
@@ -1049,7 +1050,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
             // surface — the depth must be *expressible*, even if not
             // known until render time.
             const parsedDepth = convertNode(depthNode, raw)
-            if (checkSupport(parsedDepth, 'rendered').supported) {
+            if (checkSupport(parsedDepth, 'rendered', []).supported) {
               depthExpr = parsedDepth
               flatDepth = 1 // unused placeholder — consumers must check `depthExpr` first
             } else {
@@ -2419,9 +2420,20 @@ function getUnaryOperatorString(op: ts.PrefixUnaryOperator): string {
  * reaches the page. See {@link isSupportedValue} for the sibling VALUE-
  * position entry point, and `checkSupport`'s `pos` parameter for why the two
  * never converge partway through a tree.
+ *
+ * `opts.loweringMatchers` (#2843), when given, lets a call recognised by a
+ * registered lowering plugin (`queryHref`, or any userland plugin) admit
+ * its params regardless of nesting position — a ternary branch, a
+ * template-literal interpolation, a binary operand, … — matching the
+ * top-level attribute path, which already consulted the same registry
+ * before this gate ever ran. Omit it (every existing caller does) for
+ * byte-identical prior behaviour.
  */
-export function isSupported(expr: ParsedExpr): SupportResult {
-  return checkSupport(expr, 'rendered')
+export function isSupported(
+  expr: ParsedExpr,
+  opts?: { loweringMatchers?: readonly LoweringMatcher[] },
+): SupportResult {
+  return checkSupport(expr, 'rendered', opts?.loweringMatchers ?? [])
 }
 
 /**
@@ -2430,10 +2442,13 @@ export function isSupported(expr: ParsedExpr): SupportResult {
  * assignment, never a render). The one behavioural difference from
  * {@link isSupported}: an `object-literal` anywhere in the tree is admitted
  * when every property value is itself supported, instead of being refused
- * outright.
+ * outright. See {@link isSupported}'s doc for `opts.loweringMatchers`.
  */
-export function isSupportedValue(expr: ParsedExpr): SupportResult {
-  return checkSupport(expr, 'value')
+export function isSupportedValue(
+  expr: ParsedExpr,
+  opts?: { loweringMatchers?: readonly LoweringMatcher[] },
+): SupportResult {
+  return checkSupport(expr, 'value', opts?.loweringMatchers ?? [])
 }
 
 /**
@@ -2453,7 +2468,7 @@ export function isSupportedValue(expr: ParsedExpr): SupportResult {
  */
 type ExprPos = 'rendered' | 'value'
 
-function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
+function checkSupport(expr: ParsedExpr, pos: ExprPos, matchers: readonly LoweringMatcher[]): SupportResult {
   switch (expr.kind) {
     case 'unsupported':
       return { supported: false, reason: expr.reason }
@@ -2471,7 +2486,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
         // A spread entry's SOURCE must itself be supported at `value`
         // position — the same criterion as an explicit property's value,
         // since the spread source is read (not rendered) at merge time.
-        const propSupport = checkSupport(prop.kind === 'spread' ? prop.expr : prop.value, pos)
+        const propSupport = checkSupport(prop.kind === 'spread' ? prop.expr : prop.value, pos, matchers)
         if (!propSupport.supported) return propSupport
       }
       return { supported: true, level: 'L2' }
@@ -2498,7 +2513,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // method, not here, because we can't see which adapter is consuming
       // the IR at this point.
       for (const el of expr.elements) {
-        const elSupport = checkSupport(el, pos)
+        const elSupport = checkSupport(el, pos, matchers)
         if (!elSupport.supported) return elSupport
       }
       return { supported: true, level: 'L2' }
@@ -2518,10 +2533,10 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
         }
       }
       // Receiver/args inherit `pos` (see `ExprPos`'s doc).
-      const objSupport = checkSupport(expr.object, pos)
+      const objSupport = checkSupport(expr.object, pos, matchers)
       if (!objSupport.supported) return objSupport
       for (const arg of expr.args) {
-        const argSupport = checkSupport(arg, pos)
+        const argSupport = checkSupport(arg, pos, matchers)
         if (!argSupport.supported) return argSupport
       }
       // A dynamic `.flat(depth)` carries its depth expression outside
@@ -2532,7 +2547,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // any `array-method`/`flat` node regardless of how it was constructed
       // (e.g. by a rewrite walker).
       if (expr.method === 'flat' && expr.depthExpr) {
-        const depthSupport = checkSupport(expr.depthExpr, pos)
+        const depthSupport = checkSupport(expr.depthExpr, pos, matchers)
         if (!depthSupport.supported) return depthSupport
       }
       return { supported: true, level: 'L2' }
@@ -2540,6 +2555,25 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
 
 
     case 'call': {
+      // #2843: a call a registered lowering plugin recognises (`queryHref`,
+      // or any userland plugin) is admitted regardless of where it sits in
+      // the tree — the neutral node's OWN children (`loweringNodeChildren`)
+      // are re-checked at the current `pos` instead of the call's raw
+      // `args`, so e.g. `queryHref`'s params object literal (refused at
+      // `rendered` position by the `object-literal` case above) doesn't
+      // reach that refusal at all: the plugin already took responsibility
+      // for it. Tried before `asCallbackMethodCall` and the generic per-arg
+      // loop below, matching the precedence the top-level attribute path
+      // already gives the registry.
+      for (const matcher of matchers) {
+        const node = matcher(expr.callee, expr.args)
+        if (!node) continue
+        for (const child of loweringNodeChildren(node)) {
+          const childSupport = checkSupport(child, pos, matchers)
+          if (!childSupport.supported) return childSupport
+        }
+        return { supported: true, level: 'L2' }
+      }
       // Higher-order callback methods (`.filter`/`.sort`/`.reduce`/… with an
       // arrow argument) lower via the runtime evaluator (#2018). Supported iff
       // the receiver and the callback BODY are supported. Recognised before the
@@ -2558,9 +2592,9 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // one (a signal/memo initializer) admits it.
       const cb = asCallbackMethodCall(expr)
       if (cb) {
-        const objSupport = checkSupport(cb.object, pos)
+        const objSupport = checkSupport(cb.object, pos, matchers)
         if (!objSupport.supported) return objSupport
-        const bodySupport = checkSupport(cb.arrow.body, pos)
+        const bodySupport = checkSupport(cb.arrow.body, pos, matchers)
         if (!bodySupport.supported) {
           return {
             supported: false,
@@ -2569,7 +2603,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
           }
         }
         for (const rest of cb.args) {
-          const restSupport = checkSupport(rest, pos)
+          const restSupport = checkSupport(rest, pos, matchers)
           if (!restSupport.supported) return restSupport
         }
         return { supported: true, level: 'L5' }
@@ -2577,7 +2611,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
 
       // Check if callee is supported. Not container contents — inherits
       // the CURRENT `pos` (see `ExprPos`'s doc).
-      const calleeSupport = checkSupport(expr.callee, pos)
+      const calleeSupport = checkSupport(expr.callee, pos, matchers)
       if (!calleeSupport.supported) {
         return calleeSupport
       }
@@ -2610,7 +2644,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // recognised callback/array-method (that path returned above) —
       // inherits the CURRENT `pos` (see `ExprPos`'s doc).
       for (const arg of expr.args) {
-        const argSupport = checkSupport(arg, pos)
+        const argSupport = checkSupport(arg, pos, matchers)
         if (!argSupport.supported) {
           return argSupport
         }
@@ -2620,7 +2654,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
 
     case 'member': {
       // Not container contents — inherits the CURRENT `pos`.
-      const objSupport = checkSupport(expr.object, pos)
+      const objSupport = checkSupport(expr.object, pos, matchers)
       if (!objSupport.supported) {
         return objSupport
       }
@@ -2636,9 +2670,9 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // expression are themselves supported (the index is typically a
       // loop variable or arithmetic over one). #1897 (data-table). Neither
       // is container contents — both inherit the CURRENT `pos`.
-      const objSupport = checkSupport(expr.object, pos)
+      const objSupport = checkSupport(expr.object, pos, matchers)
       if (!objSupport.supported) return objSupport
-      const indexSupport = checkSupport(expr.index, pos)
+      const indexSupport = checkSupport(expr.index, pos, matchers)
       if (!indexSupport.supported) return indexSupport
       return { supported: true, level: 'L2' }
     }
@@ -2646,9 +2680,9 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
     case 'binary': {
       // Operands inherit the CURRENT `pos` (see `ExprPos`'s doc) — a binary
       // operand isn't container contents.
-      const leftSupport = checkSupport(expr.left, pos)
+      const leftSupport = checkSupport(expr.left, pos, matchers)
       if (!leftSupport.supported) return leftSupport
-      const rightSupport = checkSupport(expr.right, pos)
+      const rightSupport = checkSupport(expr.right, pos, matchers)
       if (!rightSupport.supported) return rightSupport
 
       // Comparison operators are L3
@@ -2666,7 +2700,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
 
     case 'unary': {
       // Inherits the CURRENT `pos` — not container contents.
-      const argSupport = checkSupport(expr.argument, pos)
+      const argSupport = checkSupport(expr.argument, pos, matchers)
       if (!argSupport.supported) return argSupport
 
       // Negation is L4
@@ -2683,7 +2717,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
 
     case 'logical': {
       // Operands inherit the CURRENT `pos` — not container contents.
-      const leftSupport = checkSupport(expr.left, pos)
+      const leftSupport = checkSupport(expr.left, pos, matchers)
       if (!leftSupport.supported) return leftSupport
 
       // `x ?? {}` — admit an EMPTY object-literal fallback as the right
@@ -2710,7 +2744,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
         return { supported: true, level: 'L4' }
       }
 
-      const rightSupport = checkSupport(expr.right, pos)
+      const rightSupport = checkSupport(expr.right, pos, matchers)
       if (!rightSupport.supported) return rightSupport
 
       return { supported: true, level: 'L4' }
@@ -2722,11 +2756,11 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // position both branches are themselves rendered — `cond ? {a:1} :
       // {b:2}` stays refused there, not admitted just for being a
       // sub-expression.
-      const testSupport = checkSupport(expr.test, pos)
+      const testSupport = checkSupport(expr.test, pos, matchers)
       if (!testSupport.supported) return testSupport
-      const consSupport = checkSupport(expr.consequent, pos)
+      const consSupport = checkSupport(expr.consequent, pos, matchers)
       if (!consSupport.supported) return consSupport
-      const altSupport = checkSupport(expr.alternate, pos)
+      const altSupport = checkSupport(expr.alternate, pos, matchers)
       if (!altSupport.supported) return altSupport
 
       return { supported: true, level: 'L4' }
@@ -2738,7 +2772,7 @@ function checkSupport(expr: ParsedExpr, pos: ExprPos): SupportResult {
       // object-literal hole has no sensible rendering either way).
       for (const part of expr.parts) {
         if (part.type === 'expression') {
-          const partSupport = checkSupport(part.expr, pos)
+          const partSupport = checkSupport(part.expr, pos, matchers)
           if (!partSupport.supported) return partSupport
         }
       }

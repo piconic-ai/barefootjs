@@ -18,7 +18,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher } from '@barefootjs/jsx'
 
 export interface TwigEmitContext {
   /**
@@ -26,6 +26,17 @@ export interface TwigEmitContext {
    * is imported under. Non-empty enables the env-signal method-call lowering.
    */
   readonly _searchParamsLocals: Set<string>
+
+  /**
+   * Registered lowering-plugin matchers (#2057), bound to this component's
+   * metadata at init. Read by `TwigTopLevelEmitter`'s `lowering` seam (#2843)
+   * so a registered call — the built-in `queryHref`, or any userland plugin —
+   * is recognised no matter where it sits in an expression tree (a ternary
+   * branch, a template-literal interpolation, …), not only when it's the call
+   * the adapter's own top-level conversion entry point
+   * (`convertExpressionToTwig`) is asked to lower directly.
+   */
+  readonly _loweringMatchers: readonly LoweringMatcher[]
 
   /**
    * Inline a module-scope pure string-literal const by name as the resolved
