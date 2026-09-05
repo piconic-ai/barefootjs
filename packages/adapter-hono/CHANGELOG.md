@@ -1,5 +1,11 @@
 # @barefootjs/hono
 
+## 0.34.1
+
+### Patch Changes
+
+- 131cc63: Fix #2848: new `trackPosition(update)` runtime helper anchors a floating element while it is open — it runs `update` now, on every capture-phase `scroll` and on `resize`, and its dispose re-runs `update` once, synchronously, before detaching. `scroll` events are coalesced per rendering frame and report the scroll position current at dispatch time, so a programmatic scroll that landed in the same frame as the close (a `focus()` on an offscreen item, a `scrollIntoView()`) never reached the listener and the closed element kept a position from one scroll earlier; the closing overlay's inline position now depends only on the geometry at close time. Six site/ui overlays that positioned themselves from `getBoundingClientRect()` with their own copy of the scroll/resize wiring (`combobox`, `dropdown-menu`, `hover-card`, `menubar`, `navigation-menu`, `popover`) now share this one implementation. (`select` has the identical pattern and would benefit the same way, but fixing it fully also surfaces a second, unrelated nondeterminism tracked separately in #2745 — left untouched here so as not to override that issue's own disposition.) The compiler recognises `trackPosition` as a browser-only `@barefootjs/client` API (so importing it requires `'use client'`, like `createPortal`), and the Hono SSR shim returns a no-op dispose.
+
 ## 0.34.0
 
 No changes in this release.
