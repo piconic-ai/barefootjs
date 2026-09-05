@@ -81,25 +81,55 @@ jobs:
             done
           done
 
-          if [ "$needs_changeset" = true ]; then
-            # Look for changesets ADDED by this PR. Must be a 3-dot
-            # (merge-base) diff: a 2-dot `git diff BASE HEAD` also surfaces
-            # changesets that exist on HEAD but were since released/removed
-            # from a moving BASE, which would satisfy the gate spuriously.
-            changeset_files=$(git diff --name-only --diff-filter=A "$BASE_SHA...$HEAD_SHA" -- '.changeset/*.md' | grep -v 'README.md' || true)
+          # Changesets ADDED by this PR. Must be a 3-dot (merge-base) diff: a
+          # 2-dot `git diff BASE HEAD` also surfaces changesets that exist on
+          # HEAD but were since released/removed from a moving BASE, which
+          # would satisfy the gate spuriously. Computed unconditionally (not
+          # only when a changeset is required) because the next check below
+          # needs to inspect every changeset this PR adds, even one added
+          # alongside changes that don't themselves require one.
+          added_changesets=$(git diff --name-only --diff-filter=A "$BASE_SHA...$HEAD_SHA" -- '.changeset/*.md' | grep -v 'README.md' || true)
 
-            if [ -z "$changeset_files" ]; then
-              echo "::error::This PR modifies published package source but has no changeset."
-              echo ""
-              echo "Changed files that require a changeset:"
-              printf '  - %s\n' "${matched_paths[@]}"
-              echo ""
-              echo "Run 'bunx changeset' to add one, or add a 'no-changeset' label if this change doesn't affect consumers."
-              exit 1
-            else
-              echo "Changeset found — OK"
-              echo "$changeset_files"
-            fi
+          if [ "$needs_changeset" = true ] && [ -z "$added_changesets" ]; then
+            echo "::error::This PR modifies published package source but has no changeset."
+            echo ""
+            echo "Changed files that require a changeset:"
+            printf '  - %s\n' "${matched_paths[@]}"
+            echo ""
+            echo "Run 'bunx changeset' to add one, or add a 'no-changeset' label if this change doesn't affect consumers."
+            exit 1
+          elif [ "$needs_changeset" = true ]; then
+            echo "Changeset found — OK"
+            echo "$added_changesets"
           else
             echo "No published source files changed — changeset not required"
+          fi
+
+          # A changeset whose every listed package is in .changeset/config.json's
+          # `ignore` array can never be applied by `changeset version` — changesets
+          # silently leaves the file in .changeset/ forever instead of consuming or
+          # erroring on it. That stuck file then makes every subsequent push to main
+          # look like a release is still pending, so changesets/action never takes
+          # its publish branch again. This exact shape (a changeset for
+          # @barefootjs/compat alone) shipped via #2785/#2821 and silently blocked
+          # every npm publish from #2810 through #2836 — about two days and nine
+          # merged PRs — before anyone noticed. See #2838 for the incident writeup.
+          bad_changeset=false
+          for f in $added_changesets; do
+            pkgs=$(awk '/^---$/{n++; next} n==1' "$f" | sed -n 's/^"\{0,1\}\([^":]*\)"\{0,1\}:.*/\1/p')
+            releasable=false
+            for pkg in $pkgs; do
+              if ! echo "$ignore_list" | grep -qxF "$pkg"; then
+                releasable=true
+                break
+              fi
+            done
+            if [ "$releasable" = false ]; then
+              echo "::error file=$f::This changeset only targets package(s) listed in .changeset/config.json's 'ignore' array ($(echo $pkgs)). 'changeset version' can never release an ignored package, so this file would sit in .changeset/ forever and permanently block the next publish (see #2838 for what that looked like in practice). Delete this changeset -- an ignored/private package doesn't need a changelog entry -- or remove the package from 'ignore' if it should actually be released."
+              bad_changeset=true
+            fi
+          done
+
+          if [ "$bad_changeset" = true ]; then
+            exit 1
           fi
