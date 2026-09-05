@@ -90,12 +90,19 @@ export interface RestSpreadBindings {
  *
  * The one alias-hop walker in the compiler, shared by every caller that
  * needs "does this name ultimately reach some fixed binding" rather than
- * a bespoke copy per caller — `resolveRestSpreadOriginCore` below and
- * `resolveGetterAliases` (`csr-substitute.ts`, #2778) are its two
- * instances, differing only in what `terminal` recognizes as a hit.
- * `terminal` is checked BEFORE the constant-value lookup so a name that is
- * itself a target take priority over any same-named local shadowing it
- * (preserves `resolveRestSpreadOriginCore`'s original hop order).
+ * a bespoke copy per caller — `resolveRestSpreadOriginCore` below,
+ * `resolveGetterAliases` (`csr-substitute.ts`, #2778), and
+ * `isArrayExprDirectPropRef` (`jsx-to-ir.ts`, #2724, called directly rather
+ * than through a `*Core`-style wrapper) are its callers, differing only in
+ * what `terminal` recognizes as a hit — and, for `isArrayExprDirectPropRef`,
+ * in also narrowing `constantValues` itself (`propAliasHopCandidates`)
+ * before passing it in. `terminal` is checked BEFORE the constant-value
+ * lookup so a name that is itself a target take priority over any
+ * same-named local shadowing it (preserves `resolveRestSpreadOriginCore`'s
+ * original hop order) — a caller whose `terminal` can itself be fooled by a
+ * shadowed name (e.g. a scope-unaware lookup keyed only by name) must guard
+ * that inside `terminal`, since this walker has no scope/binding awareness
+ * of its own to do it centrally.
  *
  * `visited` guards a constant cycle (`const a = b; const b = a`); walking
  * hop by hop (not a precomputed set) is what lets a multi-hop alias

@@ -594,16 +594,34 @@ function findBaseSignalGetter(expr: ParsedExpr | undefined, signalGetters: Reado
 /**
  * (#2630) Resolve a `isPropDerived` loop's `arrayParsed` to the JS-level
  * prop name it reads. `isArrayExprDirectPropRef` (`jsx-to-ir.ts`) is what
- * sets `isPropDerivedArray` in the first place, and it only recognizes two
- * shapes — a bare destructured-prop identifier (`entries.map(...)` inside
- * `function({ entries })`) or a direct `props.<name>` member access — so
- * unlike `findBaseSignalGetter` there is no `call`/chain walking to do; the
- * compiler already restricted the shape. Returns the prop's LOCAL binding
- * name; the caller resolves it to the CALLER-FACING field
- * (`sourceName ?? name`) via `propsParams`, matching how
- * `generateInputStruct`/`generateNewPropsFunction` key the Go field and how
- * `buildGoPropsInit` keys the harness's own prop initializer (both by the
- * JS `props` object's key, not the local destructure binding).
+ * sets `isPropDerivedArray` in the first place, and — even after #2724
+ * taught it to resolve a bare `const x = y` alias-hop chain (including one
+ * that reaches the WHOLE props object, e.g. `const p = props; p.items`) —
+ * `arrayParsed` (this function's input) is `loop.array`'s own written
+ * structure, not the alias-resolved origin: a hop through a destructured
+ * prop's alias ends up here as a bare identifier (the LOCAL alias name, not
+ * the prop's own name — resolved below via `propsParams`), and a hop that
+ * lands on `props.<key>` OR `<aliasOfProps>.<key>` both end up here as the
+ * same member shape (`.property` is the source key either way; this
+ * function never inspects `.object.name`, so it doesn't matter whether the
+ * object identifier IS `props` or an alias of it).
+ *
+ * `renderLoop`'s own BF101 gate (`go-template-adapter.ts`, the
+ * `arrayName`/`localConstants` check) refuses a BARE-IDENTIFIER loop array
+ * that is a local computed value — including an alias-hop identifier —
+ * before this function would ever see one for that shape. But that gate's
+ * `arrayName` regex (`^[A-Za-z_$][\w$]*$`) never matches a MEMBER-ACCESS
+ * array text at all, so a `<propsAlias>.<key>` loop array (unlike a bare
+ * identifier one) is NOT screened by BF101 and can reach this function for
+ * real — which is fine: the member branch below resolves it correctly
+ * regardless, per the previous paragraph. Unlike `findBaseSignalGetter`
+ * there is no `call`/chain walking to do here either way — whatever hop
+ * resolution happened, already happened in `isArrayExprDirectPropRef`.
+ * Returns the prop's LOCAL binding name; the caller resolves it to the
+ * CALLER-FACING field (`sourceName ?? name`) via `propsParams`, matching
+ * how `generateInputStruct`/`generateNewPropsFunction` key the Go field and
+ * how `buildGoPropsInit` keys the harness's own prop initializer (both by
+ * the JS `props` object's key, not the local destructure binding).
  */
 function findLoopPropField(expr: ParsedExpr | undefined): string | null {
   if (!expr) return null

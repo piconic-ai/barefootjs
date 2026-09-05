@@ -40,7 +40,7 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
-import type { IRLoopSort, FunctionInfo } from './types.ts'
+import type { IRLoopSort, FunctionInfo, ConstantInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -49,7 +49,7 @@ import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
 } from './prop-rewrite.ts'
-import { buildPropAliasMap, resolveRestSpreadOriginCore } from './props-binding.ts'
+import { buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore } from './props-binding.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -93,8 +93,20 @@ interface TransformContext {
   _reactiveGetterNames?: Set<string>
   /** Cached set of module-scope @client signal/memo names. */
   _moduleClientSignalNames?: Set<string>
-  /** Cached `localConstants` index for `forwardsCallerRestProps`'s alias walk */
-  _restSpreadConstantValues?: ReadonlyMap<string, string | undefined>
+  /**
+   * Cached `localConstants` index (name → value text), shared by every
+   * `resolveAliasOrigin` walk in this file — `forwardsCallerRestProps`'s
+   * rest/props-spread alias walk and `isArrayExprDirectPropRef`'s
+   * direct-prop-array alias walk (#2724).
+   */
+  _constantValuesByName?: ReadonlyMap<string, string | undefined>
+  /**
+   * Cached `localConstants` index (name → full `ConstantInfo`), for
+   * lookups that need more than the value text — e.g.
+   * `isArrayExprDirectPropRef` reading a constant's structured `.parsed`
+   * to recognize `const arr = props.items` (#2724).
+   */
+  _constantsByName?: ReadonlyMap<string, ConstantInfo>
   /** Cached set of destructured prop names for AST-based rewriting */
   _destructuredPropNames?: Set<string> | null
   /**
@@ -7846,29 +7858,145 @@ function checkBareSignalOrMemoIdentifier(
  * Structural AST check: is the array expression a direct prop reference?
  *
  * Returns true only when arrayExpr is:
- * (a) An Identifier that is a destructured prop binding (e.g. `toggleItems`)
- * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`)
+ * (a) An Identifier that is a destructured prop binding (e.g. `toggleItems`),
+ *     OR reaches one through a bare `x = y` local-alias-hop chain (e.g.
+ *     `const toggleItems__alias = toggleItems`, any number of hops, `const`
+ *     or `let`, #2724 — see `propAliasHopCandidates`'s docstring for why
+ *     `let` stays eligible)
+ * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`),
+ *     OR one whose object reaches the props object through the same kind of
+ *     alias-hop chain as (a) (e.g. `const p = props; p.items`, #2724 review)
  *
  * Unlike the regex-based `isPropsReference`, this avoids false positives from
  * unrelated identifiers that happen to share a prop name (e.g. `state.items`
- * when `items` is also a prop).
+ * when `items` is also a prop) — the alias-hop walk only ever follows a
+ * constant's own bare-identifier value text or its structured `.parsed`
+ * shape, never a substring/regex match against arbitrary expression text.
+ * `propAliasHopCandidates` additionally restricts which constants are
+ * eligible hop sources (see its docstring) — a name that merely COLLIDES
+ * with a prop's name without being bound to it (a module constant sharing a
+ * whole-`props`-object type's member name) can still slip through that
+ * name-only check; tracked as a separate, pre-existing imprecision
+ * (`ctx.patterns.props` itself over-includes for that component shape, not
+ * something introduced by the alias walk) rather than widened here.
+ *
+ * This is more than a "prop reference somewhere in the expression" check
+ * (`isPropsReference`'s regex semantics): the return value also feeds
+ * `IRLoop.isPropDerivedArray`, which the Go adapter uses to decide whether a
+ * nested component's field is literally the loop's prop-sourced data — a
+ * false positive there would misclassify DSL-adapter codegen, not just add
+ * one extra `mapArray`. So the alias walk stays structural (AST-derived
+ * `ConstantInfo.parsed`), not a second regex-based implementation of
+ * `isPropsReference`/`isSignalOrMemoReference`'s chain walk.
  */
 function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContext): boolean {
-  const propNames = new Set(ctx.patterns.props.map(p => p.name))
   const propsObjName = ctx.analyzer.propsObjectName
 
   if (ts.isIdentifier(arrayExpr)) {
-    return propNames.has(arrayExpr.text)
+    return resolveAliasOrigin(propAliasHopCandidates(ctx), arrayExpr.text, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
   }
 
   if (ts.isPropertyAccessExpression(arrayExpr) && propsObjName) {
     const obj = arrayExpr.expression
-    if (ts.isIdentifier(obj) && obj.text === propsObjName) {
-      return true
+    if (ts.isIdentifier(obj)) {
+      return resolveAliasOrigin(propAliasHopCandidates(ctx), obj.text, name => (name === propsObjName ? true : null)) === true
     }
   }
 
   return false
+}
+
+/**
+ * Does the local name `name` itself directly denote a prop — either a
+ * destructured prop binding, or a local constant whose value is a bare
+ * `<propsObjName>.<key>` member access (`const arr = props.items`)? The
+ * alias-hop walk in `isArrayExprDirectPropRef` calls this at every hop; it
+ * never inspects arbitrary expression text itself, only a single constant's
+ * name (against the destructured-prop set) or its own structured `.parsed`
+ * (against the props-object shape) — same "structural, not regex" guarantee
+ * `isArrayExprDirectPropRef`'s docstring makes.
+ *
+ * Shadow-guarded FIRST (pullfrog review finding): `propAliasHopCandidates`
+ * only keeps a shadowed name out of the map `resolveAliasOrigin` hops
+ * INTO — it does nothing for `name` itself on the very first call, which
+ * reads the separate, shadow-unaware `constantsByName(ctx)` index directly.
+ * Without this guard, `rows.map((list, ri) => list.map(...))`'s inner
+ * `list` — an arbitrary row value with no relation to props — would
+ * resolve via an unrelated, shadowed outer `const list = props.entries`
+ * the moment that outer constant's OWN value happens to be a
+ * member-access-on-props shape, defeating the shadow guard entirely
+ * (`propAliasHopCandidates`'s own `rows.map((list) => list.map(...))`
+ * docstring example, just with a member-access-valued outer const instead
+ * of an identifier-valued one — confirmed to reach real Go `isPropDerived`
+ * codegen the same way, since Go's BF101 gate explicitly skips a
+ * scope-bound array name).
+ */
+function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
+  if (ctx.scope.isBound(name)) return false
+  if (ctx.patterns.props.some(p => p.name === name)) return true
+  const propsObjName = ctx.analyzer.propsObjectName
+  if (!propsObjName) return false
+  const parsed = constantsByName(ctx).get(name)?.parsed
+  return !!parsed && parsed.kind === 'member' && !parsed.computed && parsed.object.kind === 'identifier' && parsed.object.name === propsObjName
+}
+
+/**
+ * `constantValuesByName(ctx)`, narrowed to the constants an alias-hop walk
+ * may legitimately continue into when resolving whether a loop's array (or
+ * a property access's object) ultimately denotes a prop (#2724 review
+ * finding — a second pass after the initial fix landed found two false
+ * positives the unrestricted map let through):
+ *
+ * - Never a MODULE-scope constant (`isModule`) — a module constant cannot,
+ *   by definition, be an alias of any one component instance's props, so
+ *   hopping into one can only ever be a coincidental name match. Same
+ *   exclusion `resolveGetterAliases` (csr-substitute.ts, #2778) already
+ *   makes for its own alias-hop walk.
+ * - Never a name currently SHADOWED by an active loop/callback binding
+ *   (`ctx.scope.isBound`) — `rows.map((list) => list.map(...))`'s inner
+ *   `list` must resolve to the OUTER LOOP'S ROW VALUE, never an unrelated
+ *   outer-scope `const list = someProp` the row happens to shadow. Same
+ *   shadow-guard shape as `tryResolveTemplateSpanFromConst`'s guard
+ *   (#2222-family) — `isBound()` (all binding sources), not
+ *   `valueBoundNames()`: this is that guard's consumer class, not the
+ *   reactivity/slot-ID classifier one (`BindingScope.valueBoundNames`'s
+ *   docstring, #2482 Stage 1a Commit 2). This map only half-delivers that
+ *   guarantee — it stops `resolveAliasOrigin` from hopping INTO a shadowed
+ *   name's value, but the FIRST call (`name` itself, before any hop) goes
+ *   straight to the terminal (`isDirectPropBindingName`), which has its own
+ *   matching `ctx.scope.isBound` check for exactly this reason (pullfrog
+ *   review finding on this PR — a shadowed outer const whose OWN value is a
+ *   member-access-on-props shape resolved as prop-derived on the very first
+ *   hop, before this map's filter ever applied).
+ *
+ * `let` is deliberately NOT excluded, despite being reassignable — this was
+ * tried during review and reverted (second review pass): `isStaticArray`
+ * (jsx-to-ir.ts's derivation) treats "not recognized as prop-derived" as
+ * STATIC, not dynamic, so excluding `let` doesn't move a `let`-aliased prop
+ * array to the safe/over-reconciling side — it reproduces #2724's exact
+ * silent-divergence shape (the array silently stays on the static
+ * `qsaChildScopes` path, so a CSR-only mount never wires up the row's
+ * child). A `let` reassigned before use could in principle make this hop
+ * resolve against a stale declaration-time value — but that only risks the
+ * SAFE direction (an extra `mapArray` on a loop that turns out not to be
+ * prop-derived after all), matching this file's existing `hasCalls`
+ * over-reconciliation-is-cheap philosophy, and Go's `renderLoop` BF101 gate
+ * independently refuses any bare-identifier loop array that resolves to a
+ * non-module local variable (`let` or `const` alike) before
+ * `isPropDerivedArray` would ever drive real Go codegen off it.
+ *
+ * A NARROWED VIEW, not a change to `constantValuesByName` itself — that
+ * function is also `forwardsCallerRestProps`'s rest/props-spread alias
+ * walk, whose existing (wider) hop set this deliberately leaves alone.
+ */
+function propAliasHopCandidates(ctx: TransformContext): ReadonlyMap<string, string | undefined> {
+  const bound = ctx.scope.boundNames()
+  const candidates = new Map<string, string | undefined>()
+  for (const constant of ctx.analyzer.localConstants) {
+    if (constant.isModule || bound.has(constant.name)) continue
+    if (!candidates.has(constant.name)) candidates.set(constant.name, constant.value)
+  }
+  return candidates
 }
 
 /**
@@ -8048,7 +8176,7 @@ function isPropsReference(expr: string, ctx: TransformContext, visited?: Set<str
 function forwardsCallerRestProps(attrs: IRAttribute[], ctx: TransformContext): boolean {
   for (const attr of attrs) {
     if (attr.value.kind !== 'spread') continue
-    const constants = restSpreadConstantValues(ctx)
+    const constants = constantValuesByName(ctx)
     for (const name of new Set([attr.value.expr, attr.value.templateExpr])) {
       if (!name) continue
       if (resolveRestSpreadOriginCore(ctx.analyzer, constants, name) !== null) return true
@@ -8057,14 +8185,25 @@ function forwardsCallerRestProps(attrs: IRAttribute[], ctx: TransformContext): b
   return false
 }
 
-/** `ctx.analyzer.localConstants` indexed by name, memoized per component walk. */
-function restSpreadConstantValues(ctx: TransformContext): ReadonlyMap<string, string | undefined> {
-  if (ctx._restSpreadConstantValues) return ctx._restSpreadConstantValues
+/** `ctx.analyzer.localConstants` indexed by name → value text, memoized per component walk. */
+function constantValuesByName(ctx: TransformContext): ReadonlyMap<string, string | undefined> {
+  if (ctx._constantValuesByName) return ctx._constantValuesByName
   const byName = new Map<string, string | undefined>()
   for (const constant of ctx.analyzer.localConstants) {
     if (!byName.has(constant.name)) byName.set(constant.name, constant.value)
   }
-  ctx._restSpreadConstantValues = byName
+  ctx._constantValuesByName = byName
+  return byName
+}
+
+/** `ctx.analyzer.localConstants` indexed by name → full `ConstantInfo`, memoized per component walk. */
+function constantsByName(ctx: TransformContext): ReadonlyMap<string, ConstantInfo> {
+  if (ctx._constantsByName) return ctx._constantsByName
+  const byName = new Map<string, ConstantInfo>()
+  for (const constant of ctx.analyzer.localConstants) {
+    if (!byName.has(constant.name)) byName.set(constant.name, constant)
+  }
+  ctx._constantsByName = byName
   return byName
 }
 

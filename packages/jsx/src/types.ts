@@ -594,7 +594,9 @@ export interface IRLoop {
   isStaticArray: boolean
 
   /**
-   * True when the array is a direct prop reference promoted to mapArray (#1586).
+   * True when the array is a direct prop reference promoted to mapArray
+   * (#1586) — including one reached only through a bare `const x = y`
+   * alias-hop chain (`isArrayExprDirectPropRef`, jsx-to-ir.ts, #2724).
    * Adapters use this to include the array in JSON serialization (bf-p)
    * even though isStaticArray is false — the client's mapArray needs the
    * initial data for hydration, unlike signal-backed arrays.
