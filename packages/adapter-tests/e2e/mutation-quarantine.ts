@@ -117,7 +117,9 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // attribute (`top`/`--radix-select-content-available-height`) that
   // depends on viewport height at render time — confirmed flaky, not a
   // fragment-wrap regression, by rerunning in isolation (3/3 pass) vs. in
-  // the full parallel suite (1 failure observed).
+  // the full parallel suite (1 failure observed). Since root-caused (#2745)
+  // to Playwright's scroll-into-view racing the page's async `scroll`
+  // event and fixed in `oracle-core.ts`'s `settleScrollBeforeAction`.
 
   // --- G2c (open, #2731) ---------------------------------------------------
   { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },

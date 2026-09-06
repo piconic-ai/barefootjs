@@ -14,7 +14,7 @@ import type { JSXFixture } from '../src/types'
 import { fixtureUrl } from './fixture-host'
 import { captureDomState, diffDomState, type DomStateSnapshot } from './dom-state'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from '../src/html-normalize'
-import { actionStepsOf, runStep } from './interaction-runner'
+import { actionStepsOf, runStep, type ActionStep } from './interaction-runner'
 
 /**
  * Canonicalize `bf-po` (portal-origin marker) the same way `normalizeHTML`
@@ -72,6 +72,40 @@ export async function captureCsrMount(page: Page, fixture: JSXFixture, baseUrl: 
 }
 
 /**
+ * Pin the scroll → frame → action ordering a real user always produces
+ * before `step` fires (#2745).
+ *
+ * Playwright scrolls an action's target into view itself, but it does so
+ * in the same task as the pointer event, so whether the page's `scroll`
+ * event (dispatched asynchronously, in the next rendering update) is
+ * delivered BEFORE or AFTER the action's own handlers run depends on
+ * whether a frame boundary happens to land in between — under CI load it
+ * sometimes does, locally it mostly doesn't. A component that tracks its
+ * anchor on scroll observes the two orderings as different DOM: `select`'s
+ * content panel re-reads `getBoundingClientRect` on every `scroll` event
+ * while open and stops listening the moment the item click closes it, so
+ * its final inline `top`/`--radix-select-content-available-height`
+ * differed between the two legs by exactly the scroll-into-view distance
+ * (the CSS-less host page grows past the viewport once a selected item's
+ * unsized indicator `<svg>` renders, so the second item click has to
+ * scroll). Nothing about the construction path is being compared there —
+ * only which side of a frame boundary the click fell on.
+ *
+ * The three waits each close one gap: zero-delay work the previous action
+ * deferred (e.g. `select`'s `setTimeout(0)` focus of the selected item,
+ * which scrolls) must run before we scroll, or it could scroll again
+ * after we do; then the target is scrolled into view explicitly; then one
+ * frame delivers that scroll's event so the page has observed it before
+ * the action. With the target already visible, Playwright's own
+ * scroll-into-view inside the action is a no-op and cannot re-race.
+ */
+async function settleScrollBeforeAction(page: Page, step: ActionStep, timeout: number): Promise<void> {
+  await page.evaluate(() => new Promise(r => setTimeout(r, 0)))
+  await page.locator(step.selector).first().scrollIntoViewIfNeeded({ timeout })
+  await waitOneFrame(page)
+}
+
+/**
  * Load `fixture` under `mode` (`'hydrate'` or `'csr-mount'`, both of
  * which boot the client JS on load — no `addScriptTag` two-step needed
  * here since idempotence only cares about the END state), replay every
@@ -91,7 +125,11 @@ export async function replayActionsAndCapture(
     // real divergence, not a flake — must fail fast enough for
     // `runQuarantined`'s plain `try`/`catch` to observe it, rather than
     // hang until Playwright's outer per-test timeout force-cancels the
-    // test outside any `catch`'s reach. See `runStep`'s docstring.
+    // test outside any `catch`'s reach. See `runStep`'s docstring. The
+    // settle's `scrollIntoViewIfNeeded` shares the bound and fails first
+    // on an absent selector, so a missing element still costs one 5s
+    // wait per leg, not two.
+    await settleScrollBeforeAction(page, step, 5_000)
     await runStep(page, step, { timeout: 5_000 })
   }
   return captureDomState(page)
