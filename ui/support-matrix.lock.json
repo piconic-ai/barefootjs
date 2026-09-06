@@ -1450,11 +1450,11 @@
       }
     },
     "call": {
-      "total": 247,
+      "total": 248,
       "cells": {
         "hono": {
-          "pass": 245,
-          "total": 247,
+          "pass": 246,
+          "total": 248,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1471,8 +1471,8 @@
           ]
         },
         "blade": {
-          "pass": 230,
-          "total": 247,
+          "pass": 231,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1557,8 +1557,8 @@
           ]
         },
         "erb": {
-          "pass": 231,
-          "total": 247,
+          "pass": 232,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1637,8 +1637,8 @@
           ]
         },
         "go-template": {
-          "pass": 229,
-          "total": 247,
+          "pass": 230,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1729,8 +1729,8 @@
           ]
         },
         "jinja": {
-          "pass": 230,
-          "total": 247,
+          "pass": 231,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1815,8 +1815,8 @@
           ]
         },
         "minijinja": {
-          "pass": 230,
-          "total": 247,
+          "pass": 231,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1901,8 +1901,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 231,
-          "total": 247,
+          "pass": 232,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -1981,8 +1981,8 @@
           ]
         },
         "twig": {
-          "pass": 230,
-          "total": 247,
+          "pass": 231,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2067,8 +2067,8 @@
           ]
         },
         "xslate": {
-          "pass": 230,
-          "total": 247,
+          "pass": 231,
+          "total": 248,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2298,11 +2298,11 @@
       }
     },
     "identifier": {
-      "total": 349,
+      "total": 350,
       "cells": {
         "hono": {
-          "pass": 345,
-          "total": 349,
+          "pass": 346,
+          "total": 350,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2331,8 +2331,8 @@
           ]
         },
         "blade": {
-          "pass": 328,
-          "total": 349,
+          "pass": 329,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2437,8 +2437,8 @@
           ]
         },
         "erb": {
-          "pass": 329,
-          "total": 349,
+          "pass": 330,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2537,8 +2537,8 @@
           ]
         },
         "go-template": {
-          "pass": 325,
-          "total": 349,
+          "pass": 326,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2659,8 +2659,8 @@
           ]
         },
         "jinja": {
-          "pass": 328,
-          "total": 349,
+          "pass": 329,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2765,8 +2765,8 @@
           ]
         },
         "minijinja": {
-          "pass": 328,
-          "total": 349,
+          "pass": 329,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2871,8 +2871,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 328,
-          "total": 349,
+          "pass": 329,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -2975,8 +2975,8 @@
           ]
         },
         "twig": {
-          "pass": 328,
-          "total": 349,
+          "pass": 329,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -3081,8 +3081,8 @@
           ]
         },
         "xslate": {
-          "pass": 328,
-          "total": 349,
+          "pass": 329,
+          "total": 350,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4784,15 +4784,15 @@
       }
     },
     "object-literal": {
-      "total": 71,
+      "total": 72,
       "cells": {
         "hono": {
-          "pass": 71,
-          "total": 71
+          "pass": 72,
+          "total": 72
         },
         "blade": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4815,8 +4815,8 @@
           ]
         },
         "erb": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4839,8 +4839,8 @@
           ]
         },
         "go-template": {
-          "pass": 66,
-          "total": 71,
+          "pass": 67,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4869,8 +4869,8 @@
           ]
         },
         "jinja": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4893,8 +4893,8 @@
           ]
         },
         "minijinja": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4917,8 +4917,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4941,8 +4941,8 @@
           ]
         },
         "twig": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -4965,8 +4965,8 @@
           ]
         },
         "xslate": {
-          "pass": 67,
-          "total": 71,
+          "pass": 68,
+          "total": 72,
           "gaps": [
             {
               "fixture": "aliased-loop-source",
@@ -9215,43 +9215,43 @@
       }
     },
     "lowering:queryHref": {
-      "total": 4,
+      "total": 5,
       "cells": {
         "hono": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "blade": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "erb": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "go-template": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "jinja": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "minijinja": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "mojolicious": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "twig": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         },
         "xslate": {
-          "pass": 4,
-          "total": 4
+          "pass": 5,
+          "total": 5
         }
       },
       "source": {
@@ -9260,9 +9260,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
       },
       "example": {
-        "fixture": "query-href-src",
-        "description": "queryHref(base, {…}) lowers to the query helper in a non-href (src) attribute",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/query-href-src.ts"
+        "fixture": "query-href-shorthand-prop",
+        "description": "queryHref(base, { tag, page }) with object-literal shorthand still rewrites both props",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/query-href-shorthand-prop.ts"
       }
     },
     "lowering:toLocaleDateString": {
