@@ -11,8 +11,8 @@ export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutp
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
 export { extractSsrDefaults, deriveStashFromDefaults } from './ssr-defaults.ts'
 
-// Shared props-destructure binding + alias-map helpers (#2524)
-export { propsDestructureBinding, buildPropAliasMap, isIdentifierName } from './props-binding.ts'
+// Shared props-destructure binding + alias-map helpers (#2524, #2788)
+export { propsDestructureBinding, buildPropAliasMap, isIdentifierName, resolveBodyDestructuredPropAliases } from './props-binding.ts'
 export type { SsrDefault } from './ssr-defaults.ts'
 
 // Bare local-const alias-hop resolution for a signal/memo getter name
