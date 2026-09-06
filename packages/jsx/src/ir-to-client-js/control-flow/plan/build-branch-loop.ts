@@ -11,14 +11,13 @@
  */
 
 import type { BranchLoop } from '../../types.ts'
-import { buildChainedArrayExpr, varSlotId, wrapLoopParamAsAccessor, wrapIndexParamAsAccessor } from '../../utils.ts'
+import { buildChainedArrayExpr, varSlotId } from '../../utils.ts'
 import { buildBranchCompositePlan } from './build-composite-loop.ts'
 import { buildBranchLoopDelegationPlan } from './build-event-delegation.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
-import { buildLazyRowPlan } from './build-lazy-row.ts'
+import { buildPlainRowCore } from './build-plain-row.ts'
 import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
-import { destructureLoopParam, loopKeyFn, buildChildRefBindings, buildPreambleRegionPlans } from '../shared.ts'
-import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
+import { loopKeyFn, buildChildRefBindings } from '../shared.ts'
 import type {
   BranchCompositeLoopPlan,
   BranchLoopPlan,
@@ -44,7 +43,6 @@ export function buildBranchLoopPlan(
     return composite
   }
 
-  const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
   const hasReactiveEffects = loop.bindings.reactiveAttrs.length > 0
     || loop.bindings.reactiveTexts.length > 0
     || loop.bindings.conditionals.length > 0
@@ -54,39 +52,18 @@ export function buildBranchLoopPlan(
   const arrayExpr = fm
     ? `(${buildChainedArrayExpr(loop)}).flatMap(${fm.params} => ${fm.body})`
     : buildChainedArrayExpr(loop)
-  const indexParam = loop.index || '__idx'
-  // Item-only wrap here too (#2859 follow-up) — see the identical note in
-  // `buildPlainLoopPlan` (build-loop.ts): `mapPreambleWrapped`/`loop.template`
-  // are reused verbatim by the lazy row plan (`callSite: 'branch-plain'`) when
-  // this loop turns out lazy-eligible, and `mapArrayLazy`'s `createRow` hands
-  // the row a plain index NUMBER, never an accessor.
-  const mapPreambleWrapped = loop.preamble
-    ? renderPreamble(loop.preamble, {
-        transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings),
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined),
-      })
-    : ''
-  const preambleRegions = buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings, loop.index)
-  const lazyRow = buildLazyRowPlan({
+
+  // Shared "wrap item → decide lazy → wrap index" core (#2859 follow-up) —
+  // see `build-plain-row.ts`'s module docstring for the full rationale.
+  const core = buildPlainRowCore({
     loop,
     arrayExpr,
-    indexParam,
-    paramUnwrap,
-    mapPreambleWrapped,
-    preambleRegionCount: preambleRegions.length,
     callSite: 'branch-plain',
     flatMapLeafItem: Boolean(fm),
     anchored: false,
     scope: lazyScope,
-  }) ?? undefined
-  // Only once lazy is ruled out is it safe to ALSO wrap index references —
-  // see `buildPlainLoopPlan`'s identical step for the full rationale.
-  const indexWrappedMapPreamble = !lazyRow && loop.index
-    ? wrapIndexParamAsAccessor(mapPreambleWrapped, loop.index)
-    : mapPreambleWrapped
-  const indexWrappedTemplate = !lazyRow && loop.index
-    ? wrapIndexParamAsAccessor(loop.template, loop.index)
-    : loop.template
+  })
+  const { paramHead, paramUnwrap, indexParam, preambleRegions, lazyRow } = core
   const plan: BranchPlainLoopPlan = {
     kind: 'plain',
     rowConstruction: 'string-template',
@@ -103,10 +80,10 @@ export function buildBranchLoopPlan(
     indexParam,
     // Wrap loop-param references to signal-accessor form so the preamble
     // matches the template literal's already-wrapped reads (#1065).
-    mapPreambleWrapped: indexWrappedMapPreamble,
+    mapPreambleWrapped: core.mapPreambleWrapped,
     // Lazy row graph (§9, L3) — undefined for every ineligible loop.
     lazyRow,
-    template: indexWrappedTemplate,
+    template: core.template,
     reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
           attrs: loop.bindings.reactiveAttrs,
