@@ -99,7 +99,7 @@ export function buildPlainLoopPlan(
   profileComponentName?: string,
   lazyScope?: LazyRowScopeInfo,
 ): PlainLoopPlan {
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings, elem.index)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const hasReactive = elem.bindings.reactiveAttrs.length > 0
     || elem.bindings.reactiveTexts.length > 0
@@ -144,10 +144,10 @@ export function buildPlainLoopPlan(
   const mapPreambleWrapped = elem.preamble
     ? renderPreamble(elem.preamble, {
         transformJs: wrap,
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings, index: elem.index }], undefined),
       })
     : ''
-  const preambleRegions = buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings)
+  const preambleRegions = buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings, elem.index)
 
   return {
     kind: 'plain',
@@ -190,9 +190,10 @@ export function buildPlainLoopPlan(
     // conditional without a key is a BF023 error, but the emitted client JS
     // must still parse — an empty `anchorKeyExpr` would produce
     // `createComment(`bf-loop-i:${}`)` (a SyntaxError that breaks the whole
-    // bundle). `elem.index || '__idx'` matches `indexParam` above, so the
-    // anchor value stays consistent with the renderItem's own index param.
-    anchorKeyExpr: elem.key ? wrap(elem.key) : (elem.index || '__idx'),
+    // bundle). `indexParam` matches the renderItem head built above, and
+    // (#2859) is bound to an INDEX ACCESSOR at runtime, not a plain number —
+    // call it, same as every other reference to it in this row's body.
+    anchorKeyExpr: elem.key ? wrap(elem.key) : `${indexParam}()`,
   }
 }
 
@@ -269,7 +270,7 @@ function buildStaticLoopMaterialize(
     itemTemplate: elem.staticItemTemplate,
     mapPreamble: elem.preamble
       ? renderPreamble(elem.preamble, {
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings, index: elem.index }], undefined),
         })
       : '',
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,

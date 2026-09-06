@@ -51,7 +51,7 @@ describe('itemRootElements reaches the extras stash with an attached primary', (
       () => items(),
       ul,
       (it: { id: string }) => String(it.id),
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML =

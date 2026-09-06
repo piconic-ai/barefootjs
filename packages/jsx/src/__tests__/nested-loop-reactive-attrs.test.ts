@@ -394,8 +394,10 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     // The helper call must appear inside a createEffect alongside the
     // textContent write — `labelAt(` also appears in the static template
     // clone, so asserting it independently would pass even with the
-    // effect missing (the exact regression here).
-    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?__bfw_\w+\('s\d+', String\(labelAt\(pi\)\)\)/)
+    // effect missing (the exact regression here). `pi` reads the row's
+    // live index accessor (#2859), so `labelAt(pi())` also stays correct
+    // if this innermost loop's rows ever survive a same-key reorder.
+    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?__bfw_\w+\('s\d+', String\(labelAt\(pi\(\)\)\)\)/)
     expect(content).toContain("setAttribute('class'")
   })
 })

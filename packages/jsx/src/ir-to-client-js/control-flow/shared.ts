@@ -147,11 +147,12 @@ export function buildChildRefBindings(
   refs: readonly LoopChildRef[],
   loopParam: string,
   loopParamBindings: readonly LoopParamBinding[] | undefined,
+  loopIndex?: string | null,
 ): readonly LoopChildRefBinding[] {
   if (refs.length === 0) return []
   return refs.map(r => ({
     childSlotId: r.childSlotId,
-    callback: wrapLoopParamAsAccessor(r.callback, loopParam, loopParamBindings),
+    callback: wrapLoopParamAsAccessor(r.callback, loopParam, loopParamBindings, loopIndex),
   }))
 }
 
@@ -251,10 +252,11 @@ export function buildPreambleRegionPlans(
   regions: readonly PreambleRegionSource[] | undefined,
   loopParam: string,
   loopParamBindings: readonly LoopParamBinding[] | undefined,
+  loopIndex?: string | null,
 ): readonly PreambleRegionPlan[] {
   if (!regions || regions.length === 0) return []
   return regions.map((r) => {
-    const wrapped = wrapLoopParamAsAccessor(r.expr, loopParam, loopParamBindings)
+    const wrapped = wrapLoopParamAsAccessor(r.expr, loopParam, loopParamBindings, loopIndex)
     const valueExpr = r.joinArrayChild
       ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
       : `escapeText(${wrapped})`
@@ -270,8 +272,9 @@ export function buildComponentPropsExpr(
   comp: { props: Array<{ name: string; value: import('../../types.ts').AttrValue; isEventHandler: boolean }>, children?: import('../../types.ts').IRNode[] },
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
+  loopIndex?: string | null,
 ): string {
-  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings) : (expr: string) => expr
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings, loopIndex) : (expr: string) => expr
   const entries = comp.props.map((p) => {
     if (p.isEventHandler) {
       const handlerExpr = attrValueToString(p.value) ?? 'undefined'
@@ -347,7 +350,20 @@ export function buildDepthLevels(
   }))
 }
 
-/** Emit a single addEventListener call for a child event on a given element. */
+/**
+ * Emit a single addEventListener call for a child event on a given element.
+ *
+ * This is a DIRECT, one-time listener attach (composite/inner/conditional-arm
+ * loop shapes) — unlike the top-level delegated click dispatcher
+ * (`build-event-delegation.ts`), which re-derives the current index at click
+ * time via `arr.findIndex(...)` and is unaffected by this. A handler wired
+ * here closes over whatever `renderItem` bound its raw index parameter to at
+ * ROW CREATION time, so a reference to it needs the same accessor-call
+ * rewrite as every other loop-index read in this row (#2859) — otherwise a
+ * row that survives a same-key reorder keeps firing the handler with the
+ * stale, as-created index forever, the click-handler analogue of the
+ * render-output bug #2859 itself fixes.
+ */
 function emitEventSetup(
   ls: string[],
   indent: string,
@@ -356,8 +372,9 @@ function emitEventSetup(
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
   bodyIsMultiRoot: boolean = false,
+  loopIndex?: string | null,
 ): void {
-  const handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings) : ev.handler
+  const handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings, loopIndex) : ev.handler
   emitListenerBlock(ls, indent, elVar, ev.childSlotId, '__e', ev.eventName, handler, 'dom', bodyIsMultiRoot)
 }
 
@@ -412,14 +429,15 @@ export function emitComponentAndEventSetup(
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
   bodyIsMultiRoot: boolean = false,
+  loopIndex?: string | null,
 ): void {
-  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings) : (expr: string) => expr
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings, loopIndex) : (expr: string) => expr
   // Multi-root loop bodies (#1212) must search the item's sibling roots
   // and the pre-insertion `__bfExtras` stash; `upsertChildItem` wraps the
   // single-root `upsertChild` semantics in that walk.
   const upsertFn = bodyIsMultiRoot ? 'upsertChildItem' : 'upsertChild'
   for (const comp of comps) {
-    const propsExpr = buildComponentPropsExpr(comp, loopParam, loopParamBindings)
+    const propsExpr = buildComponentPropsExpr(comp, loopParam, loopParamBindings, loopIndex)
     // Check if children are text-equivalent and reference the loop param — if so,
     // emit a createEffect to reactively update textContent when the signal changes.
     // Text-equivalent: expression, text, or conditional with text-only branches.
@@ -429,7 +447,8 @@ export function emitComponentAndEventSetup(
     const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
     const childrenFreeIds = isTextOnly && comp.children ? irChildrenFreeIds(comp.children) : undefined
     const childrenRefsLoop = loopParam != null && rawChildrenExpr != null && childrenFreeIds != null
-      && exprRefsLoopBinding(childrenFreeIds, { param: loopParam, paramBindings: loopParamBindings })
+      && (exprRefsLoopBinding(childrenFreeIds, { param: loopParam, paramBindings: loopParamBindings })
+        || (!!loopIndex && childrenFreeIds.has(loopIndex)))
 
     const slotIdLit = comp.slotId ? `'${comp.slotId}'` : 'null'
     const keyProp = comp.props.find(p => p.name === 'key')
@@ -449,7 +468,7 @@ export function emitComponentAndEventSetup(
     }
   }
   for (const ev of events) {
-    emitEventSetup(ls, indent, elVar, ev, loopParam, loopParamBindings, bodyIsMultiRoot)
+    emitEventSetup(ls, indent, elVar, ev, loopParam, loopParamBindings, bodyIsMultiRoot, loopIndex)
   }
 }
 

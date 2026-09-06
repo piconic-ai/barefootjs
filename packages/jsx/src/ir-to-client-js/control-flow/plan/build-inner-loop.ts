@@ -161,11 +161,11 @@ function buildReactiveEmit(
   outerLoopParam?: string,
   outerLoopParamBindings?: readonly LoopParamBinding[],
 ): InnerLoopReactiveEmit {
-  const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
-  const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings)
+  const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
+  const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
   const wrappedKey = inner.key
-    ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings)
+    ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings, inner.index)
     : null
 
   // Inner-wrap children IR recursively so nested component props (e.g.,
@@ -202,12 +202,12 @@ function buildReactiveEmit(
 
   const reactiveTexts: InnerLoopText[] = inner.bindings.reactiveTexts.map(text => ({
     slotId: text.slotId,
-    wrappedExpression: wrapLoopParamAsAccessor(wrapOuter(text.expression), inner.param, inner.paramBindings),
+    wrappedExpression: wrapLoopParamAsAccessor(wrapOuter(text.expression), inner.param, inner.paramBindings, inner.index),
     insideConditional: !!text.insideConditional,
   }))
 
   const reactiveAttrs: InnerLoopReactiveAttr[] = inner.bindings.reactiveAttrs.map(attr => {
-    const wrapped = wrapLoopParamAsAccessor(wrapOuter(attr.expression), inner.param, inner.paramBindings)
+    const wrapped = wrapLoopParamAsAccessor(wrapOuter(attr.expression), inner.param, inner.paramBindings, inner.index)
     return {
       slotId: attr.childSlotId,
       attrName: attr.attrName,
@@ -241,16 +241,16 @@ function buildReactiveEmit(
     const leafLoopParams = outerLoopParam
       ? [
           { param: outerLoopParam, bindings: outerLoopParamBindings },
-          { param: inner.param, bindings: inner.paramBindings },
+          { param: inner.param, bindings: inner.paramBindings, index: inner.index },
         ]
-      : [{ param: inner.param, bindings: inner.paramBindings }]
+      : [{ param: inner.param, bindings: inner.paramBindings, index: inner.index }]
     preludeStatements.push(renderPreamble(inner.preamble, {
       transformJs: (t) => wrapInner(wrapOuter(t)),
       renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, leafLoopParams, undefined),
     }))
   }
 
-  const childRefs = buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings)
+  const childRefs = buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings, inner.index)
 
   // Per-item conditionals inside THIS loop's own row (#2706) — same
   // insert()-parity treatment the top-level loop's row conditionals

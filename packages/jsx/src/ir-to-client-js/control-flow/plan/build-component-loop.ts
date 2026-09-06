@@ -34,8 +34,8 @@ import { internalInvariant } from '../../../errors.ts'
 /** @internal — prefer `buildLoopPlan`. */
 export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?: string): ComponentLoopPlan {
   const { name } = elem.childComponent!
-  const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param)
-  const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param, elem.paramBindings)
+  const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param, undefined, elem.index)
+  const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param, elem.paramBindings, elem.index)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
 
   // A component-root loop's preamble is JS-only by construction: Phase 1
@@ -47,7 +47,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
   // that let a JSX-bearing preamble through is missing, not this line.
   const mapPreambleWrapped = elem.preamble
     ? renderPreamble(elem.preamble, {
-        transformJs: text => wrapLoopParamAsAccessor(text, elem.param, elem.paramBindings),
+        transformJs: text => wrapLoopParamAsAccessor(text, elem.param, elem.paramBindings, elem.index),
         renderLeaf: () => {
           internalInvariant(false, 'component-root loop received a JSX-bearing preamble — Phase 1 should have refused it')
         },
@@ -62,13 +62,14 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
       : false
     const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
     const childrenFreeIds = isTextOnly && comp.children ? irChildrenFreeIds(comp.children) : undefined
-    const childrenRefsLoop = rawChildrenExpr != null && childrenFreeIds != null && childrenFreeIds.has(elem.param)
+    const childrenRefsLoop = rawChildrenExpr != null && childrenFreeIds != null
+      && (childrenFreeIds.has(elem.param) || (!!elem.index && childrenFreeIds.has(elem.index)))
     return {
       componentName: comp.name,
       selector: buildCompSelector(comp),
-      propsExpr: buildComponentPropsExpr(comp, elem.param),
+      propsExpr: buildComponentPropsExpr(comp, elem.param, undefined, elem.index),
       childrenTextEffect: childrenRefsLoop
-        ? { wrappedChildren: wrapLoopParamAsAccessor(rawChildrenExpr!, elem.param, elem.paramBindings) }
+        ? { wrappedChildren: wrapLoopParamAsAccessor(rawChildrenExpr!, elem.param, elem.paramBindings, elem.index) }
         : null,
     }
   })
@@ -98,7 +99,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     // the per-item factory has no `__el` handle to invoke. Still required
     // by the type so the structural invariant (every variant has a
     // `childRefs`) is preserved; populated as empty.
-    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
+    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings, elem.index),
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
     childConditionalEffects: hasChildConds
       ? buildReactiveEffectsPlan({
@@ -107,6 +108,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
           conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,
+          loopIndex: elem.index,
           profileComponentName,
         })
       : null,

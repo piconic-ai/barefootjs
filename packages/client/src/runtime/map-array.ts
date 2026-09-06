@@ -18,7 +18,7 @@
  * Single-root loops continue to flow through the legacy path verbatim.
  */
 
-import { createSignal, createEffect, createRoot } from '@barefootjs/client/reactive'
+import { createSignal, createEffect, createRoot, batch } from '@barefootjs/client/reactive'
 import { hydratedScopes } from './hydration-state.ts'
 import { setRowMountPoint, type RowMountPoint } from './component.ts'
 import {
@@ -80,7 +80,29 @@ type ItemScope<T> = {
   scopeComments: ScopeCommentPair | null
   dispose: () => void
   setItem: (v: T) => void
+  /**
+   * Push this row's CURRENT position (#2859). A same-key reorder never
+   * re-invokes `renderItem` — only `setItem`/`setIndex` run — so anything
+   * the row body derives from the raw `.map()` index parameter (rather
+   * than from the item itself) stays live only because the compiler
+   * rewrites references to that parameter into a call through the
+   * accessor `renderItem` received (`wrapLoopParamAsAccessor`,
+   * ir-to-client-js/utils.ts) instead of using the plain number this
+   * signal was seeded from.
+   */
+  setIndex: (i: number) => void
 }
+
+/**
+ * Shape `renderItem` callbacks are compiled to. `index` mirrors `item`:
+ * an accessor, not a plain number, so a row body's reference to the raw
+ * `.map()` index parameter — rewritten to a call by
+ * `wrapLoopParamAsAccessor` — reads the row's CURRENT position instead of
+ * the value captured when the row was first created (#2859). `existing`
+ * stays optional/untyped-per-call-site since `mapArray` and
+ * `mapArrayAnchored` return different element shapes.
+ */
+export type RenderItem<T, E, R> = (item: () => T, index: () => number, existing?: E) => R
 
 /**
  * Find loop boundary comment markers in a container.
@@ -327,7 +349,7 @@ function removeScope<T>(scope: ItemScope<T>): void {
 function createItemScope<T>(
   item: T,
   index: number,
-  renderItem: (item: () => T, index: number, existing?: HTMLElement) => HTMLElement,
+  renderItem: RenderItem<T, HTMLElement, HTMLElement>,
   existingPrimary?: HTMLElement,
   existingExtras?: HTMLElement[],
   existingStart?: Comment | null,
@@ -337,6 +359,7 @@ function createItemScope<T>(
   let primaryEl!: HTMLElement
   let dispose!: () => void
   let setItem!: (v: T) => void
+  let setIndex!: (i: number) => void
   let extras: HTMLElement[] = []
   let startMarker: Comment | null = null
   let scopeComments: ScopeCommentPair | null = null
@@ -344,7 +367,9 @@ function createItemScope<T>(
   createRoot((d) => {
     dispose = d
     const [itemAccessor, itemSetter] = createSignal(item)
+    const [indexAccessor, indexSetter] = createSignal(index)
     setItem = itemSetter
+    setIndex = indexSetter
     // Fresh row: hand the mount point down so the row's own root — whether a
     // `createComponent` call or a `mountRowRoot(clone)` — observes a connected
     // element when the body's tail initialises its children. A body that does
@@ -358,7 +383,7 @@ function createItemScope<T>(
     const ownsRowMount = !existingPrimary && !!rowMount
     const prevRowMount = ownsRowMount ? setRowMountPoint(rowMount) : null
     try {
-      primaryEl = renderItem(itemAccessor, index, existingPrimary)
+      primaryEl = renderItem(itemAccessor, indexAccessor, existingPrimary)
     } catch (err) {
       // A row that connected itself and then failed to finish would stay
       // visible as a half-built row. Detached rows never could, so undo the
@@ -399,7 +424,7 @@ function createItemScope<T>(
     primaryEl.remove()
   }
 
-  return { startMarker, primaryEl, extras, scopeComments, dispose, setItem }
+  return { startMarker, primaryEl, extras, scopeComments, dispose, setItem, setIndex }
 }
 
 /**
@@ -427,7 +452,7 @@ export function mapArray<T>(
   accessor: () => T[],
   container: HTMLElement | null,
   getKey: ((item: T, index: number) => string) | null,
-  renderItem: (item: () => T, index: number, existing?: HTMLElement) => HTMLElement,
+  renderItem: RenderItem<T, HTMLElement, HTMLElement>,
   markerId?: string,
   bfId?: string,
   keyAttrName: string = BF_KEY,
@@ -573,6 +598,7 @@ export function mapArray<T>(
             scopeComments: range.scopeComments,
             dispose: () => {},
             setItem: () => {},
+            setIndex: () => {},
           })
         }
       }
@@ -645,8 +671,13 @@ export function mapArray<T>(
       const existing = scopes.get(key)
       if (existing) {
         // Same key: update per-item signal — fine-grained effects handle DOM updates.
-        // Element is preserved (no dispose, no re-render).
-        existing.setItem(item)
+        // Element is preserved (no dispose, no re-render). `setIndex` pushes this
+        // row's CURRENT position (#2859) — batched with `setItem` so a row whose
+        // effect reads both doesn't run twice for one reconcile pass.
+        batch(() => {
+          existing.setItem(item)
+          existing.setIndex(i)
+        })
         desiredOrder.push(existing)
       } else {
         // New item: create in isolated scope. The row is mounted at the end of
@@ -779,6 +810,8 @@ type AnchorScope<T> = {
   pending: DocumentFragment | null
   dispose: () => void
   setItem: (v: T) => void
+  /** See `ItemScope.setIndex` (#2859) — same per-row "current position" push. */
+  setIndex: (i: number) => void
 }
 
 const ITEM_PREFIX = `${BF_LOOP_ITEM}:`
@@ -845,23 +878,26 @@ function createAnchorScope<T>(
   item: T,
   index: number,
   key: string,
-  renderItem: (item: () => T, index: number, existing?: Comment) => DocumentFragment | Comment,
+  renderItem: RenderItem<T, Comment, DocumentFragment | Comment>,
   existingAnchor?: Comment,
 ): AnchorScope<T> {
   let dispose!: () => void
   let setItem!: (v: T) => void
+  let setIndex!: (i: number) => void
   let returned!: DocumentFragment | Comment
 
   createRoot((d) => {
     dispose = d
     const [itemAccessor, itemSetter] = createSignal(item)
+    const [indexAccessor, indexSetter] = createSignal(index)
     setItem = itemSetter
-    returned = renderItem(itemAccessor, index, existingAnchor)
+    setIndex = indexSetter
+    returned = renderItem(itemAccessor, indexAccessor, existingAnchor)
     return undefined
   })
 
   if (existingAnchor) {
-    return { anchor: existingAnchor, pending: null, dispose, setItem }
+    return { anchor: existingAnchor, pending: null, dispose, setItem, setIndex }
   }
   // CSR: renderItem returns a fragment whose first child is the anchor.
   const frag = returned as DocumentFragment
@@ -871,7 +907,7 @@ function createAnchorScope<T>(
   if (anchor && !anchor.nodeValue?.startsWith(ITEM_PREFIX)) {
     anchor.nodeValue = loopItemMarker(key)
   }
-  return { anchor, pending: frag, dispose, setItem }
+  return { anchor, pending: frag, dispose, setItem, setIndex }
 }
 
 /**
@@ -886,7 +922,7 @@ export function mapArrayAnchored<T>(
   accessor: () => T[],
   container: HTMLElement | null,
   getKey: ((item: T, index: number) => string) | null,
-  renderItem: (item: () => T, index: number, existing?: Comment) => DocumentFragment | Comment,
+  renderItem: RenderItem<T, Comment, DocumentFragment | Comment>,
   markerId?: string,
   bfId?: string,
 ): void {
@@ -949,7 +985,12 @@ export function mapArrayAnchored<T>(
 
       const existing = scopes.get(key)
       if (existing) {
-        existing.setItem(item)
+        // See the identical `mapArray` branch above (#2859): batched so a row
+        // whose effect reads both item and index doesn't run twice.
+        batch(() => {
+          existing.setItem(item)
+          existing.setIndex(i)
+        })
         desiredOrder.push(existing)
       } else {
         const scope = createAnchorScope(item, i, key, renderItem)

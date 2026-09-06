@@ -63,7 +63,11 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     // The renderItem body binds the alias before using it.
     expect(content).toContain('const i = __innerIdx')
     const aliasIdx = content.indexOf('const i = __innerIdx')
-    const setAttrIdx = content.indexOf(`setAttribute('data-key-1', String(i))`)
+    // `i` is bound to an index ACCESSOR at runtime (#2859) — `mapArray` hands
+    // every renderItem an index accessor (mirroring the item accessor) and
+    // pushes the row's current position through it on reorder, so `i()` reads
+    // the live value instead of a plain number frozen at row creation.
+    const setAttrIdx = content.indexOf(`setAttribute('data-key-1', String(i()))`)
     expect(aliasIdx).toBeGreaterThanOrEqual(0)
     expect(setAttrIdx).toBeGreaterThan(aliasIdx)
     // The alias must land before the clone IIFE too — the cloned template's
@@ -156,7 +160,12 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     `)
 
     expect(content).toContain('const i = __innerIdx')
-    expect(content).toContain('setClicked(i)')
+    // A direct (non-delegated) listener on a nested-loop row reads the row's
+    // LIVE index accessor (#2859) — unlike the top-level delegated click
+    // dispatcher (`event-delegation-index-param.test.ts`), this handler is
+    // attached once at row creation, so without this it would keep firing
+    // with the index the row was first created at after a same-key reorder.
+    expect(content).toContain('setClicked(i())')
   })
 
   test('byte-stability: index declared but never referenced emits no alias', () => {
@@ -278,7 +287,9 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     expect(content).toContain('(item, i) => String(i)')
     expect(content).toContain('const i = __bidx')
     const aliasIdx = content.indexOf('const i = __bidx')
-    const setAttrIdx = content.indexOf(`setAttribute('data-key-1', String(i))`)
+    // `i` reads the live index accessor (#2859) — see the sibling assertion
+    // in the 'key={i}' test above.
+    const setAttrIdx = content.indexOf(`setAttribute('data-key-1', String(i()))`)
     expect(aliasIdx).toBeGreaterThanOrEqual(0)
     expect(setAttrIdx).toBeGreaterThan(aliasIdx)
   })

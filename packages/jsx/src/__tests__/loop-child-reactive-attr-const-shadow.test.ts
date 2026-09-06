@@ -36,6 +36,14 @@
  * `collectLoopChildBindings` / `collectLoopChildConditionals` /
  * `summarizeLoopChildBranch` / `collectLoopChildReactiveAttrs` /
  * `collectLoopChildReactiveTexts` into `buildLoopRowScope`.
+ *
+ * #2859: `i` is now ALSO rewritten to `i()` (`wrapLoopParamAsAccessor`,
+ * `ir-to-client-js/utils.ts`) — `mapArray` hands `renderItem` an index
+ * ACCESSOR (mirroring the item accessor) and pushes each row's current
+ * position through it on every same-key reconcile, so a row surviving a
+ * reorder keeps reading its live index instead of the value frozen at
+ * creation. The #2595 fix above only prevented the module-const shadow;
+ * it still left `i` reading a plain, never-updated closure variable.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -99,9 +107,10 @@ describe('loop-child reactive attr vs a loop INDEX param shadowing a module cons
       }
     `)
 
-    // The per-item attribute effect must read the row's OWN index
-    // closure variable — never the outer module const's baked literal.
-    expect(js).toContain("const __v = i;")
+    // The per-item attribute effect must read the row's OWN, LIVE index
+    // accessor (#2859) — never the outer module const's baked literal, and
+    // never a frozen closure variable that would go stale after a reorder.
+    expect(js).toContain("const __v = i();")
     expect(js).not.toContain("const __v = 'MODULE_CONST';")
   })
 })

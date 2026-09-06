@@ -309,7 +309,7 @@ export function collectInnerLoops(
         // Forward destructured bindings (#951) so inner-loop template
         // references to the destructured locals are rewritten.
         const loopParamsForTemplate = outerLoopParam
-          ? [outerLoopParam, { param: n.param, bindings: n.paramBindings }]
+          ? [outerLoopParam, { param: n.param, bindings: n.paramBindings, index: n.index }]
           : undefined
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Check if array expression references the outer loop param
@@ -755,7 +755,7 @@ export function collectElements(
         // avoiding post-hoc regex wrapping that corrupts literal attribute values.
         // Forward destructured bindings (#951) so references like `cfg.color`
         // in the emitted template literal are rewritten to `__bfItem()[1].color`.
-        const loopParamSpec = [{ param: l.param, bindings: l.paramBindings }]
+        const loopParamSpec = [{ param: l.param, bindings: l.paramBindings, index: l.index }]
         template = useElementReconciliation
           ? irToPlaceholderTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
           : irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
@@ -1165,7 +1165,7 @@ function collectBranchLoops(
       // keeping the template consistent with reactive effect expressions that
       // use `param()` to read the current item value.
       let childTemplate: string
-      const branchLoopParamSpec = [{ param: n.param, bindings: n.paramBindings }]
+      const branchLoopParamSpec = [{ param: n.param, bindings: n.paramBindings, index: n.index }]
       if (projectionInner) {
         childTemplate = '' // descriptor renderItem builds from d.h, not a row template
       } else if (useElementReconciliation && n.children[0]) {
@@ -1478,7 +1478,7 @@ export function collectLoopChildConditionals(
       if (!readsPreamble && classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
 
       const loopParamsForCond = loopParam
-        ? [{ param: loopParam, bindings: loopParamBindings }]
+        ? [{ param: loopParam, bindings: loopParamBindings, index: loopIndex }]
         : undefined
       // `__slots` matches the closure variable emitted by
       // `stringifyLoopChildConditional` — Child-position interpolations

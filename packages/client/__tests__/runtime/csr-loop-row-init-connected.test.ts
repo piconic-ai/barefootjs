@@ -102,7 +102,7 @@ describe('mapArray row init runs connected', () => {
       () => items(),
       container,
       (it: any) => it.id,
-      (item: () => any, _i: number, existing?: HTMLElement) => {
+      (item: () => any, _i: () => number, existing?: HTMLElement) => {
         if (existing) {
           initChild('RowKid', existing, { label: item().label })
           return existing
@@ -141,7 +141,7 @@ describe('mapArray row init runs connected', () => {
           () => nodes(),
           container,
           (n: any) => n.id,
-          (item: () => any, _i: number, existing?: HTMLElement) => {
+          (item: () => any, _i: () => number, existing?: HTMLElement) => {
             const tag = `${props.value}:${item().id}`
             if (existing) {
               initChild('FlowNode', existing, { tag })
@@ -188,7 +188,7 @@ describe('mapArray row init runs connected', () => {
       () => items(),
       container,
       (it: any) => String(it.id),
-      (item: () => any, _i: number, existing?: HTMLElement) => {
+      (item: () => any, _i: () => number, existing?: HTMLElement) => {
         if (existing) {
           initChild('OrderKid', existing, { label: item().label })
           return existing
@@ -235,7 +235,7 @@ describe('mapArray row init runs connected', () => {
       () => items(),
       container,
       (it: any) => String(it.id),
-      (_item: () => any, _i: number, existing?: HTMLElement) => {
+      (_item: () => any, _i: () => number, existing?: HTMLElement) => {
         if (existing) {
           initChild('OuterRow', existing, {})
           return existing
@@ -293,7 +293,7 @@ describe('composite loop row nested child init runs connected', () => {
       () => items(),
       container,
       (it: any) => String(it.id),
-      (_item: () => any, _i: number, existing?: HTMLElement) => {
+      (_item: () => any, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li><span data-bf-ph="Inner"></span></li>`

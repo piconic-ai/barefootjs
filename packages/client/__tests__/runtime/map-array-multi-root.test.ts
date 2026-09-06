@@ -36,7 +36,7 @@ function ssrEdges(edges: Array<{ id: string }>): string {
 }
 
 /** Render a fragment-of-two-paths item from CSR-time. */
-function renderFragmentEdge(item: () => { id: string }, _idx: number, existing?: HTMLElement): HTMLElement {
+function renderFragmentEdge(item: () => { id: string }, _idx: () => number, existing?: HTMLElement): HTMLElement {
   if (existing) {
     // Hydration: the runtime hands us the primary element; extras +
     // startMarker are partitioned by mapArray itself.

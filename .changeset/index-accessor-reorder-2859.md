@@ -1,0 +1,6 @@
+---
+"@barefootjs/client": patch
+"@barefootjs/jsx": patch
+---
+
+Fix #2859: a keyed `.map()` row's index-derived output (text/attribute/class bindings, and a direct — non-delegated — event handler on a nested/composite loop row) went stale after a same-key reorder, staying pinned to whatever index the row was first created at instead of following its current position. `mapArray`/`mapArrayAnchored` now hand `renderItem` an index ACCESSOR (mirroring the existing item accessor) and push each row's current position through it on every same-key reconcile, and the compiler's `wrapLoopParamAsAccessor` rewrites a `.map()` callback's index parameter into a call through that accessor everywhere it already rewrites the item parameter (reactive attrs/texts, preamble, refs, component props, and direct event listeners) — so a row surviving a reorder reads its live position instead of a number frozen at row creation. The top-level delegated click dispatcher (`build-event-delegation.ts`, #2189/#2191) already re-derives the index at click time and is unaffected. Static (non-keyed) `.map()`-to-`forEach` loops and the lazy-row fast path (which already refuses any loop whose reactive bindings reference the index parameter) are also unaffected.

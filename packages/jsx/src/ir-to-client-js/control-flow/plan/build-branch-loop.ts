@@ -57,11 +57,11 @@ export function buildBranchLoopPlan(
   const indexParam = loop.index || '__idx'
   const mapPreambleWrapped = loop.preamble
     ? renderPreamble(loop.preamble, {
-        transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings),
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined),
+        transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings, loop.index),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings, index: loop.index }], undefined),
       })
     : ''
-  const preambleRegions = buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings)
+  const preambleRegions = buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings, loop.index)
   const plan: BranchPlainLoopPlan = {
     kind: 'plain',
     rowConstruction: 'string-template',
@@ -100,11 +100,12 @@ export function buildBranchLoopPlan(
           conditionals: loop.bindings.conditionals,
           loopParam: loop.param,
           loopParamBindings: loop.paramBindings,
+          loopIndex: loop.index,
           profileComponentName,
         })
       : null,
     eventDelegation: buildBranchLoopDelegationPlan(loop, cv, profileComponentName),
-    childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
+    childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings, loop.index),
     preambleRegions,
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${containerSlotId}` : undefined,
