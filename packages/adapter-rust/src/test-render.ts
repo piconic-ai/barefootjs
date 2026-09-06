@@ -519,6 +519,20 @@ function buildVars(
     }
   }
 
+  // #2813: `extractSsrDefaults` can seed an entry under a name that is
+  // none of `propsParams` / `signals` / `memos` above — a bare local-const
+  // alias of a signal/memo getter (`const items__alias = items`,
+  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
+  // hands the whole manifest-derived stash straight through
+  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
+  // not a harness stand-in), so any leftover `derivedProps` key must be
+  // copied too, or this harness would silently omit what production
+  // actually provides, mismeasuring this conformance case.
+  for (const [name, value] of Object.entries(derivedProps)) {
+    if (Object.prototype.hasOwnProperty.call(vars, name)) continue
+    vars[name] = value
+  }
+
   return vars
 }
 

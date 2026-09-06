@@ -89,6 +89,16 @@ export class CompileState {
   localConstants: IRMetadata['localConstants'] = []
 
   /**
+   * Bare local-const alias-hop chains that ultimately name a signal/memo
+   * getter (`const items__alias = items` → `items__alias` -> `items`,
+   * #2813) — the SSR-side twin of #2778's CSR-template fix. `rootFieldRef`
+   * resolves a name through this map before capitalizing it into a struct
+   * field, so `items__alias()` reads `.Items` (the field the getter
+   * actually seeds) instead of a phantom, never-seeded `.Items__alias`.
+   */
+  getterAliases: Map<string, string> = new Map()
+
+  /**
    * Every name a `.map()`/`.filter()` loop callback binds as its item/index
    * parameter anywhere in the component (#2208 fable review). Consulted by
    * static loop-source resolution (`getBakedStaticChildLoop`) so a const
