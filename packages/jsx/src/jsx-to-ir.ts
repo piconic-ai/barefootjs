@@ -606,12 +606,14 @@ function collectBranchLocalPropRefsViaSubstitution(
   let acc: Set<string> | undefined
   function visit(n: ts.Node, parent?: ts.Node) {
     if (ts.isIdentifier(n) && propDepsMap!.has(n.text)) {
-      // Same skip rules as `collectAstPropRefs` — only value
-      // positions count, not object keys / property-access names.
+      // Same skip rules as `collectAstPropRefs` — only value positions
+      // count, not object keys / property-access names. A shorthand
+      // property (`{ page }`) IS a value reference (#2828) — its name
+      // is simultaneously the key and the value — so it participates
+      // here too, same as `collectAstPropRefs`.
       const isObjectKey = parent && ts.isPropertyAssignment(parent) && parent.name === n
-      const isShorthand = parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n
       const isAccessName = parent && ts.isPropertyAccessExpression(parent) && parent.name === n
-      if (!isObjectKey && !isShorthand && !isAccessName) {
+      if (!isObjectKey && !isAccessName) {
         const deps = propDepsMap!.get(n.text)
         if (deps && deps.size > 0) {
           if (!acc) acc = new Set()
