@@ -487,6 +487,35 @@ export function resolveGetterAliases(
 }
 
 /**
+ * Which names in `signals`/`memos` are eligible ALIAS-HOP TARGETS for
+ * `resolveGetterAliases`'s `isGetter` predicate — a non-module,
+ * non-env-reader signal getter, or a non-module memo name. Env-signal
+ * getters are excluded because they resolve through their own
+ * request-scoped binding (an adapter's `searchParamsFieldRef`-style
+ * lookup or equivalent), never a seeded/`out`-keyed value an alias could
+ * usefully point at.
+ *
+ * Shared by every `resolveGetterAliases` call site (#2813's `ssr-defaults.ts`
+ * seeding and the Go adapter's `rootFieldRef` field-routing) so the
+ * eligibility rule can't silently drift between them — the "one decision,
+ * two implementations" defect class CLAUDE.md calls out (pullfrog review
+ * on #2854).
+ */
+export function collectAliasableGetterNames(
+  signals: readonly SignalInfo[],
+  memos: readonly MemoInfo[],
+): Set<string> {
+  const getterNames = new Set<string>()
+  for (const sig of signals) {
+    if (sig.getter && !sig.isModule && !sig.envReader) getterNames.add(sig.getter)
+  }
+  for (const memo of memos) {
+    if (!memo.isModule) getterNames.add(memo.name)
+  }
+  return getterNames
+}
+
+/**
  * Build the CSR substitution env from the live `ClientJsContext`.
  *
  * Signals contribute call-kind entries (`count()` → `(initialValue)`).

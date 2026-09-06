@@ -525,6 +525,7 @@ import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
 import { fixture as queryHrefTernaryUndefined } from './query-href-ternary-undefined'
+import { fixture as queryHrefShorthandProp } from './query-href-shorthand-prop'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
 import { fixture as dateToLocaleDateStyle } from './date-tolocale-datestyle'
@@ -969,6 +970,7 @@ export const jsxFixtures: JSXFixture[] = [
   queryHrefSrc,
   queryHrefTernary,
   queryHrefTernaryUndefined,
+  queryHrefShorthandProp,
   dateToLocaleLiteral,
   dateToLocaleUnion,
   dateToLocaleDateStyle,

@@ -31,6 +31,8 @@
 
 import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
+import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
+import { resolveBodyDestructuredPropAliases } from './props-binding.ts'
 import type { IRMetadata } from './types.ts'
 
 /**
@@ -309,6 +311,49 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
       out[memo.name] = { value: resultToJsonable(value) }
     }
     bindings[memo.name] = value
+  }
+
+  // #2813: a bare local-const alias of a signal/memo getter
+  // (`const items__alias = items`) is a DIFFERENT identifier from the
+  // getter it aliases, but a template-stash adapter's `.map()` loop over
+  // `items__alias()` looks up the stash entry BY THAT NAME — which the
+  // loops above never create, since they only seed the getter's own
+  // name. Reuses `resolveGetterAliases` (the same alias-hop walker
+  // #2778's CSR-template fix introduced) rather than a third alias-hop
+  // walker: every alias of a getter seeded above gets the SAME entry
+  // under its own name, so the stash has both `items` and `items__alias`
+  // pointing at one value. Env-signal getters are excluded from the
+  // getter-name set (they're never given an `out` entry above — an
+  // adapter's own env-signal binding seeds them instead).
+  {
+    const getterNames = collectAliasableGetterNames(metadata.signals, metadata.memos)
+    for (const [alias, origin] of resolveGetterAliases(metadata.localConstants ?? [], (n) => getterNames.has(n))) {
+      if (alias in out) continue
+      out[alias] = out[origin]
+    }
+  }
+
+  // #2788: a bare-props-form component (`function Foo(props: Props)`)
+  // whose BODY destructures a prop under a different local name
+  // (`const { children: kids } = props`) has no `ParamInfo.sourceName` to
+  // key off above — `propsParams` here comes from the TYPE annotation
+  // (`extractPropsFromTypeMembers`), which has no notion of a body-level
+  // rename. `resolveBodyDestructuredPropAliases` recognizes such a
+  // destructuring statement's `localConstants` shape; seeding the LOCAL
+  // name too (alongside the caller-facing key already seeded above) is
+  // enough to fix what a template-stash adapter's compiled output
+  // actually reads (`v[:kids]` / `$kids`). Without this, a stash-based
+  // adapter reading the renamed local sees an undefined/nil value instead
+  // of the prop — fatal under Perl strict mode (Mojolicious), a
+  // nonexistent Go struct field, or (on an adapter whose runtime
+  // tolerates a missing key) a silent wrong render the moment a caller
+  // actually supplies a value. Parameter-destructuring aliases (`{ n:
+  // count }`) need no such entry — `sourceName`/`name` already handle
+  // that shape via `callerPropName` above.
+  for (const [local, callerKey] of resolveBodyDestructuredPropAliases(metadata.localConstants ?? [], metadata.propsObjectName)) {
+    if (local in out) continue
+    const origin = out[callerKey]
+    if (origin) out[local] = origin
   }
 
   // Bare-props-arg safety net: the prop block above covers every prop

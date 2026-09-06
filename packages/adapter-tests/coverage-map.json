@@ -4152,6 +4152,19 @@
         "attribute"
       ]
     },
+    "query-href-shorthand-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [
+        "lowering:queryHref"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "query-href-src": {
       "kinds": [
         "call",
@@ -6031,14 +6044,14 @@
     "array-method": 71,
     "arrow": 71,
     "binary": 99,
-    "call": 252,
+    "call": 253,
     "conditional": 30,
-    "identifier": 354,
+    "identifier": 355,
     "index-access": 14,
     "literal": 282,
     "logical": 49,
     "member": 199,
-    "object-literal": 73,
+    "object-literal": 74,
     "template-literal": 30,
     "unary": 26,
     "unsupported": 44
@@ -6087,7 +6100,7 @@
     "logical:||": 16,
     "lowering:date": 4,
     "lowering:formatDate": 2,
-    "lowering:queryHref": 4,
+    "lowering:queryHref": 5,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
     "member:optional": 1,

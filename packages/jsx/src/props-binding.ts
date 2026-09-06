@@ -1,5 +1,5 @@
 import ts from 'typescript'
-import type { ParamInfo } from './types.ts'
+import type { ConstantInfo, ParamInfo } from './types.ts'
 
 /**
  * Authoritative IdentifierName classification for a destructure-pattern
@@ -67,6 +67,42 @@ export function buildPropAliasMap(params: readonly ParamInfo[]): Map<string, str
     }
   }
   return map
+}
+
+/**
+ * Local-name → caller-facing-key map for a BARE-PROPS-form component
+ * (`function Foo(props: Props)`) whose BODY destructures a prop under a
+ * different local name (`const { children: kids } = props`) — the
+ * body-level twin of `buildPropAliasMap` above, which only sees
+ * PARAMETER-destructuring aliases (`{ n: count }`, tracked via
+ * `ParamInfo.sourceName`). For the bare-props form, `propsParams` comes
+ * from the TYPE annotation (`extractPropsFromTypeMembers`) and has no
+ * notion of a body-level rename at all — but the analyzer already
+ * resolves such a destructuring statement into an ordinary
+ * `localConstants` entry whose `parsed` is a plain `props.<key>` member
+ * read (`const { children: kids } = props` → a `kids` local const valued
+ * `props.children`). Recognizing that shape here is enough to answer
+ * "what caller-facing prop key does this local alias" without a second,
+ * dedicated AST walk of the destructuring pattern itself (#2788).
+ *
+ * Returns an empty map for a parameter-destructuring component
+ * (`propsObjectName === null`) — that shape's aliasing is already fully
+ * covered by `buildPropAliasMap`.
+ */
+export function resolveBodyDestructuredPropAliases(
+  localConstants: readonly ConstantInfo[],
+  propsObjectName: string | null,
+): Map<string, string> {
+  const aliases = new Map<string, string>()
+  if (propsObjectName === null) return aliases
+  for (const c of localConstants) {
+    if (c.isModule) continue
+    const m = c.parsed
+    if (m?.kind === 'member' && !m.computed && m.object.kind === 'identifier' && m.object.name === propsObjectName) {
+      aliases.set(c.name, m.property)
+    }
+  }
+  return aliases
 }
 
 /**
