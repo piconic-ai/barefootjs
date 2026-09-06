@@ -234,11 +234,18 @@ export function List({ items }: { items: { id: string; name: string; cls: string
   },
   {
     // Whole-item conditional loop: the `<!--bf-loop-i:KEY-->` anchor form.
+    // The key is wrapped in `escapeCommentText` (#2795 follow-up) so a
+    // hostile key value can't spell `-->` and close the comment early — see
+    // `packages/adapter-tests/fixtures/loop-item-conditional-hostile-key.ts`
+    // for the end-to-end proof with an actual `-->`-bearing key.
     id: 'anchored-conditional-loop',
     source: `
 export function List({ items }: { items: { id: string; on: boolean; name: string }[] }) {
   return <ul>{items.map(i => i.on ? <li key={i.id}>{i.name}</li> : null)}</ul>
 }`,
+    pin: (js) => {
+      expect(js).toMatch(/bf-loop-i:\$\{escapeCommentText\(i\.id\)\}/)
+    },
   },
   {
     // Nested conditional inside a loop row.
@@ -267,7 +274,7 @@ export function Page({ title }: { title: string }) {
 // ---------------------------------------------------------------------------
 
 /** Runtime helpers that escape their own input. Nesting two is a double escape. */
-const ESCAPING_CALLS = new Set(['escapeText', 'escapeTextOrMarkup', '__bfSlot', 'escapeAttr'])
+const ESCAPING_CALLS = new Set(['escapeText', 'escapeTextOrMarkup', '__bfSlot', 'escapeAttr', 'escapeCommentText'])
 /** Runtime helpers whose output is markup by construction (`safe-html.ts`). */
 const TRUSTED_CALLS = new Set(['markupOrEmpty', 'renderChild', 'spreadAttrs'])
 
@@ -315,7 +322,7 @@ function isHtmlTemplate(t: ts.TemplateExpression): boolean {
  * template literal the form owns that must be checked even without static
  * HTML text of its own.
  */
-function classifyHole(expr: ts.Expression, precedingStatic: string, nested: ts.TemplateExpression[]): string | null {
+function classifyHole(expr: ts.Expression, nested: ts.TemplateExpression[]): string | null {
   const e = strip(expr)
   if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return 'literal'
   if (ts.isCallExpression(e)) {
@@ -371,22 +378,15 @@ function classifyHole(expr: ts.Expression, precedingStatic: string, nested: ts.T
     const left = strip(e.left)
     if (ts.isPropertyAccessExpression(left) && left.name.text === '__html') return 'dangerous-inner-html'
   }
-  // `<!--bf-loop-i:${KEY}-->` — the whole-item-conditional loop anchor
-  // (`itemAnchorTemplate`). The key is spliced raw inside a marker comment
-  // so the runtime can read it back verbatim; a key containing `-->` would
-  // close the comment early. Pre-existing, outside the text-escaping family
-  // this ratchet covers — pinned by name so it is visible, not forgotten.
-  if (precedingStatic.endsWith('bf-loop-i:')) return 'loop-item-anchor-key'
   return null
 }
 
 function checkTemplate(t: ts.TemplateExpression, seen: Set<ts.Node>, out: Soundness): void {
   if (seen.has(t)) return
   seen.add(t)
-  let preceding = t.head.text
   for (const span of t.templateSpans) {
     const nested: ts.TemplateExpression[] = []
-    const form = classifyHole(span.expression, preceding, nested)
+    const form = classifyHole(span.expression, nested)
     const text = span.expression.getText()
     if (form === null) {
       out.unsoundHoles.push(text)
@@ -398,7 +398,6 @@ function checkTemplate(t: ts.TemplateExpression, seen: Set<ts.Node>, out: Soundn
       }
     }
     for (const n of nested) checkTemplate(n, seen, out)
-    preceding = span.literal.text
   }
 }
 
@@ -527,9 +526,10 @@ describe('emitter structure pins (#2795 §4.3)', () => {
     // `interp(...)` in `safe-html.ts`. Exact, not "at most": a lower count
     // is progress and the pin should follow it down.
     expect(count('html-template.ts', '\\${')).toBe(8)
-    // `itemAnchorTemplate` builds its `${KEY}` by concatenation — the one
-    // hole the substring above cannot see (see `loop-item-anchor-key`).
-    expect(count('html-template.ts', "'${' +")).toBe(1)
+    // `itemAnchorTemplate` builds its `${escapeCommentText(KEY)}` by
+    // concatenation — the one hole the substring above cannot see. Escaped
+    // (#2795 follow-up) — see `escapeCommentText`'s docstring.
+    expect(count('html-template.ts', "'${escapeCommentText(' +")).toBe(1)
   })
 
   test('safe-html.ts has exactly one `${` — the `interp` door', () => {

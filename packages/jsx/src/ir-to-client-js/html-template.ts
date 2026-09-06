@@ -567,9 +567,17 @@ function buildSpreadAttrsMergeCall(args: {
  * expression (e.g. `t.id`). Emits a live `${keyExpr}` interpolation so each
  * rendered item carries its own key — `loopItemMarker` is reserved for
  * already-evaluated key strings (runtime / static contexts).
+ *
+ * The key is wrapped in `escapeCommentText` (#2795 follow-up): unlike every
+ * other hole in this file, this one lands inside HTML COMMENT content, where
+ * `escapeText`'s `& < > " '` escaping does nothing — the only thing that
+ * matters here is that the key can't spell `-->` and close the comment
+ * early. See `escapeCommentText`'s docstring (`@barefootjs/client/runtime`)
+ * for why a lossy hyphen substitution is fine: nothing reads this key back
+ * out of the DOM.
  */
 function itemAnchorTemplate(keyExpr: string): string {
-  return `<!--${loopItemMarker('${' + keyExpr + '}')}-->`
+  return `<!--${loopItemMarker('${escapeCommentText(' + keyExpr + ')}')}-->`
 }
 
 /**

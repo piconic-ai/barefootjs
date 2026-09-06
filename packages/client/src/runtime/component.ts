@@ -952,6 +952,33 @@ export function escapeText(value: unknown): string {
 }
 
 /**
+ * Neutralize a value for splicing into an HTML COMMENT (`<!--...-->`), the
+ * whole-item loop conditional's `bf-loop-i:<key>` anchor (#1665,
+ * `itemAnchorTemplate` in `ir-to-client-js/html-template.ts`) being the one
+ * caller today. Standard HTML escaping (`escapeAttr`/`escapeText`) does
+ * NOT help here: `-`, `<`, `>` are not special in comment content the way
+ * `& < > " '` are in text/attributes — the only thing that terminates a
+ * comment early is the literal three-character sequence `-->`, which
+ * `escapeAttr` never touches.
+ *
+ * The key's exact text does not need to round-trip: nothing reads it back
+ * out of the DOM (`mapArrayAnchored` matches items positionally on first
+ * hydration and by its own JS-computed key afterward, never by re-parsing
+ * `Comment.nodeValue`, `map-array.ts`'s `isItemAnchor`/`findItemAnchors`).
+ * So replacing every ASCII hyphen with the visually-similar U+2010 HYPHEN
+ * is sufficient and simpler than a reversible escape: it makes `-->`
+ * unconstructible from the result (a hyphen adjacent to the template's own
+ * literal `-->` can no longer complete the sequence), and — because it is
+ * a different Unicode character rather than an HTML entity — needs no
+ * decoding: HTML comments do not interpret character references at all,
+ * so `&#45;` would appear as literal text `&#45;`, not `-`.
+ */
+export function escapeCommentText(value: unknown): string {
+  if (value == null) return ''
+  return String(value).replace(/-/g, '‐')
+}
+
+/**
  * Brand carried by `bfMarkup()` — see that function's docstring. A string
  * key (not a `Symbol`) because the brand must survive `structuredClone`
  * (props cloned across an SSR seed / island-serialization boundary): a
