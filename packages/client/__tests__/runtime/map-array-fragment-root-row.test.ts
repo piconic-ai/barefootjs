@@ -57,7 +57,7 @@ function ssrRows(rows: Row[]): string {
  *  detached scope-comment pair, stashed on the element via
  *  `__bfScopeComments` exactly like `component.ts`'s `createComponent`
  *  does for a real fragment-root component connected as a loop row. */
-function renderFragmentRow(item: () => Row, _idx: number, existing?: HTMLElement): HTMLElement {
+function renderFragmentRow(item: () => Row, _idx: () => number, existing?: HTMLElement): HTMLElement {
   if (existing) {
     // Hydration: mapArray's `findItemRanges` already partitioned the
     // scope-comment pair for this row; nothing to do here.

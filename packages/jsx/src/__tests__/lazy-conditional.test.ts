@@ -51,12 +51,18 @@ const armsOf = (c: LoopChildConditional) => ({
 describe('analyzeLazyConditional — accepted', () => {
   test('two wiring-free static element arms', () => {
     const c = cond()
-    const r = analyzeLazyConditional(c, '__idx', armsOf(c))
+    const r = analyzeLazyConditional(c, armsOf(c))
     expect(r.lazySafe).toBe(true)
     if (r.lazySafe) {
       expect(r.facts.whenTrueHtml).toContain('bf-c="s0"')
       expect(r.facts.condition).toBe('row.done')
     }
+  })
+
+  test('a condition reading the loop index is accepted (#2859 follow-up) — the caller classifies it like any other binding', () => {
+    const c = cond({ conditionFreeIdentifiers: new Set(['row', '__idx']) })
+    const r = analyzeLazyConditional(c, armsOf(c))
+    expect(r.lazySafe).toBe(true)
   })
 })
 
@@ -73,7 +79,7 @@ describe('analyzeLazyConditional — refusals', () => {
   for (const [name, over, reason] of wiring) {
     test(`the true arm owns ${name}`, () => {
       const c = cond({ whenTrue: bare(over) })
-      const r = analyzeLazyConditional(c, '__idx', armsOf(c))
+      const r = analyzeLazyConditional(c, armsOf(c))
       expect(r.lazySafe).toBe(false)
       if (!r.lazySafe) expect(r.reason).toMatch(reason)
     })
@@ -81,14 +87,14 @@ describe('analyzeLazyConditional — refusals', () => {
 
   test('the FALSE arm is checked too, not just the true one', () => {
     const c = cond({ whenFalse: bare({ events: [{} as never] }) })
-    const r = analyzeLazyConditional(c, '__idx', armsOf(c))
+    const r = analyzeLazyConditional(c, armsOf(c))
     expect(r.lazySafe).toBe(false)
     if (!r.lazySafe) expect(r.reason).toMatch(/its false arm owns events/)
   })
 
   test('a fragment conditional has no single node to replace', () => {
     const c = cond()
-    const r = analyzeLazyConditional(c, '__idx', {
+    const r = analyzeLazyConditional(c, {
       whenTrueHtml: asFragment('text only'),
       whenFalseHtml: asElement(c.whenFalseHtml),
     })
@@ -98,24 +104,18 @@ describe('analyzeLazyConditional — refusals', () => {
 
   test('an arm that interpolates a value cannot be hoisted once per loop', () => {
     const c = cond({ whenTrueHtml: '<span>${row().label}</span>' })
-    const r = analyzeLazyConditional(c, '__idx', armsOf(c))
+    const r = analyzeLazyConditional(c, armsOf(c))
     expect(r.lazySafe).toBe(false)
     if (!r.lazySafe) expect(r.reason).toMatch(/interpolates a value/)
   })
 
   test('a condition with no analyzable identifier set refuses rather than assumes', () => {
     const c = cond({ conditionFreeIdentifiers: undefined })
-    const r = analyzeLazyConditional(c, '__idx', armsOf(c))
+    const r = analyzeLazyConditional(c, armsOf(c))
     expect(r.lazySafe).toBe(false)
     if (!r.lazySafe) expect(r.reason).toMatch(/no analyzable identifier set/)
   })
 
-  test('a condition reading the loop index refuses — the apply bodies have none', () => {
-    const c = cond({ conditionFreeIdentifiers: new Set(['row', '__idx']) })
-    const r = analyzeLazyConditional(c, '__idx', armsOf(c))
-    expect(r.lazySafe).toBe(false)
-    if (!r.lazySafe) expect(r.reason).toMatch(/reads the loop index parameter '__idx'/)
-  })
 })
 
 // --- emission ---------------------------------------------------------------
@@ -172,6 +172,46 @@ describe('lazy row emission — wiring-free row conditional', () => {
     expect(applyItem).toContain('__c.replaceWith(__n)')
     // Without this the next flip writes into the node the previous one detached.
     expect(applyItem).toMatch(/__r\[\d\] = __n/)
+  })
+})
+
+describe('lazy row emission — a conditional reading the loop index (#2859 follow-up)', () => {
+  // Mixed item+index condition — a PURE index-only reactive condition/attr is
+  // a separate, pre-existing, broader gap (the analyzer never classifies an
+  // expression that reads ONLY the loop index as reactive AT ALL, in either
+  // the eager or lazy path — filed separately, not this widening's job to
+  // fix). `row.done` is what makes the analyzer treat this condition as
+  // reactive in the first place; `i % 2 === 0` then rides along, which is
+  // exactly what this widening needs to prove.
+  const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; done: boolean }
+export function CondRowsIndex(props: { rows: Row[] }) {
+  const [rows, setRows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map((row, i) => (
+        <li key={row.id}>{(row.done || i % 2 === 0) ? <span class="even">even</span> : <em class="odd">odd</em>}</li>
+      ))}
+    </ul>
+  )
+}
+`
+  const js = clientJs(source, 'CondRowsIndex.tsx')
+
+  test('the loop is still lazy — the index reference no longer forces eager', () => {
+    expect(js).toContain('mapArrayLazy(')
+  })
+
+  test('the condition is emitted into applyItem, reading the live entry.index', () => {
+    const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf("}, 'l0')"))
+    expect(applyItem).toMatch(/const i = __e\.index/)
+    expect(applyItem).toContain('i % 2 === 0')
+  })
+
+  test('the plan is marked indexDriven so a pure reorder re-evaluates it', () => {
+    expect(js).toMatch(/indexDriven:\s*true/)
   })
 })
 

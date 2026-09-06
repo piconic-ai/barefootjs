@@ -237,6 +237,8 @@ interface CompositeLoopVariant extends DynamicLoopCommon {
   loopParam: string
   /** Destructured-binding metadata for the loop param. */
   loopParamBindings: TopLevelLoop['paramBindings']
+  /** This loop's index param name, when it declares one (#2859). */
+  loopIndex: TopLevelLoop['index']
   /** Reactive effects rendered after the SSR/CSR split. */
   reactiveEffects: ReactiveEffectsPlan | null
   /**

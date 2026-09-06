@@ -66,7 +66,7 @@ describe('composite loop rows connect before their tail runs', () => {
 
     const [items] = createSignal([{ id: '1' }])
     mapArray(() => items(), ulA, (it: { id: string }) => it.id,
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li data-key="${item().id}"><div data-bf-ph="s0"></div></li>`
@@ -87,7 +87,7 @@ describe('composite loop rows connect before their tail runs', () => {
     const ul = loopContainer()
     const [items] = createSignal([{ id: '1' }, { id: '2' }, { id: '3' }])
     mapArray(() => items(), ul, (it: { id: string }) => it.id,
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li data-key="${item().id}"><div data-bf-ph="s0"></div></li>`
@@ -115,7 +115,7 @@ describe('composite loop rows connect before their tail runs', () => {
     const ul = loopContainer()
     const [items, setItems] = createSignal([{ id: '1' }, { id: '2' }])
     mapArray(() => items(), ul, (it: { id: string }) => it.id,
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML =
@@ -148,7 +148,7 @@ describe('composite loop rows connect before their tail runs', () => {
     const ul = loopContainer()
     const [items, setItems] = createSignal([{ id: '1' }])
     mapArray(() => items(), ul, (it: { id: string }) => it.id,
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li data-key="${item().id}"><div data-bf-ph="s0"></div></li>`
@@ -177,7 +177,7 @@ describe('composite loop rows connect before their tail runs', () => {
     const ul = loopContainer()
     const [items] = createSignal([{ id: 'dup' }, { id: 'dup' }])
     mapArray(() => items(), ul, (it: { id: string }) => it.id,
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li data-key="${item().id}"><div data-bf-ph="s0"></div></li>`
@@ -197,7 +197,7 @@ describe('composite loop rows connect before their tail runs', () => {
     const [items] = createSignal([{ id: '1' }])
     expect(() => {
       mapArray(() => items(), ul, (it: { id: string }) => it.id,
-        (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+        (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
           if (existing) return existing
           const tpl = document.createElement('template')
           tpl.innerHTML = `<li data-key="${item().id}">boom</li>`
@@ -223,7 +223,7 @@ describe('composite loop rows connect before their tail runs', () => {
     const ul = loopContainer()
     const [items] = createSignal([{ id: '1' }])
     mapArray(() => items(), ul, (it: { id: string }) => it.id,
-      (item: () => { id: string }, _i: number, existing?: HTMLElement) => {
+      (item: () => { id: string }, _i: () => number, existing?: HTMLElement) => {
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li data-key="${item().id}"><ul class="inner"></ul><div data-bf-ph="s0"></div></li>`

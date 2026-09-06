@@ -71,9 +71,11 @@ describe('#1665 — keyless whole-item conditional emits valid JS (BF023)', () =
     const { js, errorCodes } = clientJsFor('sel() === t.id && <li>{t.id}</li>', /* withKey */ false)
     expect(errorCodes).toContain(ErrorCodes.MISSING_KEY_IN_LIST)
     // No empty template-literal interpolation, and the anchor falls back to the
-    // iteration index so the comment value is well-formed.
+    // iteration index so the comment value is well-formed. `__idx` is bound to
+    // an index ACCESSOR at runtime (#2859), so the fallback calls it like
+    // every other reference to the loop's index parameter.
     expect(js).not.toContain('${}')
-    expect(js).toContain('bf-loop-i:${__idx}')
+    expect(js).toContain('bf-loop-i:${__idx()}')
     // The whole client module must parse.
     const body = js.replace(/^import[^\n]*\n/gm, '').replace(/^export /gm, '')
     expect(() => new Function(body)).not.toThrow()

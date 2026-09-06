@@ -47,9 +47,11 @@
  *     defeating the hoist. (A literal `${` in authored TEXT would also refuse
  *     here; that is the safe direction — a false refusal costs the eager
  *     fallback, a false accept would ship a frozen arm.)
- *  4. **The condition does not read the loop INDEX.** `applyItem` and
- *     `applyOuter` have no index parameter, the same reason
- *     `ClassifiedLazyBinding.referencesIndex` refuses a binding.
+ *  4. (#2859 follow-up) A condition MAY read the loop index — it is
+ *     classified like any other binding (`classifyLazyBinding` in
+ *     `lazy-row-eligibility.ts`), which forces it into `applyItem` so a
+ *     reorder (a position change the reconciler tracks on `entry.index`)
+ *     re-evaluates it, not just an item change.
  *
  * Everything refused carries a specific reason, which `lazyRowEligibility`
  * passes through unchanged.
@@ -99,13 +101,9 @@ function wiringOn(branch: LoopChildBranchSummary): string[] {
 
 /**
  * Decide whether `cond` can be driven from the loop-level apply bodies.
- *
- * `indexParam` is the loop's index parameter name as the emitter uses it
- * (`elem.index || '__idx'`); a condition reading it is refused.
  */
 export function analyzeLazyConditional(
   cond: LoopChildConditional,
-  indexParam: string,
   arms: PreparedArms,
 ): LazyConditionalAnalysis {
   for (const [label, branch] of [['true', cond.whenTrue], ['false', cond.whenFalse]] as const) {
@@ -135,9 +133,12 @@ export function analyzeLazyConditional(
   if (!cond.conditionFreeIdentifiers) {
     return NO(`conditional on slot ${cond.slotId}: condition has no analyzable identifier set`)
   }
-  if (cond.conditionFreeIdentifiers.has(indexParam)) {
-    return NO(`conditional on slot ${cond.slotId}: condition reads the loop index parameter '${indexParam}'`)
-  }
+  // A condition reading the loop index (#2859 follow-up, widening from a hard
+  // refusal) is no longer refused here: the caller classifies the condition
+  // like any other binding (`classifyLazyBinding` in `lazy-row-eligibility.ts`),
+  // which forces `readsItem: true` for an index reference — the reconciler
+  // delivers the row's current position on `entry.index` the same way it
+  // delivers the item, so the condition is re-evaluated on a reorder too.
 
   return {
     lazySafe: true,

@@ -28,17 +28,14 @@ import {
   buildLoopChildIndexExpr,
   setIntersects,
   varSlotId,
-  wrapLoopParamAsAccessor,
 } from '../../utils.ts'
 import {
   loopKeyFn,
-  destructureLoopParam,
   buildChildRefBindings,
   buildStaticChildRefBindings,
-  buildPreambleRegionPlans,
 } from '../shared.ts'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
-import { buildLazyRowPlan } from './build-lazy-row.ts'
+import { buildPlainRowCore } from './build-plain-row.ts'
 import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
 import { buildComponentLoopPlan } from './build-component-loop.ts'
 import { buildTopLevelCompositePlan } from './build-composite-loop.ts'
@@ -99,8 +96,6 @@ export function buildPlainLoopPlan(
   profileComponentName?: string,
   lazyScope?: LazyRowScopeInfo,
 ): PlainLoopPlan {
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
-  const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const hasReactive = elem.bindings.reactiveAttrs.length > 0
     || elem.bindings.reactiveTexts.length > 0
     || elem.bindings.conditionals.length > 0
@@ -140,14 +135,26 @@ export function buildPlainLoopPlan(
   }
 
   const arrayExpr = buildChainedArrayExpr(elem)
-  const indexParam = elem.index || '__idx'
-  const mapPreambleWrapped = elem.preamble
-    ? renderPreamble(elem.preamble, {
-        transformJs: wrap,
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
-      })
-    : ''
-  const preambleRegions = buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings)
+
+  // Shared "wrap item → decide lazy → wrap index" core (#2859 follow-up) —
+  // see `build-plain-row.ts`'s module docstring for why this single
+  // implementation matters: a lazy-eligible loop's `LazyRowPlanData` embeds
+  // `mapPreambleWrapped` and clones from `elem.template` verbatim, and
+  // `mapArrayLazy`'s `createRow(entry, index)` hands the row a plain index
+  // NUMBER, never an accessor — wrapping unconditionally would call a number
+  // there. Lazy-row eligibility only refuses a REACTIVE binding that
+  // references the index; a non-reactive use (e.g. a `data-key` built from
+  // the index) is not gated the same way, so "lazy-eligible" does not imply
+  // "no index in the template" either.
+  const core = buildPlainRowCore({
+    loop: elem,
+    arrayExpr,
+    callSite: 'plain',
+    flatMapLeafItem: false,
+    anchored: elem.bodyIsItemConditional ?? false,
+    scope: lazyScope,
+  })
+  const { paramHead, paramUnwrap, indexParam, preambleRegions, lazyRow, wrapItem: wrap } = core
 
   return {
     kind: 'plain',
@@ -160,29 +167,21 @@ export function buildPlainLoopPlan(
     paramHead,
     paramUnwrap,
     indexParam,
-    // Lazy row graph (§9, L3). `null` for every ineligible loop, which then
-    // keeps the eager emission below byte-for-byte.
-    lazyRow: buildLazyRowPlan({
-      loop: elem,
-      arrayExpr,
-      indexParam,
-      paramUnwrap,
-      mapPreambleWrapped,
-      preambleRegionCount: preambleRegions.length,
-      callSite: 'plain',
-      flatMapLeafItem: false,
-      anchored: elem.bodyIsItemConditional ?? false,
-      scope: lazyScope,
-    }) ?? undefined,
+    lazyRow,
     // Stage 3 / D4 — js segments get the loop-param accessor wrap; jsx leaves
     // render as HTML-string templates under this loop's param context so a
     // leaf that reads the item (`r`) becomes `r()`.
-    mapPreambleWrapped,
-    template: elem.template,
+    mapPreambleWrapped: core.mapPreambleWrapped,
+    template: core.template,
     skeletonTemplate: elem.skeletonTemplate,
     skeletonPaths: elem.skeletonPaths,
     reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem, profileComponentName) : null,
-    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
+    // `elem.index` (#2859 follow-up): a ref callback closing over the loop
+    // index (`ref={el => refs[i] = el}`) must see it wrapped the same way
+    // every other reference in this row is — a row with any ref is always
+    // lazy-ineligible (`lazy-row-eligibility.ts`'s `childRefCount` gate), so
+    // there is no shared-string hazard here, unlike `mapPreambleWrapped`.
+    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings, elem.index),
     preambleRegions,
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
     anchored: elem.bodyIsItemConditional ?? false,
@@ -190,9 +189,10 @@ export function buildPlainLoopPlan(
     // conditional without a key is a BF023 error, but the emitted client JS
     // must still parse — an empty `anchorKeyExpr` would produce
     // `createComment(`bf-loop-i:${}`)` (a SyntaxError that breaks the whole
-    // bundle). `elem.index || '__idx'` matches `indexParam` above, so the
-    // anchor value stays consistent with the renderItem's own index param.
-    anchorKeyExpr: elem.key ? wrap(elem.key) : (elem.index || '__idx'),
+    // bundle). `indexParam` matches the renderItem head built above, and
+    // (#2859) is bound to an INDEX ACCESSOR at runtime, not a plain number —
+    // call it, same as every other reference to it in this row's body.
+    anchorKeyExpr: elem.key ? wrap(elem.key) : `${indexParam}()`,
   }
 }
 
@@ -269,7 +269,7 @@ function buildStaticLoopMaterialize(
     itemTemplate: elem.staticItemTemplate,
     mapPreamble: elem.preamble
       ? renderPreamble(elem.preamble, {
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings, index: elem.index }], undefined),
         })
       : '',
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,

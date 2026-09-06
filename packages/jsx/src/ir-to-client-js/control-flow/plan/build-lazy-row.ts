@@ -156,6 +156,17 @@ export interface LazyRowPlanData {
    * both parsed once per loop and clones on a flip.
    */
   conditionals: readonly LazyRowConditionalBinding[]
+  /**
+   * At least one binding, condition, or preamble-substituted dependency reads
+   * the loop's index parameter (#2859 follow-up — `ClassifiedLazyBinding.
+   * referencesIndex`, which also forces `readsItem: true` for that binding).
+   * The stringifier binds `const <indexParam> = __e.index` at the top of
+   * `applyItem` and inside `applyOuter`'s per-entry loop only when this is
+   * true, and emits `indexDriven: true` on the plan object literal so the
+   * runtime (`mapArrayLazy`) also calls `applyItem` on a pure reorder — a
+   * position change with no item change — not just an item change.
+   */
+  readsIndex: boolean
 }
 
 export interface BuildLazyRowArgs {
@@ -198,7 +209,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
   // bodies BEFORE classifying, because a binding that reads a declared local
   // inherits the preamble's dependencies rather than its own literal names.
   const primableNames = new Set<string>([...scope.signals.keys(), ...scope.memos])
-  const preambleAnalysis = analyzeLazyPreamble(loop.preamble, args.indexParam, primableNames)
+  const preambleAnalysis = analyzeLazyPreamble(loop.preamble, primableNames)
 
   // §9.5 conditional widening: a row conditional whose arms are wiring-free
   // static elements is driven from the apply bodies instead of a per-row
@@ -207,7 +218,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
   const condFacts: LazyConditionalFacts[] = []
   let conditionalRefusal: string | null = null
   for (const cond of rawConditionals) {
-    const verdict = analyzeLazyConditional(cond, args.indexParam, {
+    const verdict = analyzeLazyConditional(cond, {
       whenTrueHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
       whenFalseHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
     })
@@ -374,6 +385,11 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       itemNeedsPreamble: [...attrs, ...texts, ...conditionals].some(b => b.readsItem && b.readsPreamble),
       outerNeedsPreamble: [...attrs, ...texts, ...conditionals].some(b => b.readsOuter && b.readsPreamble),
       conditionals,
+      // From the RAW classification, not the final lists: a binding that
+      // reads the index is always `readsItem` (see `classifyLazyBinding`),
+      // so checking the final lists would say the same thing — raw is just
+      // the more direct source of truth.
+      readsIndex: classified.some(c => c.referencesIndex),
     },
     decision,
   }

@@ -2948,6 +2948,28 @@
         "text"
       ]
     },
+    "keyed-loop-index-reorder": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "label": {
       "kinds": [
         "identifier",
@@ -2959,6 +2981,28 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "lazy-row-index-reorder": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -5996,21 +6040,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 88,
+    "array-literal": 90,
     "array-method": 71,
     "arrow": 71,
-    "binary": 97,
-    "call": 251,
+    "binary": 99,
+    "call": 253,
     "conditional": 30,
-    "identifier": 353,
+    "identifier": 355,
     "index-access": 14,
-    "literal": 280,
+    "literal": 282,
     "logical": 49,
-    "member": 197,
-    "object-literal": 72,
+    "member": 199,
+    "object-literal": 74,
     "template-literal": 30,
     "unary": 26,
-    "unsupported": 42
+    "unsupported": 44
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -6040,7 +6084,7 @@
     "binary:!=": 2,
     "binary:!==": 9,
     "binary:*": 12,
-    "binary:+": 21,
+    "binary:+": 23,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
@@ -6049,8 +6093,8 @@
     "binary:>=": 1,
     "literal:boolean": 59,
     "literal:null": 23,
-    "literal:number": 118,
-    "literal:string": 197,
+    "literal:number": 120,
+    "literal:string": 199,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,

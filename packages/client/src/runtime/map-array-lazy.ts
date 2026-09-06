@@ -65,6 +65,18 @@
  *   (a misclassification must be harmless, not silently wrong) and for the
  *   three stranding sequences it prevents, each reproduced before it existed.
  *
+ * **Index-driven bindings (#2859 follow-up).** A row's position is tracked
+ * on `entry.index`, updated on every reconcile whether or not any binding
+ * reads it. A plan that sets `indexDriven: true` (emitted when
+ * `LazyRowPlanData.readsIndex`) is telling the runtime that some binding of
+ * `applyItem` reads `entry.index` — so the reconciler also calls
+ * `applyItem` on a pure reorder (item unchanged, position changed), not only
+ * on an item change. This mirrors the eager `mapArray` runtime's per-row
+ * index SIGNAL (`ItemScope.setIndex`) with no per-row reactive resource: the
+ * reconciler already knows a row's position changed the same way it already
+ * knows its item changed, so re-delivering that fact through a signal would
+ * be exactly the redundant machinery this design exists to avoid.
+ *
  * **Plan (compiler-emitted) obligations:**
  * - `createRow` MUST write ALL bindings — item-driven AND outer-involving —
  *   with current values (it is CSR creation; it computes everything anyway)
@@ -126,6 +138,13 @@ export interface LazyRowEntry<T> {
   key: string
   primaryEl: HTMLElement
   item: T
+  /**
+   * The row's current position in the reconciled list (#2859 follow-up).
+   * Kept current on EVERY reconcile, whether or not the plan reads it —
+   * cheap bookkeeping, and it is what makes a bare reorder (no item change)
+   * detectable for `plan.indexDriven` loops.
+   */
+  index: number
   /** plan-owned: claimed DOM refs, null until the row's first item-driven write */
   refs: unknown | null
   /** plan-owned: per-binding last-value dedup state */
@@ -155,6 +174,16 @@ export interface LazyRowPlan<T> {
    *  nodeValue) to initialize its dedup value and write only where the
    *  computed value differs (read-compare-write, spec §9.3(1)). */
   applyOuter?(entries: ReadonlyArray<LazyRowEntry<T>>, seed: boolean): void
+  /**
+   * True when some binding, condition, or preamble-substituted dependency of
+   * this row reads the loop's INDEX (#2859 follow-up,
+   * `LazyRowPlanData.readsIndex`). Such a binding is always `readsItem`
+   * (compiler-side), so the runtime must also call `applyItem` when a row's
+   * POSITION changes with no item change — a plain reorder — not only when
+   * `!Object.is(oldItem, newItem)`. Absent/false for every other loop, which
+   * keeps a bare reorder exactly as cheap as before this widening.
+   */
+  indexDriven?: boolean
 }
 
 /**
@@ -268,6 +297,7 @@ export function mapArrayLazy<T>(
       // element and must not read primaryEl.
       primaryEl: undefined as unknown as HTMLElement,
       item,
+      index,
       refs: null,
       last: null,
     }
@@ -307,7 +337,7 @@ export function mapArrayLazy<T>(
           // rows carry a depth-suffixed name (#2753 Shape B).
           const ssrKey = el.getAttribute(keyAttrName)
           const key = ssrKey !== null ? ssrKey : getKey ? getKey(items[i], i) : String(i)
-          const entry: LazyRowEntry<T> = { key, primaryEl: el, item: items[i], refs: null, last: null }
+          const entry: LazyRowEntry<T> = { key, primaryEl: el, item: items[i], index: i, refs: null, last: null }
           entries.set(key, entry)
           list.push(entry)
         }
@@ -383,11 +413,24 @@ export function mapArrayLazy<T>(
         // setItem. `applyItem` runs after `entry.item` is updated, receives
         // the previous item, and is untracked (mixed bindings may read
         // outer signals; the applyOuter effect owns the reactive side).
-        if (!Object.is(existing.item, item)) {
+        const itemChanged = !Object.is(existing.item, item)
+        // A pure reorder (#2859 follow-up): the item is unchanged but the
+        // row's POSITION is, and `plan.indexDriven` says some binding reads
+        // it. `entry.index` is bookkept below regardless — only the
+        // `applyItem` call (and the stranding it implies) is conditional.
+        const indexChanged = plan.indexDriven === true && existing.index !== i
+        if (itemChanged) {
           const prevItem = existing.item
           existing.item = item
+          existing.index = i
           untrack(() => plan.applyItem(existing, prevItem))
           markStranded()
+        } else if (indexChanged) {
+          existing.index = i
+          // prevItem === item here: nothing but the position moved.
+          untrack(() => plan.applyItem(existing, item))
+        } else {
+          existing.index = i
         }
         desiredOrder.push(existing)
       } else {

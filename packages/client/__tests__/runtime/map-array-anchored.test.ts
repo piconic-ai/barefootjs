@@ -36,7 +36,7 @@ function makeContainer(markerId: string): HTMLElement {
  * conditional via `insert()`. `cond` decides whether a `<li>` shows.
  */
 function makeRenderItem(slotId: string, cond: (id: string) => boolean) {
-  return (itemAccessor: () => { id: string }, _index: number, existing?: Comment) => {
+  return (itemAccessor: () => { id: string }, _index: () => number, existing?: Comment) => {
     const id = itemAccessor().id
     let anchor: Comment
     let frag: DocumentFragment | null = null
