@@ -9,12 +9,14 @@
  * implementation and cannot silently diverge again (CLAUDE.md's "one
  * decision, two implementations, no test comparing them"):
  *
- *   - An index-referencing row (forced eager, #2859) gets its index wrapped
- *     into a live accessor call at BOTH call sites.
- *   - A lazy-eligible row (no index reference) goes through `mapArrayLazy`
- *     at BOTH call sites, with no leaked eager-only index wrap in the
- *     shared `mapPreambleWrapped`/`template` strings — the exact shape of
- *     the original #2859 CI regression.
+ *   - A row forced eager for a reason UNRELATED to the index (here, an
+ *     imperative ref — #2859 follow-on lifted the index-only refusal, so a
+ *     bare index reference no longer forces eager on its own) still gets
+ *     its index wrapped into a live accessor call at BOTH call sites.
+ *   - A lazy-eligible row (index-referencing or not) goes through
+ *     `mapArrayLazy` at BOTH call sites, with no leaked eager-only index
+ *     wrap in the shared `mapPreambleWrapped`/`template` strings — the
+ *     exact shape of the original #2859 CI regression.
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
@@ -30,21 +32,22 @@ function clientJsFor(source: string): string {
 }
 
 describe('buildPlainRowCore — shared wrap-item/decide-lazy/wrap-index sequence', () => {
-  test('top-level plain loop: an index-referencing binding forces eager and wraps the index', () => {
+  test('top-level plain loop: a ref forces eager, and the index is wrapped into a live accessor call', () => {
     const js = clientJsFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
       type Row = { id: number; label: string }
       export function Repro() {
         const [rows] = createSignal<Row[]>([])
-        return <ul>{rows().map((row, i) => <li key={row.id}>{String(i + 1)}. {row.label}</li>)}</ul>
+        const refs: HTMLLIElement[] = []
+        return <ul>{rows().map((row, i) => <li key={row.id} ref={el => { refs[i] = el! }}>{String(i + 1)}. {row.label}</li>)}</ul>
       }
     `)
     expect(js).not.toContain('mapArrayLazy(')
     expect(js).toMatch(/i\(\)\s*\+\s*1/)
   })
 
-  test('branch-plain loop (ternary): the SAME index-referencing shape wraps the index identically', () => {
+  test('branch-plain loop (ternary): the SAME ref-bearing shape wraps the index identically', () => {
     const js = clientJsFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -52,7 +55,8 @@ describe('buildPlainRowCore — shared wrap-item/decide-lazy/wrap-index sequence
       export function Repro() {
         const [active, setActive] = createSignal(true)
         const [rows] = createSignal<Row[]>([])
-        return <div>{active() ? rows().map((row, i) => <li key={row.id}>{String(i + 1)}. {row.label}</li>) : <span>Empty</span>}</div>
+        const refs: HTMLLIElement[] = []
+        return <div>{active() ? rows().map((row, i) => <li key={row.id} ref={el => { refs[i] = el! }}>{String(i + 1)}. {row.label}</li>) : <span>Empty</span>}</div>
       }
     `)
     expect(js).not.toContain('mapArrayLazy(')
