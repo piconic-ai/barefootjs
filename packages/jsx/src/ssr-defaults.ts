@@ -31,6 +31,7 @@
 
 import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
+import { resolveGetterAliases } from './ir-to-client-js/csr-substitute.ts'
 import type { IRMetadata } from './types.ts'
 
 /**
@@ -309,6 +310,32 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
       out[memo.name] = { value: resultToJsonable(value) }
     }
     bindings[memo.name] = value
+  }
+
+  // #2813: a bare local-const alias of a signal/memo getter
+  // (`const items__alias = items`) is a DIFFERENT identifier from the
+  // getter it aliases, but a template-stash adapter's `.map()` loop over
+  // `items__alias()` looks up the stash entry BY THAT NAME — which the
+  // loops above never create, since they only seed the getter's own
+  // name. Reuses `resolveGetterAliases` (the same alias-hop walker
+  // #2778's CSR-template fix introduced) rather than a third alias-hop
+  // walker: every alias of a getter seeded above gets the SAME entry
+  // under its own name, so the stash has both `items` and `items__alias`
+  // pointing at one value. Env-signal getters are excluded from the
+  // getter-name set (they're never given an `out` entry above — an
+  // adapter's own env-signal binding seeds them instead).
+  {
+    const getterNames = new Set<string>()
+    for (const sig of metadata.signals) {
+      if (sig.getter && !sig.isModule && !sig.envReader) getterNames.add(sig.getter)
+    }
+    for (const memo of metadata.memos) {
+      if (!memo.isModule) getterNames.add(memo.name)
+    }
+    for (const [alias, origin] of resolveGetterAliases(metadata.localConstants ?? [], (n) => getterNames.has(n))) {
+      if (alias in out) continue
+      out[alias] = out[origin]
+    }
   }
 
   // Bare-props-arg safety net: the prop block above covers every prop
