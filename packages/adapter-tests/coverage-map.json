@@ -4683,7 +4683,58 @@
         "text"
       ]
     },
+    "select-multiple-value-no-match-ssr": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "select-option-selected": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "select-value-no-match-ssr": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "select-value-omitted-option-ssr": {
       "kinds": [
         "binary",
         "call",
@@ -4703,11 +4754,15 @@
         "binary",
         "call",
         "identifier",
-        "literal"
+        "literal",
+        "logical",
+        "unary"
       ],
       "axes": [
         "binary:===",
-        "literal:string"
+        "literal:string",
+        "logical:||",
+        "unary:!"
       ],
       "contexts": [
         "attribute"
@@ -5931,17 +5986,17 @@
     "array-literal": 88,
     "array-method": 71,
     "arrow": 71,
-    "binary": 94,
-    "call": 247,
+    "binary": 97,
+    "call": 250,
     "conditional": 30,
-    "identifier": 349,
+    "identifier": 352,
     "index-access": 14,
-    "literal": 277,
-    "logical": 47,
+    "literal": 280,
+    "logical": 49,
     "member": 197,
     "object-literal": 71,
     "template-literal": 30,
-    "unary": 24,
+    "unary": 26,
     "unsupported": 42
   },
   "axisCounts": {
@@ -5976,16 +6031,16 @@
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 49,
+    "binary:===": 52,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 59,
     "literal:null": 23,
-    "literal:number": 116,
-    "literal:string": 194,
+    "literal:number": 118,
+    "literal:string": 197,
     "logical:&&": 7,
     "logical:??": 41,
-    "logical:||": 14,
+    "logical:||": 16,
     "lowering:date": 4,
     "lowering:formatDate": 2,
     "lowering:queryHref": 4,
@@ -6000,7 +6055,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 16,
+    "unary:!": 18,
     "unary:-": 11
   },
   "uncoveredKinds": [

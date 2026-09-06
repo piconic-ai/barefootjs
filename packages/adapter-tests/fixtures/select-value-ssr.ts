@@ -38,6 +38,7 @@ export function FruitSelect() {
 `,
   expectedHtml: `
     <select bf-s="test" bf="s0">
+      <option disabled hidden value=""></option>
       <option value="apple">Apple</option>
       <option selected value="banana">Banana</option>
       <option value="cherry">Cherry</option>

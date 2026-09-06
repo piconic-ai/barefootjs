@@ -18,6 +18,7 @@ import {
   type IRIfStatement,
   type IRProvider,
   type IRAttribute,
+  type ExpressionAttr,
   type IREvent,
   type IRProp,
   type AttrValue,
@@ -1502,7 +1503,7 @@ function lowerFormControlValueSsr(
     return
   }
 
-  const selectedForLiteral = (optValue: string): AttrValue =>
+  const selectedForLiteral = (optValue: string): ExpressionAttr =>
     AttrValueOf.expression(
       `(${expr}) === ${JSON.stringify(optValue)}`,
       templateExpr !== undefined
@@ -1519,35 +1520,129 @@ function lowerFormControlValueSsr(
   // `classifyLazyBinding` already know how to place into both `applyItem`
   // (row changed) and `applyOuter` (controlled value changed) — no new loop
   // machinery, just one more per-row reactive attribute (#2466).
-  const selectedForExpr = (optExpr: string, optTemplateExpr: string | undefined): AttrValue =>
+  const selectedForExpr = (optExpr: string, optTemplateExpr: string | undefined): ExpressionAttr =>
     AttrValueOf.expression(
       `(${expr}) === (${optExpr})`,
       templateExpr !== undefined || optTemplateExpr !== undefined
         ? { templateExpr: `(${templateExpr ?? expr}) === (${optTemplateExpr ?? optExpr})` }
         : undefined,
     )
+  // #2758: a bound value outside the option set makes SSR and hydration
+  // disagree about what "no match" means. SSR (below) never marks any
+  // `<option>` `selected`, so the browser falls back to its own default —
+  // the FIRST option. Hydration's controlled-value effect then assigns
+  // `select.value` directly (`emitValueUpdateStatements` in
+  // `ir-to-client-js/emit-reactive.ts`), and a value matching no option
+  // yields `selectedIndex = -1` (nothing selected). So the page renders
+  // showing the first option, and the moment hydration runs the selection
+  // visibly disappears.
+  //
+  // Resolution: treat the client's reading as correct ("no match" means no
+  // selection) and make SSR able to express it. When every `<option>` here
+  // is statically enumerable (no `.map()` loop, no conditional/component/
+  // slot child, no author-supplied `selected`), collect each option's match
+  // condition and, for a single-selection `<select>` (not `multiple`, not
+  // `size` > 1 — a list-box already shows no implicit default, so SSR and
+  // hydration already agree there), inject a hidden `disabled` placeholder
+  // option whose own `selected` is the negation of every real option's
+  // condition ORed together. It is only ever actually selected when nothing
+  // else matched, so it changes nothing for the common case where the value
+  // does match an option.
+  //
+  // Bails (leaves prior behaviour) whenever the option set isn't fully
+  // statically known — a `.map()`-rendered list has an unknown number of
+  // rows at compile time, so there is no finite OR to negate.
+  const matchConditions: ExpressionAttr[] = []
+  let optionSetIsDynamic = false
+
   const distribute = (nodes: IRNode[]): void => {
     for (const n of nodes) {
+      if (n.type === 'text') continue
       if (n.type === 'element' && n.tag === 'option') {
-        if (n.attrs.some(a => a.name === 'selected')) continue
+        if (n.attrs.some(a => a.name === 'selected')) {
+          optionSetIsDynamic = true
+          continue
+        }
         const optValue = n.attrs.find(a => a.name === 'value')
-        if (!optValue) continue
+        if (!optValue) {
+          // No `value` attr: the browser falls back to the option's text
+          // content as its implicit value, which this pass can't compare
+          // against without re-deriving that text — bail rather than
+          // silently dropping this option out of the "no match" OR.
+          optionSetIsDynamic = true
+          continue
+        }
         if (optValue.value.kind === 'literal') {
-          n.attrs.push({ name: 'selected', value: selectedForLiteral(optValue.value.value), loc: n.loc })
+          const selected = selectedForLiteral(optValue.value.value)
+          n.attrs.push({ name: 'selected', value: selected, loc: n.loc })
+          matchConditions.push(selected)
         } else if (optValue.value.kind === 'expression') {
           const selected = selectedForExpr(optValue.value.expr, optValue.value.templateExpr)
           n.attrs.push({ name: 'selected', value: selected, loc: n.loc })
+          matchConditions.push(selected)
+        } else {
+          // A `value` shape neither builder above can compare (e.g. a
+          // structured `template` part) — same bail, not a silent drop.
+          optionSetIsDynamic = true
         }
-      } else if (
-        n.type === 'fragment' ||
-        n.type === 'loop' ||
-        (n.type === 'element' && n.tag === 'optgroup')
-      ) {
+      } else if (n.type === 'fragment' || (n.type === 'element' && n.tag === 'optgroup')) {
         distribute(n.children)
+      } else if (n.type === 'loop') {
+        // A `.map()`-rendered option list still needs its per-row `selected`
+        // distributed (#2466, preserved below) — but its row count is
+        // unknown at compile time, so it can't feed the "no match" OR.
+        optionSetIsDynamic = true
+        distribute(n.children)
+      } else {
+        // Conditionals/if-statements, components, slots — an option here
+        // may or may not exist at runtime, so the option set can't be
+        // exhaustively enumerated at compile time.
+        optionSetIsDynamic = true
       }
     }
   }
   distribute(children)
+
+  if (optionSetIsDynamic || matchConditions.length === 0) return
+  if (isMultiSelection(attrs)) return
+
+  const orExpr = matchConditions.map(c => `(${c.expr})`).join(' || ')
+  const orTemplateExpr = matchConditions.some(c => c.templateExpr !== undefined)
+    ? matchConditions.map(c => `(${c.templateExpr ?? c.expr})`).join(' || ')
+    : undefined
+
+  children.unshift({
+    type: 'element',
+    tag: 'option',
+    attrs: [
+      { name: 'value', value: AttrValueOf.literal(''), loc: valueAttr.loc },
+      { name: 'disabled', value: AttrValueOf.booleanAttr(), loc: valueAttr.loc },
+      { name: 'hidden', value: AttrValueOf.booleanAttr(), loc: valueAttr.loc },
+      {
+        name: 'selected',
+        value: AttrValueOf.expression(
+          `!(${orExpr})`,
+          orTemplateExpr !== undefined ? { templateExpr: `!(${orTemplateExpr})` } : undefined,
+        ),
+        loc: valueAttr.loc,
+      },
+    ],
+    events: [],
+    ref: null,
+    children: [],
+    slotId: null,
+    needsScope: false,
+    loc: valueAttr.loc,
+  })
+}
+
+/** `<select multiple>` or `size` > 1: a list box has no implicit default
+ *  selection, so SSR (no option `selected`) and hydration (`selectedIndex`
+ *  left at whatever it was) already agree without a placeholder option. */
+function isMultiSelection(attrs: IRAttribute[]): boolean {
+  if (attrs.some(a => a.name === 'multiple')) return true
+  const sizeAttr = attrs.find(a => a.name === 'size')
+  return sizeAttr?.value.kind === 'literal' && Number(sizeAttr.value.value) > 1
 }
 
 function transformHtmlElement(

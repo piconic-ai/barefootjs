@@ -5241,7 +5241,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const arg = emit(argument)
-    if (op === '!') return `not ${arg}`
+    // `not` is a Go template prefix builtin like `and`/`or` (see `logical()`
+    // below) — a multi-token argument (e.g. `or a b`) must be parenthesised
+    // or it degrades into extra sibling args of `not` itself (#2758: `not
+    // or a b` parses as `not` applied to 3 args, not 1).
+    if (op === '!') return `not ${wrapIfMultiToken(arg)}`
     if (op === '-') return `bf_neg ${arg}`
     return arg
   }
@@ -7083,7 +7087,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'unary': {
         const arg = this.renderConditionExpr(expr.argument)
-        if (expr.op === '!') return { preamble: arg.preamble, expr: `not ${arg.expr}` }
+        // Same prefix-builtin wrapping rule as the `logical` case just below
+        // (and the main `unary()` emitter above): `not` needs its multi-token
+        // argument parenthesised, or e.g. `not or a b` parses as `not`
+        // applied to 3 sibling args instead of 1 (#2758).
+        if (expr.op === '!') return { preamble: arg.preamble, expr: `not ${wrapIfMultiToken(arg.expr)}` }
         if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${arg.expr}` }
         return arg
       }
