@@ -548,6 +548,21 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
       `${memo.name} => ${value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'}`,
     )
   }
+  // #2788: `extractSsrDefaults` can seed an entry under a name that is
+  // none of `propsParams` / `signals` / `memos` above — a bare-props-form
+  // component's body-level RENAMED destructure (`const { children: kids }
+  // = props`) seeds `kids` alongside the caller-facing `children`
+  // (`ssr-defaults.ts`). Real production hands `$entry->{ssrDefaults}`
+  // straight through to `_derive_stash_from_defaults`, which iterates
+  // every key it contains — so any leftover entry here must be added too,
+  // or this harness's hand-built stash literal would silently omit a key
+  // production's manifest-driven path already provides, mismeasuring
+  // this conformance case's real behavior.
+  for (const name of Object.keys(ssrDefaults)) {
+    if (declared.has(name)) continue
+    declared.add(name)
+    entries.push(`${name} => ${ssrDefaultEntryToPerl(ssrDefaults[name])}`)
+  }
   return `{${entries.join(', ')}}`
 }
 

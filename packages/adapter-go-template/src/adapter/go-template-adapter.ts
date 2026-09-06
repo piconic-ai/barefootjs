@@ -82,6 +82,7 @@ import {
   buildImportAliasMap,
   resolveGetterAliases,
   collectAliasableGetterNames,
+  resolveBodyDestructuredPropAliases,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -476,6 +477,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const getterNames = collectAliasableGetterNames(ir.metadata.signals ?? [], ir.metadata.memos ?? [])
       this.state.getterAliases = resolveGetterAliases(ir.metadata.localConstants ?? [], (n) => getterNames.has(n))
     }
+    // #2788: bare-props-form body destructure aliases (`const { children:
+    // kids } = props`) — same alias-resolution need as `getterAliases`
+    // above, different terminal set (a prop key here, a signal/memo
+    // getter there).
+    this.state.propDestructureAliases = resolveBodyDestructuredPropAliases(
+      ir.metadata.localConstants ?? [],
+      ir.metadata.propsObjectName,
+    )
     // #2208 fable review: every name a `.map()`/`.filter()` loop callback
     // binds as its item/index parameter anywhere in the component. Static
     // loop-source resolution (`getBakedStaticChildLoop` /
@@ -4857,12 +4866,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
    */
   private rootFieldRef(name: string): string {
-    // #2813: `name` may be a bare local-const alias of a signal/memo
-    // getter (`const items__alias = items`) — resolve it to the getter's
-    // own name FIRST, so the emitted field matches what the getter itself
-    // seeds (`.Items`) instead of registering a second, never-seeded field
-    // under the alias (`.Items__alias`).
-    const resolved = this.state.getterAliases.get(name) ?? name
+    // #2813 / #2788: `name` may be a bare local-const alias of a
+    // signal/memo getter (`const items__alias = items`) or a bare-props-
+    // form body destructure's renamed prop (`const { children: kids } =
+    // props`) — resolve it to the ALIASED entity's own name FIRST, so the
+    // emitted field matches what that entity itself seeds (`.Items`,
+    // `.Children`) instead of registering a second, never-populated field
+    // under the local alias (`.Items__alias`, `.Kids`).
+    const resolved = this.state.getterAliases.get(name) ?? this.state.propDestructureAliases.get(name) ?? name
     this.state.templateReadRootFields.add(resolved)
     const prefix = this.inLoop ? '$.' : '.'
     return `${prefix}${capitalizeFieldName(resolved)}`

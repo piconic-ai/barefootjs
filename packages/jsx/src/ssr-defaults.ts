@@ -32,6 +32,7 @@
 import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
+import { resolveBodyDestructuredPropAliases } from './props-binding.ts'
 import type { IRMetadata } from './types.ts'
 
 /**
@@ -330,6 +331,29 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
       if (alias in out) continue
       out[alias] = out[origin]
     }
+  }
+
+  // #2788: a bare-props-form component (`function Foo(props: Props)`)
+  // whose BODY destructures a prop under a different local name
+  // (`const { children: kids } = props`) has no `ParamInfo.sourceName` to
+  // key off above — `propsParams` here comes from the TYPE annotation
+  // (`extractPropsFromTypeMembers`), which has no notion of a body-level
+  // rename. `resolveBodyDestructuredPropAliases` recognizes such a
+  // destructuring statement's `localConstants` shape; seeding the LOCAL
+  // name too (alongside the caller-facing key already seeded above) is
+  // enough to fix what a template-stash adapter's compiled output
+  // actually reads (`v[:kids]` / `$kids`). Without this, a stash-based
+  // adapter reading the renamed local sees an undefined/nil value instead
+  // of the prop — fatal under Perl strict mode (Mojolicious), a
+  // nonexistent Go struct field, or (on an adapter whose runtime
+  // tolerates a missing key) a silent wrong render the moment a caller
+  // actually supplies a value. Parameter-destructuring aliases (`{ n:
+  // count }`) need no such entry — `sourceName`/`name` already handle
+  // that shape via `callerPropName` above.
+  for (const [local, callerKey] of resolveBodyDestructuredPropAliases(metadata.localConstants ?? [], metadata.propsObjectName)) {
+    if (local in out) continue
+    const origin = out[callerKey]
+    if (origin) out[local] = origin
   }
 
   // Bare-props-arg safety net: the prop block above covers every prop
