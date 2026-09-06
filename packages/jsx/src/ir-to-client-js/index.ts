@@ -15,6 +15,7 @@ import { generateInitFunction } from './generate-init.ts'
 import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.ts'
 import { addConstantPropRefsToSet } from './init-declarations.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
+import { markupSlotIdsOf } from './markup-slots.ts'
 import { PROPS_PARAM } from './utils.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
@@ -282,10 +283,9 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   if (canGenerateStaticTemplate(ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
     // `ctx.dynamicElements` is always empty on this template-only path
-    // (`needsClientJs(ctx)` gates it) — passed through anyway so this
-    // matches `emitRegistrationAndHydration`'s derivation byte-for-byte
-    // rather than special-casing "no markup slots here" (#2651).
-    const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
+    // (`needsClientJs(ctx)` gates it) — derived through the shared function
+    // anyway rather than special-casing "no markup slots here" (#2651).
+    const markupSlotIds = markupSlotIdsOf(ctx)
     templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
   }
 

@@ -11,6 +11,7 @@ import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './control-flow/stringify/claim-plan.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
+import { DYNAMIC_ELEMENT_WRITER_KIND } from './markup-slots.ts'
 import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from '../to-locale-date-lowering.ts'
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
@@ -393,9 +394,11 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
       // 'text') because the value may be a live Node (e.g. a JSX-returning
       // call like `{themeLogo(id)}`) — the writer splices a Node in by
       // identity, exactly the contract `__bfText` used to provide (#1663).
+      // The kind is a named constant so the initial-render side
+      // (`markup-slots.ts` → `escapeTextOrMarkup`) reads the same decision.
       let writer = ''
       if (normalElems.length > 0) {
-        const slots: ClaimSlotSpec[] = normalElems.map(elem => ({ id: elem.slotId, kind: 'markup', path: [] }))
+        const slots: ClaimSlotSpec[] = normalElems.map(elem => ({ id: elem.slotId, kind: DYNAMIC_ELEMENT_WRITER_KIND, path: [] }))
         writer = claimWriterVarName(slots, varSlotId)
         lines.push(`  const ${writer} = lazySlots(__scope, ${claimPlanLiteral(slots)})`)
       }

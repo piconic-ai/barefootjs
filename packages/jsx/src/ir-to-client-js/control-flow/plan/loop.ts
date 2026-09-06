@@ -23,6 +23,7 @@ import type {
   TopLevelLoop,
 } from '../../types.ts'
 import type { IRLoopChildComponent } from '../../../types.ts'
+import type { SafeHtml } from '../../safe-html.ts'
 import type { SkeletonSlotPaths } from '../../html-template.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 import type { InnerLoopsPlan } from './inner-loop.ts'
@@ -83,15 +84,16 @@ interface DynamicLoopCommon extends LoopPlanCommon {
 
 /**
  * A resolved preamble-patched region (#2389), ready to emit: `valueExpr` is
- * already wrapped with the loop-param accessor and, for a `joinArrayChild`
- * source, already carries the array-join ternary — the exact value
- * `irToHtmlTemplate` computes for the same node in the row template, so a
- * same-key update's re-patch stays byte-identical to what a fresh mount
- * would render.
+ * already wrapped with the loop-param accessor and already went through the
+ * child-splice door (`safe-html.ts`) — the exact value `irToHtmlTemplate`
+ * computes for the same node in the row template, so a same-key update's
+ * re-patch stays byte-identical to what a fresh mount would render. Typed
+ * `SafeHtml` because the region writer is an `innerHTML` write: only a
+ * value the door (or a named producer) vouched for may reach it.
  */
 export interface PreambleRegionPlan {
   slotId: string
-  valueExpr: string
+  valueExpr: SafeHtml
 }
 
 /** Per-item ref callback resolved against a child slot for emission (#1244). */

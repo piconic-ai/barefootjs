@@ -9,6 +9,7 @@ import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
+import { markupSlotIdsOf } from './markup-slots.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { resolveRestSpreadNames } from './prop-handling.ts'
 
@@ -219,10 +220,7 @@ export function emitRegistrationAndHydration(
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
   if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
-    // `ctx.dynamicElements` is the claim-plan-'markup' membership
-    // (#2651) — see `generateCsrTemplate`'s identical derivation below
-    // for why this is reused as-is rather than re-derived.
-    const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
+    const markupSlotIds = markupSlotIdsOf(ctx)
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
     if (templateHtml) {
       defParts.push(buildTemplateDefPart(ctx, templateHtml))
