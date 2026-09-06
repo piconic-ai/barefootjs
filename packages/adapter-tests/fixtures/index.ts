@@ -525,6 +525,7 @@ import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
 import { fixture as queryHrefTernaryUndefined } from './query-href-ternary-undefined'
+import { fixture as queryHrefShorthandProp } from './query-href-shorthand-prop'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
 import { fixture as dateToLocaleDateStyle } from './date-tolocale-datestyle'
@@ -546,6 +547,17 @@ import { fixture as selectValueSsr } from './select-value-ssr'
 // (per-row) value expression, feeding the same per-row reactive-attribute
 // machinery `applyItem`/`applyOuter` already use.
 import { fixture as selectLoopSelected } from './select-loop-selected'
+// #2758: a value matching no option gets an explicit SSR "nothing
+// selected" via a hidden placeholder option, instead of the browser's
+// implicit first-option default that then disagreed with hydration.
+import { fixture as selectValueNoMatchSsr } from './select-value-no-match-ssr'
+// Companion to the above: a `multiple` select already has no implicit
+// default to disagree with, so the placeholder must NOT be injected there.
+import { fixture as selectMultipleValueNoMatchSsr } from './select-multiple-value-no-match-ssr'
+// Review follow-up: a value-less <option> (implicit textContent-as-value)
+// mixed with literal/expression options must bail the placeholder, not
+// silently drop out of the "no match" OR.
+import { fixture as selectValueOmittedOptionSsr } from './select-value-omitted-option-ssr'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 // #2756: the keyed-loop-row form of the same controlled-textarea SSR
 // projection — the shape whose CLIENT row builder used to bake back the
@@ -579,6 +591,13 @@ import { fixture as destructuredObjectPropNested } from './destructured-object-p
 // directly — the CSR template builder resolved the alias to the literal
 // `undefined` instead of following it.
 import { fixture as aliasedLoopSource } from './aliased-loop-source'
+// #2859: a keyed .map() row whose badge text and class both derive from
+// the row's own index — a same-key reorder must update both to the row's
+// CURRENT position, not the position it was created at.
+import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
+// #2859 follow-on: the same index-reorder shape, but with no per-row
+// imperative content — stays on the lazy row graph instead of forcing eager.
+import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
 
 import type { JSXFixture } from '../src/types'
 
@@ -951,6 +970,7 @@ export const jsxFixtures: JSXFixture[] = [
   queryHrefSrc,
   queryHrefTernary,
   queryHrefTernaryUndefined,
+  queryHrefShorthandProp,
   dateToLocaleLiteral,
   dateToLocaleUnion,
   dateToLocaleDateStyle,
@@ -961,6 +981,9 @@ export const jsxFixtures: JSXFixture[] = [
   aliasedPropSignalTagCollision,
   selectValueSsr,
   selectLoopSelected,
+  selectValueNoMatchSsr,
+  selectMultipleValueNoMatchSsr,
+  selectValueOmittedOptionSsr,
   textareaValueSsr,
   signalEarlyReturn,
   branchRootPropAttr,
@@ -978,4 +1001,6 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowControlledInput,
   statelessRestSpreadForward,
   aliasedLoopSource,
+  keyedLoopIndexReorder,
+  lazyRowIndexReorder,
 ]

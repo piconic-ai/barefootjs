@@ -31,7 +31,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
   const nestedComps = elem.nestedComponents!
   const depthLevels = buildDepthLevels(elem.innerLoops ?? [], nestedComps, elem.bindings.events)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings, elem.index)
 
   const outerCompsByDepth = nestedComps.filter(c => !c.loopDepth || c.loopDepth === 0)
 
@@ -48,13 +48,13 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
     mapPreambleWrapped: elem.preamble
       ? renderPreamble(elem.preamble, {
           transformJs: wrap,
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings, index: elem.index }], undefined),
         })
       : '',
     template: elem.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, elem.bindings.conditionals),
     outerEvents: elem.bindings.events.filter(ev => ev.nestedLoops.length === 0),
-    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
+    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings, elem.index),
     innerLoops: buildInnerLoopsPlan({
       levels: depthLevels,
       parentElVar: '__el',
@@ -63,6 +63,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
     }),
     loopParam: elem.param,
     loopParamBindings: elem.paramBindings,
+    loopIndex: elem.index,
     reactiveEffects: hasReactive(elem)
       ? buildReactiveEffectsPlan({
           attrs: elem.bindings.reactiveAttrs,
@@ -70,6 +71,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
           conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,
+          loopIndex: elem.index,
           profileComponentName,
         })
       : null,
@@ -88,7 +90,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
   const childEvents = loop.bindings.events
   const depthLevels = buildDepthLevels(innerLoops, nestedComps, childEvents)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loop.param, loop.paramBindings)
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loop.param, loop.paramBindings, loop.index)
 
   const outerCompsByDepth = nestedComps.filter(c => !c.loopDepth || c.loopDepth === 0)
 
@@ -108,13 +110,13 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
     mapPreambleWrapped: loop.preamble
       ? renderPreamble(loop.preamble, {
           transformJs: wrap,
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings, index: loop.index }], undefined),
         })
       : '',
     template: loop.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, loop.bindings.conditionals),
     outerEvents: childEvents.filter(ev => ev.nestedLoops.length === 0),
-    childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
+    childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings, loop.index),
     innerLoops: buildInnerLoopsPlan({
       levels: depthLevels,
       parentElVar: '__el',
@@ -123,6 +125,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
     }),
     loopParam: loop.param,
     loopParamBindings: loop.paramBindings,
+    loopIndex: loop.index,
     reactiveEffects: hasReactiveBranch(loop)
       ? buildReactiveEffectsPlan({
           attrs: loop.bindings.reactiveAttrs,
@@ -130,6 +133,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
           conditionals: loop.bindings.conditionals,
           loopParam: loop.param,
           loopParamBindings: loop.paramBindings,
+          loopIndex: loop.index,
           profileComponentName,
         })
       : null,

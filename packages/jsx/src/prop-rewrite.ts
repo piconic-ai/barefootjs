@@ -105,9 +105,14 @@ function isNonValuePosition(n: ts.Identifier, parent: ts.Node | undefined): bool
 /**
  * Walk an AST node for destructured-prop value references and add
  * each found name to `out`. Same skip rules as the rewrite path —
- * object-literal keys, shorthand properties, property-access names,
- * and names shadowed by a binding inside `node` are excluded so only
- * true value references get picked up. Exported for callers that need
+ * object-literal keys, property-access names, and names shadowed by a
+ * binding inside `node` are excluded so only true value references get
+ * picked up. A shorthand property (`{ page }`) IS a value reference —
+ * its name is simultaneously the key and the value, and
+ * `applyScopedPropRefRewrite` below already expands it correctly
+ * (`{ page }` → `{ page: _p.page }`) — so it must be discovered here
+ * too, or the rewrite is never even attempted for text whose only prop
+ * reference is a shorthand one (#2828). Exported for callers that need
  * the raw discovery set (e.g. the branch-local prop-dep cache from
  * #1425).
  */
@@ -118,7 +123,6 @@ export function collectAstPropRefs(
 ): void {
   walkWithScope(node, (n, parent, shadowed) => {
     if (shadowed || !propNames.has(n.text)) return
-    if (parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n) return
     if (isNonValuePosition(n, parent)) return
     out.add(n.text)
   })

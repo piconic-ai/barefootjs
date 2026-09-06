@@ -52,6 +52,8 @@ export interface BuildReactiveEffectsArgs {
   conditionals: readonly LoopChildConditional[] | undefined
   loopParam: string
   loopParamBindings?: readonly LoopParamBinding[]
+  /** This loop's index param name, when it declares one (#2859). */
+  loopIndex?: string | null
   /** Owning component name in profile mode (#1690, SR3) — else undefined. */
   profileComponentName?: string
 }
@@ -60,8 +62,8 @@ export interface BuildReactiveEffectsArgs {
 export function buildReactiveEffectsPlan(
   args: BuildReactiveEffectsArgs,
 ): ReactiveEffectsPlan {
-  const { attrs, texts, conditionals, loopParam, loopParamBindings, profileComponentName } = args
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings)
+  const { attrs, texts, conditionals, loopParam, loopParamBindings, loopIndex, profileComponentName } = args
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings, loopIndex)
 
   // 1. Group attrs by slot, preserving declaration order (Map insertion order
   //    matches the legacy iteration that produced byte-identical output).
@@ -175,6 +177,7 @@ export function buildLoopReactiveEffectsPlan(elem: TopLevelLoop, profileComponen
     conditionals: elem.bindings.conditionals,
     loopParam: elem.param,
     loopParamBindings: elem.paramBindings,
+    loopIndex: elem.index,
     profileComponentName,
   })
 }

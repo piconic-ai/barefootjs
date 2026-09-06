@@ -124,3 +124,40 @@ export { Comp }
     expect(js).toContain("items.map((tag) => tag.a).join(',') + _p.tag")
   })
 })
+
+// #2828 follow-up (pullfrog review on #2853): `collectBranchLocalPropRefsViaSubstitution`
+// (jsx-to-ir.ts) is a second, independent AST walk that decides whether a
+// branch-local variable's TRANSITIVE prop dependency gets unioned into a
+// reactive expression's rewrite — same "is this a value reference" question
+// #2828 fixed in `collectAstPropRefs`, but this walk had its own,
+// un-fixed `isShorthand` exclusion. A branch-local whose own initializer
+// reads a prop, referenced via object-literal shorthand inside a REACTIVE
+// expression, had its prop dependency silently dropped: the emitted
+// module-scope hydrate template lambda kept a bare, unprefixed reference
+// to the prop name instead of `_p.<prop>`.
+describe('branch-local transitive prop-dep via shorthand reference (#2828 follow-up)', () => {
+  test('a branch-local read from a prop, referenced via shorthand, still resolves to _p.<prop> in the hydrate template', () => {
+    const source = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+export function Comp({ tag }: { tag: string }) {
+  const [n] = createSignal(0)
+  if (n() > 0) {
+    const local = tag
+    return <div data-x={JSON.stringify({ local }) + n()}>{n()}</div>
+  }
+  return <div>none</div>
+}
+`
+    const js = compileClientJs(source)
+    // Pre-fix: the hydrate template's module-scope lambda kept a bare
+    // `tag` reference (no binding at that scope -- ReferenceError at pure
+    // CSR mount). Post-fix: it resolves through `_p.tag` like every other
+    // prop reference. (The surrounding `{ (_p.tag) }` shape -- the branch-
+    // local substitution dropping the shorthand's own key -- is a
+    // separate, pre-existing defect tracked independently; this test pins
+    // only the prop-dependency question #2828's follow-up fixed.)
+    expect(js).not.toContain('{ (tag) }')
+    expect(js).toContain('{ (_p.tag) }')
+  })
+})

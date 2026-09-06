@@ -33,11 +33,11 @@ const SIGNALS: ReadonlySet<string> = new Set(['selected', 'filter'])
 
 describe('analyzeLazyPreamble — accepted', () => {
   test('no preamble at all', () => {
-    expect(analyzeLazyPreamble(undefined, '__idx', SIGNALS).lazySafe).toBe(true)
+    expect(analyzeLazyPreamble(undefined, SIGNALS).lazySafe).toBe(true)
   })
 
   test('const declarations reading only the item', () => {
-    const r = analyzeLazyPreamble(preamble("const full = `${row.a} ${row.b}`;", ['full']), '__idx', SIGNALS)
+    const r = analyzeLazyPreamble(preamble("const full = `${row.a} ${row.b}`;", ['full']), SIGNALS)
     expect(r.lazySafe).toBe(true)
     if (r.lazySafe) expect([...r.facts.declaredNames]).toEqual(['full'])
   })
@@ -45,16 +45,21 @@ describe('analyzeLazyPreamble — accepted', () => {
   test('a zero-arg signal read is allowed — the krausest shape', () => {
     const r = analyzeLazyPreamble(
       preamble("const cls = selected() === row.id ? 'danger' : '';", ['cls']),
-      '__idx',
       SIGNALS,
     )
     expect(r.lazySafe).toBe(true)
   })
 
   test('a destructuring const contributes every bound name, not the property keys', () => {
-    const r = analyzeLazyPreamble(preamble('const { a, b: [c] } = row;', ['a', 'c']), '__idx', SIGNALS)
+    const r = analyzeLazyPreamble(preamble('const { a, b: [c] } = row;', ['a', 'c']), SIGNALS)
     expect(r.lazySafe).toBe(true)
     if (r.lazySafe) expect([...r.facts.declaredNames].sort()).toEqual(['a', 'c'])
+  })
+
+  test('a preamble reading the loop index is accepted (#2859 follow-up) — the name survives into freeNames', () => {
+    const r = analyzeLazyPreamble(preamble('const n = __idx + 1;', ['n']), SIGNALS)
+    expect(r.lazySafe).toBe(true)
+    if (r.lazySafe) expect(r.facts.freeNames.has('__idx')).toBe(true)
   })
 })
 
@@ -112,16 +117,11 @@ describe('analyzeLazyPreamble — refusals', () => {
       preamble('const selected = row.sel;', ['selected']),
       /shadows the signal\/memo getter 'selected'/,
     ],
-    [
-      'a preamble reading the loop index',
-      preamble('const n = __idx + 1;', ['n']),
-      /reads the loop index parameter '__idx'/,
-    ],
   ]
 
   for (const [name, p, reason] of cases) {
     test(name, () => {
-      const r = analyzeLazyPreamble(p, '__idx', SIGNALS)
+      const r = analyzeLazyPreamble(p, SIGNALS)
       expect(r.lazySafe).toBe(false)
       if (!r.lazySafe) expect(r.reason).toMatch(reason)
     })
@@ -134,7 +134,7 @@ describe('analyzeLazyPreamble — refusals', () => {
       declaredNames: [],
       builderNames: [],
     }
-    const r = analyzeLazyPreamble(p, '__idx', SIGNALS)
+    const r = analyzeLazyPreamble(p, SIGNALS)
     expect(r.lazySafe).toBe(false)
     if (!r.lazySafe) expect(r.reason).toMatch(/JSX leaf/)
   })

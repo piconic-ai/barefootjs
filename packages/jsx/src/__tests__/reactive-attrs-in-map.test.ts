@@ -266,17 +266,20 @@ describe('reactive attributes inside .map() callbacks', () => {
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
 
     const clientJs = result.files.find(f => f.type === 'clientJs')!.content
-    // The per-item style binding must be wired through a createEffect that
-    // re-reads the helper and writes the style attribute, so it tracks the
-    // `items()` signal and updates after hydration. Pin the helper call
-    // *inside* the createEffect alongside the style write — `widthAt(` also
+    // The per-item style binding must be wired reactively — re-reading the
+    // helper and writing the style attribute, so it tracks the `items()`
+    // signal and updates after hydration, rather than being baked into the
+    // item template once. This row has no ref/child component/inner loop,
+    // so it is lazy-eligible (#2859 follow-on): `widthAt(i)` reads the
+    // index (forcing `applyItem`) and closes over `items()` opaquely
+    // (forcing `applyOuter` too, via the re-subscribe seam), so BOTH apply
+    // bodies re-evaluate it, not a `createEffect`. Pin the helper call
+    // *inside* `applyItem` alongside the style write — `widthAt(` also
     // appears in the static template clone, so asserting it independently
-    // could pass even if the effect was missing (the exact regression here).
-    // The index resolves to the loop's renderItem index param, in scope
-    // inside the factory.
-    expect(clientJs).toMatch(
-      /createEffect\(\(\)\s*=>\s*\{[\s\S]*?widthAt\([\s\S]*?setAttribute\('style'/,
-    )
+    // could pass even if the reactive wiring were missing (the exact
+    // regression here).
+    const applyItem = clientJs.slice(clientJs.indexOf('applyItem:'), clientJs.indexOf('applyOuter:'))
+    expect(applyItem).toMatch(/widthAt\([\s\S]*?setAttribute\('style'/)
   })
 
   test('keyed loop: `key` prop is not emitted as a reactive DOM attribute', () => {

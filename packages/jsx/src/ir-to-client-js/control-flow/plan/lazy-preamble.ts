@@ -68,9 +68,10 @@
  *    markup, which is `preambleRegions` territory (refused separately).
  *  - No `builderNames`. Same shape as above, pinned explicitly so the reason
  *    names it rather than surfacing as a confusing "contains a call".
- *  - The preamble does not read the loop's INDEX parameter. `applyItem` and
- *    `applyOuter` have no index to give it — the same reason
- *    `ClassifiedLazyBinding.referencesIndex` refuses a binding.
+ *  - (#2859 follow-up) The preamble MAY read the loop's index parameter — it
+ *    survives into `freeNames` below like any other read, so a binding that
+ *    names this preamble local substitutes through to it and is classified
+ *    the same way a direct index reference is (forced into `applyItem`).
  *
  * Member access is deliberately NOT banned even though a getter could in
  * principle run code: a binding expression like `class={row.cls}` is already
@@ -130,9 +131,6 @@ const NO = (reason: string): LazyPreambleAnalysis => ({ lazySafe: false, reason 
  * Decide whether `preamble` may be re-executed inside a lazy row's apply
  * bodies, and if so what it declares and reads.
  *
- * `indexParam` is the loop's index parameter name as the emitter uses it
- * (`elem.index || '__idx'`); a preamble reading it is refused.
- *
  * `primableNames` are the component's signal getters and memos — the only
  * callees a preamble initializer may invoke (see the module docstring). Pass
  * the same names `LazyRowScopeInfo` carries, so "primable here" and "primable
@@ -140,7 +138,6 @@ const NO = (reason: string): LazyPreambleAnalysis => ({ lazySafe: false, reason 
  */
 export function analyzeLazyPreamble(
   preamble: MapCallbackPreamble | undefined,
-  indexParam: string,
   primableNames: ReadonlySet<string>,
 ): LazyPreambleAnalysis {
   if (!preamble) return NO_PREAMBLE
@@ -196,13 +193,14 @@ export function analyzeLazyPreamble(
     }
   }
 
-  // The index parameter does not exist in `applyItem` / `applyOuter`, and
-  // `createRow` receives it but the preamble must read the same values in
-  // every body it runs in. Same reason `referencesIndex` refuses a binding.
+  // A preamble reading the loop index (#2859 follow-up, widening from a hard
+  // refusal) is no longer refused here: `indexParam` survives into
+  // `freeNames` below, and any binding that names this preamble local
+  // substitutes through to it (`classifyLazyBinding`'s preamble handling),
+  // which classifies a free `indexParam` the same way a direct reference
+  // would — forcing the binding into `applyItem` so a reorder re-evaluates
+  // it via `entry.index`.
   const readNames = extractFreeIdentifiersFromStatementText(text)
-  if (readNames.has(indexParam) && !declaredNames.has(indexParam)) {
-    return NO(`map-callback preamble reads the loop index parameter '${indexParam}'`)
-  }
 
   const freeNames = new Set(readNames)
   for (const declared of declaredNames) freeNames.delete(declared)

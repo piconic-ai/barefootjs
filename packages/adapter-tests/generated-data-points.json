@@ -2105,6 +2105,80 @@
       }
     }
   ],
+  "query-href-shorthand-prop": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "tag": "sale",
+        "page": "2"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "tag": "sale",
+        "page": "2"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "tag": "sale",
+        "page": "2"
+      }
+    },
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "base": "/items",
+        "tag": "",
+        "page": "2"
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "base": "/items",
+        "tag": "<b>&\"'</b>",
+        "page": "2"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "base": "/items",
+        "tag": "日本語",
+        "page": "2"
+      }
+    },
+    {
+      "name": "gen:page:empty",
+      "props": {
+        "base": "/items",
+        "tag": "sale",
+        "page": ""
+      }
+    },
+    {
+      "name": "gen:page:markup",
+      "props": {
+        "base": "/items",
+        "tag": "sale",
+        "page": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:page:multibyte",
+      "props": {
+        "base": "/items",
+        "tag": "sale",
+        "page": "日本語"
+      }
+    }
+  ],
   "query-href-src": [
     {
       "name": "gen:base:empty",

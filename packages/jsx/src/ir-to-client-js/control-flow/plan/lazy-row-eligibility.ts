@@ -284,9 +284,15 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
 
   // Per-binding gates.
   for (const b of bindings) {
-    if (b.referencesIndex) {
-      return NO(`binding on slot ${b.slotId} references the loop index parameter`)
-    }
+    // A binding that references the loop index (#2859 follow-up, widening
+    // from a hard refusal): `applyItem`/`applyOuter` have no index PARAMETER,
+    // but the reconciler tracks each entry's current position on `entry.index`
+    // (`LazyRowEntry.index`, `map-array-lazy.ts`) exactly like it tracks
+    // `entry.item` — a reorder is a position change the reconciler already
+    // detects, the same way an item change is. `classifyLazyBinding` forces
+    // `readsItem: true` for any binding with `referencesIndex`, so it is
+    // ALWAYS emitted into `applyItem`, and the runtime calls `applyItem` on a
+    // pure reorder too when `plan.indexDriven` (`LazyRowPlanData.readsIndex`).
     // An identifier set we could not compute at all is different in kind
     // from a name we CAN see but cannot prime. With `free === null` the
     // classifier knows nothing — not the outer reads, and not whether the
@@ -445,7 +451,11 @@ export function classifyLazyBinding(args: {
       return
     }
     if (name === indexParam) {
+      // The row's current position (#2859 follow-up) — the reconciler
+      // delivers it on `entry.index` exactly like it delivers the item on
+      // `entry.item`, so a binding that reads it is item-driven too.
       referencesIndex = true
+      readsItem = true
       return
     }
     if (INERT_BINDING_GLOBALS.has(name)) return

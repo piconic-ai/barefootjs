@@ -581,17 +581,63 @@ function renderLoopBindingAccess(b: LoopParamBinding, base: string): string {
  * binding name is rewritten to `__bfItem()${path}` instead of wrapping the
  * raw pattern text. `paramName` is ignored in that case — destructured
  * callbacks never expose the pattern itself as a local.
+ *
+ * `indexParam` (#2859): the same `.map()` callback's index parameter
+ * (`(item, i) => ...`'s `i`), when the loop declares one. `mapArray`/
+ * `mapArrayAnchored` hand `renderItem` an INDEX ACCESSOR (mirroring the item
+ * accessor) precisely so a same-key reorder — which never re-invokes
+ * `renderItem`, only pushes fresh values through the item/index signals —
+ * can keep a row's index-derived output live. A bare reference to
+ * `indexParam` is therefore rewritten the same way as the item param; a
+ * caller that never threads an index through (e.g. no second callback
+ * param) simply omits it and behavior is unchanged. Rewritten as a SEPARATE
+ * pass after the item/bindings rewrite so an index name that happens to
+ * collide with a destructured binding name is a no-op here (the binding
+ * rewrite already consumed it; `!== paramName` below only guards the plain,
+ * non-destructured case, since `bindings` and `paramName` are mutually
+ * exclusive inputs to the item rewrite above).
  */
-export function wrapLoopParamAsAccessor(expr: string, paramName: string, bindings?: readonly LoopParamBinding[]): string {
+export function wrapLoopParamAsAccessor(
+  expr: string,
+  paramName: string,
+  bindings?: readonly LoopParamBinding[],
+  indexParam?: string | null,
+): string {
+  let result: string
   if (bindings && bindings.length > 0) {
-    return rewriteLoopBindingRefs(expr, bindings, '__bfItem()')
+    result = rewriteLoopBindingRefs(expr, bindings, '__bfItem()')
+  } else {
+    // `paramName` is a legal JS identifier and may itself start with `$`
+    // (`$1`, `$&`, …) — a plain string replacement would risk `String.replace`
+    // reading those as backreference/whole-match sequences, so use a replacer
+    // function to insert the accessor text literally (#2592).
+    const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(paramName)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
+    result = replaceInExprContexts(expr, re, () => `${paramName}()`)
   }
-  // `paramName` is a legal JS identifier and may itself start with `$`
-  // (`$1`, `$&`, …) — a plain string replacement would risk `String.replace`
-  // reading those as backreference/whole-match sequences, so use a replacer
-  // function to insert the accessor text literally (#2592).
-  const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(paramName)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
-  return replaceInExprContexts(expr, re, () => `${paramName}()`)
+  if (indexParam && indexParam !== paramName) {
+    result = wrapIndexParamAsAccessor(result, indexParam)
+  }
+  return result
+}
+
+/**
+ * The index-only half of `wrapLoopParamAsAccessor` — same regex shape, own
+ * identifier. Factored out so `wrapLoopParamAsAccessor` can run it as a
+ * second pass regardless of which item-rewrite branch (bindings vs. plain
+ * param) ran first (#2859).
+ *
+ * Also exported standalone for `build-loop.ts`/`build-branch-loop.ts`: a
+ * plain loop's `template`/`mapPreambleWrapped` are built ONCE, before lazy
+ * eligibility is known, because the lazy row plan reuses them verbatim when
+ * this loop turns out to be lazy-eligible (`mapArrayLazy`'s `createRow`
+ * still hands the row a plain index NUMBER, never an accessor). So those two
+ * builders wrap item references up front (safe either way) and apply this
+ * index-only pass afterward, ONLY once `buildLazyRowPlan` confirms the loop
+ * is NOT going lazy.
+ */
+export function wrapIndexParamAsAccessor(expr: string, indexParam: string): string {
+  const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(indexParam)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
+  return replaceInExprContexts(expr, re, () => `${indexParam}()`)
 }
 
 /**
@@ -718,6 +764,8 @@ export function substituteLoopBindings(
 export interface LoopParamSpec {
   param: string
   bindings?: readonly LoopParamBinding[]
+  /** This loop's index parameter name, when it declares one (#2859). */
+  index?: string | null
 }
 
 /**
@@ -747,7 +795,7 @@ export function wrapExprWithLoopParams(expr: string, loopParams?: ReadonlyArray<
   let result = expr
   for (const p of loopParams) {
     const spec = typeof p === 'string' ? { param: p } : p
-    result = wrapLoopParamAsAccessor(result, spec.param, spec.bindings)
+    result = wrapLoopParamAsAccessor(result, spec.param, spec.bindings, spec.index)
   }
   return result
 }

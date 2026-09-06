@@ -36,6 +36,23 @@
  * `collectLoopChildBindings` / `collectLoopChildConditionals` /
  * `summarizeLoopChildBranch` / `collectLoopChildReactiveAttrs` /
  * `collectLoopChildReactiveTexts` into `buildLoopRowScope`.
+ *
+ * #2859: `i` is now ALSO rewritten to `i()` (`wrapLoopParamAsAccessor`,
+ * `ir-to-client-js/utils.ts`) on the EAGER path — `mapArray` hands
+ * `renderItem` an index ACCESSOR (mirroring the item accessor) and pushes
+ * each row's current position through it on every same-key reconcile, so
+ * a row surviving a reorder keeps reading its live index instead of the
+ * value frozen at creation. The #2595 fix above only prevented the
+ * module-const shadow; it still left `i` reading a plain, never-updated
+ * closure variable.
+ *
+ * #2859 follow-on (lazy-row widening): this exact shape has no ref/child
+ * component/inner loop, so it is now LAZY-eligible — the index reference
+ * no longer forces eager on its own. On the lazy path there is no `i()`
+ * accessor call at all: `applyItem` binds `const i = __e.index` (a plain
+ * value read off the reconciler-tracked entry) and the attribute reads
+ * that bare `i`, which is exactly as live across a reorder as the eager
+ * accessor was.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -99,9 +116,14 @@ describe('loop-child reactive attr vs a loop INDEX param shadowing a module cons
       }
     `)
 
-    // The per-item attribute effect must read the row's OWN index
-    // closure variable — never the outer module const's baked literal.
-    expect(js).toContain("const __v = i;")
+    // The per-item attribute effect must read the row's OWN, LIVE index
+    // (#2859 follow-on: `entry.index`, tracked by the lazy-row reconciler
+    // the same way it tracks `entry.item`) — never the outer module
+    // const's baked literal, and never a frozen closure variable that
+    // would go stale after a reorder.
+    expect(js).toContain('const i = __e.index')
+    expect(js).toContain('const __x = i')
     expect(js).not.toContain("const __v = 'MODULE_CONST';")
+    expect(js).not.toContain("const __x = 'MODULE_CONST'")
   })
 })

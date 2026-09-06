@@ -499,6 +499,65 @@ describe('extractSsrDefaults', () => {
     // it does not abort the whole computation.
     expect(defaults?.x).toEqual({ value: [1, null] })
   })
+
+  // #2813 (pullfrog nitpick on the PR fixing it): a bare local-const alias
+  // of a signal getter must be seeded under its OWN name too, alongside
+  // the getter's — a template-stash adapter's `.map()` loop over
+  // `items__alias()` looks up the stash entry by that name, which the
+  // getter-name-only seeding above never creates.
+  test('a bare local-const alias of a signal getter is seeded under the alias name too', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [items] = createSignal([1, 2, 3])
+        const items__alias = items
+        return <ul>{items__alias().map(n => <li key={n}>{n}</li>)}</ul>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.items).toEqual({ value: [1, 2, 3] })
+    expect(defaults?.items__alias).toEqual({ value: [1, 2, 3] })
+  })
+
+  test('a multi-hop local-const alias chain resolves through every link', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [items] = createSignal([1, 2, 3])
+        const hop1 = items
+        const hop2 = hop1
+        return <ul>{hop2().map(n => <li key={n}>{n}</li>)}</ul>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.items).toEqual({ value: [1, 2, 3] })
+    expect(defaults?.hop1).toEqual({ value: [1, 2, 3] })
+    expect(defaults?.hop2).toEqual({ value: [1, 2, 3] })
+  })
+
+  test('a getter alias shares the ORIGIN entry object, including a self-derivation-collision propName shape', () => {
+    // The origin signal's OWN name collides with the prop its initializer
+    // derives from (#2669), so its entry is a propName-carrying prop
+    // entry, not a plain `{ value }` — the alias must share that exact
+    // shape (same object reference), not re-derive a plain value entry.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C(props: { label?: string }) {
+        const [label] = createSignal(props.label ?? 'Default')
+        const labelAlias = label
+        return <p>{labelAlias()}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.labelAlias).toBe(defaults?.label)
+  })
 })
 
 // TS twin of the Ruby/Python/PHP/Perl/Rust `derive*FromDefaults` runtime

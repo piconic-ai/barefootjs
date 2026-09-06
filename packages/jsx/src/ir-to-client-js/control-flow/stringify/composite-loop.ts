@@ -53,6 +53,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     innerLoops,
     loopParam,
     loopParamBindings,
+    loopIndex,
     reactiveEffects,
     childRefs,
     branchClearChildren,
@@ -124,7 +125,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     // variant whose tail needs the row already connected.
     mountRow: true,
   })
-  emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, bodyIsMultiRoot)
+  emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, bodyIsMultiRoot, loopIndex)
   if (innerLoops.length > 0) {
     stringifyInnerLoops(lines, innerLoops, bodyIndent, pc)
   }

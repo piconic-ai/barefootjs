@@ -59,9 +59,11 @@ function makePlan(opts: {
   selected?: () => string
   withOuter?: boolean
   setKeyInCreate?: boolean
+  /** #2859 follow-up: opt this plan into `applyItem` on a pure reorder too. */
+  indexDriven?: boolean
 } = {}) {
   const createRowCalls: string[] = []
-  const applyItemCalls: Array<{ key: string; prev: Item; next: Item }> = []
+  const applyItemCalls: Array<{ key: string; prev: Item; next: Item; index: number }> = []
   const applyOuterCalls: Array<{ seed: boolean; keys: string[] }> = []
   let claimCount = 0
 
@@ -96,7 +98,7 @@ function makePlan(opts: {
       return li
     },
     applyItem(entry, prevItem) {
-      applyItemCalls.push({ key: entry.key, prev: prevItem, next: entry.item })
+      applyItemCalls.push({ key: entry.key, prev: prevItem, next: entry.item, index: entry.index })
       const refs = (entry.refs ?? (entry.refs = claim(entry))) as Refs
       const last = (entry.last ?? (entry.last = {})) as Last
       // Adopted rows seed their item-driven dedup from the previous item
@@ -116,6 +118,8 @@ function makePlan(opts: {
       }
     },
   }
+
+  if (opts.indexDriven) plan.indexDriven = true
 
   if (opts.withOuter) {
     plan.applyOuter = (list, seed) => {
@@ -363,6 +367,83 @@ describe('mapArrayLazy — CSR create / remove / reorder / clear', () => {
     expect(container.children.length).toBe(2)
     setItems([])
     expect(container.children.length).toBe(0)
+  })
+})
+
+describe('mapArrayLazy — index-driven bindings (#2859 follow-up)', () => {
+  test('a plan with indexDriven: true gets applyItem called on a pure reorder, with the SAME item', () => {
+    const a = item('1', 'A')
+    const b = item('2', 'B')
+    const c = item('3', 'C')
+    const [items, setItems] = createSignal([a, b, c])
+    const container = ssrContainer(rowHtml('1', 'A') + rowHtml('2', 'B') + rowHtml('3', 'C'))
+
+    const { plan, applyItemCalls, createRowCalls } = makePlan({ indexDriven: true })
+    mapArrayLazy(items, container, keyOf, plan, 'l0')
+
+    setItems([c, b, a])
+    expect(createRowCalls.length).toBe(0)
+    // `b` stayed at index 1 — no call for it. `a` and `c` swapped positions.
+    expect(applyItemCalls.map(x => x.key).sort()).toEqual(['1', '3'])
+    for (const call of applyItemCalls) {
+      expect(call.prev).toBe(call.next) // pure reorder: item identity unchanged
+    }
+    const byKey = new Map(applyItemCalls.map(x => [x.key, x.index]))
+    expect(byKey.get('1')).toBe(2) // `a` is now last
+    expect(byKey.get('3')).toBe(0) // `c` is now first
+  })
+
+  test('a plan WITHOUT indexDriven gets no applyItem call on a pure reorder (unchanged default)', () => {
+    const a = item('1', 'A')
+    const b = item('2', 'B')
+    const [items, setItems] = createSignal([a, b])
+    const container = ssrContainer(rowHtml('1', 'A') + rowHtml('2', 'B'))
+
+    const { plan, applyItemCalls } = makePlan()
+    mapArrayLazy(items, container, keyOf, plan, 'l0')
+
+    setItems([b, a])
+    expect(applyItemCalls.length).toBe(0)
+  })
+
+  test('entry.index stays current on every reconcile even when indexDriven is not set', () => {
+    // Bookkeeping happens unconditionally — verified indirectly: turning
+    // indexDriven on AFTER a reorder still sees the correct (updated) index
+    // on the NEXT reorder, which would only be possible if index tracking
+    // never stopped.
+    const a = item('1', 'A')
+    const b = item('2', 'B')
+    const c = item('3', 'C')
+    const [items, setItems] = createSignal([a, b, c])
+    const container = ssrContainer(rowHtml('1', 'A') + rowHtml('2', 'B') + rowHtml('3', 'C'))
+
+    const { plan, applyItemCalls } = makePlan({ indexDriven: true })
+    mapArrayLazy(items, container, keyOf, plan, 'l0')
+
+    setItems([a, c, b]) // b: 1 -> 2, c: 2 -> 1
+    applyItemCalls.length = 0
+    setItems([b, c, a]) // b: 2 -> 0, c: 1 -> 1 (stationary), a: 0 -> 2
+    const byKey = new Map(applyItemCalls.map(x => [x.key, x.index]))
+    expect(byKey.get('2')).toBe(0)
+    expect(byKey.get('1')).toBe(2)
+    expect(byKey.has('3')).toBe(false) // c stayed at index 1 both times
+  })
+
+  test('an item change AND an index change on the same row calls applyItem once, not twice', () => {
+    const a = item('1', 'A')
+    const b = item('2', 'B')
+    const [items, setItems] = createSignal([a, b])
+    const container = ssrContainer(rowHtml('1', 'A') + rowHtml('2', 'B'))
+
+    const { plan, applyItemCalls } = makePlan({ indexDriven: true })
+    mapArrayLazy(items, container, keyOf, plan, 'l0')
+
+    const a2 = item('1', 'A2')
+    setItems([b, a2]) // '1' both changes item AND moves from index 0 to 1
+    const callsFor1 = applyItemCalls.filter(x => x.key === '1')
+    expect(callsFor1.length).toBe(1)
+    expect(callsFor1[0].prev).toBe(a)
+    expect(callsFor1[0].next).toBe(a2)
   })
 })
 

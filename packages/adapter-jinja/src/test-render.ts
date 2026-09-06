@@ -613,6 +613,26 @@ function buildPythonProps(
     }
   }
 
+  // #2813: `extractSsrDefaults` can seed an entry under a name that is
+  // none of `propsParams` / `signals` / `memos` above — a bare local-const
+  // alias of a signal/memo getter (`const items__alias = items`,
+  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
+  // hands the whole manifest-derived stash straight through
+  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
+  // not a harness stand-in), so any leftover `derivedProps` key must be
+  // pushed too, or this harness would silently omit what production
+  // actually provides, mismeasuring this conformance case.
+  const seededNames = new Set<string>([
+    ...ir.metadata.propsParams.filter(p => !p.isRest).map(p => p.name),
+    ...(restPropsName ? [restPropsName] : []),
+    ...ir.metadata.signals.filter(s => !s.envReader).map(s => s.getter),
+    ...ir.metadata.memos.map(m => m.name),
+  ])
+  for (const [name, value] of Object.entries(derivedProps)) {
+    if (seededNames.has(name)) continue
+    fullEntries.push(`${pyStr(name)}: ${toPyLiteral(value)}`)
+  }
+
   // (#1922) Request-scoped `searchParams()`: bind `searchParams` to an
   // empty-query reader (so the render script needn't build one from a real
   // request). The conformance harness issues no query string (the

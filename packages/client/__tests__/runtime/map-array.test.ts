@@ -199,6 +199,104 @@ describe('mapArray', () => {
     expect(container.children[2]).toBe(elA)
   })
 
+  test('index accessor tracks a row\'s current position across a reorder (#2859)', () => {
+    const [items, setItems] = createSignal([
+      { id: 'a', text: 'A' },
+      { id: 'b', text: 'B' },
+      { id: 'c', text: 'C' },
+    ])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item, index) => {
+        const li = document.createElement('li')
+        createEffect(() => {
+          li.textContent = `${index()}:${item().text}`
+        })
+        return li
+      },
+    )
+
+    expect(Array.from(container.children).map(el => el.textContent)).toEqual(['0:A', '1:B', '2:C'])
+
+    // Move 'a' to the end — same keys, new order: b, c, a.
+    setItems([
+      { id: 'b', text: 'B' },
+      { id: 'c', text: 'C' },
+      { id: 'a', text: 'A' },
+    ])
+
+    // Each surviving row's index-derived text reflects its NEW position,
+    // not the index it was created at.
+    expect(Array.from(container.children).map(el => el.textContent)).toEqual(['0:B', '1:C', '2:A'])
+  })
+
+  test('a stationary row\'s index effect does not re-run on an unrelated reorder', () => {
+    // Reuse the SAME item object references across the reorder (only their
+    // array positions change) so `setItem`'s `Object.is` bail (reactive.ts)
+    // isolates what this test actually checks: that `setIndex` also bails
+    // for a row whose position didn't change, instead of always re-running
+    // via the batched `setItem` call alongside it.
+    const a = { id: 'a', text: 'A' }
+    const b = { id: 'b', text: 'B' }
+    const c = { id: 'c', text: 'C' }
+    const [items, setItems] = createSignal([a, b, c])
+    let bRuns = 0
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item, index) => {
+        const li = document.createElement('li')
+        createEffect(() => {
+          if (item().id === 'b') bRuns++
+          li.textContent = `${index()}:${item().text}`
+        })
+        return li
+      },
+    )
+    expect(bRuns).toBe(1)
+
+    // 'b' stays at index 1; only 'a' and 'c' swap.
+    setItems([c, b, a])
+    expect(bRuns).toBe(1)
+  })
+
+  test('hydration seeds the index accessor from SSR ordinal position', () => {
+    container.innerHTML = '<li data-key="a">A</li><li data-key="b">B</li>'
+    const [items, setItems] = createSignal([
+      { id: 'a', text: 'A' },
+      { id: 'b', text: 'B' },
+    ])
+    const seenIndexes: number[] = []
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item, index, existing) => {
+        const li = existing ?? document.createElement('li')
+        createEffect(() => {
+          seenIndexes.push(index())
+        })
+        return li
+      },
+    )
+    expect(seenIndexes).toEqual([0, 1])
+
+    setItems([
+      { id: 'b', text: 'B' },
+      { id: 'a', text: 'A' },
+    ])
+    // The diff loop walks the NEW array order (b, then a), pushing each
+    // row's updated index synchronously as it goes: b's index flips 1 -> 0
+    // first, then a's flips 0 -> 1.
+    expect(seenIndexes).toEqual([0, 1, 0, 1])
+  })
+
   test('clears to empty', () => {
     const [items, setItems] = createSignal([{ id: '1', text: 'A' }])
 

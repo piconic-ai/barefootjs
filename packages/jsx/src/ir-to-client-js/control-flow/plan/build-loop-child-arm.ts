@@ -234,8 +234,8 @@ export function buildBranchInnerLoopsPlan(
     const inner = innerLoops[i]
     if (!inner.refsOuterParam || !inner.template) continue
 
-    const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
-    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings)
+    const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
+    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)
 
     const csl = inner.containerSlotId
     // Inner loop's container: host-side `bf="<slot>"` slot marker first,
@@ -251,7 +251,7 @@ export function buildBranchInnerLoopsPlan(
 
     const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
     const wrappedKey = inner.key
-      ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings)
+      ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings, inner.index)
       : null
 
     // Inner-wrap children IR recursively so nested component props (e.g.
