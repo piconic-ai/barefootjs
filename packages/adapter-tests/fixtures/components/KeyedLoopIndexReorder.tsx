@@ -15,12 +15,23 @@
 //
 // The fix threads the index through a signal (mirroring the existing item
 // signal) and batches `setIndex` alongside `setItem` on every same-key
-// diff, so `i()` always reads the row's CURRENT position. This binding
-// shape (`referencesIndex: true` on the classified binding) is also
-// unconditionally ineligible for the lazy row graph
-// (`lazy-row-eligibility.ts`'s per-binding gate) — `applyItem`/
-// `applyOuter` have no index parameter to give it — so this fixture
-// exercises the eager `mapArray` path exclusively.
+// diff, so `i()` always reads the row's CURRENT position (eager path).
+//
+// #2859 follow-on: a binding referencing the loop index no longer forces
+// eager on its own (`lazy-row-eligibility.ts`'s per-binding gate was
+// lifted) — this row has no ref/child component/inner loop, so it is
+// LAZY-eligible too. There the index is tracked on `entry.index`
+// (`LazyRowEntry`, `map-array-lazy.ts`) instead of a signal, and the
+// runtime calls `applyItem` on a pure reorder (`LazyRowPlan.indexDriven`).
+// Which path a given loop shape takes is decided by the OTHER bindings in
+// the row (a ref/child component/inner loop still forces eager); this
+// fixture's assertions hold on either path.
+//
+// The initial rows are inlined directly into `createSignal<Row[]>([...])`
+// rather than referenced from a separate module-level constant — the Go
+// template adapter's signal-initializer seeding only resolves an INLINE
+// array literal, not a reference to a named constant (a real, separate,
+// pre-existing gap, not something this fixture is testing).
 
 import { createSignal } from '@barefootjs/client'
 
@@ -29,14 +40,12 @@ interface Row {
   label: string
 }
 
-const INITIAL: Row[] = [
-  { id: 1, label: 'Alpha' },
-  { id: 2, label: 'Bravo' },
-  { id: 3, label: 'Charlie' },
-]
-
 export function KeyedLoopIndexReorder() {
-  const [rows, setRows] = createSignal<Row[]>(INITIAL)
+  const [rows, setRows] = createSignal<Row[]>([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ])
   const [selected, setSelected] = createSignal(0)
 
   const rotate = () => {

@@ -5,12 +5,11 @@ export function initLazyRowIndexReorder(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const INITIAL = [
-  { id: 1, label: 'Alpha' },
-  { id: 2, label: 'Bravo' },
-  { id: 3, label: 'Charlie' },
-]
-  const [rows, setRows] = createSignal(INITIAL)
+  const [rows, setRows] = createSignal([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ])
   const rotate = () => {
     setRows(prev => {
       const [first, ...rest] = prev
@@ -58,9 +57,9 @@ export function initLazyRowIndexReorder(__scope, _p = {}) {
 
 }
 
-hydrate('LazyRowIndexReorder', { init: initLazyRowIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul bf="s3"><!--bf-loop:l0-->${(([
-  { id: 1, label: 'Alpha' },
-  { id: 2, label: 'Bravo' },
-  { id: 3, label: 'Charlie' },
-])).map((row, i) => `<li data-key="${escapeAttr(row.id)}"><span class="badge"><!--bf:s1-->${escapeText(String(i + 1))}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(row.label)}<!--/--></span></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+hydrate('LazyRowIndexReorder', { init: initLazyRowIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul bf="s3"><!--bf-loop:l0-->${([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ]).map((row, i) => `<li data-key="${escapeAttr(row.id)}"><span class="badge"><!--bf:s1-->${escapeText(String(i + 1))}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(row.label)}<!--/--></span></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function LazyRowIndexReorder(_p, __bfKey) { return createComponent('LazyRowIndexReorder', _p, __bfKey) }

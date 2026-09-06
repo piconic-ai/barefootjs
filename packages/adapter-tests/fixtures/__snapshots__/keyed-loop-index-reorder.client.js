@@ -5,12 +5,11 @@ export function initKeyedLoopIndexReorder(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const INITIAL = [
-  { id: 1, label: 'Alpha' },
-  { id: 2, label: 'Bravo' },
-  { id: 3, label: 'Charlie' },
-]
-  const [rows, setRows] = createSignal(INITIAL)
+  const [rows, setRows] = createSignal([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ])
   const [selected, setSelected] = createSignal(0)
   const rotate = () => {
     setRows(prev => {
@@ -90,9 +89,9 @@ export function initKeyedLoopIndexReorder(__scope, _p = {}) {
 
 }
 
-hydrate('KeyedLoopIndexReorder', { init: initKeyedLoopIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul bf="s4"><!--bf-loop:l0-->${(([
-  { id: 1, label: 'Alpha' },
-  { id: 2, label: 'Bravo' },
-  { id: 3, label: 'Charlie' },
-])).map((row, i) => `<li data-key="${escapeAttr(row.id)}" ${(`${(0) === i ? 'row selected' : 'row'}`) != null ? 'class="' + escapeAttr(`${(0) === i ? 'row selected' : 'row'}`) + '"' : ''} bf="s3"><span class="badge"><!--bf:s1-->${escapeText(String(i + 1))}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(row.label)}<!--/--></span></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+hydrate('KeyedLoopIndexReorder', { init: initKeyedLoopIndexReorder, template: (_p) => `<div><button type="button" class="rotate" bf="s0"> Rotate </button><ul bf="s4"><!--bf-loop:l0-->${([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Bravo' },
+    { id: 3, label: 'Charlie' },
+  ]).map((row, i) => `<li data-key="${escapeAttr(row.id)}" ${(`${(0) === i ? 'row selected' : 'row'}`) != null ? 'class="' + escapeAttr(`${(0) === i ? 'row selected' : 'row'}`) + '"' : ''} bf="s3"><span class="badge"><!--bf:s1-->${escapeText(String(i + 1))}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(row.label)}<!--/--></span></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function KeyedLoopIndexReorder(_p, __bfKey) { return createComponent('KeyedLoopIndexReorder', _p, __bfKey) }
