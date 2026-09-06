@@ -590,6 +590,13 @@ import { fixture as destructuredObjectPropNested } from './destructured-object-p
 // directly — the CSR template builder resolved the alias to the literal
 // `undefined` instead of following it.
 import { fixture as aliasedLoopSource } from './aliased-loop-source'
+// #2859: a keyed .map() row whose badge text and class both derive from
+// the row's own index — a same-key reorder must update both to the row's
+// CURRENT position, not the position it was created at.
+import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
+// #2859 follow-on: the same index-reorder shape, but with no per-row
+// imperative content — stays on the lazy row graph instead of forcing eager.
+import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
 
 import type { JSXFixture } from '../src/types'
 
@@ -992,4 +999,6 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowControlledInput,
   statelessRestSpreadForward,
   aliasedLoopSource,
+  keyedLoopIndexReorder,
+  lazyRowIndexReorder,
 ]

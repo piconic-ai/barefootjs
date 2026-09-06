@@ -152,12 +152,17 @@ describe('lazyRowEligibility — profile mode', () => {
 })
 
 describe('lazyRowEligibility — binding refusals', () => {
-  test('a binding referencing the loop index parameter is refused', () => {
+  // #2859 follow-up, LIFTED: a binding referencing the loop index no longer
+  // sinks the loop. `classifyLazyBinding` forces `readsItem: true` for it
+  // (the row's position is delivered on `entry.index` exactly like the item
+  // is on `entry.item`), so the row stays eligible and the binding lands in
+  // `applyItem`. Inverted from the refusal it replaces so a gate that starts
+  // refusing again fails here by name.
+  test('a binding referencing the loop index parameter is ELIGIBLE (index tracked via entry.index)', () => {
     const decision = lazyRowEligibility(args({
       bindings: [{ ...itemBinding(), referencesIndex: true }],
     }))
-    expect(decision.eligible).toBe(false)
-    expect((decision as { reason: string }).reason).toMatch(/index parameter/)
+    expect(decision.eligible).toBe(true)
   })
 
   // §9.3a, LIFTED: an outer name the emitter cannot prime no longer sinks

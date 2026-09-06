@@ -191,6 +191,11 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   // --- createRow ---------------------------------------------------------
   const b1 = `${indent}  `
   const b2 = `${indent}    `
+  // Tells the runtime to also call `applyItem` on a pure reorder (#2859
+  // follow-up) — see `LazyRowPlan.indexDriven`'s docstring. Omitted (not just
+  // `false`) for every loop that never reads the index, byte-stable with
+  // this widening's predecessor.
+  if (lazyRow.readsIndex) lines.push(`${b1}indexDriven: true,`)
   lines.push(`${b1}createRow: (__e, ${o.indexParam}) => {`)
   // Always bound, even with no reactive bindings: the non-hoisted clone
   // interpolates the per-row template, which reads the param for at least
@@ -225,6 +230,9 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   } else {
     lines.push(`${b1}applyItem: (__e) => {`)
     lines.push(`${b2}const ${paramHead} = () => __e.item`)
+    // The row's current position (#2859 follow-up) — only when some binding
+    // here actually reads it, so every other loop's applyItem is unchanged.
+    if (lazyRow.readsIndex) lines.push(`${b2}const ${o.indexParam} = __e.index`)
     lines.push(`${b2}const __r = __e.refs ?? (__e.refs = [])`)
     lines.push(`${b2}const __l = __e.last ?? (__e.last = [])`)
     // Re-run the preamble only when a binding in THIS body reads a local it
@@ -255,6 +263,8 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     for (const g of lazyRow.outerPrimeGetters) lines.push(`${b2}${g}()`)
     lines.push(`${b2}for (const __e of __es) {`)
     lines.push(`${b3}const ${paramHead} = () => __e.item`)
+    // Same as `applyItem` — the row's current position (#2859 follow-up).
+    if (lazyRow.readsIndex) lines.push(`${b3}const ${o.indexParam} = __e.index`)
     lines.push(`${b3}const __r = __e.refs ?? (__e.refs = [])`)
     lines.push(`${b3}const __l = __e.last ?? (__e.last = [])`)
     // Per ENTRY, not once for the batch: the preamble reads the item, so its
