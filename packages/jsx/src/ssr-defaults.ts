@@ -31,7 +31,7 @@
 
 import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
-import { resolveGetterAliases } from './ir-to-client-js/csr-substitute.ts'
+import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
 import type { IRMetadata } from './types.ts'
 
 /**
@@ -325,13 +325,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   // getter-name set (they're never given an `out` entry above — an
   // adapter's own env-signal binding seeds them instead).
   {
-    const getterNames = new Set<string>()
-    for (const sig of metadata.signals) {
-      if (sig.getter && !sig.isModule && !sig.envReader) getterNames.add(sig.getter)
-    }
-    for (const memo of metadata.memos) {
-      if (!memo.isModule) getterNames.add(memo.name)
-    }
+    const getterNames = collectAliasableGetterNames(metadata.signals, metadata.memos)
     for (const [alias, origin] of resolveGetterAliases(metadata.localConstants ?? [], (n) => getterNames.has(n))) {
       if (alias in out) continue
       out[alias] = out[origin]

@@ -19,7 +19,7 @@ export type { SsrDefault } from './ssr-defaults.ts'
 // (`const items__alias = items`) — #2778's CSR-template fix, reused (not
 // re-walked) by SSR-side alias resolution (#2813: DSL stash seeding,
 // Go's zero-arg-call field routing).
-export { resolveGetterAliases } from './ir-to-client-js/csr-substitute.ts'
+export { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
 
 // Import-alias resolution (#2777 client-JS registry key; #2822 SSR cross-template
 // call names) — a local alias -> declared/exported name map built from

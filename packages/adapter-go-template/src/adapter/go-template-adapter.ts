@@ -81,6 +81,7 @@ import {
   BindingScope,
   buildImportAliasMap,
   resolveGetterAliases,
+  collectAliasableGetterNames,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -472,13 +473,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // field under the alias's name. Env-signal getters are excluded — they
     // resolve through `searchParamsFieldRef`, not a seeded root field.
     {
-      const getterNames = new Set<string>()
-      for (const sig of ir.metadata.signals ?? []) {
-        if (sig.getter && !sig.isModule && !sig.envReader) getterNames.add(sig.getter)
-      }
-      for (const memo of ir.metadata.memos ?? []) {
-        if (!memo.isModule) getterNames.add(memo.name)
-      }
+      const getterNames = collectAliasableGetterNames(ir.metadata.signals ?? [], ir.metadata.memos ?? [])
       this.state.getterAliases = resolveGetterAliases(ir.metadata.localConstants ?? [], (n) => getterNames.has(n))
     }
     // #2208 fable review: every name a `.map()`/`.filter()` loop callback
