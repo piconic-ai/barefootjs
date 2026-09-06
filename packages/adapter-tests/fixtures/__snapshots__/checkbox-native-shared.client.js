@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
 
 
 export function initCheckboxNative(__scope, _p = {}) {
@@ -28,5 +28,5 @@ export function initCheckboxNative(__scope, _p = {}) {
   if (_s0) _s0.addEventListener('change', (e) => { setSubscribed(e.target.checked) })
 }
 
-hydrate('CheckboxNative', { init: initCheckboxNative, template: (_p) => `<label class="subscribe-row"><input type="checkbox" class="subscribe-checkbox" ${(false) ? 'checked' : ''} bf="s0" /><span class="subscribe-label" bf="s2">${(false) ? `<!--bf-cond-start:s1-->${'Subscribed'}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${'Not subscribed'}<!--bf-cond-end:s1-->`}</span></label>` })
+hydrate('CheckboxNative', { init: initCheckboxNative, template: (_p) => `<label class="subscribe-row"><input type="checkbox" class="subscribe-checkbox" ${(false) ? 'checked' : ''} bf="s0" /><span class="subscribe-label" bf="s2">${(false) ? `<!--bf-cond-start:s1-->${escapeText('Subscribed')}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${escapeText('Not subscribed')}<!--bf-cond-end:s1-->`}</span></label>` })
 export function CheckboxNative(_p, __bfKey) { return createComponent('CheckboxNative', _p, __bfKey) }

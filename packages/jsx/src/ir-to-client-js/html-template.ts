@@ -15,6 +15,8 @@ import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } fr
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { renderChildScopeArgs } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
+import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
+import { markupSlotIdsOf } from './markup-slots.ts'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -311,113 +313,6 @@ function escapeAttrValueExpr(valExpr: string): string {
 }
 
 /**
- * Build a runtime expression that HTML-escapes an interpolated **text
- * content** slot, via the `escapeText` runtime helper. Only the
- * `<!--bf:sN-->${expr}<!--/-->` text-marker form is text content: the
- * runtime treats whatever sits between the markers as the slot's text, so
- * a string value containing `<` / `&` (e.g. `{user.name}`) must be escaped
- * to parse correctly under `innerHTML` and to match the SSR-rendered
- * bytes. Bare `${...}` interpolations — `{children}` passthrough and
- * `renderChild(...)` output — are pre-rendered HTML and must NOT be
- * escaped, so this is applied only at the four text-marker emit sites.
- * The no-`slotId` fallthrough (every `case 'expression'` branch's final
- * `return` in this file) is shared by several unrelated shapes besides
- * `{children}` passthrough — an `escapeLeafTextExpressions`-wrapped
- * preamble leaf, `lowerFormControlValueSsr`'s textarea initial value, an
- * inlined constant, a `''`/`undefined` deferred placeholder — every one of
- * which is either already escaped or a literal, and must reach the
- * template untouched. `bareSpliceExpr` below is that branch's single door
- * — the one place the fallthrough's decision is made — and it is what
- * picks the genuine `{children}` reference back out for `markupOrEmpty`'s
- * nullish guard (#2775); see its own docstring.
- * Hono escapes text content with the same set as attribute values
- * (`& " ' < >`), so `escapeText` delegates to the same operation.
- *
- * `isMarkup` (#2651) switches to `escapeTextOrMarkup` — `escapeText`'s
- * strict superset that additionally unwraps a `bfMarkup()`-branded value
- * raw instead of escaping it. Two of the four text-marker call sites
- * (`irToComponentTemplateWithOpts`, `generateCsrTemplateWithOpts`) pass
- * `true` for a slot `ctx.dynamicElements` also claims — the same
- * membership `emit-reactive.ts` uses to pick the 'markup' writer kind for
- * this slot's REACTIVE update, so the initial-render escape and the
- * reactive-update escape agree on whether the slot may carry raw markup.
- * The other two (`irToHtmlTemplate`, `irToPlaceholderTemplate`) build
- * loop-item / conditional-branch HTML, which the reactive side always
- * treats as plain text (`__bfText`) regardless — they never pass `true`,
- * so they keep calling `escapeText` byte-for-byte as before.
- */
-function escapeTextSlotExpr(innerExpr: string, isMarkup = false): string {
-  return `${isMarkup ? 'escapeTextOrMarkup' : 'escapeText'}(${innerExpr})`
-}
-
-/**
- * Recognizes a JSX child-position expression that is exactly a reference to
- * the reserved `children` prop — bare `children` (destructured) or
- * `<receiver>.children` for any single-identifier receiver (`props.children`,
- * a custom props-param name, a loop-scoped alias closing over props, ...).
- * Checked against `node.expr` — the ORIGINAL source text, never a
- * transformed/wrapped form — so it stays accurate regardless of which
- * builder is asking, and regardless of any earlier pass
- * (`escapeLeafTextExpressions`, `lowerFormControlValueSsr`) that may have
- * wrapped an unrelated leaf.
- *
- * Deliberately LOOSER than `isTransparentFragment` (`jsx-to-ir.ts`), which
- * answers the same underlying question one level up. That function runs on
- * the TS AST and compares the expression text against an EXACT set —
- * `children`, `props.children`, and the analyzer-resolved
- * `${ctx.analyzer.propsObjectName}.children`. This layer works on IR and has
- * no analyzer, so the resolved props name is not reachable here; matching any
- * single-identifier receiver is the available approximation, chosen — not an
- * inherited convention.
- *
- * The looseness costs nothing measurable. An unrelated `.children` member —
- * a tree node's own `children` array, say — does not even arrive here: a
- * reactive member expression is given a `slotId` and takes the escaped
- * text-slot branch above, so it never reaches the bare-splice fallthrough
- * this gates. And were one to arrive, the outcome is still benign: the
- * branch never escaped its value either way, a non-nullish value is
- * returned untouched, and a nullish one rendering `''` instead of the
- * literal `"undefined"` is an improvement in its own right.
- *
- * Both the ORIGINAL source text and the RESOLVED expression are tested,
- * because either one alone misses a shape. `node.expr` is the only form
- * that does not vary between the four builders, so it stays the primary
- * test; but it is the pre-substitution text, which for a
- * destructured-and-renamed children (`const { children: kids } = props`)
- * reads `kids` and matches nothing — while the resolved expression the
- * emitter is about to splice already reads `(_p.children)`. Testing both
- * closes that (#2786) without giving up `node.expr`'s stability.
- */
-function isChildrenPassthroughExpr(expr: string): boolean {
-  return /^([A-Za-z_$][\w$]*\.)?children$/.test(expr.trim())
-}
-
-/**
- * The single door for the bare (no-`slotId`) expression splice — the
- * counterpart to `escapeTextSlotExpr` for the branch that must NOT escape.
- * All four `case 'expression'` builders in this file route through here so
- * this decision exists in exactly one place: four copies that agree today
- * are four that can drift apart tomorrow, and this file is where that has
- * already happened (#2753 -> #2762).
- *
- * Only a genuine `{children}` passthrough gets `markupOrEmpty`'s nullish
- * guard (#2775). Everything else this fallthrough hosts — an
- * `escapeLeafTextExpressions`-wrapped preamble leaf,
- * `lowerFormControlValueSsr`'s textarea initial value, an inlined constant,
- * a `''`/`undefined` deferred placeholder — reaches the template exactly as
- * it arrived, already escaped or a literal. Escaping is never correct here:
- * the value is pre-rendered HTML, per `escapeTextSlotExpr`'s docstring.
- */
-function bareSpliceExpr(node: IRExpression, valueExpr: string): string {
-  // Strip the parens the emitter wraps a substituted expression in, so the
-  // resolved form is comparable to the bare source text.
-  const resolved = valueExpr.trim().replace(/^\(+|\)+$/g, '')
-  const isChildren =
-    isChildrenPassthroughExpr(node.expr) || isChildrenPassthroughExpr(resolved)
-  return !node.joinArrayChild && isChildren ? `markupOrEmpty(${valueExpr})` : valueExpr
-}
-
-/**
  * `dangerouslySetInnerHTML={{ __html: E }}` makes the element's content its
  * raw innerHTML — the intentional, React-style escape hatch. Returns the
  * raw-content template expression to use *instead of* the element's normal
@@ -435,7 +330,7 @@ function dangerouslyHtmlChildren(
 ): string | null {
   const attr = attrs.find(a => a.name === 'dangerouslySetInnerHTML')
   if (!attr || attr.value.kind !== 'expression') return null
-  return `\${((${toExpr(attr.value)}) ?? {}).__html ?? ''}`
+  return interp(dangerousInnerHtml(toExpr(attr.value)))
 }
 
 /**
@@ -672,9 +567,17 @@ function buildSpreadAttrsMergeCall(args: {
  * expression (e.g. `t.id`). Emits a live `${keyExpr}` interpolation so each
  * rendered item carries its own key — `loopItemMarker` is reserved for
  * already-evaluated key strings (runtime / static contexts).
+ *
+ * The key is wrapped in `escapeCommentText` (#2795 follow-up): unlike every
+ * other hole in this file, this one lands inside HTML COMMENT content, where
+ * `escapeText`'s `& < > " '` escaping does nothing — the only thing that
+ * matters here is that the key can't spell `-->` and close the comment
+ * early. See `escapeCommentText`'s docstring (`@barefootjs/client/runtime`)
+ * for why a lossy hyphen substitution is fine: nothing reads this key back
+ * out of the DOM.
  */
 function itemAnchorTemplate(keyExpr: string): string {
-  return `<!--${loopItemMarker('${' + keyExpr + '}')}-->`
+  return `<!--${loopItemMarker('${escapeCommentText(' + keyExpr + ')}')}-->`
 }
 
 /**
@@ -710,9 +613,9 @@ export function renderPreamble(
       const text = opts.textVariant === 'template' ? (seg.templateText ?? seg.text) : seg.text
       out += opts.transformJs ? opts.transformJs(text) : text
     } else if (opts.rawLeaf) {
-      out += opts.renderLeaf(escapeLeafTextExpressions(seg.ir))
+      out += opts.renderLeaf(seg.ir)
     } else {
-      out += '`' + opts.renderLeaf(escapeLeafTextExpressions(seg.ir)) + '`'
+      out += '`' + opts.renderLeaf(seg.ir) + '`'
     }
   }
   return out
@@ -803,41 +706,9 @@ export function renderFlatMapProjectionClientBody(
   const params = inner.index ? `(${inner.param}, ${inner.index})` : `(${inner.param})`
   const key = inner.key ? `(${inner.key})` : 'undefined'
   const html = inner.children
-    .map((c) => irToHtmlTemplate(escapeLeafTextExpressions(c), restSpreadNames, 1, undefined, undefined))
+    .map((c) => irToHtmlTemplate(c, restSpreadNames, 1, undefined, undefined))
     .join('')
   return `${chained}.map(${params} => ({ k: ${key}, h: \`${html}\` }))`
-}
-
-/**
- * SSR/CSR escaping parity for preamble leaves, decided once at the door: a
- * JSX-runtime SSR adapter renders the leaf's raw JSX and auto-escapes text
- * interpolations (`{c}`), so the client's HTML-string lowering must escape the
- * same positions — wrap every text-position expression in `escapeText(...)`.
- * Pure (returns a transformed copy); the neutral IR is never mutated with a
- * client-only concern. Attribute values already flow through the template
- * emitters' own attr escaping.
- */
-function escapeLeafTextExpressions(ir: IRNode): IRNode {
-  switch (ir.type) {
-    case 'element':
-      return { ...ir, children: ir.children.map(escapeLeafTextExpressions) }
-    case 'fragment':
-      return { ...ir, children: ir.children.map(escapeLeafTextExpressions) }
-    case 'expression': {
-      if (ir.expr === 'null' || ir.expr === 'undefined') return ir
-      // Already-wrapped or slotted expressions keep their existing handling.
-      if (ir.slotId || ir.expr.trimStart().startsWith('escapeText(')) return ir
-      return { ...ir, expr: `escapeText((${ir.expr}))`, templateExpr: ir.templateExpr ? `escapeText((${ir.templateExpr}))` : ir.templateExpr }
-    }
-    case 'conditional':
-      return {
-        ...ir,
-        whenTrue: escapeLeafTextExpressions(ir.whenTrue),
-        whenFalse: ir.whenFalse ? escapeLeafTextExpressions(ir.whenFalse) : ir.whenFalse,
-      }
-    default:
-      return ir
-  }
 }
 
 // `loopParams` here is the accessor-rewrite spec list `wrapExprWithLoopParams`
@@ -848,9 +719,6 @@ function escapeLeafTextExpressions(ir: IRNode): IRNode {
 export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, inHoistedChildren = false): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, inHoistedChildren)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
-  const wrapInterpolation = (expr: string): string => branchSlotsVar
-    ? `__bfSlot(${expr}, ${branchSlotsVar})`
-    : expr
 
   switch (node.type) {
     case 'element': {
@@ -967,38 +835,13 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // because their `clientOnly` semantics differ — see that function's
       // own comment (#2617).
 
-      // Escape only when the IR says so (`escapeInClientTemplate`) — most
-      // `${...}` here is already pre-rendered HTML. Never take
-      // `templateExpr` wholesale instead: it rebinds to `_p.xxx`, dropping
-      // the `?? {}` prop-defaulting guard in this builder's init scope
-      // (`client-js-generation.test.ts`).
-      const escapeForClient = (e: string): string =>
-        node.escapeInClientTemplate ? `escapeText(${e})` : e
-      if (node.markerless) {
-        const bare = escapeForClient(wrapInterpolation(wrapExpr(node.expr)))
-        return `\${${bare}}`
-      }
-      const inner = escapeForClient(wrapInterpolation(wrapExpr(node.expr)))
-      // Stage 3 / D4 — an element-array child ({out}) built by an arbitrary
-      // .map() preamble is an array of HTML strings; join it rather than let
-      // `${[...]}` `String`-comma-collapse it. Only reached on a JS-runtime
-      // adapter (the flag is set in Phase 1 only there); a plain local can be
-      // read twice safely.
-      const valueExpr = node.joinArrayChild
-        ? `Array.isArray(${inner}) ? ${inner}.join('') : (${inner} ?? '')`
-        : inner
-      if (node.slotId) {
-        // In branch-slot context `wrapInterpolation` routes the value
-        // through `__bfSlot`, which returns raw `<!--bf-slot:N-->` markers
-        // for live `Node` values (spliced back by `insert()`). Escaping
-        // would corrupt those markers and drop slotted content (#1694
-        // regression). `__bfSlot` owns coercion of its own value, so the
-        // text-escape applies only to the non-slot (plain text) form.
-        const slotted = branchSlotsVar || node.joinArrayChild ? valueExpr : escapeTextSlotExpr(valueExpr)
-        return `<!--bf:${node.slotId}-->\${${slotted}}<!--/-->`
-      }
-      // Bare-splice fallthrough (no `slotId`, not an array-child join).
-      return `\${${bareSpliceExpr(node, valueExpr)}}`
+      // Never take `templateExpr` here instead of `expr`: it rebinds to
+      // `_p.xxx`, dropping the `?? {}` prop-defaulting guard in this
+      // builder's init scope (`client-js-generation.test.ts`). Escaping is
+      // the door's job (`spliceChildValue`), not this builder's.
+      const hole = interp(spliceChildValue(node, wrapExpr(node.expr), { branchSlotsVar }))
+      if (node.markerless) return hole
+      return node.slotId ? `<!--bf:${node.slotId}-->${hole}<!--/-->` : hole
     }
 
     case 'conditional': {
@@ -1006,7 +849,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
-      return `\${${wrapExpr(node.condition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+      return interp(conditionalMarkup(wrapExpr(node.condition), trueHtml, falseHtml))
     }
 
     case 'fragment':
@@ -1085,7 +928,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // the slot — `renderChildScopeArgs` still passes its slotId with the
       // `loopItemRoot` flag (#2833) so it keeps `bf-h`/`bf-m` slot identity,
       // matching the Hono reference (#2444).
-      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${renderChildScopeArgs(node, keyArg)})}`
+      return interp(renderChildCall(nameForRegistryRef(node.name), propsExpr, renderChildScopeArgs(node, keyArg)))
     }
 
     case 'loop': {
@@ -1130,14 +973,14 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
         const body = renderPreamble(node.flatMapCallback, {
           renderLeaf: (ir) => irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar),
         })
-        mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
+        mapExpr = interp(mappedRowsMarkup(wrappedArray, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder
         // preamble (the hydrate-template context uses the bare loop param).
         const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar) })
-        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`))
       } else {
-        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
+        mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `\`${childTemplate}\``))
       }
       // Wrap with loop boundary markers so reconciliation doesn't affect siblings
       return `<!--${loopStartMarker(node.markerId)}-->${mapExpr}<!--${loopEndMarker(node.markerId)}-->`
@@ -1552,19 +1395,10 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
 
     case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
-      const wrapped = wrapExpr(node.expr)
-      // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
-      const value = node.joinArrayChild
-        ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
-        : wrapped
-      if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
-      }
-      // Bare-splice fallthrough (no `slotId`) — this builder's composite-row
-      // twin of `irToHtmlTemplate`'s `escapeForClient`, same "why not
-      // templateExpr" reasoning (#2765).
-      const spliced = bareSpliceExpr(node, value)
-      return `\${${node.escapeInClientTemplate ? `escapeText(${spliced})` : spliced}}`
+      // Same "`expr`, never `templateExpr`" reasoning as `irToHtmlTemplate`
+      // (#2765); escaping is the door's job.
+      const hole = interp(spliceChildValue(node, wrapExpr(node.expr), {}))
+      return node.slotId ? `<!--bf:${node.slotId}-->${hole}<!--/-->` : hole
     }
 
     case 'conditional': {
@@ -1572,7 +1406,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
-      return `\${${wrapExpr(node.condition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+      return interp(conditionalMarkup(wrapExpr(node.condition), trueHtml, falseHtml))
     }
 
     case 'fragment':
@@ -1606,13 +1440,13 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
           // Leaf `key` stripped — see the irToHtmlTemplate site above.
           renderLeaf: (ir) => irToPlaceholderTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams),
         })
-        mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
+        mapExpr = interp(mappedRowsMarkup(wrappedArray, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder preamble.
         const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams) })
-        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`))
       } else {
-        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
+        mapExpr = interp(mappedRowsMarkup(wrappedArray, iterMethod, callbackParam, `\`${childTemplate}\``))
       }
       return `<!--${loopStartMarker(node.markerId)}-->${mapExpr}<!--${loopEndMarker(node.markerId)}-->`
     }
@@ -2087,17 +1921,8 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
         if (node.markerless) return ''
         return `<!--bf:${node.slotId}--><!--/-->`
       }
-      const wrapped = transformExpr(node.expr, node.templateExpr)
-      // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
-      const value = node.joinArrayChild
-        ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
-        : wrapped
-      if (node.slotId) {
-        const isMarkup = opts.markupSlotIds?.has(node.slotId) ?? false
-        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped, isMarkup)}}<!--/-->`
-      }
-      // Bare-splice fallthrough (no `slotId`).
-      return `\${${bareSpliceExpr(node, value)}}`
+      const hole = interp(spliceChildValue(node, transformExpr(node.expr, node.templateExpr), { markupSlotIds: opts.markupSlotIds }))
+      return node.slotId ? `<!--bf:${node.slotId}-->${hole}<!--/-->` : hole
     }
 
     case 'conditional': {
@@ -2113,7 +1938,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
-      return `\${${transformExpr(node.condition, node.templateCondition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+      return interp(conditionalMarkup(transformExpr(node.condition, node.templateCondition), trueHtml, falseHtml))
     }
 
     case 'fragment':
@@ -2167,7 +1992,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${transformKeyValue(keyProp.value, transformExpr)}` : ''
-      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg})}`
+      return interp(renderChildCall(nameForRegistryRef(node.name), propsExpr, keyArg))
     }
 
     case 'loop': {
@@ -2187,7 +2012,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       // with the conditional-template path.
       const consequent = recurse(node.consequent)
       const alternate = node.alternate ? recurse(node.alternate) : ''
-      return `\${${transformExpr(node.condition, node.templateCondition)} ? \`${consequent}\` : \`${alternate}\`}`
+      return interp(conditionalMarkup(transformExpr(node.condition, node.templateCondition), consequent, alternate))
     }
 
     case 'provider':
@@ -2349,13 +2174,7 @@ export function generateCsrTemplate(
     }
   }
   const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
-  // `ctx.dynamicElements` (populated by `collectElements`, before any
-  // template-string build runs) IS the claim-plan-'markup' membership
-  // `emit-reactive.ts` claims for these same slot ids on the reactive
-  // side (#2651) — every entry is already non-conditional / non-`@client`
-  // by construction (`collectElements`'s `expression` visitor only pushes
-  // here). Reused as-is, not re-derived.
-  const markupSlotIds = new Set(ctx.dynamicElements.map(e => e.slotId))
+  const markupSlotIds = markupSlotIdsOf(ctx)
   return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName })
 }
 
@@ -2736,18 +2555,13 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         const transformed = transformExpr(node.expr, node.templateExpr)
         // Init-body-only refs would render the literal text "undefined"
         // before init's createEffect overwrites the slot (#1128). Emit
-        // an empty placeholder instead.
-        const expr = transformed === UNSAFE_TEMPLATE_EXPR ? "''" : transformed
-        // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
-        const value = node.joinArrayChild
-          ? `Array.isArray(${expr}) ? ${expr}.join('') : (${expr} ?? '')`
-          : expr
-        if (node.slotId) {
-          const isMarkup = opts.markupSlotIds?.has(node.slotId) ?? false
-          return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr, isMarkup)}}<!--/-->`
-        }
-        // Bare-splice fallthrough (no `slotId`).
-        return `\${${bareSpliceExpr(node, value)}}`
+        // an empty placeholder instead — a literal, so it bypasses the door.
+        const hole = interp(
+          transformed === UNSAFE_TEMPLATE_EXPR
+            ? EMPTY_MARKUP
+            : spliceChildValue(node, transformed, { markupSlotIds: opts.markupSlotIds }),
+        )
+        return node.slotId ? `<!--bf:${node.slotId}-->${hole}<!--/-->` : hole
       }
 
     case 'conditional': {
@@ -2764,7 +2578,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
-      return `\${${transformExpr(node.condition, node.templateCondition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+      return interp(conditionalMarkup(transformExpr(node.condition, node.templateCondition), trueHtml, falseHtml))
     }
 
     case 'fragment':
@@ -2844,7 +2658,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // See `renderChildScopeArgs`'s docstring — a loop item root still gets
       // its slotId, plus the `loopItemRoot` flag (#2833), rather than no
       // slot argument at all.
-      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${renderChildScopeArgs(node, keyArg)})}`
+      return interp(renderChildCall(nameForRegistryRef(node.name), propsExpr, renderChildScopeArgs(node, keyArg)))
     }
 
     case 'loop': {
@@ -2916,14 +2730,14 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           // Leaf `key` stripped — see the irToHtmlTemplate site above.
           renderLeaf: (ir) => recurseInLoopBody(stripLeafKeyAttr(ir)),
         })
-        mapExpr = `\${${iterArrayExpr}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
+        mapExpr = interp(mappedRowsMarkup(iterArrayExpr, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
         // Stage 3 / D4 — template-variant js text with the props rewrite
         // applied per segment; JSX leaves render via the loop-body recursion.
         const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: childScope }), renderLeaf: (ir) => recurseInLoopBody(ir) })
-        mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = interp(mappedRowsMarkup(iterArrayExpr, iterMethod, callbackParam, `{ ${preamble} return \`${childTemplate}\` }`))
       } else {
-        mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
+        mapExpr = interp(mappedRowsMarkup(iterArrayExpr, iterMethod, callbackParam, `\`${childTemplate}\``))
       }
       return `<!--${loopStartMarker(node.markerId)}-->${mapExpr}<!--${loopEndMarker(node.markerId)}-->`
     }
@@ -2931,7 +2745,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     case 'if-statement': {
       const consequent = recurse(node.consequent)
       const alternate = node.alternate ? recurse(node.alternate) : ''
-      return `\${${transformExpr(node.condition, node.templateCondition)} ? \`${consequent}\` : \`${alternate}\`}`
+      return interp(conditionalMarkup(transformExpr(node.condition, node.templateCondition), consequent, alternate))
     }
 
     case 'provider':

@@ -108,6 +108,7 @@ export {
   parseHTML,
   escapeAttr,
   escapeText,
+  escapeCommentText,
   escapeTextOrNode,
   // JSX-element-as-prop markup brand (#2651) — compiler-emitted code only.
   // NOT re-exported from the public `@barefootjs/client` top-level entry;

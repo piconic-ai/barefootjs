@@ -37,7 +37,7 @@ export { F }
     const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
     expect(r.errors).toHaveLength(0)
     const cj = r.files.find(f => f.type === 'clientJs')!.content
-    expect(cj).toMatch(/escapeText\(\(t\)\)/)
+    expect(cj).toMatch(/escapeText\(t\)/)
     expect(cj).not.toMatch(/__BF_JSX_/)
   })
 

@@ -441,7 +441,7 @@ export function initExample(__scope, _p = {}) {
 
   mapArray(() => (todos()).flatMap((todo) => {
   if (todo.hidden) return []
-  return todo.tags.map(tag => ({ k: (\`\${todo.id}:\${tag}\`), h: \`<li>\${escapeText((tag))}</li>\` }))
+  return todo.tags.map(tag => ({ k: (\`\${todo.id}:\${tag}\`), h: \`<li>\${escapeText(tag)}</li>\` }))
 }), _s0, (__bfD, __bfI) => String(__bfD.k ?? __bfI), (__bfD, __idx, __existing) => {
     let __el = __existing
     if (!__el) { const __tpl = document.createElement('template'); __tpl.innerHTML = __bfD().h; __el = __tpl.content.firstElementChild }
@@ -458,7 +458,7 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s0"><!--bf-loop:l0-->\${([]).flatMap((todo) => {
   if (todo.hidden) return []
-  return todo.tags.map(tag => \`<li>\${escapeText((tag))}</li>\`)
+  return todo.tags.map(tag => \`<li>\${escapeText(tag)}</li>\`)
 }).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
@@ -2651,7 +2651,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L85 — Compiled props object 1`] = `
-"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, escapeText } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2688,8 +2688,6 @@ export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c3
 export function initExample(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const children = _p.children
   const [count, setCount] = createSignal(0)
   const [isLoggedIn] = createSignal(false)
   const [todos] = createSignal([])
@@ -2700,7 +2698,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${get} value() \${} return count() } } </div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${escapeText(get)} value() \${escapeText()} return count() } } </div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -2752,7 +2750,7 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L79 — (no label) 1`] = `
-"import { $, __bfSlot, createComponent, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, __bfSlot, createComponent, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
 
 
 export function initToggle(__scope, _p = {}) {
@@ -2776,7 +2774,7 @@ export function initToggle(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setOn(prev => !prev) })
 }
 
-hydrate('Toggle', { init: initToggle, template: (_p) => \`<button bf="s1">\${(false) ? \`<!--bf-cond-start:s0-->\${'ON'}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${'OFF'}<!--bf-cond-end:s0-->\`}</button>\` })
+hydrate('Toggle', { init: initToggle, template: (_p) => \`<button bf="s1">\${(false) ? \`<!--bf-cond-start:s0-->\${escapeText('ON')}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${escapeText('OFF')}<!--bf-cond-end:s0-->\`}</button>\` })
 export function Toggle(_p, __bfKey) { return createComponent('Toggle', _p, __bfKey) }"
 `;
 
@@ -4337,7 +4335,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L177 — (no label) 1`] = `
-"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, __bfSlot, insert } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, __bfSlot, escapeText, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4396,7 +4394,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${on() ? \`<!--bf-cond-start:s0-->\${'ON'}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${'OFF'}<!--bf-cond-end:s0-->\`}</div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${on() ? \`<!--bf-cond-start:s0-->\${escapeText('ON')}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${escapeText('OFF')}<!--bf-cond-end:s0-->\`}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 

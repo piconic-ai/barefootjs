@@ -30,6 +30,9 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
+  // Whole-item loop conditional's `bf-loop-i:<key>` anchor comment (#1665,
+  // #2795 follow-up) — neutralizes `-` so a key can't close the comment early.
+  'escapeCommentText',
   // JSX-element-as-non-children-prop markup brand (#2651) — `bfMarkup` wraps
   // the compiler-built HTML at the producer (renderChild / initChild props);
   // `escapeTextOrMarkup` unwraps it at the claim-plan-'markup' template slot.

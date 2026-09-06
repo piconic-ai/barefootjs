@@ -1487,15 +1487,13 @@ function lowerFormControlValueSsr(
 
   if (tagName === 'textarea') {
     if (children.length > 0) return
+    // A plain text child: SSR engines escape text children natively, and
+    // the client builders escape every child-position value by default
+    // (`ir-to-client-js/safe-html.ts`, #2795) — nothing to mark here.
     children.push({
       type: 'expression',
       expr,
-      // Escaped for client string-building; `expr` stays raw since SSR
-      // engines escape text children natively.
-      templateExpr: `escapeText(${templateExpr ?? expr})`,
-      // Init-scope builders can't just swap in `templateExpr` (its `_p.`
-      // binding differs) — see `escapeInClientTemplate`'s docstring.
-      escapeInClientTemplate: true,
+      templateExpr,
       typeInfo: null,
       reactive: false,
       slotId: null,

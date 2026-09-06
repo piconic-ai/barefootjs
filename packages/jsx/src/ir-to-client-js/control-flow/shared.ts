@@ -17,6 +17,7 @@ import type { IRLoopChildComponent, LoopParamBinding } from '../../types.ts'
 import { preambleAnalysisText } from '../../types.ts'
 import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
 import { irChildrenToJsExpr, jsxChildrenPropGetterExpr } from '../html-template.ts'
+import { spliceChildValue } from '../safe-html.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
@@ -242,11 +243,13 @@ export function destructureLoopParam(
 /**
  * Resolve `IRLoop.preambleRegions` (#2389) into ready-to-emit
  * `PreambleRegionPlan`s: wrap each source expression with the loop-param
- * accessor and, for a `joinArrayChild` source, apply the same array-join
- * ternary `irToHtmlTemplate` uses for the identical node in the row
- * template — so the region-patch effect's re-render matches what a fresh
- * mount would have produced. Shared by the top-level (`build-loop.ts`) and
- * branch (`build-branch-loop.ts`) plain-loop-plan builders.
+ * accessor and hand it to the same door (`spliceChildValue`) the row
+ * template's `irToHtmlTemplate` uses for the identical node — so the
+ * region-patch effect's re-render (a `'markup'` claim writer, i.e. an
+ * `innerHTML` write) matches what a fresh mount would have produced, and
+ * the escape decision is made in exactly one place. Shared by the
+ * top-level (`build-loop.ts`) and branch (`build-branch-loop.ts`)
+ * plain-loop-plan builders.
  */
 export function buildPreambleRegionPlans(
   regions: readonly PreambleRegionSource[] | undefined,
@@ -257,9 +260,10 @@ export function buildPreambleRegionPlans(
   if (!regions || regions.length === 0) return []
   return regions.map((r) => {
     const wrapped = wrapLoopParamAsAccessor(r.expr, loopParam, loopParamBindings, loopIndex)
-    const valueExpr = r.joinArrayChild
-      ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
-      : `escapeText(${wrapped})`
+    // The region's row-template twin carries the same `slotId`, so the door
+    // takes the slotted arm; no `markupSlotIds` here — a loop-row slot's
+    // initial render is plain `escapeText`, matching `irToHtmlTemplate`.
+    const valueExpr = spliceChildValue({ expr: r.expr, slotId: r.slotId, joinArrayChild: r.joinArrayChild }, wrapped, {})
     return { slotId: r.slotId, valueExpr }
   })
 }

@@ -60,7 +60,7 @@ describe('.map() array-builder body — JS-runtime verbatim (Stage 3 / D4)', () 
     // Byte-level parity is pinned by the map-array-builder-escaping fixture.
     const r = compile(arrayBuilder, false)
     const cj = r.files.find(f => f.type === 'clientJs')!.content
-    expect(cj).toMatch(/out\.push\(`<td>\$\{escapeText\(\(c\)\)\}<\/td>`\)/)
+    expect(cj).toMatch(/out\.push\(`<td>\$\{escapeText\(c\)\}<\/td>`\)/)
   })
 
   test('the element-array child {out} is joined into the row', () => {
