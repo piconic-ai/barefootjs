@@ -620,11 +620,22 @@ export function wrapLoopParamAsAccessor(
   return result
 }
 
-/** The index-only half of `wrapLoopParamAsAccessor` — same regex shape, own
- *  identifier. Factored out so `wrapLoopParamAsAccessor` can run it as a
- *  second pass regardless of which item-rewrite branch (bindings vs. plain
- *  param) ran first (#2859). */
-function wrapIndexParamAsAccessor(expr: string, indexParam: string): string {
+/**
+ * The index-only half of `wrapLoopParamAsAccessor` — same regex shape, own
+ * identifier. Factored out so `wrapLoopParamAsAccessor` can run it as a
+ * second pass regardless of which item-rewrite branch (bindings vs. plain
+ * param) ran first (#2859).
+ *
+ * Also exported standalone for `build-loop.ts`/`build-branch-loop.ts`: a
+ * plain loop's `template`/`mapPreambleWrapped` are built ONCE, before lazy
+ * eligibility is known, because the lazy row plan reuses them verbatim when
+ * this loop turns out to be lazy-eligible (`mapArrayLazy`'s `createRow`
+ * still hands the row a plain index NUMBER, never an accessor). So those two
+ * builders wrap item references up front (safe either way) and apply this
+ * index-only pass afterward, ONLY once `buildLazyRowPlan` confirms the loop
+ * is NOT going lazy.
+ */
+export function wrapIndexParamAsAccessor(expr: string, indexParam: string): string {
   const re = new RegExp(`${ID_BOUNDARY_BEFORE}${escapeIdentifierForRegex(indexParam)}(?!\\s*\\()(?!-)${ID_BOUNDARY_AFTER}`, 'gu')
   return replaceInExprContexts(expr, re, () => `${indexParam}()`)
 }

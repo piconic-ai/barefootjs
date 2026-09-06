@@ -29,6 +29,7 @@ import {
   setIntersects,
   varSlotId,
   wrapLoopParamAsAccessor,
+  wrapIndexParamAsAccessor,
 } from '../../utils.ts'
 import {
   loopKeyFn,
@@ -99,7 +100,10 @@ export function buildPlainLoopPlan(
   profileComponentName?: string,
   lazyScope?: LazyRowScopeInfo,
 ): PlainLoopPlan {
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings, elem.index)
+  // Item-only wrap: safe to use for anything the LAZY row plan might reuse
+  // verbatim (`mapPreambleWrapped`, `elem.template`) before we know whether
+  // this loop is lazy-eligible — see the index-wrap note below.
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const hasReactive = elem.bindings.reactiveAttrs.length > 0
     || elem.bindings.reactiveTexts.length > 0
@@ -144,10 +148,44 @@ export function buildPlainLoopPlan(
   const mapPreambleWrapped = elem.preamble
     ? renderPreamble(elem.preamble, {
         transformJs: wrap,
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings, index: elem.index }], undefined),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
       })
     : ''
   const preambleRegions = buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings, elem.index)
+
+  // Lazy row graph (§9, L3). `null` for every ineligible loop, which then
+  // keeps the eager emission below byte-for-byte. Decided from the
+  // item-only-wrapped `mapPreambleWrapped` above — eligibility itself reads
+  // `elem.preamble` (raw), not this string, so which wrap it carries doesn't
+  // change the verdict.
+  const lazyRow = buildLazyRowPlan({
+    loop: elem,
+    arrayExpr,
+    indexParam,
+    paramUnwrap,
+    mapPreambleWrapped,
+    preambleRegionCount: preambleRegions.length,
+    callSite: 'plain',
+    flatMapLeafItem: false,
+    anchored: elem.bodyIsItemConditional ?? false,
+    scope: lazyScope,
+  }) ?? undefined
+
+  // Only once lazy is ruled out is it safe to ALSO wrap index references
+  // (#2859 follow-up): a lazy-eligible loop's `LazyRowPlanData` embeds
+  // `mapPreambleWrapped` and clones from `elem.template` verbatim, and
+  // `mapArrayLazy`'s `createRow(entry, index)` hands the row a plain index
+  // NUMBER, never an accessor — wrapping unconditionally would call a number
+  // there. Lazy-row eligibility only refuses a REACTIVE binding that
+  // references the index; a non-reactive use (e.g. a `data-key` built from
+  // the index) is not gated the same way, so "lazy-eligible" does not imply
+  // "no index in the template" either.
+  const indexWrappedMapPreamble = !lazyRow && elem.index
+    ? wrapIndexParamAsAccessor(mapPreambleWrapped, elem.index)
+    : mapPreambleWrapped
+  const indexWrappedTemplate = !lazyRow && elem.index
+    ? wrapIndexParamAsAccessor(elem.template, elem.index)
+    : elem.template
 
   return {
     kind: 'plain',
@@ -160,25 +198,12 @@ export function buildPlainLoopPlan(
     paramHead,
     paramUnwrap,
     indexParam,
-    // Lazy row graph (§9, L3). `null` for every ineligible loop, which then
-    // keeps the eager emission below byte-for-byte.
-    lazyRow: buildLazyRowPlan({
-      loop: elem,
-      arrayExpr,
-      indexParam,
-      paramUnwrap,
-      mapPreambleWrapped,
-      preambleRegionCount: preambleRegions.length,
-      callSite: 'plain',
-      flatMapLeafItem: false,
-      anchored: elem.bodyIsItemConditional ?? false,
-      scope: lazyScope,
-    }) ?? undefined,
+    lazyRow,
     // Stage 3 / D4 — js segments get the loop-param accessor wrap; jsx leaves
     // render as HTML-string templates under this loop's param context so a
     // leaf that reads the item (`r`) becomes `r()`.
-    mapPreambleWrapped,
-    template: elem.template,
+    mapPreambleWrapped: indexWrappedMapPreamble,
+    template: indexWrappedTemplate,
     skeletonTemplate: elem.skeletonTemplate,
     skeletonPaths: elem.skeletonPaths,
     reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem, profileComponentName) : null,

@@ -755,7 +755,19 @@ export function collectElements(
         // avoiding post-hoc regex wrapping that corrupts literal attribute values.
         // Forward destructured bindings (#951) so references like `cfg.color`
         // in the emitted template literal are rewritten to `__bfItem()[1].color`.
-        const loopParamSpec = [{ param: l.param, bindings: l.paramBindings, index: l.index }]
+        // NOT `index: l.index` here (#2859 follow-up): this exact template
+        // string is reused verbatim by the LAZY row plan when this loop is
+        // lazy-eligible (`LazyRowPlanData`'s clone source, and — via
+        // `mapPreambleWrapped` — its `preambleStatements`) — `mapArrayLazy`'s
+        // `createRow(entry, index)` still hands the row a plain NUMBER
+        // (map-array-lazy.ts is untouched by #2859), so baking `i()` in here
+        // would call a number. Lazy-row eligibility only refuses a REACTIVE
+        // binding that references the index — a non-reactive use like a
+        // `data-key` built from the index is not gated the same way, so this
+        // can't assume "lazy-eligible ⇒ no index in the template" either.
+        // `buildPlainLoopPlan`/`buildBranchLoopPlan` apply the index wrap
+        // themselves, AFTER lazy eligibility is decided, only when it's `null`.
+        const loopParamSpec = [{ param: l.param, bindings: l.paramBindings }]
         template = useElementReconciliation
           ? irToPlaceholderTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
           : irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
@@ -1165,7 +1177,11 @@ function collectBranchLoops(
       // keeping the template consistent with reactive effect expressions that
       // use `param()` to read the current item value.
       let childTemplate: string
-      const branchLoopParamSpec = [{ param: n.param, bindings: n.paramBindings, index: n.index }]
+      // NOT `index: n.index` here — see the identical note on `loopParamSpec`
+      // above; `BranchLoop.template` is reused verbatim by the lazy row plan
+      // too (`callSite: 'branch-plain'`), and `buildBranchLoopPlan` applies
+      // the index wrap itself once lazy eligibility is known (#2859 follow-up).
+      const branchLoopParamSpec = [{ param: n.param, bindings: n.paramBindings }]
       if (projectionInner) {
         childTemplate = '' // descriptor renderItem builds from d.h, not a row template
       } else if (useElementReconciliation && n.children[0]) {
