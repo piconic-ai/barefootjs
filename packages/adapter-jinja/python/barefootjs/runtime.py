@@ -659,6 +659,22 @@ class BarefootJS:
     def comment(self, text: str) -> str:
         return f"<!--bf-{text}-->"
 
+    def escape_comment_key(self, value: Any) -> str:
+        """Neutralize a value for splicing into `comment`'s HTML comment
+        content (#2795 follow-up). `comment` itself does no escaping --
+        fine for every other caller (marker IDs like "cond-start:s0",
+        "loop:l0", ...), which are entirely compiler-generated, but the
+        whole-item-conditional loop's "loop-i:<key>" anchor carries a
+        user-controlled key. Standard HTML escaping doesn't help inside a
+        comment -- only the literal sequence "-->" terminates it early, and
+        &/</>/"/' are not special there. The key's exact text doesn't need
+        to round-trip (the client's mapArrayAnchored matches items
+        positionally and by its own JS-computed key, never by re-parsing
+        the anchor Comment.nodeValue), so replacing every "-" with the
+        visually-similar U+2010 is sufficient and needs no decoding.
+        """
+        return self.string(value).replace("-", "‐")
+
     # -----------------------------------------------------------------
     # JS-equivalent value stringification
     # -----------------------------------------------------------------

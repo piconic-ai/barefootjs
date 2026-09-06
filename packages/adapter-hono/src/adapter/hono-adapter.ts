@@ -271,7 +271,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only import bfComment/bfText/bfTextEnd/serializeHydrationProps utilities
     // that are actually used
     const utilImports: string[] = []
-    for (const util of ['bfComment', 'bfText', 'bfTextEnd', 'serializeHydrationProps']) {
+    for (const util of ['bfComment', 'escapeCommentKey', 'bfText', 'bfTextEnd', 'serializeHydrationProps']) {
       if (new RegExp(`\\b${util}\\b`).test(componentCode)) {
         utilImports.push(util)
       }
@@ -1035,8 +1035,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // renders nothing), carrying the key so the client's
       // `mapArrayAnchored` can hydrate every SSR-rendered item by its anchor.
       // `bfComment(k)` emits `<!--bf-${k}-->`, so the `loop-i:` argument
-      // yields `<!--bf-loop-i:KEY-->`.
-      safeChildren = `<>{bfComment('loop-i:' + String(${loop.key}))}${children}</>`
+      // yields `<!--bf-loop-i:KEY-->`. `escapeCommentKey` (#2795 follow-up)
+      // neutralizes `-` so a key can't spell `-->` and close the comment
+      // early — see its docstring in `utils.ts`.
+      safeChildren = `<>{bfComment('loop-i:' + escapeCommentKey(${loop.key}))}${children}</>`
     }
     // Apply chained `.sort()` / `.filter()` extracted to
     // `loop.sortComparator` / `loop.filterPredicate` (#1448 Tier B).

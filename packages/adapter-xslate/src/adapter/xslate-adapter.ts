@@ -979,9 +979,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
     // anchor. Still under the row scope (see above) — `loop.key` is a
     // per-row expression.
+    // `$bf.escape_comment_key` (#2795 follow-up) both stringifies the key
+    // (JS `String()` semantics, matching the other adapters) and neutralizes
+    // `-` so it can't spell `-->` and close the comment early — see its doc
+    // in `BarefootJS.pm`.
     const bodyChildren =
       loop.bodyIsItemConditional && loop.key
-        ? `<: $bf.comment("loop-i:" ~ ${this.convertExpressionToKolon(loop.key)}) | mark_raw :>\n${childrenUnderLoop}`
+        ? `<: $bf.comment("loop-i:" ~ $bf.escape_comment_key(${this.convertExpressionToKolon(loop.key)})) | mark_raw :>\n${childrenUnderLoop}`
         : childrenUnderLoop
     this.scope = prevScope
 

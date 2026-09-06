@@ -7732,7 +7732,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // `bfComment` prepends `bf-`, so `printf "loop-i:%v"` yields
       // `<!--bf-loop-i:KEY-->`. The key expression resolves against the current
       // range item (`.` context), matching `data-key`'s emission.
-      return `{{bfComment (printf "loop-i:%v" ${this.convertExpressionToGo(loop.key)})}}`
+      // `bfEscapeCommentKey` (#2795 follow-up) neutralizes `-` so a key can't
+      // spell `-->` and close the comment early — see its doc in `bf.go`.
+      return `{{bfComment (printf "loop-i:%v" (bfEscapeCommentKey ${this.convertExpressionToGo(loop.key)}))}}`
     }
     return ''
   }
