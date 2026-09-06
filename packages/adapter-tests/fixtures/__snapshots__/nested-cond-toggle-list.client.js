@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
 
 
 export function initNestedCondToggleList(__scope, _p = {}) {
@@ -17,7 +17,7 @@ export function initNestedCondToggleList(__scope, _p = {}) {
   const [_s3] = $(__scope, 's3')
 
   mapArray(() => items(), _s3, (item) => String(item.id), (item, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<li data-key="${escapeAttr(item().id)}" class="toggle-row">${item().hidden ? `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->` : `<button bf-c="s0" ${(`${item().active ? 'toggle-btn on' : 'toggle-btn'}`) != null ? 'class="' + escapeAttr(`${item().active ? 'toggle-btn on' : 'toggle-btn'}`) + '"' : ''} ${(`toggle-${item().id}`) != null ? 'data-testid="' + escapeAttr(`toggle-${item().id}`) + '"' : ''} bf="s2">${item().active ? `<!--bf-cond-start:s1-->${'On'}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${'Off'}<!--bf-cond-end:s1-->`}</button>`}</li>`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<li data-key="${escapeAttr(item().id)}" class="toggle-row">${item().hidden ? `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->` : `<button bf-c="s0" ${(`${item().active ? 'toggle-btn on' : 'toggle-btn'}`) != null ? 'class="' + escapeAttr(`${item().active ? 'toggle-btn on' : 'toggle-btn'}`) + '"' : ''} ${(`toggle-${item().id}`) != null ? 'data-testid="' + escapeAttr(`toggle-${item().id}`) + '"' : ''} bf="s2">${item().active ? `<!--bf-cond-start:s1-->${escapeText('On')}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${escapeText('Off')}<!--bf-cond-end:s1-->`}</button>`}</li>`; return __tpl.content.firstElementChild.cloneNode(true) })()
     insert(__el, 's0', () => item().hidden, {
       template: () => { const __slots = []; return { html: `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`, slots: __slots } },
       bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
@@ -57,5 +57,5 @@ export function initNestedCondToggleList(__scope, _p = {}) {
 
 }
 
-hydrate('NestedCondToggleList', { init: initNestedCondToggleList, template: (_p) => `<ul class="toggle-list" bf="s3"><!--bf-loop:l0-->${(_p.items ?? []).map((item) => `<li data-key="${escapeAttr(item.id)}" class="toggle-row">${item.hidden ? `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->` : `<button bf-c="s0" ${(`${item.active ? 'toggle-btn on' : 'toggle-btn'}`) != null ? 'class="' + escapeAttr(`${item.active ? 'toggle-btn on' : 'toggle-btn'}`) + '"' : ''} ${(`toggle-${item.id}`) != null ? 'data-testid="' + escapeAttr(`toggle-${item.id}`) + '"' : ''} bf="s2">${item.active ? `<!--bf-cond-start:s1-->${'On'}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${'Off'}<!--bf-cond-end:s1-->`}</button>`}</li>`).join('')}<!--bf-/loop:l0--></ul>` })
+hydrate('NestedCondToggleList', { init: initNestedCondToggleList, template: (_p) => `<ul class="toggle-list" bf="s3"><!--bf-loop:l0-->${(_p.items ?? []).map((item) => `<li data-key="${escapeAttr(item.id)}" class="toggle-row">${item.hidden ? `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->` : `<button bf-c="s0" ${(`${item.active ? 'toggle-btn on' : 'toggle-btn'}`) != null ? 'class="' + escapeAttr(`${item.active ? 'toggle-btn on' : 'toggle-btn'}`) + '"' : ''} ${(`toggle-${item.id}`) != null ? 'data-testid="' + escapeAttr(`toggle-${item.id}`) + '"' : ''} bf="s2">${item.active ? `<!--bf-cond-start:s1-->${escapeText('On')}<!--bf-cond-end:s1-->` : `<!--bf-cond-start:s1-->${escapeText('Off')}<!--bf-cond-end:s1-->`}</button>`}</li>`).join('')}<!--bf-/loop:l0--></ul>` })
 export function NestedCondToggleList(_p, __bfKey) { return createComponent('NestedCondToggleList', _p, __bfKey) }
