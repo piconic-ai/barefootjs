@@ -4734,6 +4734,21 @@
         "attribute"
       ]
     },
+    "select-value-omitted-option-ssr": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "select-value-ssr": {
       "kinds": [
         "binary",
@@ -5971,12 +5986,12 @@
     "array-literal": 88,
     "array-method": 71,
     "arrow": 71,
-    "binary": 96,
-    "call": 249,
+    "binary": 97,
+    "call": 250,
     "conditional": 30,
-    "identifier": 351,
+    "identifier": 352,
     "index-access": 14,
-    "literal": 279,
+    "literal": 280,
     "logical": 49,
     "member": 197,
     "object-literal": 71,
@@ -6016,13 +6031,13 @@
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 51,
+    "binary:===": 52,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 59,
     "literal:null": 23,
     "literal:number": 118,
-    "literal:string": 196,
+    "literal:string": 197,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,

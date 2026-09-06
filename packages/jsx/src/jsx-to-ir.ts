@@ -1564,7 +1564,14 @@ function lowerFormControlValueSsr(
           continue
         }
         const optValue = n.attrs.find(a => a.name === 'value')
-        if (!optValue) continue
+        if (!optValue) {
+          // No `value` attr: the browser falls back to the option's text
+          // content as its implicit value, which this pass can't compare
+          // against without re-deriving that text — bail rather than
+          // silently dropping this option out of the "no match" OR.
+          optionSetIsDynamic = true
+          continue
+        }
         if (optValue.value.kind === 'literal') {
           const selected = selectedForLiteral(optValue.value.value)
           n.attrs.push({ name: 'selected', value: selected, loc: n.loc })
@@ -1573,6 +1580,10 @@ function lowerFormControlValueSsr(
           const selected = selectedForExpr(optValue.value.expr, optValue.value.templateExpr)
           n.attrs.push({ name: 'selected', value: selected, loc: n.loc })
           matchConditions.push(selected)
+        } else {
+          // A `value` shape neither builder above can compare (e.g. a
+          // structured `template` part) — same bail, not a silent drop.
+          optionSetIsDynamic = true
         }
       } else if (n.type === 'fragment' || (n.type === 'element' && n.tag === 'optgroup')) {
         distribute(n.children)

@@ -553,6 +553,10 @@ import { fixture as selectValueNoMatchSsr } from './select-value-no-match-ssr'
 // Companion to the above: a `multiple` select already has no implicit
 // default to disagree with, so the placeholder must NOT be injected there.
 import { fixture as selectMultipleValueNoMatchSsr } from './select-multiple-value-no-match-ssr'
+// Review follow-up: a value-less <option> (implicit textContent-as-value)
+// mixed with literal/expression options must bail the placeholder, not
+// silently drop out of the "no match" OR.
+import { fixture as selectValueOmittedOptionSsr } from './select-value-omitted-option-ssr'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 // #2756: the keyed-loop-row form of the same controlled-textarea SSR
 // projection — the shape whose CLIENT row builder used to bake back the
@@ -970,6 +974,7 @@ export const jsxFixtures: JSXFixture[] = [
   selectLoopSelected,
   selectValueNoMatchSsr,
   selectMultipleValueNoMatchSsr,
+  selectValueOmittedOptionSsr,
   textareaValueSsr,
   signalEarlyReturn,
   branchRootPropAttr,
