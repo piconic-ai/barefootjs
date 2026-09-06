@@ -2465,13 +2465,9 @@
           ]
         },
         "go-template": {
-          "pass": 327,
+          "pass": 328,
           "total": 350,
           "gaps": [
-            {
-              "fixture": "children-passthrough-renamed",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2787,13 +2783,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 330,
+          "pass": 331,
           "total": 350,
           "gaps": [
-            {
-              "fixture": "children-passthrough-renamed",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4021,13 +4013,9 @@
           ]
         },
         "go-template": {
-          "pass": 175,
+          "pass": 176,
           "total": 197,
           "gaps": [
-            {
-              "fixture": "children-passthrough-renamed",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4325,13 +4313,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 178,
+          "pass": 179,
           "total": 197,
           "gaps": [
-            {
-              "fixture": "children-passthrough-renamed",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
