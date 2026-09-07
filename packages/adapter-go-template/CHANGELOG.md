@@ -1,5 +1,15 @@
 # @barefootjs/go-template
 
+## 0.35.1
+
+### Patch Changes
+
+- 09ac5a2: Drop the `issue:` citation on the `jsx-element-prop-ternary` / `jsx-element-prop-array` (BF021) and `namespace-import-primitive` (BF013) conformance pins. Both refusals were tracked by #2667 and #2771, which are now closed — the loud refusal is confirmed to be the permanent, intended behavior for both (not a tracked capability gap), so the stale closed-issue links no longer serve a purpose. No behavior change; comment/metadata only.
+- 177bdb4: Fix #2863: a ternary (or `+`/`||`/`??` operand, or a `queryHref`-style helper argument) whose branch was a multi-part template literal (e.g. `` event.endTime ? `${event.time}–${event.endTime}` : event.time ``) emitted invalid Go template syntax — nested `{{…}}` action delimiters inside another action's pipeline argument list (`(bf_ternary … {{.Time}}–{{.EndTime}} …)`). `bf build` succeeded, but the generated `.tmpl` file failed `html/template.Parse` at Go application startup with `unexpected "{" in operand`.
+  
+  The Go adapter's ternary/operand lowering now folds a template literal used in this VALUE position into a single Go pipeline value via a left-folded `bf_concat_str` chain (the same runtime helper already used for JS string-concatenation `+`), instead of routing it through the TEXT-position `templateLiteral()` emitter (mixed literal text plus `{{…}}` action wraps), which is only safe when spliced directly into markup. A per-row child-component prop reading a multi-part template literal — previously refused outright with `BF101` — now lowers faithfully through the same path instead.
+- @barefootjs/shared@0.35.1
+
 ## 0.35.0
 
 ### Patch Changes
