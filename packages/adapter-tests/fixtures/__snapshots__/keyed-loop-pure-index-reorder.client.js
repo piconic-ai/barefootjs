@@ -34,7 +34,7 @@ export function initKeyedLoopPureIndexReorder(__scope, _p = {}) {
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {
-        const __x = `${i % 2 === 0 ? 'even' : 'odd'}`
+        const __x = `${i === 1 ? 'odd' : 'even'}`
         { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
         __l[0] = __x
       } }
@@ -53,7 +53,7 @@ export function initKeyedLoopPureIndexReorder(__scope, _p = {}) {
       const __l = __e.last ?? (__e.last = [])
       { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s3"]'))
       if (__t) {
-        const __x = `${i % 2 === 0 ? 'even' : 'odd'}`
+        const __x = `${i === 1 ? 'odd' : 'even'}`
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
         }
@@ -75,5 +75,5 @@ hydrate('KeyedLoopPureIndexReorder', { init: initKeyedLoopPureIndexReorder, temp
     { id: 1, label: 'Alpha' },
     { id: 2, label: 'Bravo' },
     { id: 3, label: 'Charlie' },
-  ]).map((row, i) => `<li data-key="${escapeAttr(row.id)}" ${(`${i % 2 === 0 ? 'even' : 'odd'}`) != null ? 'class="' + escapeAttr(`${i % 2 === 0 ? 'even' : 'odd'}`) + '"' : ''} bf="s3"><span class="badge"><!--bf:s1-->${escapeText(i)}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(row.label)}<!--/--></span></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+  ]).map((row, i) => `<li data-key="${escapeAttr(row.id)}" ${(`${i === 1 ? 'odd' : 'even'}`) != null ? 'class="' + escapeAttr(`${i === 1 ? 'odd' : 'even'}`) + '"' : ''} bf="s3"><span class="badge"><!--bf:s1-->${escapeText(i)}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(row.label)}<!--/--></span></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function KeyedLoopPureIndexReorder(_p, __bfKey) { return createComponent('KeyedLoopPureIndexReorder', _p, __bfKey) }

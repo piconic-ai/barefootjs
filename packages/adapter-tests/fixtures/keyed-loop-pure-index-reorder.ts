@@ -4,7 +4,7 @@
  * alongside the other `.map()`-index regression pins.
  *
  * The real-browser regression pin for #2861: a keyed `.map()` row whose
- * badge text (`{i}`) and `class` (`i % 2 === 0 ? … : …`) are derived
+ * badge text (`{i}`) and `class` (`i === 1 ? … : …`) are derived
  * PURELY from the row's own index — no signal read, no function call
  * anywhere in either expression. Clicking "Rotate" reorders the SAME THREE
  * keyed rows (moves the first to the back) without creating or destroying

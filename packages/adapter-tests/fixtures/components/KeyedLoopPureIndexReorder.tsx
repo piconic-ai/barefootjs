@@ -2,16 +2,21 @@
 
 // Test fixture (#2861): a keyed `.map()` row whose badge text and class are
 // derived PURELY from the row's own index — no signal read, no function
-// call anywhere in either expression (`{i}`, `i % 2 === 0 ? … : …`).
+// call anywhere in either expression (`{i}`, `i === 1 ? … : …`). (The
+// class expression deliberately avoids `%` — the Go adapter's ternary
+// condition lowering has no `bf_mod` case and panics on a raw `%` in the
+// emitted template; filed separately as a known-limitation, out of scope
+// here since this fixture only needs SOME pure-index expression, not
+// specifically modulo.)
 //
 // #2859/#2860 fixed index-derived output that ALREADY got a `createEffect`
 // wired for some other reason (a signal read elsewhere in the expression,
 // or a function call tripping the AST-flag fallback — see
 // `KeyedLoopIndexReorder.tsx`'s `String(i + 1)`). This fixture is the
 // residual gap those didn't touch: before #2861, `classifyReactivity` had
-// no case for a pure index reference at all, so `{i}` and `i % 2 === 0`
-// here were baked into the row's template once at creation and never
-// revisited — not even across a same-key reorder.
+// no case for a pure index reference at all, so `{i}` and the class
+// ternary here were baked into the row's template once at creation and
+// never revisited — not even across a same-key reorder.
 //
 // The fix teaches `classifyReactivity` a `loop-index` source (mirroring
 // its existing `loop-param` one for the item), which is enough on its own:
@@ -57,7 +62,7 @@ export function KeyedLoopPureIndexReorder() {
       </button>
       <ul>
         {rows().map((row, i) => (
-          <li key={row.id} class={i % 2 === 0 ? 'even' : 'odd'}>
+          <li key={row.id} class={i === 1 ? 'odd' : 'even'}>
             <span class="badge">{i}</span>
             <span class="label">{row.label}</span>
           </li>
