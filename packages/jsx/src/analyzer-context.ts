@@ -318,10 +318,17 @@ export function createAnalyzerContext(
       // travel as structured segments, never as raw text. Every getJS call
       // site shares this contract; the env gate keeps the subtree walk off
       // the production hot path (the trichotomy harness enables it). Scoped
-      // to error-free compiles: a compile that already refused loudly may
-      // take degraded fallback paths whose artifacts are gated by the error —
-      // the invariant this trips on is the SILENT leak.
-      if (process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' && this.errors.length === 0 && nodeContainsJsx(node)) {
+      // to compiles with no `error`-severity diagnostic: a compile that
+      // already refused loudly may take degraded fallback paths whose
+      // artifacts are gated by the error — the invariant this trips on is
+      // the SILENT leak. A `warning` (e.g. BF043 props-destructuring) does
+      // not gate anything, so it must not silently disarm this assertion too
+      // (#2867) — only `error` severity does.
+      if (
+        process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' &&
+        !this.errors.some((e) => e.severity === 'error') &&
+        nodeContainsJsx(node)
+      ) {
         throw new Error(
           'getJS() called on a JSX-bearing node — raw JSX must never be spliced ' +
           'into emitted output. Carry mixed content as structured segments ' +
