@@ -94,9 +94,10 @@ export function convertInitialValue(
     if (param) {
       return propRef(param)
     }
-    // Module-const seed (#2794): a signal seeded from a bare identifier
-    // that refers to a module-level const (`const PAYLOAD = 'x';
-    // createSignal(PAYLOAD)`) types `unknown` — the analyzer's type
+    // Module-const seed (#2794/#2815/#2862): a signal seeded from a bare
+    // identifier that refers to a module-level const (`const PAYLOAD = 'x';
+    // createSignal(PAYLOAD)`, or `const INITIAL: Row[] = [...];
+    // createSignal(INITIAL)`) types `unknown` — the analyzer's type
     // inference is text-shaped and never chases an identifier to its
     // declaration — so none of the typed branches below ever see it and
     // this used to fall through to the final `nil`. Checked AFTER the
@@ -107,10 +108,8 @@ export function convertInitialValue(
     // leaving that case on the pre-existing `nil` path unchanged.
     const inlinedStr = ctx.resolveModuleStringConst(value)
     if (inlinedStr !== null) return inlinedStr
-    const inlinedNum = ctx.resolveModuleNumericConst(value)
-    if (inlinedNum !== null) return inlinedNum
-    const inlinedBool = ctx.resolveModuleBooleanConst(value)
-    if (inlinedBool !== null) return inlinedBool
+    const inlinedConst = ctx.resolveModuleConstAsGo(value, { kind: 'go-source', bakeType: typeInfo })
+    if (inlinedConst !== null) return inlinedConst
   }
 
   const propName = ctx.extractPropNameFromInitialValue(value, preParsed)

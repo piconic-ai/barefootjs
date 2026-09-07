@@ -1641,7 +1641,7 @@ export function Widget(props: P) {
     // to `nil` — the analyzer types it `unknown` since it never chases an
     // identifier to its declaration, so none of convertInitialValue's typed
     // branches saw it (#2794). Now resolved via the same
-    // resolveModuleStringConst/resolveModuleNumericConst the adapter
+    // resolveModuleStringConst/resolveModuleConstAsGo the adapter
     // already used for live template expressions (template-interp.ts).
     test('signal seeded from a module-level const bakes its literal value, not nil', () => {
       const adapter = new GoTemplateAdapter()
@@ -6208,7 +6208,7 @@ export function Nested({ groups }: { groups: { label: string }[][] }) {
 // goes through `identifier()` (the `ParsedExprEmitter` method), which
 // already carries the loop-shadow guards (`loopParamStack` /
 // `isOuterLoopParam`, mirrored from `resolveModuleStringConst` /
-// `resolveModuleNumericConst`). So a `.map((count) => ...)` callback param
+// `resolveModuleConstAsGo`). So a `.map((count) => ...)` callback param
 // that shadows an outer `const count = 7` got the OUTER literal inlined at
 // the `data-key` position even though the text position (which DOES go
 // through `identifier()`) correctly resolved to the per-item value.

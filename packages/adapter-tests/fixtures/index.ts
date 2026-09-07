@@ -508,6 +508,10 @@ import { fixture as mapObjectLiteralBody } from './map-object-literal-body'
 // fixture file header.
 import { fixture as signalObjectSpreadInit } from './signal-object-spread-init'
 import { fixture as signalObjectSpreadInitClient } from './signal-object-spread-init-client'
+// #2862: a signal seeded from a bare identifier naming a module-level const
+// whose value is an array-of-objects / object literal (same family as
+// #2794/#2815, string/numeric/boolean module consts, fixed by PR #2816).
+import { fixture as moduleConstArraySeed } from './module-const-array-seed'
 import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
 // #2482 audit follow-ups, adapter-side (pinned known limitations):
 // Go condition-position destructured bindings, Go nested-loop `inLoop`
@@ -966,6 +970,7 @@ export const jsxFixtures: JSXFixture[] = [
   mapObjectLiteralBody,
   signalObjectSpreadInit,
   signalObjectSpreadInitClient,
+  moduleConstArraySeed,
   loopParamShadowsRecordTemplateSpan,
   loopDestructuredParamCondition,
   nestedLoopTailContent,
