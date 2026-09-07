@@ -549,8 +549,8 @@ function Widget({ values }: { values: number[] }) {
   return <ul>{values.map((label) => (label > 0 ? <li key={label}>{label}</li> : null))}</ul>
 }
 `)
-    expect(template).toContain('bf.comment("loop-i:" ~ bf.string(label))')
-    expect(template).not.toContain("bf.comment(\"loop-i:\" ~ bf.string('x'))")
+    expect(template).toContain('bf.comment("loop-i:" ~ bf.escape_comment_key(label))')
+    expect(template).not.toContain("bf.comment(\"loop-i:\" ~ bf.escape_comment_key('x'))")
   })
 
   test('a loop param shadowing an outer const resolves to the row value inside a .map() preamble local initializer', () => {
