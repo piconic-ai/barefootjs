@@ -45,7 +45,7 @@ import type { IRLoopSort, FunctionInfo, ConstantInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
-import { containsReactiveExpression } from './reactivity-checker.ts'
+import { containsReactiveExpression, collectReactiveBrandLeaves } from './reactivity-checker.ts'
 import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
@@ -2429,7 +2429,13 @@ function transformExpressionInner(
     // A reactive brand-package condition (e.g. `form.field('x').error() &&
     // …`) can't be SSR-evaluated, so defer the whole conditional rather
     // than raising BF061 — same routing as a manual `/* @client */` (#1638).
-    if ((isClientOnly || shouldAutoDeferReactiveBrand(expr, ctx)) && ir.type === 'conditional') {
+    // Check `ir.type` first: `shouldAutoDeferReactiveBrand` only matters for
+    // IRConditional, but walks the checker over `expr` — for every other
+    // shape (in particular IRLoop, whose `expr` is a `.map()` callback body
+    // full of JSX) that walk is both wasted work and, historically, exactly
+    // what tripped the getJS trust-boundary assertion on a JSX-bearing node
+    // (#2867/#2830).
+    if (ir.type === 'conditional' && (isClientOnly || shouldAutoDeferReactiveBrand(expr, ctx))) {
       ir.clientOnly = true
       if (!ir.slotId) {
         ir.slotId = generateSlotId(ctx)
@@ -8210,10 +8216,21 @@ function isReactiveExpression(expr: string, ctx: TransformContext, astNode?: ts.
 function shouldAutoDeferReactiveBrand(expr: ts.Expression, ctx: TransformContext): boolean {
   const checker = ctx.analyzer.checker
   if (!checker) return false
-  if (!containsReactiveExpression(expr, checker)) return false
+  // Read only the brand-carrying leaf(s), never `expr` itself: `expr` can be
+  // a `.map()` callback or a ternary/`&&` with JSX arms, and getJS() refuses
+  // to stringify a JSX-bearing node (the write-side trust boundary — JSX
+  // must travel as structured segments, never raw text). Each leaf is an
+  // identifier / property access / call callee, none of which can contain
+  // JSX, so getJS() is safe on them regardless of what the rest of `expr`
+  // contains (#2867/#2830 — this used to call getJS(expr) directly and
+  // throw whenever the checker was active and expr had JSX in it).
+  const leaves = collectReactiveBrandLeaves(expr, checker)
+  if (leaves.length === 0) return false
   // Native signals/memos (incl. chained-const aliases) are SSR-derivable —
   // leave them to the normal template path so their initial value renders.
-  if (isSignalOrMemoReference(ctx.getJS(expr), ctx)) return false
+  // Preserves the original "any native ref anywhere defers to non-deferred"
+  // semantics by checking every reactive-brand leaf, not just the first.
+  if (leaves.some((leaf) => isSignalOrMemoReference(ctx.getJS(leaf), ctx))) return false
   return true
 }
 

@@ -26,6 +26,7 @@ import type {
 } from './types.ts'
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
+import { nodeContainsJsx } from './reactivity-checker.ts'
 
 /**
  * Deferred info for BF043 (props destructuring warning).
@@ -318,10 +319,17 @@ export function createAnalyzerContext(
       // travel as structured segments, never as raw text. Every getJS call
       // site shares this contract; the env gate keeps the subtree walk off
       // the production hot path (the trichotomy harness enables it). Scoped
-      // to error-free compiles: a compile that already refused loudly may
-      // take degraded fallback paths whose artifacts are gated by the error —
-      // the invariant this trips on is the SILENT leak.
-      if (process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' && this.errors.length === 0 && nodeContainsJsx(node)) {
+      // to compiles with no `error`-severity diagnostic: a compile that
+      // already refused loudly may take degraded fallback paths whose
+      // artifacts are gated by the error — the invariant this trips on is
+      // the SILENT leak. A `warning` (e.g. BF043 props-destructuring) does
+      // not gate anything, so it must not silently disarm this assertion too
+      // (#2867) — only `error` severity does.
+      if (
+        process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' &&
+        !this.errors.some((e) => e.severity === 'error') &&
+        nodeContainsJsx(node)
+      ) {
         throw new Error(
           'getJS() called on a JSX-bearing node — raw JSX must never be spliced ' +
           'into emitted output. Carry mixed content as structured segments ' +
@@ -334,12 +342,6 @@ export function createAnalyzerContext(
       return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
     },
   }
-}
-
-/** Subtree JSX check for the test-gated getJS assertion above. */
-function nodeContainsJsx(node: ts.Node): boolean {
-  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true
-  return ts.forEachChild(node, nodeContainsJsx) ?? false
 }
 
 // =============================================================================
