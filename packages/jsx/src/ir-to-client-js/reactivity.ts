@@ -38,15 +38,27 @@ import { identifierCallPattern } from '../identifier-pattern.ts'
  * `index` field through before this fix (see each call site's own
  * `undefined`/omitted-arg default), so `undefined` here still means "not
  * guarded," not "no index param."
+ *
+ * `parentScope` (#2861): stacks this loop-row frame on top of an
+ * ENCLOSING loop's own scope, rather than always starting from
+ * `BindingScope.EMPTY` — for a nested `.map()` inside another `.map()`'s
+ * JSX body. `BindingScope.lookup`/`valueBoundNames` search innermost-first
+ * across every frame, so a row expression referencing the OUTER loop's
+ * item/index (with no dependency on the INNER loop's own item/index or any
+ * signal) is still granted a slot and classified reactive, instead of
+ * silently returning `'none'` because only the inner-most frame was ever
+ * visible. Omitted (or `undefined`) for a loop with no enclosing loop —
+ * identical to the pre-#2861 shape.
  */
 export function buildLoopRowScope(
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
   preambleNames?: ReadonlySet<string>,
   loopIndex?: string | null,
+  parentScope?: BindingScope,
 ): BindingScope | undefined {
   if (!loopParam) return undefined
-  return BindingScope.EMPTY.enterLoopRow({
+  return (parentScope ?? BindingScope.EMPTY).enterLoopRow({
     param: loopParam,
     paramBindings: loopParamBindings,
     index: loopIndex,
@@ -274,14 +286,28 @@ function needsEffectWrapperCore(
 /**
  * Why a given expression should be treated as reactive inside a loop item.
  *
- * Surfaces the two distinct reasons loop-child collectors care about:
+ * Surfaces the three distinct reasons loop-child collectors care about:
  * - `signal-or-memo-or-prop` — the expression reads a signal getter, a memo,
  *   or a prop name (what `needsEffectWrapper` already classifies).
- * - `loop-param` — the expression reads the loop parameter, which becomes a
- *   per-item signal accessor at runtime; the string-level `needsEffectWrapper`
- *   does not know about loop params.
+ * - `loop-param` — the expression reads the loop's item (or a destructured
+ *   binding of it), which becomes a per-item signal accessor at runtime;
+ *   the string-level `needsEffectWrapper` does not know about loop params.
+ * - `loop-index` (#2861) — the expression reads ONLY the loop's index
+ *   parameter (`.map((item, i) => ...)`'s `i`), with no item/signal/memo/prop
+ *   read anywhere else in it (e.g. bare `{i}`, `class={i % 2 === 0 ? …}`).
+ *   `mapArray`/`mapArrayAnchored` hand `renderItem` an index ACCESSOR
+ *   exactly like the item accessor (#2859/#2860), and `mapArrayLazy` tracks
+ *   a row's position on `entry.index` exactly like `entry.item` — but
+ *   before this classification existed, nothing ever put such an
+ *   expression in front of that machinery in the first place: Phase 1
+ *   (`jsx-to-ir.ts`'s `referencesLoopParam`) already grants it a patchable
+ *   slot via `BindingScope.valueBoundNames()` (item/index/destructure
+ *   together), while this function — Phase 2 — had no equivalent case for
+ *   the index alone, so the slot was written once at row-creation time and
+ *   never revisited.
  *
- * `none` means neither applies and the collector can skip the expression.
+ * `none` means none of the three applies and the collector can skip the
+ * expression.
  *
  * Consolidates the duplicated reactive-classification check shared by
  * `collectLoopChildReactiveTexts`, `collectLoopChildReactiveAttrs`, and
@@ -291,37 +317,53 @@ export type ReactivitySource =
   | { kind: 'none' }
   | { kind: 'signal-or-memo-or-prop' }
   | { kind: 'loop-param'; param: string }
+  | { kind: 'loop-index'; param: string }
 
 /**
  * Classify a (constant-expanded) expression as reactive inside a loop item.
- * See `ReactivitySource` for the two reasons we care about. Loop-param
- * matching takes precedence so `loop-param` is reported even when the
- * expression also reads a signal — the `kind` is purely informational and
- * collectors only care about `kind !== 'none'`.
+ * See `ReactivitySource` for the three reasons we care about. Loop-param
+ * and loop-index matching take precedence so one of them is reported even
+ * when the expression also reads a signal — the `kind` is purely
+ * informational and collectors only care about `kind !== 'none'`.
  *
- * For destructured `.map()` callbacks (#951), `loopParamBindings` lists each
- * destructured binding name; any reference to one of those names is treated
- * as a `loop-param` hit. The pattern text itself (e.g. `{ id, label }`)
- * never word-matches on a bare binding like `id`, so the straight
- * `loopParam` check misses destructured references without this widening.
+ * Takes the row's `BindingScope` (#2482) rather than a raw `(loopParam,
+ * loopParamBindings)` pair so this reads the EXACT SAME query Phase 1's
+ * `referencesLoopParam` reads (`scope.valueBoundNames()` — item/index/
+ * destructure together) to decide whether an expression gets a patchable
+ * slot at all. `undefined` means no enclosing loop.
+ *
+ * For destructured `.map()` callbacks (#951), a `'destructure'`-sourced
+ * binding is reported as `loop-param` — the pattern text itself (e.g.
+ * `{ id, label }`) never word-matches on a bare binding like `id`, so
+ * iterating `valueBoundNames()` (rather than testing the raw param text)
+ * is what catches a destructured reference at all.
+ *
+ * Item/destructure bindings are checked before the index so `loop-param`
+ * wins when an expression reads both (e.g. `` `${item.id}-${i}` ``) — this
+ * only affects which `kind` is reported, since every caller of this
+ * function besides the two `ReactivitySource`-typed union members simply
+ * tests `.kind !== 'none'`.
  */
 export function classifyReactivity(
   expr: string,
   ctx: ClientJsContext,
-  loopParam?: string,
-  loopParamBindings?: readonly LoopParamBinding[],
+  scope: BindingScope | undefined,
   freeIdentifiers?: ReadonlySet<string>,
 ): ReactivitySource {
   const has = (name: string): boolean =>
     freeIdentifiers ? freeIdentifiers.has(name) : tokenContainsIdent(expr, name)
-  if (loopParamBindings && loopParamBindings.length > 0) {
-    for (const b of loopParamBindings) {
-      if (has(b.name)) {
-        return { kind: 'loop-param', param: loopParam ?? b.name }
+  if (scope) {
+    let indexHit: string | undefined
+    for (const name of scope.valueBoundNames()) {
+      if (!has(name)) continue
+      const source = scope.lookup(name)?.binding.source
+      if (source === 'index') {
+        indexHit ??= name
+        continue
       }
+      return { kind: 'loop-param', param: name }
     }
-  } else if (loopParam && has(loopParam)) {
-    return { kind: 'loop-param', param: loopParam }
+    if (indexHit) return { kind: 'loop-index', param: indexHit }
   }
   if (needsEffectWrapper(expr, ctx, freeIdentifiers)) {
     return { kind: 'signal-or-memo-or-prop' }
@@ -666,9 +708,11 @@ export function collectLoopChildReactiveTexts(
   stopAtReactiveConditionals = false,
   preambleNames?: ReadonlySet<string>,
   loopIndex?: string | null,
+  /** Enclosing loop's own scope, for a NESTED loop (#2861) — see `buildLoopRowScope`. */
+  parentScope?: BindingScope,
 ): LoopChildReactiveText[] {
   const texts: LoopChildReactiveText[] = []
-  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex, parentScope)
   walkIR(node, false, {
     // Skip loop/async/if-statement subtrees — the original walker omitted
     // them; they have their own scopes (inner-loop reconciliation, async
@@ -696,7 +740,7 @@ export function collectLoopChildReactiveTexts(
       // `classifyReactivity` can't see through) still gets an update
       // effect instead of silently freezing at its SSR value (#2282).
       const reactive =
-        classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind !== 'none'
+        classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind !== 'none'
         || decideWrapFromAstFlags(n).wrap
       if (!reactive) return
       texts.push({
@@ -746,9 +790,11 @@ export function collectLoopChildReactiveAttrs(
   stopAtReactiveConditionals = false,
   preambleNames?: ReadonlySet<string>,
   loopIndex?: string | null,
+  /** Enclosing loop's own scope, for a NESTED loop (#2861) — see `buildLoopRowScope`. */
+  parentScope?: BindingScope,
 ): LoopChildReactiveAttr[] {
   const attrs: LoopChildReactiveAttr[] = []
-  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex, parentScope)
   traverseElements(node, (el) => {
     if (el.slotId) {
       for (const attr of el.attrs) {
@@ -799,7 +845,7 @@ export function collectLoopChildReactiveAttrs(
           preambleNames.size > 0 &&
           anyNameIn(expanded.freeIds ?? extractFreeIdentifiersFromText(expanded.expr), preambleNames)
         const reactive =
-          classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind !== 'none'
+          classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind !== 'none'
           || readsPreamble
           || attr.callsReactiveGetters
           || attr.hasFunctionCalls
