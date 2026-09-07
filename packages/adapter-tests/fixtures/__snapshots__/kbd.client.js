@@ -15,12 +15,17 @@ export function initSlot(__scope, _p = {}) {
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Tag_s0El] = $c(__scope, 's0')
     if (__Tag_s0El) {
-      { const __v = ([className, (((children.props).className) || '')].filter(Boolean).join(' ')); if (__v != null) __Tag_s0El.setAttribute('class', String(__v)); else __Tag_s0El.removeAttribute('class') }
+      { const __x = ([className, (((children.props).className) || '')].filter(Boolean).join(' '))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __Tag_s0El.setAttribute('class', String(__v)); else __Tag_s0El.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Tag', _s0, forwardProps(_p, { get className() { return ([className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
@@ -39,22 +44,32 @@ export function initKbd(__scope, _p = {}) {
   const [_s0] = $(__scope, 's0')
   const [_s1] = $c(__scope, 's1')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","asChild","children","data-slot","class"])
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
-      { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
+      { const __x = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Slot', _s1, forwardProps(_p, { get className() { return `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}` } }, ["className"]))
@@ -73,22 +88,32 @@ export function initKbdGroup(__scope, _p = {}) {
   const [_s0] = $(__scope, 's0')
   const [_s1] = $c(__scope, 's1')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `inline-flex items-center gap-1 ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `inline-flex items-center gap-1 ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","asChild","children","data-slot","class"])
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
-      { const __v = `inline-flex items-center gap-1 ${className}`; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
+      { const __x = `inline-flex items-center gap-1 ${className}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Slot', _s1, forwardProps(_p, { get className() { return `inline-flex items-center gap-1 ${className}` } }, ["className"]))

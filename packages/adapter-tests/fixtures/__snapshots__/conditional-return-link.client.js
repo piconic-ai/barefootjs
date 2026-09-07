@@ -16,17 +16,27 @@ export function initConditionalReturn(__scope, _p = {}) {
     __bfw_s2('s0', escapeTextOrNode(__val))
   })
 
+  { const __l = []
   createEffect(() => {
     if (_s3) {
-      { const __v = count() > 0; if (__v != null) _s3.setAttribute('data-active', String(__v)); else _s3.removeAttribute('data-active') }
+      { const __x = count() > 0
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s3.setAttribute('data-active', String(__v)); else _s3.removeAttribute('data-active') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __v = count() > 0; if (__v != null) _s1.setAttribute('data-active', String(__v)); else _s1.removeAttribute('data-active') }
+      { const __x = count() > 0
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-active', String(__v)); else _s1.removeAttribute('data-active') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s3) _s3.addEventListener('click', (e) => {
           e.preventDefault()

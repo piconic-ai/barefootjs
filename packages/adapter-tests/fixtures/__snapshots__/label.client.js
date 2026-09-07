@@ -9,11 +9,16 @@ export function initLabel(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${labelClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${labelClasses} ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","class"])
 

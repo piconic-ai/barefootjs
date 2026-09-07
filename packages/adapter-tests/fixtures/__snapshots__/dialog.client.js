@@ -53,13 +53,26 @@ export function initDialogTrigger(__scope, _p = {}) {
 
   const [_s1, _s0] = $(__scope, 's1', 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogTriggerClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
-      _s0.disabled = !!(_p.disabled ?? false)
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = `${dialogTriggerClasses} ${_p.className ?? ''}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
+      { const __x = _p.disabled ?? false
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        _s0.disabled = !!(__x)
+      }
+      __l[2] = __x }
     }
-  })
+  }) }
 
   if (_s1) (handleMount)(_s1)
   if (_s0) (handleMount)(_s0)
@@ -99,12 +112,21 @@ export function initDialogOverlay(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogOverlayBaseClasses} ${dialogOverlayClosedClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = `${dialogOverlayBaseClasses} ${dialogOverlayClosedClasses} ${_p.className ?? ''}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) (handleMount)(_s0)
 }
@@ -194,14 +216,31 @@ export function initDialogContent(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.ariaLabelledby; if (__v != null) _s0.setAttribute('aria-labelledby', String(__v)); else _s0.removeAttribute('aria-labelledby') }
-      { const __v = _p.ariaDescribedby; if (__v != null) _s0.setAttribute('aria-describedby', String(__v)); else _s0.removeAttribute('aria-describedby') }
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogContentBaseClasses} ${dialogContentClosedClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.ariaLabelledby
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('aria-labelledby', String(__v)); else _s0.removeAttribute('aria-labelledby') }
+      }
+      __l[0] = __x }
+      { const __x = _p.ariaDescribedby
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('aria-describedby', String(__v)); else _s0.removeAttribute('aria-describedby') }
+      }
+      __l[1] = __x }
+      { const __x = _p.id
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[2] = __x }
+      { const __x = `${dialogContentBaseClasses} ${dialogContentClosedClasses} ${_p.className ?? ''}`
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[3] = __x }
     }
-  })
+  }) }
 
   if (_s0) (handleMount)(_s0)
 }
@@ -216,11 +255,16 @@ export function initDialogHeader(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${dialogHeaderClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${dialogHeaderClasses} ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","class"])
 
@@ -236,12 +280,21 @@ export function initDialogTitle(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogTitleClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = `${dialogTitleClasses} ${(_p.className ?? '')}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","id","children","data-slot","class"])
 
@@ -257,12 +310,21 @@ export function initDialogDescription(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogDescriptionClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = `${dialogDescriptionClasses} ${(_p.className ?? '')}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","id","children","data-slot","class"])
 
@@ -278,11 +340,16 @@ export function initDialogFooter(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${dialogFooterClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${dialogFooterClasses} ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","class"])
 
@@ -307,12 +374,21 @@ export function initDialogClose(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogCloseClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = `${dialogCloseClasses} ${_p.className ?? ''}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) (handleMount)(_s0)
 }
@@ -336,12 +412,17 @@ export function initDialogBasicDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {
-      __Dialog_s9El.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __Dialog_s9El.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Dialog', _s9, { get open() { return open() }, onOpenChange: setOpen })
@@ -380,18 +461,28 @@ export function initDialogFormDemo(__scope, _p = {}) {
   const [_s5, _s7] = $(__scope, '^s5', '^s7')
   const [_s10, _s0, _s1, _s9, _s4, _s2, _s3, _s8, _s6] = $c(__scope, 's10', 's0', 's1', 's9', 's4', 's2', 's3', 's8', 's6')
 
+  { const __l = []
   createEffect(() => {
     if (_s5) {
-      const __val = String(confirmText())
-      if ('value' in _s5) { if (_s5.value !== __val) _s5.value = __val } else { _s5.setAttribute('value', __val) }
+      { const __x = confirmText()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        const __val = String(__x)
+        if ('value' in _s5) { if (_s5.value !== __val) _s5.value = __val } else { _s5.setAttribute('value', __val) }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s7) {
-      _s7.disabled = !!(!isConfirmed())
+      { const __x = !isConfirmed()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s7.disabled = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s5) _s5.addEventListener('input', (e) => { setConfirmText((e.target).value) })
   if (_s7) _s7.addEventListener('click', handleDelete)
@@ -404,12 +495,17 @@ export function initDialogFormDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Dialog_s10El] = $c(__scope, 's10')
     if (__Dialog_s10El) {
-      __Dialog_s10El.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __Dialog_s10El.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
   createEffect(() => {
     if (!open()) return
 
@@ -474,12 +570,17 @@ export function initDialogLongContentDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {
-      __Dialog_s9El.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __Dialog_s9El.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Dialog', _s9, { get open() { return open() }, onOpenChange: setOpen })

@@ -85,6 +85,9 @@ function emitChildValueMirrorStatements(target: string, expression: string): str
  * Generate JS statements to update a DOM attribute reactively.
  * Centralizes the attribute-type dispatch (value, class, boolean, presence, generic)
  * so that new AttrMeta flags are handled in one place.
+ *
+ * Per-kind WRITE dispatch only — an effect body must never call this
+ * directly, only through `emitDedupedAttrUpdate` below (#2869).
  */
 export function emitAttrUpdate(target: string, attrName: string, expression: string, meta: AttrMeta): string[] {
   const htmlName = toHtmlAttrName(attrName)
@@ -124,6 +127,81 @@ export function emitAttrUpdate(target: string, attrName: string, expression: str
   return [
     `{ const __v = ${expression}; if (__v != null) ${target}.setAttribute('${htmlName}', String(__v)); else ${target}.removeAttribute('${htmlName}') }`,
   ]
+}
+
+/**
+ * Last-value store every deduped attribute write in one emitting block
+ * shares — `const __l = []`, declared ONCE in the block that creates the
+ * effect(s), so the effect closure (a stable object across its own reruns)
+ * captures it and no other effect can see it. Each binding owns a fixed
+ * numeric ordinal into it. The lazy row graph (`control-flow/stringify/
+ * lazy-row.ts`) declares the same `__l` from the reconciler's `entry.last`
+ * instead — `applyItem` / `applyOuter` are separate invocations with no
+ * closure of their own to own the array — but the guard, the temp name,
+ * the ordinal scheme and the record-after-write rule below are shared with
+ * it (#2869).
+ */
+export const DEDUP_STORE_DECL = 'const __l = []'
+
+/**
+ * `__l`-backed dedup test. `in` (not a truthiness check) so a legitimately
+ * `undefined` value still records and still writes once; `!(N in __l)` on
+ * the first run is what makes the first write unconditional — the same
+ * "dedup, no trust-first-run" contract `claim-slots.ts` documents for
+ * 'markup' slots. Moved here from `control-flow/stringify/lazy-row.ts`
+ * so the eager paths below and the lazy row graph share one guard (#2869).
+ */
+export function dedupGuard(ordinal: number): string {
+  return `!(${ordinal} in __l) || !Object.is(__l[${ordinal}], __x)`
+}
+
+/**
+ * The ONLY way an effect body should write a reactive attribute (#2869).
+ * Wraps `emitAttrUpdate`'s per-kind write in a previous-value guard:
+ * compute once into `__x`, write only when `guard` holds, then record
+ * `__x` into `__l[ordinal]` whether or not the write happened, so the
+ * stored value always tracks the latest computation. Without this, every
+ * rerun of a shared effect — a keyed row's fused effect (#2869's report),
+ * or even a plain per-slot effect covering two attrs on one element — rewrote
+ * every attribute in it on every rerun, no matter which binding actually
+ * changed. `untrack()` cannot fix this on its own: it only suppresses
+ * dependency REGISTRATION for the read inside it, not re-execution of the
+ * surrounding effect when an unrelated sibling binding legitimately changes
+ * — so an `<iframe srcdoc={untrack(...)}>` kept reloading every time a
+ * sibling attribute in the same row effect changed.
+ *
+ * Self-contained block: `__x` (and `emitAttrUpdate`'s own `__v` / bare
+ * `const __val`) never leak into the caller's scope, so several bindings
+ * can sit in one effect body without a wrapper block of their own.
+ *
+ * Compares the RAW value, exactly like the lazy-row path always has: an
+ * object-valued `style` / `dangerouslySetInnerHTML` is a fresh object per
+ * run and simply keeps writing as before (no regression, no gain — a
+ * follow-up could compare the coerced value instead).
+ *
+ * `guard` is overridable for the lazy row graph's `__seed`-run DOM
+ * read-compare (`__seed ? <DOM read-compare> : <dedupGuard>`) and `null`
+ * for its `createRow` (fresh clone: write unconditionally, still record).
+ */
+export function emitDedupedAttrUpdate(
+  target: string,
+  attrName: string,
+  expression: string,
+  meta: AttrMeta,
+  ordinal: number,
+  guard: string | null = dedupGuard(ordinal),
+): string[] {
+  const write = emitAttrUpdate(target, attrName, '__x', meta)
+  const lines = [`{ const __x = ${expression}`]
+  if (guard) {
+    lines.push(`if (${guard}) {`)
+    for (const stmt of write) lines.push(`  ${stmt}`)
+    lines.push(`}`)
+  } else {
+    lines.push(...write)
+  }
+  lines.push(`__l[${ordinal}] = __x }`)
+  return lines
 }
 
 /**
@@ -494,20 +572,22 @@ export function emitReactiveAttributeUpdates(lines: string[], ctx: ClientJsConte
 
     for (const [slotId, attrs] of attrsBySlot) {
       const v = varSlotId(slotId)
+      lines.push(`  { ${DEDUP_STORE_DECL}`)
       lines.push(`  createEffect(() => {`)
       lines.push(`    if (_${v}) {`)
+      let ordinal = 0
       for (const attr of attrs) {
         // Catalogued-lowering MUST run before the bare-prop-name rewrite:
         // the matcher needs the source-form receiver (a bare identifier or
         // `props.x`), the exact two shapes `resolveReceiverType` supports —
         // same ordering `jsx-to-ir.ts`'s static-template path documents.
         const expression = rewriteDestructuredPropsInExpr(lower(attr.expression), ctx)
-        for (const stmt of emitAttrUpdate(`_${v}`, attr.attrName, expression, attr)) {
+        for (const stmt of emitDedupedAttrUpdate(`_${v}`, attr.attrName, expression, attr, ordinal++)) {
           lines.push(`      ${stmt}`)
         }
       }
       lines.push(`    }`)
-      lines.push(`  }${bindingIdArg(ctx, slotId)})`)
+      lines.push(`  }${bindingIdArg(ctx, slotId)}) }`)
       lines.push('')
     }
   }
@@ -580,6 +660,7 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
   if (ctx.reactiveChildProps.length > 0) {
     lines.push('')
     lines.push(`  // Reactive child component props`)
+    lines.push(`  { ${DEDUP_STORE_DECL}`)
     lines.push(`  createEffect(() => {`)
 
     const propsByComponent = new Map<string, typeof ctx.reactiveChildProps>()
@@ -591,6 +672,7 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
       propsByComponent.get(key)!.push(prop)
     }
 
+    let ordinal = 0
     for (const [, props] of propsByComponent) {
       const first = props[0]
       // The component's own `comment: true` root child IS `__scope` — query
@@ -609,10 +691,11 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
         // `value` is the CHILD-ROOT MIRROR case, not a developer-authored
         // attribute — route it through the no-SSR-fallback helper instead
         // of `emitAttrUpdate`'s generic (attribute-fallback) dispatch;
-        // see `emitChildValueMirrorStatements`'s docstring (#2716).
+        // see `emitChildValueMirrorStatements`'s docstring (#2716). It has
+        // its own DOM-compare and consumes no dedup ordinal (#2869).
         const stmts = toHtmlAttrName(prop.attrName) === 'value'
           ? emitChildValueMirrorStatements(varName, prop.expression)
-          : emitAttrUpdate(varName, prop.attrName, prop.expression, prop)
+          : emitDedupedAttrUpdate(varName, prop.attrName, prop.expression, prop, ordinal++)
         for (const stmt of stmts) {
           lines.push(`      ${stmt}`)
         }
@@ -620,6 +703,6 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
       lines.push(`    }`)
     }
 
-    lines.push(`  }${bindingIdArg(ctx, ctx.reactiveChildProps[0]?.slotId ?? undefined)})`)
+    lines.push(`  }${bindingIdArg(ctx, ctx.reactiveChildProps[0]?.slotId ?? undefined)}) }`)
   }
 }

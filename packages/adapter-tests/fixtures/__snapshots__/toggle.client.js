@@ -54,15 +54,36 @@ export function initToggle(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${isPressed() ? 'on' : 'off'}`; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = isPressed(); if (__v != null) _s0.setAttribute('aria-pressed', String(__v)); else _s0.removeAttribute('aria-pressed') }
-      _s0.disabled = !!(_p.disabled ?? false)
-      { const __v = classes(); if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${isPressed() ? 'on' : 'off'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
+      }
+      __l[0] = __x }
+      { const __x = _p.id
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[1] = __x }
+      { const __x = isPressed()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('aria-pressed', String(__v)); else _s0.removeAttribute('aria-pressed') }
+      }
+      __l[2] = __x }
+      { const __x = _p.disabled ?? false
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        _s0.disabled = !!(__x)
+      }
+      __l[3] = __x }
+      { const __x = classes()
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[4] = __x }
     }
-  })
+  }) }
 
   if (_s0) _s0.addEventListener('click', handleClick)
 }

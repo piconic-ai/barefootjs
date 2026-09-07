@@ -32,7 +32,7 @@
  */
 
 import { varSlotId, profileBindingId } from '../../utils.ts'
-import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { stringifyLoopChildArm } from './loop-child-arm.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
@@ -160,7 +160,9 @@ function emitAttrSlotsGranular(
     const varName = `__ra_${varSlotId(slot.slotId)}`
     const lookupExpr = attrLookupExpr(slot.slotId, varName, elVar, lookup, elementIndexBySlot)
     lines.push(`${indent}{ const ${varName} = ${lookupExpr}`)
+    lines.push(`${indent}${DEDUP_STORE_DECL}`)
     lines.push(`${indent}if (${varName}) {`)
+    let ordinal = 0
     for (const attr of slot.attrs) {
       lines.push(`${indent}  createEffect(() => {`)
       // Profile mode keeps one effect per attr, so an attr reading a preamble
@@ -171,7 +173,7 @@ function emitAttrSlotsGranular(
       if (attr.readsPreamble && mapPreambleWrapped) {
         lines.push(`${indent}    ${mapPreambleWrapped}`)
       }
-      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
+      for (const stmt of emitDedupedAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta, ordinal++)) {
         lines.push(`${indent}    ${stmt}`)
       }
       lines.push(`${indent}  }${bindingBfId(slot.slotId)})`)
@@ -233,11 +235,14 @@ function attrLookupExpr(
  * dispatches per-slot on `kind`), so a row pays for at most one `lazySlots`
  * closure + one claim `Map` instead of one per category.
  *
- * Every attr's write statements are wrapped in their own `{ }` block (not
- * just each slot's) — `emitAttrUpdate`'s 'value'-attr shape emits a bare
- * `const __val = …` with no block of its own, and merging multiple attrs
- * into one function body (previously each had its own arrow-function scope)
- * would let two 'value' attrs in the same row effect collide on `__val`.
+ * Every attr write goes through `emitDedupedAttrUpdate` (#2869): a
+ * self-contained `{ }` block (so two 'value' attrs in the same row effect
+ * can't collide on `emitAttrUpdate`'s bare `const __val`) behind a
+ * previous-value guard on the row's ONE `__l` store, ordinals sequential
+ * across every slot in the row. Without the guard, fusing bindings into one
+ * effect meant a change to ANY binding rewrote ALL of them on every rerun —
+ * `untrack()` on one binding's read couldn't stop a sibling binding's
+ * legitimate change from re-triggering this effect and re-writing it anyway.
  */
 function emitConsolidatedRowEffect(
   lines: string[],
@@ -258,6 +263,11 @@ function emitConsolidatedRowEffect(
     const varName = `__ra_${varSlotId(slot.slotId)}`
     lines.push(`${indent}const ${varName} = ${attrLookupExpr(slot.slotId, varName, elVar, lookup, elementIndexBySlot)}`)
   }
+  // Row-wide dedup store (#2869) — one `__l`, shared by every attr write
+  // below via a sequential ordinal, so a sibling binding's legitimate
+  // rerun of this shared effect can't force an unchanged binding to
+  // rewrite too.
+  if (attrSlots.length > 0) lines.push(`${indent}${DEDUP_STORE_DECL}`)
 
   // 2. ONE claimed-slot writer covering outer texts (kind 'text') and
   //    preamble regions (kind 'markup') — mixed-kind plans are supported by
@@ -293,15 +303,14 @@ function emitConsolidatedRowEffect(
   if (mapPreambleWrapped && (preambleRegions.length > 0 || attrsReadPreamble(attrSlots))) {
     lines.push(`${indent}  ${mapPreambleWrapped}`)
   }
+  let ordinal = 0
   for (const slot of attrSlots) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
     lines.push(`${indent}  if (${varName}) {`)
     for (const attr of slot.attrs) {
-      lines.push(`${indent}    {`)
-      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
-        lines.push(`${indent}      ${stmt}`)
+      for (const stmt of emitDedupedAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta, ordinal++)) {
+        lines.push(`${indent}    ${stmt}`)
       }
-      lines.push(`${indent}    }`)
     }
     lines.push(`${indent}  }`)
   }

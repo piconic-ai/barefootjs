@@ -11,12 +11,21 @@ export function initInput(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.type; if (__v != null) _s0.setAttribute('type', String(__v)); else _s0.removeAttribute('type') }
-      { const __v = `${baseClasses} ${focusClasses} ${errorClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.type
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('type', String(__v)); else _s0.removeAttribute('type') }
+      }
+      __l[0] = __x }
+      { const __x = `${baseClasses} ${focusClasses} ${errorClasses} ${(_p.className ?? '')}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","type","data-slot","class"])
 

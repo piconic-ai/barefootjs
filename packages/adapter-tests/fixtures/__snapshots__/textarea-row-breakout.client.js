@@ -20,10 +20,10 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {
-        const __x = value()
+        { const __x = value()
         const __val = String(__x)
         if ('value' in __t) { if (__t.value !== __val) __t.value = __val } else { __t.setAttribute('value', __val) }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       return __el
     },
@@ -36,12 +36,12 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
         const __l = __e.last ?? (__e.last = [])
         { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s1"]'))
         if (__t) {
-          const __x = value()
+          { const __x = value()
           if (__seed ? (('value' in __t ? __t.value !== String(__x) : __t.getAttribute('value') !== String(__x))) : (!(0 in __l) || !Object.is(__l[0], __x))) {
             const __val = String(__x)
             if ('value' in __t) { if (__t.value !== __val) __t.value = __val } else { __t.setAttribute('value', __val) }
           }
-          __l[0] = __x
+          __l[0] = __x }
         } }
       }
     },
