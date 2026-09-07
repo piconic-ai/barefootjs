@@ -44,19 +44,33 @@ export function initAIChatInteractive(__scope, _p = {}) {
 
   const [_s6, _s7, _s2, _s5] = $(__scope, 's6', 's7', 's2', 's5')
 
+  { const __l = []
   createEffect(() => {
     if (_s6) {
-      const __val = String(input())
-      if ('value' in _s6) { if (_s6.value !== __val) _s6.value = __val } else { _s6.setAttribute('value', __val) }
-      _s6.disabled = !!(isStreaming())
+      { const __x = input()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        const __val = String(__x)
+        if ('value' in _s6) { if (_s6.value !== __val) _s6.value = __val } else { _s6.setAttribute('value', __val) }
+      }
+      __l[0] = __x }
+      { const __x = isStreaming()
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        _s6.disabled = !!(__x)
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s7) {
-      _s7.disabled = !!(isStreaming())
+      { const __x = isStreaming()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s7.disabled = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   insert(__scope, 's2', () => isStreaming(), {
     template: () => { const __slots = []; return { html: `<div bf-c="s2" class="chat-msg chat-assistant"><div class="chat-bubble"><p bf="s4"><!--bf:s3-->${__bfSlot(streamingText(), __slots)}<!--/--><span class="streaming-cursor">▌</span></p></div></div>`, slots: __slots } },
@@ -92,9 +106,9 @@ export function initAIChatInteractive(__scope, _p = {}) {
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {
-        const __x = `chat-msg chat-${msg().role}`
+        { const __x = `chat-msg chat-${msg().role}`
         { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       { const __x = msg().content
       __r[1]('s0', textOrNode(__x))
@@ -107,11 +121,11 @@ export function initAIChatInteractive(__scope, _p = {}) {
       const __l = __e.last ?? (__e.last = [])
       { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s1"]'))
       if (__t) {
-        const __x = `chat-msg chat-${msg().role}`
+        { const __x = `chat-msg chat-${msg().role}`
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
         }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = msg().content

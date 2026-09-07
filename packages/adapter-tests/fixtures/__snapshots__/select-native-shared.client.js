@@ -20,12 +20,17 @@ export function initSelectNative(__scope, _p = {}) {
     __bfw_s3('s3', escapeTextOrNode(__val))
   })
 
+  { const __l = []
   createEffect(() => {
     if (_s2) {
-      const __val = String(picked())
-      if ('value' in _s2) { if (_s2.value !== __val) _s2.value = __val } else { _s2.setAttribute('value', __val) }
+      { const __x = picked()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        const __val = String(__x)
+        if ('value' in _s2) { if (_s2.value !== __val) _s2.value = __val } else { _s2.setAttribute('value', __val) }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s2) _s2.addEventListener('change', (e) => { setPicked(e.target.value) })
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
@@ -37,16 +42,16 @@ export function initSelectNative(__scope, _p = {}) {
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {
-        const __x = f().id
+        { const __x = f().id
         const __val = String(__x)
         if ('value' in __t) { if (__t.value !== __val) __t.value = __val } else { __t.setAttribute('value', __val) }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       { const __t = __r[0]
       if (__t) {
-        const __x = (picked()) === (f().id)
+        { const __x = (picked()) === (f().id)
         __t.selected = !!(__x)
-        __l[1] = __x
+        __l[1] = __x }
       } }
       { const __x = f().label
       __r[1]('s0', textOrNode(__x))
@@ -59,20 +64,20 @@ export function initSelectNative(__scope, _p = {}) {
       const __l = __e.last ?? (__e.last = [])
       { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s1"]'))
       if (__t) {
-        const __x = f().id
+        { const __x = f().id
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           const __val = String(__x)
           if ('value' in __t) { if (__t.value !== __val) __t.value = __val } else { __t.setAttribute('value', __val) }
         }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s1"]'))
       if (__t) {
-        const __x = (picked()) === (f().id)
+        { const __x = (picked()) === (f().id)
         if (!(1 in __l) || !Object.is(__l[1], __x)) {
           __t.selected = !!(__x)
         }
-        __l[1] = __x
+        __l[1] = __x }
       } }
       const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = f().label
@@ -87,11 +92,11 @@ export function initSelectNative(__scope, _p = {}) {
         const __l = __e.last ?? (__e.last = [])
         { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s1"]'))
         if (__t) {
-          const __x = (picked()) === (f().id)
+          { const __x = (picked()) === (f().id)
           if (__seed ? (__t.selected !== !!(__x)) : (!(1 in __l) || !Object.is(__l[1], __x))) {
             __t.selected = !!(__x)
           }
-          __l[1] = __x
+          __l[1] = __x }
         } }
       }
     },

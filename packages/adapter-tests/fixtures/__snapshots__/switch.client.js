@@ -64,21 +64,47 @@ export function initSwitch(__scope, _p = {}) {
 
   const [_s1, _s0] = $(__scope, 's1', 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __v = `${isChecked() ? 'checked' : 'unchecked'}`; if (__v != null) _s1.setAttribute('data-state', String(__v)); else _s1.removeAttribute('data-state') }
-      { const __v = _p.id; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
-      { const __v = isChecked(); if (__v != null) _s1.setAttribute('aria-checked', String(__v)); else _s1.removeAttribute('aria-checked') }
-      _s1.disabled = !!(_p.disabled ?? false)
-      { const __v = `peer inline-flex h-5 w-9 shrink-0 items-center rounded-xl p-0.5 shadow-xs transition-all outline-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-ring/50 focus-visible:ring-[3px] ${trackStateClasses} ${_p.className ?? ''}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      { const __x = `${isChecked() ? 'checked' : 'unchecked'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-state', String(__v)); else _s1.removeAttribute('data-state') }
+      }
+      __l[0] = __x }
+      { const __x = _p.id
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
+      }
+      __l[1] = __x }
+      { const __x = isChecked()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('aria-checked', String(__v)); else _s1.removeAttribute('aria-checked') }
+      }
+      __l[2] = __x }
+      { const __x = _p.disabled ?? false
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        _s1.disabled = !!(__x)
+      }
+      __l[3] = __x }
+      { const __x = `peer inline-flex h-5 w-9 shrink-0 items-center rounded-xl p-0.5 shadow-xs transition-all outline-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:ring-ring/50 focus-visible:ring-[3px] ${trackStateClasses} ${_p.className ?? ''}`
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      }
+      __l[4] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${isChecked() ? 'checked' : 'unchecked'}`; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
+      { const __x = `${isChecked() ? 'checked' : 'unchecked'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s1) _s1.addEventListener('click', handleClick)
 }

@@ -15,12 +15,17 @@ export function initSlot(__scope, _p = {}) {
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Tag_s0El] = $c(__scope, 's0')
     if (__Tag_s0El) {
-      { const __v = ([className, (((children.props).className) || '')].filter(Boolean).join(' ')); if (__v != null) __Tag_s0El.setAttribute('class', String(__v)); else __Tag_s0El.removeAttribute('class') }
+      { const __x = ([className, (((children.props).className) || '')].filter(Boolean).join(' '))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __Tag_s0El.setAttribute('class', String(__v)); else __Tag_s0El.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Tag', _s0, forwardProps(_p, { get className() { return ([className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
@@ -57,22 +62,32 @@ export function initButton(__scope, _p = {}) {
   const [_s0] = $(__scope, 's0')
   const [_s1] = $c(__scope, 's1')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[(_p.variant ?? 'default')]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[(_p.size ?? 'default')]} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[(_p.variant ?? 'default')]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[(_p.size ?? 'default')]} ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","variant","size","asChild","children","class"])
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
-      { const __v = `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}`; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
+      { const __x = `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Slot', _s1, forwardProps(_p, { get className() { return `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}` } }, ["className"]))

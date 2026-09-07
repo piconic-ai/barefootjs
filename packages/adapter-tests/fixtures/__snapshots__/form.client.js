@@ -9,20 +9,42 @@ export function initForm(__scope, _p = {}) {
 
   const [_s1, _s0, _s2] = $(__scope, 's1', 's0', 's2')
 
+  { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __v = `${accepted() ? 'checked' : 'unchecked'}`; if (__v != null) _s1.setAttribute('data-state', String(__v)); else _s1.removeAttribute('data-state') }
-      { const __v = styleToCss(`width: 24px; height: 24px; border: 2px solid ${accepted() ? '#4caf50' : '#ccc'}; border-radius: 4px; background: ${accepted() ? '#4caf50' : 'white'}; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;`); if (__v != null) _s1.setAttribute('style', __v); else _s1.removeAttribute('style') }
-      { const __v = accepted(); if (__v != null) _s1.setAttribute('aria-checked', String(__v)); else _s1.removeAttribute('aria-checked') }
+      { const __x = `${accepted() ? 'checked' : 'unchecked'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-state', String(__v)); else _s1.removeAttribute('data-state') }
+      }
+      __l[0] = __x }
+      { const __x = `width: 24px; height: 24px; border: 2px solid ${accepted() ? '#4caf50' : '#ccc'}; border-radius: 4px; background: ${accepted() ? '#4caf50' : 'white'}; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = styleToCss(__x); if (__v != null) _s1.setAttribute('style', __v); else _s1.removeAttribute('style') }
+      }
+      __l[1] = __x }
+      { const __x = accepted()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('aria-checked', String(__v)); else _s1.removeAttribute('aria-checked') }
+      }
+      __l[2] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s2) {
-      _s2.disabled = !!(!accepted())
-      { const __v = styleToCss(`width: 100%; padding: 12px 24px; font-size: 16px; border: none; border-radius: 6px; cursor: ${accepted() ? 'pointer' : 'not-allowed'}; background: ${accepted() ? '#4caf50' : '#e0e0e0'}; color: ${accepted() ? 'white' : '#999'};`); if (__v != null) _s2.setAttribute('style', __v); else _s2.removeAttribute('style') }
+      { const __x = !accepted()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s2.disabled = !!(__x)
+      }
+      __l[0] = __x }
+      { const __x = `width: 100%; padding: 12px 24px; font-size: 16px; border: none; border-radius: 6px; cursor: ${accepted() ? 'pointer' : 'not-allowed'}; background: ${accepted() ? '#4caf50' : '#e0e0e0'}; color: ${accepted() ? 'white' : '#999'};`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = styleToCss(__x); if (__v != null) _s2.setAttribute('style', __v); else _s2.removeAttribute('style') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   insert(__scope, 's0', () => accepted(), {
     template: () => { const __slots = []; return { html: `<svg bf-c="s0" class="checkmark" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display: block;"><path d="M3 8L6.5 11.5L13 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`, slots: __slots } },

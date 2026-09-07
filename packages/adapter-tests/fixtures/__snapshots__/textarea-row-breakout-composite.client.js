@@ -35,12 +35,15 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
     upsertChild(__el, 'Tag__515bc416', 's1', { get id() { return id() } }, undefined, __scope)
     { const __e = qsa(__el, '[bf="s2"]'); if (__e) __e.addEventListener('input', () => { setValue('a</textarea><b class="broke">X</b>') }) }
     const __ra_s2 = qsa(__el, '[bf="s2"]')
+    const __l = []
     createEffect(() => {
       if (__ra_s2) {
-        {
-          const __val = String(value())
+        { const __x = value()
+        if (!(0 in __l) || !Object.is(__l[0], __x)) {
+          const __val = String(__x)
           if ('value' in __ra_s2) { if (__ra_s2.value !== __val) __ra_s2.value = __val } else { __ra_s2.setAttribute('value', __val) }
         }
+        __l[0] = __x }
       }
     })
     return __el

@@ -58,6 +58,7 @@ export function initReactiveProps(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__ReactiveChild_s5El] = $c(__scope, 's5')
     if (__ReactiveChild_s5El) {
@@ -67,7 +68,7 @@ export function initReactiveProps(__scope, _p = {}) {
     if (__ReactiveChild_s6El) {
       if ('value' in __ReactiveChild_s6El) { const __val = String(doubled()); if (__ReactiveChild_s6El.value !== __val) __ReactiveChild_s6El.value = __val }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('ReactiveChild__aca6fc98', _s5, { get value() { return count() }, label: "Child A", onIncrement: () => setCount(n => n + 1) })
@@ -163,6 +164,7 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__PropsStyleChild_s3El] = $c(__scope, 's3')
     if (__PropsStyleChild_s3El) {
@@ -172,7 +174,7 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
     if (__DestructuredStyleChild_s4El) {
       if ('value' in __DestructuredStyleChild_s4El) { const __val = String(count()); if (__DestructuredStyleChild_s4El.value !== __val) __DestructuredStyleChild_s4El.value = __val }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('PropsStyleChild__aca6fc98', _s3, { get value() { return count() }, label: "Props Style" })

@@ -81,13 +81,26 @@ export function initRadioGroupItem(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      _s0.disabled = !!(_p.disabled ?? false)
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${itemClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.disabled ?? false
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s0.disabled = !!(__x)
+      }
+      __l[0] = __x }
+      { const __x = _p.id
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[1] = __x }
+      { const __x = `${itemClasses} ${_p.className ?? ''}`
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[2] = __x }
     }
-  })
+  }) }
 
   if (_s0) (handleMount)(_s0)
 }
