@@ -12,7 +12,6 @@ import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadO
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
-import { identifierPattern } from '../identifier-pattern.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
@@ -312,10 +311,6 @@ export function collectInnerLoops(
           ? [outerLoopParam, { param: n.param, bindings: n.paramBindings, index: n.index }]
           : undefined
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
-        // Check if array expression references the outer loop param
-        const refsOuter = outerLoopParam
-          ? identifierPattern(outerLoopParam).test(n.array)
-          : false
         // Per-item bindings for inner loop body, collected uniformly when
         // ctx is available: reactiveTexts / reactiveAttrs / refs are each
         // classified against the loop's OWN param via `classifyReactivity`,
@@ -412,7 +407,6 @@ export function collectInnerLoops(
           containerSlotId: scope.parentSlotId,
           template,
           preamble: n.preamble,
-          refsOuterParam: refsOuter,
           childComponents,
           insideConditional: !flat && scope.insideCond ? true : undefined,
           offset: flat ? undefined : resolveLoopOffset(siblingOffsets.get(n)),

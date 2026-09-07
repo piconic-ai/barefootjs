@@ -232,7 +232,12 @@ export function buildBranchInnerLoopsPlan(
   const plan: BranchInnerLoop[] = []
   for (let i = 0; i < innerLoops.length; i++) {
     const inner = innerLoops[i]
-    if (!inner.refsOuterParam || !inner.template) continue
+    // #2865: an inner loop inside a conditional arm used to be dropped
+    // entirely (no `mapArray`, no hydration wiring at all) whenever its
+    // array didn't reference the outer loop's item — the same unsound
+    // gate `build-inner-loop.ts` used, just answered by skipping instead
+    // of falling back to a weaker static emission. Always build the plan.
+    if (!inner.template) continue
 
     const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
     const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)

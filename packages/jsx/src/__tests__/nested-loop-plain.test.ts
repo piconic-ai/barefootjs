@@ -293,10 +293,13 @@ describe('plain nested loops without conditional wrapper', () => {
     // locals — `initChild`'s prop getter would throw `ReferenceError` when
     // the child component first mounted.
     //
-    // Fix: thread `inner.mapPreamble` through `InnerLoopStaticEmit` and emit
-    // it (raw — `forEach`'s param is the literal item, not a signal accessor)
-    // at the top of the forEach body so the component setup can resolve the
-    // locals.
+    // Fix: thread `inner.mapPreamble` through the static-array-child-init
+    // emission (`build-static-array-child-init.ts` — the OUTER array here
+    // is a literal, so this is unrelated to #2865's nested-loop reactive/
+    // static fork, which only ever applied under a REACTIVE outer loop)
+    // and emit it (raw — `forEach`'s param is the literal item, not a
+    // signal accessor) at the top of the forEach body so the component
+    // setup can resolve the locals.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -442,13 +445,17 @@ describe('plain nested loops without conditional wrapper', () => {
     expect(section.indexOf('const rowTag')).toBeLessThan(section.indexOf('initChild'))
   })
 
-  test('regression #1064: control-flow static inner forEach (signal outer + literal-array inner) emits inner preamble', () => {
-    // The `control-flow/inner-loop.ts::emitStatic` path fires when a
-    // reactive composite renderItem hosts a static inner loop — the
-    // outer array is a signal, but the inner array is referenced via
-    // a non-reactive lookup so its rendering stays setup-only.
-    // Use a `__innerIdx<uid>` suffix in the regex to specifically
-    // target this path (vs. the unsuffixed `static-array-child-init`).
+  test('regression #1064: reactive inner mapArray (signal outer + non-outer-derived inner array) emits inner preamble', () => {
+    // The reactive composite renderItem hosts an inner loop whose array is
+    // a non-outer-derived lookup (a module-level constant here — could just
+    // as easily be a signal, a memo, or a prop). Before #2865, an inner
+    // array not referencing the outer loop param routed to
+    // `control-flow/inner-loop.ts::emitStatic` — a hydration-only `forEach`
+    // that silently never re-ran the row's own preamble/reactivity on a
+    // later update. That fork is gone: every inner loop now gets the full
+    // `mapArray` emission. Use a `__innerIdx<uid>` suffix in the regex to
+    // specifically target the nested `mapArray` (vs. the unsuffixed
+    // `static-array-child-init` for a fully-static OUTER array).
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -480,8 +487,12 @@ describe('plain nested loops without conditional wrapper', () => {
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
     const js = result.files.find(f => f.type === 'clientJs')!.content
 
-    // The static forEach uses a `__innerIdx<uid>` suffix in this path —
-    // assert preamble appears in that body and precedes any prop read.
-    expect(js).toMatch(/SHARED\.forEach\(\(cell, __innerIdx\d+_\d+\) => \{[\s\S]*?const\s+tag\s*=/)
+    // The inner mapArray's renderItem uses a `__innerIdx<uid>` suffix —
+    // assert the preamble appears in that body, re-derived from the
+    // ACCESSOR form of both the outer and inner loop params (`row()`,
+    // `cell()`), and precedes the child-component prop read.
+    expect(js).toMatch(
+      /mapArray\(\(\) => SHARED \|\| \[\], .*?, \(cell, __innerIdx\d+_\d+, __existing\) => \{[\s\S]*?const\s+tag\s*=\s*`\$\{row\(\)\.key\}-\$\{cell\(\)\.n\}`[\s\S]*?upsertChild/
+    )
   })
 })

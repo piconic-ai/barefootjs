@@ -489,8 +489,6 @@ export interface NestedLoop extends LoopCore {
    * (and any subsequent reads) are in scope (#1052).
    */
   preamble?: MapCallbackPreamble
-  /** Whether the inner array references the outer loop param (needs reactive mapArray) */
-  refsOuterParam?: boolean
   /** Child components inside inner loop items (for initChild/createComponent) */
   childComponents?: import('../types.ts').IRLoopChildComponent[]
   /** True when this loop is inside a conditional branch (handled by insert() bindEvents instead) */

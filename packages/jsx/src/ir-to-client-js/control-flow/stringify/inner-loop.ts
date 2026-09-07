@@ -1,8 +1,12 @@
 /**
  * Stringify `InnerLoopsPlan` into source lines.
  *
- * Two emission shapes (mode-discriminated, byte-identical to the legacy
- * `emitInnerLoopSetup`):
+ * One emission shape (#2865 — the former second "static forEach,
+ * setup-only" shape for a nested loop whose array didn't reference the
+ * outer item was removed: it answered "does the array mention the outer
+ * item" instead of "is this reactive at all", so it silently froze any
+ * other reactivity — a signal, a memo, a prop, a preamble local — the
+ * inner array or its rows depended on):
  *
  *   reactive — full mapArray:
  *     <indent>// Reactive inner loop: <arraySrc>
@@ -16,18 +20,6 @@
  *     <indent>  reactive text effects
  *     <indent>  per-item conditionals: insert() over __innerEl<uid> (#2706)
  *     <indent>  return __innerEl<uid>
- *     <indent>}) }
- *
- *   static — forEach setup-only:
- *     <indent>// Initialize <arraySrc> loop components and events
- *     <indent>{ const __ic<uid> = <containerExpr>
- *     <indent>if (__ic<uid> && <arrayExpr>) <arrayExpr>.forEach((<param>, __innerIdx<uid>) => {
- *     <indent>  const __innerEl<uid> = __ic<uid>.children[__innerIdx<uid>]
- *     <indent>  if (!__innerEl<uid>) return
- *     <indent>  <preludeStatements*>   // raw preamble (#1064)
- *     <indent>  __innerEl<uid>.setAttribute('<keyAttr>', String(<rawKey>))?
- *     <indent>  emitComponentAndEventSetup(...)
- *     <indent>  recurse on childLevels
  *     <indent>}) }
  */
 
@@ -50,18 +42,13 @@ export function stringifyInnerLoops(
   pc?: string,
 ): void {
   for (const inner of plan) {
-    if (inner.emit.mode === 'reactive') {
-      emitReactive(lines, inner, indent, pc)
-    } else {
-      emitStatic(lines, inner, indent, pc)
-    }
+    emitReactive(lines, inner, indent, pc)
   }
 }
 
 function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc: string | undefined): void {
   const uid = inner.uidSuffix
   const emit = inner.emit
-  if (emit.mode !== 'reactive') return // narrow
 
   lines.push(`${indent}// Reactive inner loop: ${inner.arraySrc}`)
   lines.push(`${indent}{ const __ic${uid} = ${inner.containerExpr}`)
@@ -162,47 +149,4 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
   // concept, so a nested keyed loop must tell it which name to check/write
   // instead of the default `data-key`.
   lines.push(`${indent}}, '${inner.markerId}'${mapArrayKeyArgs(profileBindingId(pc, inner.slotId), !!emit.wrappedKey, inner.keyDepth)}) }`)
-}
-
-function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string, pc: string | undefined): void {
-  const uid = inner.uidSuffix
-  const emit = inner.emit
-  if (emit.mode !== 'static') return
-
-  lines.push(`${indent}// Initialize ${inner.arraySrc} loop components and events`)
-  lines.push(`${indent}{ const __ic${uid} = ${inner.containerExpr}`)
-  // Guard: inner array may be undefined when inside a conditional branch.
-  lines.push(`${indent}if (__ic${uid} && ${inner.arrayExpr}) ${inner.arrayExpr}.forEach((${inner.param}, __innerIdx${uid}) => {`)
-  lines.push(`${indent}  const __innerEl${uid} = __ic${uid}.children[__innerIdx${uid}]`)
-  lines.push(`${indent}  if (!__innerEl${uid}) return`)
-  // Body-entry statements: inner-`.map()` preamble locals (raw, since the
-  // forEach param is the literal item — #1064). Emitted before component
-  // and event setup so their prop getters / handlers resolve the locals.
-  for (const stmt of emit.preludeStatements) {
-    lines.push(`${indent}  ${stmt}`)
-  }
-  if (emit.rawKey) {
-    lines.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.keyDepth)}', String(${emit.rawKey}))`)
-  }
-  emitComponentAndEventSetup(
-    lines,
-    `${indent}  `,
-    `__innerEl${uid}`,
-    [...emit.components],
-    [...emit.events],
-    inner.outerLoopParam,
-    inner.outerLoopParamBindings,
-  )
-  if (inner.childLevels.length > 0) {
-    stringifyInnerLoops(lines, inner.childLevels, `${indent}  `, pc)
-  }
-  // Imperative ref callbacks for static inner loops — fire once per
-  // forEach iteration (#1244). Static arrays don't reactively re-iterate,
-  // so this is effectively a one-shot per item.
-  emitLoopChildRefs(lines, emit.childRefs, {
-    indent: `${indent}  `,
-    elVar: `__innerEl${uid}`,
-    bodyIsMultiRoot: false,
-  })
-  lines.push(`${indent}}) }`)
 }
