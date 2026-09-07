@@ -14,11 +14,16 @@ export function initToggleItem(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
+  { const __l = []
   createEffect(() => {
     if (_s3) {
-      { const __v = styleToCss(`padding: 4px 12px; min-width: 60px; background: ${on() ? '#4caf50' : '#ccc'}; color: ${on() ? 'white' : 'black'}; border: none; border-radius: 4px; cursor: pointer;`); if (__v != null) _s3.setAttribute('style', __v); else _s3.removeAttribute('style') }
+      { const __x = `padding: 4px 12px; min-width: 60px; background: ${on() ? '#4caf50' : '#ccc'}; color: ${on() ? 'white' : 'black'}; border: none; border-radius: 4px; cursor: pointer;`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = styleToCss(__x); if (__v != null) _s3.setAttribute('style', __v); else _s3.removeAttribute('style') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   insert(__scope, 's2', () => on(), {
     template: () => { const __slots = []; return { html: `<!--bf-cond-start:s2-->${__bfSlot('ON', __slots)}<!--bf-cond-end:s2-->`, slots: __slots } },

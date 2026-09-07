@@ -113,7 +113,10 @@ describe('reactive CSS custom properties (#135)', () => {
 
     // Both reactive sinks live in the init body — one assigning the DOM
     // `disabled` property, the other writing the `aria-busy` attribute.
-    expect(content).toMatch(/\.disabled\s*=\s*!!\(busy\(\)\)/)
+    // The write reads a dedup-guarded temp (`__x`, #2869), not `busy()`
+    // inline — the computed value is still `busy()`'s result either way.
+    expect(content).toMatch(/const __x = busy\(\)/)
+    expect(content).toMatch(/\.disabled\s*=\s*!!\(__x\)/)
     expect(content).toContain("setAttribute('aria-busy'")
   })
 })

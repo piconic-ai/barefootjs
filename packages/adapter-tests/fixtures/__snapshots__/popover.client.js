@@ -59,13 +59,26 @@ export function initPopoverTrigger(__scope, _p = {}) {
 
   const [_s1, _s0] = $(__scope, 's1', 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      _s0.disabled = !!(_p.disabled ?? false)
-      { const __v = `${popoverTriggerClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = _p.disabled ?? false
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        _s0.disabled = !!(__x)
+      }
+      __l[1] = __x }
+      { const __x = `${popoverTriggerClasses} ${_p.className ?? ''}`
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[2] = __x }
     }
-  })
+  }) }
 
   if (_s1) (handleMount)(_s1)
   if (_s0) (handleMount)(_s0)
@@ -169,12 +182,21 @@ export function initPopoverContent(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${popoverContentBaseClasses} ${popoverContentClosedClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = `${popoverContentBaseClasses} ${popoverContentClosedClasses} ${_p.className ?? ''}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) (handleMount)(_s0)
 }
@@ -197,12 +219,21 @@ export function initPopoverClose(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = _p.className ?? ''; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.id
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[0] = __x }
+      { const __x = _p.className ?? ''
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) (handleMount)(_s0)
 }
@@ -226,11 +257,16 @@ export function initPopoverPreviewDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __scope.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Popover', __scope, { get open() { return open() }, onOpenChange: setOpen })
@@ -257,11 +293,16 @@ export function initPopoverBasicDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __scope.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Popover', __scope, { get open() { return open() }, onOpenChange: setOpen })
@@ -308,11 +349,16 @@ export function initPopoverFormDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __scope.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Popover', __scope, { get open() { return open() }, onOpenChange: setOpen })

@@ -11,17 +11,27 @@ export function initVariantTag(__scope, _p = {}) {
 
   const [_s1, _s0] = $(__scope, 's1', 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __v = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
 }
 
@@ -46,12 +56,17 @@ export function initBranchRootPropAttr(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__VariantTag_s0El] = $c(__scope, 's0')
     if (__VariantTag_s0El) {
-      { const __v = variant(); if (__v != null) __VariantTag_s0El.setAttribute('variant', String(__v)); else __VariantTag_s0El.removeAttribute('variant') }
+      { const __x = variant()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __VariantTag_s0El.setAttribute('variant', String(__v)); else __VariantTag_s0El.removeAttribute('variant') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('VariantTag', _s0, { get variant() { return variant() } })

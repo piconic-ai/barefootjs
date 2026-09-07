@@ -17,17 +17,27 @@ export function initPortalExample(__scope, _p = {}) {
 
   const [_s0, _s1, _s2, _s3] = $(__scope, 's0', 's1', 's2', 's3')
 
+  { const __l = []
   createEffect(() => {
     if (_s1) {
-      _s1.hidden = !!(!open())
+      { const __x = !open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s1.hidden = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s3) {
-      _s3.hidden = !!(!open())
+      { const __x = !open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s3.hidden = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) _s0.addEventListener('click', handleOpen)
   if (_s1) _s1.addEventListener('click', handleClose)

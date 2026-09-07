@@ -12,24 +12,39 @@ export function initTodoItem(__scope, _p = {}) {
     __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
+  { const __l = []
   createEffect(() => {
     if (_s5) {
-      { const __v = _p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : ''); if (__v != null) _s5.setAttribute('class', String(__v)); else _s5.removeAttribute('class') }
+      { const __x = _p.todo.done ? (_p.todo.editing ? 'completed editing' : 'completed') : (_p.todo.editing ? 'editing' : '')
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s5.setAttribute('class', String(__v)); else _s5.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      _s0.checked = !!(_p.todo.done)
+      { const __x = _p.todo.done
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s0.checked = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s4) {
-      const __val = String(_p.todo.text)
-      if ('value' in _s4) { if (_s4.value !== __val) _s4.value = __val } else { _s4.setAttribute('value', __val) }
+      { const __x = _p.todo.text
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        const __val = String(__x)
+        if ('value' in _s4) { if (_s4.value !== __val) _s4.value = __val } else { _s4.setAttribute('value', __val) }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) _s0.addEventListener('change', () => { _p.onToggle() })
   if (_s2) _s2.addEventListener('dblclick', () => { _p.onStartEdit() })
@@ -165,30 +180,50 @@ export function initTodoApp(__scope, _p = {}) {
     __bfw_s6('s6', todos().filter(t => !t.done).length)
   }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      const __val = String(newText())
-      if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
+      { const __x = newText()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        const __val = String(__x)
+        if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s10) {
-      { const __v = `${filter() === 'all' ? 'selected' : ''}`; if (__v != null) _s10.setAttribute('class', String(__v)); else _s10.removeAttribute('class') }
+      { const __x = `${filter() === 'all' ? 'selected' : ''}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s10.setAttribute('class', String(__v)); else _s10.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s11) {
-      { const __v = `${filter() === 'active' ? 'selected' : ''}`; if (__v != null) _s11.setAttribute('class', String(__v)); else _s11.removeAttribute('class') }
+      { const __x = `${filter() === 'active' ? 'selected' : ''}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s11.setAttribute('class', String(__v)); else _s11.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
+  { const __l = []
   createEffect(() => {
     if (_s12) {
-      { const __v = `${filter() === 'completed' ? 'selected' : ''}`; if (__v != null) _s12.setAttribute('class', String(__v)); else _s12.removeAttribute('class') }
+      { const __x = `${filter() === 'completed' ? 'selected' : ''}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s12.setAttribute('class', String(__v)); else _s12.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   insert(__scope, 's1', () => todos().length > 0, {
     template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1--><input id="toggle-all" class="toggle-all" type="checkbox" bf="s2" /><label for="toggle-all">Mark all as complete</label><!--bf-cond-end:s1-->`, slots: __slots } },
@@ -197,9 +232,14 @@ export function initTodoApp(__scope, _p = {}) {
       if (_s2) _s2.addEventListener('change', handleToggleAll)
       const __disposers = []
       { const __ra_s2 = qsa(__branchScope, '[bf="s2"]')
+      const __l = []
       if (__ra_s2) {
         __disposers.push(createDisposableEffect(() => {
-          __ra_s2.checked = !!(todos().every(t => t.done))
+          { const __x = todos().every(t => t.done)
+          if (!(0 in __l) || !Object.is(__l[0], __x)) {
+            __ra_s2.checked = !!(__x)
+          }
+          __l[0] = __x }
         }))
       } }
       return () => __disposers.forEach(d => d())

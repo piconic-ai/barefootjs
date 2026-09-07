@@ -140,8 +140,10 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     const content = result.files.find((f) => f.type === 'clientJs')!.content
 
     // `data-off` uses the truthy-check shape (no `__v != null` for this
-    // attribute) so a concrete `false` removes the attribute.
-    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?if \(c\(\)\.isOff\)\s*\S+\.setAttribute\('data-off',\s*''\)/)
+    // attribute) so a concrete `false` removes the attribute. The dedup
+    // guard (#2869) computes into `__x` first, so the truthy check reads
+    // `__x`, not `c().isOff` inline.
+    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?const __x = c\(\)\.isOff[\s\S]*?if \(__x\)\s*\S+\.setAttribute\('data-off',\s*''\)/)
     // aria-* keeps the explicit "true" value per WAI-ARIA.
     expect(content).toContain("setAttribute('aria-pressed', 'true')")
   })
@@ -233,8 +235,11 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     // and the inner-loop reactive `createEffect` (must be `task().id`
     // to subscribe to the per-item accessor). The bug we're locking
     // down is purely in the createEffect emission, so scope to that.
+    // The object literal now sits in the dedup guard's `const __x = {...}`
+    // temp (#2869) — `styleToCss` reads it back as `styleToCss(__x)`, not
+    // the object literal inline.
     const effectMatch = content.match(
-      /createEffect\(\(\) => \{[\s\S]*?styleToCss\(\{[\s\S]*?\}\)[\s\S]*?__ta_s\d+\.setAttribute\('style'/,
+      /createEffect\(\(\) => \{[\s\S]*?const __x = \{[\s\S]*?\}[\s\S]*?styleToCss\(__x\)[\s\S]*?__ta_s\d+\.setAttribute\('style'/,
     )
     expect(effectMatch).not.toBeNull()
     const effectBody = effectMatch![0]
@@ -282,8 +287,11 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     const result = compileJSX(source, 'G.tsx', { adapter })
     expect(result.errors).toHaveLength(0)
     const content = result.files.find((f) => f.type === 'clientJs')!.content
+    // The object literal now sits in the dedup guard's `const __x = {...}`
+    // temp (#2869) — `styleToCss` reads it back as `styleToCss(__x)`, not
+    // the object literal inline.
     const effectMatch = content.match(
-      /createEffect\(\(\) => \{[\s\S]*?styleToCss\(\{[\s\S]*?\}\)[\s\S]*?__ta_s\d+\.setAttribute\('style'/,
+      /createEffect\(\(\) => \{[\s\S]*?const __x = \{[\s\S]*?\}[\s\S]*?styleToCss\(__x\)[\s\S]*?__ta_s\d+\.setAttribute\('style'/,
     )
     expect(effectMatch).not.toBeNull()
     const effectBody = effectMatch![0]

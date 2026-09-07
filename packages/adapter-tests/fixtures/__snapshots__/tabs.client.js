@@ -8,12 +8,21 @@ export function initTabs(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.value || _p.defaultValue; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
-      { const __v = `${tabsClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.value || _p.defaultValue
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
+      }
+      __l[0] = __x }
+      { const __x = `${tabsClasses} ${(_p.className ?? '')}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","value","defaultValue","children","data-slot","data-value","class"])
 
@@ -29,11 +38,16 @@ export function initTabsList(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${tabsListClasses} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${tabsListClasses} ${(_p.className ?? '')}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","role","class"])
 
@@ -86,17 +100,46 @@ export function initTabsTrigger(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = _p.selected ?? false; if (__v != null) _s0.setAttribute('aria-selected', String(__v)); else _s0.removeAttribute('aria-selected') }
-      _s0.disabled = !!(_p.disabled ?? false)
-      { const __v = `${(_p.selected ?? false) ? 'active' : 'inactive'}`; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
-      { const __v = _p.value; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
-      { const __v = (_p.selected ?? false) ? 0 : -1; if (__v != null) _s0.setAttribute('tabindex', String(__v)); else _s0.removeAttribute('tabindex') }
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm dark:text-muted-foreground dark:data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = _p.selected ?? false
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('aria-selected', String(__v)); else _s0.removeAttribute('aria-selected') }
+      }
+      __l[0] = __x }
+      { const __x = _p.disabled ?? false
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        _s0.disabled = !!(__x)
+      }
+      __l[1] = __x }
+      { const __x = `${(_p.selected ?? false) ? 'active' : 'inactive'}`
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
+      }
+      __l[2] = __x }
+      { const __x = _p.value
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
+      }
+      __l[3] = __x }
+      { const __x = (_p.selected ?? false) ? 0 : -1
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('tabindex', String(__v)); else _s0.removeAttribute('tabindex') }
+      }
+      __l[4] = __x }
+      { const __x = _p.id
+      if (!(5 in __l) || !Object.is(__l[5], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[5] = __x }
+      { const __x = `inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm dark:text-muted-foreground dark:data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 ${_p.className ?? ''}`
+      if (!(6 in __l) || !Object.is(__l[6], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[6] = __x }
     }
-  })
+  }) }
 
   if (_s0) _s0.addEventListener('click', _p.onClick)
   if (_s0) _s0.addEventListener('keydown', handleKeyDown)
@@ -110,14 +153,31 @@ export function initTabsContent(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = `${(_p.selected ?? false) ? 'active' : 'inactive'}`; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
-      { const __v = _p.value; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `flex-1 outline-none ${(_p.selected ?? false) ? '' : 'hidden'} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = `${(_p.selected ?? false) ? 'active' : 'inactive'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-state', String(__v)); else _s0.removeAttribute('data-state') }
+      }
+      __l[0] = __x }
+      { const __x = _p.value
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
+      }
+      __l[1] = __x }
+      { const __x = _p.id
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
+      }
+      __l[2] = __x }
+      { const __x = `flex-1 outline-none ${(_p.selected ?? false) ? '' : 'hidden'} ${_p.className ?? ''}`
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[3] = __x }
     }
-  })
+  }) }
 
 }
 
@@ -168,27 +228,44 @@ export function initTabsBasicDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     if (__scope) {
       if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
-      __TabsTrigger_s0El.selected = !!(isAccountSelected())
+      { const __x = isAccountSelected()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __TabsTrigger_s0El.selected = !!(__x)
+      }
+      __l[0] = __x }
     }
     const [__TabsTrigger_s1El] = $c(__scope, 's1')
     if (__TabsTrigger_s1El) {
-      __TabsTrigger_s1El.selected = !!(isPasswordSelected())
+      { const __x = isPasswordSelected()
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        __TabsTrigger_s1El.selected = !!(__x)
+      }
+      __l[1] = __x }
     }
     const [__TabsContent_s3El] = $c(__scope, 's3')
     if (__TabsContent_s3El) {
-      __TabsContent_s3El.selected = !!(isAccountSelected())
+      { const __x = isAccountSelected()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        __TabsContent_s3El.selected = !!(__x)
+      }
+      __l[2] = __x }
     }
     const [__TabsContent_s4El] = $c(__scope, 's4')
     if (__TabsContent_s4El) {
-      __TabsContent_s4El.selected = !!(isPasswordSelected())
+      { const __x = isPasswordSelected()
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        __TabsContent_s4El.selected = !!(__x)
+      }
+      __l[3] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Tabs', __scope, { get value() { return activeTab() }, onValueChange: setActiveTab })
@@ -274,43 +351,76 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     if (__scope) {
       if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
-      __TabsTrigger_s0El.selected = !!(isOverviewSelected())
+      { const __x = isOverviewSelected()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __TabsTrigger_s0El.selected = !!(__x)
+      }
+      __l[0] = __x }
     }
     const [__TabsTrigger_s1El] = $c(__scope, 's1')
     if (__TabsTrigger_s1El) {
-      __TabsTrigger_s1El.selected = !!(isAnalyticsSelected())
+      { const __x = isAnalyticsSelected()
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        __TabsTrigger_s1El.selected = !!(__x)
+      }
+      __l[1] = __x }
     }
     const [__TabsTrigger_s2El] = $c(__scope, 's2')
     if (__TabsTrigger_s2El) {
-      __TabsTrigger_s2El.selected = !!(isReportsSelected())
+      { const __x = isReportsSelected()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        __TabsTrigger_s2El.selected = !!(__x)
+      }
+      __l[2] = __x }
     }
     const [__TabsTrigger_s3El] = $c(__scope, 's3')
     if (__TabsTrigger_s3El) {
-      __TabsTrigger_s3El.selected = !!(isNotificationsSelected())
+      { const __x = isNotificationsSelected()
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        __TabsTrigger_s3El.selected = !!(__x)
+      }
+      __l[3] = __x }
     }
     const [__TabsContent_s5El] = $c(__scope, 's5')
     if (__TabsContent_s5El) {
-      __TabsContent_s5El.selected = !!(isOverviewSelected())
+      { const __x = isOverviewSelected()
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        __TabsContent_s5El.selected = !!(__x)
+      }
+      __l[4] = __x }
     }
     const [__TabsContent_s6El] = $c(__scope, 's6')
     if (__TabsContent_s6El) {
-      __TabsContent_s6El.selected = !!(isAnalyticsSelected())
+      { const __x = isAnalyticsSelected()
+      if (!(5 in __l) || !Object.is(__l[5], __x)) {
+        __TabsContent_s6El.selected = !!(__x)
+      }
+      __l[5] = __x }
     }
     const [__TabsContent_s7El] = $c(__scope, 's7')
     if (__TabsContent_s7El) {
-      __TabsContent_s7El.selected = !!(isReportsSelected())
+      { const __x = isReportsSelected()
+      if (!(6 in __l) || !Object.is(__l[6], __x)) {
+        __TabsContent_s7El.selected = !!(__x)
+      }
+      __l[6] = __x }
     }
     const [__TabsContent_s8El] = $c(__scope, 's8')
     if (__TabsContent_s8El) {
-      __TabsContent_s8El.selected = !!(isNotificationsSelected())
+      { const __x = isNotificationsSelected()
+      if (!(7 in __l) || !Object.is(__l[7], __x)) {
+        __TabsContent_s8El.selected = !!(__x)
+      }
+      __l[7] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Tabs', __scope, { get value() { return activeTab() }, onValueChange: setActiveTab })
@@ -372,27 +482,44 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     if (__scope) {
       if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
     }
     const [__TabsTrigger_s0El] = $c(__scope, 's0')
     if (__TabsTrigger_s0El) {
-      __TabsTrigger_s0El.selected = !!(isActiveSelected())
+      { const __x = isActiveSelected()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __TabsTrigger_s0El.selected = !!(__x)
+      }
+      __l[0] = __x }
     }
     const [__TabsTrigger_s2El] = $c(__scope, 's2')
     if (__TabsTrigger_s2El) {
-      __TabsTrigger_s2El.selected = !!(isAnotherSelected())
+      { const __x = isAnotherSelected()
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        __TabsTrigger_s2El.selected = !!(__x)
+      }
+      __l[1] = __x }
     }
     const [__TabsContent_s4El] = $c(__scope, 's4')
     if (__TabsContent_s4El) {
-      __TabsContent_s4El.selected = !!(isActiveSelected())
+      { const __x = isActiveSelected()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        __TabsContent_s4El.selected = !!(__x)
+      }
+      __l[2] = __x }
     }
     const [__TabsContent_s5El] = $c(__scope, 's5')
     if (__TabsContent_s5El) {
-      __TabsContent_s5El.selected = !!(isAnotherSelected())
+      { const __x = isAnotherSelected()
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        __TabsContent_s5El.selected = !!(__x)
+      }
+      __l[3] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Tabs', __scope, { get value() { return activeTab() } })
