@@ -1,13 +1,19 @@
 /**
  * Plan types for inner loops emitted inside a composite loop's renderItem
- * body. Each `InnerLoopPlan` is one level (= one `mapArray` for reactive
- * inner loops, one `forEach` for static ones); `childLevels` recurses for
- * deeper nestings.
+ * body. Each `InnerLoopPlan` is one level (= one `mapArray`); `childLevels`
+ * recurses for deeper nestings.
  *
  * Replaces the legacy `emitInnerLoopSetup` + `DepthLevel` walk. The
- * builder pre-resolves every per-level decision (mode, container query,
- * wrapped array / template / key, narrowed-outer-param children) so the
+ * builder pre-resolves every per-level decision (container query, wrapped
+ * array / template / key, narrowed-outer-param children) so the
  * stringifier is a deterministic walk.
+ *
+ * Every level gets the reactive `mapArray` shape (#2865) — there used to
+ * be a second "static forEach, setup-only" shape for a nested loop whose
+ * array didn't reference the outer item, but that gate answered the wrong
+ * question (it never checked whether the array was reactive at all, only
+ * whether it mentioned the outer item's name) and silently froze any other
+ * reactivity in the row. See `build-inner-loop.ts`'s module docstring.
  */
 
 import type { LoopChildEvent } from '../../types.ts'
@@ -64,20 +70,9 @@ export interface InnerLoopReactiveAttr {
 }
 
 /**
- * One inner loop level inside a composite renderItem.
- *
- * The `mode` discriminator selects the emission shape:
- *
- *   - `reactive`: full `mapArray(...)` with renderItem (template clone,
- *     key attr, components/events with inner-wrapped props, reactive text
- *     effects, recursive childLevels).
- *   - `static`: `forEach(...)` for setup-only (children are rendered
- *     into the SSR HTML); components/events use the raw param, no
- *     wrap, no template clone.
- *
- * Choosing the mode requires checking whether `inner.array` references
- * the outer loop param at *this* level (legacy O-8 fix). The builder
- * does that check; the stringifier just dispatches on `mode`.
+ * One inner loop level inside a composite renderItem: a full `mapArray(...)`
+ * with renderItem (template clone, key attr, components/events with
+ * inner-wrapped props, reactive text/attr effects, recursive childLevels).
  */
 export interface InnerLoopPlan {
   /** Unique suffix used in `__ic` / `__innerEl` / `__innerIdx` var names. */
@@ -105,11 +100,8 @@ export interface InnerLoopPlan {
   param: string
   /** Depth used by `keyAttrName(...)`. Same as the IR's `inner.depth`. */
   keyDepth: number
-  /**
-   * Per-mode emission data. Discriminator keeps each shape's required fields
-   * narrowed and prevents accidental cross-talk.
-   */
-  emit: InnerLoopReactiveEmit | InnerLoopStaticEmit
+  /** Emission data for this level's `mapArray` renderItem. */
+  emit: InnerLoopReactiveEmit
   /** Recursive child levels — narrowed-outer-param at build time. */
   childLevels: readonly InnerLoopPlan[]
   /** Outer loop param threaded into emitComponentAndEventSetup. */
@@ -161,26 +153,6 @@ export interface InnerLoopReactiveEmit {
    */
   conditionals: readonly LoopChildConditionalPlan[]
   /** Pre-wrapped imperative ref callbacks for the inner-item body (#1244). */
-  childRefs: readonly LoopChildRefBinding[]
-}
-
-export interface InnerLoopStaticEmit {
-  mode: 'static'
-  /** Raw key expression (used as-is in setAttribute) — null when no key. */
-  rawKey: string | null
-  /**
-   * Body-entry statements (see `PreludeStatements`) emitted at the top of
-   * the static `forEach(...)` body, after the existence guard. Holds the
-   * inner `.map()` callback preamble locals (#1064). Emitted unwrapped
-   * because the forEach param is the literal item, not a signal accessor —
-   * no accessor rewrite is needed.
-   */
-  preludeStatements: PreludeStatements
-  /** Raw components (no inner-wrap; the static body has no signal accessor). */
-  components: readonly IRLoopChildComponent[]
-  /** Raw events (no inner-wrap). */
-  events: readonly LoopChildEvent[]
-  /** Imperative ref callbacks (unwrapped — static body has no signal accessor). */
   childRefs: readonly LoopChildRefBinding[]
 }
 

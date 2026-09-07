@@ -1511,12 +1511,13 @@ describe('ref callback re-invocation on remount under the same key (#1244)', () 
     expect(c.clientJs).toContain('refMap.set(it().id')
   })
 
-  test('static inner .map() under reactive outer: ref callback closing over inner param stays raw', () => {
-    // Outer is signal-backed (composite). Inner is a literal static array
-    // — buildStaticEmit handles its per-iteration setup via `forEach`.
-    // The inner param `s` is the raw value in `forEach`, so a ref callback
-    // closing over `s` must NOT be signal-accessor-wrapped (would emit
-    // `s()` and throw at runtime).
+  test('inner .map() under reactive outer: ref callback closing over inner param is accessor-wrapped (#2865)', () => {
+    // Outer is signal-backed (composite). Inner is a literal array with no
+    // outer-item dependency. Before #2865 this routed to `buildStaticEmit`'s
+    // `forEach`, where the inner param `s` was the raw value, so a ref
+    // callback closing over `s` was emitted unwrapped. Every inner loop now
+    // gets the full reactive `mapArray` emission — `s` is a signal accessor
+    // in that renderItem, so the ref callback must close over `s()`.
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -1540,8 +1541,7 @@ describe('ref callback re-invocation on remount under the same key (#1244)', () 
     `
     const c = compile(src)
     expectNoFatalErrors(c)
-    expect(c.clientJs).toMatch(/refMap\.set\(\s*s\s*,/)
-    expect(c.clientJs).not.toMatch(/refMap\.set\(\s*s\(\)/)
+    expect(c.clientJs).toMatch(/refMap\.set\(\s*s\(\)\s*,/)
   })
 })
 

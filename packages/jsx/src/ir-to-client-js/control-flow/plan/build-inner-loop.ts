@@ -7,8 +7,18 @@
  *   - Sibling levels at the same depth are flattened into the top-level
  *     list; deeper levels become `childLevels` of the immediately-preceding
  *     ancestor.
- *   - Choose `reactive` vs `static` mode by checking whether `inner.array`
- *     references the *current* outer loop param (the O-8 narrowing fix).
+ *   - Every level gets the full reactive `mapArray` emission (#2865 —
+ *     the former "static forEach, setup-only" shortcut for a nested
+ *     `.map()` whose array didn't textually mention the outer loop's item
+ *     silently froze any OTHER reactivity the inner array or its rows
+ *     depended on: a signal, a memo, a prop, an imported function call, a
+ *     preamble local, a destructured outer param, an outer-index-derived
+ *     array — none of those are "the outer item", so `refsParent` missed
+ *     all of them, and the static emitter never wired a single
+ *     `createEffect` for the row's own reactiveTexts/reactiveAttrs/
+ *     conditionals either. A `mapArray` over a genuinely non-reactive
+ *     array just subscribes to nothing and runs once — a strict superset
+ *     of what the deleted static path did).
  *   - Recurse with `inner.param` as the new outerLoopParam so deeper
  *     levels see their immediate parent.
  */
@@ -28,7 +38,7 @@ import {
   wrapLoopParamAsAccessor,
   attrValueToString,
 } from '../../utils.ts'
-import { buildChildRefBindings, buildStaticChildRefBindings } from '../shared.ts'
+import { buildChildRefBindings } from '../shared.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import { buildLoopChildConditionalsPlan } from './build-loop-child-arm.ts'
 import type { LoopChildConditionalPlan } from './loop-child-arm.ts'
@@ -67,7 +77,6 @@ import type {
   InnerLoopPlan,
   InnerLoopReactiveAttr,
   InnerLoopReactiveEmit,
-  InnerLoopStaticEmit,
   InnerLoopText,
   InnerLoopsPlan,
 } from './inner-loop.ts'
@@ -111,17 +120,13 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
       ? `qsa(${parentElVar}, '[bf="${inner.containerSlotId}"]')`
       : parentElVar
 
-    // O-8 narrowing: at depth 2+, `inner.array` may reference the *immediate*
-    // parent loop's param. Check against whatever outerLoopParam our caller
-    // narrowed to — the recursion passes `inner.param` for child levels.
-    const refsParent = !!outerLoopParam && (inner.arrayFreeIdentifiers?.has(outerLoopParam) ?? false)
-    const useReactive = refsParent && !!inner.template
+    // #2865: every nested loop gets the full reactive `mapArray` emission,
+    // regardless of whether its array references the outer loop's item —
+    // see the module docstring for why the old `refsParent`-gated static
+    // shortcut was unsound.
+    const emit: InnerLoopReactiveEmit = buildReactiveEmit(inner, level, wrapOuter, uidSuffix, outerLoopParam, outerLoopParamBindings)
 
-    const emit: InnerLoopReactiveEmit | InnerLoopStaticEmit = useReactive
-      ? buildReactiveEmit(inner, level, wrapOuter, uidSuffix, outerLoopParam, outerLoopParamBindings)
-      : buildStaticEmit(inner, level, uidSuffix)
-
-    const arrayExpr = useReactive ? wrapOuter(inner.array) : inner.array
+    const arrayExpr = wrapOuter(inner.array)
 
     const childLevelsPlan = childLevels.length > 0
       ? buildInnerLoopsPlan({
@@ -281,39 +286,5 @@ function buildReactiveEmit(
     reactiveAttrs,
     conditionals,
     childRefs,
-  }
-}
-
-function buildStaticEmit(inner: NestedLoop, level: DepthLevel, uidSuffix: string): InnerLoopStaticEmit {
-  // Static `forEach` iterates with the literal item as its first param, so
-  // no signal-accessor rewrite is needed — emit the preamble verbatim
-  // before the component/event setup so prop getters and event handlers
-  // can resolve the locals (#1064). Refs follow the same contract:
-  // wrapping the callback would rewrite `s.x` to `s().x` and throw at
-  // runtime when the callback closes over the static inner param (#1244,
-  // PR #1352 Copilot review).
-  //
-  // The index alias (#2218) lands first, same rationale as the reactive
-  // path: `forEach`'s second param is the synthetic `__innerIdx<uid>`, not
-  // the user's index name, so a preamble/prop/event that reads it needs the
-  // alias bound before anything else runs.
-  const preludeStatements: string[] = []
-  const indexAlias = nestedLoopIndexAlias(inner, `__innerIdx${uidSuffix}`, inner.param, level.comps, level.events)
-  if (indexAlias) preludeStatements.push(indexAlias)
-  // Static `forEach` receives the literal item, so neither the js text nor a
-  // leaf's param reads get accessor-wrapped (mirrors the verbatim emission
-  // of the js segments above).
-  if (inner.preamble) {
-    preludeStatements.push(renderPreamble(inner.preamble, {
-      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined),
-    }))
-  }
-  return {
-    mode: 'static',
-    rawKey: inner.key ?? null,
-    preludeStatements,
-    components: level.comps,
-    events: level.events,
-    childRefs: buildStaticChildRefBindings(inner.bindings.refs),
   }
 }

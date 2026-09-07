@@ -223,10 +223,13 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     expect(content).not.toContain('const id = __innerIdx')
   })
 
-  test('static inner array (no signal dependency) also binds the index alias', () => {
-    // Sibling of the reactive-path test above, exercising `emitStatic` in
-    // `stringify/inner-loop.ts` (the `forEach` renderItem path used when the
-    // inner array does not reference the outer loop param reactively).
+  test('inner array with no outer-item dependency still binds the index alias (#2865: no more static forEach)', () => {
+    // Sibling of the reactive-path test above. Before #2865, an inner loop
+    // whose array didn't reference the outer loop param was routed to
+    // `emitStatic` in `stringify/inner-loop.ts` — a hydration-only
+    // `forEach` that never wired reactivity for anything inside the row.
+    // That fork is gone: every inner loop now gets the full `mapArray`
+    // emission regardless of what its array depends on.
     const content = clientJsFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -251,7 +254,7 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
       }
     `)
 
-    expect(content).toMatch(/SHARED\.forEach\(\(cell, __innerIdx[^)]+\) => \{[\s\S]*?const\s+i\s*=\s*__innerIdx/)
+    expect(content).toMatch(/mapArray\(\(\) => SHARED \|\| \[\], .*?, \(cell, __innerIdx[^)]+, __existing\) => \{[\s\S]*?const\s+i\s*=\s*__innerIdx/)
   })
 
   test('conditional-branch-arm inner loop (loop -> conditional -> inner loop) binds the index alias', () => {
