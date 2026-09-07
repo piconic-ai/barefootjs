@@ -5180,7 +5180,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // arithmetic index lowers correctly. A multi-token operand
     // (`bf_add $i 1`) must be parenthesised or Go parses it as extra
     // `bf_get` arguments.
-    return `bf_get ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(index))}`
+    return `bf_get ${wrapIfMultiToken(this.emitOperand(object, emit))} ${wrapIfMultiToken(this.emitOperand(index, emit))}`
   }
 
   /**
@@ -5623,8 +5623,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     method: ArrayMethod,
     object: ParsedExpr,
     args: ParsedExpr[],
-    emit: (e: ParsedExpr) => string,
+    rawEmit: (e: ParsedExpr) => string,
   ): string {
+    // Every `emit(...)` call below lowers an ARGUMENT position (the
+    // receiver or a `.method(...)` arg) that feeds a prefix-call Go form
+    // (`bf_join (...) ...`, `bf_replace ... ... ...`, …) — shadow the
+    // dispatcher's own `emit` with `emitOperand` (#2863) so a
+    // template-literal receiver/argument (e.g. `items.join(\`${a}-${b}\`)`)
+    // folds through `bf_concat_str` instead of leaking the TEXT-position
+    // `templateLiteral()` form into another action's argument list.
+    const emit = (e: ParsedExpr): string => this.emitOperand(e, rawEmit)
     // `bf_join` etc. are registered in the runtime FuncMap. The exhaustive
     // switch on `method` mirrors the IR-level discriminator — adding a new
     // `ArrayMethod` variant becomes a TS compile error until every adapter
@@ -7176,7 +7184,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'template-literal':
-        return plain(this.renderParsedExpr(expr))
+        // #2863 follow-up: fold to one Go value (`bf_concat_str` chain) via
+        // the same door as the `conditional` case just above, instead of
+        // `renderParsedExpr`'s TEXT-position `templateLiteral()` form —
+        // which would leak raw `{{…}}` into THIS condition-expression's own
+        // pipeline position (e.g. `(a === \`${x}-${y}\`) ? … : …`).
+        return plain(lowerTemplateLiteralValue(this.emitCtx, expr.parts))
 
       case 'arrow':
         // A standalone arrow has no Go condition form (callbacks reach the

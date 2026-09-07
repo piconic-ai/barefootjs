@@ -473,6 +473,66 @@ export function Schedule() {
   })
 })
 
+// #2863 (pullfrog review on #2877): three more argument/operand positions
+// that reach a template literal without going through `lowerValueOperand`/
+// `emitOperand` — verified to reproduce the identical `unexpected "{" in
+// operand` class of bug before this fix, via a standalone script driving
+// `html/template.Parse` on the pre-fix output.
+describe('GoTemplateAdapter - value-position template literal in condition/array-method/index positions (#2863 follow-up)', () => {
+  // `renderConditionExpr`'s own `binary`/`unary`/`logical` recursion is a
+  // SEPARATE walker from the generic `emit()` dispatcher (it threads a
+  // `preamble` string `emitOperand` doesn't track) — reached whenever a
+  // ternary/`&&`/`||`/`!` TEST is a comparison against (or otherwise
+  // contains) a template literal, since `lowerTernaryTest`/`lowerUrlGuard`'s
+  // "bool-shape" branch routes through `convertConditionToGo` instead of
+  // `lowerValueOperand`.
+  test('a ternary TEST comparing to a template literal folds through bf_concat_str inside the {{if}}', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T() {
+  const [x] = createSignal('x')
+  const [y] = createSignal('y')
+  const [z] = createSignal('z')
+  return <span>{(x() === \`\${y()}-\${z()}\`) ? 'a' : 'b'}</span>
+}
+`)
+    expect(template).toContain('{{if eq .X (bf_concat_str (bf_concat_str .Y "-") .Z)}}')
+  })
+
+  // `arrayMethod()`'s per-method cases (`join`, `includes`, `indexOf`, …) all
+  // lower their receiver/args via the dispatcher's plain `emit`, not
+  // `emitOperand` — no ternary or helper-inlining needed to reach the bug.
+  test('Array.join with a template-literal separator folds through bf_concat_str', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T() {
+  const [items] = createSignal<string[]>([])
+  const [y] = createSignal('y')
+  const [z] = createSignal('z')
+  return <span>{items().join(\`\${y()}-\${z()}\`)}</span>
+}
+`)
+    expect(template).toContain('bf_join (.Items) (bf_concat_str (bf_concat_str .Y "-") .Z)')
+  })
+
+  // `indexAccess()` lowers both the object and the index via plain `emit`.
+  test('a computed index-access with a template-literal key folds through bf_concat_str', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T() {
+  const [obj] = createSignal<Record<string, string>>({})
+  const [y] = createSignal('y')
+  const [z] = createSignal('z')
+  return <span>{obj()[\`\${y()}-\${z()}\`]}</span>
+}
+`)
+    expect(template).toContain('bf_get .Obj (bf_concat_str (bf_concat_str .Y "-") .Z)')
+  })
+})
+
 // #2335 item 2 (correctness): a ternary used as a boolean CONDITION used to
 // return only its lowered `test`, silently discarding both branches. It now
 // lowers faithfully to `(bf_ternary …)`, truthiness-checked by the enclosing
