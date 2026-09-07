@@ -9,9 +9,12 @@
  * cannot have, because there is no `.map()` preamble outside a loop.
  *
  * Tracing where `readsPreamble` is actually set (`reactivity.ts`'s
- * `collectBranchReactiveAttrs`, guarding the exact "#2447" scenario this test
- * reproduces: `const cls = row.done ? … ; class={cls}`) proved it CAN be true
- * for an attribute inside a loop-row's branch conditional. But
+ * `collectLoopChildReactiveAttrs`, called for the branch-arm case from
+ * `collect-elements.ts` with `stopAtReactiveConditionals: true` — NOT the
+ * separate, top-level-only `collectBranchReactiveAttrs` that feeds
+ * `insert.ts`'s `ArmBody` instead — guarding the exact "#2447" scenario this
+ * test reproduces: `const cls = row.done ? … ; class={cls}`) proved it CAN be
+ * true for an attribute inside a loop-row's branch conditional. But
  * `stringifyLoopChildArm` / `stringifyBranchReactiveAttrs`
  * (`control-flow/stringify/loop-child-arm.ts`) never receive a
  * `mapPreambleWrapped` string to inject — unlike every other `readsPreamble`
