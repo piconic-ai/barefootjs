@@ -191,3 +191,63 @@ export function containsReactiveExpression(node: ts.Node, checker: ts.TypeChecke
   incrementCounter('reactivityChecks')
   return brandTypeReactivityAnalyzer.analyze(node, checker).isReactive
 }
+
+/** Subtree JSX check — same predicate as analyzer-context.ts's getJS() guard. */
+function nodeContainsJsx(node: ts.Node): boolean {
+  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true
+  return ts.forEachChild(node, nodeContainsJsx) ?? false
+}
+
+/**
+ * Every node that itself carries the `Reactive<T>` brand within `node`,
+ * without stopping at the first match (unlike `analyze`, which only needs
+ * one hit to answer "is this reactive"). A caller that needs to read the
+ * *text* of the reactive part(s) — e.g. to tell a brand-package wrapper
+ * apart from a plain native signal/memo call (#2867) — must not stringify
+ * `node` itself: for a `.map()` callback or a ternary with JSX arms, `node`
+ * is JSX-bearing, and the write-side trust boundary (`getJS()`,
+ * `analyzer-context.ts`) rejects producing text for a JSX-bearing node.
+ * Each returned node is JSX-free: property access and identifier leaves
+ * cannot contain JSX by construction; a call leaf is the whole call
+ * (preserving the `name(...)` shape native-signal/memo regex patterns
+ * match against) unless its arguments happen to contain JSX, in which case
+ * only the callee is returned instead.
+ */
+export function collectReactiveBrandLeaves(node: ts.Node, checker: ts.TypeChecker): ts.Node[] {
+  const leaves: ts.Node[] = []
+  const visit = (n: ts.Node): void => {
+    if (ts.isPropertyAccessExpression(n)) {
+      try {
+        if (isReactiveType(queryType(checker, n))) {
+          leaves.push(n)
+          return
+        }
+      } catch {
+        // fall through to walking the object part
+      }
+      visit(n.expression)
+      return
+    }
+    if (ts.isIdentifier(n)) {
+      try {
+        if (isReactiveType(queryType(checker, n))) leaves.push(n)
+      } catch {
+        // not reactive
+      }
+      return
+    }
+    if (ts.isCallExpression(n)) {
+      try {
+        if (isReactiveType(queryType(checker, n.expression))) {
+          leaves.push(nodeContainsJsx(n) ? n.expression : n)
+          return
+        }
+      } catch {
+        // fall through to walking children
+      }
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return leaves
+}
