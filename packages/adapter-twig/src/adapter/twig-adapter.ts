@@ -1044,9 +1044,12 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
     // anchor. Still under the row scope (see above) — `loop.key` is a
     // per-row expression.
+    // `bf.escape_comment_key` (#2795 follow-up) both stringifies the key and
+    // neutralizes `-` so it can't spell `-->` and close the comment early —
+    // see its doc in `BarefootJS.php`.
     const bodyChildren =
       loop.bodyIsItemConditional && loop.key
-        ? `{{ bf.comment("loop-i:" ~ bf.string(${this.convertExpressionToTwig(loop.key)})) | raw }}\n${childrenUnderLoop}`
+        ? `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToTwig(loop.key)})) | raw }}\n${childrenUnderLoop}`
         : childrenUnderLoop
     this.scope = prevScope
 

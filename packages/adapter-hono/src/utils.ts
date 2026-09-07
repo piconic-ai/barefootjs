@@ -9,6 +9,26 @@ export function bfComment(key: string) {
 }
 
 /**
+ * Neutralize a value for splicing into `bfComment`'s HTML comment content
+ * (#2795 follow-up). `comment`/`bfComment` itself is `<!--bf-${text}-->`
+ * with no escaping — fine for every OTHER caller (`cond-start:s0`,
+ * `loop:l0`, ...), whose text is entirely compiler-generated marker IDs,
+ * but the whole-item-conditional loop's `loop-i:<key>` anchor
+ * (`hono-adapter.ts`'s `bodyIsItemConditional` branch) carries a
+ * user-controlled key. Standard HTML escaping doesn't help inside a
+ * comment — only the literal sequence `-->` terminates it early, and
+ * `&`/`<`/`>`/`"`/`'` are not special there. The key's exact text doesn't
+ * need to round-trip (the client's `mapArrayAnchored` matches items
+ * positionally and by its own JS-computed key, never by re-parsing the
+ * anchor `Comment.nodeValue`), so replacing every `-` with the
+ * visually-similar U+2010 is sufficient and needs no decoding.
+ */
+export function escapeCommentKey(value: unknown): string {
+  if (value == null) return ''
+  return String(value).replace(/-/g, '‐')
+}
+
+/**
  * Output opening comment marker for reactive text expressions.
  * Renders <!--bf:slotId-->
  */

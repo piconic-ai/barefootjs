@@ -1416,6 +1416,20 @@ impl Object for BfInstance {
 
             // -- Comment markers -------------------------------------------
             "comment" => Ok(safe(format!("<!--bf-{}-->", js_string(a(0))))),
+            // Neutralize a value for splicing into `comment`'s HTML comment
+            // content (#2795 follow-up). `comment` itself does no escaping --
+            // fine for every other caller (marker IDs like "cond-start:s0",
+            // "loop:l0", ...), which are entirely compiler-generated, but the
+            // whole-item-conditional loop's "loop-i:<key>" anchor carries a
+            // user-controlled key. Standard HTML escaping doesn't help inside
+            // a comment -- only the literal sequence "-->" terminates it
+            // early, and &/</>/"/' are not special there. The key's exact
+            // text doesn't need to round-trip (the client's mapArrayAnchored
+            // matches items positionally and by its own JS-computed key,
+            // never by re-parsing the anchor Comment.nodeValue), so replacing
+            // every "-" with the visually-similar U+2010 is sufficient and
+            // needs no decoding.
+            "escape_comment_key" => Ok(MjValue::from(js_string(a(0)).replace('-', "‐"))),
             "bool_str" => Ok(MjValue::from(js_bool_str(js_truthy(a(0))))),
             "text_start" => Ok(safe(format!("<!--bf:{}-->", js_string(a(0))))),
             "text_end" => Ok(safe("<!--/-->".to_string())),

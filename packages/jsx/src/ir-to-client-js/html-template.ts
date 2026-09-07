@@ -887,8 +887,8 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
               // trust the brand and skip re-escaping it. EXCEPT an explicit
               // `children={<jsx/>}` prop (out of scope, unchanged): the
               // child's `{children}` interpolation is the bare-passthrough
-              // door (`escapeTextSlotExpr`'s own docstring), never routed
-              // through an escape/unwrap call, so a branded object here
+              // arm of `spliceChildValue`'s door (`safe-html.ts`), never
+              // routed through an escape/unwrap call, so a branded object here
               // would stringify to `[object Object]` instead of unwrapping.
               return p.name === 'children'
                 ? `${quotePropName(p.name)}: \`${childHtml}\``
@@ -1715,8 +1715,8 @@ export interface TemplateOptions {
    * (`ctx.dynamicElements`, populated by `collectElements` — the exact set
    * `emit-reactive.ts`'s `emitDynamicTextUpdates` claims `kind: 'markup'`
    * for on the REACTIVE side, #2651). When a text-marker expression's
-   * `slotId` is a member, `escapeTextSlotExpr` emits `escapeTextOrMarkup`
-   * instead of `escapeText` so a `bfMarkup()`-branded prop value (a JSX
+   * `slotId` is a member, `spliceChildValue`'s door (`safe-html.ts`) emits
+   * `escapeTextOrMarkup` instead of `escapeText` so a `bfMarkup()`-branded prop value (a JSX
    * element passed at a non-`children` component prop position) reaches
    * the initial-render template raw, matching what the reactive writer
    * already does via `escapeTextOrNode`. Computed once per component from

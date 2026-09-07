@@ -1004,7 +1004,7 @@ export interface BfMarkup {
  * itself assembled from a JSX element passed at a non-`children` component
  * prop position (`header={<strong>Title</strong>}`) — every text segment
  * inside that assembly was already escaped node-by-node during the
- * assembly (the same `escapeHtml` / `escapeTextSlotExpr` calls
+ * assembly (the same `escapeHtml` calls / `spliceChildValue` door
  * `html-template.ts` uses for ordinary element children), so the
  * concatenated result is exactly as safe as any other compiler-emitted
  * template fragment.
@@ -1036,8 +1036,8 @@ export function isBfMarkup(value: unknown): value is BfMarkup {
 /**
  * `escapeText`'s counterpart for a claim-plan slot the compiler has
  * classified `kind: 'markup'` at STATIC/initial-render time
- * (`html-template.ts`'s `escapeTextSlotExpr`, gated on the same
- * `ctx.dynamicElements` membership `emit-reactive.ts` reads to pick the
+ * (`html-template.ts`'s `spliceChildValue` door, `safe-html.ts`, gated on
+ * the same `ctx.dynamicElements` membership `emit-reactive.ts` reads to pick the
  * writer kind for the REACTIVE side, below) — #2651. A `bfMarkup()`-branded
  * value is compiler-built HTML the compiler already escaped piecewise
  * while assembling it, and must reach the template raw, unescaped a second
@@ -1054,9 +1054,8 @@ export function escapeTextOrMarkup(value: unknown): string {
 
 /**
  * Nullish guard for a bare `${children}` passthrough splice
- * (`ir-to-client-js/html-template.ts`'s no-`slotId` `'expression'` branches
- * — the "bare `${...}` interpolations" the docstring above `escapeTextSlotExpr`
- * describes) — #2775. The value here is ALREADY-STRINGIFIED MARKUP, not an
+ * (`ir-to-client-js/safe-html.ts`'s `spliceChildValue` door, no-`slotId`
+ * `'expression'` branches) — #2775. The value here is ALREADY-STRINGIFIED MARKUP, not an
  * arbitrary prop: `materializeComponent` (this file, "Template functions
  * expect children as an HTML string, not an array") joins a component's
  * `children` into an HTML string before the template lambda ever runs, so by
@@ -1090,7 +1089,7 @@ export function markupOrEmpty(value: unknown): string {
  * interpret HTML, so a raw un-escaped string is an injection/corruption
  * risk exactly where the initial SSR/CSR TEMPLATE already calls
  * `escapeText` on the same expression (`html-template.ts`'s
- * `escapeTextSlotExpr`). A live `Node`, by contrast, must pass through
+ * `spliceChildValue` door, `safe-html.ts`). A live `Node`, by contrast, must pass through
  * untouched — `escapeText(node)` would stringify it to garbage, and
  * `writeMarkup`'s own `instanceof Node` check needs the real object to
  * splice in by identity. This is the single call every "dynamic JSX/text

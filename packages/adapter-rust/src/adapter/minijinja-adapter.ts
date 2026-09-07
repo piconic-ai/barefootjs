@@ -1037,9 +1037,12 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // client's `mapArrayAnchored` can hydrate every SSR-rendered item by its
     // anchor. Still under the row scope (see above) — `loop.key` is a
     // per-row expression.
+    // `bf.escape_comment_key` (#2795 follow-up) both stringifies the key and
+    // neutralizes `-` so it can't spell `-->` and close the comment early —
+    // see its doc in `runtime.rs`.
     const bodyChildren =
       loop.bodyIsItemConditional && loop.key
-        ? `{{ bf.comment("loop-i:" ~ bf.string(${this.convertExpressionToJinja(loop.key)})) | safe }}\n${childrenUnderLoop}`
+        ? `{{ bf.comment("loop-i:" ~ bf.escape_comment_key(${this.convertExpressionToJinja(loop.key)})) | safe }}\n${childrenUnderLoop}`
         : childrenUnderLoop
     this.scope = prevScope
 
