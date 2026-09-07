@@ -15,12 +15,17 @@ export function initNoteBoxNative(__scope, _p = {}) {
     __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      const __val = String(note())
-      if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
+      { const __x = note()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        const __val = String(__x)
+        if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) _s0.addEventListener('input', (e) => { setNote(e.target.value) })
 }

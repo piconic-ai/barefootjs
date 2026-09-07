@@ -146,6 +146,13 @@ export interface BranchInnerLoop {
   outerLoopParam: string
   /** Outer loop param destructuring metadata. */
   outerLoopParamBindings?: readonly import('../../../types.ts').LoopParamBinding[]
+  /**
+   * Outer loop's index param name, when present (#2861) — threaded into
+   * `emitComponentAndEventSetup`'s own outer-wrap pass alongside
+   * `outerLoopParam`/`outerLoopParamBindings`, mirroring `InnerLoopPlan`'s
+   * field of the same name.
+   */
+  outerLoopIndex?: string | null
 }
 
 export type BranchInnerLoopsPlan = readonly BranchInnerLoop[]

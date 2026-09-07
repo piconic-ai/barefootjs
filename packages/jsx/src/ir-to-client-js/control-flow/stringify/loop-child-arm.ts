@@ -13,7 +13,7 @@
 
 import { varSlotId, DATA_BF_PH, keyAttrName, mapArrayKeyArgs, profileBindingId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
-import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { namespaceWrapForTemplate } from './template-parse.ts'
 import { emitListenerLine } from './event-listener.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
@@ -51,10 +51,12 @@ export function stringifyBranchReactiveAttrs(
   for (const slot of plan) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
     lines.push(`${indent}{ const ${varName} = qsa(__branchScope, '[bf="${slot.slotId}"]')`)
+    lines.push(`${indent}${DEDUP_STORE_DECL}`)
     lines.push(`${indent}if (${varName}) {`)
+    let ordinal = 0
     for (const attr of slot.attrs) {
       lines.push(`${indent}  __disposers.push(createDisposableEffect(() => {`)
-      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
+      for (const stmt of emitDedupedAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta, ordinal++)) {
         lines.push(`${indent}    ${stmt}`)
       }
       lines.push(`${indent}  }${profileBindingId(pc, slot.slotId)}))`)
@@ -156,6 +158,8 @@ export function stringifyBranchInnerLoops(
         [...inner.legacyEvents],
         inner.outerLoopParam,
         inner.outerLoopParamBindings,
+        false,
+        inner.outerLoopIndex,
       )
     }
     const conditionalTexts = inner.reactiveTexts.filter(t => t.insideConditional)

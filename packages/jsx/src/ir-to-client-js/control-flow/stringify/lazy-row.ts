@@ -60,7 +60,7 @@
  */
 
 import { isBooleanAttr } from '../../../html-constants.ts'
-import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitDedupedAttrUpdate, dedupGuard } from '../../emit-reactive.ts'
 import { toHtmlAttrName } from '../../utils.ts'
 import type { SkeletonSlotPaths } from '../../html-template.ts'
 import { claimPlanLiteral, type ClaimSlotSpec } from './claim-plan.ts'
@@ -458,11 +458,13 @@ function emitConditional(
   lines.push(`${ind}} }`)
 }
 
-/** `entry.last`-backed dedup test. `in` (not a truthiness check) so a
- *  legitimately `undefined` value still records and still writes once. */
-function dedupGuard(ordinal: number): string {
-  return `!(${ordinal} in __l) || !Object.is(__l[${ordinal}], __x)`
-}
+// `dedupGuard` (the `entry.last`-backed dedup test) and the actual guarded
+// write now live in `emit-reactive.ts` as `emitDedupedAttrUpdate` (#2869) —
+// shared with every eager reactive-attr emission site. This module's only
+// remaining substrate-specific piece is WHERE `__l` comes from: the
+// reconciler's `entry.last` (see the per-mode `applyItem`/`applyOuter`
+// callers below), not a closure-local `const __l = []`, because those are
+// separate invocations with no shared closure of their own to own it.
 
 function emitAttrBinding(
   lines: string[],
@@ -474,21 +476,16 @@ function emitAttrBinding(
   // plain read. An ADOPTED row starts with an EMPTY `refs` array and each
   // binding claims its OWN slot on first use — see `elementAccess`.
   const target = mode === 'create' ? `__r[${a.refIndex}]` : elementAccess(a)
-  lines.push(`${ind}{ const __t = ${target}`)
-  lines.push(`${ind}if (__t) {`)
-  lines.push(`${ind}  const __x = ${a.wrappedExpression}`)
   const guard = mode === 'create'
     ? null
     : mode === 'item'
       ? dedupGuard(a.ordinal)
       : `__seed ? (${seedDiffersExpr('__t', a)}) : (${dedupGuard(a.ordinal)})`
-  const writeIndent = guard ? `${ind}    ` : `${ind}  `
-  if (guard) lines.push(`${ind}  if (${guard}) {`)
-  for (const stmt of emitAttrUpdate('__t', a.attrName, '__x', a.meta)) {
-    lines.push(`${writeIndent}${stmt}`)
+  lines.push(`${ind}{ const __t = ${target}`)
+  lines.push(`${ind}if (__t) {`)
+  for (const stmt of emitDedupedAttrUpdate('__t', a.attrName, a.wrappedExpression, a.meta, a.ordinal, guard)) {
+    lines.push(`${ind}  ${stmt}`)
   }
-  if (guard) lines.push(`${ind}  }`)
-  lines.push(`${ind}  __l[${a.ordinal}] = __x`)
   lines.push(`${ind}} }`)
 }
 

@@ -96,7 +96,7 @@ export interface InnerLoopPlan {
    * `// Initialize <array> loop components and events` comments.
    */
   arraySrc: string
-  /** Inner loop parameter identifier (used by static forEach). */
+  /** Inner loop parameter identifier. */
   param: string
   /** Depth used by `keyAttrName(...)`. Same as the IR's `inner.depth`. */
   keyDepth: number
@@ -108,6 +108,13 @@ export interface InnerLoopPlan {
   outerLoopParam: string | undefined
   /** Outer loop param destructuring metadata. */
   outerLoopParamBindings?: readonly LoopParamBinding[]
+  /**
+   * Outer loop's index param name, when present (#2861) — threaded into
+   * `emitComponentAndEventSetup` so a component prop / event handler in
+   * this row that closes over the OUTER loop's index reads it through the
+   * live accessor instead of a value frozen at row-creation time.
+   */
+  outerLoopIndex?: string | null
 }
 
 export interface InnerLoopReactiveEmit {

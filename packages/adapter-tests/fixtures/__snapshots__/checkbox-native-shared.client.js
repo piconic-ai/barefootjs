@@ -9,11 +9,16 @@ export function initCheckboxNative(__scope, _p = {}) {
 
   const [_s0, _s1] = $(__scope, 's0', 's1')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      _s0.checked = !!(subscribed())
+      { const __x = subscribed()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s0.checked = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   insert(__scope, 's1', () => subscribed(), {
     template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1-->${__bfSlot('Subscribed', __slots)}<!--bf-cond-end:s1-->`, slots: __slots } },

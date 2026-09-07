@@ -29,7 +29,7 @@
  */
 
 import { emitRefCall, varSlotId } from '../../utils.ts'
-import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types.ts'
 import { stringifyBranchLoops } from './branch-loop.ts'
 import { emitListenerLine } from './event-listener.ts'
@@ -163,10 +163,12 @@ function emitArmBody(
     const v = varSlotId(slotId)
     const elVar = `__ra_${v}`
     lines.push(`${indent}{ const ${elVar} = qsa(__branchScope, '[bf="${slotId}"]')`)
+    lines.push(`${indent}${DEDUP_STORE_DECL}`)
     lines.push(`${indent}if (${elVar}) {`)
+    let ordinal = 0
     for (const attr of attrs) {
       lines.push(`${indent}  __disposers.push(createDisposableEffect(() => {`)
-      for (const stmt of emitAttrUpdate(elVar, attr.attrName, attr.expression, attr)) {
+      for (const stmt of emitDedupedAttrUpdate(elVar, attr.attrName, attr.expression, attr, ordinal++)) {
         lines.push(`${indent}    ${stmt}`)
       }
       lines.push(`${indent}  }${bindingBfId(slotId)}))`)

@@ -9,11 +9,16 @@ export function initDetailsFaq(__scope, _p = {}) {
 
   const [_s0, _s1] = $(__scope, 's0', 's1')
 
+  { const __l = []
   createEffect(() => {
     if (_s1) {
-      _s1.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        _s1.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) _s0.addEventListener('click', (e) => {
           e.preventDefault()
