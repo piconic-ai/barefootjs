@@ -911,7 +911,15 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
               // emit sites (`irToComponentTemplateWithOpts`,
               // `generateCsrTemplateWithOpts`), which already pick the
               // prop-rewritten variant.
-              const expr = attrValueToString(p.value, { useTemplate: true }) ?? 'undefined'
+              // Also wrap through `wrapExpr` (#2868 follow-up): this
+              // `renderChild(...)` call can itself live inside a loop row's
+              // conditional-branch HTML (a child component rendered by
+              // `.map()`-row type), so a prop reading the row's own loop
+              // param/index must read the live accessor, same as every
+              // other expression position `irToHtmlTemplate` renders —
+              // previously masked by the post-hoc `wrapLoopParamAsAccessor`
+              // pass over the whole branch string, which #2868 removed.
+              const expr = wrapExpr(attrValueToString(p.value, { useTemplate: true }) ?? 'undefined')
               return `${quotePropName(p.name)}: ${expr}`
             }
           }

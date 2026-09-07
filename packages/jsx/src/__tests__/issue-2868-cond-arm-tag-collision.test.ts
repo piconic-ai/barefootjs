@@ -114,6 +114,43 @@ export { T }`)
     expectNoCorruption(clientJs)
   })
 
+  test('child component prop inside a reactive conditional branch reads the loop item live (#2868 follow-up)', () => {
+    // `irToHtmlTemplate`'s `case 'component':` branch never ran the prop
+    // expression through `wrapExpr` — a pre-existing gap that #2868's own
+    // fix exposed by deleting the post-hoc `wrapLoopParamAsAccessor` regex
+    // pass that had accidentally been fixing it too. Caught by a real
+    // `site/ui` component (`DashboardBuilderDemo`), not by any fixture in
+    // #2868's own PR.
+    const clientJs = compile(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+function Badge(props: { text: string }) {
+  return <span>{props.text}</span>
+}
+function T() {
+  const [items] = createSignal([{ id: 'a', active: true, label: 'A' }])
+  return (
+    <ul>
+      {items().map((item, i) => (
+        <li key={item.id} ref={(el: HTMLElement | null) => {}}>
+          {item.active ? <Badge text={item.label} /> : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+export { T, Badge }`)
+    expectNoCorruption(clientJs)
+    // The branch's re-render template (the `insert(...)` reactive-update
+    // path, NOT the outer static SSR template built once from the literal
+    // array) must read the row's live item accessor (`item()`), not the
+    // bare loop param (`item`) — a bare reference would stringify to the
+    // destructured item at row-creation time and never update after that.
+    const insertCall = clientJs.slice(clientJs.indexOf('insert(__el'), clientJs.indexOf("}, 'l0')"))
+    expect(insertCall).toContain("renderChild('Badge', {text: item().label}")
+    expect(insertCall).not.toContain("renderChild('Badge', {text: item.label}")
+  })
+
   test("nested .map() conditional arm reads the OUTER loop's own index (ancestor chain)", () => {
     const clientJs = compile(`
 'use client'
