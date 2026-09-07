@@ -34,9 +34,9 @@ export function initKeyedLoopPureIndexReorder(__scope, _p = {}) {
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {
-        const __x = `${i === 1 ? 'odd' : 'even'}`
+        { const __x = `${i === 1 ? 'odd' : 'even'}`
         { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       { const __x = i
       __r[1]('s1', textOrNode(__x))
@@ -53,11 +53,11 @@ export function initKeyedLoopPureIndexReorder(__scope, _p = {}) {
       const __l = __e.last ?? (__e.last = [])
       { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s3"]'))
       if (__t) {
-        const __x = `${i === 1 ? 'odd' : 'even'}`
+        { const __x = `${i === 1 ? 'odd' : 'even'}`
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
         }
-        __l[0] = __x
+        __l[0] = __x }
       } }
       const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = i

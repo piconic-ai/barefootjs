@@ -146,8 +146,12 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     // call — before `classifyReactivity`'s `loop-index` source existed this
     // was classified fully static and never got a `createEffect`, so the
     // class stayed frozen at whichever value the row was created with.
+    // The expression is read into `__x` first (#2869's dedup-guard shape,
+    // `emitDedupedAttrUpdate`) before the actual attribute write reads it
+    // back as `__v` — assert both halves rather than the old direct
+    // `const __v = <expr>` shape #2869 replaced.
     expect(content).toMatch(
-      /createEffect\(\(\) => \{[\s\S]*?const __v = `\$\{i\(\) % 2 === 0 \? 'even' : 'odd'\}`/
+      /createEffect\(\(\) => \{[\s\S]*?const __x = `\$\{i\(\) % 2 === 0 \? 'even' : 'odd'\}`[\s\S]*?const __v = __x;/
     )
   })
 

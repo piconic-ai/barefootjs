@@ -76,9 +76,11 @@ describe('plain loop: pure index-only expressions (#2861)', () => {
     // A ref forces the eager `mapArray` path (no lazy row graph for rows
     // that own an imperative ref) — the class binding must still be wired
     // through a per-item `createEffect` reading the index ACCESSOR (#2859).
+    // The expression is read into `__x` first (#2869's dedup-guard shape,
+    // `emitDedupedAttrUpdate`) before the write reads it back as `__v`.
     expect(content).toContain('mapArray(')
     expect(content).toMatch(
-      /createEffect\(\(\) => \{[\s\S]*?const __v = `\$\{i\(\) % 2 === 0 \? 'even' : 'odd'\}`/
+      /createEffect\(\(\) => \{[\s\S]*?const __x = `\$\{i\(\) % 2 === 0 \? 'even' : 'odd'\}`[\s\S]*?const __v = __x;/
     )
   })
 
@@ -161,8 +163,10 @@ describe('nested loop: referencing an OUTER loop\'s own index (#2861)', () => {
       }
     `)
 
+    // The expression is read into `__x` first (#2869's dedup-guard shape,
+    // `emitDedupedAttrUpdate`) before the write reads it back as `__v`.
     expect(content).toMatch(
-      /createEffect\(\(\) => \{[\s\S]*?const __v = `\$\{gi\(\) % 2 === 0 \? 'even' : 'odd'\}`/
+      /createEffect\(\(\) => \{[\s\S]*?const __x = `\$\{gi\(\) % 2 === 0 \? 'even' : 'odd'\}`[\s\S]*?const __v = __x;/
     )
   })
 
