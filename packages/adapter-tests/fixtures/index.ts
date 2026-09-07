@@ -415,6 +415,8 @@ import { fixture as nestedLoopOuterBinding } from './nested-loop-outer-binding'
 import { fixture as nestedLoopTripleDepth } from './nested-loop-triple-depth'
 import { fixture as nestedLoopRefConst } from './nested-loop-ref-const'
 import { fixture as nestedLoopIndependentSignal } from './nested-loop-independent-signal'
+import { fixture as keyedLoopPureIndexReorder } from './keyed-loop-pure-index-reorder'
+import { fixture as nestedLoopOuterIndexReorder } from './nested-loop-outer-index-reorder'
 import { fixture as svgInnerLoop } from './svg-inner-loop'
 import { fixture as siblingLoopsKeyIsolation } from './sibling-loops-key-isolation'
 import { fixture as conditionalReturnNull } from './conditional-return-null'
@@ -908,6 +910,8 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopTripleDepth,
   nestedLoopRefConst,
   nestedLoopIndependentSignal,
+  keyedLoopPureIndexReorder,
+  nestedLoopOuterIndexReorder,
   svgInnerLoop,
   siblingLoopsKeyIsolation,
   conditionalReturnNull,

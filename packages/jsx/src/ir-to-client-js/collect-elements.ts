@@ -13,6 +13,7 @@ import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
+import type { BindingScope } from '../scope/binding-scope.ts'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
 const EMPTY_RENDER_EXPRS = new Set(['null', 'undefined', 'false', "''", '""', '``'])
@@ -279,12 +280,29 @@ export function collectInnerLoops(
     parentSlotId: string | null
     depth: number
     insideCond: boolean
+    /**
+     * Every ancestor loop's own item/index binding, innermost-first
+     * (#2861) — `undefined` above the outermost loop. Threaded (not just
+     * captured once from `outerLoopParam`) so a THIRD-level-deep loop's row
+     * sees BOTH its grandparent's and its immediate parent's bindings, not
+     * only the outermost one: each `loop:` visit below pushes its own
+     * frame via `buildLoopRowScope(..., scope.bindingScope)` before
+     * descending into that loop's own children.
+     */
+    bindingScope: BindingScope | undefined
   }
   const result: NestedLoop[] = []
   const flat = options?.flatBranchMode === true
   const fixedDepth = options?.templateDepth
   const collectBindings = options?.collectItemBindings === true
-  const initialScope: Scope = { parentSlotId: null, depth: 0, insideCond: false }
+  // Normalize to a spec regardless of which shape the caller passed (#2868
+  // callers always pass a full spec; a bare string carries no bindings/index
+  // of its own) — one shape feeds both the reactivity scope below and
+  // `loopParamsForTemplate` inside the `loop:` visitor.
+  const outerSpec: LoopParamSpec | undefined =
+    typeof outerLoopParam === 'string' ? { param: outerLoopParam } : outerLoopParam
+  const outerScope = buildLoopRowScope(outerSpec?.param, outerSpec?.bindings, undefined, outerSpec?.index)
+  const initialScope: Scope = { parentSlotId: null, depth: 0, insideCond: false, bindingScope: outerScope }
 
   for (const root of nodes) {
     walkIR<Scope>(root, initialScope, {
@@ -307,8 +325,8 @@ export function collectInnerLoops(
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
         // Forward destructured bindings (#951) so inner-loop template
         // references to the destructured locals are rewritten.
-        const loopParamsForTemplate = outerLoopParam
-          ? [outerLoopParam, { param: n.param, bindings: n.paramBindings, index: n.index }]
+        const loopParamsForTemplate = outerSpec
+          ? [outerSpec, { param: n.param, bindings: n.paramBindings, index: n.index }]
           : undefined
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Per-item bindings for inner loop body, collected uniformly when
@@ -344,8 +362,8 @@ export function collectInnerLoops(
             // guarantees the branch's marker is mounted the moment this
             // effect first runs (issue-2706-nested-loop-conditional-slot
             // .test.ts's original repro).
-            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index))
-            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index))
+            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index, scope.bindingScope))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, true, innerPreambleNames, n.index, scope.bindingScope))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
           bindings.conditionals.push(...collectLoopChildConditionals(
@@ -361,6 +379,7 @@ export function collectInnerLoops(
             // param — an inner-loop conditional arm can read an outer
             // loop's item/index too (#2868).
             loopParamsForTemplate,
+            scope.bindingScope,
           ))
         }
 
@@ -419,7 +438,14 @@ export function collectInnerLoops(
         })
         // Branch-mode callers handle deeper nesting via their own collection paths.
         if (!flat) {
-          descend({ ...scope, depth: scope.depth + 1 })
+          // #2861: push THIS loop's own item/index frame onto the scope
+          // stack before descending, so a loop found deeper still (depth 2+)
+          // sees every ancestor's bindings, not just the outermost one.
+          descend({
+            ...scope,
+            depth: scope.depth + 1,
+            bindingScope: buildLoopRowScope(n.param, n.paramBindings, innerPreambleNames, n.index, scope.bindingScope),
+          })
         }
       },
       // fragment / provider / async auto-descend with the same scope.
@@ -1486,24 +1512,25 @@ export function collectLoopChildConditionals(
    * JS expression positions, never tag names.
    */
   loopParams?: ReadonlyArray<string | LoopParamSpec>,
+  /** Enclosing loop's own scope, for a NESTED loop (#2861) — see `buildLoopRowScope`. */
+  parentScope?: BindingScope,
 ): LoopChildConditional[] {
   const conditionals: LoopChildConditional[] = []
-  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
+  const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex, parentScope)
 
   // Widen the source-level "references loop param" check so destructured
   // callbacks fire too — the pattern text `[, cfg]` never word-matches on
   // bare `cfg` but individual binding names do (#951). Consumes a
   // pre-computed `Set<string>` of free identifiers (#1267) rather than
   // running word-boundary regex on the expression text.
-  const refsAnyBindingViaFreeIds = (freeIds: ReadonlySet<string>): boolean => {
-    if (loopParamBindings && loopParamBindings.length > 0) {
-      for (const b of loopParamBindings) {
-        if (freeIds.has(b.name)) return true
-      }
-      return false
-    }
-    return loopParam ? freeIds.has(loopParam) : false
-  }
+  //
+  // #2861: also checks the loop's INDEX binding, not just item/destructure
+  // — `scope.valueBoundNames()` already unions all three (the same query
+  // Phase 1's `referencesLoopParam` reads to grant a slot at all), so a
+  // condition referencing only the index (e.g. `{i % 2 === 0 ? … : null}`)
+  // no longer dies at this pre-gate before `classifyReactivity` even runs.
+  const refsAnyBindingViaFreeIds = (freeIds: ReadonlySet<string>): boolean =>
+    scope !== undefined && anyNameIn(scope.valueBoundNames(), freeIds)
 
   walkIR(node, null, {
     // element / fragment / component / provider auto-descend with same scope.
@@ -1534,9 +1561,10 @@ export function collectLoopChildConditionals(
         preambleNames !== undefined &&
         preambleNames.size > 0 &&
         anyNameIn(expanded.freeIds ?? extractFreeIdentifiersFromText(expanded.expr), preambleNames)
-      // Loop-param conditionals are reactive via per-item signal accessors;
-      // classifyReactivity sees both paths (signal/memo/prop + loop-param).
-      if (!readsPreamble && classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
+      // Loop-param/loop-index conditionals are reactive via per-item signal
+      // accessors; classifyReactivity sees all three paths (signal/memo/prop
+      // + loop-param + loop-index, #2861).
+      if (!readsPreamble && classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind === 'none') return
 
       const loopParamsForCond =
         loopParams ?? (loopParam ? [{ param: loopParam, bindings: loopParamBindings, index: loopIndex }] : undefined)

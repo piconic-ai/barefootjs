@@ -158,6 +158,8 @@ export function stringifyBranchInnerLoops(
         [...inner.legacyEvents],
         inner.outerLoopParam,
         inner.outerLoopParamBindings,
+        false,
+        inner.outerLoopIndex,
       )
     }
     const conditionalTexts = inner.reactiveTexts.filter(t => t.insideConditional)

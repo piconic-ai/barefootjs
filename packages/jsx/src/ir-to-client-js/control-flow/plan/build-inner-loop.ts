@@ -86,6 +86,8 @@ export interface BuildInnerLoopsArgs {
   parentElVar: string
   outerLoopParam: string | undefined
   outerLoopParamBindings?: readonly LoopParamBinding[]
+  /** Outer loop's index param name, when present (#2861). */
+  outerLoopIndex?: string | null
 }
 
 /**
@@ -94,9 +96,9 @@ export interface BuildInnerLoopsArgs {
  * conditional branch are skipped (they're emitted by `stringifyBranchInnerLoops`).
  */
 export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
-  const { levels, parentElVar, outerLoopParam, outerLoopParamBindings } = args
+  const { levels, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex } = args
   const wrapOuter = outerLoopParam
-    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings)
+    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings, outerLoopIndex)
     : (expr: string) => expr
 
   const plan: InnerLoopPlan[] = []
@@ -124,7 +126,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
     // regardless of whether its array references the outer loop's item —
     // see the module docstring for why the old `refsParent`-gated static
     // shortcut was unsound.
-    const emit: InnerLoopReactiveEmit = buildReactiveEmit(inner, level, wrapOuter, uidSuffix, outerLoopParam, outerLoopParamBindings)
+    const emit: InnerLoopReactiveEmit = buildReactiveEmit(inner, level, wrapOuter, uidSuffix, outerLoopParam, outerLoopParamBindings, outerLoopIndex)
 
     const arrayExpr = wrapOuter(inner.array)
 
@@ -134,6 +136,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
           parentElVar: `__innerEl${uidSuffix}`,
           outerLoopParam: inner.param,
           outerLoopParamBindings: inner.paramBindings,
+          outerLoopIndex: inner.index,
         })
       : []
 
@@ -151,6 +154,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
       childLevels: childLevelsPlan,
       outerLoopParam,
       outerLoopParamBindings,
+      outerLoopIndex,
     })
 
     i = j
@@ -165,6 +169,7 @@ function buildReactiveEmit(
   uidSuffix: string,
   outerLoopParam?: string,
   outerLoopParamBindings?: readonly LoopParamBinding[],
+  outerLoopIndex?: string | null,
 ): InnerLoopReactiveEmit {
   const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings, inner.index)
   const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings, inner.index)
@@ -245,7 +250,7 @@ function buildReactiveEmit(
     // wrapInner(wrapOuter(...)) applied to the js text.
     const leafLoopParams = outerLoopParam
       ? [
-          { param: outerLoopParam, bindings: outerLoopParamBindings },
+          { param: outerLoopParam, bindings: outerLoopParamBindings, index: outerLoopIndex },
           { param: inner.param, bindings: inner.paramBindings, index: inner.index },
         ]
       : [{ param: inner.param, bindings: inner.paramBindings, index: inner.index }]
@@ -270,6 +275,7 @@ function buildReactiveEmit(
     wrap: wrapBoth,
     loopParam: inner.param,
     loopParamBindings: inner.paramBindings,
+    loopIndex: inner.index,
   })
 
   return {

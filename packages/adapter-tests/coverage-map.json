@@ -1436,29 +1436,6 @@
         "text"
       ]
     },
-    "cond-arm-tag-collision": {
-      "kinds": [
-        "array-literal",
-        "arrow",
-        "call",
-        "identifier",
-        "literal",
-        "member",
-        "object-literal",
-        "unary"
-      ],
-      "axes": [
-        "literal:boolean",
-        "literal:string",
-        "unary:!"
-      ],
-      "contexts": [
-        "attribute",
-        "condition",
-        "loop",
-        "text"
-      ]
-    },
     "condition-position-ternary": {
       "kinds": [
         "call",
@@ -2993,6 +2970,26 @@
         "text"
       ]
     },
+    "keyed-loop-pure-index-reorder": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "label": {
       "kinds": [
         "identifier",
@@ -3814,6 +3811,26 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-outer-index-reorder": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -6083,21 +6100,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 92,
+    "array-literal": 93,
     "array-method": 71,
-    "arrow": 72,
+    "arrow": 71,
     "binary": 99,
-    "call": 255,
+    "call": 256,
     "conditional": 30,
-    "identifier": 357,
+    "identifier": 358,
     "index-access": 14,
-    "literal": 284,
+    "literal": 285,
     "logical": 49,
-    "member": 201,
-    "object-literal": 76,
+    "member": 202,
+    "object-literal": 77,
     "template-literal": 30,
-    "unary": 27,
-    "unsupported": 45
+    "unary": 26,
+    "unsupported": 47
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -6134,10 +6151,10 @@
     "binary:===": 52,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 60,
+    "literal:boolean": 59,
     "literal:null": 23,
-    "literal:number": 121,
-    "literal:string": 201,
+    "literal:number": 123,
+    "literal:string": 202,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,
@@ -6155,7 +6172,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 19,
+    "unary:!": 18,
     "unary:-": 11
   },
   "uncoveredKinds": [

@@ -202,6 +202,8 @@ export interface BuildBranchInnerLoopsArgs {
   outerLoopParam: string
   /** Outer loop param destructuring metadata. */
   outerLoopParamBindings?: readonly LoopParamBinding[]
+  /** Outer loop's index param name, when present (#2861). */
+  outerLoopIndex?: string | null
   /**
    * Outer-wrap closure — defaults to wrapping with `outerLoopParam`. Overridden
    * by `emitNestedLoopChildConditionals` recursion (which threads its own wrap).
@@ -225,6 +227,7 @@ export function buildBranchInnerLoopsPlan(
     condSlotId,
     outerLoopParam,
     outerLoopParamBindings,
+    outerLoopIndex,
     wrapOuter,
   } = args
   if (!innerLoops || innerLoops.length === 0) return []
@@ -332,11 +335,13 @@ export function buildBranchInnerLoopsPlan(
         wrap: wrapBoth,
         loopParam: inner.param,
         loopParamBindings: inner.paramBindings,
+        loopIndex: inner.index,
       }),
       innerLoopParam: inner.param,
       innerLoopParamBindings: inner.paramBindings,
       outerLoopParam,
       outerLoopParamBindings,
+      outerLoopIndex,
     })
   }
   return plan
@@ -357,6 +362,8 @@ export interface BuildLoopChildConditionalsArgs {
   loopParam: string
   /** Loop param destructuring metadata. */
   loopParamBindings?: readonly LoopParamBinding[]
+  /** Loop's index param name, when it declares one (#2861) — same role as `loopParam` above. */
+  loopIndex?: string | null
 }
 
 /**
@@ -376,7 +383,7 @@ export interface BuildLoopChildConditionalsArgs {
 export function buildLoopChildConditionalsPlan(
   args: BuildLoopChildConditionalsArgs,
 ): LoopChildConditionalPlan[] {
-  const { conditionals, scopeVar, wrap, loopParam, loopParamBindings } = args
+  const { conditionals, scopeVar, wrap, loopParam, loopParamBindings, loopIndex } = args
   if (!conditionals || conditionals.length === 0) return []
 
   const plans: LoopChildConditionalPlan[] = []
@@ -398,6 +405,7 @@ export function buildLoopChildConditionalsPlan(
         wrap,
         loopParam,
         loopParamBindings,
+        loopIndex,
         condId: cond.slotId,
       }),
       whenFalseArm: buildLoopChildArmPlan({
@@ -405,6 +413,7 @@ export function buildLoopChildConditionalsPlan(
         wrap,
         loopParam,
         loopParamBindings,
+        loopIndex,
         condId: cond.slotId,
       }),
     })
@@ -467,12 +476,14 @@ interface BuildLoopChildArmArgs {
   wrap: (expr: string) => string
   loopParam: string
   loopParamBindings?: readonly LoopParamBinding[]
+  /** Loop's index param name, when it declares one (#2861). */
+  loopIndex?: string | null
   /** The enclosing conditional's own slot id — threaded to `buildBranchInnerLoopsPlan`'s `condSlotId` (#2705). */
   condId: string
 }
 
 function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
-  const { branch, wrap, loopParam, loopParamBindings, condId } = args
+  const { branch, wrap, loopParam, loopParamBindings, loopIndex, condId } = args
   return {
     events: buildBranchEventBindingsPlan({
       events: branch.events,
@@ -488,6 +499,7 @@ function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
       condSlotId: condId,
       outerLoopParam: loopParam,
       outerLoopParamBindings: loopParamBindings,
+      outerLoopIndex: loopIndex,
       wrapOuter: wrap,
     }),
     nestedConditionals: buildLoopChildConditionalsPlan({
@@ -496,6 +508,7 @@ function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
       wrap,
       loopParam,
       loopParamBindings,
+      loopIndex,
     }),
     attrs: buildArmAttrsPlan(branch.reactiveAttrs, wrap),
     texts: buildArmTextsPlan(branch.reactiveTexts, wrap),

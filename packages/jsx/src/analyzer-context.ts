@@ -26,6 +26,7 @@ import type {
 } from './types.ts'
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
+import { nodeContainsJsx } from './reactivity-checker.ts'
 
 /**
  * Deferred info for BF043 (props destructuring warning).
@@ -341,12 +342,6 @@ export function createAnalyzerContext(
       return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
     },
   }
-}
-
-/** Subtree JSX check for the test-gated getJS assertion above. */
-function nodeContainsJsx(node: ts.Node): boolean {
-  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true
-  return ts.forEachChild(node, nodeContainsJsx) ?? false
 }
 
 // =============================================================================

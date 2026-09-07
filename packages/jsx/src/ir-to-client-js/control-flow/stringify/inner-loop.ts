@@ -95,6 +95,8 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
       [...emit.events],
       inner.outerLoopParam,
       inner.outerLoopParamBindings,
+      false,
+      inner.outerLoopIndex,
     )
   }
   if (inner.childLevels.length > 0) {

@@ -108,6 +108,14 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     // *after* the alias, inside the inner renderItem's own clone template.
     const templateIdx = content.indexOf('escapeText(i)', aliasIdx)
     expect(templateIdx).toBeGreaterThan(aliasIdx)
+    // #2861: a bare `{i}` — no signal, no function call anywhere in the
+    // expression — used to be classified fully static by Phase 2 and never
+    // get a `createEffect` at all, so it stayed frozen at whatever value it
+    // had when the row was first created. `classifyReactivity`'s new
+    // `loop-index` source fixes this: the index is wired through the same
+    // accessor `mapArray` already hands every row (#2859/#2860), and the
+    // slot now gets a real update effect.
+    expect(content).toContain(`createEffect(() => { __bfw_s0('s0', String(i())) })`)
   })
 
   test('index referenced in a reactive attribute expression is bound', () => {
@@ -134,6 +142,17 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
 
     expect(content).toContain('const i = __innerIdx')
     expect(content).toContain(`i % 2 === 0 ? 'even' : 'odd'`)
+    // #2861: `class={i % 2 === 0 ? …}` has no signal read and no function
+    // call — before `classifyReactivity`'s `loop-index` source existed this
+    // was classified fully static and never got a `createEffect`, so the
+    // class stayed frozen at whichever value the row was created with.
+    // The expression is read into `__x` first (#2869's dedup-guard shape,
+    // `emitDedupedAttrUpdate`) before the actual attribute write reads it
+    // back as `__v` — assert both halves rather than the old direct
+    // `const __v = <expr>` shape #2869 replaced.
+    expect(content).toMatch(
+      /createEffect\(\(\) => \{[\s\S]*?const __x = `\$\{i\(\) % 2 === 0 \? 'even' : 'odd'\}`[\s\S]*?const __v = __x;/
+    )
   })
 
   test('index referenced only in an event handler inside the inner loop is bound', () => {
