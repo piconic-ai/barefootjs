@@ -416,6 +416,7 @@ import { fixture as nestedLoopTripleDepth } from './nested-loop-triple-depth'
 import { fixture as nestedLoopRefConst } from './nested-loop-ref-const'
 import { fixture as nestedLoopIndependentSignal } from './nested-loop-independent-signal'
 import { fixture as keyedLoopPureIndexReorder } from './keyed-loop-pure-index-reorder'
+import { fixture as ternaryTemplateLiteralBranch } from './ternary-template-literal-branch'
 import { fixture as nestedLoopOuterIndexReorder } from './nested-loop-outer-index-reorder'
 import { fixture as svgInnerLoop } from './svg-inner-loop'
 import { fixture as siblingLoopsKeyIsolation } from './sibling-loops-key-isolation'
@@ -911,6 +912,7 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopRefConst,
   nestedLoopIndependentSignal,
   keyedLoopPureIndexReorder,
+  ternaryTemplateLiteralBranch,
   nestedLoopOuterIndexReorder,
   svgInnerLoop,
   siblingLoopsKeyIsolation,

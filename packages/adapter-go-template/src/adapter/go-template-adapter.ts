@@ -130,7 +130,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTernary } from "./expr/url-builder.ts"
+import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -5180,12 +5180,35 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // arithmetic index lowers correctly. A multi-token operand
     // (`bf_add $i 1`) must be parenthesised or Go parses it as extra
     // `bf_get` arguments.
-    return `bf_get ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(index))}`
+    return `bf_get ${wrapIfMultiToken(this.emitOperand(object, emit))} ${wrapIfMultiToken(this.emitOperand(index, emit))}`
+  }
+
+  /**
+   * A `binary`/`logical`/`unary` operand that feeds a prefix-call Go form
+   * (`bf_mul a b`, `and a b`, `not a`, …), which cannot host a raw `{{…}}`
+   * action the way the generic `emit` dispatcher's `templateLiteral()` would
+   * produce for a template-literal operand (#2863). ONLY a template literal
+   * is special-cased here, folded through `bf_concat_str` (the same door
+   * `lowerValueOperand` uses for a ternary branch / helper-call arg /
+   * query-guard value); every other kind still goes through the caller's own
+   * `emit` closure unchanged. This matters: routing every operand through
+   * `lowerValueOperand`'s `convertExpressionToGo` fallback (rather than only
+   * the one broken kind) would ALSO pick up `convertExpressionToGo`'s own
+   * string-keyed fast paths — e.g. inlining a bare identifier bound to a
+   * local literal const — which `emit`'s AST-walk `identifier()` dispatch
+   * does not do, a real behavioral divergence for that shape (caught by the
+   * #2236 loop-param-shadowing regression pins).
+   */
+  private emitOperand(n: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    if (n.kind === 'template-literal') {
+      return wrapIfMultiToken(lowerTemplateLiteralValue(this.emitCtx, n.parts))
+    }
+    return emit(n)
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    const l = this.emitOperand(left, emit)
+    const r = this.emitOperand(right, emit)
     // Every Go form below is a prefix function call (`bf_mul a b`, `gt a b`,
     // `eq a b`), so a COMPOUND operand must be parenthesised or the template
     // parser folds its tokens into the call's argument list — e.g.
@@ -5268,7 +5291,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const arg = emit(argument)
+    const arg = this.emitOperand(argument, emit)
     // `not` is a Go template prefix builtin like `and`/`or` (see `logical()`
     // below) — a multi-token argument (e.g. `or a b`) must be parenthesised
     // or it degrades into extra sibling args of `not` itself (#2758: `not
@@ -5291,8 +5314,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `and`/`or`. This makes `searchParams().get(k) ?? d` lower to
     // `or (.SearchParams.Get "sort") "none"` instead of the broken
     // `or .SearchParams.Get "sort" "none"`.
-    const wrapLeft = wrapIfMultiToken(emit(left))
-    const wrapRight = wrapIfMultiToken(emit(right))
+    const wrapLeft = wrapIfMultiToken(this.emitOperand(left, emit))
+    const wrapRight = wrapIfMultiToken(this.emitOperand(right, emit))
     if (op === '&&') return `and ${wrapLeft} ${wrapRight}`
     // `??` on a nillable prop needs true JS nullish semantics (#2248): Go's
     // `or` is truthiness-based, so `{{or .Label "Default"}}` falls back on a
@@ -5600,8 +5623,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     method: ArrayMethod,
     object: ParsedExpr,
     args: ParsedExpr[],
-    emit: (e: ParsedExpr) => string,
+    rawEmit: (e: ParsedExpr) => string,
   ): string {
+    // Every `emit(...)` call below lowers an ARGUMENT position (the
+    // receiver or a `.method(...)` arg) that feeds a prefix-call Go form
+    // (`bf_join (...) ...`, `bf_replace ... ... ...`, …) — shadow the
+    // dispatcher's own `emit` with `emitOperand` (#2863) so a
+    // template-literal receiver/argument (e.g. `items.join(\`${a}-${b}\`)`)
+    // folds through `bf_concat_str` instead of leaking the TEXT-position
+    // `templateLiteral()` form into another action's argument list.
+    const emit = (e: ParsedExpr): string => this.emitOperand(e, rawEmit)
     // `bf_join` etc. are registered in the runtime FuncMap. The exhaustive
     // switch on `method` mirrors the IR-level discriminator — adding a new
     // `ArrayMethod` variant becomes a TS compile error until every adapter
@@ -6682,34 +6713,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
         continue
       }
-      // A ternary / single-interpolation template literal with STRING-typed
-      // branches (`row.on ? "yes" : "no"`, `${row.x}` alone) parses to a
-      // ParsedExpr `template-literal` whose sole part is non-string —
-      // `templateLiteral()` wraps that one dynamic part's already-bare
-      // pipeline value (e.g. `(bf_ternary ...)`, #2335) in a bare `{{...}}`
-      // shell meant for TEXT-position embedding. A multi-part template
-      // literal (mixed literal text and interpolation) has no such reduction
-      // and stays refused below. Unwrap the single-part case back to the
-      // bare pipeline value this call site (a function ARGUMENT position,
-      // not a text position) needs.
-      const singlePartTemplateLiteral =
-        exprOut.parsed?.kind === 'template-literal' &&
-        exprOut.parsed.parts.length === 1 &&
-        exprOut.parsed.parts[0].type !== 'string' &&
-        go.startsWith('{{') &&
-        go.endsWith('}}')
-      if (singlePartTemplateLiteral) {
-        go = go.slice(2, -2)
-      }
-      // Skip the fragment re-check for the just-unwrapped single-part case —
-      // `kind` is still (accurately) `template-literal`, which would
-      // otherwise re-trip `isTemplateFragment`'s `kind === 'template-literal'`
-      // branch on the ALREADY-unwrapped bare value.
-      if (!singlePartTemplateLiteral && this.isTemplateFragment(go, exprOut.parsed?.kind)) {
-        // A genuine multi-part `{{if}}...{{end}}`-shaped fragment can't be a
-        // bare pipeline argument — refuse loudly rather than silently
-        // dropping the prop (the #2445 bug was exactly a silent drop one
-        // level up).
+      // A ternary or template literal (`row.on ? "yes" : "no"`, `` `#${row.id}
+      // ${row.label}` ``) in this ARGUMENT position (a `bf_with_props`/
+      // `bf_reprops` value, not a text position) must lower through the
+      // shared value-operand door (#2863/#2335) — `convertExpressionToGo`'s
+      // generic path returns `templateLiteral()`'s TEXT-position mixed
+      // literal-text-plus-`{{…}}`-actions form for a template literal, which
+      // is not a legal bare pipeline argument (multi-part) or needed an
+      // ad-hoc single-part unwrap here (this replaces both). Recompute from
+      // the already-validated `exprOut.parsed` tree rather than trying to
+      // unwrap or refuse the text-position string after the fact.
+      if (exprOut.parsed?.kind === 'template-literal' || exprOut.parsed?.kind === 'conditional') {
+        go = lowerValueOperand(this.emitCtx, exprOut.parsed)
+      } else if (this.isTemplateFragment(go, exprOut.parsed?.kind)) {
+        // A genuine `{{if}}...{{end}}`-shaped (or other `{{`-leading action)
+        // fragment can't be a bare pipeline argument — refuse loudly rather
+        // than silently dropping the prop (the #2445 bug was exactly a
+        // silent drop one level up).
         this.state.errors.push({
           code: 'BF101',
           severity: 'error',
@@ -7164,7 +7184,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'template-literal':
-        return plain(this.renderParsedExpr(expr))
+        // #2863 follow-up: fold to one Go value (`bf_concat_str` chain) via
+        // the same door as the `conditional` case just above, instead of
+        // `renderParsedExpr`'s TEXT-position `templateLiteral()` form —
+        // which would leak raw `{{…}}` into THIS condition-expression's own
+        // pipeline position (e.g. `(a === \`${x}-${y}\`) ? … : …`).
+        return plain(lowerTemplateLiteralValue(this.emitCtx, expr.parts))
 
       case 'arrow':
         // A standalone arrow has no Go condition form (callbacks reach the

@@ -5816,6 +5816,17 @@
         "condition"
       ]
     },
+    "ternary-template-literal-branch": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "text-escape": {
       "kinds": [
         "call",
@@ -6128,14 +6139,14 @@
     "arrow": 72,
     "binary": 99,
     "call": 257,
-    "conditional": 30,
-    "identifier": 359,
+    "conditional": 31,
+    "identifier": 360,
     "index-access": 14,
     "literal": 286,
     "logical": 49,
     "member": 203,
     "object-literal": 78,
-    "template-literal": 30,
+    "template-literal": 31,
     "unary": 27,
     "unsupported": 47
   },

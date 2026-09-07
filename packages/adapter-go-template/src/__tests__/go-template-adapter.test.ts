@@ -376,6 +376,161 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   test('emits no {{if}} action fragment for a value-position ternary', () => {
     expect(render("flag ? 'a' : 'b'")).not.toContain('{{if')
   })
+
+  // #2863: a multi-part template literal (mixed literal text and MULTIPLE
+  // interpolations) as a ternary BRANCH used to lower through the TEXT-
+  // position `templateLiteral()` path (`{{.Start}}-{{.End}}`), nesting raw
+  // `{{`/`}}` delimiters inside `bf_ternary`'s own argument list — a
+  // `html/template` parse error ("unexpected \"{\" in operand") at Go
+  // application startup, even though `bf build` itself succeeded. It must
+  // instead fold to one pipeline value, chained through the same
+  // `bf_concat_str` runtime helper JS string-concat `+` already uses (#2168).
+  test('a multi-part template-literal branch folds to a bf_concat_str chain, not a raw fragment (#2863)', () => {
+    expect(render('end ? `${start}-${end}` : start')).toBe(
+      '{{(bf_ternary (bf_truthy .End) (bf_concat_str (bf_concat_str .Start "-") .End) .Start)}}',
+    )
+  })
+
+  test('a template-literal branch never leaks a raw {{ or }} into the surrounding action (#2863)', () => {
+    const out = render('end ? `${start}-${end}` : start')
+    const inner = out.slice(2, -2) // strip the outer {{ }} the whole expression is wrapped in
+    expect(inner).not.toContain('{{')
+    expect(inner).not.toContain('}}')
+  })
+
+  test('a single-part template-literal branch reduces to the bare value, no bf_concat_str wrap (#2863)', () => {
+    expect(render('end ? `${start}` : end')).toBe('{{(bf_ternary (bf_truthy .End) .Start .End)}}')
+  })
+
+  test('static text in a template-literal branch is an escaped Go string literal (#2863)', () => {
+    expect(render('end ? `say "hi" ${start}` : end')).toBe(
+      '{{(bf_ternary (bf_truthy .End) (bf_concat_str "say \\"hi\\" " .Start) .End)}}',
+    )
+  })
+
+  test('a nested ternary inside a template-literal branch still lowers to bf_ternary, not {{if}} (#2863)', () => {
+    const out = render('end ? `x ${flag ? \'a\' : \'b\'}` : end')
+    expect(out).toBe(
+      '{{(bf_ternary (bf_truthy .End) (bf_concat_str "x " (bf_ternary (bf_truthy .Flag) "a" "b")) .End)}}',
+    )
+    expect(out).not.toContain('{{if')
+  })
+})
+
+// #2863 follow-up: the same value-position leak existed for a `+`/`||`
+// operand and a registered-lowering (`queryHref`) argument, not just a
+// `bf_ternary` branch — every such position funnels through the Go
+// adapter's shared `lowerValueOperand` door (`expr/url-builder.ts`).
+describe('GoTemplateAdapter - value-position template literal in other operand positions (#2863)', () => {
+  const adapter = new GoTemplateAdapter()
+  const render = (expr: string) => adapter.renderExpression({ expr } as IRExpression)
+
+  test('a template-literal operand of `+` folds through bf_concat_str, not a raw fragment', () => {
+    const out = render('`${a}-${b}` + a')
+    const inner = out.slice(2, -2)
+    expect(inner).not.toContain('{{')
+    expect(inner).toContain('bf_concat_str')
+  })
+
+  test('a template-literal operand of `||` folds through bf_concat_str, not a raw fragment', () => {
+    const out = render('a || `${a}-${b}`')
+    const inner = out.slice(2, -2)
+    expect(inner).not.toContain('{{')
+  })
+
+  // The issue's exact repro shape: a local, expression-bodied helper arrow
+  // (`eventTime`) whose body is the ternary+template-literal, called from a
+  // `.map()` row. A ternary written DIRECTLY inline in JSX instead compiles
+  // to a text-position `IRConditional` (`{{if}}…{{else}}…{{end}}`, correct
+  // and unaffected by this bug) — the buggy VALUE-position path is only
+  // reached once `inlineLocalHelperCall` substitutes the helper's body into
+  // the `eventTime(event)` call site and the Go adapter re-parses the
+  // result as a plain expression, not a JSX conditional.
+  test('the issue #2863 repro: a local-helper ternary+template-literal inlined in a .map() row lowers to valid Go source', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Event = { id: string; time: string; endTime: string }
+type Dashboard = { events: Event[] }
+const empty: Dashboard = { events: [] }
+export function Schedule() {
+  const [data] = createSignal<Dashboard>(empty)
+  const eventTime = (event: Event) =>
+    event.endTime ? \`\${event.time}–\${event.endTime}\` : event.time
+  return (
+    <ol>
+      {data().events.map((event) => (
+        <li key={event.id}><time>{eventTime(event)}</time></li>
+      ))}
+    </ol>
+  )
+}
+`)
+    expect(template).toContain(
+      '(bf_ternary (bf_truthy .EndTime) (bf_concat_str (bf_concat_str .Time "–") .EndTime) .Time)',
+    )
+    expect(template).not.toContain('{{.Time}}–{{.EndTime}}')
+  })
+})
+
+// #2863 (pullfrog review on #2877): three more argument/operand positions
+// that reach a template literal without going through `lowerValueOperand`/
+// `emitOperand` — verified to reproduce the identical `unexpected "{" in
+// operand` class of bug before this fix, via a standalone script driving
+// `html/template.Parse` on the pre-fix output.
+describe('GoTemplateAdapter - value-position template literal in condition/array-method/index positions (#2863 follow-up)', () => {
+  // `renderConditionExpr`'s own `binary`/`unary`/`logical` recursion is a
+  // SEPARATE walker from the generic `emit()` dispatcher (it threads a
+  // `preamble` string `emitOperand` doesn't track) — reached whenever a
+  // ternary/`&&`/`||`/`!` TEST is a comparison against (or otherwise
+  // contains) a template literal, since `lowerTernaryTest`/`lowerUrlGuard`'s
+  // "bool-shape" branch routes through `convertConditionToGo` instead of
+  // `lowerValueOperand`.
+  test('a ternary TEST comparing to a template literal folds through bf_concat_str inside the {{if}}', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T() {
+  const [x] = createSignal('x')
+  const [y] = createSignal('y')
+  const [z] = createSignal('z')
+  return <span>{(x() === \`\${y()}-\${z()}\`) ? 'a' : 'b'}</span>
+}
+`)
+    expect(template).toContain('{{if eq .X (bf_concat_str (bf_concat_str .Y "-") .Z)}}')
+  })
+
+  // `arrayMethod()`'s per-method cases (`join`, `includes`, `indexOf`, …) all
+  // lower their receiver/args via the dispatcher's plain `emit`, not
+  // `emitOperand` — no ternary or helper-inlining needed to reach the bug.
+  test('Array.join with a template-literal separator folds through bf_concat_str', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T() {
+  const [items] = createSignal<string[]>([])
+  const [y] = createSignal('y')
+  const [z] = createSignal('z')
+  return <span>{items().join(\`\${y()}-\${z()}\`)}</span>
+}
+`)
+    expect(template).toContain('bf_join (.Items) (bf_concat_str (bf_concat_str .Y "-") .Z)')
+  })
+
+  // `indexAccess()` lowers both the object and the index via plain `emit`.
+  test('a computed index-access with a template-literal key folds through bf_concat_str', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T() {
+  const [obj] = createSignal<Record<string, string>>({})
+  const [y] = createSignal('y')
+  const [z] = createSignal('z')
+  return <span>{obj()[\`\${y()}-\${z()}\`]}</span>
+}
+`)
+    expect(template).toContain('bf_get .Obj (bf_concat_str (bf_concat_str .Y "-") .Z)')
+  })
 })
 
 // #2335 item 2 (correctness): a ternary used as a boolean CONDITION used to
@@ -4701,11 +4856,14 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
   })
 
   // A multi-part template literal (mixed literal text and interpolation,
-  // `` `#${row.id} ${row.label}` ``) has no single-pipeline-value reduction
-  // the way a single-part ternary does — refuse it loudly (BF101) instead
-  // of silently emitting the stale constructor-only value (the #2445 bug
-  // this whole fix exists to close).
-  test('a multi-part template-literal per-row prop is refused with BF101, not silently stale', () => {
+  // `` `#${row.id} ${row.label}` ``) folds through the shared value-operand
+  // door (#2863) — a left-folded `bf_concat_str` chain — instead of being
+  // refused (BF101) the way it used to be here (this call site had no
+  // reduction for the multi-part case before #2863, only a single-part
+  // unwrap). It must still NOT silently emit the stale constructor-only
+  // value (the #2445 bug this whole fix exists to close) — it now emits the
+  // correct live per-row value instead.
+  test('a multi-part template-literal per-row prop folds through bf_concat_str, not silently stale (#2445, #2863)', () => {
     const result = compileJSX(`
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -4726,9 +4884,11 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
   )
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
-    expect((result.errors ?? []).some(e => e.code === 'BF101')).toBe(true)
+    expect(result.errors ?? []).toEqual([])
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
-    expect(template).not.toContain('bf_with_props')
+    expect(template).toContain(
+      '{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" (bf_concat_str (bf_concat_str (bf_concat_str "#" .ID) " ") .Label))}}',
+    )
   })
 
   // A prop whose expression `convertExpressionToGo` itself refuses (an
