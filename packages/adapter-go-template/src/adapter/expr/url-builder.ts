@@ -10,13 +10,14 @@
 import {
   type LoweringNode,
   type ParsedExpr,
+  type TemplatePart,
   parseExpression,
   stringifyParsedExpr,
   isValidHelperId,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { wrapIfMultiToken } from '../lib/go-emit.ts'
+import { escapeGoString, wrapIfMultiToken } from '../lib/go-emit.ts'
 
 /**
  * Logical helper id → Go template helper name. `bf_<helper>` is a formula,
@@ -61,7 +62,7 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
   if (isBoolShape) {
     return ctx.convertConditionToGo(stringifyParsedExpr(g), g).condition
   }
-  const valueGo = wrapIfMultiToken(ctx.convertExpressionToGo(stringifyParsedExpr(g), undefined, g))
+  const valueGo = lowerValueOperand(ctx, g)
   return `ne ${valueGo} ""`
 }
 
@@ -91,20 +92,62 @@ export function lowerTernary(
   alternate: ParsedExpr,
 ): string {
   const t = lowerTernaryTest(ctx, test)
-  return `(bf_ternary ${t} ${lowerTernaryOperand(ctx, consequent)} ${lowerTernaryOperand(ctx, alternate)})`
+  return `(bf_ternary ${t} ${lowerValueOperand(ctx, consequent)} ${lowerValueOperand(ctx, alternate)})`
 }
 
 /**
- * A ternary branch in value position: a nested ternary recurses to another
- * `bf_ternary`; anything else lowers to its Go value (parenthesised when
- * multi-token so it stays one argument). String branches become quoted,
- * html/template-escaped values — not the bare unquoted text the old `{{if}}`
- * fragment path emitted — which is exactly right for the value positions this
- * is reached for.
+ * Lower a template literal to ONE Go pipeline VALUE (#2863): a left fold of
+ * `bf_concat_str` over the parts — static text as an escaped Go string
+ * literal, each interpolation as its own value operand. The TEXT-position
+ * form (`GoTemplateAdapter.templateLiteral()`: literal text interleaved with
+ * `{{…}}` actions) is only legal where the result is spliced directly into
+ * markup; inside another action's argument list (a `bf_ternary` branch, a
+ * helper-call arg, a `bf_query` guard value, …) Go rejects nested `{{`/`}}`
+ * delimiters ("unexpected \"{\" in operand"). This is the Go twin of the
+ * concatenation every other DSL adapter already emits for the same nested
+ * shape (e.g. Jinja/Twig `bf.string(a) ~ '–' ~ bf.string(b)`) — Go was the
+ * lone outlier because `text/template` has no expression-level string
+ * concatenation operator of its own, only this runtime helper (already used
+ * by `binary()`'s string-typed `+`, #2168).
+ *
+ * A single-part literal (`` `${x}` `` alone) reduces to that one value with
+ * no `bf_concat_str` wrapper — mirrors the sibling single-part unwrap at the
+ * child-prop call site. An all-static literal (already reduced to a plain
+ * `literal` ParsedExpr by the parser in practice, but handled here too)
+ * folds to one escaped string.
  */
-function lowerTernaryOperand(ctx: GoEmitContext, n: ParsedExpr): string {
+export function lowerTemplateLiteralValue(ctx: GoEmitContext, parts: readonly TemplatePart[]): string {
+  const terms: string[] = []
+  for (const part of parts) {
+    if (part.type === 'string') {
+      if (part.value !== '') terms.push(`"${escapeGoString(part.value)}"`)
+    } else {
+      terms.push(lowerValueOperand(ctx, part.expr))
+    }
+  }
+  if (terms.length === 0) return '""'
+  return terms.slice(1).reduce((acc, t) => `(bf_concat_str ${acc} ${t})`, terms[0])
+}
+
+/**
+ * The single door for "this ParsedExpr sits in Go pipeline ARGUMENT
+ * position" — a `bf_ternary` branch, a ternary/guard test's value form, a
+ * helper-call arg, a `bf_query` base/guard/value. A nested ternary recurses
+ * to another `bf_ternary`; a template literal folds through
+ * `lowerTemplateLiteralValue` (#2863) rather than the generic expression
+ * path, which would otherwise return the TEXT-position mixed
+ * literal-text-plus-`{{…}}`-actions form; anything else lowers to its Go
+ * value (parenthesised when multi-token so it stays one argument). String
+ * branches become quoted, html/template-escaped values — not the bare
+ * unquoted text the old `{{if}}` fragment path emitted — which is exactly
+ * right for the value positions this is reached for.
+ */
+export function lowerValueOperand(ctx: GoEmitContext, n: ParsedExpr): string {
   if (n.kind === 'conditional') {
     return lowerTernary(ctx, n.test, n.consequent, n.alternate)
+  }
+  if (n.kind === 'template-literal') {
+    return wrapIfMultiToken(lowerTemplateLiteralValue(ctx, n.parts))
   }
   return wrapIfMultiToken(ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n))
 }
@@ -120,7 +163,7 @@ function lowerTernaryOperand(ctx: GoEmitContext, n: ParsedExpr): string {
  * counterpart of `lowerUrlGuard`'s string-only `ne <value> ""`.
  */
 function lowerTernaryTest(ctx: GoEmitContext, test: ParsedExpr): string {
-  const go = wrapIfMultiToken(ctx.convertExpressionToGo(stringifyParsedExpr(test), undefined, test))
+  const go = lowerValueOperand(ctx, test)
   const isBoolShape =
     (test.kind === 'binary' && BOOL_COMPARISON_OPS.has(test.op)) ||
     (test.kind === 'unary' && test.op === '!') ||
@@ -280,22 +323,14 @@ function ternaryHasQueryBranch(
 function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | null {
   const helper = goHelperName(node.helper)
   if (!helper) return null
-  const lowerExpr = (n: ParsedExpr): string =>
-    ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
-  // A `conditional` in ARGUMENT position lowers to the pipeline-position
-  // `(bf_ternary …)` form via the shared `lowerTernary` (#2335) — the same
-  // form the ParsedExpr `conditional()` emitter and the condition-expression
-  // emitter produce. Routing it here explicitly (rather than leaning on the
-  // generic `lowerExpr`, whose `conditional()` dispatch now reaches the very
-  // same helper) keeps the arg lowering self-contained and its intent local;
-  // `lowerTernary` itself right-folds a nested chain (the #2324 union stage's
-  // locale→pattern table) into `(bf_ternary <cond> <a> (bf_ternary …))`.
-  const lowerArg = (n: ParsedExpr): string =>
-    n.kind === 'conditional'
-      ? lowerTernary(ctx, n.test, n.consequent, n.alternate)
-      : wrapIfMultiToken(lowerExpr(n))
+  // Every argument here is Go pipeline ARGUMENT position — a `conditional`
+  // lowers to `(bf_ternary …)`, a `template-literal` folds through
+  // `bf_concat_str` (#2863) rather than leaking the TEXT-position
+  // `{{…}}`-actions form into this call's argument list, anything else takes
+  // the generic value path. `lowerValueOperand` is the one shared door every
+  // such position in this file now goes through.
   if (node.kind === 'helper-call') {
-    const args = node.args.map(a => lowerArg(a))
+    const args = node.args.map(a => lowerValueOperand(ctx, a))
     return [helper, ...args].join(' ')
   }
   // guard-list — `queryHref`-shaped. Inclusion mirrors the client exactly, where
@@ -304,12 +339,12 @@ function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | nu
   //   - plain `key: v` (guard null)        → `(true) "key" v`
   //   - conditional `key: cond ? a : <omit>` → `(<cond>) "key" a`, where the
   //     non-empty check is done by bf_query, not folded into the guard.
-  const parts: string[] = [wrapIfMultiToken(lowerExpr(node.base))]
+  const parts: string[] = [lowerValueOperand(ctx, node.base)]
   for (const t of node.triples) {
     const includeGo = t.guard === null ? 'true' : lowerUrlGuard(ctx, t.guard)
     parts.push(`(${includeGo})`)
     parts.push(JSON.stringify(t.key))
-    parts.push(wrapIfMultiToken(lowerExpr(t.value)))
+    parts.push(lowerValueOperand(ctx, t.value))
   }
   return `${helper} ${parts.join(' ')}`
 }
