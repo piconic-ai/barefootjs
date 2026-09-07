@@ -138,18 +138,21 @@ describe('plain nested loops without conditional wrapper', () => {
   })
 
   test('regression: 3-level nested loop wires mapArray at the deepest level (not forEach)', () => {
-    // Before the fix, `emitInnerLoopSetup` decided "is this loop reactive?"
-    // by checking the IR's `inner.refsOuterParam` — a flag set at collect
-    // time against the *outermost* loop's param only. At depth 2+, the array
-    // expression typically references the *immediate* parent (e.g.
-    // `g.items` inside `t.groups.map(g => ...)` body), so the check failed
-    // and the loop fell through to the static `forEach` branch. Result:
-    // additions / removals at the deepest level silently never reached
-    // the DOM.
+    // Originally (the O-8 narrowing fix), `emitInnerLoopSetup` decided "is
+    // this loop reactive?" by checking the IR's `inner.refsOuterParam` — a
+    // flag set at collect time against the *outermost* loop's param only.
+    // At depth 2+, the array expression typically references the
+    // *immediate* parent (e.g. `g.items` inside `t.groups.map(g => ...)`
+    // body), so the check failed and the loop fell through to the static
+    // `forEach` branch. Result: additions / removals at the deepest level
+    // silently never reached the DOM.
     //
-    // Fix: re-check dynamically at each level against the parent param
-    // passed in, and narrow the parent param when recursing into child
-    // levels.
+    // O-8's own fix: re-check dynamically at each level against the parent
+    // param passed in, and narrow the parent param when recursing into
+    // child levels. #2865 later removed the reactive/static fork (and
+    // `refsOuterParam` with it) entirely — every level is unconditionally
+    // reactive now — so this assertion holds trivially, but the test stays
+    // as a regression pin on "every depth gets its own `mapArray`."
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
