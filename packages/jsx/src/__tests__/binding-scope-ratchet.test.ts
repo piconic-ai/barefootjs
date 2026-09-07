@@ -197,7 +197,11 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // parameter (the full ancestor loop-param chain) so a conditional arm
   // inside an inner `.map()` can render against an outer loop's item/index
   // too — same accessor-rewrite-payload shape, one more forwarding site.
-  'packages/jsx/src/ir-to-client-js/collect-elements.ts': { loopParams: 12 },
+  // Grew by 1 more merging #2861's `parentScope` param (a DIFFERENT,
+  // independent extension of the same function for the reactivity-scope
+  // concern) alongside #2868's `loopParams` — both trailing params now
+  // coexist on `collectLoopChildConditionals`'s signature.
+  'packages/jsx/src/ir-to-client-js/collect-elements.ts': { loopParams: 13 },
   // FLOOR (shape 2): `computeCsrInlinability`'s fixed-point constant-chain
   // inlining loop over `ctx.localConstants` — component-scope const
   // resolution, not loop-row scope.
