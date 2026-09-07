@@ -260,7 +260,9 @@ describe('Solid-style wrap-by-default fallback for child-component props (#942)'
     // The emitted code rewrites `props.xxx` to the internal props-param
     // name (`_p.xxx`) via rewriteDestructuredPropsInExpr. Assert on the
     // emitted form — the gate's `expandedValue.includes('props.')` check
-    // still runs against the source expression before rewriting.
-    expect(clientJs).toMatch(/__v\s*=\s*_p\.title/)
+    // still runs against the source expression before rewriting. The
+    // dedup-guarded write (#2869) computes into `__x` first, then assigns
+    // `__v = __x` inside `emitAttrUpdate`'s own generic branch.
+    expect(clientJs).toMatch(/__x\s*=\s*_p\.title/)
   })
 })

@@ -33,7 +33,7 @@
 
 import { keyAttrName, mapArrayKeyArgs, profileBindingId, varSlotId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
-import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines, namespaceWrapForTemplate } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
@@ -132,11 +132,13 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
       lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) }${profileBindingId(pc, text.slotId)})`)
     }
   }
+  if (emit.reactiveAttrs.length > 0) lines.push(`${indent}  ${DEDUP_STORE_DECL}`)
+  let attrOrdinal = 0
   for (const attr of emit.reactiveAttrs) {
     const targetVar = `__ta_${attr.slotId.replace(/[^a-zA-Z0-9]/g, '_')}`
     lines.push(`${indent}  { const ${targetVar} = qsa(__innerEl${uid}, '[bf="${attr.slotId}"]')`)
     lines.push(`${indent}  if (${targetVar}) createEffect(() => {`)
-    for (const stmt of emitAttrUpdate(targetVar, attr.attrName, attr.wrappedExpression, attr.meta)) {
+    for (const stmt of emitDedupedAttrUpdate(targetVar, attr.attrName, attr.wrappedExpression, attr.meta, attrOrdinal++)) {
       lines.push(`${indent}    ${stmt}`)
     }
     lines.push(`${indent}  }${profileBindingId(pc, attr.slotId)}) }`)

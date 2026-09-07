@@ -30,7 +30,7 @@
  */
 
 import { emitRefCall, varSlotId, profileBindingId } from '../../utils.ts'
-import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr, namespaceWrapForTemplate, multiRootNamespaceWrapForTemplate, wrapHtmlForNamespace } from './template-parse.ts'
 import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.ts'
@@ -452,13 +452,15 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     lines.push(`      }`)
   }
   lines.push(`      if (__iterEl) {`)
+  if (attrsBySlot.length > 0) lines.push(`        ${DEDUP_STORE_DECL}`)
+  let ordinal = 0
   for (const [slotId, attrs] of attrsBySlot) {
     const varName = `__t_${varSlotId(slotId)}`
     lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
     lines.push(`        if (${varName}) {`)
     for (const attr of attrs) {
       lines.push(`          createEffect(() => {`)
-      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
+      for (const stmt of emitDedupedAttrUpdate(varName, attr.attrName, attr.expression, attr, ordinal++)) {
         lines.push(`            ${stmt}`)
       }
       lines.push(`          }${profileBindingId(pc, slotId)})`)

@@ -2550,6 +2550,99 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
+exports[`docs/core/reactivity/untrack.md doc-examples L79 — (no label) 1`] = `
+"import { $, createComponent, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArrayLazy, qsa, textOrNode, untrack } from '@barefootjs/client/runtime'
+
+var renderPreview = renderPreview ?? function(id) {
+  return \`<p>Preview for item \${id}</p>\`
+}
+
+export function initGallery(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [items, setItems] = createSignal([{ id: 1, label: 'First' }, { id: 2, label: 'Second' }])
+  const rename = () => setItems(items().map(item => ({ id: item.id, label: item.label + '!' })))
+
+  const [_s0, _s3] = $(__scope, 's0', 's3')
+
+  if (_s0) _s0.addEventListener('click', rename)
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key="" bf="s2"><!--bf:s1--><!--/--></li>\`
+  const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's1', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's1', kind: 'text', path: __lzp_l0[0] }]
+  mapArrayLazy(() => items(), _s3, (item) => String(item.id), {
+    createRow: (__e, __idx) => {
+      const item = () => __e.item
+      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
+      const __r = __e.refs = [__el, lazySlots(__el, __lzsc_l0)]
+      const __l = __e.last = []
+      { const __t = __r[0]
+      if (__t) {
+        { const __x = item().label
+        { const __v = __x; if (__v != null) __t.setAttribute('title', String(__v)); else __t.removeAttribute('title') }
+        __l[0] = __x }
+      } }
+      { const __t = __r[0]
+      if (__t) {
+        { const __x = untrack(() => renderPreview(item().id))
+        { const __v = __x; if (__v != null) __t.setAttribute('data-preview', String(__v)); else __t.removeAttribute('data-preview') }
+        __l[1] = __x }
+      } }
+      { const __x = item().label
+      __r[1]('s1', textOrNode(__x))
+      __l[2] = __x }
+      return __el
+    },
+    applyItem: (__e) => {
+      const item = () => __e.item
+      const __r = __e.refs ?? (__e.refs = [])
+      const __l = __e.last ?? (__e.last = [])
+      { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s2"]'))
+      if (__t) {
+        { const __x = item().label
+        if (!(0 in __l) || !Object.is(__l[0], __x)) {
+          { const __v = __x; if (__v != null) __t.setAttribute('title', String(__v)); else __t.removeAttribute('title') }
+        }
+        __l[0] = __x }
+      } }
+      { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s2"]'))
+      if (__t) {
+        { const __x = untrack(() => renderPreview(item().id))
+        if (!(1 in __l) || !Object.is(__l[1], __x)) {
+          { const __v = __x; if (__v != null) __t.setAttribute('data-preview', String(__v)); else __t.removeAttribute('data-preview') }
+        }
+        __l[1] = __x }
+      } }
+      const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0))
+      { const __x = item().label
+      if (!(2 in __l) || !Object.is(__l[2], __x)) __d('s1', textOrNode(__x))
+      __l[2] = __x }
+    },
+    applyOuter: (__es, __seed) => {
+      for (const __e of __es) {
+        const item = () => __e.item
+        const __r = __e.refs ?? (__e.refs = [])
+        const __l = __e.last ?? (__e.last = [])
+        { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s2"]'))
+        if (__t) {
+          { const __x = untrack(() => renderPreview(item().id))
+          if (__seed ? (__t.getAttribute('data-preview') !== (__x != null ? String(__x) : null)) : (!(1 in __l) || !Object.is(__l[1], __x))) {
+            { const __v = __x; if (__v != null) __t.setAttribute('data-preview', String(__v)); else __t.removeAttribute('data-preview') }
+          }
+          __l[1] = __x }
+        } }
+      }
+    },
+  }, 'l0')
+
+}
+
+hydrate('Gallery', { init: initGallery, template: (_p) => \`<div><button bf="s0">Rename all</button><ul bf="s3"><!--bf-loop:l0-->\${([{ id: 1, label: 'First' }, { id: 2, label: 'Second' }]).map((item) => \`<li data-key="\${escapeAttr(item.id)}" \${(item.label) != null ? 'title="' + escapeAttr(item.label) + '"' : ''} \${(untrack(() => renderPreview(item.id))) != null ? 'data-preview="' + escapeAttr(untrack(() => renderPreview(item.id))) + '"' : ''} bf="s2"><!--bf:s1-->\${escapeText(item.label)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul></div>\` })
+export function Gallery(_p, __bfKey) { return createComponent('Gallery', _p, __bfKey) }"
+`;
+
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L16 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
@@ -2635,12 +2728,13 @@ export function initExample(__scope, _p = {}) {
   })
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Child_s0El] = $c(__scope, 's0')
     if (__Child_s0El) {
       if ('value' in __Child_s0El) { const __val = String(count()); if (__Child_s0El.value !== __val) __Child_s0El.value = __val }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Child', _s0, { get value() { return count() } })
@@ -3253,12 +3347,17 @@ export function initExample(__scope, _p = {}) {
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {
-      __Dialog_s9El.open = !!(open())
+      { const __x = open()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        __Dialog_s9El.open = !!(__x)
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('Dialog', _s9, { get open() { return open() }, onOpenChange: setOpen })
@@ -3936,11 +4035,16 @@ export function initButton(__scope, _p = {}) {
 
   const [_s0] = $(__scope, 's0')
 
+  { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __v = classes; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      { const __x = classes
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
   if (_s0) applyRestAttrs(_s0, _p, ["class"])
 
@@ -4109,24 +4213,38 @@ export function initProductPage(__scope, _p = {}) {
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
+  { const __l = []
   createEffect(() => {
     if (_s4) {
-      { const __v = _p.product.image; if (__v != null) _s4.setAttribute('src', String(__v)); else _s4.removeAttribute('src') }
+      { const __x = _p.product.image
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s4.setAttribute('src', String(__v)); else _s4.removeAttribute('src') }
+      }
+      __l[0] = __x }
     }
-  })
+  }) }
 
 
   // Reactive child component props
+  { const __l = []
   createEffect(() => {
     const [__ReviewStars_s5El] = $c(__scope, 's5')
     if (__ReviewStars_s5El) {
-      { const __v = product.rating; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
+      { const __x = product.rating
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
+      }
+      __l[0] = __x }
     }
     const [__AddToCart_s6El] = $c(__scope, 's6')
     if (__AddToCart_s6El) {
-      { const __v = product.id; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
+      { const __x = product.id
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
+      }
+      __l[1] = __x }
     }
-  })
+  }) }
 
   // Initialize child components with props
   initChild('ReviewStars', _s5, { get rating() { return product.rating } })

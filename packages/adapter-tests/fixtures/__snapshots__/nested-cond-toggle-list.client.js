@@ -30,12 +30,21 @@ export function initNestedCondToggleList(__scope, _p = {}) {
         }
         const __disposers = []
         { const __ra_s2 = qsa(__branchScope, '[bf="s2"]')
+        const __l = []
         if (__ra_s2) {
           __disposers.push(createDisposableEffect(() => {
-            { const __v = `${item().active ? 'toggle-btn on' : 'toggle-btn'}`; if (__v != null) __ra_s2.setAttribute('class', String(__v)); else __ra_s2.removeAttribute('class') }
+            { const __x = `${item().active ? 'toggle-btn on' : 'toggle-btn'}`
+            if (!(0 in __l) || !Object.is(__l[0], __x)) {
+              { const __v = __x; if (__v != null) __ra_s2.setAttribute('class', String(__v)); else __ra_s2.removeAttribute('class') }
+            }
+            __l[0] = __x }
           }))
           __disposers.push(createDisposableEffect(() => {
-            { const __v = `toggle-${item().id}`; if (__v != null) __ra_s2.setAttribute('data-testid', String(__v)); else __ra_s2.removeAttribute('data-testid') }
+            { const __x = `toggle-${item().id}`
+            if (!(1 in __l) || !Object.is(__l[1], __x)) {
+              { const __v = __x; if (__v != null) __ra_s2.setAttribute('data-testid', String(__v)); else __ra_s2.removeAttribute('data-testid') }
+            }
+            __l[1] = __x }
           }))
         } }
         __disposers.push(createDisposableEffect(() => {
