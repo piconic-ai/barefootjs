@@ -601,6 +601,9 @@ import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
+// #2868: a reactive conditional branch's own root tag collides with the
+// enclosing loop's item param name — must not corrupt the tag on re-render.
+import { fixture as condArmTagCollision } from './cond-arm-tag-collision'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1009,4 +1012,5 @@ export const jsxFixtures: JSXFixture[] = [
   aliasedLoopSource,
   keyedLoopIndexReorder,
   lazyRowIndexReorder,
+  condArmTagCollision,
 ]

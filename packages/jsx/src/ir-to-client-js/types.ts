@@ -400,7 +400,19 @@ export interface LoopChildRef {
 export interface BranchLoop extends LoopCore {
   kind: 'branch'
   index: string | null // Index parameter (e.g., 'i')
-  template: string     // HTML template for each item
+  template: string     // HTML template for each item, item-only wrapped (no index — see `templateIndexed`)
+  /**
+   * Same render as `template`, but with `index` also wrapped as an accessor
+   * (`i()`) — rendered structurally at IR time (`irToHtmlTemplate`'s
+   * `loopParams`), never via a post-hoc regex pass over `template` (#2868:
+   * a word-boundary regex over assembled HTML can match a bare tag name
+   * colliding with the index identifier, e.g. `<i>` -> `<i()>`). Present
+   * iff the loop declares an index; `build-plain-row.ts` picks this over
+   * `template` once lazy eligibility rules out the lazy row plan (which
+   * needs the index UNWRAPPED — `mapArrayLazy`'s `createRow` hands it a
+   * plain number, never an accessor).
+   */
+  templateIndexed?: string
   containerSlotId: string // bf slot ID of the container element (e.g., 's1' for <ul bf="s1">)
   preamble?: MapCallbackPreamble
   // Composite loop fields (loops whose body contains child components)
@@ -620,6 +632,12 @@ export interface TopLevelLoop extends LoopCore {
   slotId: string
   index: string | null
   template: string
+  /**
+   * Same render as `template`, but with `index` also wrapped as an accessor
+   * (`i()`) — see `BranchLoop.templateIndexed` for why this exists as a
+   * second structured render rather than a post-hoc regex pass (#2868).
+   */
+  templateIndexed?: string
   /**
    * Per-iteration HTML template for static-array loops that need to
    * self-heal on CSR mount (#1247). Unlike `template`, this variant skips

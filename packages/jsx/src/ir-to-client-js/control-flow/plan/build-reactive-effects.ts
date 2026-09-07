@@ -12,8 +12,9 @@
  *      from `LoopChildBranchSummary.reactiveAttrs` / `.reactiveTexts` —
  *      collected per-branch, recursively, so a doubly-nested conditional's
  *      arm carries its own bindings instead of an outer scope reaching in.
- *   4. Apply `addCondAttrToTemplate` to the wrapped branch HTML so the
- *      stringifier emits a ready-to-interpolate template literal.
+ *   4. Apply `addCondAttrToTemplate` to each branch's HTML (already
+ *      loop-param-wrapped at IR render time, #2868) so the stringifier
+ *      emits a ready-to-interpolate template literal.
  *   5. Recurse into the per-arm sub-plans via `LoopChildArmPlan` —
  *      events, child component inits, inner loops, nested conditionals,
  *      attrs, texts. No legacy passthrough remains.
@@ -110,8 +111,15 @@ export function buildReactiveEffectsPlan(
       conditionalPlans.push({
         slotId: cond.slotId,
         wrappedCondition: wrap(cond.condition),
-        whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
-        whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
+        // whenTrueHtml/whenFalseHtml are already loop-param-wrapped at IR
+        // render time (`irToHtmlTemplate`'s `loopParams`, collect-elements.ts)
+        // — do NOT re-wrap the rendered HTML string here. A word-boundary
+        // regex over already-assembled markup matches a bare tag name that
+        // collides with the param/index identifier (`<i>` -> `<i()>`) just
+        // as readily as a real reference, since `<`/`>` are non-word
+        // characters (#2868).
+        whenTrueTemplateHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId),
+        whenFalseTemplateHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId),
         whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, loopIndex, cond.slotId, profileComponentName),
         whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, loopIndex, cond.slotId, profileComponentName),
         ...(cond.readsPreamble && { readsPreamble: true }),

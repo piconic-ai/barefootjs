@@ -192,8 +192,16 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   },
   // FLOOR (shape 3): `irToPlaceholderTemplate`'s loop-param accessor-rewrite
   // spec forwarding — see the canonical docstring on
-  // `wrapExprWithLoopParams` in `ir-to-client-js/utils.ts`.
-  'packages/jsx/src/ir-to-client-js/collect-elements.ts': { loopParams: 9 },
+  // `wrapExprWithLoopParams` in `ir-to-client-js/utils.ts`. Grew by 3 for
+  // #2868: `collectLoopChildConditionals` gained an optional `loopParams`
+  // parameter (the full ancestor loop-param chain) so a conditional arm
+  // inside an inner `.map()` can render against an outer loop's item/index
+  // too — same accessor-rewrite-payload shape, one more forwarding site.
+  // Grew by 1 more merging #2861's `parentScope` param (a DIFFERENT,
+  // independent extension of the same function for the reactivity-scope
+  // concern) alongside #2868's `loopParams` — both trailing params now
+  // coexist on `collectLoopChildConditionals`'s signature.
+  'packages/jsx/src/ir-to-client-js/collect-elements.ts': { loopParams: 13 },
   // FLOOR (shape 2): `computeCsrInlinability`'s fixed-point constant-chain
   // inlining loop over `ctx.localConstants` — component-scope const
   // resolution, not loop-row scope.
@@ -202,6 +210,16 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // pass a loop-param accessor-rewrite spec (see the file's own comments) —
   // the remaining mentions are all in that reasoning, not device usage.
   'packages/jsx/src/ir-to-client-js/control-flow/plan/build-event-delegation.ts': { loopParams: 4 },
+  // FLOOR (shape 3, new for #2868): a doc comment pointing at
+  // `collect-elements.ts`'s `irToHtmlTemplate` `loopParams` — explaining why
+  // `cond.whenTrueHtml`/`whenFalseHtml` must not be re-wrapped post-hoc.
+  'packages/jsx/src/ir-to-client-js/control-flow/plan/build-lazy-row.ts': { loopParams: 1 },
+  // FLOOR (shape 3, new for #2868): same doc-comment reference as
+  // `build-lazy-row.ts` above.
+  'packages/jsx/src/ir-to-client-js/control-flow/plan/build-loop-child-arm.ts': { loopParams: 1 },
+  // FLOOR (shape 3, new for #2868): same doc-comment reference as
+  // `build-lazy-row.ts` above.
+  'packages/jsx/src/ir-to-client-js/control-flow/plan/build-reactive-effects.ts': { loopParams: 1 },
   // FLOOR (shape 3): `irToHtmlTemplate`/`irToPlaceholderTemplate`'s
   // loop-param accessor-rewrite spec — see `ir-to-client-js/utils.ts`'s
   // `wrapExprWithLoopParams` docstring (the canonical explanation, pointed
@@ -221,6 +239,11 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
   // `loopParams`-named parameter in `ir-to-client-js/` forwards. See its
   // docstring (added Stage 4) for the full shape-3 reasoning.
   'packages/jsx/src/ir-to-client-js/utils.ts': { loopParams: 4 },
+  // FLOOR (shape 3, new for #2868): `TopLevelLoop.templateIndexed` /
+  // `BranchLoop.templateIndexed`'s doc comments point at `irToHtmlTemplate`'s
+  // `loopParams` to explain why the index-wrapped render is a second
+  // structured render, not a post-hoc regex pass over `template`.
+  'packages/jsx/src/ir-to-client-js/types.ts': { loopParams: 1 },
   // `jsx-to-ir.ts` — MIGRATED to 0 in Stage 4: `makeBindingEnv`'s
   // `loopParams: boundNames` field now reads `loopValueBoundNames:
   // boundNames`, matching `free-refs.ts`'s renamed field. No entry needed
