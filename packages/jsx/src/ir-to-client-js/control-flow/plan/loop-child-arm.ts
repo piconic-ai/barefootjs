@@ -213,4 +213,11 @@ export interface LoopChildConditionalPlan {
   whenFalseTemplateHtml: string
   whenTrueArm: LoopChildArmPlan
   whenFalseArm: LoopChildArmPlan
+  /**
+   * `wrappedCondition` reads a `.map()` callback preamble local (#2596,
+   * same field as `NestedConditionalPlan.readsPreamble` one level up) —
+   * the stringifier must run the row's preamble inside the getter passed
+   * to `insert()`; the local isn't otherwise in scope there.
+   */
+  readsPreamble?: boolean
 }

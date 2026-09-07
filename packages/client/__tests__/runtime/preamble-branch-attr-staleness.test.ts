@@ -1,44 +1,35 @@
 /**
- * Regression probe, NOT yet filed as a GitHub issue: found while discussing
- * whether `insert.ts`'s branch-arm reactive-attr handling and
- * `loop-child-arm.ts`'s `stringifyBranchReactiveAttrs` should share one
- * implementation (#2869 follow-up conversation). They turned out to answer
- * DIFFERENT questions — `ReactiveAttrEffect` (the type `stringifyBranchReactiveAttrs`
- * consumes) carries a `readsPreamble?: boolean` field that `ArmReactiveAttr`
- * (`insert.ts`'s equivalent, for top-level non-loop conditionals) structurally
- * cannot have, because there is no `.map()` preamble outside a loop.
+ * Regression test found while discussing (post-#2869) whether `insert.ts`'s
+ * branch-arm reactive-attr handling and `loop-child-arm.ts`'s
+ * `stringifyBranchReactiveAttrs` should share one implementation. They
+ * turned out to answer DIFFERENT questions — `ReactiveAttrEffect` (the type
+ * `stringifyBranchReactiveAttrs` consumes) carries a `readsPreamble?: boolean`
+ * field that `ArmReactiveAttr` (`insert.ts`'s equivalent, for top-level
+ * non-loop conditionals) structurally cannot have, because there is no
+ * `.map()` preamble outside a loop.
  *
- * Tracing where `readsPreamble` is actually set (`reactivity.ts`'s
- * `collectLoopChildReactiveAttrs`, called for the branch-arm case from
- * `collect-elements.ts` with `stopAtReactiveConditionals: true` — NOT the
- * separate, top-level-only `collectBranchReactiveAttrs` that feeds
- * `insert.ts`'s `ArmBody` instead — guarding the exact "#2447" scenario this
- * test reproduces: `const cls = row.done ? … ; class={cls}`) proved it CAN be
- * true for an attribute inside a loop-row's branch conditional. But
- * `stringifyLoopChildArm` / `stringifyBranchReactiveAttrs`
- * (`control-flow/stringify/loop-child-arm.ts`) never receive a
- * `mapPreambleWrapped` string to inject — unlike every other `readsPreamble`
- * consumer (`emitAttrSlotsGranular`, `emitConsolidatedRowEffect`, and the
- * condition itself in `emitOuterConditional`, which explicitly reruns the
- * preamble inside its `insert()` condition getter but never threads it down
- * into the arm bodies it hands to `stringifyLoopChildArm`).
+ * `readsPreamble` is set by `reactivity.ts`'s `collectLoopChildReactiveAttrs`
+ * (called for the branch-arm case from `collect-elements.ts` with
+ * `stopAtReactiveConditionals: true` — NOT the separate, top-level-only
+ * `collectBranchReactiveAttrs` that feeds `insert.ts`'s `ArmBody` instead)
+ * for exactly the "#2447" scenario this test reproduces: `const cls =
+ * row.done ? … ; class={cls}`. But `stringifyLoopChildArm` /
+ * `stringifyBranchReactiveAttrs` (`control-flow/stringify/loop-child-arm.ts`)
+ * used to never receive a `mapPreambleWrapped` string to inject — unlike
+ * every other `readsPreamble` consumer (`emitAttrSlotsGranular`,
+ * `emitConsolidatedRowEffect`, and the condition itself in
+ * `emitOuterConditional`, which reruns the preamble inside its `insert()`
+ * condition getter). `buildArmAttrsPlan`
+ * (`control-flow/plan/build-loop-child-arm.ts`) also dropped the
+ * `readsPreamble` flag on the way from `LoopChildReactiveAttr` to
+ * `ReactiveAttrEffect` — two gaps, not one.
  *
- * Net effect: a reactive attribute that lives INSIDE a loop row's branch
- * conditional and reads a `.map()` preamble local closes over whatever that
- * local was on the row's LAST FULL RENDER (creation, or same-key remount) and
- * never sees a same-key `setItem` update again — even though a genuinely
- * reactive sibling in the SAME branch (a plain `{row().field}` text
- * expression, which reads the live per-item accessor directly instead of
- * through a preamble local) updates correctly. The result is a silent
- * DOM/text divergence: the visible text says one thing, a class/attribute
- * derived from the same data says another.
- *
- * This test pins TODAY's (broken) behavior so it doesn't regress further and
- * so a real fix has a green target to flip. It is not skipped/failing — the
- * bug is real but low severity (stale class/attr, not a crash), so there is
- * no CI-blocking reason to mark it red before a fix is scoped. Once fixed,
- * flip `expect(target.className).toBe('tier-gold')` to `.toBe('tier-silver')`
- * and delete this docstring's "pins TODAY's behavior" framing.
+ * Fixed by threading `mapPreambleWrapped` through `stringifyLoopChildArm` →
+ * `stringifyBranchReactiveAttrs` (and `stringifyLoopChildConditional`'s own
+ * condition getter, via the shared `conditionGetterExpr` helper — a nested
+ * conditional's own condition had the identical gap, #2596 one level
+ * deeper), and forwarding `readsPreamble` in `buildArmAttrsPlan` /
+ * `buildLoopChildConditionalsPlan`.
  */
 import { describe, test, expect, beforeAll } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -124,8 +115,8 @@ async function setupHydration(): Promise<{ hydrate: () => void }> {
   }
 }
 
-describe('preamble local inside a loop-row branch conditional does not refresh on same-key update', () => {
-  test('sibling text (live accessor) updates; class (preamble local) stays stale', async () => {
+describe('preamble local inside a loop-row branch conditional refreshes on same-key update', () => {
+  test('sibling text and preamble-derived class both update', async () => {
     const { hydrate } = await setupHydration()
     hydrate()
 
@@ -135,16 +126,13 @@ describe('preamble local inside a loop-row branch conditional does not refresh o
 
     document.getElementById('bump')!.dispatchEvent(new window.Event('click', { bubbles: true }))
 
-    // Correct: the branch's own live accessor read (`{row().tier}`) is not a
+    // The branch's own live accessor read (`{row().tier}`) is not a
     // preamble local, so it updates on the same-key `setItem` reconcile.
     expect(target.textContent).toBe('silver')
 
-    // BUG (pinned, not yet fixed): `cls` was computed once, in the `.map()`
-    // preamble, at row creation — nothing re-runs that computation on a
-    // same-key update inside this branch-arm path, so the class silently
-    // disagrees with the text it's describing. If this assertion ever
-    // fails, the gap traced in this file's docstring has been fixed —
-    // update this test to assert 'tier-silver' instead of deleting it.
-    expect(target.className).toBe('tier-gold')
+    // Fixed: the arm's attr effect re-runs the preamble (`const cls =
+    // 'tier-' + row().tier`) before reading `cls`, so the class no longer
+    // disagrees with the text describing the same data.
+    expect(target.className).toBe('tier-silver')
   })
 })

@@ -137,7 +137,13 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
   // ternary. Mirrors `stringifyBranchInnerLoops`'s identical call for a
   // branch-scoped inner loop's own conditionals.
   if (emit.conditionals.length > 0) {
-    stringifyLoopChildConditionals(lines, emit.conditionals, `${indent}  `, pc)
+    // This inner loop's own preamble (`preludeStatements` above) is not a
+    // single re-runnable string like the outer row's `mapPreambleWrapped`,
+    // so there is nothing correct to thread here — `readsPreamble &&
+    // mapPreambleWrapped`'s guard downstream makes this `undefined` a
+    // no-op, exactly as before this fix (inner-loop preambles are out of
+    // scope — see PR notes on #2596 follow-up).
+    stringifyLoopChildConditionals(lines, emit.conditionals, `${indent}  `, pc, undefined)
   }
   // Imperative ref callbacks fire on every renderItem invocation, which
   // means every mount: SSR hydration, initial CSR creation, and same-key

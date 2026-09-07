@@ -46,7 +46,9 @@ export function stringifyBranchReactiveAttrs(
   lines: string[],
   plan: readonly ReactiveAttrSlot[],
   indent: string,
-  pc?: string,
+  pc: string | undefined,
+  /** The row's preamble re-run statement, when this scope has one (#2596/#2447) — see `conditionGetterExpr`'s docstring for the shared contract. */
+  mapPreambleWrapped: string | undefined,
 ): void {
   for (const slot of plan) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
@@ -56,6 +58,12 @@ export function stringifyBranchReactiveAttrs(
     let ordinal = 0
     for (const attr of slot.attrs) {
       lines.push(`${indent}  __disposers.push(createDisposableEffect(() => {`)
+      // One effect per attr, so an attr reading a preamble local needs the
+      // declarations inside ITS OWN effect — same rule, same line, as
+      // `emitAttrSlotsGranular` (reactive-effects.ts, #2447 follow-up).
+      if (attr.readsPreamble && mapPreambleWrapped) {
+        lines.push(`${indent}    ${mapPreambleWrapped}`)
+      }
       for (const stmt of emitDedupedAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta, ordinal++)) {
         lines.push(`${indent}    ${stmt}`)
       }
@@ -181,7 +189,13 @@ export function stringifyBranchInnerLoops(
       }
     }
     if (inner.nestedConditionals.length > 0) {
-      stringifyLoopChildConditionals(lines, inner.nestedConditionals, `${indent}  `, pc)
+      // An inner loop's own conditionals are classified against the INNER
+      // loop's preamble names, not the outer row's — `BranchInnerLoop`
+      // carries no re-runnable preamble string for that scope, so there is
+      // nothing correct to inject here. The `readsPreamble && mapPreambleWrapped`
+      // guard downstream makes this `undefined` a no-op, exactly as before
+      // this fix (inner-loop preambles are out of scope — see PR notes).
+      stringifyLoopChildConditionals(lines, inner.nestedConditionals, `${indent}  `, pc, undefined)
     }
     lines.push(`${indent}  return __bel${uid}`)
     // #2753 Shape B: see the identical comment in `inner-loop.ts` —
@@ -202,11 +216,32 @@ export function stringifyLoopChildConditionals(
   lines: string[],
   conditionals: readonly LoopChildConditionalPlan[],
   indent: string,
-  pc?: string,
+  pc: string | undefined,
+  /** The row's preamble re-run statement, when this scope has one (#2596/#2447). */
+  mapPreambleWrapped: string | undefined,
 ): void {
   for (const cond of conditionals) {
-    stringifyLoopChildConditional(lines, cond, indent, pc)
+    stringifyLoopChildConditional(lines, cond, indent, pc, mapPreambleWrapped)
   }
+}
+
+/**
+ * The `() => cond` getter handed to `insert()`. A condition flagged
+ * `readsPreamble` (#2596) re-runs the row preamble INSIDE the getter —
+ * `insert()` re-invokes this closure on every dependency change to decide
+ * the branch, and a preamble local is a plain per-row `const`, not a signal
+ * `insert()` can see through on its own. ONE implementation for both the
+ * outer (`emitOuterConditional`, reactive-effects.ts) and nested
+ * (`stringifyLoopChildConditional`, here) levels so the two can't drift.
+ */
+export function conditionGetterExpr(
+  wrappedCondition: string,
+  readsPreamble: boolean | undefined,
+  mapPreambleWrapped: string | undefined,
+): string {
+  return readsPreamble && mapPreambleWrapped
+    ? `() => { ${mapPreambleWrapped}; return (${wrappedCondition}) }`
+    : `() => ${wrappedCondition}`
 }
 
 function stringifyLoopChildConditional(
@@ -214,21 +249,22 @@ function stringifyLoopChildConditional(
   cond: LoopChildConditionalPlan,
   indent: string,
   pc: string | undefined,
+  mapPreambleWrapped: string | undefined,
 ): void {
   const armIndent = `${indent}    `
   // Body-form arrows wire `__bfSlot` captures into the runtime so live
   // `Node` returns from Child-position interpolations are spliced into
   // the parsed fragment instead of being stringified by the surrounding
   // template literal (#1213).
-  lines.push(`${indent}insert(${cond.scopeVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
+  lines.push(`${indent}insert(${cond.scopeVar}, '${cond.slotId}', ${conditionGetterExpr(cond.wrappedCondition, cond.readsPreamble, mapPreambleWrapped)}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc)
+  stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc, mapPreambleWrapped)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent, pc)
+  stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent, pc, mapPreambleWrapped)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}${profileBindingId(pc, cond.slotId)})`)
 }
@@ -246,6 +282,8 @@ export function stringifyLoopChildArm(
   arm: LoopChildArmPlan,
   armIndent: string,
   pc: string | undefined,
+  /** The row's preamble re-run statement, when this scope has one (#2596/#2447) — forwarded to this arm's own reactive attrs and nested conditionals. */
+  mapPreambleWrapped: string | undefined,
 ): void {
   stringifyBranchEventBindings(lines, arm.events, armIndent)
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
@@ -261,7 +299,7 @@ export function stringifyLoopChildArm(
   if (!hasDisposables) return
 
   lines.push(`${armIndent}const __disposers = []`)
-  stringifyBranchReactiveAttrs(lines, arm.attrs, armIndent, pc)
+  stringifyBranchReactiveAttrs(lines, arm.attrs, armIndent, pc, mapPreambleWrapped)
 
   // Nested conditionals: each inner `insert()` is wrapped in its own
   // disposable effect so disposing THIS entry cascades to whatever
@@ -269,7 +307,7 @@ export function stringifyLoopChildArm(
   // conditional's nested-conditional handling in stringify/insert.ts).
   for (const cond of arm.nestedConditionals) {
     lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => {`)
-    stringifyLoopChildConditional(lines, cond, `${armIndent}  `, pc)
+    stringifyLoopChildConditional(lines, cond, `${armIndent}  `, pc, mapPreambleWrapped)
     lines.push(`${armIndent}}))`)
   }
 
