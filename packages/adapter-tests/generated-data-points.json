@@ -3129,6 +3129,64 @@
       }
     }
   ],
+  "ternary-template-literal-branch": [
+    {
+      "name": "gen:ok:false",
+      "props": {
+        "ok": false,
+        "a": "9<b>&\"'",
+        "b": "10"
+      }
+    },
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "ok": true,
+        "a": "",
+        "b": "10"
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "ok": true,
+        "a": "<b>&\"'</b>",
+        "b": "10"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "ok": true,
+        "a": "日本語",
+        "b": "10"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "ok": true,
+        "a": "9<b>&\"'",
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "ok": true,
+        "a": "9<b>&\"'",
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "ok": true,
+        "a": "9<b>&\"'",
+        "b": "日本語"
+      }
+    }
+  ],
   "text-escape": [
     {
       "name": "gen:label:empty",
