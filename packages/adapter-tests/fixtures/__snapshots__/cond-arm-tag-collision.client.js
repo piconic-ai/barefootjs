@@ -17,10 +17,18 @@ export function initCondArmTagCollision(__scope, _p = {}) {
     insert(__el, 's1', () => on(), {
       template: () => { const __slots = []; return { html: `<b bf-c="s1" class="on">even <!--bf:s2-->${__bfSlot(i(), __slots)}<!--/--></b>`, slots: __slots } },
       bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+        const __disposers = []
+        const __bfw_s2 = lazySlots(__branchScope, [{ id: 's2', kind: 'markup', path: [] }])
+        __disposers.push(createDisposableEffect(() => { __bfw_s2('s2', escapeTextOrNode(i())) }))
+        return () => __disposers.forEach(d => d())
       }
     }, {
       template: () => { const __slots = []; return { html: `<i bf-c="s1" class="off">odd <!--bf:s3-->${__bfSlot(i(), __slots)}<!--/--></i>`, slots: __slots } },
       bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+        const __disposers = []
+        const __bfw_s3 = lazySlots(__branchScope, [{ id: 's3', kind: 'markup', path: [] }])
+        __disposers.push(createDisposableEffect(() => { __bfw_s3('s3', escapeTextOrNode(i())) }))
+        return () => __disposers.forEach(d => d())
       }
     })
     { const __rf_s4 = qsa(__el, '[bf="s4"]')
