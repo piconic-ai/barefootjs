@@ -416,6 +416,7 @@ export function buildLoopChildConditionalsPlan(
         loopIndex,
         condId: cond.slotId,
       }),
+      ...(cond.readsPreamble && { readsPreamble: true }),
     })
   }
   return plans
@@ -450,6 +451,7 @@ export function buildArmAttrsPlan(
         attrName: attr.attrName,
         wrappedExpression: wrap(attr.expression),
         meta: pickAttrMeta(attr),
+        ...(attr.readsPreamble && { readsPreamble: true }),
       })),
     })
   }
