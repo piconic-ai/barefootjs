@@ -4,7 +4,7 @@
 
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
-import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
+import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
@@ -271,7 +271,7 @@ export const branchInnerLoopOptions: CollectInnerLoopsOptions = {
 export function collectInnerLoops(
   nodes: IRNode[],
   siblingOffsets: Map<IRLoop, IRNode[]>,
-  outerLoopParam?: string,
+  outerLoopParam?: string | LoopParamSpec,
   ctx?: ClientJsContext,
   options?: CollectInnerLoopsOptions,
 ): NestedLoop[] {
@@ -356,6 +356,11 @@ export function collectInnerLoops(
             n.paramBindings,
             innerPreambleNames,
             n.index,
+            // Render a branch's HTML against the FULL ancestor chain (outer
+            // loop(s) + this loop's own param), not just this loop's own
+            // param — an inner-loop conditional arm can read an outer
+            // loop's item/index too (#2868).
+            loopParamsForTemplate,
           ))
         }
 
@@ -449,7 +454,12 @@ function decideLoopRendering(
   // loop. These only surface for static arrays (gated at the call site via
   // `isStaticArray && innerLoops.length`) so dynamic child-component loops —
   // which render through `createComponent` — are unaffected.
-  const innerLoops = collectInnerLoops(loop.children, siblingOffsets, loop.param, ctx)
+  const innerLoops = collectInnerLoops(
+    loop.children,
+    siblingOffsets,
+    { param: loop.param, bindings: loop.paramBindings, index: loop.index },
+    ctx,
+  )
   const hasInnerLoops = (innerLoops?.length ?? 0) > 0
   const useElementReconciliation =
     !loop.childComponent && !loop.isStaticArray && (hasNestedComps || hasInnerLoops)
@@ -721,6 +731,7 @@ export function collectElements(
         : decideLoopRendering(l, siblingOffsets, ctx)
 
       let template = ''
+      let templateIndexed: string | undefined
       let staticItemTemplate: string | undefined
       let skeletonTemplate: string | undefined
       let skeletonPaths: SkeletonSlotPaths | undefined
@@ -765,6 +776,18 @@ export function collectElements(
         template = useElementReconciliation
           ? irToPlaceholderTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
           : irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpec)
+        // Second structured render, WITH the index wrapped too — used by
+        // `build-plain-row.ts` once lazy eligibility rules out the lazy row
+        // plan (which needs `template` above, index-unwrapped, verbatim).
+        // Rendered here (IR level) rather than via a post-hoc regex pass
+        // over `template`, which can corrupt a tag name colliding with the
+        // index identifier (`<i>` -> `<i()>`, #2868).
+        if (l.index) {
+          const loopParamSpecIndexed = [{ param: l.param, bindings: l.paramBindings, index: l.index }]
+          templateIndexed = useElementReconciliation
+            ? irToPlaceholderTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpecIndexed)
+            : irToHtmlTemplate(l.children[0], resolveRestSpreadNames(ctx), 0, loopParamSpecIndexed)
+        }
         // Static-array loops emit a `forEach((param, idx) => ...)` whose body
         // references the destructured param directly — `__bfItem()` is not in
         // scope there. Build a second template that skips the loop-param
@@ -821,6 +844,7 @@ export function collectElements(
         iterationShape: l.iterationShape,
         objectIteration: l.objectIteration,
         template,
+        templateIndexed,
         staticItemTemplate,
         skeletonTemplate,
         skeletonPaths,
@@ -1171,6 +1195,7 @@ function collectBranchLoops(
       // keeping the template consistent with reactive effect expressions that
       // use `param()` to read the current item value.
       let childTemplate: string
+      let childTemplateIndexed: string | undefined
       // NOT `index: n.index` here — see the identical note on `loopParamSpec`
       // above; `BranchLoop.template` is reused verbatim by the lazy row plan
       // too (`callSite: 'branch-plain'`), and `buildBranchLoopPlan` applies
@@ -1182,6 +1207,15 @@ function collectBranchLoops(
         childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0, branchLoopParamSpec)
       } else {
         childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, branchLoopParamSpec)).join('')
+      }
+      // Second structured render, WITH the index wrapped too — see the
+      // identical `templateIndexed` note on the top-level loop path above
+      // (#2868).
+      if (n.index && !projectionInner) {
+        const branchLoopParamSpecIndexed = [{ param: n.param, bindings: n.paramBindings, index: n.index }]
+        childTemplateIndexed = useElementReconciliation && n.children[0]
+          ? irToPlaceholderTemplate(n.children[0], restNames, 0, branchLoopParamSpecIndexed)
+          : n.children.map(c => irToHtmlTemplate(c, undefined, 0, branchLoopParamSpecIndexed)).join('')
       }
 
       // Collect per-item bindings (events, reactive attrs/texts, refs,
@@ -1208,6 +1242,7 @@ function collectBranchLoops(
         iterationShape: n.iterationShape,
         objectIteration: n.objectIteration,
         template: childTemplate,
+        templateIndexed: childTemplateIndexed,
         containerSlotId: containerSlot,
         preamble: n.preamble,
         preambleRegions: n.preambleRegions,
@@ -1435,6 +1470,22 @@ export function collectLoopChildConditionals(
    * `collectLoopChildBindings`'s doc comment (Copilot review on #2595).
    */
   loopIndex?: string | null,
+  /**
+   * The full ancestor loop-param chain to render branch HTML against
+   * (outermost first), when known — e.g. `[outerSpec, innerSpec]` for a
+   * conditional inside an inner `.map()`. Defaults to just
+   * `[{ param: loopParam, bindings: loopParamBindings, index: loopIndex }]`
+   * (this function's own single-loop scope) when omitted, which is correct
+   * for every caller except `collectInnerLoops`'s inner-loop handler, which
+   * passes the full chain so an inner loop's conditional arm can also
+   * reference an OUTER loop's item/index (#2868). Rendering the branch's
+   * HTML against the full chain at IR time — rather than re-wrapping the
+   * assembled HTML string with a word-boundary regex afterward — is also
+   * what makes it safe for a branch root tag name to collide with a
+   * param/index identifier (`<i>`, `<b>`, …): `irToHtmlTemplate` only wraps
+   * JS expression positions, never tag names.
+   */
+  loopParams?: ReadonlyArray<string | LoopParamSpec>,
 ): LoopChildConditional[] {
   const conditionals: LoopChildConditional[] = []
   const scope = buildLoopRowScope(loopParam, loopParamBindings, preambleNames, loopIndex)
@@ -1487,9 +1538,8 @@ export function collectLoopChildConditionals(
       // classifyReactivity sees both paths (signal/memo/prop + loop-param).
       if (!readsPreamble && classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
 
-      const loopParamsForCond = loopParam
-        ? [{ param: loopParam, bindings: loopParamBindings, index: loopIndex }]
-        : undefined
+      const loopParamsForCond =
+        loopParams ?? (loopParam ? [{ param: loopParam, bindings: loopParamBindings, index: loopIndex }] : undefined)
       // `__slots` matches the closure variable emitted by
       // `stringifyLoopChildConditional` — Child-position interpolations
       // get wrapped in `__bfSlot(EXPR, __slots)` so live `Node` returns
@@ -1530,7 +1580,13 @@ function summarizeLoopChildBranch(
   /** Enclosing loop's index param name — see `collectLoopChildConditionals` (Copilot review on #2595). */
   loopIndex?: string | null,
 ): LoopChildBranchSummary {
-  const inner = collectInnerLoops([node], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
+  const inner = collectInnerLoops(
+    [node],
+    siblingOffsets,
+    loopParam ? { param: loopParam, bindings: loopParamBindings, index: loopIndex } : undefined,
+    ctx,
+    branchInnerLoopOptions,
+  )
   return {
     childComponents: collectConditionalBranchChildComponents(node),
     innerLoops: inner.length > 0 ? inner : undefined,

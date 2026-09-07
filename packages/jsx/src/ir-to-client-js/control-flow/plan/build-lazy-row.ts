@@ -218,9 +218,14 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
   const condFacts: LazyConditionalFacts[] = []
   let conditionalRefusal: string | null = null
   for (const cond of rawConditionals) {
+    // whenTrueHtml/whenFalseHtml are already loop-param-wrapped at IR
+    // render time (`irToHtmlTemplate`'s `loopParams`, collect-elements.ts)
+    // — do NOT re-wrap the rendered HTML string here (#2868: a
+    // word-boundary regex over assembled markup can match a bare tag name
+    // colliding with the param/index identifier, e.g. `<i>` -> `<i()>`).
     const verdict = analyzeLazyConditional(cond, {
-      whenTrueHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
-      whenFalseHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
+      whenTrueHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId),
+      whenFalseHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId),
     })
     if (!verdict.lazySafe) { conditionalRefusal = verdict.reason; break }
     condFacts.push(verdict.facts)

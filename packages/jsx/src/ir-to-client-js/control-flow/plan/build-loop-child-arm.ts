@@ -365,7 +365,8 @@ export interface BuildLoopChildConditionalsArgs {
  * recursion. Each conditional pre-builds:
  *
  *   - the wrapped condition expression
- *   - the wrapped + addCondAttr'd whenTrue / whenFalse template HTML
+ *   - the addCondAttr'd whenTrue / whenFalse template HTML (already
+ *     loop-param-wrapped at IR render time, #2868)
  *   - per-arm `LoopChildArmPlan`: events / child components / inner
  *     loops / nested conditionals (recursion)
  *
@@ -384,8 +385,14 @@ export function buildLoopChildConditionalsPlan(
       slotId: cond.slotId,
       scopeVar,
       wrappedCondition: wrap(cond.condition),
-      whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
-      whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
+      // whenTrueHtml/whenFalseHtml are already loop-param-wrapped for the
+      // full ancestor chain at IR render time (`irToHtmlTemplate`'s
+      // `loopParams`, collect-elements.ts) — do NOT re-wrap the rendered
+      // HTML string here (#2868: a word-boundary regex over assembled
+      // markup can match a bare tag name colliding with the param/index
+      // identifier, e.g. `<i>` -> `<i()>`).
+      whenTrueTemplateHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId),
+      whenFalseTemplateHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId),
       whenTrueArm: buildLoopChildArmPlan({
         branch: cond.whenTrue,
         wrap,

@@ -93,8 +93,14 @@ export function buildPlainRowCore(inputs: PlainRowInputs): PlainRowCore {
   const mapPreambleWrappedFinal = !lazyRow && loop.index
     ? wrapIndexParamAsAccessor(mapPreambleWrapped, loop.index)
     : mapPreambleWrapped
+  // `loop.templateIndexed` is a second structured render (index wrapped at
+  // IR time, `collect-elements.ts`) rather than a post-hoc regex pass over
+  // `loop.template` — a word-boundary regex over assembled HTML can match a
+  // bare tag name colliding with the index identifier (`<i>` -> `<i()>`,
+  // #2868). Falls back to `loop.template` for the rare shape that doesn't
+  // populate it (e.g. a flatMap projection loop).
   const templateFinal = !lazyRow && loop.index
-    ? wrapIndexParamAsAccessor(loop.template, loop.index)
+    ? (loop.templateIndexed ?? loop.template)
     : loop.template
 
   return {
