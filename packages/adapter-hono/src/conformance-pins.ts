@@ -14,18 +14,24 @@ import type { ConformancePins } from '@barefootjs/jsx'
 export const conformancePins: ConformancePins = {
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2648' }],
-  // #2667: a ternary/array LITERALLY WRAPPING JSX at a non-children prop
+  // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop
   // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of
   // `adapter.generate()` in the shared jsx-to-ir.ts phase, so it is pinned
   // identically on every adapter (including Hono) — same reasoning as
-  // `rich-prop-client-read` above.
-  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
-  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2667' }],
-  // #2771: a reactive primitive invoked through a namespace import
+  // `rich-prop-client-read` above. This is the permanent, intended behavior
+  // (formerly tracked as #2667, closed): the issue's own acceptance criteria
+  // treated a loud refusal as fully resolving the silent-divergence bug, so
+  // no open issue tracks further work here.
+  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error' }],
+  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error' }],
+  // A reactive primitive invoked through a namespace import
   // (`import * as bf from '@barefootjs/client'`, `bf.createSignal(...)`)
   // that the analyzer's checker-less fast path cannot recognize refuses
   // loudly (BF013) instead of silently dropping the declaration — fired
   // in the shared analyzer pass ahead of any adapter's `adapter.generate()`,
-  // so all nine adapters (including Hono) pin this identically.
-  'namespace-import-primitive': [{ code: 'BF013', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2771' }],
+  // so all nine adapters (including Hono) pin this identically. A compile
+  // that supplies a shared `ts.Program` (e.g. via `@barefootjs/vite`)
+  // resolves the primitive normally and never reaches this refusal (formerly
+  // tracked as #2771, closed) — no open issue tracks further work.
+  'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
 }

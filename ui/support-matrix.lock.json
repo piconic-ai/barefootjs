@@ -1432,9 +1432,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             }
           ]
         },
@@ -1482,9 +1480,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1558,9 +1554,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1640,9 +1634,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1728,9 +1720,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1810,9 +1800,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1886,9 +1874,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1968,9 +1954,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2050,9 +2034,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2248,21 +2230,15 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             }
           ]
         },
@@ -2310,15 +2286,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2330,9 +2302,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2406,15 +2376,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2426,9 +2392,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2508,9 +2472,7 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-rest-bag-dynamic",
@@ -2520,9 +2482,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2534,9 +2494,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2622,15 +2580,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2642,9 +2596,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2724,15 +2676,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2744,9 +2692,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2820,15 +2766,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2840,9 +2782,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -2922,15 +2862,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -2942,9 +2878,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3024,15 +2958,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -3044,9 +2974,7 @@
             },
             {
               "fixture": "namespace-import-primitive",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2771"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3156,9 +3084,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             }
           ]
         },
@@ -3188,9 +3114,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3246,9 +3170,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3310,9 +3232,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3374,9 +3294,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3432,9 +3350,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3490,9 +3406,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3548,9 +3462,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3606,9 +3518,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -3814,15 +3724,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             }
           ]
         },
@@ -3870,15 +3776,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -3960,15 +3862,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -4056,9 +3954,7 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-rest-bag-dynamic",
@@ -4068,9 +3964,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -4164,15 +4058,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -4260,15 +4150,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -4350,15 +4236,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -4446,15 +4328,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -4542,15 +4420,11 @@
             },
             {
               "fixture": "jsx-element-prop-array",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "map-array-builder-body",
@@ -7804,9 +7678,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             }
           ]
         },
@@ -7816,9 +7688,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7832,9 +7702,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7854,9 +7722,7 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7876,9 +7742,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7892,9 +7756,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7908,9 +7770,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7924,9 +7784,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -7940,9 +7798,7 @@
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2667"
-              ]
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
