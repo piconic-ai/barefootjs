@@ -192,8 +192,8 @@ export function containsReactiveExpression(node: ts.Node, checker: ts.TypeChecke
   return brandTypeReactivityAnalyzer.analyze(node, checker).isReactive
 }
 
-/** Subtree JSX check — same predicate as analyzer-context.ts's getJS() guard. */
-function nodeContainsJsx(node: ts.Node): boolean {
+/** Subtree JSX check — also used by analyzer-context.ts's getJS() guard. */
+export function nodeContainsJsx(node: ts.Node): boolean {
   if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true
   return ts.forEachChild(node, nodeContainsJsx) ?? false
 }
