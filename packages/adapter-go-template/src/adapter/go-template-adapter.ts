@@ -6361,6 +6361,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             return `bf_mul ${left} ${right}`
           case '/':
             return `bf_div ${left} ${right}`
+          case '%':
+            // #2873: mirrors the general binary emitter's `%` case (below,
+            // `bf_mod`) — this switch previously had no `%` case, so the
+            // `default` arm emitted a literal ` % ` into the template text,
+            // which `html/template` can't parse (`unexpected "%" in
+            // operand`).
+            return `bf_mod ${left} ${right}`
           default:
             return `${left} ${expr.op} ${right}`
         }
@@ -7162,6 +7169,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             result = `bf_mul ${left} ${right}`; break
           case '/':
             result = `bf_div ${left} ${right}`; break
+          case '%':
+            // #2873: this switch had no `%` case even though
+            // `needsParensInGoTemplate` (above) already treats `%` as an
+            // arithmetic operator needing parens — so the `default` arm
+            // below emitted a literal ` % ` into a ternary/condition's
+            // template text, which `html/template` can't parse
+            // (`unexpected "%" in operand`). Mirrors the general binary
+            // emitter's `%` case (`bf_mod`, outside condition position).
+            result = `bf_mod ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
         }

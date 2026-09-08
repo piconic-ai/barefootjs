@@ -1484,6 +1484,19 @@
       ],
       "contexts": []
     },
+    "conditional-class-modulo": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "conditional-return-button": {
       "kinds": [
         "binary",
@@ -6200,11 +6213,11 @@
     "array-method": 71,
     "arrow": 72,
     "binary": 101,
-    "call": 260,
+    "call": 261,
     "conditional": 31,
-    "identifier": 363,
+    "identifier": 364,
     "index-access": 14,
-    "literal": 289,
+    "literal": 290,
     "logical": 49,
     "member": 206,
     "object-literal": 81,
@@ -6249,7 +6262,7 @@
     "binary:>=": 1,
     "literal:boolean": 61,
     "literal:null": 23,
-    "literal:number": 126,
+    "literal:number": 127,
     "literal:string": 206,
     "logical:&&": 7,
     "logical:??": 41,

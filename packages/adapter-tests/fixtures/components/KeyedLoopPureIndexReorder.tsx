@@ -2,12 +2,7 @@
 
 // Test fixture (#2861): a keyed `.map()` row whose badge text and class are
 // derived PURELY from the row's own index — no signal read, no function
-// call anywhere in either expression (`{i}`, `i === 1 ? … : …`). (The
-// class expression deliberately avoids `%` — the Go adapter's ternary
-// condition lowering has no `bf_mod` case and panics on a raw `%` in the
-// emitted template; filed separately as a known-limitation, out of scope
-// here since this fixture only needs SOME pure-index expression, not
-// specifically modulo.)
+// call anywhere in either expression (`{i}`, `i === 1 ? … : …`).
 //
 // #2859/#2860 fixed index-derived output that ALREADY got a `createEffect`
 // wired for some other reason (a signal read elsewhere in the expression,
@@ -29,11 +24,6 @@
 // different, already-fixed path — this fixture deliberately has NO signal
 // read anywhere in its row, to isolate the pure-index case on its own).
 //
-// The initial rows are inlined directly into `createSignal<Row[]>([...])`
-// rather than referenced from a separate module-level constant — the Go
-// template adapter's signal-initializer seeding only resolves an INLINE
-// array literal, not a reference to a named constant (piconic-ai/barefootjs#2862).
-
 import { createSignal } from '@barefootjs/client'
 
 interface Row {
