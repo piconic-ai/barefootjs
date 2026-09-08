@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 382,
+    "totalFixtures": 384,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2247,6 +2247,12 @@
             "state": "escapable",
             "twin": "filter-nested-find-predicate-client"
           }
+        }
+      },
+      "filter-predicate-renamed-prop": {
+        "mojolicious": {
+          "kind": "render",
+          "reason": "https://github.com/piconic-ai/barefootjs/issues/2883"
         }
       },
       "filter-typeof-predicate": {
@@ -3582,6 +3588,10 @@
       "filter-nested-find-predicate": {
         "description": "Filter predicate containing a nested .find() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate.ts"
+      },
+      "filter-predicate-renamed-prop": {
+        "description": ".filter() predicate referencing a renamed prop destructure (#2857)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-renamed-prop.ts"
       },
       "filter-typeof-predicate": {
         "description": "Off-subset filter predicate (typeof) — JS-runtime faithful, DSL diagnostic",
