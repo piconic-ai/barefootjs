@@ -139,6 +139,7 @@ import { fixture as filterNestedFindPredicate } from './filter-nested-find-predi
 import { fixture as filterNestedFindPredicateClient } from './filter-nested-find-predicate-client'
 import { fixture as filterPredicateSignalAlias } from './filter-predicate-signal-alias'
 import { fixture as filterPredicateRenamedProp } from './filter-predicate-renamed-prop'
+import { fixture as filterPredicateModulo } from './filter-predicate-modulo'
 import { fixture as fillUnsupported } from './fill-unsupported'
 import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
 import { fixture as findTypeofPredicate } from './find-typeof-predicate'
@@ -690,6 +691,7 @@ export const jsxFixtures: JSXFixture[] = [
   filterNestedFindPredicateClient,
   filterPredicateSignalAlias,
   filterPredicateRenamedProp,
+  filterPredicateModulo,
   fillUnsupported,
   fillUnsupportedClient,
   findTypeofPredicate,
