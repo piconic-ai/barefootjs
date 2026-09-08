@@ -14,7 +14,7 @@
  * genuinely needs it, so the seam documents the real cross-module coupling.
  */
 
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { CompileState } from './lib/compile-state.ts'
 
@@ -81,16 +81,18 @@ export interface GoEmitContext {
   resolveModuleStringConst(name: string): string | null
 
   /**
-   * Inline a module numeric const by name as its Go literal text (e.g.
-   * `8`, `-3.5`), or null when the name is not such a const (loop vars and
-   * outer-loop params are excluded, same as `resolveModuleStringConst`).
+   * Resolve a bare identifier naming a plain module-level const (`const
+   * TRACK = 8`, `const OPEN = true`, `const INITIAL: Row[] = [...]`) to its
+   * Go literal, dispatched structurally off the const's `ConstantInfo.parsed`
+   * — or null when the name is not such a const (loop vars and outer-loop
+   * params are excluded, same as `resolveModuleStringConst`). `target.kind
+   * === 'go-source'` may bake a composite (array/object) literal against
+   * `target.bakeType`; `target.kind === 'template-action'` only resolves a
+   * scalar, since a `{{...}}` splice has no valid Go template spelling for a
+   * composite literal.
    */
-  resolveModuleNumericConst(name: string): string | null
-
-  /**
-   * Inline a module boolean const by name as its Go literal text
-   * (`true`/`false`), or null when the name is not such a const (same
-   * exclusions as `resolveModuleNumericConst`).
-   */
-  resolveModuleBooleanConst(name: string): string | null
+  resolveModuleConstAsGo(
+    name: string,
+    target: { kind: 'template-action' } | { kind: 'go-source'; bakeType: TypeInfo },
+  ): string | null
 }

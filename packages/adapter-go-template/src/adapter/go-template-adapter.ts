@@ -262,8 +262,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
     extractCollisionDerivation: (parsed) => this.extractCollisionDerivation(parsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
-    resolveModuleNumericConst: (name) => this.resolveModuleNumericConst(name),
-    resolveModuleBooleanConst: (name) => this.resolveModuleBooleanConst(name),
+    resolveModuleConstAsGo: (name, target) => this.resolveModuleConstAsGo(name, target),
   }
 
   /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
@@ -4726,11 +4725,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
-    // Module numeric const (e.g. `const TRACK = 8` used in a width expression):
-    // inline the literal value rather than emit `{{.TRACK}}` against a Props
-    // field that never exists. Mirrors the string-const inlining above.
-    const inlinedNum = this.resolveModuleNumericConst(name)
-    if (inlinedNum !== null) return inlinedNum
+    // Module scalar const (e.g. `const TRACK = 8` used in a width expression,
+    // or `const OPEN = true`): inline the literal value rather than emit
+    // `{{.TRACK}}` against a Props field that never exists. Mirrors the
+    // string-const inlining above.
+    const inlinedScalar = this.resolveModuleConstAsGo(name, { kind: 'template-action' })
+    if (inlinedScalar !== null) return inlinedScalar
     if (this.isCurrentLoopItem(name)) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
     // the Go range variable `$name` declared by that loop's `{{range … := …}}`;
@@ -4935,13 +4935,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * The single module-const lookup shared by `resolveModuleNumericConst`
-   * and `resolveModuleBooleanConst` — they differ only in which literal
-   * SHAPE they accept from the same "plain module-level const" search, not
-   * in how that search is performed. A second inline lookup per resolver
-   * would grow `binding-scope-ratchet.test.ts`'s shrink-only floor for this
-   * file (already at 5) for a shape variance the callers can express
-   * themselves instead.
+   * The single module-const lookup shared by `resolveModuleConstAsGo` —
+   * kept as its own method (rather than inlined) so a second `.find(` isn't
+   * added elsewhere, growing `binding-scope-ratchet.test.ts`'s shrink-only
+   * floor for this file (already at 5).
    */
   private findModuleConst(name: string): ConstantInfo | undefined {
     return this.state.localConstants.find(
@@ -4950,40 +4947,50 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Inline a module-level numeric const (`const TRACK = 8`) as its literal
-   * value. Only a plain numeric initializer qualifies — anything computed or
-   * non-numeric falls through to the normal field/ident resolution. Scoped to
-   * module consts (like the string variant) and guarded against loop vars so a
-   * range variable that shadows a const name still wins.
+   * Resolve a bare identifier naming a plain module-level const (`const
+   * TRACK = 8`, `const OPEN = true`, `const INITIAL: Row[] = [...]`, #2794 /
+   * #2815 / #2862) to its value's Go literal — dispatched STRUCTURALLY off
+   * `ConstantInfo.parsed`, through the same `parsedLiteralToGo` door an
+   * inline `createSignal([...])`/`createSignal({...})` seed already takes,
+   * rather than a separate per-type text-matching resolver for each literal
+   * shape (the numeric/boolean resolvers this replaces, and the array/
+   * object-literal gap #2862 tracked, were exactly that repeated pattern).
+   * `resolveModuleStringConst` stays separate: its fixed-point text
+   * resolution also covers a COMPOSED template-literal const (`` `${A}-${B}`
+   * ``) that has no single structural literal to bake.
+   *
+   * `target` names the emission position, which constrains what can resolve
+   * there:
+   *   - `go-source` (the `New<Component>Props` constructor) may bake a
+   *     composite (array/object) literal against `bakeType` — falling back
+   *     to the const's OWN declared type when the consumer's type is
+   *     `unknown` (the analyzer's inference is text-shaped and never chases
+   *     a bare `createSignal(INITIAL)` seed to its declaration).
+   *   - `template-action` (a bare `{{...}}` splice, e.g. a className
+   *     expression) has no valid Go template spelling for a composite
+   *     literal, so only a scalar (or unary-minus number) resolves there —
+   *     the same restriction the numeric/boolean resolvers already had.
+   *
+   * Scoped to module consts and guarded against loop vars so a range
+   * variable that shadows a const name still wins (same guards the
+   * resolvers this replaces already had).
    */
-  private resolveModuleNumericConst(name: string): string | null {
+  private resolveModuleConstAsGo(
+    name: string,
+    target: { kind: 'template-action' } | { kind: 'go-source'; bakeType: TypeInfo },
+  ): string | null {
     if (this.isCurrentLoopItem(name)) return null
     if (this.loopVarRefCount.has(name)) return null
     if (this.isOuterLoopParam(name)) return null
     const c = this.findModuleConst(name)
-    if (!c || c.value === undefined) return null
-    // `value` is reconstructed from source text, so a valid TS literal may carry
-    // numeric separators (`100_000`). Strip them between digits, then accept a
-    // plain decimal / float; Go template numeric literals don't allow `_`.
-    const v = c.value.trim().replace(/(?<=\d)_(?=\d)/g, '')
-    return /^-?\d+(\.\d+)?$/.test(v) ? v : null
-  }
-
-  /**
-   * Inline a module-level boolean const (`const OPEN = true`) as its Go
-   * literal (`true`/`false`). Only a plain `true`/`false` initializer
-   * qualifies (#2815) — mirrors `resolveModuleNumericConst`'s shape, sharing
-   * its lookup rather than adding a second `.find(` (see
-   * `findModuleConst`'s docstring).
-   */
-  private resolveModuleBooleanConst(name: string): string | null {
-    if (this.isCurrentLoopItem(name)) return null
-    if (this.loopVarRefCount.has(name)) return null
-    if (this.isOuterLoopParam(name)) return null
-    const c = this.findModuleConst(name)
-    if (!c || c.value === undefined) return null
-    const v = c.value.trim()
-    return v === 'true' || v === 'false' ? v : null
+    if (!c?.parsed) return null
+    if (target.kind === 'template-action') {
+      return c.parsed.kind === 'literal' || c.parsed.kind === 'unary'
+        ? parsedLiteralToGo(this.emitCtx, c.parsed)
+        : null
+    }
+    const bakeType = target.bakeType.kind !== 'unknown' ? target.bakeType : (c.type ?? undefined)
+    return parsedLiteralToGo(this.emitCtx, c.parsed, bakeType)
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
@@ -6599,7 +6606,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `loopVarRefCount` — so both are still consulted. Shared by the
    * string-keyed fast paths (#2236, #2242 Copilot review) that resolve raw
    * `jsExpr` text before `identifier()`'s own guards can see it. Mirrors the
-   * checks in `resolveModuleStringConst` / `resolveModuleNumericConst`.
+   * checks in `resolveModuleStringConst` / `resolveModuleConstAsGo`.
    */
   private isLoopShadowedName(name: string): boolean {
     return this.scope.isBound(name) || this.loopVarRefCount.has(name)
