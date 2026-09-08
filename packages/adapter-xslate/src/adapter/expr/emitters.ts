@@ -65,6 +65,21 @@ const PREDICATE_METHODS = new Set<HigherOrderMethod>([
 ])
 
 /**
+ * `props.x` on a bare-props-form component flattens to the bare `$x` the
+ * SSR caller binds each prop to (props arrive as individual top-level vars,
+ * not a `$props` hashref). Single door for BOTH `member()` emitters below
+ * (#2886) — `XslateFilterEmitter` lacked this decision entirely (#2879's
+ * cross-adapter follow-up), silently reaching `$props.x`, and `$props` is
+ * nil at runtime (silent — every row is kept instead of filtered). Returns
+ * null for any other receiver so callers fall through to their generic
+ * member lowering — `props.a.b` flattens only the inner hop.
+ */
+function flattenPropsMember(object: ParsedExpr, property: string): string | null {
+  if (object.kind === 'identifier' && object.name === 'props') return `$${property}`
+  return null
+}
+
+/**
  * Lowering for the predicate body of a filter / every / some / find, plus the
  * same shape used by `renderBlockBodyCondition` for complex block-body
  * filters. Higher-order predicates are emitted using Kolon's own scalar
@@ -119,6 +134,8 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // `.length` — route through `$bf.length` (handles both array element
     // count and string char count, JS-compatibly). Kolon's builtin `.size()`
     // is array-only and faults on a string.
@@ -323,11 +340,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
-    // `props.x` flattens to the bare `$x` the SSR caller binds each prop to
-    // (props arrive as individual top-level vars, not a `$props` hashref).
-    if (object.kind === 'identifier' && object.name === 'props') {
-      return `$${property}`
-    }
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a Kolon var that
