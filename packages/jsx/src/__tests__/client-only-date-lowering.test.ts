@@ -22,10 +22,38 @@
  * about would fire BF021 and never reach the reactive-emission sites this
  * suite is about.
  */
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll } from 'bun:test'
 import { compileJSX } from '../index'
 import { TestAdapter } from '../adapters/test-adapter'
 import { ErrorCodes } from '../errors'
+import { getLoweringPlugins } from '../lowering-registry'
+import { BUILTIN_LOWERING_PLUGINS } from '../builtin-lowering-plugins'
+
+// #2831 — the persistent, CI-only "test (jsx-2)" flake on this suite's own
+// assertions traced to `date-lowering.test.ts`'s per-test `afterEach`
+// filtering the built-in `'date'` plugin out of the SHARED, module-level
+// `lowering-registry.ts` registry (fixed: dbaba32, "date-lowering.test.ts
+// leaked the built-in 'date' plugin out of the shared registry"). `bun
+// test` runs every file in one process with no guaranteed file order, so a
+// leak in one file's registry manipulation silently starves every
+// LATER-running file that depends on a built-in plugin — this suite's own
+// `datePlugin`/`toLocaleDatePlugin` dependency was the victim. A future
+// leak of the same shape would again fail here as a confusing "lowering
+// wasn't applied" assertion with no clue why. This guard converts that
+// into a named, up-front failure instead.
+beforeAll(() => {
+  const registered = new Set(getLoweringPlugins().map((p) => p.name))
+  const missing = BUILTIN_LOWERING_PLUGINS.map((p) => p.name).filter((name) => !registered.has(name))
+  if (missing.length > 0) {
+    throw new Error(
+      `Built-in lowering plugin(s) missing from the shared registry before this suite ran: ${missing.join(', ')}. ` +
+        `This suite's assertions depend on them being registered — a SIBLING test file most likely reset or ` +
+        `filtered the shared \`lowering-registry.ts\` registry without restoring it (the #2831 bug class: use ` +
+        `\`beforeAll\`/\`afterAll\` snapshot-and-restore around a describe block, never a per-test \`afterEach\` ` +
+        `filter, when touching this shared, module-level registry).`,
+    )
+  }
+})
 
 function compile(src: string) {
   const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
