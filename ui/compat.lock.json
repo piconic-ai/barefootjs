@@ -2249,12 +2249,6 @@
           }
         }
       },
-      "filter-predicate-renamed-prop": {
-        "mojolicious": {
-          "kind": "render",
-          "reason": "https://github.com/piconic-ai/barefootjs/issues/2883"
-        }
-      },
       "filter-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -3588,10 +3582,6 @@
       "filter-nested-find-predicate": {
         "description": "Filter predicate containing a nested .find() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate.ts"
-      },
-      "filter-predicate-renamed-prop": {
-        "description": ".filter() predicate referencing a renamed prop destructure (#2857)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-predicate-renamed-prop.ts"
       },
       "filter-typeof-predicate": {
         "description": "Off-subset filter predicate (typeof) — JS-runtime faithful, DSL diagnostic",
