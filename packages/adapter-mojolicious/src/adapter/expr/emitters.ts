@@ -81,6 +81,22 @@ const PREDICATE_METHODS: ReadonlySet<string> = new Set([
   'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
 ])
 
+/**
+ * `props.x` on a bare-props-form component flattens to the bare `$x` the
+ * Mojo SSR caller binds each prop to (props arrive as individual `my $x`
+ * vars, not a `$props` hashref). Single door for BOTH `member()` emitters
+ * below (#2886) — `MojoFilterEmitter` lacked this decision entirely
+ * (#2879's cross-adapter follow-up), silently reaching `$props->{x}`, a
+ * Perl variable never declared under `use strict`. Returns null for any
+ * other receiver so callers fall through to their generic member
+ * lowering — `props.a.b` flattens only the inner hop, then the caller's
+ * own recursion appends `.b`.
+ */
+function flattenPropsMember(object: ParsedExpr, property: string): string | null {
+  if (object.kind === 'identifier' && object.name === 'props') return `$${property}`
+  return null
+}
+
 export class MojoFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -129,6 +145,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // `.length` on a higher-order result (e.g.
     // `x.tags.filter(t => t.active).length > 0` inside the outer
     // filter predicate, #1443). The higher-order emit produces an
@@ -381,12 +399,8 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
-    // `props.x` flattens to the bare `$x` the Mojo SSR caller binds each
-    // prop to (props arrive as individual `my $x = ...` vars, not a
-    // `$props` hashref).
-    if (object.kind === 'identifier' && object.name === 'props') {
-      return `$${property}`
-    }
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic hash lowering below would dereference a Perl var that

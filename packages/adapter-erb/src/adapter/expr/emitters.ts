@@ -92,6 +92,21 @@ function unusedIsStringName(_n: string): boolean {
   return false
 }
 
+/**
+ * `props.x` on a bare-props-form component flattens to the `v[:x]` the ERB
+ * SSR caller seeds each prop under (props arrive as vars-Hash entries, not
+ * a nested `props` Hash). Single door for BOTH `member()` emitters below
+ * (#2886) — `ErbFilterEmitter` lacked this decision entirely (#2879's
+ * cross-adapter follow-up), silently reaching `v[:props][:x]`, which is
+ * `nil[...]` at runtime (`NoMethodError`). Returns null for any other
+ * receiver so callers fall through to their generic member lowering —
+ * `props.a.b` flattens only the inner hop.
+ */
+function flattenPropsMember(object: ParsedExpr, property: string): string | null {
+  if (object.kind === 'identifier' && object.name === 'props') return `v[${rubySymbolLiteral(property)}]`
+  return null
+}
+
 export class ErbFilterEmitter implements ParsedExprEmitter {
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
@@ -164,6 +179,8 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // `.length` needs no special higher-order form here — see the file
     // docstring's simplification (2): `.select { ... }.length` just works
     // in Ruby, unlike Perl's anonymous-arrayref `scalar(@{...})` detour.
@@ -411,11 +428,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    // `props.x` flattens to the `v[:x]` the ERB SSR caller seeds each prop
-    // under (props arrive as vars-Hash entries, not a nested `props` Hash).
-    if (object.kind === 'identifier' && object.name === 'props') {
-      return `v[${rubySymbolLiteral(property)}]`
-    }
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`) resolves at compile time — the generic Hash
     // lowering below would read a vars-Hash key that doesn't exist

@@ -109,6 +109,21 @@ export function truthyTest(node: ParsedExpr, rendered: string): string {
 }
 
 /**
+ * `props.x` on a bare-props-form component flattens to the bare context var
+ * the SSR caller binds each prop to (props arrive as individual top-level
+ * context entries, not a nested `props` dict). Single door for BOTH
+ * `member()` emitters below (#2886) — `JinjaFilterEmitter` lacked this
+ * decision entirely (#2879's cross-adapter follow-up), silently reaching
+ * `props['x']`, and `props` is undefined in the predicate's context.
+ * Returns null for any other receiver so callers fall through to their
+ * generic member lowering — `props.a.b` flattens only the inner hop.
+ */
+function flattenPropsMember(object: ParsedExpr, property: string): string | null {
+  if (object.kind === 'identifier' && object.name === 'props') return jinjaIdent(property)
+  return null
+}
+
+/**
  * Lowering for the predicate body of a filter / every / some / find, plus the
  * same shape used by the loop-hoist `.filter().map()` inline condition.
  * Higher-order predicates are emitted using Jinja's own scalar comparison
@@ -165,6 +180,8 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
     // count and string char count, JS-compatibly). Jinja's builtin
     // `|length` filter also faults trying to match JS semantics for every
@@ -390,12 +407,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
-    // `props.x` flattens to the bare context var the SSR caller binds each
-    // prop to (props arrive as individual top-level context entries, not a
-    // nested `props` dict).
-    if (object.kind === 'identifier' && object.name === 'props') {
-      return jinjaIdent(property)
-    }
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a context var that

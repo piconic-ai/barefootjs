@@ -144,6 +144,21 @@ export function truthyTest(node: ParsedExpr, rendered: string): string {
 }
 
 /**
+ * `props.x` on a bare-props-form component flattens to the bare context var
+ * the SSR caller binds each prop to (props arrive as individual top-level
+ * context entries, not a nested `props` hash). Single door for BOTH
+ * `member()` emitters below (#2886) — `BladeFilterEmitter` lacked this
+ * decision entirely (#2879's cross-adapter follow-up), silently reaching
+ * `data_get($props, 'x')`, and `$props` is undefined. Returns null for any
+ * other receiver so callers fall through to their generic member lowering —
+ * `props.a.b` flattens only the inner hop.
+ */
+function flattenPropsMember(object: ParsedExpr, property: string): string | null {
+  if (object.kind === 'identifier' && object.name === 'props') return bladeVar(property)
+  return null
+}
+
+/**
  * Lowering for the predicate body of a filter / every / some / find, plus the
  * same shape used by the loop-hoist `.filter().map()` inline condition.
  * Higher-order predicates are emitted using PHP's own scalar comparison
@@ -200,6 +215,8 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // `.length` — route through `$bf->length` (handles both array element
     // count and string char count, JS-compatibly).
     if (property === 'length') {
@@ -405,12 +422,8 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
-    // `props.x` flattens to the bare context var the SSR caller binds each
-    // prop to (props arrive as individual top-level context entries, not a
-    // nested `props` hash).
-    if (object.kind === 'identifier' && object.name === 'props') {
-      return bladeVar(property)
-    }
+    const flat = flattenPropsMember(object, property)
+    if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic `data_get` lowering below would reference a context var that
