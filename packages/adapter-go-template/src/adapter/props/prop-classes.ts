@@ -7,7 +7,7 @@
  * function over `ir.metadata`; no adapter instance state.
  */
 
-import { collectLoopBoundNames, type ComponentIR, type TypeInfo } from '@barefootjs/jsx'
+import { collectLoopBoundNames, resolveBodyDestructuredPropAliases, type ComponentIR, type TypeInfo } from '@barefootjs/jsx'
 
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo): boolean {
@@ -49,6 +49,19 @@ function isBareStringLiteral(initialValue: string | undefined): boolean {
  * string elsewhere in the component) but safe: the suppressed case just
  * falls back to today's numeric `bf_add` — the same, already-accepted
  * residual as an unresolvable operand — never silently-wrong output.
+ *
+ * A bare-props-form component's BODY-destructured, RENAMED prop (`const {
+ * fallbackLabel: skipLabel } = props`, the #2788 alias family) has no
+ * `propsParams` entry of its own — `propsParams` only carries the TYPE-level,
+ * caller-facing names, and the local alias never appears there. Without the
+ * alias resolved here too, a string-typed prop referenced only under its
+ * local rename in a `+` concat (`greeting + skipLabel`) is invisible to this
+ * witness, so `isStringConcatBinary` falls through to numeric `bf_add`
+ * instead of `bf_concat_str` (#2894, the go-template sibling of #2883's
+ * Mojolicious fix). `resolveBodyDestructuredPropAliases` already recognizes
+ * this exact destructuring shape; reusing it here keeps this one witness the
+ * single source of truth `_isStringValueName` reads, rather than growing a
+ * second, adapter-local alias lookup.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -59,6 +72,12 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const p of ir.metadata.propsParams) {
     if (isStringTypeInfo(p.type)) names.add(p.name)
+  }
+  for (const [local, callerKey] of resolveBodyDestructuredPropAliases(
+    ir.metadata.localConstants ?? [],
+    ir.metadata.propsObjectName,
+  )) {
+    if (names.has(callerKey)) names.add(local)
   }
   for (const c of ir.metadata.localConstants) {
     if ((c.type !== null && isStringTypeInfo(c.type)) || isBareStringLiteral(c.value)) {

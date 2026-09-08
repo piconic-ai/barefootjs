@@ -6,7 +6,7 @@
  * sets the adapter consults during lowering. No adapter instance state.
  */
 
-import { collectLoopBoundNames, type ComponentIR } from '@barefootjs/jsx'
+import { collectLoopBoundNames, resolveBodyDestructuredPropAliases, type ComponentIR } from '@barefootjs/jsx'
 import { isStringTypeInfo, isBareStringLiteral } from '../value/parsed-literal.ts'
 
 /**
@@ -69,6 +69,20 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
  * elsewhere in the component) but safe: the suppressed case just falls
  * back to today's numeric `+` — the same, already-accepted residual as an
  * unresolvable operand — never silently-wrong output.
+ *
+ * A bare-props-form component's BODY-destructured, RENAMED prop (`const {
+ * fallbackLabel: skipLabel } = props`, the #2788 alias family) has no
+ * `propsParams` entry of its own — `propsParams` only carries the TYPE-level,
+ * caller-facing names, and the local alias never appears there. Without the
+ * alias resolved here too, a string-typed prop referenced only under its
+ * local rename in a `+` concat (`greeting + skipLabel`) is invisible to this
+ * witness, so `isStringConcatBinary` falls through to numeric `+` instead of
+ * Blade's `.` (#2894 sibling gap, surfaced by the `string-concat-plus-
+ * renamed-prop` fixture — same bug class as #2883/go-template's fix).
+ * `resolveBodyDestructuredPropAliases` already recognizes this exact
+ * destructuring shape; reusing it here keeps this one witness the single
+ * source of truth `_isStringValueName` reads, rather than growing a second,
+ * adapter-local alias lookup.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -79,6 +93,12 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const p of ir.metadata.propsParams) {
     if (isStringTypeInfo(p.type)) names.add(p.name)
+  }
+  for (const [local, callerKey] of resolveBodyDestructuredPropAliases(
+    ir.metadata.localConstants ?? [],
+    ir.metadata.propsObjectName,
+  )) {
+    if (names.has(callerKey)) names.add(local)
   }
   for (const c of ir.metadata.localConstants) {
     if (isStringTypeInfo(c.type ?? undefined) || isBareStringLiteral(c.value)) names.add(c.name)

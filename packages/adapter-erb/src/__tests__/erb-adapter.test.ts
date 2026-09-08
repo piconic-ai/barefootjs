@@ -669,3 +669,59 @@ describe('ErbAdapter - Ruby double-quote escaping order (#2698 review)', () => {
     expect(rubySymbolKey('a\\"b')).toBe('"a\\\\\\"b":')
   })
 })
+
+// #2894 — investigated as the ERB sibling of #2883 (Mojolicious) and
+// go-template's own fix in this same PR: `collectStringValueNames`'s
+// string-typed-name witness has the identical missing-alias gap for a
+// bare-props-form BODY-destructured, RENAMED prop (`const { fallbackKey:
+// skipKey } = props`, the #2788 alias family) used as an index-access key.
+// Unlike Mojolicious/go-template, this is NOT a live bug on ERB: since
+// #2491, `emitIndexAccessRuby` (`adapter/expr/operand.ts`) ignores its
+// `isStringName` parameter entirely and always lowers `obj[index]` to the
+// runtime's polymorphic `bf.get(obj, index)` helper (Hash-key-or-Symbol-or-
+// String-or-Array, tried in that order) rather than choosing a lowering at
+// compile time — so the missing witness never reaches a decision point.
+// This test pins that a renamed alias used as an index key resolves
+// correctly end-to-end regardless, as evidence for that closed-out finding
+// (no code change needed here; see the #2894 PR/issue for the full trail).
+describe('ErbAdapter - #2894 index access by a renamed body-destructured prop already works via bf.get', () => {
+  test('renders the correct value: bf.get resolves the key regardless of collectStringValueNames', async () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function IndexAccessRenamedProp(props: { fallbackKey: string }) {
+  const { fallbackKey: skipKey } = props
+  const [labels] = createSignal<Record<string, string>>({ a: 'Apple', b: 'Banana' })
+  return <div>{labels()[skipKey]}</div>
+}
+`
+    let html: string
+    try {
+      html = await renderErbComponent({
+        source,
+        adapter: new ErbAdapter(),
+        props: { fallbackKey: 'b' },
+      })
+    } catch (err) {
+      if (err instanceof ErbNotAvailableError) return // Ruby toolchain not installed on this host
+      throw err
+    }
+    expect(html).toContain('Banana')
+  })
+
+  test('the emitted template routes through bf.get, not a compile-time Hash/Array branch', () => {
+    const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function IndexAccessRenamedProp(props: { fallbackKey: string }) {
+  const { fallbackKey: skipKey } = props
+  const [labels] = createSignal<Record<string, string>>({ a: 'Apple', b: 'Banana' })
+  return <div>{labels()[skipKey]}</div>
+}
+`)
+    const { template } = new ErbAdapter().generate(ir)
+    expect(template).toContain('bf.get(v[:labels], v[:skipKey])')
+  })
+})

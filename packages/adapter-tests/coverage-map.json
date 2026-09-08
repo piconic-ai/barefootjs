@@ -5537,6 +5537,27 @@
         "text"
       ]
     },
+    "string-concat-plus-renamed-prop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "string-endsWith": {
       "kinds": [
         "array-method",
@@ -6319,18 +6340,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 101,
+    "array-literal": 102,
     "array-method": 71,
     "arrow": 72,
-    "binary": 103,
-    "call": 267,
+    "binary": 104,
+    "call": 268,
     "conditional": 31,
-    "identifier": 370,
+    "identifier": 371,
     "index-access": 14,
-    "literal": 295,
+    "literal": 296,
     "logical": 49,
-    "member": 212,
-    "object-literal": 84,
+    "member": 213,
+    "object-literal": 85,
     "template-literal": 31,
     "unary": 27,
     "unsupported": 50
@@ -6364,7 +6385,7 @@
     "binary:!==": 11,
     "binary:%": 1,
     "binary:*": 12,
-    "binary:+": 23,
+    "binary:+": 24,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
@@ -6373,8 +6394,8 @@
     "binary:>=": 1,
     "literal:boolean": 61,
     "literal:null": 23,
-    "literal:number": 132,
-    "literal:string": 207,
+    "literal:number": 133,
+    "literal:string": 208,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,

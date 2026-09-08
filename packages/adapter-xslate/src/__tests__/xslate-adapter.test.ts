@@ -759,3 +759,33 @@ export function Counter() {
     expect(template).not.toContain('<link')
   })
 })
+
+describe('XslateAdapter - collectStringValueNames resolves renamed body-destructured prop aliases (#2894)', () => {
+  // Sibling gap to #2883 (Mojolicious) and this same PR's go-template fix:
+  // a `+` concat against a bare-props-form BODY-destructured, RENAMED prop
+  // (`const { fallbackLabel: skipLabel } = props`, the #2788 alias family)
+  // had no witness in `collectStringValueNames`, so `isStringConcatBinary`
+  // fell through to Kolon's numeric `+` instead of `~` — Kolon's `+`
+  // coerces a non-numeric string operand to `0` (#2176).
+  test('a `+` concat against a renamed body-destructured prop lowers to ~, not numeric +', () => {
+    const result = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+type Todo = { id: number; label: string }
+
+export function ConcatRenamedProp(props: { fallbackLabel: string }) {
+  const { fallbackLabel: skipLabel } = props
+  const [todos] = createSignal<Todo[]>([{ id: 1, label: 'Alpha' }])
+  return (
+    <ul>
+      {todos().map(t => (
+        <li key={t.id}>{t.label + skipLabel}</li>
+      ))}
+    </ul>
+  )
+}
+`)
+    expect(result.template).toContain('$t.label ~ $skipLabel')
+  })
+})
