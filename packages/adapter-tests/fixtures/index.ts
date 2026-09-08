@@ -514,6 +514,9 @@ import { fixture as signalObjectSpreadInitClient } from './signal-object-spread-
 // whose value is an array-of-objects / object literal (same family as
 // #2794/#2815, string/numeric/boolean module consts, fixed by PR #2816).
 import { fixture as moduleConstArraySeed } from './module-const-array-seed'
+// pullfrog review, PR #2881: the no-explicit-generic sibling, exercising
+// resolveModuleConstAsGo's c.type fallback (target.bakeType.kind === 'unknown').
+import { fixture as moduleConstArraySeedNoGeneric } from './module-const-array-seed-no-generic'
 import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
 // #2482 audit follow-ups, adapter-side (pinned known limitations):
 // Go condition-position destructured bindings, Go nested-loop `inLoop`
@@ -975,6 +978,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalObjectSpreadInit,
   signalObjectSpreadInitClient,
   moduleConstArraySeed,
+  moduleConstArraySeedNoGeneric,
   loopParamShadowsRecordTemplateSpan,
   loopDestructuredParamCondition,
   nestedLoopTailContent,

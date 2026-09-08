@@ -124,7 +124,7 @@ const ALLOWLIST: Record<string, Partial<Record<Pattern, number>>> = {
     // passthrough, called only from `generateNewPropsFunction`'s
     // `emitStaticChildInstances`), `computeDerivedConstFields` and
     // `isStringExpr` (same `generateNewPropsFunction` constructor-context
-    // bucket), and `resolveModuleNumericConst` (guarded in place by
+    // bucket), and `resolveModuleConstAsGo` (guarded in place by
     // `isCurrentLoopItem`/`isOuterLoopParam`, both already `this.scope.lookup`-
     // backed) — 3 are shape-1 (no live scope in the ctor-generation prepass)
     // and 1 is already scope-guarded. The 5th, `renderLoop`'s loop-array
