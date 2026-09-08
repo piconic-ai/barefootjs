@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import ts from 'typescript'
 import { compileJSX } from '../index'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/index'
 
@@ -153,11 +154,15 @@ export function Comp({ tag }: { tag: string }) {
     // Pre-fix: the hydrate template's module-scope lambda kept a bare
     // `tag` reference (no binding at that scope -- ReferenceError at pure
     // CSR mount). Post-fix: it resolves through `_p.tag` like every other
-    // prop reference. (The surrounding `{ (_p.tag) }` shape -- the branch-
-    // local substitution dropping the shorthand's own key -- is a
-    // separate, pre-existing defect tracked independently; this test pins
-    // only the prop-dependency question #2828's follow-up fixed.)
+    // prop reference, and the shorthand key survives the substitution
+    // (#2856 -- the branch-local substitution used to drop it, emitting
+    // the invalid `{ (_p.tag) }`).
     expect(js).not.toContain('{ (tag) }')
-    expect(js).toContain('{ (_p.tag) }')
+    expect(js).not.toContain('{ (_p.tag) }')
+    expect(js).toContain('{ local: (_p.tag) }')
+    // The emitted client JS must actually parse.
+    const sf = ts.createSourceFile('__test.ts', js, ts.ScriptTarget.Latest, true)
+    const diagnostics = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics
+    expect(diagnostics ?? []).toHaveLength(0)
   })
 })
