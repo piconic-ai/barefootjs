@@ -305,7 +305,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 87,
+          "pass": 88,
           "total": 99,
           "gaps": [
             {
@@ -321,10 +321,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
@@ -1271,7 +1267,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 94,
+          "pass": 95,
           "total": 103,
           "gaps": [
             {
@@ -1283,10 +1279,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
@@ -1845,7 +1837,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 248,
+          "pass": 249,
           "total": 264,
           "gaps": [
             {
@@ -1867,10 +1859,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
@@ -2741,7 +2729,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 347,
+          "pass": 348,
           "total": 367,
           "gaps": [
             {
@@ -2763,10 +2751,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
@@ -3397,7 +3381,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 279,
+          "pass": 280,
           "total": 292,
           "gaps": [
             {
@@ -3406,10 +3390,6 @@
             },
             {
               "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
               "issues": []
             },
             {
@@ -4219,7 +4199,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 190,
+          "pass": 191,
           "total": 209,
           "gaps": [
             {
@@ -4241,10 +4221,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
@@ -4619,13 +4595,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 79,
+          "pass": 80,
           "total": 83,
           "gaps": [
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -6901,14 +6873,8 @@
           "total": 11
         },
         "mojolicious": {
-          "pass": 10,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "filter-predicate-renamed-prop",
-              "issues": []
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "twig": {
           "pass": 11,
@@ -8094,15 +8060,11 @@
           ]
         },
         "mojolicious": {
-          "pass": 123,
+          "pass": 124,
           "total": 129,
           "gaps": [
             {
               "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
               "issues": []
             },
             {
@@ -8402,7 +8364,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 198,
+          "pass": 199,
           "total": 207,
           "gaps": [
             {
@@ -8411,10 +8373,6 @@
             },
             {
               "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "filter-predicate-renamed-prop",
               "issues": []
             },
             {
