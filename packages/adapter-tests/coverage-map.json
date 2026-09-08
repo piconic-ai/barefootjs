@@ -3795,6 +3795,25 @@
         "text"
       ]
     },
+    "module-const-array-seed-no-generic": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "multi-component-module": {
       "kinds": [
         "call",
@@ -6230,18 +6249,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 98,
+    "array-literal": 99,
     "array-method": 71,
     "arrow": 72,
     "binary": 102,
-    "call": 262,
+    "call": 263,
     "conditional": 31,
-    "identifier": 365,
+    "identifier": 366,
     "index-access": 14,
-    "literal": 291,
+    "literal": 292,
     "logical": 49,
-    "member": 207,
-    "object-literal": 82,
+    "member": 208,
+    "object-literal": 83,
     "template-literal": 31,
     "unary": 27,
     "unsupported": 47
@@ -6284,8 +6303,8 @@
     "binary:>=": 1,
     "literal:boolean": 61,
     "literal:null": 23,
-    "literal:number": 128,
-    "literal:string": 206,
+    "literal:number": 129,
+    "literal:string": 207,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,
