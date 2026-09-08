@@ -1,0 +1,7 @@
+---
+"@barefootjs/go-template": patch
+---
+
+Fix #2873: `%` (modulo) inside a ternary/`&&`/`||` condition (e.g. `class={i % 2 === 0 ? 'even' : 'odd'}`) compiled to a Go template that panicked at render time (`unexpected "%" in operand`) instead of rendering. `renderConditionExpr`'s binary-operator switch had no `%` case — unlike the general (non-condition) binary emitter, which already lowers `%` to the existing `bf_mod` runtime helper — so the `default` arm emitted a literal ` % ` into the generated template text, which `html/template` can't parse. The `.filter()`/`.find()`/etc. predicate emitter (`renderFilterExprNode`'s binary case) had the identical gap and is fixed the same way, mirroring the general emitter's `bf_mod` case in both places.
+
+Also fixed, surfaced while adding a `.filter()`-position regression fixture (pullfrog review, PR #2882): `renderFilterExprNode`'s binary case never parenthesized a compound operand (a nested binary result like `bf_mod .N 2`), unlike the general binary emitter's `wrapIfMultiToken` wrapping — so `.filter(row => row.n % 2 === 0)` emitted `eq bf_mod .N 2 0`, which `html/template` parses as `eq` called with 4 args including the bare function name `bf_mod` (invoked with 0 args instead of nested), panicking with `wrong number of args for bf_mod: want 2 got 0`. This was a pre-existing gap for `-`/`*`/`/` too, not just the new `%` case; now wrapped consistently for every arithmetic and comparison operator in that switch, mirroring the general emitter's pattern.

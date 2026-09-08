@@ -1484,6 +1484,19 @@
       ],
       "contexts": []
     },
+    "conditional-class-modulo": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "conditional-return-button": {
       "kinds": [
         "binary",
@@ -2354,6 +2367,27 @@
         "unary:!"
       ],
       "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "filter-predicate-modulo": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:===",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -6215,18 +6249,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 98,
+    "array-literal": 99,
     "array-method": 71,
     "arrow": 72,
-    "binary": 101,
-    "call": 261,
+    "binary": 102,
+    "call": 263,
     "conditional": 31,
-    "identifier": 364,
+    "identifier": 366,
     "index-access": 14,
-    "literal": 290,
+    "literal": 292,
     "logical": 49,
-    "member": 207,
-    "object-literal": 82,
+    "member": 208,
+    "object-literal": 83,
     "template-literal": 31,
     "unary": 27,
     "unsupported": 47
@@ -6258,17 +6292,18 @@
     "array-method:trimStart": 1,
     "binary:!=": 2,
     "binary:!==": 10,
+    "binary:%": 1,
     "binary:*": 12,
     "binary:+": 23,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 53,
+    "binary:===": 54,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 61,
     "literal:null": 23,
-    "literal:number": 127,
+    "literal:number": 129,
     "literal:string": 207,
     "logical:&&": 7,
     "logical:??": 41,

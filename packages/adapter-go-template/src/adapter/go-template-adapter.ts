@@ -6337,30 +6337,50 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (this.filterExprUnsupported) return 'false'
         const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
+        // #2873 (pullfrog review, PR #2882): every case below is a prefix
+        // function call (`bf_mod a b`, `eq a b`, …), so a COMPOUND operand —
+        // itself a nested binary result like `bf_mod .N 2` — must be
+        // parenthesised or the template parser folds its tokens into the
+        // outer call's argument list (`eq bf_mod .N 2 0` hands `eq` four
+        // args, and a bare func-name argument like `bf_mod` there is called
+        // with ZERO args instead of nested: `wrong number of args for
+        // bf_mod: want 2 got 0`). Mirrors the general (non-filter) binary
+        // emitter's `wl`/`wr` wrapping (`wrapIfMultiToken`, above) — this
+        // switch had never applied it, so `-`/`*`/`/` had the identical
+        // pre-existing gap for a nested compound operand.
+        const wl = wrapIfMultiToken(left)
+        const wr = wrapIfMultiToken(right)
 
         switch (expr.op) {
           case '===':
           case '==':
-            return `eq ${left} ${right}`
+            return `eq ${wl} ${wr}`
           case '!==':
           case '!=':
-            return `ne ${left} ${right}`
+            return `ne ${wl} ${wr}`
           case '>':
-            return `gt ${left} ${right}`
+            return `gt ${wl} ${wr}`
           case '<':
-            return `lt ${left} ${right}`
+            return `lt ${wl} ${wr}`
           case '>=':
-            return `ge ${left} ${right}`
+            return `ge ${wl} ${wr}`
           case '<=':
-            return `le ${left} ${right}`
+            return `le ${wl} ${wr}`
           case '+':
-            return this._emitPlus(expr.left, expr.right, left, right)
+            return this._emitPlus(expr.left, expr.right, wl, wr)
           case '-':
-            return `bf_sub ${left} ${right}`
+            return `bf_sub ${wl} ${wr}`
           case '*':
-            return `bf_mul ${left} ${right}`
+            return `bf_mul ${wl} ${wr}`
           case '/':
-            return `bf_div ${left} ${right}`
+            return `bf_div ${wl} ${wr}`
+          case '%':
+            // #2873: mirrors the general binary emitter's `%` case (below,
+            // `bf_mod`) — this switch previously had no `%` case, so the
+            // `default` arm emitted a literal ` % ` into the template text,
+            // which `html/template` can't parse (`unexpected "%" in
+            // operand`).
+            return `bf_mod ${wl} ${wr}`
           default:
             return `${left} ${expr.op} ${right}`
         }
@@ -7162,6 +7182,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             result = `bf_mul ${left} ${right}`; break
           case '/':
             result = `bf_div ${left} ${right}`; break
+          case '%':
+            // #2873: this switch had no `%` case even though
+            // `needsParensInGoTemplate` (above) already treats `%` as an
+            // arithmetic operator needing parens — so the `default` arm
+            // below emitted a literal ` % ` into a ternary/condition's
+            // template text, which `html/template` can't parse
+            // (`unexpected "%" in operand`). Mirrors the general binary
+            // emitter's `%` case (`bf_mod`, outside condition position).
+            result = `bf_mod ${left} ${right}`; break
           default:
             result = `${left} ${expr.op} ${right}`
         }
