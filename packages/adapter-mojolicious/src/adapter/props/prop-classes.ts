@@ -7,7 +7,7 @@
  * adapter's `props/prop-types.ts`. No adapter instance state.
  */
 
-import { collectLoopBoundNames, type ComponentIR } from '@barefootjs/jsx'
+import { collectLoopBoundNames, resolveBodyDestructuredPropAliases, type ComponentIR } from '@barefootjs/jsx'
 import { isStringTypeInfo, isBareStringLiteral } from '../value/parsed-literal.ts'
 
 /**
@@ -88,6 +88,22 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
  * elsewhere in the component) but safe: the suppressed case just falls
  * back to today's numeric `+` — the same, already-accepted residual as an
  * unresolvable operand — never silently-wrong output.
+ *
+ * A bare-props-form component's BODY-destructured, RENAMED prop
+ * (`const { fallbackLabel: skipLabel } = props`, the #2788 alias family)
+ * has no `propsParams` entry of its own — `propsParams` only carries the
+ * TYPE-level, caller-facing names, and the local alias never appears
+ * there. Without the alias resolved here too, a string-typed prop
+ * referenced only under its local rename inside a filter predicate
+ * (`t => t.label !== skipLabel`) is invisible to this witness, so its
+ * equality lowers to numeric `!=` instead of `ne` — every row is
+ * dropped, since `'Alpha' != 'Alpha'` and `'Beta' != 'Alpha'` both
+ * numify to `0 != 0` (#2883). `resolveBodyDestructuredPropAliases`
+ * already recognizes this exact destructuring shape (built for #2788's
+ * top-level splice path); reusing it here keeps this one witness the
+ * single source of truth `MojoFilterEmitter`/`MojoTopLevelEmitter` both
+ * read via `_isStringValueName`, rather than growing a second, adapter-
+ * emitter-local alias lookup.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -98,6 +114,12 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const p of ir.metadata.propsParams) {
     if (isStringTypeInfo(p.type)) names.add(p.name)
+  }
+  for (const [local, callerKey] of resolveBodyDestructuredPropAliases(
+    ir.metadata.localConstants ?? [],
+    ir.metadata.propsObjectName,
+  )) {
+    if (names.has(callerKey)) names.add(local)
   }
   for (const c of ir.metadata.localConstants) {
     if (isStringTypeInfo(c.type ?? undefined) || isBareStringLiteral(c.value)) names.add(c.name)
