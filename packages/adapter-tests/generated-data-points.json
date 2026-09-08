@@ -1352,6 +1352,63 @@
       }
     }
   ],
+  "filter-predicate-props-member": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "hiddenId": 1
+      }
+    },
+    {
+      "name": "gen:hiddenId:zero",
+      "props": {
+        "items": [
+          {
+            "id": 1,
+            "label": "Alpha"
+          },
+          {
+            "id": 2,
+            "label": "Beta"
+          }
+        ],
+        "hiddenId": 0
+      }
+    },
+    {
+      "name": "gen:hiddenId:negative",
+      "props": {
+        "items": [
+          {
+            "id": 1,
+            "label": "Alpha"
+          },
+          {
+            "id": 2,
+            "label": "Beta"
+          }
+        ],
+        "hiddenId": -7
+      }
+    },
+    {
+      "name": "gen:hiddenId:large",
+      "props": {
+        "items": [
+          {
+            "id": 1,
+            "label": "Alpha"
+          },
+          {
+            "id": 2,
+            "label": "Beta"
+          }
+        ],
+        "hiddenId": 1234567890
+      }
+    }
+  ],
   "filter-predicate-renamed-prop": [
     {
       "name": "gen:fallbackLabel:empty",

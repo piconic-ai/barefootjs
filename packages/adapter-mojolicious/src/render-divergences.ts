@@ -26,4 +26,13 @@ export const renderDivergences: RenderDivergences = {
   // #2857's Go Template adapter fix that this fixture was added for — this
   // fixture is a shared cross-adapter conformance fixture, not Go-specific.
   'filter-predicate-renamed-prop': 'https://github.com/piconic-ai/barefootjs/issues/2883',
+  // #2886: `MojoFilterEmitter.member()` (expr/emitters.ts) has no `props.x`
+  // flattening, unlike its non-filter sibling `member()` a few hundred
+  // lines below — a bare-props-form prop read DIRECTLY (no destructure,
+  // `props.hiddenId`) inside a `.filter()` predicate emits `$props->{...}`,
+  // a Perl variable never declared under `use strict`. Same family as
+  // #2879's Go Template adapter fix that this fixture was added for, but
+  // this fixture is a shared cross-adapter conformance fixture, not
+  // Go-specific.
+  'filter-predicate-props-member': 'https://github.com/piconic-ai/barefootjs/issues/2886',
 }

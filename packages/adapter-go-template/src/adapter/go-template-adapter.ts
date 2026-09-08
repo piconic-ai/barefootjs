@@ -4889,6 +4889,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Root-scope field reference from INSIDE a `.filter()`/`.find()` predicate
+   * (#2857, #2879). Same registration + alias resolution as `rootFieldRef`,
+   * but the `$.` prefix is unconditional: a filter predicate's `{{if}}`
+   * always sits inside its loop's own `{{range}}` (`renderLoop` restores
+   * `this.inLoop` before rendering it), so a bare `.Field` would resolve
+   * against the current row's type instead of root.
+   */
+  private filterRootFieldRef(name: string): string {
+    this.rootFieldRef(name)
+    return `$.${capitalizeFieldName(this.resolveRootFieldAlias(name))}`
+  }
+
+  /**
    * When `name` is a local binding of the `searchParams()` env signal, resolve
    * it to the canonical `.SearchParams` field — not `.<Capitalized name>` — so
    * an aliased `import { searchParams as sp }` (`sp()`) reaches the same struct
@@ -6232,8 +6245,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // `resolveRootFieldAlias` (#2857) so a getter-alias local
           // (`const items__alias = items`) still emits the field the
           // signal itself seeds instead of a phantom `.Items__alias`.
-          this.rootFieldRef(signal)
-          return `$.${capitalizeFieldName(this.resolveRootFieldAlias(signal))}`
+          return this.filterRootFieldRef(signal)
         }
         // Any other identifier reaching here is ALSO a root-scope
         // reference (a memo, a plain derived const, or — #2857 — a
@@ -6250,8 +6262,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // root, and `html/template` panics at execute time (`can't
         // evaluate field ... in type ...`) the first time such a
         // reference is exercised.
-        this.rootFieldRef(expr.name)
-        return `$.${capitalizeFieldName(this.resolveRootFieldAlias(expr.name))}`
+        return this.filterRootFieldRef(expr.name)
       }
 
       case 'literal':
@@ -6267,6 +6278,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // t.done -> .Done (or .Todo.Done under a wrapper struct, #2228)
         if (expr.object.kind === 'identifier' && expr.object.name === param) {
           return `${paramPrefix}.${capitalizeFieldName(expr.property)}`
+        }
+        // props.x on a bare-props-form component (#2879): props are
+        // flattened onto the root struct, so this is a root-scope read
+        // (`$.X`), not `.Props.X`. Mirrors `renderConditionExpr`'s own
+        // `propsObjectName` branch; `props.a.b` still reaches root through
+        // the generic recursion below.
+        if (
+          expr.object.kind === 'identifier' &&
+          this.state.propsObjectName &&
+          expr.object.name === this.state.propsObjectName
+        ) {
+          return this.filterRootFieldRef(expr.property)
         }
         // `.length` on a higher-order filter result (e.g.
         // `x.tags.filter(t => t.active).length > 0`). Reuse
@@ -6300,8 +6323,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // resolution (#2857) — as the `identifier` case above, for the same
         // reason (#2700's BF101 gate; pullfrog review, PR #2818).
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
-          this.rootFieldRef(expr.callee.name)
-          return `$.${capitalizeFieldName(this.resolveRootFieldAlias(expr.callee.name))}`
+          return this.filterRootFieldRef(expr.callee.name)
         }
         // A nested callback method call (`other.some(r => …)`) reaching this
         // arm has no Go template form in filter context — the fallthrough

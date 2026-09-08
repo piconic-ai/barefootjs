@@ -17,4 +17,12 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // at value position and the runtime evaluator's `object-literal` case
 // now merges it, so the seed classifies `derived` and SSRs identically
 // to Hono.
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // #2886: the filter `member()` emitter has no `props.x` flattening,
+  // unlike its non-filter sibling — a bare-props-form prop read DIRECTLY
+  // (no destructure, `props.hiddenId`) inside a `.filter()` predicate
+  // emits `props.hiddenId`, and `props` is undefined. Added for #2879's Go
+  // Template adapter fix, but this fixture is a shared cross-adapter
+  // conformance fixture, not Go-specific.
+  'filter-predicate-props-member': 'https://github.com/piconic-ai/barefootjs/issues/2886',
+}
