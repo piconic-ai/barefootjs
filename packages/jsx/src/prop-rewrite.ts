@@ -89,8 +89,16 @@ function walkWithScope(
 /**
  * True when `n` sits in a non-value position where a prop rewrite must
  * never apply: an object-literal key, a member-access name, a binding
- * position (parameter / variable / binding-element name), or a type
- * reference.
+ * position (parameter / variable / binding-element name), a destructuring
+ * declaration's SOURCE key (`propertyName`, e.g. the `local` in
+ * `const { local: renamed } = obj`), or a type reference.
+ *
+ * The `propertyName` check matters even though `BindingElement.name` is
+ * already excluded above it: a renamed destructuring pattern has BOTH —
+ * `propertyName` is the source key (`local`) and `name` is the local
+ * binding (`renamed`) — and pullfrog review on #2889 caught that only the
+ * latter was excluded, so a substituted name colliding with the SOURCE key
+ * still corrupted to invalid JS (`const { (_p.tag): renamed } = obj`).
  */
 function isNonValuePosition(n: ts.Identifier, parent: ts.Node | undefined): boolean {
   if (!parent) return false
@@ -98,6 +106,7 @@ function isNonValuePosition(n: ts.Identifier, parent: ts.Node | undefined): bool
   if (ts.isPropertyAccessExpression(parent) && parent.name === n) return true
   if (ts.isQualifiedName(parent) && parent.right === n) return true
   if ((ts.isParameter(parent) || ts.isVariableDeclaration(parent) || ts.isBindingElement(parent)) && parent.name === n) return true
+  if (ts.isBindingElement(parent) && parent.propertyName === n) return true
   if (ts.isTypeReferenceNode(parent)) return true
   return false
 }
