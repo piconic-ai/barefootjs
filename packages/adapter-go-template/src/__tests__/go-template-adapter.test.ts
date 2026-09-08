@@ -6909,3 +6909,34 @@ export { C }
     expect(decode(htmlExplicitZero)).toEqual({ name: 'Ada', label: '', x: 0 })
   })
 })
+
+describe('GoTemplateAdapter - collectStringValueNames resolves renamed body-destructured prop aliases (#2894)', () => {
+  // Sibling gap to #2883 (Mojolicious): a `+` concat against a bare-props-form
+  // BODY-destructured, RENAMED prop (`const { fallbackLabel: skipLabel } =
+  // props`, the #2788 alias family) previously had no witness in
+  // `collectStringValueNames`, so `isStringConcatBinary` fell through to
+  // numeric `bf_add` instead of `bf_concat_str` — Go's `bf_add` coerces both
+  // operands through `toFloat64`, so a string operand silently becomes `0`.
+  test('a `+` concat against a renamed body-destructured prop lowers to bf_concat_str, not bf_add', () => {
+    const result = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+type Todo = { id: number; label: string }
+
+export function ConcatRenamedProp(props: { fallbackLabel: string }) {
+  const { fallbackLabel: skipLabel } = props
+  const [todos] = createSignal<Todo[]>([{ id: 1, label: 'Alpha' }])
+  return (
+    <ul>
+      {todos().map(t => (
+        <li key={t.id}>{t.label + skipLabel}</li>
+      ))}
+    </ul>
+  )
+}
+`)
+    expect(result.template).toContain('bf_concat_str .Label $.FallbackLabel')
+    expect(result.template).not.toContain('bf_add .Label $.FallbackLabel')
+  })
+})
