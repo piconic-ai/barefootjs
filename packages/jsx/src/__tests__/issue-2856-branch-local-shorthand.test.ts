@@ -53,6 +53,20 @@ describe('rewriteScopedValueRefs (#2856)', () => {
     expect(out).toBe('(_p.tag) + [1, 2, 3].map((local) => local).join(",")')
   })
 
+  test('does not touch a destructuring declaration\'s source key (pullfrog review, #2889)', () => {
+    // `{ local: renamed } = obj` -- `local` here is the SOURCE key of a
+    // renamed destructuring binding, not a value reference. Distinct from
+    // the shorthand case above: a renamed destructuring pattern has BOTH
+    // `propertyName` (the source key) and `name` (the local binding), and
+    // only the latter was excluded pre-fix.
+    const out = rewriteScopedValueRefs(
+      '(el) => { const { local: renamed } = obj; use(renamed) }',
+      new Set(['local']),
+      () => '(_p.tag)',
+    )
+    expect(out).toBe('(el) => { const { local: renamed } = obj; use(renamed) }')
+  })
+
   test('resolves inside a template-literal interpolation hole, leaving the cooked text alone', () => {
     const out = rewriteScopedValueRefs('`label:local=${local}`', new Set(['local']), () => '(_p.tag)')
     expect(out).toBe('`label:local=${(_p.tag)}`')
