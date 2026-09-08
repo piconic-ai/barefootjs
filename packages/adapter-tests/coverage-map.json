@@ -2392,6 +2392,22 @@
         "text"
       ]
     },
+    "filter-predicate-props-member": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:!=="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-predicate-renamed-prop": {
       "kinds": [
         "array-literal",
@@ -6252,14 +6268,14 @@
     "array-literal": 99,
     "array-method": 71,
     "arrow": 72,
-    "binary": 102,
-    "call": 263,
+    "binary": 103,
+    "call": 264,
     "conditional": 31,
-    "identifier": 366,
+    "identifier": 367,
     "index-access": 14,
     "literal": 292,
     "logical": 49,
-    "member": 208,
+    "member": 209,
     "object-literal": 83,
     "template-literal": 31,
     "unary": 27,
@@ -6291,7 +6307,7 @@
     "array-method:trimEnd": 1,
     "array-method:trimStart": 1,
     "binary:!=": 2,
-    "binary:!==": 10,
+    "binary:!==": 11,
     "binary:%": 1,
     "binary:*": 12,
     "binary:+": 23,
