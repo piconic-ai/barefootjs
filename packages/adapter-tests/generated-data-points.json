@@ -1352,6 +1352,26 @@
       }
     }
   ],
+  "filter-predicate-renamed-prop": [
+    {
+      "name": "gen:fallbackLabel:empty",
+      "props": {
+        "fallbackLabel": ""
+      }
+    },
+    {
+      "name": "gen:fallbackLabel:markup",
+      "props": {
+        "fallbackLabel": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:fallbackLabel:multibyte",
+      "props": {
+        "fallbackLabel": "日本語"
+      }
+    }
+  ],
   "flatmap-expression-body": [
     {
       "name": "gen:items:empty",
