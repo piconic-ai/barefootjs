@@ -1,5 +1,11 @@
 # @barefootjs/streaming
 
+## 0.35.2
+
+### Patch Changes
+
+- @barefootjs/shared@0.35.2
+
 ## 0.35.1
 
 ### Patch Changes
