@@ -49,6 +49,7 @@ import { containsReactiveExpression, collectReactiveBrandLeaves } from './reacti
 import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
+  rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
 import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore } from './props-binding.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -8456,10 +8457,19 @@ function inferExpressionType(
 
 /**
  * Substitute branch-local identifier references in `text` with the
- * value returned by `resolve(name)`. Skips occurrences inside string
- * / regex / template-body / comment tokens via the shared
- * `replaceInExprContexts` scanner, so a string like `'mergedClass'`
- * never gets rewritten into invalid JS. Identifier boundaries use
+ * value returned by `resolve(name)`. Tries the AST-based, scope-aware
+ * `rewriteScopedValueRefs` (`prop-rewrite.ts`) first — it correctly
+ * expands an object-literal shorthand property (`{ local }`) to
+ * `{ local: <resolved> }` instead of corrupting it to `{ (<resolved>) }`
+ * (#2856), and understands inner-scope shadowing. `allowStatements`
+ * covers raw-captured text that isn't guaranteed to be a bare
+ * expression (e.g. a `.map()`-callback preamble statement).
+ *
+ * Falls back to the legacy `replaceInExprContexts` scanner — which
+ * skips occurrences inside string / regex / template-body / comment
+ * tokens, so a string like `'mergedClass'` never gets rewritten into
+ * invalid JS, but has no notion of AST position — only when `text`
+ * doesn't parse under either attempt. Identifier boundaries use
  * `[\w$]` lookarounds rather than `\b`, since JS regex's word-char
  * class excludes `$` — a bare `\b` would mis-match the `foo` inside
  * `$foo`. Branch-local names are syntactically `[A-Za-z_$][A-Za-z0-9_$]*`
@@ -8478,6 +8488,8 @@ function replaceBranchLocalRefs(
   resolve: (name: string) => string,
 ): string {
   if (branchNames.length === 0) return text
+  const astResult = rewriteScopedValueRefs(text, new Set(branchNames), resolve, { allowStatements: true })
+  if (astResult !== null) return astResult
   const pattern = new RegExp(`(?<![\\w$])(${branchNames.join('|')})(?![\\w$])`, 'g')
   return replaceInExprContexts(text, pattern, (_match, name) => resolve(name))
 }

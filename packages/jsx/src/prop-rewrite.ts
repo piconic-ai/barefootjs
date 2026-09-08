@@ -130,49 +130,54 @@ export function collectAstPropRefs(
 
 /**
  * Scope-aware rewrite: parse `text` as an expression, walk it with the
- * binding stack, and splice `${PROPS_PARAM}.` onto exactly the
- * identifier references that are (a) in `propRefs` and (b) not
- * shadowed by a binding inside the text. Shorthand properties expand
- * (`{ org }` → `{ org: _p.org }`) so the result stays syntactically
- * valid.
+ * binding stack, and splice `replacementFor(name)` onto exactly the
+ * identifier references that are (a) in `names` and (b) not shadowed by
+ * a binding inside the text. Shorthand properties expand
+ * (`{ org }` → `{ org: <replacement> }`) so the result stays
+ * syntactically valid — this is the one place in the compiler that
+ * correctly distinguishes a value reference from an object-literal key
+ * / property-access name / shorthand property / binding name, so every
+ * caller doing this class of substitution (prop refs, #1425 branch-local
+ * refs, …) should route through this rather than growing its own
+ * regex-based text splice (#2856 — a second, regex-based substitution
+ * mechanism doesn't know shorthand is simultaneously a key and a value,
+ * and drops the key).
  *
- * `replacementFor` overrides the substitution text for a value
- * reference (default `${PROPS_PARAM}.<callerKey>`) — e.g. the reactive
- * client-JS emit path (`emit-reactive.ts`'s `rewriteDestructuredPropsInExpr`)
- * wraps it in a `(_p.x ?? <default>)` fallback for a prop with a
- * destructure default. Kept as a caller override rather than a
- * duplicate AST walk in that module, per the "one decision, one
- * implementation" rule (CLAUDE.md) — this walk is already the one place
- * that correctly distinguishes a value reference from an object-literal
- * key / property-access name / shorthand property / binding name.
+ * With `allowStatements`, a `text` that fails to parse as a bare
+ * expression is retried as a standalone statement list (no wrapping
+ * parens) — for callers whose raw-captured text isn't guaranteed to be
+ * expression-shaped (e.g. a `.map()`-callback preamble statement).
  *
- * Returns null when `text` does not parse cleanly as an expression —
- * the caller falls back to the legacy regex rewrite.
+ * Returns null when `text` doesn't parse cleanly under either attempt —
+ * the caller falls back to its own legacy mechanism.
  */
-function applyScopedPropRefRewrite(
+export function rewriteScopedValueRefs(
   text: string,
-  propRefs: Set<string>,
-  propAliases?: ReadonlyMap<string, string>,
-  replacementFor?: (localName: string, callerKey: string) => string,
+  names: ReadonlySet<string>,
+  replacementFor: (name: string) => string,
+  opts?: { allowStatements?: boolean },
 ): string | null {
   // Wrap in parens so object literals and arrows parse as expressions.
   const prefix = '('
-  const sf = ts.createSourceFile('__bf_prop_rewrite.ts', `${prefix}${text}\n)`, ts.ScriptTarget.Latest, true)
-  const parseDiagnostics = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics
-  if (parseDiagnostics && parseDiagnostics.length > 0) return null
+  let sf = ts.createSourceFile('__bf_scoped_rewrite.ts', `${prefix}${text}\n)`, ts.ScriptTarget.Latest, true)
+  let parseDiagnostics = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics
+  let usedPrefix = prefix
+  if (parseDiagnostics && parseDiagnostics.length > 0) {
+    if (!opts?.allowStatements) return null
+    sf = ts.createSourceFile('__bf_scoped_rewrite.ts', text, ts.ScriptTarget.Latest, true)
+    parseDiagnostics = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics
+    if (parseDiagnostics && parseDiagnostics.length > 0) return null
+    usedPrefix = ''
+  }
 
   const edits: Array<{ start: number; end: number; replacement: string }> = []
   walkWithScope(sf, (n, parent, shadowed) => {
-    if (shadowed || !propRefs.has(n.text)) return
+    if (shadowed || !names.has(n.text)) return
     if (isNonValuePosition(n, parent)) return
-    const start = n.getStart(sf) - prefix.length
-    const end = n.getEnd() - prefix.length
+    const start = n.getStart(sf) - usedPrefix.length
+    const end = n.getEnd() - usedPrefix.length
     if (start < 0 || end > text.length) return
-    // `_p` is always keyed by the caller-facing name (`sourceName ?? name`
-    // — #2524 CSR half); the local binding (`n.text`) only survives on the
-    // left of a shorthand expansion.
-    const callerKey = propAliases?.get(n.text) ?? n.text
-    const value = replacementFor ? replacementFor(n.text, callerKey) : `${PROPS_PARAM}.${callerKey}`
+    const value = replacementFor(n.text)
     if (parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n) {
       edits.push({ start, end, replacement: `${n.text}: ${value}` })
       return
@@ -186,6 +191,33 @@ function applyScopedPropRefRewrite(
     result = result.slice(0, edit.start) + edit.replacement + result.slice(edit.end)
   }
   return result
+}
+
+/**
+ * `applyScopedPropRefRewrite` specializes `rewriteScopedValueRefs` for
+ * the destructured-prop case: the substitution defaults to
+ * `${PROPS_PARAM}.<callerKey>`, where the caller-facing key comes from
+ * `propAliases` (`_p` is always keyed by the caller-facing name —
+ * `sourceName ?? name`, #2524 CSR half — the local binding only
+ * survives on the left of a shorthand expansion).
+ *
+ * `replacementFor` overrides the substitution text for a value
+ * reference — e.g. the reactive client-JS emit path
+ * (`emit-reactive.ts`'s `rewriteDestructuredPropsInExpr`) wraps it in a
+ * `(_p.x ?? <default>)` fallback for a prop with a destructure default.
+ * Kept as a caller override rather than a duplicate AST walk in that
+ * module, per the "one decision, one implementation" rule (CLAUDE.md).
+ */
+function applyScopedPropRefRewrite(
+  text: string,
+  propRefs: Set<string>,
+  propAliases?: ReadonlyMap<string, string>,
+  replacementFor?: (localName: string, callerKey: string) => string,
+): string | null {
+  return rewriteScopedValueRefs(text, propRefs, (name) => {
+    const callerKey = propAliases?.get(name) ?? name
+    return replacementFor ? replacementFor(name, callerKey) : `${PROPS_PARAM}.${callerKey}`
+  })
 }
 
 /**

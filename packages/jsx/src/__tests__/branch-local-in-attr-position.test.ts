@@ -305,19 +305,28 @@ describe('branch-local at element-attribute position (#1414)', () => {
     expect(hydrate).toContain('foo bar')
   })
 
-  test('branch-local substitution skips string literals and `$`-prefixed identifiers', () => {
+  test('branch-local substitution skips string-literal text and correctly resolves a `$`-prefixed identifier', () => {
     // The substitution machinery used to scan with `text.replace(/\b
     // (name1|name2)\b/g, ...)`, which would (a) rewrite occurrences
     // of the name inside string literals into invalid JS and
     // (b) mis-match `\b` between `$` and a word char, splitting an
     // identifier like `$kind` and rewriting just its `kind` tail.
-    // The fix routes both substitution passes through
-    // `replaceInExprContexts` (skips opaque tokens — strings, regex,
-    // template bodies, comments) and replaces `\b` with `[\w$]`
-    // lookarounds so the boundary check treats `$` as part of an
-    // identifier. This test pins both invariants by declaring a
-    // branch-local whose name collides with a token inside a string
-    // literal *and* with the tail of a `$`-prefixed identifier.
+    // The regex-scanner fallback (`replaceInExprContexts`, still used
+    // when text doesn't parse as an expression/statement list) fixes
+    // both by skipping opaque tokens — strings, regex, template
+    // bodies, comments — and replacing `\b` with `[\w$]` lookarounds.
+    // But it treats an entire template literal as one opaque token,
+    // so it can't reach a branch-local reference INSIDE a `${...}`
+    // hole either — `$kind` used to survive as a literal, undeclared
+    // identifier in the emitted output (a latent ReferenceError, the
+    // same failure class as #2856). The AST-based
+    // `rewriteScopedValueRefs` (#2856) parses the template literal
+    // properly and resolves the hole like any other expression
+    // position, while still leaving the cooked text (`label:kind=`)
+    // alone since it's not an identifier. This test pins a branch-local
+    // whose name collides with a token inside a string literal *and*
+    // with the tail of a `$`-prefixed identifier used inside a
+    // template-literal hole.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -345,9 +354,12 @@ describe('branch-local at element-attribute position (#1414)', () => {
     // verbatim — pre-fix, the `kind` inside the template-literal head
     // would have been rewritten into `('plain')`, mangling the string.
     expect(clientJs).toContain('label:kind=')
-    // The `$kind` identifier must stay intact — pre-fix, `\\bkind\\b`
-    // would have split `$kind` into `$` + `kind` and rewritten just
-    // the `kind` tail.
-    expect(clientJs).toContain('$kind')
+    // The `$kind` identifier (distinct from the branch-local `kind`)
+    // must resolve to its own branch-local value, not leak through
+    // unresolved (which would be a ReferenceError at hydrate — no
+    // `$kind` binding exists in the emitted module scope) and not have
+    // its `kind` tail mistakenly matched by the `kind` substitution.
+    expect(clientJs).not.toMatch(/[^(]\$kind\b/)
+    expect(clientJs).toContain("label:kind=${('dollar')}")
   })
 })
