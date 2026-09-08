@@ -101,4 +101,19 @@ export const conformancePins: ConformancePins = {
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
   'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
+  // #2893: `analyzeBakeableStaticElementLoop`'s static-array bake (Go's only
+  // path to bind a static/non-signal array as a loop source — `html/template`
+  // has no slice literal syntax) bails the WHOLE loop when the body contains
+  // a nested `loop` node (module docstring, `static-element-loop-bake.ts`).
+  // This fixture's outer static array's row has a nested `.map()` over
+  // `item.children`, so it falls through to the generic "computed loop
+  // array" BF101 refusal. Unrelated to #2798's own fix (a client-JS-only
+  // ref/reactive-binding gap) — this is a pre-existing Go-adapter SSR
+  // static-loop-baking scope boundary the new fixture happened to be the
+  // first to exercise.
+  'static-nested-loop-ref': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2893',
+  }],
 }

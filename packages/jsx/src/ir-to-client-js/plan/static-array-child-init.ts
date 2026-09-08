@@ -7,7 +7,9 @@
  *   - `outer-nested`       — depth 0 の `nestedComponents`。outer forEach で
  *                            `__iterEl.querySelector(...)` 経由で initChild。
  *   - `inner-loop-nested`  — depth > 0 の `nestedComponents`。outer + inner
- *                            forEach の二重ループで initChild。
+ *                            forEach の二重ループで initChild。同じ二重ループで
+ *                            プレーン要素の ref / reactive text / reactive attr
+ *                            も配線する (#2798、depth 1 のみ)。
  *   - `component-rooted-inner-loop`
  *                          — outer の loop item root が **child component**
  *                            (`loop.childComponent`) で、その JSX children に
@@ -24,6 +26,8 @@
  */
 
 import type { PreludeStatements } from '../control-flow/plan/inner-loop.ts'
+import type { LoopChildRefBinding } from '../control-flow/plan/loop.ts'
+import type { LoopChildReactiveAttr, LoopChildReactiveText } from '../types.ts'
 
 /** Pre-built `{ name: value, ... }` props object expression. */
 export type PropsExpr = string
@@ -143,6 +147,20 @@ export interface InnerLoopNestedInitPlan {
   depth: number
   /** Per-component initialisers emitted inside the inner forEach body. */
   comps: readonly InnerLoopComp[]
+  /**
+   * Reactive attrs on plain elements inside this inner loop's body,
+   * grouped by child slot id (#2798 — a static outer array's nested
+   * `.map()` over plain elements used to wire up NOTHING: no refs, no
+   * reactive text/attr effects, since the whole `elem.innerLoops` pass
+   * only ever ran for depth-N CHILD COMPONENTS). Only populated for a
+   * depth-1 inner loop under a plain-element-rooted outer item — see
+   * `buildStaticArrayChildInitsPlan`'s docstring.
+   */
+  attrsBySlot: ReadonlyArray<readonly [string, readonly LoopChildReactiveAttr[]]>
+  /** Reactive text interpolations inside this inner loop's body (#2798). */
+  texts: readonly LoopChildReactiveText[]
+  /** Imperative ref callbacks on elements inside this inner loop's body (#2798). */
+  refs: readonly LoopChildRefBinding[]
 }
 
 /**

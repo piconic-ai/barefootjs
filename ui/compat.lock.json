@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 389,
+    "totalFixtures": 392,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -3479,6 +3479,21 @@
           }
         }
       },
+      "static-nested-loop-ref": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2893"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "static-nested-loop-ref-precomputed"
+          }
+        }
+      },
       "tag-cloud": {
         "blade": {
           "kind": "refusal",
@@ -3651,6 +3666,10 @@
         "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
       },
+      "static-nested-loop-ref": {
+        "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref.ts"
+      },
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
@@ -3710,6 +3729,10 @@
       "static-array-from-props-with-component-precomputed": {
         "description": "prop-precompute twin of static-array-from-props-with-component — child components render at SSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-precomputed.ts"
+      },
+      "static-nested-loop-ref-precomputed": {
+        "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2893)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
       }
     }
   },

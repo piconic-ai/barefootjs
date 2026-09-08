@@ -419,6 +419,9 @@ import { fixture as nestedMapIndexKey } from './nested-map-index-key'
 import { fixture as nestedLoopOuterBinding } from './nested-loop-outer-binding'
 import { fixture as nestedLoopTripleDepth } from './nested-loop-triple-depth'
 import { fixture as nestedLoopRefConst } from './nested-loop-ref-const'
+import { fixture as staticNestedLoopRef } from './static-nested-loop-ref'
+import { fixture as staticNestedLoopRefClient } from './static-nested-loop-ref-client'
+import { fixture as staticNestedLoopRefPrecomputed } from './static-nested-loop-ref-precomputed'
 import { fixture as nestedLoopIndependentSignal } from './nested-loop-independent-signal'
 import { fixture as keyedLoopPureIndexReorder } from './keyed-loop-pure-index-reorder'
 import { fixture as ternaryTemplateLiteralBranch } from './ternary-template-literal-branch'
@@ -927,6 +930,9 @@ export const jsxFixtures: JSXFixture[] = [
   nestedLoopOuterBinding,
   nestedLoopTripleDepth,
   nestedLoopRefConst,
+  staticNestedLoopRef,
+  staticNestedLoopRefClient,
+  staticNestedLoopRefPrecomputed,
   nestedLoopIndependentSignal,
   keyedLoopPureIndexReorder,
   ternaryTemplateLiteralBranch,

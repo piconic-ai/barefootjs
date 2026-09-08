@@ -18,7 +18,7 @@
  */
 
 import type { IRLoopChildComponent, MapCallbackPreamble } from '../../types.ts'
-import type { ClientJsContext, NestedLoop, TopLevelLoop } from '../types.ts'
+import type { ClientJsContext, LoopChildReactiveAttr, NestedLoop, TopLevelLoop } from '../types.ts'
 import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
 import { jsxChildrenPropGetterExpr, renderPreamble, irToHtmlTemplate } from '../html-template.ts'
 
@@ -34,7 +34,7 @@ function staticPreludeStatements(preamble: MapCallbackPreamble | undefined): str
       })]
     : []
 }
-import { buildCompSelector } from '../control-flow/shared.ts'
+import { buildCompSelector, buildStaticChildRefBindings } from '../control-flow/shared.ts'
 
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
 type LoopChildCompProp = IRLoopChildComponent['props'][number]
@@ -66,25 +66,47 @@ export function buildStaticArrayChildInitsPlan(
         if (comp.loopDepth) continue // handled in inner-loop pass
         plans.push(buildOuterNestedPlan(elem, comp))
       }
+    }
 
-      if (elem.innerLoops) {
-        for (const innerLoop of elem.innerLoops) {
-          const innerComps = elem.nestedComponents.filter(c =>
-            (c.loopDepth ?? 0) === innerLoop.depth && c.innerLoopArray === innerLoop.array,
-          )
-          if (innerComps.length === 0) continue
-          // Component-rooted outer item (#1725): the inner `.map()` lives
-          // inside the child component's JSX children. The element-offset
-          // addressing of `inner-loop-nested` can't reach a fragment-rooted
-          // passthrough's flattened items, so use the document-order zip
-          // shape instead.
-          plans.push(
-            elem.childComponent
-              ? buildComponentRootedInnerLoopPlan(elem, innerLoop, innerComps)
-              : buildInnerLoopNestedPlan(elem, innerLoop, innerComps),
-          )
-        }
+    if (!elem.innerLoops) continue
+
+    for (const innerLoop of elem.innerLoops) {
+      const innerComps = (elem.nestedComponents ?? []).filter(c =>
+        (c.loopDepth ?? 0) === innerLoop.depth && c.innerLoopArray === innerLoop.array,
+      )
+
+      if (elem.childComponent) {
+        // Component-rooted outer item (#1725): the inner `.map()` lives
+        // inside the child component's JSX children. The element-offset
+        // addressing of `inner-loop-nested` can't reach a fragment-rooted
+        // passthrough's flattened items, so use the document-order zip
+        // shape instead. (Plain-element bindings on a component-rooted
+        // inner loop aren't addressed by this shape either — out of scope
+        // here, same as this shape's existing filter/sort limitation.)
+        if (innerComps.length === 0) continue
+        plans.push(buildComponentRootedInnerLoopPlan(elem, innerLoop, innerComps))
+        continue
       }
+
+      // Plain-element-rooted outer item: `inner-loop-nested`'s element-offset
+      // addressing also wires up a plain element's own reactive attrs/texts/
+      // refs inside the inner loop (#2798) — previously this whole pass only
+      // ever ran for depth-N CHILD COMPONENTS (gated behind
+      // `elem.nestedComponents.length > 0` with an `innerComps.length === 0`
+      // skip), so a static outer array's nested `.map()` over plain elements
+      // wired up NOTHING: no ref invocation, no reactive text/attr effect,
+      // even though the outer row's OWN bindings at this same depth-0 level
+      // are faithfully wired (`buildStaticLoopPlan`'s `childRefs`/`texts`/
+      // `attrsBySlot`). Scoped to depth 1 — `NestedLoop` has no parent link
+      // to thread a second offset through for depth ≥ 2, and the inner
+      // array expression there reads the depth-1 param, so a flat emission
+      // would `ReferenceError`; deeper nesting stays a known limitation.
+      if (innerLoop.depth !== 1) continue
+      const hasPlainBindings = innerLoop.bindings.refs.length > 0
+        || innerLoop.bindings.reactiveTexts.length > 0
+        || innerLoop.bindings.reactiveAttrs.length > 0
+      if (innerComps.length === 0 && !hasPlainBindings) continue
+      plans.push(buildInnerLoopNestedPlan(elem, innerLoop, innerComps))
     }
   }
 
@@ -147,6 +169,21 @@ function buildInnerLoopNestedPlan(
     propsExpr: buildStaticPropsExpr(comp.props),
   }))
 
+  // Plain-element bindings (#2798) — grouped/passed the same way
+  // `buildStaticLoopPlan` handles the OUTER row's own bindings: `forEach`
+  // binds the param as the raw item value, so texts/attrs stay unwrapped
+  // (no signal-accessor rewrite) and refs go through
+  // `buildStaticChildRefBindings`, not `buildChildRefBindings`.
+  const attrsBySlotMap = new Map<string, LoopChildReactiveAttr[]>()
+  for (const attr of innerLoop.bindings.reactiveAttrs) {
+    let bucket = attrsBySlotMap.get(attr.childSlotId)
+    if (!bucket) {
+      bucket = []
+      attrsBySlotMap.set(attr.childSlotId, bucket)
+    }
+    bucket.push(attr)
+  }
+
   return {
     kind: 'inner-loop-nested',
     containerVar: `_${varSlotId(elem.slotId)}`,
@@ -163,6 +200,9 @@ function buildInnerLoopNestedPlan(
     innerPreludeStatements: staticPreludeStatements(innerLoop.preamble),
     depth: innerLoop.depth,
     comps,
+    attrsBySlot: [...attrsBySlotMap].map(([slotId, attrs]) => [slotId, attrs] as const),
+    texts: innerLoop.bindings.reactiveTexts,
+    refs: buildStaticChildRefBindings(innerLoop.bindings.refs),
   }
 }
 

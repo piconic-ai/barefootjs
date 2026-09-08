@@ -58,6 +58,10 @@ import type {
   StaticArrayChildInitsPlan,
 } from '../plan/static-array-child-init.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
+import { varSlotId } from '../utils.ts'
+import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../emit-reactive.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from '../control-flow/stringify/claim-plan.ts'
+import { emitLoopChildRefs } from '../control-flow/stringify/loop.ts'
 
 export function stringifyStaticArrayChildInits(
   lines: string[],
@@ -142,6 +146,9 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     innerPreludeStatements,
     depth,
     comps,
+    attrsBySlot,
+    texts,
+    refs,
   } = plan
   lines.push(`  // Initialize inner-loop components in static array (depth ${depth})`)
   lines.push(`  if (${containerVar}) {`)
@@ -174,6 +181,38 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     lines.push(`        const ${compElVar} = qsaChildScope(__innerEl, ${comp.selector})`)
     lines.push(`        if (${compElVar}) initChild('${nameForRegistryRef(comp.componentName)}', ${compElVar}, ${comp.propsExpr})`)
   })
+  // Plain-element reactive attrs / texts / refs inside this inner loop's
+  // body (#2798) — mirrors `stringifyStaticLoop`'s own per-row wiring for
+  // the OUTER static loop, one nesting level in. `forEach` binds
+  // `innerParam` as the raw item value, so `texts`/`attrsBySlot`
+  // expressions stay unwrapped, same as the outer row.
+  if (attrsBySlot.length > 0) lines.push(`        ${DEDUP_STORE_DECL}`)
+  let ordinal = 0
+  for (const [slotId, attrs] of attrsBySlot) {
+    const varName = `__t_${varSlotId(slotId)}`
+    lines.push(`        const ${varName} = qsa(__innerEl, '[bf="${slotId}"]')`)
+    lines.push(`        if (${varName}) {`)
+    for (const attr of attrs) {
+      lines.push(`          createEffect(() => {`)
+      for (const stmt of emitDedupedAttrUpdate(varName, attr.attrName, attr.expression, attr, ordinal++)) {
+        lines.push(`            ${stmt}`)
+      }
+      lines.push(`          })`)
+    }
+    lines.push(`        }`)
+  }
+  if (texts.length > 0) {
+    const slots: ClaimSlotSpec[] = texts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const writer = claimWriterVarName(slots, varSlotId)
+    lines.push(`        const ${writer} = lazySlots(__innerEl, ${claimPlanLiteral(slots)})`)
+    for (const text of texts) {
+      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', String(${text.expression})) })`)
+    }
+  }
+  // Ref callbacks fire on every forEach iteration — initial mount and any
+  // future array-change-driven re-iteration. For a static array the array
+  // is non-reactive, so refs effectively fire once per item (#1244).
+  emitLoopChildRefs(lines, refs, { indent: '        ', elVar: '__innerEl', bodyIsMultiRoot: false })
   lines.push(`      })`)
   lines.push(`    })`)
   lines.push(`  }`)

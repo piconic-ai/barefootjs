@@ -13,12 +13,17 @@ import { createFixture } from '../src/types'
  * the first inner row constructs.
  *
  * `items` MUST be signal-backed, not a plain literal array: a literal array
- * routes through the hoisted static-array fast path, which never splices in
- * a ref call site at ANY depth (a separate, pre-existing gap — see #2798) —
- * that path would make this fixture pass regardless of whether #2750's fix
- * is present, defeating the whole point. Only the dynamic `mapArray`/
- * row-construction path (taken for a signal-backed array) emits the ref call
- * site this fixture exists to pin.
+ * routes through the hoisted static-array fast path. #2798 fixed that path's
+ * DEPTH-1 nested `.map()` (a plain-element inner loop directly inside the
+ * static outer row now wires its own ref/reactive-text/reactive-attr
+ * bindings, `buildInnerLoopNestedPlan` in `plan/build-static-array-child-
+ * init.ts`), but this fixture's shape is DEPTH-2 (`row.children.map(child
+ * => <span ref={trackMount}>...)` nested two levels inside the outer
+ * `.map()`) — out of #2798's scope (`NestedLoop` has no parent link to
+ * thread a second offset through), so a literal array here would still
+ * silently drop the ref. Using a signal-backed array instead routes through
+ * the dynamic `mapArray`/row-construction path regardless of depth, which is
+ * what this fixture exists to pin — #2750's bug, not #2798's.
  *
  * `ref` is a no-op here — this fixture's only concern is that the referenced
  * const is DECLARED and CALLABLE, not what it does once called, so no body

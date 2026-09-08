@@ -2645,6 +2645,14 @@
       }
     }
   ],
+  "static-nested-loop-ref-precomputed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "string-concat-plus": [
     {
       "name": "gen:name:markup",
