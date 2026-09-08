@@ -2358,6 +2358,49 @@
         "text"
       ]
     },
+    "filter-predicate-renamed-prop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-predicate-signal-alias": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-simple": {
       "kinds": [
         "array-literal",
@@ -6134,18 +6177,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 94,
+    "array-literal": 96,
     "array-method": 71,
     "arrow": 72,
-    "binary": 99,
-    "call": 257,
+    "binary": 101,
+    "call": 259,
     "conditional": 31,
-    "identifier": 360,
+    "identifier": 362,
     "index-access": 14,
-    "literal": 286,
+    "literal": 288,
     "logical": 49,
-    "member": 203,
-    "object-literal": 78,
+    "member": 205,
+    "object-literal": 80,
     "template-literal": 31,
     "unary": 27,
     "unsupported": 47
@@ -6176,19 +6219,19 @@
     "array-method:trimEnd": 1,
     "array-method:trimStart": 1,
     "binary:!=": 2,
-    "binary:!==": 9,
+    "binary:!==": 10,
     "binary:*": 12,
     "binary:+": 23,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 52,
+    "binary:===": 53,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 60,
+    "literal:boolean": 61,
     "literal:null": 23,
-    "literal:number": 123,
-    "literal:string": 203,
+    "literal:number": 125,
+    "literal:string": 205,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,

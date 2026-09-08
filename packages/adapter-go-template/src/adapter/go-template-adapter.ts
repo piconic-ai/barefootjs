@@ -4866,17 +4866,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * rebinds. Outside any loop the root *is* the dot, so we emit `.Field`.
    */
   private rootFieldRef(name: string): string {
-    // #2813 / #2788: `name` may be a bare local-const alias of a
-    // signal/memo getter (`const items__alias = items`) or a bare-props-
-    // form body destructure's renamed prop (`const { children: kids } =
-    // props`) — resolve it to the ALIASED entity's own name FIRST, so the
-    // emitted field matches what that entity itself seeds (`.Items`,
-    // `.Children`) instead of registering a second, never-populated field
-    // under the local alias (`.Items__alias`, `.Kids`).
-    const resolved = this.state.getterAliases.get(name) ?? this.state.propDestructureAliases.get(name) ?? name
+    const resolved = this.resolveRootFieldAlias(name)
     this.state.templateReadRootFields.add(resolved)
     const prefix = this.inLoop ? '$.' : '.'
     return `${prefix}${capitalizeFieldName(resolved)}`
+  }
+
+  /**
+   * #2813 / #2788: `name` may be a bare local-const alias of a signal/memo
+   * getter (`const items__alias = items`) or a bare-props-form body
+   * destructure's renamed prop (`const { children: kids } = props`) —
+   * resolve it to the ALIASED entity's own name, so a caller that needs to
+   * build its own prefixed field reference (e.g. `renderFilterExprNode`,
+   * which must hardcode `$.` regardless of `rootFieldRef`'s
+   * `this.inLoop`-conditional prefix — #2857) still lands on the field that
+   * entity itself seeds (`.Items`, `.Children`) instead of a never-populated
+   * field under the local alias (`.Items__alias`, `.Kids`). `rootFieldRef`
+   * itself is built on top of this so there is exactly one resolution.
+   */
+  private resolveRootFieldAlias(name: string): string {
+    return this.state.getterAliases.get(name) ?? this.state.propDestructureAliases.get(name) ?? name
   }
 
   /**
@@ -6212,12 +6221,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // prefix because a filter predicate must always escape back to
           // root regardless of loop nesting; call it only for its
           // registration side effect and keep the prefix here (pullfrog
-          // review, PR #2818).
+          // review, PR #2818). The field name itself DOES go through
+          // `resolveRootFieldAlias` (#2857) so a getter-alias local
+          // (`const items__alias = items`) still emits the field the
+          // signal itself seeds instead of a phantom `.Items__alias`.
           this.rootFieldRef(signal)
-          return `$.${capitalizeFieldName(signal)}`
+          return `$.${capitalizeFieldName(this.resolveRootFieldAlias(signal))}`
         }
+        // Any other identifier reaching here is ALSO a root-scope
+        // reference (a memo, a plain derived const, or — #2857 — a
+        // bare-props-form destructured/renamed prop) rather than the
+        // loop's own param, so it needs the same unconditional `$.`
+        // escape as the signal branch above, for the same reason: a
+        // `.filter().map()` JSX loop's `{{if}}` gate (built from
+        // `loop.filterPredicate` a few hundred lines below, via
+        // `renderPredicateCondition` → this method) always sits inside
+        // that loop's own `{{range}}`, never at the template's un-rebound
+        // root, so `rootFieldRef`'s own `this.inLoop`-conditional prefix
+        // would be wrong here even without the alias bug — a bare
+        // `.Field` resolves against the CURRENT LOOP ITEM's type, not
+        // root, and `html/template` panics at execute time (`can't
+        // evaluate field ... in type ...`) the first time such a
+        // reference is exercised.
         this.rootFieldRef(expr.name)
-        return `.${capitalizeFieldName(expr.name)}`
+        return `$.${capitalizeFieldName(this.resolveRootFieldAlias(expr.name))}`
       }
 
       case 'literal':
@@ -6262,11 +6289,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
         }
         // Signal calls: `filter()` -> `$.Filter`. Same registration-only
-        // `rootFieldRef` call as the `identifier` case above, for the same
+        // `rootFieldRef` call — and the same `resolveRootFieldAlias` field
+        // resolution (#2857) — as the `identifier` case above, for the same
         // reason (#2700's BF101 gate; pullfrog review, PR #2818).
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           this.rootFieldRef(expr.callee.name)
-          return `$.${capitalizeFieldName(expr.callee.name)}`
+          return `$.${capitalizeFieldName(this.resolveRootFieldAlias(expr.callee.name))}`
         }
         // A nested callback method call (`other.some(r => …)`) reaching this
         // arm has no Go template form in filter context — the fallthrough
