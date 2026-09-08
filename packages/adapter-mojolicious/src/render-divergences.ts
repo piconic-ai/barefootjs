@@ -15,15 +15,4 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // at value position and the runtime evaluator's `object-literal` case
 // now merges it, so the seed classifies `derived` and SSRs identically
 // to Hono.
-export const renderDivergences: RenderDivergences = {
-  // #2883: `MojoFilterEmitter.identifier()` (expr/emitters.ts) resolves a
-  // `.filter()` predicate identifier against only the loop param and
-  // `localVarMap` — a bare-props-form renamed prop destructure (`const {
-  // fallbackLabel: skipLabel } = props`, the #2788 alias family) falls
-  // through to a bare `$skipLabel`, a Perl variable never declared in the
-  // generated `.html.ep`. Every row is filtered out (the fixture's
-  // reference expects only the non-matching row to survive). Unrelated to
-  // #2857's Go Template adapter fix that this fixture was added for — this
-  // fixture is a shared cross-adapter conformance fixture, not Go-specific.
-  'filter-predicate-renamed-prop': 'https://github.com/piconic-ai/barefootjs/issues/2883',
-}
+export const renderDivergences: RenderDivergences = {}

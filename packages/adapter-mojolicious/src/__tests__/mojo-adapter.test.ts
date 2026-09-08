@@ -733,6 +733,40 @@ export function L() {
     expect(result.template).not.toContain('$sel eq $t->{n}')
   })
 
+  test('compares a filter predicate against a renamed body-destructured prop with Perl `ne`, not numeric `!=` (#2883)', () => {
+    // `MojoFilterEmitter.identifier()` correctly resolves `skipLabel` to
+    // `$skipLabel` (Mojo seeds/derives that stash key for the #2788 alias
+    // family, same as the top-level splice path) — the actual bug was
+    // `collectStringValueNames`'s witness for `eq`/`ne` vs `==`/`!=` not
+    // knowing about body-destructured RENAMED props, so this comparison
+    // fell through to numeric `!=`. `'Alpha' != 'Alpha'` and
+    // `'Beta' != 'Alpha'` both numify to `0 != 0` — every row was
+    // filtered out regardless of the real string value.
+    const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Todo = { id: number; label: string }
+
+export function FilterPredicateRenamedProp(props: { fallbackLabel: string }) {
+  const { fallbackLabel: skipLabel } = props
+  const [todos] = createSignal<Todo[]>([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Beta' },
+  ])
+  return (
+    <ul>
+      {todos().filter(t => t.label !== skipLabel).map(t => (
+        <li key={t.id}>{t.label}</li>
+      ))}
+    </ul>
+  )
+}
+`)
+    expect(result.template).toContain('$t->{label} ne $skipLabel')
+    expect(result.template).not.toContain('$t->{label} != $skipLabel')
+  })
+
   test('generates script registration for client components', () => {
     const result = compileAndGenerate(`
 "use client"
