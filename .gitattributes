@@ -7,3 +7,11 @@
 # when the compiler changes, the snapshot diff is the review signal
 # (expected output change vs regression), so it must stay expandable.
 packages/adapter-tests/fixtures/__snapshots__/** linguist-generated=true
+
+# `ui/support-matrix.lock.json` (support-matrix-cli.ts): the per-adapter
+# capability matrix, mechanically regenerated from the full fixture corpus.
+# Nearly every fixture addition/removal reshuffles pass/total counts across
+# every adapter cell, so the diff is thousands of lines of noise rather than
+# a review signal — collapse it by default in PR diffs (still expandable,
+# and kept out of language stats).
+ui/support-matrix.lock.json linguist-generated=true
