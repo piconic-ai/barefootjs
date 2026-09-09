@@ -625,6 +625,31 @@ export interface LoopChildConditional {
    * preamble-bound identifier unexpanded on purpose (#2482 Stage 1b).
    */
   readsPreamble?: boolean
+  /**
+   * `condition` can change value after first render — it reads a signal,
+   * memo, prop, or preamble-derived reactive local, as opposed to reading
+   * ONLY the (for a static array, fixed-forever) loop item/index (#2897
+   * follow-up). `classifyReactivity`'s `kind` can't answer this: it
+   * reports `'loop-param'` for ANY expression referencing a loop-bound
+   * name, even one that ALSO reads a signal (`item.x && flag()`) — that
+   * precedence is deliberate for its own two `ReactivitySource`-typed
+   * callers and must not change. This field is computed independently,
+   * at collection time, as `n.reactive || readsPreamble ||
+   * needsEffectWrapper(...)` — the same "does it need a patchable slot
+   * beyond the row's own item" question, without the loop-param
+   * short-circuit.
+   *
+   * Consumers: a static array's row/inner-loop conditional only needs
+   * escalation off the compile-time-bakeable static path when THIS is
+   * true — a condition that reads only the item/index never changes for
+   * a static array, so the row's branch decision (bare element OR child
+   * component) is correctly baked once by SSR and wired once by the
+   * static `initChild` pass, exactly as it was before #2897. A dynamic
+   * (signal-backed) array's `mapArray`/`insert()` path is unaffected by
+   * this field — every loop-param conditional is genuinely per-row
+   * reactive there, so `bindings.conditionals` itself is never filtered.
+   */
+  reactiveBeyondLoopScope: boolean
 }
 
 export interface TopLevelLoop extends LoopCore {

@@ -135,6 +135,136 @@ describe('#2897 — nested: static outer array + depth-1 inner loop whose row ha
   })
 })
 
+describe('#2897 follow-up — static array, own-row conditional reading ONLY the loop item, child-component branch', () => {
+  // `SocialShell` (site/ui) shape: `item.key === 'messages'` is a
+  // `classifyReactivity` `'loop-param'` verdict (every loop-param-referencing
+  // condition is, regardless of array static-ness — see `reactiveBeyondLoopScope`'s
+  // doc comment on `LoopChildConditional`), so `bindings.conditionals` is
+  // non-empty here too. For a STATIC array the row item never changes after
+  // first render, so this decision is exactly as compile-time-bakeable as a
+  // bare-element conditional — escalating it is unnecessary and (via the
+  // composite/`insert()` path) previously double-mounted the child component.
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    function Badge() { return <span className="badge">B</span> }
+    export function C() {
+      const items = [{ id: 1, key: 'other' }, { id: 2, key: 'messages' }]
+      return (
+        <ul>
+          {items.map(item => (
+            <li key={item.id}>
+              {item.key === 'messages' ? <Badge /> : null}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  `
+
+  test('stays on the static forEach + initChild path, no reconciliation', () => {
+    const js = compile(source)
+    expect(usesStaticForEach(js)).toBe(true)
+    expect(usesReconciliation(js)).toBe(false)
+  })
+})
+
+describe('#2897 follow-up — static array, own-row conditional whose CONDITION reads a signal, child-component branch', () => {
+  // Same branch shape as above, but the condition itself (`flag()`) can
+  // change after first render — this is the case #2897 actually fixes, and
+  // must still escalate regardless of what the branches contain.
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    function Badge() { return <span className="badge">B</span> }
+    export function C() {
+      const items = [{ id: 1 }]
+      const [flag] = createSignal(true)
+      return (
+        <ul>
+          {items.map(item => (
+            <li key={item.id}>
+              {flag() ? <Badge /> : null}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  `
+
+  test('routes through reconciliation, not the static forEach bake', () => {
+    const js = compile(source)
+    expect(usesReconciliation(js)).toBe(true)
+    expect(usesStaticForEach(js)).toBe(false)
+  })
+})
+
+describe('#2897 follow-up — static array, own-row condition mixing an item read and a signal read', () => {
+  // `classifyReactivity` reports `'loop-param'` (not `'signal-or-memo-or-prop'`)
+  // for `item.x && flag()` because it checks loop-bound names FIRST — that
+  // precedence is deliberate and must not change (two other, typed callers
+  // depend on it). `reactiveBeyondLoopScope` must still escalate this,
+  // independently of that `kind`, since the value CAN change after first
+  // render (`flag()`).
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function C() {
+      const items = [{ id: 1, x: true }]
+      const [flag] = createSignal(true)
+      return (
+        <ul>
+          {items.map(item => (
+            <li key={item.id}>
+              {item.x && flag() ? <b>Yes</b> : <i>No</i>}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  `
+
+  test('routes through reconciliation, not the static forEach bake', () => {
+    const js = compile(source)
+    expect(usesReconciliation(js)).toBe(true)
+    expect(usesStaticForEach(js)).toBe(false)
+  })
+})
+
+describe('#2897 follow-up — static array, own-row conditional reading ONLY the loop item, bare-element branches', () => {
+  // The item-only-condition control for a BARE-element branch (as opposed
+  // to the child-component branch above) — both must stay static; content
+  // of the branches plays no part in the escalation decision, only whether
+  // the condition itself can change. `ref` gives the row #2798's own
+  // static-forEach wiring to check against (a fully inert row — no
+  // ref/text/attr/childComponent needing a runtime touch at all — emits NO
+  // loop wiring in the first place, which would make `usesStaticForEach`
+  // vacuously false here regardless of this fix; a click handler alone
+  // doesn't count either — events use container-level delegation, not
+  // per-row forEach).
+  const source = `
+    'use client'
+    export function C() {
+      const items = [{ id: 1, done: true }, { id: 2, done: false }]
+      return (
+        <ul>
+          {items.map(item => (
+            <li key={item.id} ref={(el) => console.log(el, item.id)}>
+              {item.done ? <b>Yes</b> : <i>No</i>}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  `
+
+  test('stays on the static forEach + createEffect path, no reconciliation', () => {
+    const js = compile(source)
+    expect(usesStaticForEach(js)).toBe(true)
+    expect(usesReconciliation(js)).toBe(false)
+  })
+})
+
 describe('#2897 — control: static outer + depth-1 inner loop with NO conditional stays on the #2798 fast path', () => {
   // Regression armor: the escalation must be conditional-triggered only —
   // a nested static loop with ordinary ref/text/attr bindings and no
