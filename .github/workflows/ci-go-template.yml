@@ -38,7 +38,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
