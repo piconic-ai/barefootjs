@@ -38,12 +38,23 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
 
 // --- Context ---
+
+/**
+ * One registered ComboboxItem. `label` is a getter so the root's
+ * filtered-list memo re-reads the rendered text on every recompute
+ * instead of caching a mount-time snapshot.
+ */
+interface ComboboxItemEntry {
+  el: HTMLElement
+  value: string
+  label: () => string
+}
 
 interface ComboboxContextValue {
   open: () => boolean
@@ -52,7 +63,26 @@ interface ComboboxContextValue {
   onValueChange: (value: string) => void
   search: () => string
   onSearchChange: (value: string) => void
-  filter: (value: string, search: string) => boolean
+  registerItem: (entry: ComboboxItemEntry) => void
+  unregisterItem: (entry: ComboboxItemEntry) => void
+  /** Every registered item, in document order. */
+  items: () => ReadonlyArray<ComboboxItemEntry>
+  /** The registered items the current search keeps, in document order. */
+  visibleItems: () => ReadonlyArray<ComboboxItemEntry>
+  /** Whether `el` (a registered item root) survives the current search. */
+  isVisible: (el: HTMLElement) => boolean
+}
+
+/**
+ * `Array.prototype.sort` comparator placing `a` before `b` when `a`
+ * precedes it in the document. Two nodes not in one tree (a row not yet
+ * attached) compare equal, so the sort keeps their registration order.
+ */
+function documentOrder(a: HTMLElement, b: HTMLElement): number {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
 }
 
 const ComboboxContext = createContext<ComboboxContextValue>()
@@ -173,6 +203,27 @@ function Combobox(props: ComboboxProps) {
     return value.toLowerCase().includes(search.toLowerCase())
   }))
 
+  // Item registry as a signal: every "which items are visible" answer
+  // (item `hidden`, group/empty visibility, the highlighted row) is a
+  // synchronous derivation of `entries` + `search`, so it settles inside
+  // the same signal write instead of on a later animation frame. The old
+  // rAF-deferred DOM queries left the group/empty `hidden` attributes and
+  // `data-selected` one frame behind the item `hidden` writes — a race
+  // any observer between the write and the frame could see (#2827).
+  const [entries, setEntries] = createSignal<ComboboxItemEntry[]>([])
+
+  // Sorted on every recompute (not at registration) so a row that
+  // registered while still detached is ordered once it is in the tree.
+  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+
+  const visibleItems = createMemo(() => {
+    const s = search()
+    const filter = filterFn()
+    return items().filter(entry => filter(entry.label(), s))
+  })
+
+  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
+
   return (
     <ComboboxContext.Provider value={{
       open,
@@ -188,7 +239,11 @@ function Combobox(props: ComboboxProps) {
       },
       search,
       onSearchChange: setSearch,
-      filter: filterFn(),
+      registerItem: (entry: ComboboxItemEntry) => setEntries(prev => [...prev, entry]),
+      unregisterItem: (entry: ComboboxItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items,
+      visibleItems,
+      isVisible: (el: HTMLElement) => visibleSet().has(el),
     }}>
       <div data-slot="combobox" id={props.id} className={`relative inline-block ${props.className ?? ''}`}>
         {props.children}
@@ -401,18 +456,18 @@ function ComboboxContent(props: ComboboxContentProps) {
       }
     })
 
-    // Auto-select visible item when search changes:
-    // prefer the currently checked item, fall back to first visible
+    // Highlight a visible item whenever the filtered list changes: prefer
+    // the currently checked item, fall back to the first visible. Reads
+    // the root's filtered-list memo and the value signal directly rather
+    // than the items' `hidden`/`data-state` attributes, so it does not
+    // depend on running after the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      requestAnimationFrame(() => {
-        const visibleItems = Array.from(el.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')) as HTMLElement[]
-        const checkedItem = el.querySelector('[data-slot="combobox-item"][data-state="checked"]:not([hidden])') as HTMLElement | null
-        const targetItem = checkedItem ?? visibleItems[0] ?? null
-        visibleItems.forEach((item) => {
-          item.setAttribute('data-selected', String(item === targetItem))
-        })
-      })
+      const visible = ctx.visibleItems()
+      const checked = ctx.value()
+      const target = visible.find(entry => entry.value === checked) ?? visible[0] ?? null
+      for (const entry of visible) {
+        entry.el.setAttribute('data-selected', String(entry === target))
+      }
     })
 
   }
@@ -482,15 +537,10 @@ function ComboboxEmpty(props: ComboboxEmptyProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(ComboboxContext)
 
+    // Derived from the root's filtered-list memo, so it settles in the
+    // same signal write as the items' own `hidden` — no frame in between.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const container = el.closest('[data-slot="combobox-content"]')
-        if (!container) return
-        const visibleItems = container.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')
-        el.hidden = visibleItems.length > 0
-      })
+      el.hidden = ctx.visibleItems().length > 0
     })
   }
 
@@ -519,12 +569,18 @@ function ComboboxItem(props: ComboboxItemProps) {
     // Set data-value for querying
     el.setAttribute('data-value', props.value)
 
-    // Self-filter based on search
+    const entry: ComboboxItemEntry = {
+      el,
+      value: props.value,
+      label: () => el.textContent?.trim() ?? props.value,
+    }
+    ctx.registerItem(entry)
+    onCleanup(() => ctx.unregisterItem(entry))
+
+    // Visibility is the root's decision (one filtered-list memo shared with
+    // the group/empty rows and the highlight); this effect only mirrors it.
     createEffect(() => {
-      const s = ctx.search()
-      const label = el.textContent?.trim() ?? props.value
-      const visible = ctx.filter(label, s)
-      el.hidden = !visible
+      el.hidden = !ctx.isVisible(el)
     })
 
     // Selected (checked) state + data-selected highlight
@@ -596,13 +652,13 @@ function ComboboxGroup(props: ComboboxGroupProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(ComboboxContext)
 
+    // Hide the group if it has items but none survive the search. Reads
+    // the root's registry + filtered-list memos rather than querying the
+    // items' `hidden` attributes, so it does not depend on running after
+    // the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      requestAnimationFrame(() => {
-        const items = el.querySelectorAll('[data-slot="combobox-item"]')
-        const visibleItems = el.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')
-        el.hidden = items.length > 0 && visibleItems.length === 0
-      })
+      const own = ctx.items().filter(entry => el.contains(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
     })
   }
 

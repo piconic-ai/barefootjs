@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, onCleanup, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2952,6 +2952,12 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `$
 })[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${_p.className}`) != null ? 'class="' + escapeAttr(`shrink-0 ${_p.className}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
 export function Icon(_p, __bfKey) { return createComponent('Icon', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initCombobox(__scope, _p = {}) {
   if (!__scope) return
@@ -2969,6 +2975,14 @@ export function initCombobox(__scope, _p = {}) {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   }))
+  const [entries, setEntries] = createSignal([])
+  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+  const visibleItems = createMemo(() => {
+    const s = search()
+    const filter = filterFn()
+    return items().filter(entry => filter(entry.label(), s))
+  })
+  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
 
 
   // Provide context for child components
@@ -2986,7 +3000,11 @@ export function initCombobox(__scope, _p = {}) {
       },
       search,
       onSearchChange: setSearch,
-      filter: filterFn(),
+      registerItem: (entry) => setEntries(prev => [...prev, entry]),
+      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items,
+      visibleItems,
+      isVisible: (el) => visibleSet().has(el),
     })
 }
 
@@ -3230,18 +3248,18 @@ export function initComboboxContent(__scope, _p = {}) {
       }
     })
 
-    // Auto-select visible item when search changes:
-    // prefer the currently checked item, fall back to first visible
+    // Highlight a visible item whenever the filtered list changes: prefer
+    // the currently checked item, fall back to the first visible. Reads
+    // the root's filtered-list memo and the value signal directly rather
+    // than the items' `hidden`/`data-state` attributes, so it does not
+    // depend on running after the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      requestAnimationFrame(() => {
-        const visibleItems = Array.from(el.querySelectorAll('[data-slot="combobox-item"]:not([hidden])'))
-        const checkedItem = el.querySelector('[data-slot="combobox-item"][data-state="checked"]:not([hidden])')
-        const targetItem = checkedItem ?? visibleItems[0] ?? null
-        visibleItems.forEach((item) => {
-          item.setAttribute('data-selected', String(item === targetItem))
-        })
-      })
+      const visible = ctx.visibleItems()
+      const checked = ctx.value()
+      const target = visible.find(entry => entry.value === checked) ?? visible[0] ?? null
+      for (const entry of visible) {
+        entry.el.setAttribute('data-selected', String(entry === target))
+      }
     })
 
   }
@@ -3341,15 +3359,10 @@ export function initComboboxEmpty(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(ComboboxContext)
 
+    // Derived from the root's filtered-list memo, so it settles in the
+    // same signal write as the items' own `hidden` — no frame in between.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const container = el.closest('[data-slot="combobox-content"]')
-        if (!container) return
-        const visibleItems = container.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')
-        el.hidden = visibleItems.length > 0
-      })
+      el.hidden = ctx.visibleItems().length > 0
     })
   }
 
@@ -3392,12 +3405,18 @@ export function initComboboxItem(__scope, _p = {}) {
     // Set data-value for querying
     el.setAttribute('data-value', _p.value)
 
-    // Self-filter based on search
+    const entry = {
+      el,
+      value: _p.value,
+      label: () => el.textContent?.trim() ?? _p.value,
+    }
+    ctx.registerItem(entry)
+    onCleanup(() => ctx.unregisterItem(entry))
+
+    // Visibility is the root's decision (one filtered-list memo shared with
+    // the group/empty rows and the highlight); this effect only mirrors it.
     createEffect(() => {
-      const s = ctx.search()
-      const label = el.textContent?.trim() ?? _p.value
-      const visible = ctx.filter(label, s)
-      el.hidden = !visible
+      el.hidden = !ctx.isVisible(el)
     })
 
     // Selected (checked) state + data-selected highlight
@@ -3486,13 +3505,13 @@ export function initComboboxGroup(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(ComboboxContext)
 
+    // Hide the group if it has items but none survive the search. Reads
+    // the root's registry + filtered-list memos rather than querying the
+    // items' `hidden` attributes, so it does not depend on running after
+    // the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      requestAnimationFrame(() => {
-        const items = el.querySelectorAll('[data-slot="combobox-item"]')
-        const visibleItems = el.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')
-        el.hidden = items.length > 0 && visibleItems.length === 0
-      })
+      const own = ctx.items().filter(entry => el.contains(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
     })
   }
 

@@ -57,10 +57,11 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
   },
-  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` (#2827) instead of
-  // graduating like `accordion`'s: measured bimodal (a genuine structural
-  // divergence some runs, agreement others), so the ledger's "reliably
-  // fails" assumption doesn't hold for this pair.
+  // `idempotence` graduated (#2827): the bimodal divergence was the
+  // component's own rAF-deferred group/empty `hidden` + `data-selected`
+  // writes landing one frame after the item `hidden` writes; the root now
+  // derives all of them synchronously from an item-registry signal (see
+  // `IDEMPOTENCE_EXCLUDED`'s docstring in `oracle.playwright.ts`).
   command: {
     oracles: ['snap', 'three-point'],
     reason:
@@ -81,13 +82,12 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
   },
-  // `idempotence` moved to `IDEMPOTENCE_EXCLUDED` once #2717 fixed the
+  // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
-  // record (see the dialog/popover/portal group below): with the ordering
-  // agreed, the pair is bimodal on the `combobox-empty` row's `hidden`
-  // attribute (same class as `command`, #2827), so the ledger's "reliably
-  // fails" assumption no longer holds. The remaining oracles are the
-  // #2715 placeholder mirror.
+  // record (see the dialog/popover/portal group below), which left the
+  // pair bimodal on the `combobox-empty` row's `hidden` attribute — the
+  // same rAF-deferred write as `command` (#2827), fixed the same way. The
+  // remaining oracles are the #2715 placeholder mirror.
   combobox: {
     oracles: ['snap', 'three-point'],
     reason:

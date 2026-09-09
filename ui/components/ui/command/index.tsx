@@ -32,7 +32,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup } from '@barefootjs/client'
 import {
   Dialog,
   DialogOverlay,
@@ -42,15 +42,43 @@ import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { SearchIcon } from '../icon'
 
+/**
+ * One registered CommandItem. `value`/`keywords` are getters so the root's
+ * filtered-list memo re-reads them on every recompute instead of caching
+ * a mount-time snapshot.
+ */
+interface CommandItemEntry {
+  el: HTMLElement
+  value: () => string
+  keywords: () => string[] | undefined
+}
+
 // Context for Command → children state sharing
 interface CommandContextValue {
   search: () => string
   onSearchChange: (value: string) => void
   selectedValue: () => string
   onSelect: (value: string) => void
-  registerItem: (el: HTMLElement) => void
-  unregisterItem: (el: HTMLElement) => void
-  filter: (value: string, search: string, keywords?: string[]) => boolean
+  registerItem: (entry: CommandItemEntry) => void
+  unregisterItem: (entry: CommandItemEntry) => void
+  /** Every registered item, in document order. */
+  items: () => ReadonlyArray<CommandItemEntry>
+  /** The registered items the current search keeps, in document order. */
+  visibleItems: () => ReadonlyArray<CommandItemEntry>
+  /** Whether `el` (a registered item root) survives the current search. */
+  isVisible: (el: HTMLElement) => boolean
+}
+
+/**
+ * `Array.prototype.sort` comparator placing `a` before `b` when `a`
+ * precedes it in the document. Two nodes not in one tree (a row not yet
+ * attached) compare equal, so the sort keeps their registration order.
+ */
+function documentOrder(a: HTMLElement, b: HTMLElement): number {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
 }
 
 const CommandContext = createContext<CommandContextValue>()
@@ -144,27 +172,37 @@ interface CommandDialogProps extends HTMLBaseAttributes {
 function Command(props: CommandProps) {
   const [search, setSearch] = createSignal('')
   const [selectedValue, setSelectedValue] = createSignal('')
-  const items = new Set<HTMLElement>()
+  // Item registry as a signal: every "which items are visible" answer
+  // below (item `hidden`, group/empty visibility, auto-selection) is a
+  // synchronous derivation of `entries` + `search`, so it settles inside
+  // the same signal write instead of on a later animation frame. The old
+  // rAF-deferred DOM queries left the group/empty `hidden` attributes and
+  // `data-selected` one frame behind the item `hidden` writes — a race
+  // any observer between the write and the frame could see (#2827).
+  const [entries, setEntries] = createSignal<CommandItemEntry[]>([])
 
   const filterFn = createMemo(() => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   }))
 
+  // Sorted on every recompute (not at registration) so a row that
+  // registered while still detached is ordered once it is in the tree.
+  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+
+  const visibleItems = createMemo(() => {
+    const s = search()
+    const filter = filterFn()
+    return items().filter(entry => filter(entry.value(), s, entry.keywords()))
+  })
+
+  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
+
   const handleMount = (el: HTMLElement) => {
-    // Auto-select first visible item when search changes
+    // Auto-select the first visible item whenever the filtered list changes
     createEffect(() => {
-      search() // track dependency
-      // Use rAF to run after item effects have updated visibility
-      requestAnimationFrame(() => {
-        const visibleItems = Array.from(el.querySelectorAll('[data-slot="command-item"]:not([hidden])')) as HTMLElement[]
-        if (visibleItems.length > 0) {
-          const firstValue = visibleItems[0].getAttribute('data-value') ?? ''
-          setSelectedValue(firstValue)
-        } else {
-          setSelectedValue('')
-        }
-      })
+      const first = visibleItems()[0]
+      setSelectedValue(first ? first.value() : '')
     })
 
     // Keyboard navigation
@@ -213,9 +251,11 @@ function Command(props: CommandProps) {
         setSelectedValue(value)
         props.onValueChange?.(value)
       },
-      registerItem: (el: HTMLElement) => items.add(el),
-      unregisterItem: (el: HTMLElement) => items.delete(el),
-      filter: filterFn(),
+      registerItem: (entry: CommandItemEntry) => setEntries(prev => [...prev, entry]),
+      unregisterItem: (entry: CommandItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items,
+      visibleItems,
+      isVisible: (el: HTMLElement) => visibleSet().has(el),
     }}>
       <div
         data-slot="command"
@@ -295,15 +335,10 @@ function CommandEmpty(props: CommandEmptyProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(CommandContext)
 
+    // Derived from the root's filtered-list memo, so it settles in the
+    // same signal write as the items' own `hidden` — no frame in between.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const list = el.closest('[data-slot="command-list"]') ?? el.closest('[data-slot="command"]')
-        if (!list) return
-        const visibleItems = list.querySelectorAll('[data-slot="command-item"]:not([hidden])')
-        el.hidden = visibleItems.length > 0
-      })
+      el.hidden = ctx.visibleItems().length > 0
     })
   }
 
@@ -328,15 +363,13 @@ function CommandGroup(props: CommandGroupProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(CommandContext)
 
+    // Hide the group if it has items but none survive the search. Reads
+    // the root's registry + filtered-list memos rather than querying the
+    // items' `hidden` attributes, so it does not depend on running after
+    // the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const items = el.querySelectorAll('[data-slot="command-item"]')
-        const visibleItems = el.querySelectorAll('[data-slot="command-item"]:not([hidden])')
-        // Hide the group if it has items but none are visible
-        el.hidden = items.length > 0 && visibleItems.length === 0
-      })
+      const own = ctx.items().filter(entry => el.contains(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
     })
   }
 
@@ -375,14 +408,14 @@ function CommandItem(props: CommandItemProps) {
     const value = resolveValue()
     el.setAttribute('data-value', value)
 
-    ctx.registerItem(el)
+    const entry: CommandItemEntry = { el, value: resolveValue, keywords: () => props.keywords }
+    ctx.registerItem(entry)
+    onCleanup(() => ctx.unregisterItem(entry))
 
-    // Self-filter based on search
+    // Visibility is the root's decision (one filtered-list memo shared with
+    // the group/empty rows and auto-selection); this effect only mirrors it.
     createEffect(() => {
-      const s = ctx.search()
-      const v = resolveValue()
-      const visible = ctx.filter(v, s, props.keywords)
-      el.hidden = !visible
+      el.hidden = !ctx.isVisible(el)
     })
 
     // Selected state

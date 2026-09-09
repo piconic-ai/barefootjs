@@ -77,25 +77,29 @@ const CSR_MOUNT_EXCLUDED: ReadonlyMap<string, string> = new Map([])
 /**
  * Fixtures excluded from the `'idempotence'` oracle, by declared id, with
  * a reason. Reserved for a fixture whose comparison is inherently flaky
- * independent of any real idempotence bug — either because its action
- * steps are position/timing-dependent (`carousel`'s `drag` step, see the
+ * independent of any real idempotence bug — because its action steps are
+ * position/timing-dependent (`carousel`'s `drag` step, see the
  * determinism caveat already documented on `InteractionStep`'s `'drag'`
- * variant, `src/types.ts`, and #1971), or because the comparison itself
- * is bimodal (`command`, #2827) — the quarantine ledger can't express
- * "reliably fails" for a pair that isn't.
+ * variant, `src/types.ts`, and #1971) — the quarantine ledger can't
+ * express "reliably fails" for a pair that isn't.
+ *
+ * `command` and `combobox` used to sit here as "bimodal" (#2827). They
+ * were not harness flakes: both components computed their group/empty
+ * `hidden` attributes and `data-selected` highlight inside
+ * `requestAnimationFrame` callbacks scheduled from an effect, i.e. one
+ * frame AFTER the items' own `hidden` writes, and this oracle captures
+ * right after the last action with no frame in between — so which leg
+ * had seen its frame decided the comparison. Fixed at the source: the
+ * root now owns an item registry signal and every visibility answer is
+ * a synchronous memo over it (`ui/components/ui/command/index.tsx`,
+ * `ui/components/ui/combobox/index.tsx`). Measured 10/10 agreeing on
+ * both fixtures with `--repeat-each=10 --workers=1` after the fix, versus
+ * 3/8 and 2/8 diverging before it.
  */
 const IDEMPOTENCE_EXCLUDED: ReadonlyMap<string, string> = new Map([
   [
     'carousel',
     "drag steps are pointer-position-dependent on a CSS-less host page (src/types.ts's 'drag' variant docstring, #1971) — replaying the same drag twice for comparison would be flaky independent of any real idempotence bug.",
-  ],
-  [
-    'command',
-    'measured non-deterministic (#2827): replaying the fill/filter steps twice for comparison lands on a differently-structured filtered list some of the time and agrees the rest — a race in the runtime\'s own filtered-list reconciliation, not a timing artifact of the interaction harness. Quarantining it assumes a reliably-failing pair, which this is not (CI has observed both the structural-divergence failure and the ledger\'s stale-entry rot-check tripping on the same pair).',
-  ],
-  [
-    'combobox',
-    'measured bimodal once its portal-ordering divergence was fixed (#2717): 4 of 5 repeats agree, the fifth diverges only on the `combobox-empty` row\'s `hidden` attribute (its visibility is an effect counting visible siblings after the fill/filter steps) — the same filtered-list reconciliation race class as `command` (#2827), not a portal-position difference (the portaled content sits at the same body position on every run). The ledger\'s "reliably fails" assumption does not hold for this pair, so it is excluded rather than quarantined.',
   ],
 ])
 

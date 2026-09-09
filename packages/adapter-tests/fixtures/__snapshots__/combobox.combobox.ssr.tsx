@@ -1,9 +1,15 @@
 /** @jsxImportSource hono/jsx */
 import { serializeHydrationProps, bfText, bfTextEnd, bfComment } from '@barefootjs/hono/utils'
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, createPortal, isSSRPortal, findSiblingSlot, trackPosition, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon, SearchIcon } from '../icon'
+
+interface ComboboxItemEntry {
+  el: HTMLElement
+  value: string
+  label: () => string
+}
 
 interface ComboboxContextValue {
   open: () => boolean
@@ -12,7 +18,21 @@ interface ComboboxContextValue {
   onValueChange: (value: string) => void
   search: () => string
   onSearchChange: (value: string) => void
-  filter: (value: string, search: string) => boolean
+  registerItem: (entry: ComboboxItemEntry) => void
+  unregisterItem: (entry: ComboboxItemEntry) => void
+  /** Every registered item, in document order. */
+  items: () => ReadonlyArray<ComboboxItemEntry>
+  /** The registered items the current search keeps, in document order. */
+  visibleItems: () => ReadonlyArray<ComboboxItemEntry>
+  /** Whether `el` (a registered item root) survives the current search. */
+  isVisible: (el: HTMLElement) => boolean
+}
+
+function documentOrder(a: HTMLElement, b: HTMLElement): number {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
 }
 
 const ComboboxContext = createContext<ComboboxContextValue>()
@@ -129,11 +149,20 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   const setSearch: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const internalValue = () => props.value ?? ''
   const setInternalValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
+  const entries = () => [] as ComboboxItemEntry[]
+  const setEntries: (valueOrFn: ComboboxItemEntry[] | ((prev: ComboboxItemEntry[]) => ComboboxItemEntry[])) => void = () => {}
   const isControlled = () => props.value !== undefined
   const filterFn = () => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   })
+  const items = () => [...entries()].sort((a, b) => documentOrder(a.el, b.el))
+  const visibleItems = () => {
+    const s = search()
+    const filter = filterFn()
+    return items().filter(entry => filter(entry.label(), s))
+  }
+  const visibleSet = () => new Set(visibleItems().map(entry => entry.el))
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -157,7 +186,11 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
       },
       search,
       onSearchChange: setSearch,
-      filter: filterFn(),
+      registerItem: (entry) => setEntries(prev => [...prev, entry]),
+      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items,
+      visibleItems,
+      isVisible: (el) => visibleSet().has(el),
     }, <><div data-slot="combobox" id={props.id} className={`relative inline-block ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}>{props.children}</div></>)}</>
   )
 }

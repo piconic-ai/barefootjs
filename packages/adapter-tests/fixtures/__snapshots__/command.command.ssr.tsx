@@ -1,19 +1,37 @@
 /** @jsxImportSource hono/jsx */
 import { serializeHydrationProps, bfComment, bfText, bfTextEnd } from '@barefootjs/hono/utils'
-import { createContext, useContext, createSignal, createMemo, createEffect, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, provideContextSSR } from '@barefootjs/hono/client-shim'
 import { Dialog, DialogOverlay, DialogContent } from '../dialog'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { SearchIcon } from '../icon'
+
+interface CommandItemEntry {
+  el: HTMLElement
+  value: () => string
+  keywords: () => string[] | undefined
+}
 
 interface CommandContextValue {
   search: () => string
   onSearchChange: (value: string) => void
   selectedValue: () => string
   onSelect: (value: string) => void
-  registerItem: (el: HTMLElement) => void
-  unregisterItem: (el: HTMLElement) => void
-  filter: (value: string, search: string, keywords?: string[]) => boolean
+  registerItem: (entry: CommandItemEntry) => void
+  unregisterItem: (entry: CommandItemEntry) => void
+  /** Every registered item, in document order. */
+  items: () => ReadonlyArray<CommandItemEntry>
+  /** The registered items the current search keeps, in document order. */
+  visibleItems: () => ReadonlyArray<CommandItemEntry>
+  /** Whether `el` (a registered item root) survives the current search. */
+  isVisible: (el: HTMLElement) => boolean
+}
+
+function documentOrder(a: HTMLElement, b: HTMLElement): number {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
 }
 
 const CommandContext = createContext<CommandContextValue>()
@@ -144,11 +162,19 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
   const setSearch: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const selectedValue = () => ''
   const setSelectedValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
+  const entries = () => [] as CommandItemEntry[]
+  const setEntries: (valueOrFn: CommandItemEntry[] | ((prev: CommandItemEntry[]) => CommandItemEntry[])) => void = () => {}
   const filterFn = () => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   })
-  const items = new Set<HTMLElement>()
+  const items = () => [...entries()].sort((a, b) => documentOrder(a.el, b.el))
+  const visibleItems = () => {
+    const s = search()
+    const filter = filterFn()
+    return items().filter(entry => filter(entry.value(), s, entry.keywords()))
+  }
+  const visibleSet = () => new Set(visibleItems().map(entry => entry.el))
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -165,9 +191,11 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
         setSelectedValue(value)
         props.onValueChange?.(value)
       },
-      registerItem: (el) => items.add(el),
-      unregisterItem: (el) => items.delete(el),
-      filter: filterFn(),
+      registerItem: (entry) => setEntries(prev => [...prev, entry]),
+      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items,
+      visibleItems,
+      isVisible: (el) => visibleSet().has(el),
     }, <><div data-slot="command" id={props.id} className={`${commandRootClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div></>)}</>
   )
 }

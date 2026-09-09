@@ -3347,6 +3347,12 @@ export function initDialogClose(__scope, _p = {}) {
 hydrate('DialogClose', { init: initDialogClose, template: (_p) => `<button data-slot="dialog-close" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation border bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>` })
 export function DialogClose(_p, __bfKey) { return createComponent('DialogClose', _p, __bfKey) }
 var CommandContext = CommandContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initCommand(__scope, _p = {}) {
   if (!__scope) return
@@ -3355,25 +3361,23 @@ export function initCommand(__scope, _p = {}) {
   const commandRootClasses = 'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground'
   const [search, setSearch] = createSignal('')
   const [selectedValue, setSelectedValue] = createSignal('')
-  const items = new Set()
+  const [entries, setEntries] = createSignal([])
   const filterFn = createMemo(() => _p.filter ?? ((value, search) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   }))
+  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+  const visibleItems = createMemo(() => {
+    const s = search()
+    const filter = filterFn()
+    return items().filter(entry => filter(entry.value(), s, entry.keywords()))
+  })
+  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
   const handleMount = (el) => {
-    // Auto-select first visible item when search changes
+    // Auto-select the first visible item whenever the filtered list changes
     createEffect(() => {
-      search() // track dependency
-      // Use rAF to run after item effects have updated visibility
-      requestAnimationFrame(() => {
-        const visibleItems = Array.from(el.querySelectorAll('[data-slot="command-item"]:not([hidden])'))
-        if (visibleItems.length > 0) {
-          const firstValue = visibleItems[0].getAttribute('data-value') ?? ''
-          setSelectedValue(firstValue)
-        } else {
-          setSelectedValue('')
-        }
-      })
+      const first = visibleItems()[0]
+      setSelectedValue(first ? first.value() : '')
     })
 
     // Keyboard navigation
@@ -3442,9 +3446,11 @@ export function initCommand(__scope, _p = {}) {
         setSelectedValue(value)
         _p.onValueChange?.(value)
       },
-      registerItem: (el) => items.add(el),
-      unregisterItem: (el) => items.delete(el),
-      filter: filterFn(),
+      registerItem: (entry) => setEntries(prev => [...prev, entry]),
+      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items,
+      visibleItems,
+      isVisible: (el) => visibleSet().has(el),
     })
 }
 
@@ -3547,15 +3553,10 @@ export function initCommandEmpty(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(CommandContext)
 
+    // Derived from the root's filtered-list memo, so it settles in the
+    // same signal write as the items' own `hidden` — no frame in between.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const list = el.closest('[data-slot="command-list"]') ?? el.closest('[data-slot="command"]')
-        if (!list) return
-        const visibleItems = list.querySelectorAll('[data-slot="command-item"]:not([hidden])')
-        el.hidden = visibleItems.length > 0
-      })
+      el.hidden = ctx.visibleItems().length > 0
     })
   }
 
@@ -3592,15 +3593,13 @@ export function initCommandGroup(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(CommandContext)
 
+    // Hide the group if it has items but none survive the search. Reads
+    // the root's registry + filtered-list memos rather than querying the
+    // items' `hidden` attributes, so it does not depend on running after
+    // the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const items = el.querySelectorAll('[data-slot="command-item"]')
-        const visibleItems = el.querySelectorAll('[data-slot="command-item"]:not([hidden])')
-        // Hide the group if it has items but none are visible
-        el.hidden = items.length > 0 && visibleItems.length === 0
-      })
+      const own = ctx.items().filter(entry => el.contains(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
     })
   }
 
@@ -3660,14 +3659,14 @@ export function initCommandItem(__scope, _p = {}) {
     const value = resolveValue()
     el.setAttribute('data-value', value)
 
-    ctx.registerItem(el)
+    const entry = { el, value: resolveValue, keywords: () => _p.keywords }
+    ctx.registerItem(entry)
+    onCleanup(() => ctx.unregisterItem(entry))
 
-    // Self-filter based on search
+    // Visibility is the root's decision (one filtered-list memo shared with
+    // the group/empty rows and auto-selection); this effect only mirrors it.
     createEffect(() => {
-      const s = ctx.search()
-      const v = resolveValue()
-      const visible = ctx.filter(v, s, _p.keywords)
-      el.hidden = !visible
+      el.hidden = !ctx.isVisible(el)
     })
 
     // Selected state
