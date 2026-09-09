@@ -205,6 +205,11 @@
       "getter": "internalValue",
       "setter": "setInternalValue",
       "initialValue": "props.value ?? ''"
+    },
+    {
+      "getter": "entries",
+      "setter": "setEntries",
+      "initialValue": "[]"
     }
   ],
   "memos": [
@@ -215,6 +220,26 @@
     {
       "name": "filterFn",
       "deps": []
+    },
+    {
+      "name": "items",
+      "deps": [
+        "entries"
+      ]
+    },
+    {
+      "name": "visibleItems",
+      "deps": [
+        "search",
+        "filterFn",
+        "items"
+      ]
+    },
+    {
+      "name": "visibleSet",
+      "deps": [
+        "visibleItems"
+      ]
     }
   ]
 }
