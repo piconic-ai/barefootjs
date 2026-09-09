@@ -42,7 +42,7 @@ Tokens:
 
 Debug:
   debug graph <component>                     Show signal dependency graph
-  debug trace <component> <signal>            Trace update propagation for a signal/memo
+  debug trace <component> <signal|memo|prop>  Trace update propagation for a signal/memo/prop
   debug events <component>                    Show event handlers and their update paths
   debug loops <component>                     Show loop bindings grouped by source collection
   debug why-update <component> <binding>      Explain why a binding updates

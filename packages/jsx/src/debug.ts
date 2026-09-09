@@ -21,6 +21,7 @@ import type {
   MemoInfo,
   EffectInfo,
   SourceLocation,
+  OriginInfo,
 } from './types.ts'
 import { analyzeComponent, listComponentFunctions } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
@@ -66,6 +67,16 @@ export interface DomBinding {
   kind: 'dom'
   label: string // e.g., 'text node "s0"', 'click handler "s1"'
   slotId: string
+  /**
+   * Statically proven reactive sources this binding reads, by name: signal
+   * getters, memo names, and props (#2903). A prop dep is spelled the way the
+   * source reads it — a destructured prop by its name (`title`), a props-object
+   * member as `<propsObject>.<member>` (`props.value`) — and a prop read
+   * through a prop-derived local const (`class={classes}`) is reported as the
+   * underlying prop(s), never the const. Every entry resolves to a node in
+   * `ComponentGraph.signals` / `.memos` / `.props`. Event handlers instead list
+   * the setters / getters the handler body references.
+   */
   deps: string[]
   type: 'text' | 'event' | 'conditional' | 'loop' | 'attribute'
   /**
@@ -105,18 +116,38 @@ export interface DomBinding {
   jsxPreview?: string
 }
 
+/**
+ * A component prop that at least one DOM binding reads reactively (#2903).
+ * Props are reactive sources on the same footing as signals and memos — the
+ * emitter wraps a prop-driven binding in `createEffect` exactly like a
+ * signal-driven one — so the graph lists them as nodes with consumers,
+ * rather than leaving the binding's `deps` empty and reporting
+ * `(no tracked deps)` for a read the IR itself marks `reactive: true`.
+ *
+ * Only props that some binding actually reads appear here (the list is
+ * derived from `DomBinding.deps`, not from the declared prop type), so a
+ * prop used solely inside an event handler is absent.
+ */
+export interface PropNode {
+  kind: 'prop'
+  /** As spelled in `DomBinding.deps` — `title` or `props.value`. */
+  name: string
+  consumers: string[] // names of DOM nodes that read this prop
+}
+
 export interface ComponentGraph {
   componentName: string
   sourceFile: string
   signals: SignalNode[]
   memos: MemoNode[]
   effects: EffectNode[]
+  props: PropNode[]
   domBindings: DomBinding[]
 }
 
 export interface UpdatePath {
   target: string
-  kind: 'signal' | 'memo'
+  kind: 'signal' | 'memo' | 'prop'
   dependents: UpdatePathEntry[]
 }
 
@@ -199,7 +230,7 @@ export interface WhyUpdateResult {
 
 export interface WhyUpdateDep {
   name: string
-  kind: 'signal' | 'memo'
+  kind: 'signal' | 'memo' | 'prop'
   dependsOn: string[]
   changedBy: WhyUpdateSource[]
 }
@@ -254,6 +285,7 @@ export function buildComponentGraph(source: string, filePath: string, componentN
       signals: [],
       memos: [],
       effects: [],
+      props: [],
       domBindings: [],
     }
   }
@@ -266,6 +298,7 @@ export function buildComponentGraph(source: string, filePath: string, componentN
       signals: [],
       memos: [],
       effects: [],
+      props: [],
       domBindings: [],
     }
   }
@@ -295,73 +328,96 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   const memoNames = new Set(meta.memos.map(m => m.name))
   const signalSetters = new Map(meta.signals.filter(s => s.setter).map(s => [s.setter!, s.getter]))
 
-  // Does an attribute expression read a component prop? Mirrors the emitter's
+  // Which component props does a binding expression read? Mirrors the emitter's
   // `needsEffectWrapper` prop gate (`reactivity.ts`):
   //   - any individual destructured prop name (`{ className }` → `class={className}`),
   //   - or a `<propsObject>.x` member access (`class={props.className}`),
   // both excluding `children` (server-rendered, never wrapped). Detection is
   // structural, not a raw-string regex: destructured names use the IR's
-  // lexer-resolved `freeIdentifiers` (falling back to the lexer-aware
+  // lexer-resolved free-identifier sets (falling back to the lexer-aware
   // `tokenContainsIdent`), and the props-object case parses the expression and
-  // walks for a real `props.member` access — so a `props.` inside a string
+  // walks for real `props.member` accesses — so a `props.` inside a string
   // literal / comment can't false-match, and bare `props` (`id={props}`) or
   // `props.children` are correctly NOT treated as reactive (matching the
   // emitter, which only wraps `<propsObject>.<non-children>`).
   //
-  // Prop-driven attribute bindings are wrapped in a `createEffect` by the
-  // emitter (and so emit a `#binding:<slot>` profiler id), but the debug-side
-  // collector only tracked signal/memo deps before — so those ids resolved to
-  // `(unresolved)` in `bf debug profile` (#1844 follow-up). Detecting prop reads
-  // here closes that emit↔analyzer gap.
+  // Prop-driven bindings are wrapped in a `createEffect` by the emitter (and so
+  // emit a `#binding:<slot>` profiler id), but the debug-side collector only
+  // tracked signal/memo deps before — so those ids resolved to `(unresolved)`
+  // in `bf debug profile` (#1844 follow-up), and `bf debug graph` printed
+  // `(no tracked deps)` for a `props.value` read the IR itself marks
+  // `reactive: true` (#2903). The collector therefore returns the prop NAMES
+  // (not a boolean), so a prop read lands in `DomBinding.deps` on the same
+  // footing as a signal or memo read.
   const destructuredPropNames = new Set(meta.propsParams.map(p => p.name).filter(n => n !== 'children'))
   const propsObjectName = meta.propsObjectName
+  const propMemberDep = (member: string): string => `${propsObjectName}.${member}`
 
   // A binding often reads a prop *indirectly* through a local const:
   // `const classes = `…${variant}…${size}…${className}``, then
   // `<button class={classes}>` / `<Slot className={classes}>`. The emitter
   // inlines `classes`, sees the prop reads, and wraps the binding in a
   // `createEffect` (emitting `#binding:<slot>`) — but the expression's only free
-  // identifier is the local `classes`, so the direct prop check above misses it
+  // identifier is the local `classes`, so the direct prop check would miss it
   // and the id resolves to `(unresolved)` (the Slot-composed-button case, #1863).
-  // Precompute every local const whose value transitively derives from a prop,
-  // so reading such a const counts as reading a prop. Module-level consts can't
-  // reach component props, so they fall out naturally.
+  // Precompute, for every local const, the props its value transitively reads,
+  // so reading such a const reports the UNDERLYING props (`variant, className`),
+  // not the const's own name — a const is not a reactive source, the props it
+  // captures are. Module-level consts can't reach component props, so they fall
+  // out naturally (empty list).
   const constByName = new Map(meta.localConstants.map(c => [c.name, c]))
-  const propDerivedConsts = new Set<string>()
+  const constPropDeps = new Map<string, readonly string[]>()
   {
     const onStack = new Set<string>()
-    const derivesFromProp = (name: string): boolean => {
-      if (propDerivedConsts.has(name)) return true
+    const propDepsOfConst = (name: string): readonly string[] => {
+      const cached = constPropDeps.get(name)
+      if (cached) return cached
       const c = constByName.get(name)
-      if (!c?.freeIdentifiers || onStack.has(name)) return false
+      if (!c?.freeIdentifiers || onStack.has(name)) return []
       onStack.add(name)
-      let derived = false
+      const out = new Set<string>()
       for (const free of c.freeIdentifiers) {
-        if (destructuredPropNames.has(free) || free === propsObjectName || derivesFromProp(free)) {
-          derived = true
-          break
-        }
+        if (destructuredPropNames.has(free)) out.add(free)
+        for (const dep of propDepsOfConst(free)) out.add(dep)
+      }
+      if (propsObjectName && c.value !== undefined && c.freeIdentifiers.has(propsObjectName)) {
+        for (const member of collectPropMembers(c.value, propsObjectName)) out.add(propMemberDep(member))
       }
       onStack.delete(name)
-      if (derived) propDerivedConsts.add(name)
-      return derived
+      const deps = [...out]
+      constPropDeps.set(name, deps)
+      return deps
     }
-    for (const c of meta.localConstants) derivesFromProp(c.name)
+    for (const c of meta.localConstants) propDepsOfConst(c.name)
   }
 
-  const exprReadsProp = (expr: string, freeIds?: ReadonlySet<string>): boolean => {
+  // `isShadowed` (#2903): inside a `.map()` row a loop binding of the same name
+  // hides the outer prop — `({ item }) => rows.map(item => <li>{item}</li>)`
+  // reads the row item, not the prop — so a shadowed name is never a prop dep.
+  // This is the SHADOW-GUARD consumer class of `BindingScope` (`isBound`), not
+  // the reactivity classifier (`valueBoundNames`).
+  const propDepsOf = (expr: string, freeIds?: ReadonlySet<string>, isShadowed?: (name: string) => boolean): string[] => {
+    const out = new Set<string>()
+    const reads = (name: string): boolean =>
+      !isShadowed?.(name) && (freeIds ? freeIds.has(name) : tokenContainsIdent(expr, name))
     for (const name of destructuredPropNames) {
-      if (freeIds ? freeIds.has(name) : tokenContainsIdent(expr, name)) return true
+      if (reads(name)) out.add(name)
     }
-    for (const name of propDerivedConsts) {
-      if (freeIds ? freeIds.has(name) : tokenContainsIdent(expr, name)) return true
+    for (const [name, deps] of constPropDeps) {
+      if (deps.length > 0 && reads(name)) for (const dep of deps) out.add(dep)
     }
-    return propsObjectName ? exprReadsPropMember(expr, propsObjectName) : false
+    // Same shadow guard as the two branches above: a `.map(props => …)` row
+    // whose callback param is literally named `props` reads the row item, so
+    // its `props.x` accesses are not outer-prop deps (Pullfrog review on #2904).
+    if (propsObjectName && !isShadowed?.(propsObjectName)) {
+      for (const member of collectPropMembers(expr, propsObjectName)) out.add(propMemberDep(member))
+    }
+    return [...out]
   }
 
   // Collect DOM bindings from IR tree
   const domBindings: DomBinding[] = []
-  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, BindingScope.EMPTY, exprReadsProp)
+  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, BindingScope.EMPTY, propDepsOf)
 
   // Build consumer lists for signals
   const signalConsumers = new Map<string, string[]>()
@@ -413,6 +469,23 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
     }
   }
 
+  // Props are nodes too (#2903): every binding dep that is neither a signal
+  // nor a memo is a prop read (that is the only other thing `propDepsOf`
+  // contributes), keyed in first-seen order so the graph is stable.
+  const propConsumers = new Map<string, string[]>()
+  for (const dom of domBindings) {
+    if (dom.type === 'event') continue
+    for (const dep of dom.deps) {
+      if (signalGetters.has(dep) || memoNames.has(dep)) continue
+      let consumers = propConsumers.get(dep)
+      if (!consumers) {
+        consumers = []
+        propConsumers.set(dep, consumers)
+      }
+      consumers.push(`dom:${dom.label}`)
+    }
+  }
+
   const signals: SignalNode[] = meta.signals.map(s => ({
     kind: 'signal',
     name: s.getter,
@@ -439,12 +512,19 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
     loc: { file: e.loc.file, line: e.loc.start.line },
   }))
 
+  const props: PropNode[] = [...propConsumers].map(([name, consumers]) => ({
+    kind: 'prop',
+    name,
+    consumers,
+  }))
+
   return {
     componentName: meta.componentName,
     sourceFile: findSourceFile(meta) ?? '',
     signals,
     memos,
     effects,
+    props,
     domBindings,
   }
 }
@@ -1029,22 +1109,22 @@ export function formatLoopSummary(summary: LoopSummary): string {
 // =============================================================================
 
 /**
- * Trace the update propagation path from a signal or memo.
+ * Trace the update propagation path from a signal, memo, or prop (#2903 —
+ * a prop is named as spelled in the graph: `title` / `props.value`).
  * Shows all downstream effects, memos, and DOM bindings.
  */
 export function traceUpdatePath(graph: ComponentGraph, targetName: string): UpdatePath | null {
-  // Find the target in signals or memos
   const signal = graph.signals.find(s => s.name === targetName)
+  if (signal) return { target: targetName, kind: 'signal', dependents: traceConsumers(signal.consumers, graph) }
   const memo = graph.memos.find(m => m.name === targetName)
+  if (memo) return { target: targetName, kind: 'memo', dependents: traceConsumers(memo.consumers, graph) }
+  const prop = graph.props.find(p => p.name === targetName)
+  if (prop) return { target: targetName, kind: 'prop', dependents: traceConsumers(prop.consumers, graph) }
+  return null
+}
 
-  if (!signal && !memo) return null
-
-  const kind = signal ? 'signal' : 'memo'
-  const consumers = signal ? signal.consumers : memo!.consumers
-
-  const dependents = consumers.map(consumer => buildUpdateEntry(consumer, graph, new Set()))
-
-  return { target: targetName, kind: kind as 'signal' | 'memo', dependents }
+function traceConsumers(consumers: string[], graph: ComponentGraph): UpdatePathEntry[] {
+  return consumers.map(consumer => buildUpdateEntry(consumer, graph, new Set()))
 }
 
 function buildUpdateEntry(consumer: string, graph: ComponentGraph, visited: Set<string>): UpdatePathEntry {
@@ -1145,6 +1225,14 @@ export function buildWhyUpdate(
     if (memo) {
       deps.push({ name, kind: 'memo', dependsOn: memo.deps, changedBy: [] })
       for (const dep of memo.deps) traceDep(dep)
+      return
+    }
+
+    // A prop is driven by the parent, so it has no in-component setter to
+    // trace — but it IS a real reactive source (#2903), so report it rather
+    // than silently dropping the dep.
+    if (graph.props.some(p => p.name === name)) {
+      deps.push({ name, kind: 'prop', dependsOn: [], changedBy: [] })
     }
   }
 
@@ -1179,6 +1267,9 @@ export function formatWhyUpdate(result: WhyUpdateResult): string {
     if (dep.kind === 'memo') {
       lines.push(`${dep.name} depends on:`)
       for (const d of dep.dependsOn) lines.push(`  ${d}`)
+    } else if (dep.kind === 'prop') {
+      lines.push(`${dep.name} changes from:`)
+      lines.push('  (prop — the parent component passes a new value)')
     } else {
       lines.push(`${dep.name} changes from:`)
       if (dep.changedBy.length === 0) {
@@ -1232,6 +1323,16 @@ export function formatComponentGraph(graph: ComponentGraph): string {
     }
   }
 
+  // Props read reactively by a DOM binding (#2903) — listed like signals /
+  // memos so the `<- props.value` / `props.value -> dom:…` edges below have a
+  // node to point at.
+  if (graph.props.length > 0) {
+    lines.push(`  props:`)
+    for (const p of graph.props) {
+      lines.push(`    ${p.name}`)
+    }
+  }
+
   // DOM bindings. Fallback-wrapped expressions (#937 Solid-style
   // wrap-by-default) are marked with a leading `~` so users can spot
   // expressions whose reactivity couldn't be statically proven — these
@@ -1272,7 +1373,7 @@ export function formatComponentGraph(graph: ComponentGraph): string {
   }
 
   // Dependency graph
-  if (graph.signals.length > 0 || graph.memos.length > 0) {
+  if (graph.signals.length > 0 || graph.memos.length > 0 || graph.props.length > 0) {
     lines.push(`  dependency graph:`)
     for (const s of graph.signals) {
       for (const consumer of s.consumers) {
@@ -1282,6 +1383,11 @@ export function formatComponentGraph(graph: ComponentGraph): string {
     for (const m of graph.memos) {
       for (const consumer of m.consumers) {
         lines.push(`    ${m.name} -> ${consumer}`)
+      }
+    }
+    for (const p of graph.props) {
+      for (const consumer of p.consumers) {
+        lines.push(`    ${p.name} -> ${consumer}`)
       }
     }
   }
@@ -1340,6 +1446,10 @@ export function graphToJSON(graph: ComponentGraph): object {
       deps: e.deps,
       body: e.body,
       loc: e.loc,
+    })),
+    props: graph.props.map(p => ({
+      name: p.name,
+      consumers: p.consumers,
     })),
     domBindings: graph.domBindings.map(d => ({
       label: d.label,
@@ -1689,13 +1799,18 @@ function collectDomBindings(
   // `BindingScope.valueBoundNames`'s docstring) — reads `valueBoundNames()`,
   // not `boundNames()`.
   scope: BindingScope = BindingScope.EMPTY,
-  // Predicate: does an attribute expression read a component prop? Mirrors the
-  // emitter's `needsEffectWrapper` prop detection so a prop-driven attribute
+  // Which component props does a binding expression read? Mirrors the
+  // emitter's `needsEffectWrapper` prop detection so a prop-driven binding
   // (wrapped in `createEffect` at codegen, hence emitting `#binding:<slot>`) is
-  // tracked here too — otherwise its profiler id resolves to `(unresolved)`.
-  readsProp: (expr: string, freeIds?: ReadonlySet<string>) => boolean = () => false,
+  // tracked here too — otherwise its profiler id resolves to `(unresolved)` and
+  // the graph prints `(no tracked deps)` for it (#2903). Returns the prop
+  // names, which join `deps` alongside signal / memo reads.
+  propDepsOf: (expr: string, freeIds?: ReadonlySet<string>, isShadowed?: (name: string) => boolean) => string[] = () => [],
 ): void {
   const boundNames = scope.valueBoundNames()
+  // Shadow guard for prop deps (see `propDepsOf`'s `isShadowed` in
+  // `buildGraphFromIR`): a loop-row binding hides an outer prop of the same name.
+  const isShadowed = scope.asShadowPredicate()
   // Does a loop-child binding read a loop param (or index)? Use the analyzer's
   // lexer-resolved metadata, NOT a raw-string regex — so a param name that only
   // appears inside a string literal (index `i` vs `'i'`) is not mistaken for a
@@ -1712,6 +1827,13 @@ function collectDomBindings(
     boundNames.size > 0 && (n.origin?.freeRefs?.some(r => boundNames.has(r.name)) ?? false)
   const attrReadsLoopParam = (free: ReadonlySet<string> | undefined): boolean =>
     boundNames.size > 0 && free !== undefined && setSomeIn(boundNames, free)
+  // Text / conditional nodes carry no `freeIdentifiers`; their analyzer-resolved
+  // `origin.freeRefs` is the equivalent lexer-aware identifier set (a
+  // `reactive-brand` ref's name is a full access path, which simply never
+  // matches a prop name). Absent origin ⇒ `undefined` ⇒ `propDepsOf` falls back
+  // to `tokenContainsIdent`.
+  const freeIdsOf = (origin: OriginInfo | undefined): ReadonlySet<string> | undefined =>
+    origin?.freeRefs ? new Set(origin.freeRefs.map(r => r.name)) : undefined
   switch (node.type) {
     case 'element': {
       // Dynamic attribute bindings (style, class, aria-*, data-*, etc.)
@@ -1728,19 +1850,21 @@ function collectDomBindings(
         if (attr.name === 'key' && boundNames.size > 0) continue
         const expr = attrValueToString(attr.value)
         if (!expr) continue
-        const deps = extractReactiveDeps(expr, signalGetters, memoNames)
-        const isReactive = deps.length > 0 || attrReadsLoopParam(attr.freeIdentifiers)
+        const signalDeps = extractReactiveDeps(expr, signalGetters, memoNames)
+        const isReactive = signalDeps.length > 0 || attrReadsLoopParam(attr.freeIdentifiers)
         // A prop-driven attribute (`id={props.id}`, `class={`…${props.x}`}`) is
         // wrapped in a `createEffect` by the emitter even with no signal/memo
-        // dep — match that gate so its `#binding:<slot>` id resolves.
-        const hasPropsRef = readsProp(expr, attr.freeIdentifiers)
+        // dep — match that gate so its `#binding:<slot>` id resolves, and list
+        // the props read as deps (#2903).
+        const propDeps = propDepsOf(expr, attr.freeIdentifiers, isShadowed)
+        const hasPropsRef = propDeps.length > 0
         const wrapReason = inferWrapReasonForAttrLike(isReactive, hasPropsRef, attr)
         if (wrapReason) {
           bindings.push({
             kind: 'dom',
             label: attr.name,
             slotId: node.slotId ?? '?',
-            deps,
+            deps: [...signalDeps, ...propDeps],
             type: 'attribute',
             classification: isReactive || hasPropsRef ? 'reactive' : 'fallback',
             expression: expr,
@@ -1768,7 +1892,7 @@ function collectDomBindings(
       }
       // Recurse — pass element tag as parent context for text bindings
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, scope, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, scope, propDepsOf)
       }
       break
     }
@@ -1778,7 +1902,10 @@ function collectDomBindings(
       const decision = decideWrapFromAstFlags(node)
       const loopReactive = exprReadsLoopParam(node)
       if ((decision.wrap || loopReactive) && node.slotId) {
-        const deps = extractReactiveDeps(node.expr, signalGetters, memoNames)
+        const deps = [
+          ...extractReactiveDeps(node.expr, signalGetters, memoNames),
+          ...propDepsOf(node.expr, freeIdsOf(node.origin), isShadowed),
+        ]
         const preview = parentTag
           ? `<${parentTag}>{${truncateExpr(node.expr)}}</${parentTag}>`
           : `{${truncateExpr(node.expr)}}`
@@ -1808,7 +1935,10 @@ function collectDomBindings(
       const loopReactive =
         boundNames.size > 0 && (node.origin?.freeRefs?.some(r => boundNames.has(r.name)) ?? false)
       if ((decision.wrap || loopReactive) && node.slotId) {
-        const deps = extractReactiveDeps(node.condition, signalGetters, memoNames)
+        const deps = [
+          ...extractReactiveDeps(node.condition, signalGetters, memoNames),
+          ...propDepsOf(node.condition, freeIdsOf(node.origin), isShadowed),
+        ]
         bindings.push({
           kind: 'dom',
           label: `conditional "${node.slotId}"`,
@@ -1825,8 +1955,8 @@ function collectDomBindings(
           jsxPreview: `{${truncateExpr(node.condition)} ? ... : ...}`,
         })
       }
-      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
-      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
+      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
+      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
       break
     }
     case 'loop': {
@@ -1877,7 +2007,7 @@ function collectDomBindings(
       // `paramBindings`/`preamble`), so no bespoke Set bookkeeping is needed.
       const childScope = scope.enterLoopRow(node)
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childScope, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childScope, propDepsOf)
       }
       break
     }
@@ -1888,22 +2018,23 @@ function collectDomBindings(
         if (prop.value.kind !== 'expression' && prop.value.kind !== 'template' && prop.value.kind !== 'spread') continue
         const propValue = attrValueToString(prop.value) ?? ''
         if (!propValue) continue
-        const deps = extractReactiveDeps(propValue, signalGetters, memoNames)
+        const signalDeps = extractReactiveDeps(propValue, signalGetters, memoNames)
         // Mirror the element-attr gate: a child prop is wrapped (and emits
         // `#binding:<slot>`) when it reads a prop directly or via a prop-derived
         // local const (`<Slot className={classes}>`). The previous
         // `includes('props.')` check missed both destructured props and the
         // local-const indirection, leaving the forwarded binding `(unresolved)`
         // (#1863).
-        const hasPropsRef = readsProp(propValue, prop.freeIdentifiers)
-        const isReactive = deps.length > 0 || hasPropsRef
-        const wrapReason = inferWrapReasonForAttrLike(deps.length > 0, hasPropsRef, prop)
+        const propDeps = propDepsOf(propValue, prop.freeIdentifiers, isShadowed)
+        const hasPropsRef = propDeps.length > 0
+        const isReactive = signalDeps.length > 0 || hasPropsRef
+        const wrapReason = inferWrapReasonForAttrLike(signalDeps.length > 0, hasPropsRef, prop)
         if (wrapReason) {
           bindings.push({
             kind: 'dom',
             label: `${node.name}.${prop.name}`,
             slotId: node.slotId ?? '?',
-            deps,
+            deps: [...signalDeps, ...propDeps],
             type: 'attribute',
             classification: isReactive ? 'reactive' : 'fallback',
             expression: propValue,
@@ -1916,21 +2047,21 @@ function collectDomBindings(
         }
       }
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
       }
       break
     }
     case 'fragment':
     case 'provider': {
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
       }
       break
     }
     case 'if-statement': {
-      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
+      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
       if (node.alternate) {
-        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, scope, readsProp)
+        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, scope, propDepsOf)
       }
       break
     }
@@ -1943,37 +2074,36 @@ function truncateExpr(expr: string, max: number = 40): string {
 }
 
 /**
- * True when `expr` contains a genuine `<propsObject>.<member>` property access
- * with `member !== 'children'` — the emitter's prop gate for the props object
- * (`needsEffectWrapper`, `reactivity.ts`). Parses the expression rather than
- * regex-matching the raw string, so a `props.` inside a string literal/comment
- * doesn't false-match, and bare `props` / `props.children` are excluded. Parse
- * failures (e.g. an attribute expression carrying JSX) fall back to `false` —
- * conservative: we never invent a binding the emitter wouldn't wrap.
+ * Member names of every genuine `<propsObject>.<member>` property access in
+ * `expr` with `member !== 'children'` — the emitter's prop gate for the props
+ * object (`needsEffectWrapper`, `reactivity.ts`). Parses the expression rather
+ * than regex-matching the raw string, so a `props.` inside a string literal /
+ * comment doesn't false-match, and bare `props` / `props.children` are
+ * excluded. Parse failures (e.g. an attribute expression carrying JSX) yield
+ * `[]` — conservative: we never invent a binding the emitter wouldn't wrap.
+ * Deduplicated, in first-seen order.
  */
-function exprReadsPropMember(expr: string, propsObjectName: string): boolean {
+function collectPropMembers(expr: string, propsObjectName: string): string[] {
   let sf: ts.SourceFile
   try {
     sf = ts.createSourceFile('__attr.tsx', `(${expr})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   } catch {
-    return false
+    return []
   }
-  let found = false
+  const members = new Set<string>()
   const visit = (n: ts.Node): void => {
-    if (found) return
     if (
       ts.isPropertyAccessExpression(n) &&
       ts.isIdentifier(n.expression) &&
       n.expression.text === propsObjectName &&
       n.name.text !== 'children'
     ) {
-      found = true
-      return
+      members.add(n.name.text)
     }
     ts.forEachChild(n, visit)
   }
   visit(sf)
-  return found
+  return [...members]
 }
 
 /** Convert an `AttrValue` to a flat string for reactive dep extraction. */
