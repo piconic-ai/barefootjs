@@ -673,7 +673,18 @@ export interface TopLevelLoop extends LoopCore {
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies
   // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
   // now live on `LoopCore.bindings` — see issue #1244 §B.
-  isStaticArray: boolean // True if array is a static prop (not a signal)
+  // True when this loop takes the static forEach fast path — the IR's own
+  // `isStaticArray` (a static, non-signal array) MINUS a fast-path refusal
+  // (#2897): a conditional anywhere in the row tree (this row's own
+  // `bindings.conditionals`, or any depth-1 `innerLoops[i].bindings.conditionals`)
+  // forces this false even when the IR flag is true, since neither the static
+  // forEach bake nor `inner-loop-nested`'s clone-and-wire architecture has any
+  // conditional-handling machinery — the row falls through to the plain/
+  // composite dynamic path instead, which already wires a conditional's live
+  // branch-swap correctly. SSR adapters (e.g. Go template's static-loop
+  // baking) read the IR-level `isStaticArray` directly and are unaffected;
+  // this field is client-JS routing only.
+  isStaticArray: boolean
   useElementReconciliation?: boolean // True: mapArray/mapArrayAnchored + composite rendering (native root with child components)
   /** Inner loop metadata for composite element reconciliation (array, param, key, container) */
   innerLoops?: NestedLoop[]

@@ -2645,6 +2645,22 @@
       }
     }
   ],
+  "static-loop-conditional-precomputed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "static-nested-loop-conditional-precomputed": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "static-nested-loop-ref-precomputed": [
     {
       "name": "gen:items:empty",
