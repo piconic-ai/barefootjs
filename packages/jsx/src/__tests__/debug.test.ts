@@ -1400,3 +1400,223 @@ describe('formatComponentSummary', () => {
     expect(output).toContain('dynamic text bindings:')
   })
 })
+
+describe('prop reads are tracked deps (#2903)', () => {
+  // The issue's own repro: `props.value` read in an attribute AND a
+  // conditional. The IR marks both `reactive: true`; the graph must not
+  // print `(no tracked deps)` for a read the compiler itself proved reactive.
+  const reproChildSource = `
+    'use client'
+
+    export interface ReproChildProps {
+      value: boolean
+    }
+
+    export function ReproChild(props: ReproChildProps) {
+      return <button disabled={props.value}>{props.value ? 'busy' : 'idle'}</button>
+    }
+  `
+
+  test('props.value in attribute and conditional lists props.value as a dep', () => {
+    const graph = buildComponentGraph(reproChildSource, 'ReproChild.tsx')
+    const attr = graph.domBindings.find(d => d.label === 'disabled')
+    const cond = graph.domBindings.find(d => d.type === 'conditional')
+    expect(attr).toBeDefined()
+    expect(cond).toBeDefined()
+    expect(attr!.classification).toBe('reactive')
+    expect(cond!.classification).toBe('reactive')
+    expect(attr!.deps).toEqual(['props.value'])
+    expect(cond!.deps).toEqual(['props.value'])
+  })
+
+  test('formatComponentGraph shows the prop as the source, never (no tracked deps)', () => {
+    const output = formatComponentGraph(buildComponentGraph(reproChildSource, 'ReproChild.tsx'))
+    expect(output).toContain('props.value -> <button disabled={props.value}>')
+    expect(output).toContain('props.value -> {props.value ? ... : ...}')
+    expect(output).not.toContain('(no tracked deps)')
+    // Props get their own node section and dependency-graph edges, exactly
+    // like signals and memos do.
+    expect(output).toContain('  props:\n    props.value')
+    expect(output).toContain('dependency graph:')
+    expect(output).toContain('props.value -> dom:disabled')
+    expect(output).toContain('props.value -> dom:conditional "s0"')
+  })
+
+  test('graph.props carries one node per read prop with consumers; JSON mirrors it', () => {
+    const graph = buildComponentGraph(reproChildSource, 'ReproChild.tsx')
+    expect(graph.props).toHaveLength(1)
+    expect(graph.props[0].kind).toBe('prop')
+    expect(graph.props[0].name).toBe('props.value')
+    expect(graph.props[0].consumers).toEqual(['dom:disabled', 'dom:conditional "s0"'])
+    const json = graphToJSON(graph) as { props: Array<{ name: string; consumers: string[] }> }
+    expect(json.props).toEqual([{ name: 'props.value', consumers: ['dom:disabled', 'dom:conditional "s0"'] }])
+  })
+
+  test('a reactive non-event binding never has an empty deps list for a prop read', () => {
+    // The invariant the issue is really about: `classification: 'reactive'`
+    // with `deps: []` is what rendered as `(no tracked deps)`.
+    const graph = buildComponentGraph(reproChildSource, 'ReproChild.tsx')
+    for (const d of graph.domBindings) {
+      if (d.type === 'event') continue
+      if (d.classification === 'reactive') expect(d.deps.length).toBeGreaterThan(0)
+    }
+  })
+
+  test('destructured props are deps by name in text, attribute, conditional and child prop', () => {
+    const source = `
+      'use client'
+      import { Card } from './Card'
+
+      export function A({ title, count, children }: { title: string; count: number; children?: any }) {
+        return (
+          <div data-n={count}>
+            <Card title={title} />
+            <span>{title}</span>
+            {count > 0 ? 'y' : 'n'}
+            {children}
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'A.tsx')
+    const byLabel = (l: string) => graph.domBindings.find(d => d.label === l)!
+    expect(byLabel('data-n').deps).toEqual(['count'])
+    expect(byLabel('Card.title').deps).toEqual(['title'])
+    expect(graph.domBindings.find(d => d.type === 'text')!.deps).toEqual(['title'])
+    expect(graph.domBindings.find(d => d.type === 'conditional')!.deps).toEqual(['count'])
+    // `children` is server-rendered, never a reactive dep — and never a node.
+    expect(graph.props.map(p => p.name).sort()).toEqual(['count', 'title'])
+    expect(graph.domBindings.every(d => !d.deps.includes('children'))).toBe(true)
+  })
+
+  test('a prop read through a prop-derived local const reports the underlying props, not the const', () => {
+    // The #1863 Slot-composed-button shape: `class={classes}` where `classes`
+    // captures `props.variant` / `props.className`. The const is not a reactive
+    // source; the props it captures are.
+    const source = `
+      'use client'
+
+      export function B(props: { title: string; variant: 'a' | 'b'; className?: string }) {
+        const label = props.title + '!'
+        const classes = \`btn-\${props.variant} \${props.className ?? ''}\`
+        return <div class={classes}>{label}</div>
+      }
+    `
+    const graph = buildComponentGraph(source, 'B.tsx')
+    const cls = graph.domBindings.find(d => d.label === 'class')!
+    expect(cls.classification).toBe('reactive')
+    expect(cls.deps).toEqual(['props.variant', 'props.className'])
+    const text = graph.domBindings.find(d => d.type === 'text')!
+    expect(text.deps).toEqual(['props.title'])
+    expect(graph.domBindings.every(d => !d.deps.includes('classes') && !d.deps.includes('label'))).toBe(true)
+  })
+
+  test('props.children, bare props, and props.x inside a string literal are not deps', () => {
+    const source = `
+      'use client'
+
+      export function C(props: { title: string; children?: any }) {
+        return <div title="props.title" data-x={props}>{props.children}</div>
+      }
+    `
+    const graph = buildComponentGraph(source, 'C.tsx')
+    expect(graph.props).toHaveLength(0)
+    for (const d of graph.domBindings) {
+      expect(d.deps).toHaveLength(0)
+    }
+  })
+
+  test('signal, memo and prop deps coexist in one binding, in that order', () => {
+    const source = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+
+      export function M(props: { base: number }) {
+        const [n, setN] = createSignal(0)
+        const total = createMemo(() => n() + props.base)
+        return (
+          <button onClick={() => setN(v => v + 1)} aria-label={\`\${props.base}/\${n()}\`}>
+            {total()}
+          </button>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'M.tsx')
+    const aria = graph.domBindings.find(d => d.label === 'aria-label')!
+    expect(aria.deps).toEqual(['n', 'props.base'])
+    // The memo's own `props.base` read is memo metadata, not a DOM binding —
+    // so the prop node's consumers are the DOM sites only.
+    expect(graph.props).toEqual([{ kind: 'prop', name: 'props.base', consumers: ['dom:aria-label'] }])
+    const output = formatComponentGraph(graph)
+    expect(output).toContain('n, props.base -> <button aria-label=')
+    expect(output).toContain('props.base -> dom:aria-label')
+  })
+
+  test('buildWhyUpdate reports a prop dep with kind "prop"', () => {
+    const result = buildWhyUpdate(reproChildSource, 'ReproChild.tsx', 'disabled')!
+    expect(result).not.toBeNull()
+    expect(result.deps).toEqual([{ name: 'props.value', kind: 'prop', dependsOn: [], changedBy: [] }])
+    const output = formatWhyUpdate(result)
+    expect(output).toContain('disabled updates because:')
+    expect(output).toContain('props.value changes from:')
+    expect(output).toContain('(prop — the parent component passes a new value)')
+  })
+
+  test('traceUpdatePath accepts a prop name and lists its DOM consumers', () => {
+    const graph = buildComponentGraph(reproChildSource, 'ReproChild.tsx')
+    const path = traceUpdatePath(graph, 'props.value')
+    expect(path).not.toBeNull()
+    expect(path!.kind).toBe('prop')
+    expect(path!.dependents.map(d => d.name)).toEqual(['disabled', 'conditional "s0"'])
+    expect(formatUpdatePath(path!)).toContain('props.value (prop)')
+  })
+
+  test('a prop shadowed by a .map() row binding of the same name is not a prop dep', () => {
+    // `item` inside the row is the loop item, not the outer prop — the
+    // shadow guard (`BindingScope.isBound`) keeps it out of `deps` / `props`.
+    const source = `
+      'use client'
+
+      export function S({ item, rows }: { item: string; rows: string[] }) {
+        return (
+          <div>
+            <span>{item}</span>
+            <ul>{rows.map(item => <li title={item}>{item}</li>)}</ul>
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'S.tsx')
+    // (`rows` feeds the loop's array, which is a loop binding, not a prop
+    // dep — loop-array sources are outside this fix.)
+    expect(graph.props.map(p => p.name)).toEqual(['item'])
+    const outer = graph.props[0]
+    // Only the outer `<span>{item}</span>` consumes the prop.
+    expect(outer.consumers).toHaveLength(1)
+    expect(outer.consumers[0]).toMatch(/^dom:text/)
+    const rowTitle = graph.domBindings.find(d => d.label === 'title')!
+    expect(rowTitle.classification).toBe('reactive')
+    expect(rowTitle.deps).not.toContain('item')
+  })
+
+  test('a fallback binding with no proven source still reads (no tracked deps)', () => {
+    // Guard the other direction: the fix must not invent a prop dep for an
+    // opaque call the analyzer genuinely cannot see through.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { pick } from './pick'
+
+      export function F(props: { id: string }) {
+        const [, setFoo] = createSignal(0)
+        return <div onClick={() => setFoo(1)} title={pick()}>x</div>
+      }
+    `
+    const graph = buildComponentGraph(source, 'F.tsx')
+    const title = graph.domBindings.find(d => d.label === 'title')!
+    expect(title.classification).toBe('fallback')
+    expect(title.deps).toEqual([])
+    expect(graph.props).toHaveLength(0)
+    expect(formatComponentGraph(graph)).toContain('~ <div title={pick()}> (no tracked deps)')
+  })
+})
