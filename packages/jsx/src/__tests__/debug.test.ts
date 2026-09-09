@@ -1599,6 +1599,32 @@ describe('prop reads are tracked deps (#2903)', () => {
     expect(rowTitle.deps).not.toContain('item')
   })
 
+  test('a .map() row param literally named like the props object shadows props.x reads', () => {
+    // The props-object branch of `propDepsOf` needs the same shadow guard as
+    // the destructured / const branches: inside `rows.map(props => …)` the
+    // name `props` is the row item, so `props.label` is not an outer-prop
+    // read — neither as a text binding nor as a forwarded child prop.
+    const source = `
+      'use client'
+      import { Card } from './Card'
+
+      export function S(props: { title: string; rows: Array<{ label: string }> }) {
+        return (
+          <div>
+            <span>{props.title}</span>
+            <ul>{props.rows.map(props => <li title={props.label}><Card label={props.label} />{props.label}</li>)}</ul>
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'S.tsx')
+    expect(graph.props.map(p => p.name)).toEqual(['props.title'])
+    expect(graph.props[0].consumers).toHaveLength(1)
+    for (const d of graph.domBindings) {
+      expect(d.deps).not.toContain('props.label')
+    }
+  })
+
   test('a fallback binding with no proven source still reads (no tracked deps)', () => {
     // Guard the other direction: the fix must not invent a prop dep for an
     // opaque call the analyzer genuinely cannot see through.

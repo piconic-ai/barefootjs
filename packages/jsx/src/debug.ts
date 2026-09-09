@@ -406,7 +406,10 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
     for (const [name, deps] of constPropDeps) {
       if (deps.length > 0 && reads(name)) for (const dep of deps) out.add(dep)
     }
-    if (propsObjectName) {
+    // Same shadow guard as the two branches above: a `.map(props => …)` row
+    // whose callback param is literally named `props` reads the row item, so
+    // its `props.x` accesses are not outer-prop deps (Pullfrog review on #2904).
+    if (propsObjectName && !isShadowed?.(propsObjectName)) {
       for (const member of collectPropMembers(expr, propsObjectName)) out.add(propMemberDep(member))
     }
     return [...out]
