@@ -5,7 +5,7 @@
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, type LoopParamSpec } from './utils.ts'
-import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
+import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
@@ -752,9 +752,77 @@ export function collectElements(
       // Determine rendering strategy for dynamic arrays:
       // Use element reconciliation when the loop body has nested components,
       // or when inner loops need their own mapArray for events/reactive text.
-      const { useElementReconciliation, innerLoops } = projectionInner
+      const { useElementReconciliation: reconciliationBase, innerLoops } = projectionInner
         ? { useElementReconciliation: false, innerLoops: undefined }
         : decideLoopRendering(l, siblingOffsets, ctx)
+
+      // #2897: a static (non-signal) array's forEach bake and the
+      // `inner-loop-nested` clone-and-wire architecture (#2798) have NO
+      // conditional-handling machinery at all — a `{cond ? A : B}` inside
+      // either the outer row or a depth-1 inner loop's row bakes to its
+      // initial branch at compile time and never updates, since neither
+      // path ever re-evaluates the condition. `elem.bodyIsItemConditional`
+      // (below) already carves out the WHOLE-row, one-empty-branch shape;
+      // this widens the same idea to any conditional anywhere in the row
+      // tree. `bindings.conditionals` is the outer row's own conditionals
+      // (never recurses into `loop` nodes, see `collectLoopChildConditionals`'s
+      // `stopAt(..., 'loop', ...)`); `innerLoops[i].bindings.conditionals` is
+      // collected separately per inner loop (#2706) — together they cover
+      // the whole tree with no overlap. Excludes a child-component-rooted
+      // outer item (`l.childComponent`) — out of scope, matching #2798's own
+      // plain-element-only scoping for the identical reason (#1725's
+      // document-order-zip shape doesn't address plain-element bindings).
+      //
+      // Gated on `reactiveBeyondLoopScope`, not mere presence: EVERY
+      // loop-param-referencing conditional lands in `bindings.conditionals`
+      // (`classifyReactivity` reports `'loop-param'` for `item.key === 'x'`
+      // exactly like it does for `flag()` — array static-ness plays no part
+      // in that classification, by design). For a static array the row
+      // item never changes after first render, so a condition that reads
+      // ONLY the item/index (`item.key === 'messages'`) is exactly as
+      // compile-time-bakeable as the #2798 static path already assumes —
+      // regardless of whether its branches are a bare element or a child
+      // component (`SocialShell`'s `NAV_ITEMS.map()` row: `{item.key ===
+      // 'messages' ? <SocialUnreadBadge /> : null}` inside a static
+      // function-local array — the static `outer-nested`/`inner-loop-nested`
+      // init already tolerates an absent-this-row child component). Only a
+      // condition that can ITSELF change value later (`flag()`, or a mixed
+      // `item.x && flag()`) needs the escalation #2897 actually fixed.
+      const staticRowHasConditional = !projectionInner && l.isStaticArray && !l.childComponent
+        && bindings.conditionals.some(c => c.reactiveBeyondLoopScope)
+      const staticInnerLoopHasConditional = !projectionInner && l.isStaticArray && !l.childComponent
+        && (innerLoops ?? []).some(il => il.bindings.conditionals.some(c => c.reactiveBeyondLoopScope))
+      const hasInnerStructure = (l.nestedComponents?.length ?? 0) > 0 || (innerLoops?.length ?? 0) > 0
+      // An own-row conditional alone needs no inner structure to reconcile —
+      // it falls through (via `clientIsStaticArray` below) straight to the
+      // plain dynamic-array path, which already wires a bare conditional's
+      // live branch-swap correctly (`buildLoopReactiveEffectsPlan`, proven
+      // by the identical shape on a signal-backed array). But when the row
+      // ALSO has a sibling inner loop (`hasInnerStructure`), that plain path
+      // (`buildPlainLoopPlan`) never reads `TopLevelLoop.innerLoops` at all —
+      // only the composite and static-array-child-init plans do — so an
+      // inner loop's own ref/reactive-attr/reactive-text bindings would be
+      // silently dropped (pullfrog review on #2899: confirmed by compiling
+      // a static row with a signal-driven sibling conditional next to an
+      // inner loop with a `ref` — the ref callback never appeared in the
+      // emitted JS). Escalating to the composite path here, exactly as an
+      // inner-loop conditional already does, keeps those bindings wired.
+      // An inner-loop conditional always DOES need reconciliation on its
+      // own (no `hasInnerStructure` gate needed there — `innerLoops` being
+      // non-empty is exactly what `hasInnerStructure` already asks), since
+      // #2798's static machinery it would otherwise take has no conditional
+      // support to add to — `buildTopLevelCompositePlan` already handles
+      // nested loops of arbitrary depth, including the conditional case,
+      // unconditionally.
+      const useElementReconciliation =
+        reconciliationBase || staticInnerLoopHasConditional || (staticRowHasConditional && hasInnerStructure)
+      // The client-side `isStaticArray` field (NOT the IR-level `l.isStaticArray`,
+      // which SSR adapters like Go template's static-loop baking still read
+      // directly and are unaffected by — #2897 is client-JS-only): false
+      // whenever a conditional forces this loop off the static fast path,
+      // so `buildLoopPlan`'s dispatcher and `buildStaticArrayChildInitsPlan`
+      // both skip the static machinery for it automatically.
+      const clientIsStaticArray = l.isStaticArray && !staticRowHasConditional && !staticInnerLoopHasConditional
 
       let template = ''
       let templateIndexed: string | undefined
@@ -878,7 +946,7 @@ export function collectElements(
         bindings,
         childComponent: l.childComponent,
         nestedComponents: l.nestedComponents,
-        isStaticArray: l.isStaticArray,
+        isStaticArray: clientIsStaticArray,
         useElementReconciliation,
         innerLoops: (useElementReconciliation || (l.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
         offset: resolveLoopOffset(siblingOffsets.get(l)),
@@ -1565,6 +1633,17 @@ export function collectLoopChildConditionals(
       // accessors; classifyReactivity sees all three paths (signal/memo/prop
       // + loop-param + loop-index, #2861).
       if (!readsPreamble && classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind === 'none') return
+      // #2897 follow-up: does the condition read anything beyond the loop
+      // item/index? `classifyReactivity`'s `kind` can't answer this — it
+      // reports `'loop-param'` first whenever a loop-bound name appears,
+      // even alongside a signal read (`item.x && flag()`), which is the
+      // right precedence for its own two typed callers but the wrong
+      // question here. Computed independently so a static array's
+      // escalation decision (`collect-elements.ts`'s `loop:` visitor) can
+      // ask "can this branch decision change after first render" instead
+      // of "does this touch the loop param at all" — see
+      // `LoopChildConditional.reactiveBeyondLoopScope`'s doc comment.
+      const reactiveBeyondLoopScope = n.reactive || readsPreamble || needsEffectWrapper(expanded.expr, ctx, expanded.freeIds)
 
       const loopParamsForCond =
         loopParams ?? (loopParam ? [{ param: loopParam, bindings: loopParamBindings, index: loopIndex }] : undefined)
@@ -1583,6 +1662,7 @@ export function collectLoopChildConditionals(
         whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
         ...(expanded.freeIds !== undefined && { conditionFreeIdentifiers: expanded.freeIds }),
         ...(readsPreamble && { readsPreamble: true }),
+        reactiveBeyondLoopScope,
       })
     },
   })

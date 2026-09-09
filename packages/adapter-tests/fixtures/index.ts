@@ -423,6 +423,12 @@ import { fixture as nestedLoopRefConst } from './nested-loop-ref-const'
 import { fixture as staticNestedLoopRef } from './static-nested-loop-ref'
 import { fixture as staticNestedLoopRefClient } from './static-nested-loop-ref-client'
 import { fixture as staticNestedLoopRefPrecomputed } from './static-nested-loop-ref-precomputed'
+import { fixture as staticLoopConditional } from './static-loop-conditional'
+import { fixture as staticLoopConditionalPrecomputed } from './static-loop-conditional-precomputed'
+import { fixture as staticLoopConditionalClient } from './static-loop-conditional-client'
+import { fixture as staticNestedLoopConditional } from './static-nested-loop-conditional'
+import { fixture as staticNestedLoopConditionalPrecomputed } from './static-nested-loop-conditional-precomputed'
+import { fixture as staticNestedLoopConditionalClient } from './static-nested-loop-conditional-client'
 import { fixture as nestedLoopIndependentSignal } from './nested-loop-independent-signal'
 import { fixture as keyedLoopPureIndexReorder } from './keyed-loop-pure-index-reorder'
 import { fixture as ternaryTemplateLiteralBranch } from './ternary-template-literal-branch'
@@ -935,6 +941,12 @@ export const jsxFixtures: JSXFixture[] = [
   staticNestedLoopRef,
   staticNestedLoopRefClient,
   staticNestedLoopRefPrecomputed,
+  staticLoopConditional,
+  staticLoopConditionalPrecomputed,
+  staticLoopConditionalClient,
+  staticNestedLoopConditional,
+  staticNestedLoopConditionalPrecomputed,
+  staticNestedLoopConditionalClient,
   nestedLoopIndependentSignal,
   keyedLoopPureIndexReorder,
   ternaryTemplateLiteralBranch,
