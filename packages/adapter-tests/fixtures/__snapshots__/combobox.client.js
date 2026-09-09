@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, onCleanup, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2952,6 +2952,24 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `$
 })[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${_p.className}`) != null ? 'class="' + escapeAttr(`shrink-0 ${_p.className}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
 export function Icon(_p, __bfKey) { return createComponent('Icon', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+var insertInDocumentOrder = insertInDocumentOrder ?? function(list, entry) {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (documentOrder(list[mid].el, entry.el) <= 0) lo = mid + 1
+    else hi = mid
+  }
+  const next = list.slice()
+  next.splice(lo, 0, entry)
+  return next
+}
 
 export function initCombobox(__scope, _p = {}) {
   if (!__scope) return
@@ -2969,6 +2987,21 @@ export function initCombobox(__scope, _p = {}) {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   }))
+  const [entries, setEntries] = createSignal([])
+  const matches = (entry, s) => filterFn()(entry.label(), s)
+  const visibleItems = createMemo(() => {
+    const s = search()
+    return entries().filter(entry => matches(entry, s))
+  })
+  const itemsByGroup = createMemo(() => {
+    const byGroup = new Map()
+    for (const entry of entries()) {
+      const list = byGroup.get(entry.group)
+      if (list) list.push(entry)
+      else byGroup.set(entry.group, [entry])
+    }
+    return byGroup
+  })
 
 
   // Provide context for child components
@@ -2986,13 +3019,24 @@ export function initCombobox(__scope, _p = {}) {
       },
       search,
       onSearchChange: setSearch,
-      filter: filterFn(),
+      registerItem: (entry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
+      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items: entries,
+      visibleItems,
+      itemsInGroup: (group) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry) => matches(entry, search()),
     })
 }
 
 hydrate('Combobox', { init: initCombobox, template: (_p) => `<div data-slot="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`relative inline-block ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`relative inline-block ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function Combobox(_p, __bfKey) { return createComponent('Combobox', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxTrigger(__scope, _p = {}) {
   if (!__scope) return
@@ -3053,6 +3097,12 @@ export function initComboboxTrigger(__scope, _p = {}) {
 hydrate('ComboboxTrigger', { init: initComboboxTrigger, template: (_p) => `<button data-slot="combobox-trigger" type="button" role="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" ${(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) + '"' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {className: "size-4 shrink-0 opacity-50"}, undefined, 's0')}</button>` })
 export function ComboboxTrigger(_p, __bfKey) { return createComponent('ComboboxTrigger', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxValue(__scope, _p = {}) {
   if (!__scope) return
@@ -3108,6 +3158,12 @@ hydrate('ComboboxValue', { init: initComboboxValue, template: (_p) => `<span dat
 export function ComboboxValue(_p, __bfKey) { return createComponent('ComboboxValue', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxContent(__scope, _p = {}) {
   if (!__scope) return
@@ -3230,18 +3286,18 @@ export function initComboboxContent(__scope, _p = {}) {
       }
     })
 
-    // Auto-select visible item when search changes:
-    // prefer the currently checked item, fall back to first visible
+    // Highlight a visible item whenever the filtered list changes: prefer
+    // the currently checked item, fall back to the first visible. Reads
+    // the root's filtered-list memo and the value signal directly rather
+    // than the items' `hidden`/`data-state` attributes, so it does not
+    // depend on running after the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      requestAnimationFrame(() => {
-        const visibleItems = Array.from(el.querySelectorAll('[data-slot="combobox-item"]:not([hidden])'))
-        const checkedItem = el.querySelector('[data-slot="combobox-item"][data-state="checked"]:not([hidden])')
-        const targetItem = checkedItem ?? visibleItems[0] ?? null
-        visibleItems.forEach((item) => {
-          item.setAttribute('data-selected', String(item === targetItem))
-        })
-      })
+      const visible = ctx.visibleItems()
+      const checked = ctx.value()
+      const target = visible.find(entry => entry.value === checked) ?? visible[0] ?? null
+      for (const entry of visible) {
+        entry.el.setAttribute('data-selected', String(entry === target))
+      }
     })
 
   }
@@ -3270,6 +3326,12 @@ export function initComboboxContent(__scope, _p = {}) {
 hydrate('ComboboxContent', { init: initComboboxContent, template: (_p) => `<div data-slot="combobox-content" data-state="closed" role="listbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxContent(_p, __bfKey) { return createComponent('ComboboxContent', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxInput(__scope, _p = {}) {
   if (!__scope) return
@@ -3332,6 +3394,12 @@ export function initComboboxInput(__scope, _p = {}) {
 hydrate('ComboboxInput', { init: initComboboxInput, template: (_p) => `<div data-slot="combobox-input-wrapper" ${(`flex items-center border-b px-3`) != null ? 'class="' + escapeAttr(`flex items-center border-b px-3`) + '"' : ''} bf="s2">${renderChild('SearchIcon', {className: "mr-2 size-4 shrink-0 opacity-50"}, undefined, 's0')}<input data-slot="combobox-input" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} type="text" ${(_p.placeholder) != null ? 'placeholder="' + escapeAttr(_p.placeholder) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} autocomplete="off" bf="s1" /></div>` })
 export function ComboboxInput(_p, __bfKey) { return createComponent('ComboboxInput', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxEmpty(__scope, _p = {}) {
   if (!__scope) return
@@ -3341,15 +3409,10 @@ export function initComboboxEmpty(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(ComboboxContext)
 
+    // Derived from the root's filtered-list memo, so it settles in the
+    // same signal write as the items' own `hidden` — no frame in between.
     createEffect(() => {
-      ctx.search() // track dependency
-      // Check after items have updated their visibility
-      requestAnimationFrame(() => {
-        const container = el.closest('[data-slot="combobox-content"]')
-        if (!container) return
-        const visibleItems = container.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')
-        el.hidden = visibleItems.length > 0
-      })
+      el.hidden = ctx.visibleItems().length > 0
     })
   }
 
@@ -3378,6 +3441,12 @@ hydrate('ComboboxEmpty', { init: initComboboxEmpty, template: (_p) => `<div data
 export function ComboboxEmpty(_p, __bfKey) { return createComponent('ComboboxEmpty', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3392,12 +3461,19 @@ export function initComboboxItem(__scope, _p = {}) {
     // Set data-value for querying
     el.setAttribute('data-value', _p.value)
 
-    // Self-filter based on search
+    const entry = {
+      el,
+      group: el.closest('[data-slot="combobox-group"]'),
+      value: _p.value,
+      label: () => el.textContent?.trim() ?? _p.value,
+    }
+    ctx.registerItem(entry)
+    onCleanup(() => ctx.unregisterItem(entry))
+
+    // Visibility is the root's decision (the same `matches` the list-level
+    // memo uses); this effect only mirrors it and tracks `search` alone.
     createEffect(() => {
-      const s = ctx.search()
-      const label = el.textContent?.trim() ?? _p.value
-      const visible = ctx.filter(label, s)
-      el.hidden = !visible
+      el.hidden = !ctx.isVisible(entry)
     })
 
     // Selected (checked) state + data-selected highlight
@@ -3477,6 +3553,12 @@ export function initComboboxItem(__scope, _p = {}) {
 hydrate('ComboboxItem', { init: initComboboxItem, template: (_p) => `<div data-slot="combobox-item" ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} data-state="unchecked" data-selected="false" role="option" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-selected="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="combobox-item-indicator" ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} style="display:none">${renderChild('CheckIcon', {className: "size-4"}, undefined, 's0')}</span>${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxItem(_p, __bfKey) { return createComponent('ComboboxItem', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxGroup(__scope, _p = {}) {
   if (!__scope) return
@@ -3486,13 +3568,12 @@ export function initComboboxGroup(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(ComboboxContext)
 
+    // Hide the group if it has items but none survive the search. Reads
+    // the root's registry + filter rather than querying the items' `hidden`
+    // attributes, so it does not depend on running after the item effects.
     createEffect(() => {
-      ctx.search() // track dependency
-      requestAnimationFrame(() => {
-        const items = el.querySelectorAll('[data-slot="combobox-item"]')
-        const visibleItems = el.querySelectorAll('[data-slot="combobox-item"]:not([hidden])')
-        el.hidden = items.length > 0 && visibleItems.length === 0
-      })
+      const own = ctx.itemsInGroup(el)
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
 
@@ -3533,6 +3614,13 @@ export function initComboboxGroup(__scope, _p = {}) {
 
 hydrate('ComboboxGroup', { init: initComboboxGroup, template: (_p) => `<div data-slot="combobox-group" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="group" ${(`${('overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s3">${_p.heading ? `<div bf-c="s0" data-slot="combobox-group-heading" aria-hidden="true" bf="s2"><!--bf:s1-->${escapeText(_p.heading)}<!--/--></div>` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxGroup(_p, __bfKey) { return createComponent('ComboboxGroup', _p, __bfKey) }
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
 export function initComboboxSeparator(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')

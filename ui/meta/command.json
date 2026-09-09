@@ -213,12 +213,30 @@
       "getter": "selectedValue",
       "setter": "setSelectedValue",
       "initialValue": "''"
+    },
+    {
+      "getter": "entries",
+      "setter": "setEntries",
+      "initialValue": "[]"
     }
   ],
   "memos": [
     {
       "name": "filterFn",
       "deps": []
+    },
+    {
+      "name": "visibleItems",
+      "deps": [
+        "search",
+        "entries"
+      ]
+    },
+    {
+      "name": "itemsByGroup",
+      "deps": [
+        "entries"
+      ]
     }
   ]
 }

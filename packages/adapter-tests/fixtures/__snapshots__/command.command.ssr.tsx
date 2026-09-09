@@ -1,19 +1,58 @@
 /** @jsxImportSource hono/jsx */
 import { serializeHydrationProps, bfComment, bfText, bfTextEnd } from '@barefootjs/hono/utils'
-import { createContext, useContext, createSignal, createMemo, createEffect, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { createContext, useContext, createSignal, createMemo, createEffect, onCleanup, provideContextSSR } from '@barefootjs/hono/client-shim'
 import { Dialog, DialogOverlay, DialogContent } from '../dialog'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { SearchIcon } from '../icon'
+
+interface CommandItemEntry {
+  el: HTMLElement
+  /** The enclosing group root (resolved once, at registration), if any. */
+  group: HTMLElement | null
+  value: () => string
+  keywords: () => string[] | undefined
+}
 
 interface CommandContextValue {
   search: () => string
   onSearchChange: (value: string) => void
   selectedValue: () => string
   onSelect: (value: string) => void
-  registerItem: (el: HTMLElement) => void
-  unregisterItem: (el: HTMLElement) => void
-  filter: (value: string, search: string, keywords?: string[]) => boolean
+  registerItem: (entry: CommandItemEntry) => void
+  unregisterItem: (entry: CommandItemEntry) => void
+  /** Every registered item, in document order (kept sorted at registration). */
+  items: () => ReadonlyArray<CommandItemEntry>
+  /** The registered items the current search keeps, in document order. */
+  visibleItems: () => ReadonlyArray<CommandItemEntry>
+  /** The registered items whose enclosing group root is `group`. */
+  itemsInGroup: (group: HTMLElement) => ReadonlyArray<CommandItemEntry>
+  /**
+   * Whether `entry` survives the current search. Depends on `search` (and
+   * the filter) only, never on the registry, so an item's own `hidden`
+   * effect does not re-run when a sibling registers.
+   */
+  isVisible: (entry: CommandItemEntry) => boolean
+}
+
+function documentOrder(a: HTMLElement, b: HTMLElement): number {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
+function insertInDocumentOrder(list: ReadonlyArray<CommandItemEntry>, entry: CommandItemEntry): CommandItemEntry[] {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (documentOrder(list[mid].el, entry.el) <= 0) lo = mid + 1
+    else hi = mid
+  }
+  const next = list.slice()
+  next.splice(lo, 0, entry)
+  return next
 }
 
 const CommandContext = createContext<CommandContextValue>()
@@ -144,11 +183,26 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
   const setSearch: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const selectedValue = () => ''
   const setSelectedValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
+  const entries = () => [] as CommandItemEntry[]
+  const setEntries: (valueOrFn: CommandItemEntry[] | ((prev: CommandItemEntry[]) => CommandItemEntry[])) => void = () => {}
   const filterFn = () => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   })
-  const items = new Set<HTMLElement>()
+  const visibleItems = () => {
+    const s = search()
+    return entries().filter(entry => matches(entry, s))
+  }
+  const itemsByGroup = () => {
+    const byGroup = new Map<HTMLElement | null, CommandItemEntry[]>()
+    for (const entry of entries()) {
+      const list = byGroup.get(entry.group)
+      if (list) list.push(entry)
+      else byGroup.set(entry.group, [entry])
+    }
+    return byGroup
+  }
+  const matches = (entry: CommandItemEntry, s: string): boolean => filterFn()(entry.value(), s, entry.keywords())
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -165,9 +219,12 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
         setSelectedValue(value)
         props.onValueChange?.(value)
       },
-      registerItem: (el) => items.add(el),
-      unregisterItem: (el) => items.delete(el),
-      filter: filterFn(),
+      registerItem: (entry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
+      unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
+      items: entries,
+      visibleItems,
+      itemsInGroup: (group) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry) => matches(entry, search()),
     }, <><div data-slot="command" id={props.id} className={`${commandRootClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div></>)}</>
   )
 }
