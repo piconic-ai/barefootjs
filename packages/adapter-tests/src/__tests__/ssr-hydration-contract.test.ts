@@ -148,6 +148,21 @@ const statelessFixtures = new Set([
   // #1467 Phase 2e: same multi-export divergence (`pagination` passes
   // and is intentionally NOT listed).
   'data-table',
+  // #2897/#2898: same `/* @client */`-elides-SSR-markers divergence as
+  // `todo-app` above, but for a `insert()` conditional-swap call
+  // specifically — the depth-1 inner loop's row conditional escalates
+  // this fixture to the composite path (`mapArray` + `insert('s0', ...)`
+  // inside the inner renderItem), whose `insert()` call the client JS
+  // always emits regardless of the (here, empty) array's contents. SSR
+  // renders the loop-deferred `<ul></ul>` with no rows at all, so `s0`
+  // has no HTML marker to match against — same "client materialises
+  // markers SSR elided" shape, just via `extractClientInsertRefs` instead
+  // of `extractClientTextRefs`/`extractClientSlotRefs`. The TOP-LEVEL
+  // sibling fixture (`static-loop-conditional-client`) does NOT need this
+  // exemption: its conditional swap goes through `mapArrayLazy`'s inline
+  // `qsa(...)` lookup (`applyOuter`), never `insert()`, so it emits no
+  // marker this test's `insert()` scan would catch.
+  'static-nested-loop-conditional-client',
 ])
 
 describe('SSR-Hydration Contract', () => {
