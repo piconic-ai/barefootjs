@@ -49,6 +49,8 @@ import { SearchIcon } from '../icon'
  */
 interface CommandItemEntry {
   el: HTMLElement
+  /** The enclosing group root (resolved once, at registration), if any. */
+  group: HTMLElement | null
   value: () => string
   keywords: () => string[] | undefined
 }
@@ -61,11 +63,17 @@ interface CommandContextValue {
   onSelect: (value: string) => void
   registerItem: (entry: CommandItemEntry) => void
   unregisterItem: (entry: CommandItemEntry) => void
-  /** Every registered item, in document order. */
+  /** Every registered item, in document order (kept sorted at registration). */
   items: () => ReadonlyArray<CommandItemEntry>
   /** The registered items the current search keeps, in document order. */
   visibleItems: () => ReadonlyArray<CommandItemEntry>
-  /** Whether a registered item survives the current search. */
+  /** The registered items whose enclosing group root is `group`. */
+  itemsInGroup: (group: HTMLElement) => ReadonlyArray<CommandItemEntry>
+  /**
+   * Whether `entry` survives the current search. Depends on `search` (and
+   * the filter) only, never on the registry, so an item's own `hidden`
+   * effect does not re-run when a sibling registers.
+   */
   isVisible: (entry: CommandItemEntry) => boolean
 }
 
@@ -79,6 +87,26 @@ function documentOrder(a: HTMLElement, b: HTMLElement): number {
   if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
   if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
   return 0
+}
+
+/**
+ * Copy of `list` with `entry` inserted at its document-order position
+ * (after any entry that compares equal, so registration order breaks
+ * ties). Binary search: O(log n) DOM comparisons per registration, so
+ * mounting n items costs O(n log n) comparisons overall rather than a
+ * full re-sort per registration.
+ */
+function insertInDocumentOrder(list: ReadonlyArray<CommandItemEntry>, entry: CommandItemEntry): CommandItemEntry[] {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (documentOrder(list[mid].el, entry.el) <= 0) lo = mid + 1
+    else hi = mid
+  }
+  const next = list.slice()
+  next.splice(lo, 0, entry)
+  return next
 }
 
 const CommandContext = createContext<CommandContextValue>()
@@ -179,6 +207,9 @@ function Command(props: CommandProps) {
   // rAF-deferred DOM queries left the group/empty `hidden` attributes and
   // `data-selected` one frame behind the item `hidden` writes — a race
   // any observer between the write and the frame could see (#2827).
+  // Each registration is one signal write; what re-runs on it is bounded
+  // to the list-level memos and the group/empty/selection effects (O(n)),
+  // never the n per-item `hidden` effects — see `isVisible`.
   const [entries, setEntries] = createSignal<CommandItemEntry[]>([])
 
   const filterFn = createMemo(() => props.filter ?? ((value: string, search: string) => {
@@ -186,21 +217,31 @@ function Command(props: CommandProps) {
     return value.toLowerCase().includes(search.toLowerCase())
   }))
 
-  // Sorted on every recompute (not at registration) so a row that
-  // registered while still detached is ordered once it is in the tree.
-  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+  // The one filter decision, shared by the per-item `hidden` effect
+  // (`isVisible`) and the list-level memo below.
+  const matches = (entry: CommandItemEntry, s: string): boolean => filterFn()(entry.value(), s, entry.keywords())
 
+  // `entries` is kept in document order at registration, so this is too.
+  // (No Array.prototype.map projection anywhere in this file, on purpose:
+  // a map call, even inside a comment, makes `needsTypeBasedDetection` in
+  // `packages/jsx/src/analyzer.ts` build a TypeScript Program for the
+  // file, which costs seconds of compile time.)
   const visibleItems = createMemo(() => {
     const s = search()
-    const filter = filterFn()
-    return items().filter(entry => filter(entry.value(), s, entry.keywords()))
+    return entries().filter(entry => matches(entry, s))
   })
 
-  // A Set of entries rather than an Array.prototype.map projection onto
-  // elements: a map call anywhere in this file (even in a comment) makes
-  // `needsTypeBasedDetection` (`packages/jsx/src/analyzer.ts`) build a
-  // TypeScript Program for it, which costs seconds of compile time.
-  const visibleSet = createMemo(() => new Set(visibleItems()))
+  // Group root → its items, so a group's effect is O(own items) instead of
+  // an O(all items) `contains` scan on every registration.
+  const itemsByGroup = createMemo(() => {
+    const byGroup = new Map<HTMLElement | null, CommandItemEntry[]>()
+    for (const entry of entries()) {
+      const list = byGroup.get(entry.group)
+      if (list) list.push(entry)
+      else byGroup.set(entry.group, [entry])
+    }
+    return byGroup
+  })
 
   const handleMount = (el: HTMLElement) => {
     // Auto-select the first visible item whenever the filtered list changes
@@ -255,11 +296,12 @@ function Command(props: CommandProps) {
         setSelectedValue(value)
         props.onValueChange?.(value)
       },
-      registerItem: (entry: CommandItemEntry) => setEntries(prev => [...prev, entry]),
+      registerItem: (entry: CommandItemEntry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
       unregisterItem: (entry: CommandItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
-      items,
+      items: entries,
       visibleItems,
-      isVisible: (entry: CommandItemEntry) => visibleSet().has(entry),
+      itemsInGroup: (group: HTMLElement) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry: CommandItemEntry) => matches(entry, search()),
     }}>
       <div
         data-slot="command"
@@ -368,11 +410,10 @@ function CommandGroup(props: CommandGroupProps) {
     const ctx = useContext(CommandContext)
 
     // Hide the group if it has items but none survive the search. Reads
-    // the root's registry + filtered-list memos rather than querying the
-    // items' `hidden` attributes, so it does not depend on running after
-    // the item effects.
+    // the root's registry + filter rather than querying the items' `hidden`
+    // attributes, so it does not depend on running after the item effects.
     createEffect(() => {
-      const own = ctx.items().filter(entry => el.contains(entry.el))
+      const own = ctx.itemsInGroup(el)
       el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
@@ -412,12 +453,17 @@ function CommandItem(props: CommandItemProps) {
     const value = resolveValue()
     el.setAttribute('data-value', value)
 
-    const entry: CommandItemEntry = { el, value: resolveValue, keywords: () => props.keywords }
+    const entry: CommandItemEntry = {
+      el,
+      group: el.closest('[data-slot="command-group"]') as HTMLElement | null,
+      value: resolveValue,
+      keywords: () => props.keywords,
+    }
     ctx.registerItem(entry)
     onCleanup(() => ctx.unregisterItem(entry))
 
-    // Visibility is the root's decision (one filtered-list memo shared with
-    // the group/empty rows and auto-selection); this effect only mirrors it.
+    // Visibility is the root's decision (the same `matches` the list-level
+    // memo uses); this effect only mirrors it and tracks `search` alone.
     createEffect(() => {
       el.hidden = !ctx.isVisible(entry)
     })

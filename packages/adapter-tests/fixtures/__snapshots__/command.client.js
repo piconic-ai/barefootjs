@@ -3353,6 +3353,18 @@ var documentOrder = documentOrder ?? function(a, b) {
   if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
   return 0
 }
+var insertInDocumentOrder = insertInDocumentOrder ?? function(list, entry) {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (documentOrder(list[mid].el, entry.el) <= 0) lo = mid + 1
+    else hi = mid
+  }
+  const next = list.slice()
+  next.splice(lo, 0, entry)
+  return next
+}
 
 export function initCommand(__scope, _p = {}) {
   if (!__scope) return
@@ -3366,13 +3378,20 @@ export function initCommand(__scope, _p = {}) {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
   }))
-  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+  const matches = (entry, s) => filterFn()(entry.value(), s, entry.keywords())
   const visibleItems = createMemo(() => {
     const s = search()
-    const filter = filterFn()
-    return items().filter(entry => filter(entry.value(), s, entry.keywords()))
+    return entries().filter(entry => matches(entry, s))
   })
-  const visibleSet = createMemo(() => new Set(visibleItems()))
+  const itemsByGroup = createMemo(() => {
+    const byGroup = new Map()
+    for (const entry of entries()) {
+      const list = byGroup.get(entry.group)
+      if (list) list.push(entry)
+      else byGroup.set(entry.group, [entry])
+    }
+    return byGroup
+  })
   const handleMount = (el) => {
     // Auto-select the first visible item whenever the filtered list changes
     createEffect(() => {
@@ -3446,17 +3465,24 @@ export function initCommand(__scope, _p = {}) {
         setSelectedValue(value)
         _p.onValueChange?.(value)
       },
-      registerItem: (entry) => setEntries(prev => [...prev, entry]),
+      registerItem: (entry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
       unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
-      items,
+      items: entries,
       visibleItems,
-      isVisible: (entry) => visibleSet().has(entry),
+      itemsInGroup: (group) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry) => matches(entry, search()),
     })
 }
 
 hydrate('Command', { init: initCommand, template: (_p) => `<div data-slot="command" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function Command(_p, __bfKey) { return createComponent('Command', _p, __bfKey) }
 var CommandContext = CommandContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initCommandInput(__scope, _p = {}) {
   if (!__scope) return
@@ -3518,6 +3544,13 @@ export function initCommandInput(__scope, _p = {}) {
 
 hydrate('CommandInput', { init: initCommandInput, template: (_p) => `<div data-slot="command-input-wrapper" ${(`flex items-center border-b px-3`) != null ? 'class="' + escapeAttr(`flex items-center border-b px-3`) + '"' : ''} bf="s2">${renderChild('SearchIcon', {className: "mr-2 size-4 shrink-0 opacity-50"}, undefined, 's0')}<input data-slot="command-input" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} type="text" ${(_p.placeholder) != null ? 'placeholder="' + escapeAttr(_p.placeholder) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} autocomplete="off" bf="s1" /></div>` })
 export function CommandInput(_p, __bfKey) { return createComponent('CommandInput', _p, __bfKey) }
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
 export function initCommandList(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -3544,6 +3577,12 @@ export function initCommandList(__scope, _p = {}) {
 hydrate('CommandList', { init: initCommandList, template: (_p) => `<div data-slot="command-list" role="listbox" ${(`${('max-h-[300px] overflow-y-auto overflow-x-hidden')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('max-h-[300px] overflow-y-auto overflow-x-hidden')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function CommandList(_p, __bfKey) { return createComponent('CommandList', _p, __bfKey) }
 var CommandContext = CommandContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initCommandEmpty(__scope, _p = {}) {
   if (!__scope) return
@@ -3584,6 +3623,12 @@ export function initCommandEmpty(__scope, _p = {}) {
 hydrate('CommandEmpty', { init: initCommandEmpty, template: (_p) => `<div data-slot="command-empty" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} hidden ${(`${('py-6 text-center text-sm')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('py-6 text-center text-sm')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function CommandEmpty(_p, __bfKey) { return createComponent('CommandEmpty', _p, __bfKey) }
 var CommandContext = CommandContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initCommandGroup(__scope, _p = {}) {
   if (!__scope) return
@@ -3594,11 +3639,10 @@ export function initCommandGroup(__scope, _p = {}) {
     const ctx = useContext(CommandContext)
 
     // Hide the group if it has items but none survive the search. Reads
-    // the root's registry + filtered-list memos rather than querying the
-    // items' `hidden` attributes, so it does not depend on running after
-    // the item effects.
+    // the root's registry + filter rather than querying the items' `hidden`
+    // attributes, so it does not depend on running after the item effects.
     createEffect(() => {
-      const own = ctx.items().filter(entry => el.contains(entry.el))
+      const own = ctx.itemsInGroup(el)
       el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
@@ -3641,6 +3685,12 @@ export function initCommandGroup(__scope, _p = {}) {
 hydrate('CommandGroup', { init: initCommandGroup, template: (_p) => `<div data-slot="command-group" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="group" ${(`${('overflow-hidden p-1 text-foreground [&_[data-slot=command-group-heading]]:px-2 [&_[data-slot=command-group-heading]]:py-1.5 [&_[data-slot=command-group-heading]]:text-xs [&_[data-slot=command-group-heading]]:font-medium [&_[data-slot=command-group-heading]]:text-muted-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('overflow-hidden p-1 text-foreground [&_[data-slot=command-group-heading]]:px-2 [&_[data-slot=command-group-heading]]:py-1.5 [&_[data-slot=command-group-heading]]:text-xs [&_[data-slot=command-group-heading]]:font-medium [&_[data-slot=command-group-heading]]:text-muted-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s3">${_p.heading ? `<div bf-c="s0" data-slot="command-group-heading" aria-hidden="true" bf="s2"><!--bf:s1-->${escapeText(_p.heading)}<!--/--></div>` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}${markupOrEmpty(_p.children)}</div>` })
 export function CommandGroup(_p, __bfKey) { return createComponent('CommandGroup', _p, __bfKey) }
 var CommandContext = CommandContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initCommandItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3659,12 +3709,17 @@ export function initCommandItem(__scope, _p = {}) {
     const value = resolveValue()
     el.setAttribute('data-value', value)
 
-    const entry = { el, value: resolveValue, keywords: () => _p.keywords }
+    const entry = {
+      el,
+      group: el.closest('[data-slot="command-group"]'),
+      value: resolveValue,
+      keywords: () => _p.keywords,
+    }
     ctx.registerItem(entry)
     onCleanup(() => ctx.unregisterItem(entry))
 
-    // Visibility is the root's decision (one filtered-list memo shared with
-    // the group/empty rows and auto-selection); this effect only mirrors it.
+    // Visibility is the root's decision (the same `matches` the list-level
+    // memo uses); this effect only mirrors it and tracks `search` alone.
     createEffect(() => {
       el.hidden = !ctx.isVisible(entry)
     })
@@ -3721,6 +3776,13 @@ export function initCommandItem(__scope, _p = {}) {
 
 hydrate('CommandItem', { init: initCommandItem, template: (_p) => `<div data-slot="command-item" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="option" ${(_p.disabled ?? false) ? 'data-disabled' : ''} data-selected="false" ${(`${('relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function CommandItem(_p, __bfKey) { return createComponent('CommandItem', _p, __bfKey) }
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
 export function initCommandSeparator(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -3746,6 +3808,13 @@ export function initCommandSeparator(__scope, _p = {}) {
 
 hydrate('CommandSeparator', { init: initCommandSeparator, template: (_p) => `<div data-slot="command-separator" role="separator" ${(`${('-mx-1 h-px bg-border')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('-mx-1 h-px bg-border')} ${_p.className}`) + '"' : ''} bf="s0"></div>` })
 export function CommandSeparator(_p, __bfKey) { return createComponent('CommandSeparator', _p, __bfKey) }
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
 export function initCommandShortcut(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -3771,6 +3840,13 @@ export function initCommandShortcut(__scope, _p = {}) {
 
 hydrate('CommandShortcut', { init: initCommandShortcut, template: (_p) => `<span data-slot="command-shortcut" ${(`${('ml-auto text-xs tracking-widest text-muted-foreground')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('ml-auto text-xs tracking-widest text-muted-foreground')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</span>` })
 export function CommandShortcut(_p, __bfKey) { return createComponent('CommandShortcut', _p, __bfKey) }
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
 export function initCommandDialog(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')

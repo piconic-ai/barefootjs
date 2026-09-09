@@ -2958,6 +2958,18 @@ var documentOrder = documentOrder ?? function(a, b) {
   if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
   return 0
 }
+var insertInDocumentOrder = insertInDocumentOrder ?? function(list, entry) {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (documentOrder(list[mid].el, entry.el) <= 0) lo = mid + 1
+    else hi = mid
+  }
+  const next = list.slice()
+  next.splice(lo, 0, entry)
+  return next
+}
 
 export function initCombobox(__scope, _p = {}) {
   if (!__scope) return
@@ -2976,13 +2988,20 @@ export function initCombobox(__scope, _p = {}) {
     return value.toLowerCase().includes(search.toLowerCase())
   }))
   const [entries, setEntries] = createSignal([])
-  const items = createMemo(() => [...entries()].sort((a, b) => documentOrder(a.el, b.el)))
+  const matches = (entry, s) => filterFn()(entry.label(), s)
   const visibleItems = createMemo(() => {
     const s = search()
-    const filter = filterFn()
-    return items().filter(entry => filter(entry.label(), s))
+    return entries().filter(entry => matches(entry, s))
   })
-  const visibleSet = createMemo(() => new Set(visibleItems()))
+  const itemsByGroup = createMemo(() => {
+    const byGroup = new Map()
+    for (const entry of entries()) {
+      const list = byGroup.get(entry.group)
+      if (list) list.push(entry)
+      else byGroup.set(entry.group, [entry])
+    }
+    return byGroup
+  })
 
 
   // Provide context for child components
@@ -3000,17 +3019,24 @@ export function initCombobox(__scope, _p = {}) {
       },
       search,
       onSearchChange: setSearch,
-      registerItem: (entry) => setEntries(prev => [...prev, entry]),
+      registerItem: (entry) => setEntries(prev => insertInDocumentOrder(prev, entry)),
       unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
-      items,
+      items: entries,
       visibleItems,
-      isVisible: (entry) => visibleSet().has(entry),
+      itemsInGroup: (group) => itemsByGroup().get(group) ?? [],
+      isVisible: (entry) => matches(entry, search()),
     })
 }
 
 hydrate('Combobox', { init: initCombobox, template: (_p) => `<div data-slot="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`relative inline-block ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`relative inline-block ${_p.className ?? ''}`) + '"' : ''}>${markupOrEmpty(_p.children)}</div>` })
 export function Combobox(_p, __bfKey) { return createComponent('Combobox', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxTrigger(__scope, _p = {}) {
   if (!__scope) return
@@ -3071,6 +3097,12 @@ export function initComboboxTrigger(__scope, _p = {}) {
 hydrate('ComboboxTrigger', { init: initComboboxTrigger, template: (_p) => `<button data-slot="combobox-trigger" type="button" role="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" ${(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) + '"' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {className: "size-4 shrink-0 opacity-50"}, undefined, 's0')}</button>` })
 export function ComboboxTrigger(_p, __bfKey) { return createComponent('ComboboxTrigger', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxValue(__scope, _p = {}) {
   if (!__scope) return
@@ -3126,6 +3158,12 @@ hydrate('ComboboxValue', { init: initComboboxValue, template: (_p) => `<span dat
 export function ComboboxValue(_p, __bfKey) { return createComponent('ComboboxValue', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxContent(__scope, _p = {}) {
   if (!__scope) return
@@ -3288,6 +3326,12 @@ export function initComboboxContent(__scope, _p = {}) {
 hydrate('ComboboxContent', { init: initComboboxContent, template: (_p) => `<div data-slot="combobox-content" data-state="closed" role="listbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('fixed z-50 max-h-[min(var(--radix-select-content-available-height,384px),384px)] min-w-[8rem] overflow-hidden rounded-md border bg-popover shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out')} ${('opacity-0 scale-95 pointer-events-none')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxContent(_p, __bfKey) { return createComponent('ComboboxContent', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxInput(__scope, _p = {}) {
   if (!__scope) return
@@ -3350,6 +3394,12 @@ export function initComboboxInput(__scope, _p = {}) {
 hydrate('ComboboxInput', { init: initComboboxInput, template: (_p) => `<div data-slot="combobox-input-wrapper" ${(`flex items-center border-b px-3`) != null ? 'class="' + escapeAttr(`flex items-center border-b px-3`) + '"' : ''} bf="s2">${renderChild('SearchIcon', {className: "mr-2 size-4 shrink-0 opacity-50"}, undefined, 's0')}<input data-slot="combobox-input" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} type="text" ${(_p.placeholder) != null ? 'placeholder="' + escapeAttr(_p.placeholder) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} autocomplete="off" bf="s1" /></div>` })
 export function ComboboxInput(_p, __bfKey) { return createComponent('ComboboxInput', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxEmpty(__scope, _p = {}) {
   if (!__scope) return
@@ -3391,6 +3441,12 @@ hydrate('ComboboxEmpty', { init: initComboboxEmpty, template: (_p) => `<div data
 export function ComboboxEmpty(_p, __bfKey) { return createComponent('ComboboxEmpty', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var contentTriggerMap = contentTriggerMap ?? new WeakMap()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3407,14 +3463,15 @@ export function initComboboxItem(__scope, _p = {}) {
 
     const entry = {
       el,
+      group: el.closest('[data-slot="combobox-group"]'),
       value: _p.value,
       label: () => el.textContent?.trim() ?? _p.value,
     }
     ctx.registerItem(entry)
     onCleanup(() => ctx.unregisterItem(entry))
 
-    // Visibility is the root's decision (one filtered-list memo shared with
-    // the group/empty rows and the highlight); this effect only mirrors it.
+    // Visibility is the root's decision (the same `matches` the list-level
+    // memo uses); this effect only mirrors it and tracks `search` alone.
     createEffect(() => {
       el.hidden = !ctx.isVisible(entry)
     })
@@ -3496,6 +3553,12 @@ export function initComboboxItem(__scope, _p = {}) {
 hydrate('ComboboxItem', { init: initComboboxItem, template: (_p) => `<div data-slot="combobox-item" ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} data-state="unchecked" data-selected="false" role="option" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-selected="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="combobox-item-indicator" ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} style="display:none">${renderChild('CheckIcon', {className: "size-4"}, undefined, 's0')}</span>${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxItem(_p, __bfKey) { return createComponent('ComboboxItem', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
 
 export function initComboboxGroup(__scope, _p = {}) {
   if (!__scope) return
@@ -3506,11 +3569,10 @@ export function initComboboxGroup(__scope, _p = {}) {
     const ctx = useContext(ComboboxContext)
 
     // Hide the group if it has items but none survive the search. Reads
-    // the root's registry + filtered-list memos rather than querying the
-    // items' `hidden` attributes, so it does not depend on running after
-    // the item effects.
+    // the root's registry + filter rather than querying the items' `hidden`
+    // attributes, so it does not depend on running after the item effects.
     createEffect(() => {
-      const own = ctx.items().filter(entry => el.contains(entry.el))
+      const own = ctx.itemsInGroup(el)
       el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
@@ -3552,6 +3614,13 @@ export function initComboboxGroup(__scope, _p = {}) {
 
 hydrate('ComboboxGroup', { init: initComboboxGroup, template: (_p) => `<div data-slot="combobox-group" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="group" ${(`${('overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('overflow-hidden p-1 text-foreground [&_[data-slot=combobox-group-heading]]:px-2 [&_[data-slot=combobox-group-heading]]:py-1.5 [&_[data-slot=combobox-group-heading]]:text-xs [&_[data-slot=combobox-group-heading]]:font-medium [&_[data-slot=combobox-group-heading]]:text-muted-foreground')} ${_p.className ?? ''}`) + '"' : ''} bf="s3">${_p.heading ? `<div bf-c="s0" data-slot="combobox-group-heading" aria-hidden="true" bf="s2"><!--bf:s1-->${escapeText(_p.heading)}<!--/--></div>` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxGroup(_p, __bfKey) { return createComponent('ComboboxGroup', _p, __bfKey) }
+var documentOrder = documentOrder ?? function(a, b) {
+  const pos = a.compareDocumentPosition(b)
+  if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1
+  if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1
+  return 0
+}
+
 export function initComboboxSeparator(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')

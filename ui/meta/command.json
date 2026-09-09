@@ -226,23 +226,16 @@
       "deps": []
     },
     {
-      "name": "items",
+      "name": "visibleItems",
       "deps": [
+        "search",
         "entries"
       ]
     },
     {
-      "name": "visibleItems",
+      "name": "itemsByGroup",
       "deps": [
-        "search",
-        "filterFn",
-        "items"
-      ]
-    },
-    {
-      "name": "visibleSet",
-      "deps": [
-        "visibleItems"
+        "entries"
       ]
     }
   ]
