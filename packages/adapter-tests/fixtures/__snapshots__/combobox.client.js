@@ -2982,7 +2982,7 @@ export function initCombobox(__scope, _p = {}) {
     const filter = filterFn()
     return items().filter(entry => filter(entry.label(), s))
   })
-  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
+  const visibleSet = createMemo(() => new Set(visibleItems()))
 
 
   // Provide context for child components
@@ -3004,7 +3004,7 @@ export function initCombobox(__scope, _p = {}) {
       unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
       items,
       visibleItems,
-      isVisible: (el) => visibleSet().has(el),
+      isVisible: (entry) => visibleSet().has(entry),
     })
 }
 
@@ -3416,7 +3416,7 @@ export function initComboboxItem(__scope, _p = {}) {
     // Visibility is the root's decision (one filtered-list memo shared with
     // the group/empty rows and the highlight); this effect only mirrors it.
     createEffect(() => {
-      el.hidden = !ctx.isVisible(el)
+      el.hidden = !ctx.isVisible(entry)
     })
 
     // Selected (checked) state + data-selected highlight
@@ -3511,7 +3511,7 @@ export function initComboboxGroup(__scope, _p = {}) {
     // the item effects.
     createEffect(() => {
       const own = ctx.items().filter(entry => el.contains(entry.el))
-      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
 

@@ -3372,7 +3372,7 @@ export function initCommand(__scope, _p = {}) {
     const filter = filterFn()
     return items().filter(entry => filter(entry.value(), s, entry.keywords()))
   })
-  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
+  const visibleSet = createMemo(() => new Set(visibleItems()))
   const handleMount = (el) => {
     // Auto-select the first visible item whenever the filtered list changes
     createEffect(() => {
@@ -3450,7 +3450,7 @@ export function initCommand(__scope, _p = {}) {
       unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
       items,
       visibleItems,
-      isVisible: (el) => visibleSet().has(el),
+      isVisible: (entry) => visibleSet().has(entry),
     })
 }
 
@@ -3599,7 +3599,7 @@ export function initCommandGroup(__scope, _p = {}) {
     // the item effects.
     createEffect(() => {
       const own = ctx.items().filter(entry => el.contains(entry.el))
-      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
 
@@ -3666,7 +3666,7 @@ export function initCommandItem(__scope, _p = {}) {
     // Visibility is the root's decision (one filtered-list memo shared with
     // the group/empty rows and auto-selection); this effect only mirrors it.
     createEffect(() => {
-      el.hidden = !ctx.isVisible(el)
+      el.hidden = !ctx.isVisible(entry)
     })
 
     // Selected state

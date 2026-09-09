@@ -23,8 +23,8 @@ interface CommandContextValue {
   items: () => ReadonlyArray<CommandItemEntry>
   /** The registered items the current search keeps, in document order. */
   visibleItems: () => ReadonlyArray<CommandItemEntry>
-  /** Whether `el` (a registered item root) survives the current search. */
-  isVisible: (el: HTMLElement) => boolean
+  /** Whether a registered item survives the current search. */
+  isVisible: (entry: CommandItemEntry) => boolean
 }
 
 function documentOrder(a: HTMLElement, b: HTMLElement): number {
@@ -174,7 +174,7 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
     const filter = filterFn()
     return items().filter(entry => filter(entry.value(), s, entry.keywords()))
   }
-  const visibleSet = () => new Set(visibleItems().map(entry => entry.el))
+  const visibleSet = () => new Set(visibleItems())
 
   // Serialize props for client hydration
   const __hydrateProps: Record<string, unknown> = {}
@@ -195,7 +195,7 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
       unregisterItem: (entry) => setEntries(prev => prev.filter(e => e !== entry)),
       items,
       visibleItems,
-      isVisible: (el) => visibleSet().has(el),
+      isVisible: (entry) => visibleSet().has(entry),
     }, <><div data-slot="command" id={props.id} className={`${commandRootClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div></>)}</>
   )
 }

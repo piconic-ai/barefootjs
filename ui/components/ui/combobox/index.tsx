@@ -69,8 +69,8 @@ interface ComboboxContextValue {
   items: () => ReadonlyArray<ComboboxItemEntry>
   /** The registered items the current search keeps, in document order. */
   visibleItems: () => ReadonlyArray<ComboboxItemEntry>
-  /** Whether `el` (a registered item root) survives the current search. */
-  isVisible: (el: HTMLElement) => boolean
+  /** Whether a registered item survives the current search. */
+  isVisible: (entry: ComboboxItemEntry) => boolean
 }
 
 /**
@@ -222,7 +222,11 @@ function Combobox(props: ComboboxProps) {
     return items().filter(entry => filter(entry.label(), s))
   })
 
-  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
+  // A Set of entries rather than an Array.prototype.map projection onto
+  // elements: a map call anywhere in this file (even in a comment) makes
+  // `needsTypeBasedDetection` (`packages/jsx/src/analyzer.ts`) build a
+  // TypeScript Program for it, which costs seconds of compile time.
+  const visibleSet = createMemo(() => new Set(visibleItems()))
 
   return (
     <ComboboxContext.Provider value={{
@@ -243,7 +247,7 @@ function Combobox(props: ComboboxProps) {
       unregisterItem: (entry: ComboboxItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
       items,
       visibleItems,
-      isVisible: (el: HTMLElement) => visibleSet().has(el),
+      isVisible: (entry: ComboboxItemEntry) => visibleSet().has(entry),
     }}>
       <div data-slot="combobox" id={props.id} className={`relative inline-block ${props.className ?? ''}`}>
         {props.children}
@@ -580,7 +584,7 @@ function ComboboxItem(props: ComboboxItemProps) {
     // Visibility is the root's decision (one filtered-list memo shared with
     // the group/empty rows and the highlight); this effect only mirrors it.
     createEffect(() => {
-      el.hidden = !ctx.isVisible(el)
+      el.hidden = !ctx.isVisible(entry)
     })
 
     // Selected (checked) state + data-selected highlight
@@ -658,7 +662,7 @@ function ComboboxGroup(props: ComboboxGroupProps) {
     // the item effects.
     createEffect(() => {
       const own = ctx.items().filter(entry => el.contains(entry.el))
-      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
 

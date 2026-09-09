@@ -65,8 +65,8 @@ interface CommandContextValue {
   items: () => ReadonlyArray<CommandItemEntry>
   /** The registered items the current search keeps, in document order. */
   visibleItems: () => ReadonlyArray<CommandItemEntry>
-  /** Whether `el` (a registered item root) survives the current search. */
-  isVisible: (el: HTMLElement) => boolean
+  /** Whether a registered item survives the current search. */
+  isVisible: (entry: CommandItemEntry) => boolean
 }
 
 /**
@@ -196,7 +196,11 @@ function Command(props: CommandProps) {
     return items().filter(entry => filter(entry.value(), s, entry.keywords()))
   })
 
-  const visibleSet = createMemo(() => new Set(visibleItems().map(entry => entry.el)))
+  // A Set of entries rather than an Array.prototype.map projection onto
+  // elements: a map call anywhere in this file (even in a comment) makes
+  // `needsTypeBasedDetection` (`packages/jsx/src/analyzer.ts`) build a
+  // TypeScript Program for it, which costs seconds of compile time.
+  const visibleSet = createMemo(() => new Set(visibleItems()))
 
   const handleMount = (el: HTMLElement) => {
     // Auto-select the first visible item whenever the filtered list changes
@@ -255,7 +259,7 @@ function Command(props: CommandProps) {
       unregisterItem: (entry: CommandItemEntry) => setEntries(prev => prev.filter(e => e !== entry)),
       items,
       visibleItems,
-      isVisible: (el: HTMLElement) => visibleSet().has(el),
+      isVisible: (entry: CommandItemEntry) => visibleSet().has(entry),
     }}>
       <div
         data-slot="command"
@@ -369,7 +373,7 @@ function CommandGroup(props: CommandGroupProps) {
     // the item effects.
     createEffect(() => {
       const own = ctx.items().filter(entry => el.contains(entry.el))
-      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry.el))
+      el.hidden = own.length > 0 && !own.some(entry => ctx.isVisible(entry))
     })
   }
 
@@ -415,7 +419,7 @@ function CommandItem(props: CommandItemProps) {
     // Visibility is the root's decision (one filtered-list memo shared with
     // the group/empty rows and auto-selection); this effect only mirrors it.
     createEffect(() => {
-      el.hidden = !ctx.isVisible(el)
+      el.hidden = !ctx.isVisible(entry)
     })
 
     // Selected state
