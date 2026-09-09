@@ -793,17 +793,29 @@ export function collectElements(
       const staticInnerLoopHasConditional = !projectionInner && l.isStaticArray && !l.childComponent
         && (innerLoops ?? []).some(il => il.bindings.conditionals.some(c => c.reactiveBeyondLoopScope))
       const hasInnerStructure = (l.nestedComponents?.length ?? 0) > 0 || (innerLoops?.length ?? 0) > 0
-      // Own-row conditional needs no inner structure to reconcile — it falls
-      // through (via `clientIsStaticArray` below) straight to the plain
-      // dynamic-array path, which already wires a bare conditional's live
-      // branch-swap correctly (`buildLoopReactiveEffectsPlan`, proven by the
-      // identical shape on a signal-backed array). An inner-loop conditional
-      // DOES need reconciliation (the composite path), since #2798's static
-      // machinery it would otherwise take has no conditional support to add
-      // to — `buildTopLevelCompositePlan` already handles nested loops of
-      // arbitrary depth, including the conditional case, unconditionally.
+      // An own-row conditional alone needs no inner structure to reconcile —
+      // it falls through (via `clientIsStaticArray` below) straight to the
+      // plain dynamic-array path, which already wires a bare conditional's
+      // live branch-swap correctly (`buildLoopReactiveEffectsPlan`, proven
+      // by the identical shape on a signal-backed array). But when the row
+      // ALSO has a sibling inner loop (`hasInnerStructure`), that plain path
+      // (`buildPlainLoopPlan`) never reads `TopLevelLoop.innerLoops` at all —
+      // only the composite and static-array-child-init plans do — so an
+      // inner loop's own ref/reactive-attr/reactive-text bindings would be
+      // silently dropped (pullfrog review on #2899: confirmed by compiling
+      // a static row with a signal-driven sibling conditional next to an
+      // inner loop with a `ref` — the ref callback never appeared in the
+      // emitted JS). Escalating to the composite path here, exactly as an
+      // inner-loop conditional already does, keeps those bindings wired.
+      // An inner-loop conditional always DOES need reconciliation on its
+      // own (no `hasInnerStructure` gate needed there — `innerLoops` being
+      // non-empty is exactly what `hasInnerStructure` already asks), since
+      // #2798's static machinery it would otherwise take has no conditional
+      // support to add to — `buildTopLevelCompositePlan` already handles
+      // nested loops of arbitrary depth, including the conditional case,
+      // unconditionally.
       const useElementReconciliation =
-        reconciliationBase || (staticInnerLoopHasConditional && hasInnerStructure)
+        reconciliationBase || staticInnerLoopHasConditional || (staticRowHasConditional && hasInnerStructure)
       // The client-side `isStaticArray` field (NOT the IR-level `l.isStaticArray`,
       // which SSR adapters like Go template's static-loop baking still read
       // directly and are unaffected by — #2897 is client-JS-only): false

@@ -135,6 +135,48 @@ describe('#2897 — nested: static outer array + depth-1 inner loop whose row ha
   })
 })
 
+describe('#2897 follow-up — static array, own-row conditional escalates the row, sibling inner loop has a ref binding', () => {
+  // Pullfrog review on #2899: an own-row conditional escalates
+  // `clientIsStaticArray` to false regardless of any inner loop, but
+  // `useElementReconciliation` previously escalated ONLY on an
+  // inner-loop's OWN conditional (`staticInnerLoopHasConditional`). A row
+  // whose OWN conditional escalates it, with a SIBLING inner loop that has
+  // no conditional of its own but DOES have a ref/reactive-attr/reactive-text
+  // binding, fell through to `buildPlainLoopPlan` — which never reads
+  // `TopLevelLoop.innerLoops` at all — silently dropping that inner loop's
+  // binding with no compile error. Confirmed by compiling this exact shape
+  // pre-fix: the `ref` callback never appeared anywhere in the emitted JS.
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function C() {
+      const items = [{ id: 1, children: [{ id: 11 }] }]
+      const [flag] = createSignal(true)
+      return (
+        <ul>
+          {items.map(item => (
+            <li key={item.id}>
+              {flag() ? <b>Yes</b> : <i>No</i>}
+              {item.children.map(child => (
+                <span key={child.id} ref={(el) => console.log(el, child.id)}>{child.id}</span>
+              ))}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  `
+
+  test('escalates to composite element reconciliation so the inner loop\'s ref binding is not dropped', () => {
+    const js = compile(source)
+    expect(usesReconciliation(js)).toBe(true)
+    expect(usesStaticForEach(js)).toBe(false)
+    // The regression itself: the ref callback's body must appear somewhere
+    // in the emitted JS, wired to the inner loop's row element.
+    expect(js).toContain('console.log(el')
+  })
+})
+
 describe('#2897 follow-up — static array, own-row conditional reading ONLY the loop item, child-component branch', () => {
   // `SocialShell` (site/ui) shape: `item.key === 'messages'` is a
   // `classifyReactivity` `'loop-param'` verdict (every loop-param-referencing
