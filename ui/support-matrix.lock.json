@@ -6984,43 +6984,43 @@
       }
     },
     "binary:!==": {
-      "total": 11,
+      "total": 12,
       "cells": {
         "hono": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "blade": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "jinja": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 11,
-          "total": 11
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
