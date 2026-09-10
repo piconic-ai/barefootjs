@@ -361,19 +361,28 @@ function Child({ initialCount }: Props) {
 
 ### BF044 — Signal/Memo Getter Not Called
 
-**Trigger:** Signal/memo getter passed without calling it.
+**Trigger:** Signal/memo getter passed without calling it in a RENDERED
+position — a DOM element attribute or a JSX text child, where the value
+becomes literal output.
 
 ```tsx
 // ❌ BF044
-<Child count={count} />  // Passing getter function, not the value
+<div count={count} />  // Passing getter function, not the value
 ```
 
 **Fix:**
 
 ```tsx
 // ✅ Fixed
-<Child count={count()} />
+<div count={count()} />
 ```
+
+**Not triggered on a component prop:** `<Child count={count} />` compiles —
+a component prop is an opaque value handed to the child, not rendered
+output, and passing a live getter there is this codebase's deliberate
+Context-Provider idiom (the child calls it at its own read site). See
+[`spec/compiler.md`'s BF044 section](https://github.com/piconic-ai/barefootjs/blob/main/spec/compiler.md#signalmemo-getter-not-called-bf044)
+for the full rule.
 
 <a id="bf049"></a>
 
