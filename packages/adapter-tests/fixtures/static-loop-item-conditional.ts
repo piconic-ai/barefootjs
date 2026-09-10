@@ -25,10 +25,21 @@ import { createFixture } from '../src/types'
  * correctly bail the whole loop for the item where that field is null,
  * since printing `null` isn't a resolvable scalar — that is a real BF101
  * refusal shape, not this fixture's.
+ *
+ * Refuses on Mojolicious and Xslate too, for an UNRELATED reason (#2911):
+ * both Perl-backed adapters' own static-array bake deliberately refuses a
+ * `boolean` value anywhere in the item shape (`active: boolean` here) —
+ * Perl has no boolean literal. The diagnostic's own suggestion names a
+ * prop-precompute/@client escape on every refusing adapter, verified by
+ * the twins below.
  */
 export const fixture = createFixture({
   id: 'static-loop-item-conditional',
   description: "static array's .map() row conditional keyed off the item itself bakes to a per-item Go literal (#2898)",
+  escapes: [
+    { kind: 'prop-precompute', fixture: 'static-loop-item-conditional-precomputed' },
+    { kind: 'client-directive', fixture: 'static-loop-item-conditional-client' },
+  ],
   source: `
 type Item = { id: number; label: string; active: boolean; tag: string | null }
 

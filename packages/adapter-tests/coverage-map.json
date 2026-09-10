@@ -5536,6 +5536,39 @@
         "text"
       ]
     },
+    "static-loop-item-conditional-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-item-conditional-precomputed": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "static-nested-loop-conditional": {
       "kinds": [
         "array-literal",
@@ -6476,17 +6509,17 @@
     }
   },
   "kindCounts": {
-    "array-literal": 107,
+    "array-literal": 108,
     "array-method": 71,
     "arrow": 74,
     "binary": 104,
     "call": 274,
     "conditional": 31,
-    "identifier": 378,
+    "identifier": 380,
     "index-access": 14,
-    "literal": 303,
+    "literal": 305,
     "logical": 49,
-    "member": 220,
+    "member": 222,
     "object-literal": 88,
     "template-literal": 31,
     "unary": 29,
@@ -6529,7 +6562,7 @@
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 68,
-    "literal:null": 24,
+    "literal:null": 26,
     "literal:number": 136,
     "literal:string": 210,
     "logical:&&": 7,
