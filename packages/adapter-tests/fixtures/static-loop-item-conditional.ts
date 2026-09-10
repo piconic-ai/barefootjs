@@ -8,21 +8,34 @@ import { createFixture } from '../src/types'
  * which must resolve to a per-item Go literal at bake time rather than fall
  * through to the normal reactive `{{if}}` lowering (there is no `{{range}}`
  * dot-context inside a #2224 per-item unrolled body for `item` to resolve
- * against). Also covers a per-item conditional's `null` branch (`item.note`)
- * — a `resolved.value` of `null` must still classify as `literal` (Go
- * `false`), matching JS truthiness rather than `resolvesToScalar`'s
- * text/attr-value notion of "printable".
+ * against).
+ *
+ * Also covers a per-item condition that resolves to `null` (`item.tag`) —
+ * `evaluateStaticLiteral` returning `{ value: null }` must still classify
+ * as `literal` (Go `false`), matching JS truthiness rather than
+ * `resolvesToScalar`'s text/attr-value notion of "printable". Deliberately
+ * keeps that branch's OWN content static (`<em>tagged</em>`, no `{item.tag}`
+ * interpolation): `allExpressionsFoldFor` requires BOTH branches of a
+ * conditional to resolve for EVERY item regardless of which one a given
+ * item's condition selects (`renderConditional` always renders both arms
+ * into `{{if}}…{{else}}…{{end}}` — Go never evaluates the unselected arm's
+ * actions at request time, but the per-item bake still needs valid Go text
+ * for it). A branch whose own content depends on the SAME nullable field
+ * driving the condition (`item.tag ? <em>{item.tag}</em> : null`) would
+ * correctly bail the whole loop for the item where that field is null,
+ * since printing `null` isn't a resolvable scalar — that is a real BF101
+ * refusal shape, not this fixture's.
  */
 export const fixture = createFixture({
   id: 'static-loop-item-conditional',
   description: "static array's .map() row conditional keyed off the item itself bakes to a per-item Go literal (#2898)",
   source: `
-type Item = { id: number; label: string; active: boolean; note: string | null }
+type Item = { id: number; label: string; active: boolean; tag: string | null }
 
 export function StaticLoopItemConditional() {
   const items: Item[] = [
-    { id: 1, label: 'Alpha', active: true, note: 'first' },
-    { id: 2, label: 'Beta', active: false, note: null },
+    { id: 1, label: 'Alpha', active: true, tag: 'x' },
+    { id: 2, label: 'Beta', active: false, tag: null },
   ]
   return (
     <ul>
@@ -30,7 +43,7 @@ export function StaticLoopItemConditional() {
         <li key={item.id}>
           <span>{item.label}</span>
           {item.active ? <b>on</b> : <i>off</i>}
-          {item.note ? <em>{item.note}</em> : null}
+          {item.tag ? <em>tagged</em> : null}
         </li>
       ))}
     </ul>
@@ -38,11 +51,11 @@ export function StaticLoopItemConditional() {
 }
 `,
   expectedHtml: `
-    <ul bf-s="test" bf="s4">
+    <ul bf-s="test" bf="s3">
       <li data-key="1">
         <span><!--bf:s0-->Alpha<!--/--></span>
         <b bf-c="s1">on</b>
-        <em bf-c="s2"><!--bf:s3-->first<!--/--></em>
+        <em bf-c="s2">tagged</em>
       </li>
       <li data-key="2">
         <span><!--bf:s0-->Beta<!--/--></span>

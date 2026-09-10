@@ -131,7 +131,7 @@
           ]
         },
         "go-template": {
-          "pass": 91,
+          "pass": 92,
           "total": 106,
           "gaps": [
             {
@@ -181,12 +181,6 @@
             {
               "fixture": "some-typeof-predicate",
               "issues": []
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
-              ]
             },
             {
               "fixture": "static-nested-loop-conditional",
@@ -761,7 +755,7 @@
           ]
         },
         "go-template": {
-          "pass": 63,
+          "pass": 64,
           "total": 74,
           "gaps": [
             {
@@ -799,12 +793,6 @@
             {
               "fixture": "some-typeof-predicate",
               "issues": []
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
-              ]
             },
             {
               "fixture": "static-nested-loop-conditional",
@@ -1621,7 +1609,7 @@
           ]
         },
         "go-template": {
-          "pass": 254,
+          "pass": 255,
           "total": 274,
           "gaps": [
             {
@@ -1698,12 +1686,6 @@
               "fixture": "static-array-from-props-with-component",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             },
             {
@@ -2477,7 +2459,7 @@
           ]
         },
         "go-template": {
-          "pass": 352,
+          "pass": 353,
           "total": 377,
           "gaps": [
             {
@@ -2576,12 +2558,6 @@
               "fixture": "static-array-from-props-with-component",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             },
             {
@@ -3267,7 +3243,7 @@
           ]
         },
         "go-template": {
-          "pass": 285,
+          "pass": 286,
           "total": 302,
           "gaps": [
             {
@@ -3326,12 +3302,6 @@
               "fixture": "static-array-from-props-with-component",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             },
             {
@@ -3995,7 +3965,7 @@
           ]
         },
         "go-template": {
-          "pass": 195,
+          "pass": 196,
           "total": 219,
           "gaps": [
             {
@@ -4090,12 +4060,6 @@
               "fixture": "static-array-from-props-with-component",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             },
             {
@@ -4631,7 +4595,7 @@
           ]
         },
         "go-template": {
-          "pass": 80,
+          "pass": 81,
           "total": 87,
           "gaps": [
             {
@@ -4648,12 +4612,6 @@
               "fixture": "static-array-from-props",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             },
             {
@@ -4967,7 +4925,7 @@
           ]
         },
         "go-template": {
-          "pass": 25,
+          "pass": 26,
           "total": 29,
           "gaps": [
             {
@@ -4979,12 +4937,6 @@
             {
               "fixture": "preamble-cells",
               "issues": []
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
-              ]
             },
             {
               "fixture": "static-nested-loop-conditional",
@@ -7901,7 +7853,7 @@
           ]
         },
         "go-template": {
-          "pass": 61,
+          "pass": 62,
           "total": 67,
           "gaps": [
             {
@@ -7922,12 +7874,6 @@
               "fixture": "signal-object-spread-init",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2700"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             },
             {
@@ -8132,7 +8078,7 @@
           ]
         },
         "go-template": {
-          "pass": 127,
+          "pass": 128,
           "total": 135,
           "gaps": [
             {
@@ -8150,12 +8096,6 @@
             {
               "fixture": "reduce-typeof-body",
               "issues": []
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
-              ]
             },
             {
               "fixture": "static-nested-loop-conditional",
@@ -8406,7 +8346,7 @@
           ]
         },
         "go-template": {
-          "pass": 199,
+          "pass": 200,
           "total": 209,
           "gaps": [
             {
@@ -8447,12 +8387,6 @@
               "fixture": "static-array-from-props-with-component",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
               ]
             }
           ]
@@ -9672,7 +9606,7 @@
           ]
         },
         "go-template": {
-          "pass": 17,
+          "pass": 18,
           "total": 21,
           "gaps": [
             {
@@ -9684,12 +9618,6 @@
             {
               "fixture": "preamble-cells",
               "issues": []
-            },
-            {
-              "fixture": "static-loop-conditional",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2898"
-              ]
             },
             {
               "fixture": "static-nested-loop-conditional",
