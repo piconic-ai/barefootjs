@@ -1,0 +1,14 @@
+<section class="peitho-slide layout-live layout-live-todos">
+  <header class="head">
+    <div class="head-rule" aria-hidden="true"></div>
+    <h1><slot name="title" accepts="inline" arity="1"></slot></h1>
+  </header>
+  <div class="live-columns">
+    <div class="live-stage">
+      <div class="bf-mount" data-bf="Todos"></div>
+    </div>
+    <figure class="code live-code">
+      <slot name="code" accepts="code" arity="1"></slot>
+    </figure>
+  </div>
+</section>

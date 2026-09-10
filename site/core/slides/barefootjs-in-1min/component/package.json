@@ -1,0 +1,8 @@
+{
+  "name": "barefootjs-in-1min-component",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "vite build" },
+  "dependencies": { "@barefootjs/client": "workspace:*" },
+  "devDependencies": { "@barefootjs/vite": "workspace:*", "@barefootjs/jsx": "workspace:*", "vite": "^6.1.1", "typescript": "^5" }
+}

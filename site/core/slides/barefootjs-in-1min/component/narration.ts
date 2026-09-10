@@ -1,0 +1,68 @@
+// Deck chrome added to peitho's distribution viewer: a thin progress bar, a slide counter,
+// and a word-by-word rise for headlines. No narration, no captions, no autoplay.
+//
+// Slides are identified by the data-slide-key peitho puts on each slide's root <section>.
+const progress = document.createElement('div')
+progress.id = 'bf-progress'
+progress.innerHTML = '<i></i>'
+document.body.append(progress)
+const counter = document.createElement('div')
+counter.id = 'bf-counter'
+document.body.append(counter)
+
+const style = document.createElement('style')
+style.textContent = `
+  #bf-progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 21; background: rgba(10,10,10,.06); }
+  #bf-progress i { display: block; height: 100%; width: 0; background: #3fa45b; transition: width 600ms cubic-bezier(.2,.6,.2,1); }
+  #bf-counter { position: fixed; right: 22px; bottom: 18px; z-index: 20; font: 400 12px/1 "DM Mono", ui-monospace, monospace; letter-spacing: .1em; color: #6e6e73; }`
+document.head.append(style)
+
+function currentKey(): string | null {
+  return document.querySelector<HTMLElement>('#peitho-canvas section[data-slide-key]')?.dataset.slideKey ?? null
+}
+function slideIndex(): number {
+  return Number(new URLSearchParams(location.search).get('slide') ?? '1')
+}
+function total(): number {
+  return Number(document.body.dataset.bfTotal ?? '0')
+}
+
+function splitHeadline() {
+  const h = document.querySelector<HTMLElement>('#peitho-canvas .slot-title')
+  if (!h || h.dataset.split) return
+  h.dataset.split = '1'
+  const text = h.textContent ?? ''
+  if (currentKey() === 'cover') return // the wordmark stays whole
+  h.textContent = ''
+  const words = text.split(' ')
+  words.forEach((w, n) => {
+    const s = document.createElement('span')
+    s.className = 'hl-word'
+    s.style.setProperty('--w', String(n))
+    s.textContent = w
+    h.append(s)
+    if (n < words.length - 1) h.append(' ')
+  })
+}
+function paintProgress() {
+  const t = total(); const i = slideIndex()
+  if (!t) return
+  const w = `${(i / t) * 100}%`
+  const bar = progress.querySelector('i')!
+  if (bar.style.width !== w) bar.style.width = w
+  const label = `${String(i).padStart(2, '0')} / ${String(t).padStart(2, '0')}`
+  // Only write on change: this runs from a MutationObserver, and an unconditional
+  // textContent write is itself a mutation (infinite loop, measured).
+  if (counter.textContent !== label) counter.textContent = label
+}
+function check() {
+  if (currentKey()) { splitHeadline(); paintProgress() }
+}
+
+// total slides: from the inlined manifest when present, else from manifest.json next to the page
+const m = (window as any).__BF_MANIFEST
+if (m?.slides) document.body.dataset.bfTotal = String(m.slides.length)
+else fetch('manifest.json').then(r => r.json()).then(mm => { document.body.dataset.bfTotal = String(mm.slides.length); check() }).catch(() => {})
+new MutationObserver(() => check()).observe(document.getElementById('peitho-canvas') ?? document.body, { childList: true, subtree: true })
+check()
+export {}
