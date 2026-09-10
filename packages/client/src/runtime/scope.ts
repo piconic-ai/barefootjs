@@ -43,12 +43,13 @@ export function getPortalScopeId(element: Element): string | null {
  * never the proxy's `bf-s`), so none of them match and the component's
  * `.map()`-produced children silently never initialise.
  *
- * `hydrateCommentScope`, `findCommentChildScope`, and `createComponent`'s
- * top-level CSR mount all register the proxy in `commentScopeRegistry`
- * before running this component's init, so preferring that registration
- * over the raw attribute gives the component its own id in both cases;
- * an element-scoped component (never registered here) falls through to
- * the attribute unchanged.
+ * `hydrateCommentScope`, `findCommentChildScope`, and every CSR-materialize
+ * path through `createComponent` (a bare top-level mount, AND a nested/
+ * slotted mount via `upsertChild`/`upsertChildItem`) register the proxy in
+ * `commentScopeRegistry` before running this component's init, so
+ * preferring that registration over the raw attribute gives the component
+ * its own id in every case; an element-scoped component (never registered
+ * here) falls through to the attribute unchanged.
  */
 export function ownScopeId(element: Element): string | null {
   return commentScopeRegistry.get(element)?.scopeId ?? element.getAttribute(BF_SCOPE)
