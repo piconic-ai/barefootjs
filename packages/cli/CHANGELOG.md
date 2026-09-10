@@ -1,5 +1,14 @@
 # @barefootjs/cli
 
+## 0.35.5
+
+### Patch Changes
+
+- ac53a19: The scaffold favicon shipped by every `bf init` adapter template (`FAVICON_SVG`) now matches the project's own logo (`images/logo/favicon.svg`) — a white circle with a black footprint mark — instead of a different look-alike "footprint" mark (dark rounded square). No change to how the favicon is linked or where it's written.
+- Updated dependencies [03bfbea]
+  - @barefootjs/client@0.35.5
+  - @barefootjs/shared@0.35.5
+
 ## 0.35.4
 
 ### Patch Changes
