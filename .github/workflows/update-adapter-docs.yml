@@ -1,11 +1,11 @@
 name: Update Adapter Docs
 
 # Verify-only mirror of update-fixtures.yml / update-doc-snapshots.yml, for
-# the generated adapter table in README.md and
-# docs/core/core-concepts/backend-freedom.md
+# the generated adapter table in README.md,
+# docs/core/core-concepts/backend-freedom.md, and docs/core/adapters.md
 # (scripts/generate-adapter-docs.ts, sourced from
 # packages/compat/src/adapter-doc-catalog.ts). Without this job, adding or
-# removing an adapter package can silently leave those two tables stale —
+# removing an adapter package can silently leave those tables stale —
 # which is exactly what happened to backend-freedom.md before this
 # workflow existed (it kept listing shipped adapters as "Planned").
 #
@@ -21,6 +21,7 @@ on:
       - 'scripts/generate-adapter-docs.ts'
       - 'README.md'
       - 'docs/core/core-concepts/backend-freedom.md'
+      - 'docs/core/adapters.md'
       - '.github/workflows/update-adapter-docs.yml'
 
 permissions:
