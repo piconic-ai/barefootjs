@@ -123,6 +123,7 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
+import { routesToRestBag } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
@@ -1205,12 +1206,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
 
-    // Computed once (the walk is shared by all three generators). Also gates the
-    // `Spread_<N> map[string]any` field `generateInputStruct` adds for
-    // `input-bag` slots (the open-ended restPropsName spread bag).
+    // Computed once (the walk is shared by all three generators).
     const spreadSlots = collectSpreadSlots(this.emitCtx, ir.root)
 
-    this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
+    this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides)
 
     this.state.needsStringsImport = false
     this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
@@ -1700,7 +1699,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     componentName: string,
     nestedComponents: NestedComponentInfo[],
     propTypeOverrides: Map<string, string>,
-    spreadSlots: SpreadSlotInfo[]
   ): void {
     const inputTypeName = `${componentName}Input`
     lines.push(`// ${inputTypeName} is the user-facing input type.`)
@@ -1770,22 +1768,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)}`)
     }
 
-    // Input-side bag for restPropsName spreads. The destructured-rest pattern
-    // (`function({a, ...rest}: P) { <el {...rest}/> }`) is a `bagSource:
-    // 'input-bag'` slot; Go can't enumerate the open-ended key set, so the
-    // caller passes a `map[string]any`. Field + JSON tag use the rest binding
-    // name (`rest` → `Rest`) so call sites and JSON round-trips line up.
+    // Input-side bag for a destructured rest binding (`function({a, ...rest}:
+    // P) { ... }`) — Go can't enumerate the open-ended key set, so the caller
+    // passes a `map[string]any`. Field + JSON tag use the rest binding name
+    // (`rest` → `Rest`) so call sites and JSON round-trips line up. Emitted
+    // whenever the component destructures a rest binding at all (#2805) —
+    // NOT only when it's also spread onto an element (`bagSource:
+    // 'input-bag'`): a component that only READS `rest.header` needs the
+    // same field to land a value in, even though it never spreads the bag.
     const restPropsName = ir.metadata.restPropsName
     if (restPropsName) {
-      const seen = new Set<string>()
-      for (const slot of spreadSlots) {
-        if (slot.bagSource !== 'input-bag') continue
-        const fieldName = capitalizeFieldName(restPropsName)
-        if (seen.has(fieldName)) continue
-        seen.add(fieldName)
-        const jsonTag = this.toJsonTag(restPropsName)
-        lines.push(`\t${fieldName} map[string]any \`json:"${jsonTag}"\``)
-      }
+      const fieldName = capitalizeFieldName(restPropsName)
+      const jsonTag = this.toJsonTag(restPropsName)
+      lines.push(`\t${fieldName} map[string]any \`json:"${jsonTag}"\``)
     }
 
     lines.push('}')
@@ -2308,6 +2303,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.emitSpreadBagInits(lines, ir, spreadSlots)
 
+    // Pass the rest-bag map straight through from Input to Props (#2805) —
+    // same field on both structs (`generateInputStruct` / `emitPropsAuxFields`),
+    // no reshaping needed since it's already `map[string]any` on both sides.
+    if (ir.metadata.restPropsName) {
+      const field = capitalizeFieldName(ir.metadata.restPropsName)
+      lines.push(`\t\t${field}: in.${field},`)
+    }
+
     lines.push('\t}')
     lines.push('}')
   }
@@ -2476,11 +2479,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const childShape = this.childComponentShapes.get(declaredName)
       const restBagEntries: string[] = []
       const emitChildField = (jsxName: string, goValue: string): void => {
-        if (
-          childShape &&
-          childShape.restBagField &&
-          !childShape.paramNames.has(jsxName)
-        ) {
+        if (routesToRestBag(childShape, jsxName)) {
           restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
           return
         }
@@ -3435,6 +3434,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const slot of spreadSlots) {
       const jsonTag = '-'
       lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
+    }
+
+    // Rest-bag field mirroring the Input-side one `generateInputStruct` emits
+    // (#2805) — a value routed into it (a jsx-children prop the child only
+    // reads via its rest binding, e.g. `rest.header`) needs somewhere to
+    // land on the struct the template actually executes against. Never
+    // serialised: rest-bag values reach the client through `BfCallerProps`
+    // the same way reserved `children` does, not through `bf-p` JSON.
+    if (ir.metadata.restPropsName) {
+      const fieldName = capitalizeFieldName(ir.metadata.restPropsName)
+      lines.push(`\t${fieldName} map[string]any \`json:"-"\``)
     }
   }
 
@@ -5131,6 +5141,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.rootFieldRef(property)
     }
 
+    // A member access on the component's own destructured rest binding
+    // (`function({ children, ...rest }) { ... rest.header ... }`) reads off
+    // the rest-bag's `map[string]any` field (#2805) — case-tolerant
+    // `bf_get`, the same route `isMapRootedPropChain` below uses for an
+    // inline-object-typed prop, since a source-cased key is what both the
+    // static bake (`emitChildField`) and the dynamic-delivery route
+    // (`queueDynamicPropDefine`) write. `scope.isBound` guards against an
+    // INNER `.map(({ ...rest }) => ...)` binding of the same name shadowing
+    // the outer rest bag (the shared shadow-guard predicate — see
+    // `spec/compiler.md`'s `BindingScope` section).
+    if (
+      object.kind === 'identifier' &&
+      this.state.restPropsName &&
+      object.name === this.state.restPropsName &&
+      !this.scope.isBound(object.name)
+    ) {
+      return `bf_get ${this.rootFieldRef(object.name)} ${JSON.stringify(property)}`
+    }
+
     // A member chain rooted in a `useContext` local whose `createContext`
     // default is object-shaped (#2087 — `defaultKind === 'object'`) reads off
     // a `map[string]interface{}` field, not a struct: plain Go template dot
@@ -6739,12 +6768,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (prop.name === 'key' || prop.name === 'children') continue
       if (prop.name.startsWith('on') && prop.name.length > 2) continue
       if (prop.name.includes('-')) continue
-      // A prop that routes into the child's rest bag (`emitChildField`'s
-      // same routing rule) has no named Go field to override — `bf_with_props`
-      // would silently no-op the pair via its unknown-field passthrough.
-      // Leave it on the constructor-only path (unchanged from before this
-      // fix) rather than emit a pipeline argument that can never land.
-      if (childShape?.restBagField && !childShape.paramNames.has(prop.name)) continue
+      // A prop that routes into the child's rest bag (`routesToRestBag`,
+      // `emitChildField`'s same routing rule) has no named Go field to
+      // override via `bf_with_props`. Unlike `queueDynamicPropDefine`'s
+      // named-children-prop route (#2805, `bf_with_bag`), a loop-row VALUE
+      // override into a rest-bag key is left on the constructor-only path —
+      // out of scope here, tracked separately (#2920).
+      if (routesToRestBag(childShape, prop.name)) continue
       // `literal` / `boolean-shorthand` / `boolean-attr` carry no runtime
       // expression to re-evaluate per row; `spread` / `jsx-children` are
       // handled elsewhere (`emitSpreadBagInits`, `queueLoopBodyChildrenDefine`).
@@ -7926,12 +7956,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * a loop row never reaches `collectStaticChildInstances`).
    *
    * Returns the flat `"FieldName" (bf_tmpl "name" .) ...` argument list ready
-   * to splice into `bf_with_props`, or null when no named prop needs it —
-   * batches every prop that needs dynamic delivery into ONE `bf_with_props`
-   * call rather than nesting one per prop.
+   * to splice into `bf_with_props` (`fieldArgs`, null when no declared-field
+   * prop needs it), plus any props that instead route into the child's
+   * rest bag (`bagEntries`, #2805) — each needs its OWN `bf_with_bag` call
+   * at the call site rather than a `bf_with_props` argument pair, since
+   * `WithProps` only ever targets a named struct field.
    */
-  private queueDynamicPropDefine(comp: IRComponent): string | null {
+  private queueDynamicPropDefine(
+    comp: IRComponent,
+  ): { fieldArgs: string | null; bagEntries: Array<{ bagField: string; key: string; defineName: string }> } {
     const args: string[] = []
+    const bagEntries: Array<{ bagField: string; key: string; defineName: string }> = []
     // #2822: cross-file shapes/field-name maps are keyed by the child's own
     // declared name, not the caller-local alias — see `importAliases`.
     const declaredName = this.resolveChildName(comp.name)
@@ -7942,30 +7977,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (this.extractTextChildren(children) !== null) continue
       if (this.extractHtmlChildren(children) !== null) continue
       if (this.extractScopedHtmlChildren(children) !== null) continue
-      // A prop routed into the child's rest bag (no declared param —
-      // `loopRowChildPropOverrides`'s identical guard, above) has no named
-      // Go field for `bf_with_props`/`WithProps` to target at all; `WithProps`
-      // silently no-ops on an unmatched field name. Refuse loudly instead of
-      // delivering the value against a field name that can never land —
-      // this shape had no dynamic-delivery route before this method existed
-      // either (the blanket BF101 this method's caller replaced was
-      // unconditional for any unbakeable named prop), so this keeps it loud
-      // rather than trading that refusal for a silent dropped render.
-      if (childShape?.restBagField && !childShape.paramNames.has(prop.name)) {
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `JSX-valued prop '${prop.name}' on <${comp.name}> is dynamic and routes into the child's rest-bag prop ('${childShape.restBagField}') rather than a declared field — there is no named Go struct field for 'bf_with_props' to target`,
-          loc: prop.loc,
-        })
-        continue
-      }
       const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
         this.state.pendingChildrenDefines.push({
           name,
           content: this.renderChildren(children),
         })
+      }
+      // A prop routed into the child's rest bag (no declared param —
+      // `emitChildField`/`loopRowChildPropOverrides`'s identical guard) has
+      // no named Go field for `bf_with_props`/`WithProps` to target; route
+      // it through `bf_with_bag`/`WithBagEntry` instead (#2805), keyed by
+      // the RAW JSX attribute name — a rest-bag entry has no local alias to
+      // resolve through `childPropFieldNames` the way a declared field does.
+      if (routesToRestBag(childShape, prop.name)) {
+        bagEntries.push({ bagField: childShape!.restBagField!, key: prop.name, defineName: name })
+        continue
       }
       // `bf_with_props`/`WithProps` patches the child's Props struct, keyed
       // by the child's own LOCAL destructured field name — not necessarily
@@ -7979,7 +8006,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const fieldName = this.childPropFieldNames.get(declaredName)?.get(prop.name) ?? capitalizeFieldName(prop.name)
       args.push(`${JSON.stringify(fieldName)} (bf_tmpl ${JSON.stringify(name)} .)`)
     }
-    return args.length > 0 ? args.join(' ') : null
+    return { fieldArgs: args.length > 0 ? args.join(' ') : null, bagEntries }
   }
 
   /**
@@ -8102,10 +8129,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // via a companion define. Props helper stays INNER, same ordering
       // rule as the loop-nested branch above: `bf_with_children` applies
       // last, on the props-patched value.
-      const propArgs = this.queueDynamicPropDefine(comp)
-      const base = propArgs
-        ? `(bf_with_props .${comp.name}${suffix} ${propArgs})`
+      const propResult = this.queueDynamicPropDefine(comp)
+      let base = propResult.fieldArgs
+        ? `(bf_with_props .${comp.name}${suffix} ${propResult.fieldArgs})`
         : `.${comp.name}${suffix}`
+      // Each rest-bag prop (#2805) wraps in its OWN `bf_with_bag` call,
+      // outside the (optional) `bf_with_props` wrap — the two helpers patch
+      // disjoint fields (a declared struct field vs. a rest-bag map key), so
+      // ordering between them doesn't matter; `bf_with_props` stays
+      // innermost only because it was already there.
+      for (const entry of propResult.bagEntries) {
+        base = `(bf_with_bag ${base} ${JSON.stringify(entry.bagField)} ${JSON.stringify(entry.key)} (bf_tmpl ${JSON.stringify(entry.defineName)} .))`
+      }
       templateCall = childrenDefine
         ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${childrenDefine}" .))}}`
         : `{{template "${declaredName}" ${base}}}`

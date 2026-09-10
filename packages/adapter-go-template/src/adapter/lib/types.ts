@@ -115,6 +115,23 @@ export interface ChildComponentShape {
 }
 
 /**
+ * True when a JSX attribute the parent passes has no declared field on the
+ * child at all and can only reach it through the child's rest-bag spread
+ * (`function Card({ children, ...rest }) { ... rest.header ... }`) — the
+ * shape #2805's `bf_with_bag` route exists for. Shared by every call site
+ * that must decide field-targeted delivery (`bf_with_props`) vs rest-bag
+ * delivery (`bf_with_bag`) for the SAME prop: the static bake
+ * (`emitChildField`), the dynamic named-children-prop route
+ * (`queueDynamicPropDefine`), and the loop-row override route
+ * (`loopRowChildPropOverrides`) all answer this question and must agree —
+ * "one decision, two implementations" is exactly the defect class a single
+ * shared predicate closes.
+ */
+export function routesToRestBag(shape: ChildComponentShape | undefined, jsxName: string): boolean {
+  return !!shape?.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
  * Top-level (non-loop) JSX intrinsic-element spread slot. The adapter emits one
  * `Spread_<slotId> map[string]any` field on the component's Props struct and
  * initialises it in `NewXxxProps` from the source JS expression. Loop-internal

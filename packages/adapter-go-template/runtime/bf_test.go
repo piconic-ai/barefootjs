@@ -2666,3 +2666,78 @@ func TestWithProps(t *testing.T) {
 		}
 	})
 }
+
+func TestWithBagEntry(t *testing.T) {
+	type CardProps struct {
+		ScopeID string
+		Rest    map[string]interface{}
+	}
+
+	t.Run("sets a key on a nil rest map", func(t *testing.T) {
+		got, err := WithBagEntry(CardProps{ScopeID: "test_s0"}, "Rest", "header", template.HTML("<b>hi</b>"))
+		if err != nil {
+			t.Fatalf("WithBagEntry returned error: %v", err)
+		}
+		copy := got.(CardProps)
+		if copy.Rest["header"] != template.HTML("<b>hi</b>") {
+			t.Errorf("copy.Rest[header] = %v, want <b>hi</b>", copy.Rest["header"])
+		}
+	})
+
+	t.Run("adds a key to an existing map without mutating the original", func(t *testing.T) {
+		original := CardProps{Rest: map[string]interface{}{"footer": "kept"}}
+		got, err := WithBagEntry(original, "Rest", "header", "new")
+		if err != nil {
+			t.Fatalf("WithBagEntry returned error: %v", err)
+		}
+		copy := got.(CardProps)
+		if copy.Rest["header"] != "new" {
+			t.Errorf("copy.Rest[header] = %v, want new", copy.Rest["header"])
+		}
+		if copy.Rest["footer"] != "kept" {
+			t.Errorf("copy.Rest[footer] = %v, want kept (sibling key preserved)", copy.Rest["footer"])
+		}
+		if _, ok := original.Rest["header"]; ok {
+			t.Errorf("original.Rest gained %q — map was mutated in place, not cloned", "header")
+		}
+		if len(original.Rest) != 1 {
+			t.Errorf("original.Rest = %v, want unchanged single-entry map", original.Rest)
+		}
+	})
+
+	t.Run("nil value stores the map's zero element", func(t *testing.T) {
+		got, err := WithBagEntry(CardProps{}, "Rest", "header", nil)
+		if err != nil {
+			t.Fatalf("WithBagEntry returned error: %v", err)
+		}
+		copy := got.(CardProps)
+		if copy.Rest["header"] != nil {
+			t.Errorf("copy.Rest[header] = %v, want nil", copy.Rest["header"])
+		}
+		if _, ok := copy.Rest["header"]; !ok {
+			t.Error("copy.Rest missing the header key entirely, want a present nil entry")
+		}
+	})
+
+	t.Run("missing field errors", func(t *testing.T) {
+		if _, err := WithBagEntry(CardProps{}, "NoSuchField", "header", "x"); err == nil {
+			t.Error("WithBagEntry with unknown bag field: want error, got nil")
+		}
+	})
+
+	t.Run("non-map field errors", func(t *testing.T) {
+		if _, err := WithBagEntry(CardProps{}, "ScopeID", "header", "x"); err == nil {
+			t.Error("WithBagEntry targeting a non-map field: want error, got nil")
+		}
+	})
+
+	t.Run("non-struct props pass through unchanged", func(t *testing.T) {
+		got, err := WithBagEntry("not a struct", "Rest", "header", "x")
+		if err != nil {
+			t.Fatalf("WithBagEntry returned error: %v", err)
+		}
+		if got != "not a struct" {
+			t.Errorf("WithBagEntry(non-struct) = %v, want passthrough", got)
+		}
+	})
+}

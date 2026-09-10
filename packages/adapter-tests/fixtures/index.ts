@@ -468,6 +468,7 @@ import { fixture as textareaRowBreakoutComposite } from './textarea-row-breakout
 import { fixture as jsxElementPropFragmentConditional } from './jsx-element-prop-fragment-conditional'
 import { fixture as jsxElementPropRenamedDestructure } from './jsx-element-prop-renamed-destructure'
 import { fixture as jsxElementPropRestBagDynamic } from './jsx-element-prop-rest-bag-dynamic'
+import { fixture as jsxElementPropRestBagStatic } from './jsx-element-prop-rest-bag-static'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
@@ -985,6 +986,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxElementPropFragmentConditional,
   jsxElementPropRenamedDestructure,
   jsxElementPropRestBagDynamic,
+  jsxElementPropRestBagStatic,
   grandchildComposition,
   compositeRowChildComponent,
   compositeRowChildDerivedProp,

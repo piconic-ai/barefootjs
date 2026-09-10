@@ -62,23 +62,13 @@ export const conformancePins: ConformancePins = {
   // no open issue tracks further work here.
   'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error' }],
   'jsx-element-prop-array': [{ code: 'BF021', severity: 'error' }],
-  // `jsx-element-prop-fragment-conditional` (#2703) is NOT pinned here — it
-  // renders correctly since `queueDynamicPropDefine` (go-template-adapter.ts)
-  // extended the reserved `children` slot's `bf_with_children`/`bf_tmpl`
-  // dynamic-delivery route to named jsx-children props.
-  // #2805: a named jsx-children prop routed into the child's rest bag (no
-  // declared param — only reachable via the child's `...rest` spread) has
-  // no named Go struct field for `bf_with_props`/`WithProps` to target at
-  // all. `queueDynamicPropDefine` refuses loudly with BF101 rather than
-  // silently no-op through `WithProps`'s unmatched-field passthrough.
-  // `unescapable`: the capability gap (a rest-bag delivery route) is #2805
-  // itself, not authored yet, so no `/* @client */` escape twin exists.
-  'jsx-element-prop-rest-bag-dynamic': [{
-    code: 'BF101',
-    severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2805',
-    unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2805' },
-  }],
+  // `jsx-element-prop-fragment-conditional` (#2703) and
+  // `jsx-element-prop-rest-bag-dynamic` (#2805, graduated) are NOT pinned
+  // here — both render correctly: `queueDynamicPropDefine`
+  // (go-template-adapter.ts) extended the reserved `children` slot's
+  // dynamic-delivery route to named jsx-children props, and #2805 further
+  // extended it to a prop that routes into the child's rest bag (`bf_with_bag`
+  // / `WithBagEntry`, `runtime/bf.go`) rather than a declared field.
   // #2700: a `derived` signal/memo (non-empty free set) seeded from an
   // object literal the constructor-time baker can't reproduce (identifier/
   // member/call operands defer, `parsed-literal-to-go.ts`) now refuses

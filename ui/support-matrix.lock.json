@@ -2256,11 +2256,11 @@
       }
     },
     "identifier": {
-      "total": 386,
+      "total": 387,
       "cells": {
         "hono": {
-          "pass": 382,
-          "total": 386,
+          "pass": 383,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2283,8 +2283,8 @@
           ]
         },
         "blade": {
-          "pass": 366,
-          "total": 386,
+          "pass": 367,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2379,8 +2379,8 @@
           ]
         },
         "erb": {
-          "pass": 366,
-          "total": 386,
+          "pass": 367,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2473,8 +2473,8 @@
           ]
         },
         "go-template": {
-          "pass": 363,
-          "total": 386,
+          "pass": 365,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2517,12 +2517,6 @@
             {
               "fixture": "jsx-element-prop-array",
               "issues": []
-            },
-            {
-              "fixture": "jsx-element-prop-rest-bag-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2805"
-              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -2587,8 +2581,8 @@
           ]
         },
         "jinja": {
-          "pass": 366,
-          "total": 386,
+          "pass": 367,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2683,8 +2677,8 @@
           ]
         },
         "minijinja": {
-          "pass": 366,
-          "total": 386,
+          "pass": 367,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2779,8 +2773,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 365,
-          "total": 386,
+          "pass": 366,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2881,8 +2875,8 @@
           ]
         },
         "twig": {
-          "pass": 366,
-          "total": 386,
+          "pass": 367,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2977,8 +2971,8 @@
           ]
         },
         "xslate": {
-          "pass": 364,
-          "total": 386,
+          "pass": 365,
+          "total": 387,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3279,7 +3273,7 @@
           ]
         },
         "go-template": {
-          "pass": 294,
+          "pass": 295,
           "total": 309,
           "gaps": [
             {
@@ -3301,12 +3295,6 @@
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
-            },
-            {
-              "fixture": "jsx-element-prop-rest-bag-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2805"
-              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -3818,11 +3806,11 @@
       }
     },
     "member": {
-      "total": 228,
+      "total": 229,
       "cells": {
         "hono": {
-          "pass": 225,
-          "total": 228,
+          "pass": 226,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3841,8 +3829,8 @@
           ]
         },
         "blade": {
-          "pass": 209,
-          "total": 228,
+          "pass": 210,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3933,8 +3921,8 @@
           ]
         },
         "erb": {
-          "pass": 209,
-          "total": 228,
+          "pass": 210,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4023,8 +4011,8 @@
           ]
         },
         "go-template": {
-          "pass": 206,
-          "total": 228,
+          "pass": 208,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4067,12 +4055,6 @@
             {
               "fixture": "jsx-element-prop-array",
               "issues": []
-            },
-            {
-              "fixture": "jsx-element-prop-rest-bag-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2805"
-              ]
             },
             {
               "fixture": "jsx-element-prop-ternary",
@@ -4133,8 +4115,8 @@
           ]
         },
         "jinja": {
-          "pass": 209,
-          "total": 228,
+          "pass": 210,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4225,8 +4207,8 @@
           ]
         },
         "minijinja": {
-          "pass": 209,
-          "total": 228,
+          "pass": 210,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4317,8 +4299,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 208,
-          "total": 228,
+          "pass": 209,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4415,8 +4397,8 @@
           ]
         },
         "twig": {
-          "pass": 209,
-          "total": 228,
+          "pass": 210,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4507,8 +4489,8 @@
           ]
         },
         "xslate": {
-          "pass": 207,
-          "total": 228,
+          "pass": 208,
+          "total": 229,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -7945,15 +7927,9 @@
           ]
         },
         "go-template": {
-          "pass": 65,
+          "pass": 66,
           "total": 69,
           "gaps": [
-            {
-              "fixture": "jsx-element-prop-rest-bag-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2805"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []

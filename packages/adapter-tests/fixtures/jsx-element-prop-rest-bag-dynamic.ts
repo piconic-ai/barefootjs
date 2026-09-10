@@ -7,22 +7,16 @@ import { createFixture } from '../src/types'
  * spread (`{ children, ...rest }`), the same routing `emitChildField`
  * already special-cases for the STATIC bake path.
  *
- * Regression pin for a gap Pullfrog's review caught on go-template PR #2804
- * (`queueDynamicPropDefine`, go-template-adapter.ts): a prop routed into
- * the child's rest bag has no named Go struct field at all for
- * `bf_with_props`/`WithProps` to target — `loopRowChildPropOverrides`
- * already guards against this exact shape (`childShape?.restBagField &&
- * !childShape.paramNames.has(prop.name)`) for its own `bf_with_props` call
- * site, but `queueDynamicPropDefine` initially didn't, which would have
- * silently no-op'd the dynamic value via `WithProps`'s unmatched-field
- * passthrough — turning the BLANKET `BF101` refusal this PR's first commit
- * replaced (unconditional for any unbakeable named prop) into a silent
- * wrong render for exactly this shape. `queueDynamicPropDefine` mirrors
- * the same guard and refuses loudly with `BF101` instead.
- *
- * This fixture is pinned on go-template only (`conformance-pins.ts`);
- * every other adapter renders it correctly, same as its sibling
- * `jsx-element-prop-fragment-conditional`.
+ * Regression test for #2805 (originally a gap Pullfrog's review caught on
+ * go-template PR #2804): `queueDynamicPropDefine` now routes a prop with no
+ * declared field through `bf_with_bag`/`WithBagEntry` (`runtime/bf.go`)
+ * instead of `bf_with_props`/`WithProps`, which can only ever target a named
+ * struct field — the child's `Rest map[string]any` field (now emitted
+ * whenever a component destructures a rest binding at all, not only when it
+ * also spreads it onto an element — see `generateInputStruct` /
+ * `emitPropsAuxFields`) receives the value under the raw JSX attribute name,
+ * and the read (`rest.header`) resolves it via `bf_get` (`member()`'s
+ * `restPropsName` branch).
  */
 export const fixture = createFixture({
   id: 'jsx-element-prop-rest-bag-dynamic',

@@ -2949,6 +2949,16 @@
         "text"
       ]
     },
+    "jsx-element-prop-rest-bag-static": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "jsx-element-prop-ternary": {
       "kinds": [
         "identifier",
@@ -6610,11 +6620,11 @@
     "binary": 104,
     "call": 274,
     "conditional": 31,
-    "identifier": 386,
+    "identifier": 387,
     "index-access": 14,
     "literal": 309,
     "logical": 49,
-    "member": 228,
+    "member": 229,
     "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
