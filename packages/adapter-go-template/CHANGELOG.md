@@ -1,5 +1,15 @@
 # @barefootjs/go-template
 
+## 0.35.5
+
+### Patch Changes
+
+- 94f4b3c: The Go template adapter now delivers a dynamic (non-bakeable) named jsx-children prop into a child component's rest bag — a prop the child only reads via its `{ ...rest }` binding rather than a declared param (e.g. `function Card({ children, ...rest }) { ... rest.header ... }`) — instead of refusing with a loud BF101. A new runtime helper (`WithBagEntry`/`bf_with_bag`, `runtime/bf.go`) sets one entry in the rest bag's `map[string]any` field on a per-call-site copy of the child's props, mirroring `WithProps`/`bf_with_props`'s existing per-declared-field delivery. The rest-bag field is also now emitted on both the child's Input and Props structs whenever the component destructures a rest binding at all, not only when it's also spread onto an element — a prerequisite gap the static bake path had too (#2805).
+- 3772797: Follow-up to #2898's static-loop-conditional fix, found during code review: `elementAttrEmitter`'s boolean-HTML-attribute path (`disabled`, `checked`, `hidden`, etc.) also routes through the same `convertConditionToGo` method #2898 taught to consult `staticLoopItemStack` — so an item-bound boolean attribute (`disabled={item.disabled}`) inside a Go template adapter's per-item unrolled static loop row, previously a silent divergence with no test coverage, is now also fixed and pinned with a regression fixture (`static-loop-item-boolean-attr`). That fixture surfaces the same pre-existing Mojolicious/Xslate boolean-in-static-array limitation #2911 already tracks, pinned identically to `static-loop-item-conditional`.
+- 16a23d1: The Go template adapter's static-array per-item unroll (`analyzeBakeableStaticElementLoop`, #2224) no longer refuses a `.map()` row that contains a conditional (`{cond ? <a/> : <b/>}`) alongside static siblings. A conditional whose branches are themselves foldable now bakes: an item-bound condition (e.g. `item.active ? ... : ...`) resolves to a per-item Go literal, and an item-independent condition (e.g. a signal call like `flag()`) falls through to the adapter's normal reactive lowering unchanged. Previously this shape fell through to a generic BF101 "computed loop array" refusal (#2898).
+- 8dcbf3b: The Go template adapter's static-array per-item unroll (`analyzeBakeableStaticElementLoop`, #2224) no longer refuses a `.map()` row that contains a nested `.map()` over a per-item array (e.g. `item.children.map(child => ...)`). The analysis now recurses into a nested static loop, accumulating each level's item binding so arbitrarily deep static nesting bakes — previously this shape fell through to a generic BF101 "computed loop array" refusal (#2893).
+- @barefootjs/shared@0.35.5
+
 ## 0.35.4
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @barefootjs/xslate
 
+## 0.35.5
+
+### Patch Changes
+
+- f622e0c: No behavior change. Documents a pre-existing, permanent limitation (#2911) in each adapter's own `conformance-pins.ts`: a `boolean` value anywhere inside a static loop array's item shape keeps the whole array unbakeable (`staticValueToPerl` deliberately refuses to serialize a boolean, since Perl has no boolean literal), surfaced by a new conformance fixture added alongside the Go template adapter's #2898/#2893 fixes.
+- 3772797: Follow-up to #2898's static-loop-conditional fix, found during code review: `elementAttrEmitter`'s boolean-HTML-attribute path (`disabled`, `checked`, `hidden`, etc.) also routes through the same `convertConditionToGo` method #2898 taught to consult `staticLoopItemStack` — so an item-bound boolean attribute (`disabled={item.disabled}`) inside a Go template adapter's per-item unrolled static loop row, previously a silent divergence with no test coverage, is now also fixed and pinned with a regression fixture (`static-loop-item-boolean-attr`). That fixture surfaces the same pre-existing Mojolicious/Xslate boolean-in-static-array limitation #2911 already tracks, pinned identically to `static-loop-item-conditional`.
+- @barefootjs/shared@0.35.5
+
 ## 0.35.4
 
 ### Patch Changes
