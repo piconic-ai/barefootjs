@@ -128,6 +128,7 @@ export { styleToCss } from './style.ts'
 
 // Runtime helpers
 export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEscape, tAfter } from './query.ts'
+export { ownScopeId } from './scope.ts'
 export { date } from './date.ts'
 export { hydrate, rehydrateAll, rehydrateScope, disposeScope, flushHydration, getRegisteredDef } from './hydrate.ts'
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry.ts'

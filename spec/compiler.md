@@ -370,6 +370,24 @@ rendered outside the compiler pipeline. See piconic-ai/barefootjs#1915.
    the scope's own addressable id used by portals (`bf-po`), context
    lookups, and the hydration walker — but **not** slot identity.
 
+   **A comment-scoped component resolves its own id via the comment
+   registry, not its proxy's `bf-s` (#2910).** A component whose root is a
+   `needsScopeComment` fragment or itself a single child-component call
+   (#2649) is mounted on a PROXY element — the wrapped child's own rendered
+   root, not an element the wrapper owns. That proxy's `bf-s` attribute
+   names the PROXY's (i.e. the wrapped child's) scope, not the wrapping
+   component's. `generateInitFunction` (`ir-to-client-js/generate-init.ts`)
+   therefore emits `const __scopeId = ownScopeId(__scope)` for such a root
+   instead of `__scope.getAttribute('bf-s')` — `ownScopeId`
+   (`packages/client/src/runtime/scope.ts`) reads the id `hydrateCommentScope`
+   / `findCommentChildScope` / `createComponent`'s top-level CSR mount all
+   register in `commentScopeRegistry` BEFORE running this component's init,
+   falling back to the raw attribute for an ordinary element-scoped root
+   (never registered there). Skipping this resolves every `[bf-h="<id>"]`
+   child lookup the component's own init builds — including a `.map()`-
+   produced child's static-array lookup — against the wrong id, so those
+   children silently never initialise.
+
    **Loop item root (#2833).** A loop item root does not DERIVE its `bf-s`
    from its slot (see "Pass `_bf_slot` for slotted children" below), but it
    still carries `(bf-h, bf-m)` slot identity like any other slotted child —

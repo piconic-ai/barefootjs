@@ -5,7 +5,7 @@
  * Maps an element to its comment node and the sibling range boundary.
  */
 
-import { BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX, BF_LOOP_ITEM, BF_LOOP_END } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX, BF_LOOP_ITEM, BF_LOOP_END } from '@barefootjs/shared'
 
 /**
  * Information about a comment-based scope.
@@ -27,6 +27,31 @@ export const commentScopeRegistry = new WeakMap<Element, CommentScopeInfo>()
 export function getPortalScopeId(element: Element): string | null {
   const info = commentScopeRegistry.get(element)
   return info?.scopeId ?? null
+}
+
+/**
+ * Resolve the scope id a component's OWN init body should use for
+ * `[bf-h="<id>"]`/`[bf-s$="_<slot>"]` child lookups (#2910).
+ *
+ * A comment-scoped component (a fragment root wrapped in
+ * `<!--bf-scope:-->`, or a root that is itself a single child-component
+ * call, #2649) is mounted on a PROXY element that also carries its own
+ * `bf-s` attribute — but that attribute names the proxy's host/parent
+ * scope, not this component's. Reading it as `__scopeId` makes every
+ * child selector this component builds search for children stamped with
+ * the WRONG id (the compiled child rows carry `bf-h="<comment scope id>"`,
+ * never the proxy's `bf-s`), so none of them match and the component's
+ * `.map()`-produced children silently never initialise.
+ *
+ * `hydrateCommentScope`, `findCommentChildScope`, and `createComponent`'s
+ * top-level CSR mount all register the proxy in `commentScopeRegistry`
+ * before running this component's init, so preferring that registration
+ * over the raw attribute gives the component its own id in both cases;
+ * an element-scoped component (never registered here) falls through to
+ * the attribute unchanged.
+ */
+export function ownScopeId(element: Element): string | null {
+  return commentScopeRegistry.get(element)?.scopeId ?? element.getAttribute(BF_SCOPE)
 }
 
 /**

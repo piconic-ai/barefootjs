@@ -1737,6 +1737,17 @@ export interface InitStatementInfo {
    */
   assignedIdentifiers?: Set<string>
   /**
+   * Identifiers mutated IN PLACE by this statement — a property/element
+   * write (`config[k] = …`), a known mutating method call
+   * (`items.push(...)`), or `Object.assign(target, …)` — as opposed to
+   * `assignedIdentifiers`, which tracks reassignment of the binding
+   * itself. Read by `markMutatedConstants` (analyzer.ts) to flag the
+   * matching `ConstantInfo.mutatedAfterDeclaration` (#2910): a `const`
+   * whose value is later mutated this way can no longer be treated as
+   * equal to its declaration-time initializer text.
+   */
+  mutatedIdentifiers?: Set<string>
+  /**
    * When true, the emitted statement must be prefixed with `;` to defeat
    * ASI fusion with the previous line. Tracked in IR rather than recovered
    * by emit-time text inspection — losing this is the failure mode behind
@@ -1984,6 +1995,26 @@ export interface ConstantInfo {
   isJsxFunction?: boolean
   /** When true, the initializer contains an arrow function or function expression (computed from AST). */
   containsArrow?: boolean
+  /**
+   * When true, a same-scope statement (a `for`/`while` body, or any other
+   * imperative statement) mutates this binding's value AFTER its
+   * declaration — in place (`config[k] = …`, `items.push(...)`) or by
+   * reassigning the binding itself (`let`, later `x = …`) — so `value`
+   * (the declaration's initializer text) no longer reflects what the
+   * binding actually holds by the time the rest of the component runs
+   * (#2910). Set by `markMutatedConstants` (analyzer.ts) from
+   * `InitStatementInfo.mutatedIdentifiers`/`assignedIdentifiers`.
+   *
+   * Every consumer that would otherwise re-inline `value` verbatim in
+   * place of a bare reference to `name` — `expandDynamicPropValue`,
+   * `expandConstantForReactivity`, CSR template inlining
+   * (`compute-inlinability.ts`), and `hasInitScopeOnlyConstant` — must
+   * check this first and fall back to a live reference to the binding
+   * instead. Skipping this check re-embeds a snapshot of the value from
+   * BEFORE the mutation ran, silently dropping everything the mutation
+   * was supposed to do.
+   */
+  mutatedAfterDeclaration?: boolean
   /** The kind of system construct, if the initializer is createContext() or new WeakMap(). */
   systemConstructKind?: 'createContext' | 'weakMap'
   /** Value with destructured prop refs rewritten to _p.propName, for template inlining. */

@@ -139,7 +139,15 @@ export function upsertChild(
   // Without slotId: name-prefix bf-s scan for top-level component lookup.
   let ssr: HTMLElement | null = null
   if (slotId) {
-    ssr = findSsrScopeBySlotIn(parent, slotId, anchorScope, /* selfMatch */ false)
+    // selfMatch: true — mirrors the CSR/placeholder branch below (`parent`
+    // itself may carry `data-bf-ph`), because the SSR shape has the same
+    // degenerate case: a comment-scoped wrapper whose root IS the deferred
+    // child renders NO wrapper element of its own, so `parent` (the
+    // wrapper's proxy) IS the child's own (bf-h, bf-m)-stamped root, not an
+    // ancestor of it (#2910). Without this, `parent.querySelector(...)`
+    // only searches DESCENDANTS and never matches `parent` itself, so the
+    // deferred child's init never runs.
+    ssr = findSsrScopeBySlotIn(parent, slotId, anchorScope, /* selfMatch */ true)
   } else {
     ssr = parent.querySelector(`[${BF_SCOPE}^="${name}_"]`) as HTMLElement | null
   }

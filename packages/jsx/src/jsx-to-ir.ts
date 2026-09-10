@@ -6816,6 +6816,9 @@ function tryResolveTemplateSpanFromConst(
     if (ctx.scope.isBound(expr.text)) return null
     const constInfo = findLocalConst(expr.text, ctx.analyzer)
     if (!constInfo) return null
+    // #2910: see `tryResolveIdentifierAsTemplateLiteral`'s matching guard —
+    // a binding mutated after its declaration has no compile-time value.
+    if (constInfo.mutatedAfterDeclaration) return null
     const ast = parseConstInitializer(constInfo)
     if (!ast) return null
     if (ts.isStringLiteral(ast) || ts.isNoSubstitutionTemplateLiteral(ast)) {
@@ -6833,6 +6836,8 @@ function tryResolveTemplateSpanFromConst(
     if (ctx.scope.isBound(expr.expression.text)) return null
     const constInfo = findLocalConst(expr.expression.text, ctx.analyzer)
     if (!constInfo) return null
+    // #2910: see `tryResolveIdentifierAsTemplateLiteral`'s matching guard.
+    if (constInfo.mutatedAfterDeclaration) return null
     const ast = parseConstInitializer(constInfo)
     if (!ast || !ts.isObjectLiteralExpression(ast)) return null
     const cases: Record<string, string> = {}
@@ -7011,6 +7016,15 @@ function tryResolveIdentifierAsTemplateLiteral(
   if (ctx.scope.isBound(ident.text)) return null
   const constInfo = findLocalConst(ident.text, ctx.analyzer)
   if (!constInfo) return null
+  // #2910: a binding mutated after its declaration has no compile-time
+  // value — baking its DECLARATION-TIME literal into the IR here would
+  // freeze the attribute at a pre-mutation snapshot, permanently invisible
+  // to `ir-to-client-js`'s own `mutatedAfterDeclaration` guard (which only
+  // sees this attribute AFTER it has already been resolved to a literal
+  // `template` AttrValue, too late to intervene). Falling through to
+  // `null` here keeps the attribute a plain `expression`, so the runtime
+  // reference stays live.
+  if (constInfo.mutatedAfterDeclaration) return null
   const ast = parseConstInitializer(constInfo)
   if (!ast) return null
 

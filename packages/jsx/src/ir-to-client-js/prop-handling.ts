@@ -113,6 +113,11 @@ export function expandDynamicPropValue(value: string, ctx: ClientJsContext, scop
   if (scope?.isBound(trimmedValue)) return value
 
   const constant = ctx.localConstants.find((c) => c.name === trimmedValue)
+  // A binding mutated after its declaration (#2910) has no compile-time
+  // value — `constant.value` is a snapshot from BEFORE the mutation ran.
+  // Re-embedding it here would silently drop the mutation; keep the bare
+  // reference instead so the emitted getter reads the LIVE binding.
+  if (constant?.mutatedAfterDeclaration) return value
   if (constant && constant.value) {
     return constant.value
   }
@@ -156,6 +161,10 @@ export function expandConstantForReactivity(
   if (scope?.isBound(trimmedValue)) return { expr, freeIds: originalFreeIds }
 
   const constant = ctx.localConstants.find((c) => c.name === trimmedValue)
+  // See `expandDynamicPropValue`'s matching guard (#2910): a mutated
+  // binding's `value` is a stale pre-mutation snapshot, so it must not be
+  // substituted in place of a live reference.
+  if (constant?.mutatedAfterDeclaration) return { expr, freeIds: originalFreeIds }
   if (constant && constant.value) {
     return { expr: constant.value, freeIds: constant.freeIdentifiers }
   }

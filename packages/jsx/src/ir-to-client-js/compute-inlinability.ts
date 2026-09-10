@@ -113,6 +113,12 @@ export type ConstantInlinability =
   /** After chained-ref resolution, the inlined value still mentions
    *  a name classified unsafe above. Transitive demotion. */
   | { kind: 'depends-on-unsafe' }
+  /** A same-scope statement mutates this binding's value after its
+   *  declaration (`ConstantInfo.mutatedAfterDeclaration`, #2910) — e.g.
+   *  `const config = {}; for (...) config[k] = ...`. `value` is a
+   *  pre-mutation snapshot; inlining it anywhere would silently drop
+   *  the mutation, so this is unsafe exactly like an init-local. */
+  | { kind: 'mutated-after-declaration' }
 
 export type FunctionInlinability =
   /** Module-scope function that does NOT touch component internals —
@@ -339,7 +345,7 @@ function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv, ge
   // call-kind entry (`buildEnvWithConsts`'s Map spread puts `constSubs`
   // last) — the literal `(undefined)()` this issue is about (#2778).
   for (const c of ctx.localConstants) {
-    if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind || getterAliases.has(c.name)) {
+    if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind || c.mutatedAfterDeclaration || getterAliases.has(c.name)) {
       ctx.csrInlinable.set(c.name, null)
       finalised.add(c.name)
     }
@@ -626,6 +632,7 @@ function classifyConstantInitial(
 ): { status: ConstantInlinability; decisions: RelocateDecision[] } {
   if (c.isJsx) return { status: { kind: 'jsx-inline' }, decisions: [] }
   if (!c.value) return { status: { kind: 'placeholder-let' }, decisions: [] }
+  if (c.mutatedAfterDeclaration) return { status: { kind: 'mutated-after-declaration' }, decisions: [] }
   if (c.containsArrow) return { status: { kind: 'arrow-literal' }, decisions: [] }
   if (c.systemConstructKind) return { status: { kind: 'system-construct' }, decisions: [] }
   // A multi-hop alias chain to a getter (`const a = items; const b = a`)
