@@ -1,19 +1,20 @@
 #!/usr/bin/env bun
 //
-// Regenerate the adapter tables in README.md and
-// docs/core/core-concepts/backend-freedom.md from the single source of
-// truth: ADAPTER_ENTRIES (packages/compat/src/adapter-doc-catalog.ts),
-// which is itself floor-checked against the compiled adapter registry
+// Regenerate the adapter tables in README.md,
+// docs/core/core-concepts/backend-freedom.md, and docs/core/adapters.md
+// from the single source of truth: ADAPTER_ENTRIES
+// (packages/compat/src/adapter-doc-catalog.ts), which is itself
+// floor-checked against the compiled adapter registry
 // (packages/compat/src/adapter-registry.ts) — see
 // adapter-doc-catalog.test.ts.
 //
 // Usage: bun run scripts/generate-adapter-docs.ts [--check]
 //
 //   (no flags)  Rewrite the generated regions in place.
-//   --check     Exit 1 if regenerating would change either file, without
+//   --check     Exit 1 if regenerating would change any file, without
 //               writing — used by .github/workflows/update-adapter-docs.yml.
 //
-// Both target files carry a matched pair of HTML-comment markers
+// Every target file carries a matched pair of HTML-comment markers
 // (`ADAPTER-TABLE:START` / `ADAPTER-TABLE:END`); only the text between
 // them is replaced, so hand-written prose around the table survives.
 
@@ -37,6 +38,7 @@ interface Target {
 const TARGETS: Target[] = [
   { path: 'README.md', docPathPrefix: 'docs/core/' },
   { path: 'docs/core/core-concepts/backend-freedom.md', docPathPrefix: '../' },
+  { path: 'docs/core/adapters.md', docPathPrefix: './' },
 ]
 
 function renderTable(docPathPrefix: string): string {
