@@ -2,7 +2,7 @@
 //
 // Regenerate the adapter tables in README.md and
 // docs/core/core-concepts/backend-freedom.md from the single source of
-// truth: ADAPTER_FAMILIES (packages/compat/src/adapter-doc-catalog.ts),
+// truth: ADAPTER_ENTRIES (packages/compat/src/adapter-doc-catalog.ts),
 // which is itself floor-checked against the compiled adapter registry
 // (packages/compat/src/adapter-registry.ts) — see
 // adapter-doc-catalog.test.ts.
@@ -20,7 +20,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { assertAdapterDocCatalogComplete, ADAPTER_FAMILIES, type AdapterFamily } from '../packages/compat/src/adapter-doc-catalog'
+import { assertAdapterDocCatalogComplete, ADAPTER_ENTRIES, type AdapterEntry } from '../packages/compat/src/adapter-doc-catalog'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
@@ -40,12 +40,11 @@ const TARGETS: Target[] = [
 ]
 
 function renderTable(docPathPrefix: string): string {
-  const header = '| Language | Backend | Output | Package |'
-  const separator = '|----------|---------|--------|---------|'
-  const rows = ADAPTER_FAMILIES.map((family: AdapterFamily) => {
-    const link = `[${family.name}](${docPathPrefix}${family.docPage})`
-    const packages = family.packages.map(pkg => `\`${pkg}\``).join(', ')
-    return `| ${family.language} | ${link} — ${family.backend} | ${family.output} | ${packages} |`
+  const header = '| Language | Backend | Package |'
+  const separator = '|----------|---------|---------|'
+  const rows = ADAPTER_ENTRIES.map((entry: AdapterEntry) => {
+    const link = `[${entry.backend}](${docPathPrefix}${entry.docPage})`
+    return `| ${entry.language} | ${link} | \`${entry.pkg}\` |`
   })
   return [header, separator, ...rows].join('\n')
 }

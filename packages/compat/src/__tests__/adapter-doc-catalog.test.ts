@@ -4,7 +4,7 @@
 // listing shipped adapters as "Planned").
 
 import { describe, test, expect } from 'bun:test'
-import { ADAPTER_FAMILIES, assertAdapterDocCatalogComplete } from '../adapter-doc-catalog'
+import { ADAPTER_ENTRIES, assertAdapterDocCatalogComplete } from '../adapter-doc-catalog'
 import { COMPAT_ADAPTER_PACKAGES } from '../adapter-registry'
 
 describe('adapter-doc-catalog', () => {
@@ -12,14 +12,14 @@ describe('adapter-doc-catalog', () => {
     expect(() => assertAdapterDocCatalogComplete()).not.toThrow()
   })
 
-  test('every family package name is unique', () => {
-    const allPackages = ADAPTER_FAMILIES.flatMap(f => f.packages)
+  test('every row package name is unique', () => {
+    const allPackages = ADAPTER_ENTRIES.map(e => e.pkg)
     expect(new Set(allPackages).size).toBe(allPackages.length)
   })
 
   test('catches a package registered but not catalogued', () => {
     const registered = [...COMPAT_ADAPTER_PACKAGES, '@barefootjs/new-adapter']
-    const cataloged = new Set(ADAPTER_FAMILIES.flatMap(f => f.packages))
+    const cataloged = new Set(ADAPTER_ENTRIES.map(e => e.pkg))
     const missing = registered.filter(pkg => !cataloged.has(pkg))
     expect(missing).toEqual(['@barefootjs/new-adapter'])
   })
