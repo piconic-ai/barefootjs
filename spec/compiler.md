@@ -1155,6 +1155,18 @@ error[BF044]: Signal getter 'count' passed without calling it
 | `onChange={setCount}` | No | Setter, not getter |
 | `value={props.checked}` | No | Property access, not bare identifier |
 | `value={count() + 1}` | No | Expression, not bare identifier |
+| `<Child x={count} />` | No | Component prop — see below |
+| `<Child x={{ v: count }} />` | No | Component prop — see below |
+
+**Component props are exempt.** The table above covers DOM element attributes and JSX text
+children — positions that are genuinely RENDERED, where a forgotten `()` silently produces
+wrong output. A component prop is not rendered; it is an opaque value handed to the child,
+and passing a live, uncalled accessor there is this codebase's deliberate Context-Provider
+idiom — `<SelectContext.Provider value={{ open, value: () => … }}>` hands descendants an
+accessor so each consumer subscribes reactively at its own read site, rather than freezing
+the value at provider-render time. This applies equally whether the accessor is passed
+directly (`<Child x={count} />`) or nested inside an object literal
+(`<Child x={{ v: count }} />`) — the two forms are one idiom, not an inconsistency (#2760).
 
 ### class= vs className= in JSX
 

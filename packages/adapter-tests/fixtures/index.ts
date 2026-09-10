@@ -637,6 +637,10 @@ import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
 // #2868: a reactive conditional branch's own root tag collides with the
 // enclosing loop's item param name — must not corrupt the tag on re-render.
 import { fixture as condArmTagCollision } from './cond-arm-tag-collision'
+// #2760: a signal getter passed DIRECTLY (unwrapped) to a component prop —
+// BF044 used to refuse this while the structurally identical object-literal
+// wrapped form (`context-provider-nullish-object-fallback.ts`) passed silently.
+import { fixture as componentPropBareGetter } from './component-prop-bare-getter'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1074,4 +1078,5 @@ export const jsxFixtures: JSXFixture[] = [
   keyedLoopIndexReorder,
   lazyRowIndexReorder,
   condArmTagCollision,
+  componentPropBareGetter,
 ]

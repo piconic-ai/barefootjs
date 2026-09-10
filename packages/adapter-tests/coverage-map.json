@@ -1360,6 +1360,20 @@
         "text"
       ]
     },
+    "component-prop-bare-getter": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-row-loop-preamble-handler": {
       "kinds": [
         "array-literal",
@@ -6618,13 +6632,13 @@
     "array-method": 71,
     "arrow": 74,
     "binary": 104,
-    "call": 274,
+    "call": 275,
     "conditional": 31,
-    "identifier": 387,
+    "identifier": 388,
     "index-access": 14,
-    "literal": 309,
+    "literal": 310,
     "logical": 49,
-    "member": 229,
+    "member": 230,
     "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
@@ -6668,7 +6682,7 @@
     "binary:>=": 1,
     "literal:boolean": 69,
     "literal:null": 26,
-    "literal:number": 140,
+    "literal:number": 141,
     "literal:string": 211,
     "logical:&&": 7,
     "logical:??": 41,
