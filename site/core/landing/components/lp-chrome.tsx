@@ -7,6 +7,7 @@
 
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Logo, LogoIcon } from '../../../shared/components/logo'
+import { GitHubIcon } from '../../../shared/components/icons'
 
 export function LpHeader({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
   return (
@@ -22,7 +23,15 @@ export function LpHeader({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: st
           <a href="/docs/introduction">Docs</a>
           <a href={uiHref}>Components</a>
           <a href="/integrations">Integrations</a>
-          <a href="https://github.com/piconic-ai/barefootjs">Source</a>
+          <a
+            href="https://github.com/piconic-ai/barefootjs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lp-nav-github"
+            aria-label="View on GitHub"
+          >
+            <GitHubIcon />
+          </a>
           <ThemeSwitcher />
         </nav>
       </div>

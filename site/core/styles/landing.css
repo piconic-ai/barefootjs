@@ -71,6 +71,11 @@ main :focus-visible,
   color: var(--foreground);
 }
 
+.lp-nav-github {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* ── 1. Hero ────────────────────────────────────────────────── */
 
 .lp-hero {
