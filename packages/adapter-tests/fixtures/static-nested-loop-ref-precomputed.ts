@@ -1,28 +1,33 @@
 import { createFixture } from '../src/types'
 
 /**
- * `prop-precompute` twin of `static-nested-loop-ref` (#2893) — the SECOND
- * escape kind the Go template BF101 diagnostic claims, alongside
- * `static-nested-loop-ref-client`.
+ * `prop-precompute` twin of `static-nested-loop-ref` (#2909 — originally
+ * pinned to #2893, whose nested-loop structural bail is now fixed; the
+ * base fixture's OWN remaining refusal is the narrower #2909, a signal
+ * call in the inner row's text) — the SECOND escape kind the Go template
+ * BF101 diagnostic claims, alongside `static-nested-loop-ref-client`.
  *
- * The base refuses on the Go template adapter because `items` is a
- * component-scope LOCAL const — `analyzeBakeableStaticElementLoop`'s
- * static-loop bake can't unroll the nested inner `.map()`, and the
- * generic "local computed value" BF101 fallback fires. That refusal keys
- * specifically on `this.state.localConstants` (`go-template-adapter.ts`),
- * so it never fires for a PROP at all — a prop binds as an ordinary Go
- * struct field, same as `static-array-from-props-precomputed`'s twin.
+ * The base refuses on the Go template adapter because `count()` (a signal
+ * read in the inner row's text) has no item-independent bake path
+ * (`allExpressionsFoldFor`'s plain-`expression` case, unlike a
+ * `conditional`'s own condition — #2898's `classifyBakedCondition`). A prop
+ * doesn't change that — but this twin's array IS the loop source, and
+ * `analyzeBakeableStaticElementLoop`'s bake gate never even considers a
+ * prop-derived array (it keys off `this.state.localConstants`,
+ * `go-template-adapter.ts`) — a prop binds as an ordinary Go struct field
+ * and the loop renders via the adapter's normal `{{range}}` path instead,
+ * where `count()` resolves fine (real dot-context, no bake involved).
  * Moving the array to a prop escapes with full SSR (contrast with the
  * `-client` twin, which renders the loop host empty until hydration).
  *
- * This does NOT fix #2893 — the compiler still cannot bake a nested
- * inner `.map()` inside a LOCAL static array's row on the Go template
- * adapter. What it proves is that the refusal's first-listed escape
- * genuinely works, full SSR included.
+ * This does NOT fix #2909 — the compiler still cannot bake a signal read
+ * inside a nested LOCAL static array's row on the Go template adapter.
+ * What it proves is that the refusal's first-listed escape genuinely
+ * works, full SSR included.
  */
 export const fixture = createFixture({
   id: 'static-nested-loop-ref-precomputed',
-  description: 'prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2893)',
+  description: 'prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)',
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'

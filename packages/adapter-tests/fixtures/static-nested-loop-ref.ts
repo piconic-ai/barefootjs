@@ -53,9 +53,12 @@ export function StaticNestedLoopRef() {
   expectedHtml: `
     <ul bf-s="test" bf="s4"><li bf="s3" data-key="1"><span bf="s2" data-key-1="11"><!--bf:s0-->11<!--/-->:<!--bf:s1-->0<!--/--></span><span bf="s2" data-key-1="12"><!--bf:s0-->12<!--/-->:<!--bf:s1-->0<!--/--></span></li></ul>
   `,
-  // Go template adapter refuses this shape with BF101 (#2893 — its own
-  // static-loop-baking can't unroll a nested inner .map()); the diagnostic's
-  // own suggestion names a /* @client */ escape, verified by the twin below.
+  // Go template adapter refuses this shape with BF101 (#2909 — the inner
+  // row's `count()` signal read in TEXT position has no item-independent
+  // bake path; #2893's own nested-loop structural gate this fixture
+  // originally exercised is fixed — see `static-nested-loop-plain`). The
+  // diagnostic's own suggestion names a /* @client */ escape, verified by
+  // the twin below.
   escapes: [
     { kind: 'prop-precompute', fixture: 'static-nested-loop-ref-precomputed' },
     { kind: 'client-directive', fixture: 'static-nested-loop-ref-client' },

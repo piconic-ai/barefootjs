@@ -5668,6 +5668,40 @@
         "loop"
       ]
     },
+    "static-nested-loop-depth2": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-nested-loop-plain": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "static-nested-loop-ref": {
       "kinds": [
         "array-literal",
@@ -5712,6 +5746,23 @@
         "literal",
         "member",
         "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-nested-loop-shadowed-param": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
       ],
       "axes": [
         "literal:number"
@@ -6553,18 +6604,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 110,
+    "array-literal": 113,
     "array-method": 71,
     "arrow": 74,
     "binary": 104,
     "call": 274,
     "conditional": 31,
-    "identifier": 383,
+    "identifier": 386,
     "index-access": 14,
-    "literal": 306,
+    "literal": 309,
     "logical": 49,
-    "member": 225,
-    "object-literal": 89,
+    "member": 228,
+    "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
     "unsupported": 50
@@ -6607,7 +6658,7 @@
     "binary:>=": 1,
     "literal:boolean": 69,
     "literal:null": 26,
-    "literal:number": 137,
+    "literal:number": 140,
     "literal:string": 211,
     "logical:&&": 7,
     "logical:??": 41,

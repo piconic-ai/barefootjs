@@ -423,6 +423,9 @@ import { fixture as nestedLoopRefConst } from './nested-loop-ref-const'
 import { fixture as staticNestedLoopRef } from './static-nested-loop-ref'
 import { fixture as staticNestedLoopRefClient } from './static-nested-loop-ref-client'
 import { fixture as staticNestedLoopRefPrecomputed } from './static-nested-loop-ref-precomputed'
+import { fixture as staticNestedLoopPlain } from './static-nested-loop-plain'
+import { fixture as staticNestedLoopDepth2 } from './static-nested-loop-depth2'
+import { fixture as staticNestedLoopShadowedParam } from './static-nested-loop-shadowed-param'
 import { fixture as staticLoopConditional } from './static-loop-conditional'
 import { fixture as staticLoopConditionalPrecomputed } from './static-loop-conditional-precomputed'
 import { fixture as staticLoopConditionalClient } from './static-loop-conditional-client'
@@ -947,6 +950,9 @@ export const jsxFixtures: JSXFixture[] = [
   staticNestedLoopRef,
   staticNestedLoopRefClient,
   staticNestedLoopRefPrecomputed,
+  staticNestedLoopPlain,
+  staticNestedLoopDepth2,
+  staticNestedLoopShadowedParam,
   staticLoopConditional,
   staticLoopConditionalPrecomputed,
   staticLoopConditionalClient,
