@@ -18,12 +18,15 @@ import { createFixture } from '../src/types'
  * shape assert the corresponding diagnostic via `expectedDiagnostics`
  * on their own test file (#1266).
  * The remaining template-adapter refusal (computed component-scope const as
- * the loop source) is tracked in #2321. It has a verified `/* @client *\/`
- * escape — `static-array-from-props-client` — that defers the whole loop
- * (the `entries` computation included) to the browser; SSR renders the
- * loop host empty on every DSL adapter. That escape does NOT fix #2321:
- * template adapters still cannot lower a props-derived computed const at
- * SSR time, so #2321 stays open as an SSR capability gap.
+ * the loop source) is tracked in #2321, now settled as a permanent design
+ * position (not a capability gap to close): precompute the array where
+ * it's already computable and pass the RESULT as a prop — the better fix,
+ * since it keeps full SSR output — or use the verified `/* @client *\/`
+ * escape below (`static-array-from-props-client`), which defers the whole
+ * loop (the `entries` computation included) to the browser and renders the
+ * loop host empty on every DSL adapter's SSR. No template adapter will
+ * gain a general binding for an arbitrary computed local; see #2321 for
+ * the full reasoning.
  */
 export const fixture = createFixture({
   id: 'static-array-from-props',
