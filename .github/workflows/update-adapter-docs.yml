@@ -1,0 +1,50 @@
+name: Update Adapter Docs
+
+# Verify-only mirror of update-fixtures.yml / update-doc-snapshots.yml, for
+# the generated adapter table in README.md and
+# docs/core/core-concepts/backend-freedom.md
+# (scripts/generate-adapter-docs.ts, sourced from
+# packages/compat/src/adapter-doc-catalog.ts). Without this job, adding or
+# removing an adapter package can silently leave those two tables stale —
+# which is exactly what happened to backend-freedom.md before this
+# workflow existed (it kept listing shipped adapters as "Planned").
+#
+# No `branches` filter: a stacked PR's head can drift the same as a
+# main-based one, and this is the only check that would catch it (see
+# CLAUDE.md's "When main Breaks" section for the general pattern).
+
+on:
+  pull_request:
+    paths:
+      - 'packages/compat/src/adapter-registry.ts'
+      - 'packages/compat/src/adapter-doc-catalog.ts'
+      - 'scripts/generate-adapter-docs.ts'
+      - 'README.md'
+      - 'docs/core/core-concepts/backend-freedom.md'
+      - '.github/workflows/update-adapter-docs.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-adapter-docs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-adapter-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check adapter docs are up to date
+        run: bun run scripts/generate-adapter-docs.ts --check
