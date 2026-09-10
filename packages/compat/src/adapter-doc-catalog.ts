@@ -3,10 +3,11 @@
 // `adapter-registry.ts` is the ONE place TemplateAdapter packages are
 // enumerated for compiling; this file is the doc-facing counterpart — the
 // ONE place those same packages get a language/backend label for
-// README.md and docs/core/core-concepts/backend-freedom.md, rendered as
-// an adapter table via `scripts/generate-adapter-docs.ts`. One row per
-// package — a language with two backends (Perl: Mojolicious + Xslate;
-// PHP: Twig + Blade) gets two rows, not one combined row.
+// README.md, docs/core/core-concepts/backend-freedom.md, and
+// docs/core/adapters.md, rendered as an adapter table via
+// `scripts/generate-adapter-docs.ts`. One row per package — a language
+// with two backends (Perl: Mojolicious + Xslate; PHP: Twig + Blade) gets
+// two rows, not one combined row.
 //
 // `assertAdapterDocCatalogComplete` (exercised by
 // `__tests__/adapter-doc-catalog.test.ts`) diffs this file's package list

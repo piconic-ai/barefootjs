@@ -1,7 +1,7 @@
-// Floor test for adapter-doc-catalog.ts — keeps README.md and
-// docs/core/core-concepts/backend-freedom.md from silently going stale
-// the way backend-freedom.md did before this file existed (it kept
-// listing shipped adapters as "Planned").
+// Floor test for adapter-doc-catalog.ts — keeps README.md,
+// docs/core/core-concepts/backend-freedom.md, and docs/core/adapters.md
+// from silently going stale the way backend-freedom.md did before this
+// file existed (it kept listing shipped adapters as "Planned").
 
 import { describe, test, expect } from 'bun:test'
 import { ADAPTER_ENTRIES, assertAdapterDocCatalogComplete } from '../adapter-doc-catalog'
