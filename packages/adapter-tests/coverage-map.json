@@ -5756,6 +5756,23 @@
         "text"
       ]
     },
+    "static-nested-loop-shadowed-param": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "string-concat-plus": {
       "kinds": [
         "binary",
@@ -6587,18 +6604,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 112,
+    "array-literal": 113,
     "array-method": 71,
     "arrow": 74,
     "binary": 104,
     "call": 274,
     "conditional": 31,
-    "identifier": 385,
+    "identifier": 386,
     "index-access": 14,
-    "literal": 308,
+    "literal": 309,
     "logical": 49,
-    "member": 227,
-    "object-literal": 91,
+    "member": 228,
+    "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
     "unsupported": 50
@@ -6641,7 +6658,7 @@
     "binary:>=": 1,
     "literal:boolean": 69,
     "literal:null": 26,
-    "literal:number": 139,
+    "literal:number": 140,
     "literal:string": 211,
     "logical:&&": 7,
     "logical:??": 41,

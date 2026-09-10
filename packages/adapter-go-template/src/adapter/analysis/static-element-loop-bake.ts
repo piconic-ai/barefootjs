@@ -199,6 +199,13 @@ export function analyzeBakeableStaticElementLoop(
  * `evaluateStaticLiteral` against the SAME bindings map the per-item fold
  * check uses, so the two can never disagree about what an inner loop's
  * array evaluates to.
+ *
+ * The bound-name check reads `arrayParsed`'s free identifiers, not just a
+ * bare-identifier `arrayParsed` itself, so a shadowing loop param (an outer
+ * `const item = ...` shadowed by an inner `.map(item => ...)`) always
+ * resolves against the loop binding, never a same-named const — regardless
+ * of whether a future `resolveStaticLoopSource` learns to resolve member
+ * reads off consts.
  */
 function resolveBakedLoopSource(
   arrayParsed: ParsedExpr | undefined,
@@ -207,7 +214,9 @@ function resolveBakedLoopSource(
   opts?: { isNameShadowed?: (name: string) => boolean },
 ): unknown[] | null {
   if (!arrayParsed) return null
-  if (!(arrayParsed.kind === 'identifier' && bindings.has(arrayParsed.name))) {
+  const free = freeIdentifiers(arrayParsed)
+  const referencesBoundName = free !== null && [...free].some((name) => bindings.has(name))
+  if (!referencesBoundName) {
     const resolved = resolveStaticLoopSource(arrayParsed, localConstants, opts)
     if (resolved !== null) return resolved
   }
@@ -239,7 +248,15 @@ function isFoldableTree(nodes: readonly IRNode[]): boolean {
         // the OUTER item, its own body against ITS item) is checked later in
         // `allExpressionsFoldFor`, where the accumulating bindings map is
         // available — here just the structural (item-independent) shape.
-        if (node.clientOnly) continue // client-deferred: item-independent, SSR renders nothing for it.
+        //
+        // A clientOnly nested loop bails here (unlike the clientOnly
+        // conditional case above, whose `cond.slotId` markers are proven
+        // safe to repeat once per unrolled row): `renderLoop`'s clientOnly
+        // branch emits ONE `{{bfComment "loop:<markerId>"}}` pair per call
+        // site, and repeating that same markerId once per unrolled outer
+        // row is untested against the client's per-row insertion targeting
+        // — refuse loudly (#2918) rather than admit an unverified shape.
+        if (node.clientOnly) return false
         if (!isBakeableLoopShape(node) || !isFoldableTree(node.children)) return false
         continue
       default:
@@ -315,8 +332,8 @@ function allExpressionsFoldFor(
       // per-item fold) for the nested loop, seeded with the bindings
       // accumulated so far — `analyzeBakeableStaticElementLoop` adds its own
       // param on top before checking ITS body, so a third level nests the
-      // same way a second one does.
-      if (node.clientOnly) continue
+      // same way a second one does. A clientOnly nested loop never reaches
+      // here — `isFoldableTree`'s structural pass already bailed it.
       if (analyzeBakeableStaticElementLoop(node, localConstants, { ...opts, bindings }) === null) return false
       continue
     }
