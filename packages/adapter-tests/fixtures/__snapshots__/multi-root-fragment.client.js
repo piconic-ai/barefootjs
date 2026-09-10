@@ -1,9 +1,9 @@
-import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, ownScopeId } from '@barefootjs/client/runtime'
 
 
 export function initMultiRootFragment(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [count, setCount] = createSignal(0)
 

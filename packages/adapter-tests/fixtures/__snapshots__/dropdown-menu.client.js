@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3713,7 +3713,7 @@ hydrate('DropdownMenuGroup', { init: initDropdownMenuGroup, template: (_p) => `<
 export function DropdownMenuGroup(_p, __bfKey) { return createComponent('DropdownMenuGroup', _p, __bfKey) }
 export function initDropdownMenuBasicDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [open, setOpen] = createSignal(false)
 
@@ -3755,7 +3755,7 @@ hydrate('DropdownMenuBasicDemo', { init: initDropdownMenuBasicDemo, template: (_
 export function DropdownMenuBasicDemo(_p, __bfKey) { return createComponent('DropdownMenuBasicDemo', _p, __bfKey) }
 export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [open, setOpen] = createSignal(false)
   const [showStatus, setShowStatus] = createSignal(true)
@@ -3819,7 +3819,7 @@ hydrate('DropdownMenuCheckboxDemo', { init: initDropdownMenuCheckboxDemo, templa
 export function DropdownMenuCheckboxDemo(_p, __bfKey) { return createComponent('DropdownMenuCheckboxDemo', _p, __bfKey) }
 export function initDropdownMenuProfileDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [open, setOpen] = createSignal(false)
   const [showBookmarks, setShowBookmarks] = createSignal(true)

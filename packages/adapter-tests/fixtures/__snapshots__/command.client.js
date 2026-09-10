@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, onCleanup, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, markupOrEmpty, onCleanup, ownScopeId, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3849,7 +3849,7 @@ var documentOrder = documentOrder ?? function(a, b) {
 
 export function initCommandDialog(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const commandDialogContentClasses = 'overflow-hidden p-0'
 
@@ -4075,7 +4075,7 @@ hydrate('Button', { init: initButton, template: (_p) => `${_p.asChild ? `${rende
 export function Button(_p, __bfKey) { return createComponent('Button', _p, __bfKey) }
 export function initCommandPreviewDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [_s0, _s14, _s1, _s5, _s2, _s3, _s4, _s6, _s13, _s8, _s7, _s10, _s9, _s12, _s11] = $c(__scope, 's0', 's14', 's1', 's5', 's2', 's3', 's4', 's6', 's13', 's8', 's7', 's10', 's9', 's12', 's11')
 
@@ -4167,7 +4167,7 @@ hydrate('CommandDialogDemo', { init: initCommandDialogDemo, template: (_p) => `<
 export function CommandDialogDemo(_p, __bfKey) { return createComponent('CommandDialogDemo', _p, __bfKey) }
 export function initCommandFilterDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const prefixFilter = (value, search) => {
     if (!search) return true
