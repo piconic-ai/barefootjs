@@ -127,7 +127,7 @@ import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
-import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
+import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
@@ -7004,6 +7004,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): { condition: string; preamble: string } {
     const trimmed = jsCondition.trim()
     const parsed = preParsed ?? parseExpression(trimmed)
+
+    // #2898: inside a #2224 per-item unrolled static-array loop body, there
+    // is no `{{range}}` dot-context for `renderConditionExpr`'s item-param
+    // resolution (`isCurrentLoopItem(...) → '.'`) to resolve against — so an
+    // item-bound condition (`item.active ? ... : ...`) must be baked to a Go
+    // literal per item here, the SAME as any other item-bound expression
+    // (see the `staticLoopItemStack` override in `convertExpressionToGo`).
+    // An item-INDEPENDENT condition (`flag()`, an outer const, ...) needs no
+    // such rewrite — it falls through to the normal path below unmodified,
+    // since `renderConditionExpr` never relies on a `{{range}}` dot-context
+    // for those. `analyzeBakeableStaticElementLoop`'s `classifyBakedCondition`
+    // call has already verified this resolves one way or the other for every
+    // item; a `null` classification here is the same invariant violation
+    // `convertExpressionToGo`'s override guards against, not a real path.
+    if (this.staticLoopItemStack.length > 0) {
+      const top = this.staticLoopItemStack[this.staticLoopItemStack.length - 1]
+      const classified = classifyBakedCondition(parsed, new Map([[top.param, top.item]]))
+      if (classified === null) {
+        this.staticLoopBakeFailed = true
+        return { condition: 'false', preamble: '' }
+      }
+      if (classified.kind === 'literal') {
+        return { condition: classified.go, preamble: '' }
+      }
+      // 'independent' — fall through to the normal lowering below.
+    }
+
     const support = isSupported(parsed)
 
     if (!support.supported) {

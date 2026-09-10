@@ -426,6 +426,7 @@ import { fixture as staticNestedLoopRefPrecomputed } from './static-nested-loop-
 import { fixture as staticLoopConditional } from './static-loop-conditional'
 import { fixture as staticLoopConditionalPrecomputed } from './static-loop-conditional-precomputed'
 import { fixture as staticLoopConditionalClient } from './static-loop-conditional-client'
+import { fixture as staticLoopItemConditional } from './static-loop-item-conditional'
 import { fixture as staticNestedLoopConditional } from './static-nested-loop-conditional'
 import { fixture as staticNestedLoopConditionalPrecomputed } from './static-nested-loop-conditional-precomputed'
 import { fixture as staticNestedLoopConditionalClient } from './static-nested-loop-conditional-client'
@@ -944,6 +945,7 @@ export const jsxFixtures: JSXFixture[] = [
   staticLoopConditional,
   staticLoopConditionalPrecomputed,
   staticLoopConditionalClient,
+  staticLoopItemConditional,
   staticNestedLoopConditional,
   staticNestedLoopConditionalPrecomputed,
   staticNestedLoopConditionalClient,

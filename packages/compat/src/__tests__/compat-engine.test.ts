@@ -50,20 +50,20 @@ describe('compileForCompat', () => {
     // source), #2700 (a `derived` object-literal signal/memo the
     // constructor-time baker can't reproduce, `signal-object-spread-init`),
     // #2805 (a named jsx-children prop routed into a child's rest bag,
-    // `jsx-element-prop-rest-bag-dynamic`), #2893 (a nested `.map()`
+    // `jsx-element-prop-rest-bag-dynamic`), and #2893 (a nested `.map()`
     // inside a static outer array's row, `static-nested-loop-ref` AND
     // `static-nested-loop-conditional` — the latter `unescapable`-pinned
-    // to the same issue rather than re-proving the identical escape), and
-    // #2898 (a conditional inside a static array's row with no nested loop,
-    // `static-loop-conditional`) surface here even though this test only
-    // exercises the nested-filter-callback shape. Three pins are no longer
-    // among them, each because the shape
-    // got a real lowering rather than a narrower refusal: #2319
-    // (dangerous-inner-html-dynamic → a faithful raw-output lowering),
-    // #2208 (static-array-children → the loop-source gate bakes a
-    // fully-static array-of-objects const), and #2448 (loop-row child prop
+    // to the same issue rather than re-proving the identical escape)
+    // surface here even though this test only exercises the
+    // nested-filter-callback shape. Four pins are no longer among them,
+    // each because the shape got a real lowering rather than a narrower
+    // refusal: #2319 (dangerous-inner-html-dynamic → a faithful raw-output
+    // lowering), #2208 (static-array-children → the loop-source gate bakes
+    // a fully-static array-of-objects const), #2448 (loop-row child prop
     // override feeding a derived field → the child rebuilds itself per row
-    // through `bf_reprops`). See `go-template`'s `conformance-pins.ts`.
+    // through `bf_reprops`), and #2898 (a conditional inside a static
+    // array's row with no nested loop → `isFoldableTree` now bakes it).
+    // See `go-template`'s `conformance-pins.ts`.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
@@ -74,7 +74,6 @@ describe('compileForCompat', () => {
           'https://github.com/piconic-ai/barefootjs/issues/2700',
           'https://github.com/piconic-ai/barefootjs/issues/2805',
           'https://github.com/piconic-ai/barefootjs/issues/2893',
-          'https://github.com/piconic-ai/barefootjs/issues/2898',
         ],
       },
     ])
