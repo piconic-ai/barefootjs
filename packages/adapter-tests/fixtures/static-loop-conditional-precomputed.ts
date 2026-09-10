@@ -18,6 +18,11 @@ import { createFixture } from '../src/types'
  * inside a LOCAL static array's row on the Go template adapter. What it
  * proves is that the refusal's first-listed escape genuinely works, full
  * SSR included.
+ *
+ * #2898 later fixed the base fixture directly (`isFoldableTree` now bakes a
+ * `conditional` node), so this twin is no longer required by the escape-
+ * coverage floor test — kept as its own standalone prop-derived-array
+ * coverage, same reasoning as `static-nested-loop-ref-precomputed`.
  */
 export const fixture = createFixture({
   id: 'static-loop-conditional-precomputed',

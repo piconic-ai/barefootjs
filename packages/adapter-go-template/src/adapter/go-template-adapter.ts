@@ -7005,19 +7005,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const trimmed = jsCondition.trim()
     const parsed = preParsed ?? parseExpression(trimmed)
 
-    // #2898: inside a #2224 per-item unrolled static-array loop body, there
-    // is no `{{range}}` dot-context for `renderConditionExpr`'s item-param
-    // resolution (`isCurrentLoopItem(...) → '.'`) to resolve against — so an
-    // item-bound condition (`item.active ? ... : ...`) must be baked to a Go
-    // literal per item here, the SAME as any other item-bound expression
-    // (see the `staticLoopItemStack` override in `convertExpressionToGo`).
-    // An item-INDEPENDENT condition (`flag()`, an outer const, ...) needs no
-    // such rewrite — it falls through to the normal path below unmodified,
-    // since `renderConditionExpr` never relies on a `{{range}}` dot-context
-    // for those. `analyzeBakeableStaticElementLoop`'s `classifyBakedCondition`
-    // call has already verified this resolves one way or the other for every
-    // item; a `null` classification here is the same invariant violation
-    // `convertExpressionToGo`'s override guards against, not a real path.
+    // #2898: inside a #2224 per-item unrolled static-array loop body there is
+    // no `{{range}}` dot-context for an item-bound condition to resolve
+    // against, so it must bake to a Go literal here (same reasoning as the
+    // `staticLoopItemStack` override in `convertExpressionToGo`). An
+    // item-independent condition needs no such rewrite and falls through to
+    // the normal path below. `classifyBakedCondition` returning `null` here
+    // is the same pre-verified invariant `convertExpressionToGo`'s override
+    // guards against, not a real path.
     if (this.staticLoopItemStack.length > 0) {
       const top = this.staticLoopItemStack[this.staticLoopItemStack.length - 1]
       const classified = classifyBakedCondition(parsed, new Map([[top.param, top.item]]))
@@ -8180,6 +8175,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (css !== null) return `style="${css}"`
       }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
+        // Every boolean-attribute value routes through `convertConditionToGo`
+        // even when it's a plain item-bound expression (`disabled={item.x}`),
+        // not a `conditional` IR node — so #2898's `staticLoopItemStack` check
+        // there also fixes this path inside an unrolled static loop row (was
+        // a pre-existing silent divergence; `static-loop-item-boolean-attr`
+        // is its regression fixture).
         const { condition: goCond, preamble } = this.convertConditionToGo(value.expr, value.parsed)
         // ARIA attributes are string-valued ("true"/"false"), not HTML5 presence
         // booleans — the truthy presence form renders as `aria-x="true"`

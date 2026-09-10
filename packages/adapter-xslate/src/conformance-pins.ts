@@ -96,4 +96,13 @@ export const conformancePins: ConformancePins = {
     severity: 'error',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2911',
   }],
+  // #2911: same trigger as `static-loop-item-conditional` above — this
+  // fixture's item shape has a `disabled: boolean` field (feeding a boolean
+  // HTML attribute rather than a conditional), found alongside it while
+  // reviewing #2898.
+  'static-loop-item-boolean-attr': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2911',
+  }],
 }

@@ -45,17 +45,14 @@
  *     `whenFalse` are themselves nullish (a `null`/`undefined` expression
  *     branch, matching `renderConditional`'s own empty-branch test) or
  *     foldable per this same walk, AND its condition classifies via
- *     `classifyBakedCondition` — either fully item-literal (evaluates via
- *     `evaluateStaticLiteral` against the item, one Go literal per item, no
- *     `{{if}}` in the emitted output) or item-INDEPENDENT (references none
- *     of the item's bound names — e.g. a signal call like `flag()` — so the
- *     normal reactive `renderConditional`/`convertConditionToGo` path
- *     handles it per item unmodified, since that path never depends on a
- *     `{{range}}` dot-context in the first place). A condition that mixes
- *     item-bound and item-independent names, or that can't be classified at
- *     all (`freeIdentifiers` returns `null`), bails the whole loop — baking
- *     one branch per item while leaving the other's markers/content out
- *     would desync from `renderConditional`'s slot-marker pairing.
+ *     `classifyBakedCondition` as item-literal (bakes to a Go literal
+ *     condition per item) or item-INDEPENDENT (falls through to the normal
+ *     reactive lowering unmodified — see that function's own docstring for
+ *     why each is safe). A condition that mixes item-bound and
+ *     item-independent names, or that can't be classified at all, bails the
+ *     whole loop — baking one branch per item while leaving the other's
+ *     markers/content out would desync from `renderConditional`'s
+ *     slot-marker pairing.
  *   - Every element attribute is `literal` / `boolean-attr` /
  *     `boolean-shorthand`, or a plain `expression` whose parsed kind is one
  *     of `identifier` / `member` / `index-access` / `literal`. An attribute
@@ -186,7 +183,7 @@ function isFoldableTree(nodes: readonly IRNode[]): boolean {
   return true
 }
 
-/** A conditional branch is foldable if it's the nullish sentinel `renderConditional` special-cases, or itself a foldable tree. */
+/** A conditional branch is foldable if it's a nullish (`null`/`undefined`) expression — `renderConditional` special-cases a nullish `whenFalse` with empty markers, and a nullish `whenTrue` renders as an empty string via the normal expression path — or itself a foldable tree. */
 function isFoldableBranch(node: IRNode): boolean {
   if (isNullishBranch(node)) return true
   return isFoldableTree([node])
@@ -236,8 +233,8 @@ function allExpressionsFoldFor(nodes: readonly IRNode[], bindings: ReadonlyMap<s
       if (node.clientOnly) continue // renderClientOnlyConditional: item-independent comment markers.
       const parsedCondition = node.parsedCondition ?? parseExpression(node.condition.trim())
       if (classifyBakedCondition(parsedCondition, bindings) === null) return false
-      if (!isNullishBranch(node.whenTrue) && !allExpressionsFoldFor([node.whenTrue], bindings)) return false
-      if (!isNullishBranch(node.whenFalse) && !allExpressionsFoldFor([node.whenFalse], bindings)) return false
+      const branchFolds = (branch: IRNode) => isNullishBranch(branch) || allExpressionsFoldFor([branch], bindings)
+      if (!branchFolds(node.whenTrue) || !branchFolds(node.whenFalse)) return false
       continue
     }
   }
@@ -252,18 +249,23 @@ function resolvesToScalar(expr: ParsedExpr, bindings: ReadonlyMap<string, unknow
 
 /**
  * A conditional's condition, classified for per-item baking (#2898):
- *   - `literal`: fully resolves via `evaluateStaticLiteral` against the
- *     item bindings — the SAME value for this one item on every render, so
- *     the caller substitutes the Go literal directly (`{{if true}}`) with no
- *     `{{if}}` runtime evaluation needed.
+ *   - `literal`: fully resolves via `evaluateStaticLiteral` against the item
+ *     bindings — the SAME value for this one item on every render, so the
+ *     caller substitutes the Go literal directly (`{{if true}}`) instead of
+ *     the runtime-evaluated condition.
  *   - `independent`: references none of the item's bound names at all (a
  *     signal call, an outer const, ...) — safe to fall through to the
  *     adapter's normal `renderConditionExpr` lowering unmodified, since that
  *     path never depends on the unrolled body's missing `{{range}}` dot
  *     context in the first place.
  *   - `null` (unclassifiable): the condition mixes item-bound and
- *     item-independent names, or `freeIdentifiers` can't analyze its shape.
- *     The caller must bail (loud refusal, not a guess).
+ *     item-independent names, `freeIdentifiers` can't analyze its shape, OR
+ *     it's item-bound but not literal-resolvable (e.g. `item.count > 0`,
+ *     `binary`/`logical` shapes `evaluateStaticLiteral` doesn't evaluate) —
+ *     the caller must bail (loud refusal, not a guess) rather than guess a
+ *     value. Not tracked as a separate capability gap: it's the same
+ *     `evaluateStaticLiteral` coverage boundary every other item-literal
+ *     bake in this module already accepts (`resolvesToScalar`, above).
  */
 export type BakedCondition = { kind: 'literal'; go: string } | { kind: 'independent' }
 
