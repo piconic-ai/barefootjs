@@ -226,6 +226,8 @@ npm install @barefootjs/client @barefootjs/hono @barefootjs/jsx @barefootjs/shar
 npm install -D @barefootjs/vite
 ```
 
+These packages currently peer-depend on `vite ^6.0.0` and `typescript ^5.0.0`. If the existing project is already on a newer major of either, plain `npm install` fails with an `ERESOLVE` dependency-tree error — install with `--legacy-peer-deps`, or pin `typescript` down to `^5` (the `vite` peer range is the more conservative one in practice; a newer `vite` alone tends to work). A `typescript` major above `^5` is the one that actually matters at runtime: `vite build` can fail at config-load time with `TypeError: ts.createPrinter is not a function` (or similar) rather than a clear version error, because `@barefootjs/vite` calls into the `typescript` package's compiler API directly.
+
 ### 2. `tsconfig.json` — the `@/components/*` path mapping
 
 Components are imported by the server through a path alias with **two** targets, compiled output first:
@@ -306,7 +308,10 @@ If the project already has a `vite.config.ts` for a whole-app SSR bundler, the `
   "name": "my-app",
   // The uncompiled entry, not a pre-bundled SSR output. Wrangler's own
   // esbuild-based bundler compiles it at dev/deploy time and follows
-  // the tsconfig `paths` mapping into dist/components/.
+  // the tsconfig `paths` mapping into dist/components/. `server.tsx`
+  // here is illustrative — point `main` at wherever your app's Hono
+  // entry file already lives (e.g. `src/index.tsx`); don't create a
+  // new file at this path.
   "main": "server.tsx",
   "compatibility_date": "2025-01-01",
   // Static assets (CSS, generated client JS, manifest) are served
@@ -317,7 +322,7 @@ If the project already has a `vite.config.ts` for a whole-app SSR bundler, the `
 }
 ```
 
-Previously `main` pointed at whatever single-file bundle the SSR build step produced. That step is what this migration removes: `barefoot()` only compiles components, so there is no bundled server artifact to point at anymore. Wrangler bundles `server.tsx` natively — resolving `@/components/*` to the compiled templates under `dist/components/` via the tsconfig mapping — so the server entry stays ordinary TypeScript source in the repository.
+Previously `main` pointed at whatever single-file bundle the SSR build step produced. That step is what this migration removes: `barefoot()` only compiles components, so there is no bundled server artifact to point at anymore. Wrangler bundles the existing entry file natively — resolving `@/components/*` to the compiled templates under `dist/components/` via the tsconfig mapping — so the server entry stays ordinary TypeScript source in the repository, at whatever path it already had.
 
 `assets.directory` must cover `build.outDir` from step 3 and must not include `templates` (see above).
 
@@ -362,6 +367,8 @@ app.use('*', renderer)
 app.get('/', (c) => c.render(<main><Counter /></main>, { title: 'My app' }))
 export default app
 ```
+
+`import { renderer } from './renderer'` assumes the `jsxRenderer` from step 5 lives in its own module, matching the scaffold's layout — if the existing project defines `jsxRenderer` inline in its entry file instead, there's no need to split it out; just apply step 5's edit to that file in place and skip this import.
 
 Existing plain Hono JSX components can stay where they are and be moved under `components/` one at a time; only files under a `components` directory are compiled.
 
