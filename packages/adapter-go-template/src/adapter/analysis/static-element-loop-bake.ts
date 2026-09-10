@@ -37,10 +37,22 @@
  *   - The body is neither multi-root (`bodyIsMultiRoot`) nor a whole-item
  *     conditional (`bodyIsItemConditional`) — those need anchor-marker
  *     machinery this pass doesn't attempt to reproduce per item.
- *   - Every node anywhere in the body's IR tree is an `element`, `text`, or
- *     `expression` — a nested `loop`, `conditional`, `component`, `slot`,
+ *   - Every node anywhere in the body's IR tree is an `element`, `text`,
+ *     `expression`, or `conditional` — a nested `loop`, `component`, `slot`,
  *     `fragment`, `if-statement`, `provider`, or `async` bails the WHOLE
  *     loop (no partial unroll; a loud refusal beats silently wrong output).
+ *   - A `conditional` node (#2898) is foldable only when both `whenTrue` and
+ *     `whenFalse` are themselves nullish (a `null`/`undefined` expression
+ *     branch, matching `renderConditional`'s own empty-branch test) or
+ *     foldable per this same walk, AND its condition classifies via
+ *     `classifyBakedCondition` as item-literal (bakes to a Go literal
+ *     condition per item) or item-INDEPENDENT (falls through to the normal
+ *     reactive lowering unmodified — see that function's own docstring for
+ *     why each is safe). A condition that mixes item-bound and
+ *     item-independent names, or that can't be classified at all, bails the
+ *     whole loop — baking one branch per item while leaving the other's
+ *     markers/content out would desync from `renderConditional`'s
+ *     slot-marker pairing.
  *   - Every element attribute is `literal` / `boolean-attr` /
  *     `boolean-shorthand`, or a plain `expression` whose parsed kind is one
  *     of `identifier` / `member` / `index-access` / `literal`. An attribute
@@ -68,6 +80,8 @@
 
 import {
   evaluateStaticLiteral,
+  freeIdentifiers,
+  parseExpression,
   resolveStaticLoopSource,
   type ConstantInfo,
   type IRElement,
@@ -156,13 +170,27 @@ function isFoldableTree(nodes: readonly IRNode[]): boolean {
         if (!isFoldableAttrs(node)) return false
         if (!isFoldableTree(node.children)) return false
         continue
+      case 'conditional':
+        if (node.clientOnly) continue // renderClientOnlyConditional: item-independent comment markers.
+        if (!isFoldableBranch(node.whenTrue) || !isFoldableBranch(node.whenFalse)) return false
+        continue
       default:
-        // 'conditional' | 'loop' | 'component' | 'slot' | 'fragment' |
-        // 'if-statement' | 'provider' | 'async' — none foldable per-item.
+        // 'loop' | 'component' | 'slot' | 'fragment' | 'if-statement' |
+        // 'provider' | 'async' — none foldable per-item.
         return false
     }
   }
   return true
+}
+
+/** A conditional branch is foldable if it's a nullish (`null`/`undefined`) expression — `renderConditional` special-cases a nullish `whenFalse` with empty markers, and a nullish `whenTrue` renders as an empty string via the normal expression path — or itself a foldable tree. */
+function isFoldableBranch(node: IRNode): boolean {
+  if (isNullishBranch(node)) return true
+  return isFoldableTree([node])
+}
+
+function isNullishBranch(node: IRNode): boolean {
+  return node.type === 'expression' && (node.expr === 'null' || node.expr === 'undefined')
 }
 
 function isFoldableAttrs(element: IRElement): boolean {
@@ -199,6 +227,15 @@ function allExpressionsFoldFor(nodes: readonly IRNode[], bindings: ReadonlyMap<s
         if (!attr.value.parsed || !resolvesToScalar(attr.value.parsed, bindings)) return false
       }
       if (!allExpressionsFoldFor(node.children, bindings)) return false
+      continue
+    }
+    if (node.type === 'conditional') {
+      if (node.clientOnly) continue // renderClientOnlyConditional: item-independent comment markers.
+      const parsedCondition = node.parsedCondition ?? parseExpression(node.condition.trim())
+      if (classifyBakedCondition(parsedCondition, bindings) === null) return false
+      const branchFolds = (branch: IRNode) => isNullishBranch(branch) || allExpressionsFoldFor([branch], bindings)
+      if (!branchFolds(node.whenTrue) || !branchFolds(node.whenFalse)) return false
+      continue
     }
   }
   return true
@@ -208,4 +245,46 @@ function resolvesToScalar(expr: ParsedExpr, bindings: ReadonlyMap<string, unknow
   const resolved = evaluateStaticLiteral(expr, bindings)
   if (resolved === null) return false
   return scalarToGoLiteral(resolved.value) !== null
+}
+
+/**
+ * A conditional's condition, classified for per-item baking (#2898):
+ *   - `literal`: fully resolves via `evaluateStaticLiteral` against the item
+ *     bindings — the SAME value for this one item on every render, so the
+ *     caller substitutes the Go literal directly (`{{if true}}`) instead of
+ *     the runtime-evaluated condition.
+ *   - `independent`: references none of the item's bound names at all (a
+ *     signal call, an outer const, ...) — safe to fall through to the
+ *     adapter's normal `renderConditionExpr` lowering unmodified, since that
+ *     path never depends on the unrolled body's missing `{{range}}` dot
+ *     context in the first place.
+ *   - `null` (unclassifiable): the condition mixes item-bound and
+ *     item-independent names, `freeIdentifiers` can't analyze its shape, OR
+ *     it's item-bound but not literal-resolvable (e.g. `item.count > 0`,
+ *     `binary`/`logical` shapes `evaluateStaticLiteral` doesn't evaluate) —
+ *     the caller must bail (loud refusal, not a guess) rather than guess a
+ *     value. Not tracked as a separate capability gap: it's the same
+ *     `evaluateStaticLiteral` coverage boundary every other item-literal
+ *     bake in this module already accepts (`resolvesToScalar`, above).
+ */
+export type BakedCondition = { kind: 'literal'; go: string } | { kind: 'independent' }
+
+export function classifyBakedCondition(
+  expr: ParsedExpr,
+  bindings: ReadonlyMap<string, unknown>,
+): BakedCondition | null {
+  const resolved = evaluateStaticLiteral(expr, bindings)
+  if (resolved !== null) {
+    // A condition only needs its JS truthiness, not a printable value — so
+    // (unlike `resolvesToScalar`, used for text/attrs) a non-scalar or
+    // nullish resolved value still classifies, via the same truthiness Go's
+    // `{{if}}` and JS's `? :` already agree on for every other value kind.
+    return { kind: 'literal', go: resolved.value ? 'true' : 'false' }
+  }
+  const free = freeIdentifiers(expr)
+  if (free === null) return null
+  for (const name of bindings.keys()) {
+    if (free.has(name)) return null
+  }
+  return { kind: 'independent' }
 }

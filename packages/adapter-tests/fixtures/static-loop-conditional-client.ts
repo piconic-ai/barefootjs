@@ -1,16 +1,15 @@
 import { createFixture } from '../src/types'
 
 /**
- * `/* @client *​/` twin of `static-loop-conditional` (#2897 fix, #2898 Go
- * template refusal).
+ * `/* @client *​/` twin of `static-loop-conditional` (#2897 fix).
  *
  * The marker defers the whole loop to client evaluation, so SSR renders the
- * empty `<ul>` on EVERY adapter and no BF101 may fire — same suppression
- * contract as `filter-nested-callback-predicate-client.ts` /
- * `static-nested-loop-ref-client.ts`. Verifies the Go template adapter's
- * BF101 refusal (pinned in `conformance-pins.ts` for the non-@client
- * fixture, #2898) has a working escape, as its own diagnostic suggestion
- * claims.
+ * empty `<ul>` on EVERY adapter — same suppression contract as
+ * `filter-nested-callback-predicate-client.ts` / `static-nested-loop-ref-
+ * client.ts`. Originally authored to verify the Go template adapter's BF101
+ * refusal (#2898) had a working escape; #2898 later fixed the base fixture
+ * directly, so this twin is no longer required by the escape-coverage floor
+ * test — kept as its own standalone `/* @client *​/` suppression coverage.
  *
  * `items` is an EMPTY literal array (unlike the non-@client twin's
  * populated one) — CSR conformance compares `expectedHtml` against the

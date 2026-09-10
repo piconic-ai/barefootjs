@@ -80,4 +80,29 @@ export const conformancePins: ConformancePins = {
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
   'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
+  // #2911: `staticValueToPerl` (`adapter/lib/static-value.ts`) deliberately
+  // returns `null` for a `boolean` anywhere inside a static loop array's
+  // item shape — Perl has no native boolean literal, and baking `1`/`''`
+  // would diverge from JS's `String(true) === "true"` the moment that value
+  // is ever interpolated as text. This fixture's item shape has an `active:
+  // boolean` field (feeding a conditional, never interpolated as text
+  // itself), so the whole array fails to serialize and falls through to the
+  // generic "local computed value" BF101 refusal. Unrelated to #2898 (a
+  // Go-template-only fix) — this fixture happened to be the first to
+  // combine a boolean item field with a conditional in this adapter's own
+  // corpus.
+  'static-loop-item-conditional': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2911',
+  }],
+  // #2911: same trigger as `static-loop-item-conditional` above — this
+  // fixture's item shape has a `disabled: boolean` field (feeding a boolean
+  // HTML attribute rather than a conditional), found alongside it while
+  // reviewing #2898.
+  'static-loop-item-boolean-attr': [{
+    code: 'BF101',
+    severity: 'error',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2911',
+  }],
 }

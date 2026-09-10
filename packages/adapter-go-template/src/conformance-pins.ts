@@ -116,22 +116,19 @@ export const conformancePins: ConformancePins = {
     severity: 'error',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2893',
   }],
-  // #2897/#2898: `analyzeBakeableStaticElementLoop`'s `isFoldableTree` bails
-  // the whole bake when the row contains a `conditional` node anywhere
-  // (`static-loop-conditional`, a partial conditional alongside static
-  // siblings — no nested loop involved) or a `loop` node (`static-nested-
-  // loop-conditional`, whose OUTER row contains a nested `.map()` — the
-  // SAME #2893 nested-loop trigger; its own row's conditional never gets a
-  // chance to matter, the nested loop alone already bails). Both fall
-  // through to the generic "computed loop array" BF101 refusal. Unrelated
-  // to #2897's own fix (a client-JS-only reactive-wiring gap) — this is a
-  // pre-existing Go-adapter SSR static-loop-baking scope boundary the new
-  // fixtures happened to be the first to exercise.
-  'static-loop-conditional': [{
-    code: 'BF101',
-    severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2898',
-  }],
+  // #2893 (successor to #2897): `analyzeBakeableStaticElementLoop`'s
+  // `isFoldableTree` bails the whole bake when the row contains a nested
+  // `loop` node — `static-nested-loop-conditional`'s OUTER row has a nested
+  // `.map()`, the SAME #2893 nested-loop trigger; its own row's conditional
+  // never gets a chance to matter, the nested loop alone already bails.
+  // Falls through to the generic "computed loop array" BF101 refusal.
+  // Unrelated to #2897's own fix (a client-JS-only reactive-wiring gap) —
+  // this is a pre-existing Go-adapter SSR static-loop-baking scope boundary
+  // the new fixture happened to be the first to exercise. (The sibling
+  // `static-loop-conditional` shape — a `conditional` with no nested loop —
+  // graduated in #2898: `isFoldableTree` now allows a `conditional` node
+  // whose branches fold and whose condition classifies as item-literal or
+  // item-independent.)
   'static-nested-loop-conditional': [{
     code: 'BF101',
     severity: 'error',

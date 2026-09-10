@@ -426,6 +426,12 @@ import { fixture as staticNestedLoopRefPrecomputed } from './static-nested-loop-
 import { fixture as staticLoopConditional } from './static-loop-conditional'
 import { fixture as staticLoopConditionalPrecomputed } from './static-loop-conditional-precomputed'
 import { fixture as staticLoopConditionalClient } from './static-loop-conditional-client'
+import { fixture as staticLoopItemConditional } from './static-loop-item-conditional'
+import { fixture as staticLoopItemConditionalPrecomputed } from './static-loop-item-conditional-precomputed'
+import { fixture as staticLoopItemConditionalClient } from './static-loop-item-conditional-client'
+import { fixture as staticLoopItemBooleanAttr } from './static-loop-item-boolean-attr'
+import { fixture as staticLoopItemBooleanAttrPrecomputed } from './static-loop-item-boolean-attr-precomputed'
+import { fixture as staticLoopItemBooleanAttrClient } from './static-loop-item-boolean-attr-client'
 import { fixture as staticNestedLoopConditional } from './static-nested-loop-conditional'
 import { fixture as staticNestedLoopConditionalPrecomputed } from './static-nested-loop-conditional-precomputed'
 import { fixture as staticNestedLoopConditionalClient } from './static-nested-loop-conditional-client'
@@ -944,6 +950,12 @@ export const jsxFixtures: JSXFixture[] = [
   staticLoopConditional,
   staticLoopConditionalPrecomputed,
   staticLoopConditionalClient,
+  staticLoopItemConditional,
+  staticLoopItemConditionalPrecomputed,
+  staticLoopItemConditionalClient,
+  staticLoopItemBooleanAttr,
+  staticLoopItemBooleanAttrPrecomputed,
+  staticLoopItemBooleanAttrClient,
   staticNestedLoopConditional,
   staticNestedLoopConditionalPrecomputed,
   staticNestedLoopConditionalClient,

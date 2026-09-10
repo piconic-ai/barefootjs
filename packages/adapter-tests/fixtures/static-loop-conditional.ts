@@ -37,14 +37,4 @@ export const spec: SharedFixtureSpec = {
   ],
 }
 
-export const fixture: JSXFixture = {
-  ...defineSharedFixture(spec),
-  // Go template adapter refuses this shape with BF101 (#2898 — the row's
-  // conditional isn't foldable by the static-loop bake); the diagnostic's
-  // own suggestion names a prop-precompute/@client escape, verified by the
-  // twins below.
-  escapes: [
-    { kind: 'prop-precompute', fixture: 'static-loop-conditional-precomputed' },
-    { kind: 'client-directive', fixture: 'static-loop-conditional-client' },
-  ],
-}
+export const fixture: JSXFixture = defineSharedFixture(spec)

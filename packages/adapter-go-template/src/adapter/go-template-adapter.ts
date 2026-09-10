@@ -127,7 +127,7 @@ import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
-import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
+import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
@@ -7004,6 +7004,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): { condition: string; preamble: string } {
     const trimmed = jsCondition.trim()
     const parsed = preParsed ?? parseExpression(trimmed)
+
+    // #2898: inside a #2224 per-item unrolled static-array loop body there is
+    // no `{{range}}` dot-context for an item-bound condition to resolve
+    // against, so it must bake to a Go literal here (same reasoning as the
+    // `staticLoopItemStack` override in `convertExpressionToGo`). An
+    // item-independent condition needs no such rewrite and falls through to
+    // the normal path below. `classifyBakedCondition` returning `null` here
+    // is the same pre-verified invariant `convertExpressionToGo`'s override
+    // guards against, not a real path.
+    if (this.staticLoopItemStack.length > 0) {
+      const top = this.staticLoopItemStack[this.staticLoopItemStack.length - 1]
+      const classified = classifyBakedCondition(parsed, new Map([[top.param, top.item]]))
+      if (classified === null) {
+        this.staticLoopBakeFailed = true
+        return { condition: 'false', preamble: '' }
+      }
+      if (classified.kind === 'literal') {
+        return { condition: classified.go, preamble: '' }
+      }
+      // 'independent' — fall through to the normal lowering below.
+    }
+
     const support = isSupported(parsed)
 
     if (!support.supported) {
@@ -8153,6 +8175,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (css !== null) return `style="${css}"`
       }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
+        // Every boolean-attribute value routes through `convertConditionToGo`
+        // even when it's a plain item-bound expression (`disabled={item.x}`),
+        // not a `conditional` IR node — so #2898's `staticLoopItemStack` check
+        // there also fixes this path inside an unrolled static loop row (was
+        // a pre-existing silent divergence; `static-loop-item-boolean-attr`
+        // is its regression fixture).
         const { condition: goCond, preamble } = this.convertConditionToGo(value.expr, value.parsed)
         // ARIA attributes are string-valued ("true"/"false"), not HTML5 presence
         // booleans — the truthy presence form renders as `aria-x="true"`
