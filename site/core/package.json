@@ -29,6 +29,7 @@
     "@barefootjs/mojolicious": "workspace:*",
     "@barefootjs/rust": "workspace:*",
     "@barefootjs/twig": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
     "@barefootjs/xslate": "workspace:*",
     "@unocss/cli": "^66.0.0",
     "@unocss/preset-wind": "^66.0.0",
