@@ -380,6 +380,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private staticLoopBakeFailed = false
 
   /**
+   * Fold `staticLoopItemStack` (outer→inner) into one bindings map — an
+   * inner row (#2893) needs to resolve BOTH its own item param AND any
+   * outer loop's, not just the innermost entry (`item.id` read from inside
+   * a nested `item.children.map(child => ...)` row). Later entries win on a
+   * name collision, matching normal JS shadowing (`items.map(item =>
+   * item.children.map(item => ...))`, however unlikely). The SAME map shape
+   * `analyzeBakeableStaticElementLoop`'s per-item fold check builds, so the
+   * two can never disagree about what a name resolves to.
+   */
+  private staticLoopBindings(): ReadonlyMap<string, unknown> {
+    const bindings = new Map<string, unknown>()
+    for (const entry of this.staticLoopItemStack) bindings.set(entry.param, entry.item)
+    return bindings
+  }
+
+  /**
    * Cross-component child shapes, keyed by child component name. Populated via
    * `registerChildComponentShape` before the parent's `generateTypes`, so the
    * static-child-init codegen can route an attribute that is NOT a declared
@@ -6528,9 +6544,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // passes disagreed and the safest move is a sentinel, not a `.Field`
     // reference with no range context behind it.
     if (this.staticLoopItemStack.length > 0) {
-      const top = this.staticLoopItemStack[this.staticLoopItemStack.length - 1]
       const parsedForBake = preParsed ?? parseExpression(trimmed)
-      const resolved = evaluateStaticLiteral(parsedForBake, new Map([[top.param, top.item]]))
+      const resolved = evaluateStaticLiteral(parsedForBake, this.staticLoopBindings())
       const literal = resolved !== null ? scalarToGoLiteral(resolved.value) : null
       if (literal !== null) {
         // Deliberately leave `out.parsed` unset — a `template-literal`-kind
@@ -7014,8 +7029,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // is the same pre-verified invariant `convertExpressionToGo`'s override
     // guards against, not a real path.
     if (this.staticLoopItemStack.length > 0) {
-      const top = this.staticLoopItemStack[this.staticLoopItemStack.length - 1]
-      const classified = classifyBakedCondition(parsed, new Map([[top.param, top.item]]))
+      const classified = classifyBakedCondition(parsed, this.staticLoopBindings())
       if (classified === null) {
         this.staticLoopBakeFailed = true
         return { condition: 'false', preamble: '' }
@@ -7564,7 +7578,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       : analyzeBakeableStaticElementLoop(
           loop,
           this.state.localConstants,
-          { isNameShadowed: this.scope.asShadowPredicate() },
+          { isNameShadowed: this.scope.asShadowPredicate(), bindings: this.staticLoopBindings() },
         )
     if (bakedElementLoop) {
       return this.renderUnrolledStaticElementLoop(loop, bakedElementLoop.items)

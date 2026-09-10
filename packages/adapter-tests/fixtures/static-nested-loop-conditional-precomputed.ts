@@ -1,26 +1,17 @@
 import { createFixture } from '../src/types'
 
 /**
- * `prop-precompute` twin of `static-nested-loop-conditional` (#2893) — the
- * SECOND escape kind the Go template BF101 diagnostic claims, alongside
- * `static-nested-loop-conditional-client`.
+ * `prop-precompute` twin of `static-nested-loop-conditional`.
  *
- * The base refuses on the Go template adapter because `rows` is a
- * component-scope LOCAL const — `analyzeBakeableStaticElementLoop`'s
- * static-loop bake can't unroll the nested inner `.map()` (the SAME #2893
- * trigger `static-nested-loop-ref` already pins; the inner row's own
- * conditional never even gets a chance to matter — a nested `loop` node
- * alone already bails `isFoldableTree`). That refusal keys specifically on
- * `this.state.localConstants` (`go-template-adapter.ts`), so it never
- * fires for a PROP at all — a prop binds as an ordinary Go struct field.
- * Moving the array to a prop escapes with full SSR.
- *
- * This does NOT fix #2893 — the compiler still cannot bake a nested inner
- * `.map()` inside a LOCAL static array's row on the Go template adapter.
- * What it proves is that the refusal's first-listed escape genuinely
- * works, full SSR included, for this fixture specifically (mirroring
- * `static-nested-loop-ref-precomputed`'s already-proven twin for the
- * ref/text/attr sibling shape).
+ * Originally authored (#2893, before its nested-loop structural bail was
+ * fixed) to prove that moving `rows` from a component-scope LOCAL const to
+ * a PROP escaped the then-refusal — `analyzeBakeableStaticElementLoop`'s
+ * refusal keyed specifically on `this.state.localConstants`
+ * (`go-template-adapter.ts`), so it never fired for a prop at all. #2893's
+ * fix means the NON-@client base fixture now compiles clean on Go too (no
+ * refusal left to escape) — kept as its own coverage of a prop-derived
+ * nested-loop-plus-conditional shape, mirroring
+ * `static-nested-loop-ref-precomputed`'s sibling twin.
  */
 export const fixture = createFixture({
   id: 'static-nested-loop-conditional-precomputed',

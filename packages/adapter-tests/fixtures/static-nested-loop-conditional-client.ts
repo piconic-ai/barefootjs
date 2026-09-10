@@ -1,15 +1,16 @@
 import { createFixture } from '../src/types'
 
 /**
- * `/* @client *​/` twin of `static-nested-loop-conditional` (#2897 fix,
- * #2893 Go template refusal).
+ * `/* @client *​/` twin of `static-nested-loop-conditional` (#2897 fix).
  *
  * The marker defers the whole outer loop to client evaluation, so SSR
- * renders the empty `<ul>` on EVERY adapter and no BF101 may fire — same
- * suppression contract as `static-nested-loop-ref-client.ts`. Verifies the
- * Go template adapter's BF101 refusal (pinned in `conformance-pins.ts` for
- * the non-@client fixture, #2893) has a working escape, as its own
- * diagnostic suggestion claims.
+ * renders the empty `<ul>` on EVERY adapter — same suppression contract as
+ * `static-nested-loop-ref-client.ts`. Originally authored to verify the Go
+ * template adapter's BF101 refusal (then pinned to #2893) had a working
+ * escape; #2893 fixed the nested-loop structural bail so the NON-@client
+ * base fixture now compiles clean on Go too (no refusal left to escape) —
+ * kept as its own coverage of the `/* @client *​/` suppression contract on
+ * this nested-loop-plus-conditional shape.
  *
  * `rows` is an EMPTY literal array (unlike the non-@client twin's populated
  * one) — CSR conformance compares `expectedHtml` against the POST-HYDRATION

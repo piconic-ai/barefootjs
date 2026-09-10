@@ -6128,18 +6128,23 @@ export function List() {
     expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
   })
 
-  test('gate: a nested loop inside the body keeps the BF101 refusal', () => {
+  test('#2893: a nested loop inside the body bakes (recurses per outer item)', () => {
     const result = compileJSX(
       `
 export function List() {
   const items = [{ label: 'Alpha', tags: ['x', 'y'] }]
-  return <ul>{items.map(item => <li key={item.label}>{item.tags.map(t => <span>{t}</span>)}</li>)}</ul>
+  return <ul>{items.map(item => <li key={item.label}>{item.tags.map(t => <span key={t}>{t}</span>)}</li>)}</ul>
 }
 `,
       'test.tsx',
       { adapter: new GoTemplateAdapter() },
     )
-    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('{{"x"}}')
+    expect(template).toContain('{{"y"}}')
+    // No `{{range}}` anywhere — both levels unroll to literal Go template text.
+    expect(template).not.toContain('{{range')
   })
 
   test('gate: a non-scalar item field (array/object) keeps the BF101 refusal', () => {

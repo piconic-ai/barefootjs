@@ -5515,50 +5515,6 @@
         "text"
       ]
     },
-    "static-loop-item-boolean-attr": {
-      "kinds": [
-        "array-literal",
-        "identifier",
-        "literal",
-        "member",
-        "object-literal"
-      ],
-      "axes": [
-        "literal:boolean",
-        "literal:number",
-        "literal:string"
-      ],
-      "contexts": [
-        "attribute",
-        "loop",
-        "text"
-      ]
-    },
-    "static-loop-item-boolean-attr-client": {
-      "kinds": [
-        "array-literal",
-        "identifier",
-        "member"
-      ],
-      "axes": [],
-      "contexts": [
-        "attribute",
-        "loop",
-        "text"
-      ]
-    },
-    "static-loop-item-boolean-attr-precomputed": {
-      "kinds": [
-        "identifier",
-        "member"
-      ],
-      "axes": [],
-      "contexts": [
-        "attribute",
-        "loop",
-        "text"
-      ]
-    },
     "static-loop-item-conditional": {
       "kinds": [
         "array-literal",
@@ -5666,6 +5622,40 @@
         "attribute",
         "condition",
         "loop"
+      ]
+    },
+    "static-nested-loop-depth2": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-nested-loop-plain": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "static-nested-loop-ref": {
@@ -6559,12 +6549,12 @@
     "binary": 104,
     "call": 274,
     "conditional": 31,
-    "identifier": 383,
+    "identifier": 382,
     "index-access": 14,
-    "literal": 306,
+    "literal": 307,
     "logical": 49,
-    "member": 225,
-    "object-literal": 89,
+    "member": 224,
+    "object-literal": 90,
     "template-literal": 31,
     "unary": 29,
     "unsupported": 50
@@ -6605,10 +6595,10 @@
     "binary:===": 54,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 69,
+    "literal:boolean": 68,
     "literal:null": 26,
-    "literal:number": 137,
-    "literal:string": 211,
+    "literal:number": 138,
+    "literal:string": 210,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,

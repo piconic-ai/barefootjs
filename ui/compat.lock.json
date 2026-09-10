@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 405,
+    "totalFixtures": 404,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -3479,34 +3479,6 @@
           }
         }
       },
-      "static-loop-item-boolean-attr": {
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2911"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "static-loop-item-boolean-attr-precomputed"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2911"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "static-loop-item-boolean-attr-precomputed"
-          }
-        }
-      },
       "static-loop-item-conditional": {
         "mojolicious": {
           "kind": "refusal",
@@ -3535,21 +3507,6 @@
           }
         }
       },
-      "static-nested-loop-conditional": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2893"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "static-nested-loop-conditional-precomputed"
-          }
-        }
-      },
       "static-nested-loop-ref": {
         "go-template": {
           "kind": "refusal",
@@ -3557,7 +3514,7 @@
             "BF101"
           ],
           "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2893"
+            "https://github.com/piconic-ai/barefootjs/issues/2909"
           ],
           "escape": {
             "state": "escapable",
@@ -3737,17 +3694,9 @@
         "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
       },
-      "static-loop-item-boolean-attr": {
-        "description": "static array's .map() row boolean attribute keyed off the item itself renders per item (#2898)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-boolean-attr.ts"
-      },
       "static-loop-item-conditional": {
         "description": "static array's .map() row conditional keyed off the item itself bakes to a per-item Go literal…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-conditional.ts"
-      },
-      "static-nested-loop-conditional": {
-        "description": "a static outer array + depth-1 inner loop row conditional swaps live, not frozen at its SSR-time…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-conditional.ts"
       },
       "static-nested-loop-ref": {
         "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
@@ -3813,20 +3762,12 @@
         "description": "prop-precompute twin of static-array-from-props-with-component — child components render at SSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-precomputed.ts"
       },
-      "static-loop-item-boolean-attr-precomputed": {
-        "description": "prop-precompute twin of static-loop-item-boolean-attr — items moved to a prop, full SSR (#2898,…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-boolean-attr-precomputed.ts"
-      },
       "static-loop-item-conditional-precomputed": {
         "description": "prop-precompute twin of static-loop-item-conditional — items moved to a prop, full SSR (#2898,…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-conditional-precomputed.ts"
       },
-      "static-nested-loop-conditional-precomputed": {
-        "description": "prop-precompute twin of static-nested-loop-conditional — rows moved to a prop, full SSR (#2893)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-conditional-precomputed.ts"
-      },
       "static-nested-loop-ref-precomputed": {
-        "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2893)",
+        "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
       }
     }

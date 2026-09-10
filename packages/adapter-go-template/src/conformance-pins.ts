@@ -101,37 +101,21 @@ export const conformancePins: ConformancePins = {
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
   'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
-  // #2893: `analyzeBakeableStaticElementLoop`'s static-array bake (Go's only
-  // path to bind a static/non-signal array as a loop source — `html/template`
-  // has no slice literal syntax) bails the WHOLE loop when the body contains
-  // a nested `loop` node (module docstring, `static-element-loop-bake.ts`).
-  // This fixture's outer static array's row has a nested `.map()` over
-  // `item.children`, so it falls through to the generic "computed loop
-  // array" BF101 refusal. Unrelated to #2798's own fix (a client-JS-only
-  // ref/reactive-binding gap) — this is a pre-existing Go-adapter SSR
-  // static-loop-baking scope boundary the new fixture happened to be the
-  // first to exercise.
+  // #2893's nested-loop STRUCTURAL bail (the whole reason this fixture used
+  // to refuse — see #2893's own minimal `static-nested-loop-plain` fixture,
+  // which now compiles clean) is fixed: `analyzeBakeableStaticElementLoop`
+  // recurses into a nested `loop` node through the same analysis, resolving
+  // its array (`item.children`, a member read off the OUTER item) via
+  // `evaluateStaticLiteral` against the accumulated outer→inner bindings.
+  // This fixture still refuses for a DIFFERENT, narrower reason: its inner
+  // row also reads a signal (`count()`) in TEXT position, which
+  // `allExpressionsFoldFor`'s plain-`expression` case has no
+  // item-independent escape hatch for (unlike a `conditional`'s own
+  // condition, #2898's `classifyBakedCondition`) — tracked separately as
+  // #2909.
   'static-nested-loop-ref': [{
     code: 'BF101',
     severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2893',
-  }],
-  // #2893 (successor to #2897): `analyzeBakeableStaticElementLoop`'s
-  // `isFoldableTree` bails the whole bake when the row contains a nested
-  // `loop` node — `static-nested-loop-conditional`'s OUTER row has a nested
-  // `.map()`, the SAME #2893 nested-loop trigger; its own row's conditional
-  // never gets a chance to matter, the nested loop alone already bails.
-  // Falls through to the generic "computed loop array" BF101 refusal.
-  // Unrelated to #2897's own fix (a client-JS-only reactive-wiring gap) —
-  // this is a pre-existing Go-adapter SSR static-loop-baking scope boundary
-  // the new fixture happened to be the first to exercise. (The sibling
-  // `static-loop-conditional` shape — a `conditional` with no nested loop —
-  // graduated in #2898: `isFoldableTree` now allows a `conditional` node
-  // whose branches fold and whose condition classifies as item-literal or
-  // item-independent.)
-  'static-nested-loop-conditional': [{
-    code: 'BF101',
-    severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2893',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2909',
   }],
 }

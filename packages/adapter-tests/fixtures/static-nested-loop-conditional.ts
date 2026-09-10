@@ -42,15 +42,4 @@ export const spec: SharedFixtureSpec = {
   ],
 }
 
-export const fixture: JSXFixture = {
-  ...defineSharedFixture(spec),
-  // Go template adapter refuses this shape with BF101 (#2893 — the SAME
-  // nested-loop-present bail `static-nested-loop-ref` already pins; the
-  // inner row's own conditional never gets a chance to matter). The
-  // diagnostic's own suggestion names a prop-precompute/@client escape,
-  // verified by the twins below.
-  escapes: [
-    { kind: 'prop-precompute', fixture: 'static-nested-loop-conditional-precomputed' },
-    { kind: 'client-directive', fixture: 'static-nested-loop-conditional-client' },
-  ],
-}
+export const fixture: JSXFixture = defineSharedFixture(spec)

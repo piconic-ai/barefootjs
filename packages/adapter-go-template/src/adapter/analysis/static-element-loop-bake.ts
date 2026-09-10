@@ -38,9 +38,22 @@
  *     conditional (`bodyIsItemConditional`) — those need anchor-marker
  *     machinery this pass doesn't attempt to reproduce per item.
  *   - Every node anywhere in the body's IR tree is an `element`, `text`,
- *     `expression`, or `conditional` — a nested `loop`, `component`, `slot`,
- *     `fragment`, `if-statement`, `provider`, or `async` bails the WHOLE
- *     loop (no partial unroll; a loud refusal beats silently wrong output).
+ *     `expression`, `conditional`, or (#2893) a nested `loop` — a
+ *     `component`, `slot`, `fragment`, `if-statement`, `provider`, or
+ *     `async` bails the WHOLE loop (no partial unroll; a loud refusal beats
+ *     silently wrong output).
+ *   - A nested `loop` node (#2893, e.g. `item.children.map(child => ...)`)
+ *     is foldable only when it independently satisfies every one of THIS
+ *     module's own gates (`isBakeableLoopShape` — no child component, not
+ *     `.flatMap()`, plain non-destructured param, no index param, no
+ *     filter/sort, not multi-root/whole-item-conditional) AND its own body
+ *     is foldable by this same recursive walk. Its array need not be a
+ *     named const — `item.children` (a member read off the OUTER item) also
+ *     resolves, via `evaluateStaticLiteral` against the accumulating
+ *     outer→inner bindings map (`resolveBakedLoopSource`) rather than
+ *     `resolveStaticLoopSource`'s named-const-only path. Arbitrarily deep
+ *     nesting composes for free: each level's per-item pass adds its own
+ *     param to the SAME bindings map before recursing into the next.
  *   - A `conditional` node (#2898) is foldable only when both `whenTrue` and
  *     `whenFalse` are themselves nullish (a `null`/`undefined` expression
  *     branch, matching `renderConditional`'s own empty-branch test) or
@@ -118,41 +131,88 @@ type LoopShape = Pick<
   | 'objectIteration'
   | 'method'
   | 'flatMapCallback'
+  | 'clientOnly'
 >
+
+type BakeOpts = { isNameShadowed?: (name: string) => boolean; bindings?: ReadonlyMap<string, unknown> }
+
+const EMPTY_BINDINGS: ReadonlyMap<string, unknown> = new Map()
+
+/**
+ * The 9 shape gates every bakeable loop (outer or nested, #2893) must pass,
+ * independent of whether its own body/array happen to resolve. Split out
+ * from `analyzeBakeableStaticElementLoop` so a nested `loop` node can be
+ * gated the SAME way as the outer one, by the same code.
+ */
+function isBakeableLoopShape(loop: LoopShape): boolean {
+  if (loop.childComponent) return false // #2208's own path handles this shape.
+  // `.flatMap()`: an item can fold to 0+ elements, and a complex callback
+  // carries its body out-of-band (`flatMapCallback`, `children` left empty)
+  // rather than in `children` — either way this pass's per-item, single-
+  // element-tree model doesn't apply. Out of scope.
+  if (loop.method === 'flatMap' || loop.flatMapCallback) return false
+  if (!loop.param || /^[{[]/.test(loop.param)) return false
+  if (loop.index && loop.index !== '_') return false
+  if (loop.paramBindings && loop.paramBindings.length > 0) return false
+  if (loop.filterPredicate || loop.sortComparator) return false
+  if (loop.iterationShape || loop.objectIteration) return false
+  if (loop.bodyIsMultiRoot || loop.bodyIsItemConditional) return false
+  return true
+}
 
 /**
  * Analyze a `.map()` loop with a plain-element (non-component) body for
  * static unrolling. Returns the resolved item values (ready for the caller
  * to render the body once per item) or `null` when the shape isn't (yet)
  * bakeable this way — see the acceptance criteria in the module docstring.
+ * `opts.bindings` carries an already-baked OUTER item (#2893, recursing
+ * into a nested loop) — absent/empty at the top-level call.
  */
 export function analyzeBakeableStaticElementLoop(
   loop: LoopShape,
   localConstants: ReadonlyArray<ConstantInfo>,
-  opts?: { isNameShadowed?: (name: string) => boolean },
+  opts?: BakeOpts,
 ): BakedStaticElementLoop | null {
-  if (loop.childComponent) return null // #2208's own path handles this shape.
-  // `.flatMap()`: an item can fold to 0+ elements, and a complex callback
-  // carries its body out-of-band (`flatMapCallback`, `children` left empty)
-  // rather than in `children` — either way this pass's per-item, single-
-  // element-tree model doesn't apply. Out of scope.
-  if (loop.method === 'flatMap' || loop.flatMapCallback) return null
-  if (!loop.param || /^[{[]/.test(loop.param)) return null
-  if (loop.index && loop.index !== '_') return null
-  if (loop.paramBindings && loop.paramBindings.length > 0) return null
-  if (loop.filterPredicate || loop.sortComparator) return null
-  if (loop.iterationShape || loop.objectIteration) return null
-  if (loop.bodyIsMultiRoot || loop.bodyIsItemConditional) return null
+  if (!isBakeableLoopShape(loop)) return null
   if (!isFoldableTree(loop.children)) return null
 
-  const items = resolveStaticLoopSource(loop.arrayParsed, localConstants, opts)
+  const outerBindings = opts?.bindings ?? EMPTY_BINDINGS
+  const items = resolveBakedLoopSource(loop.arrayParsed, localConstants, outerBindings, opts)
   if (items === null) return null
 
   for (const item of items) {
-    const bindings = new Map<string, unknown>([[loop.param, item]])
-    if (!allExpressionsFoldFor(loop.children, bindings)) return null
+    const bindings = new Map(outerBindings)
+    bindings.set(loop.param, item)
+    if (!allExpressionsFoldFor(loop.children, bindings, localConstants, opts)) return null
   }
   return { items }
+}
+
+/**
+ * Resolve a loop's array source against the accumulated outer-item
+ * bindings (#2893). A bare identifier NOT already bound to an outer item
+ * (the top-level loop's own array, or an inner loop whose array happens to
+ * be a plain name) goes through `resolveStaticLoopSource`'s named
+ * function/module-scope-const resolution, unchanged from before. Anything
+ * else — a member/index-access read off a bound outer item
+ * (`item.children`), or any other foldable expression shape — resolves via
+ * `evaluateStaticLiteral` against the SAME bindings map the per-item fold
+ * check uses, so the two can never disagree about what an inner loop's
+ * array evaluates to.
+ */
+function resolveBakedLoopSource(
+  arrayParsed: ParsedExpr | undefined,
+  localConstants: ReadonlyArray<ConstantInfo>,
+  bindings: ReadonlyMap<string, unknown>,
+  opts?: { isNameShadowed?: (name: string) => boolean },
+): unknown[] | null {
+  if (!arrayParsed) return null
+  if (!(arrayParsed.kind === 'identifier' && bindings.has(arrayParsed.name))) {
+    const resolved = resolveStaticLoopSource(arrayParsed, localConstants, opts)
+    if (resolved !== null) return resolved
+  }
+  const evaluated = evaluateStaticLiteral(arrayParsed, bindings)
+  return Array.isArray(evaluated?.value) ? evaluated.value : null
 }
 
 /**
@@ -174,9 +234,17 @@ function isFoldableTree(nodes: readonly IRNode[]): boolean {
         if (node.clientOnly) continue // renderClientOnlyConditional: item-independent comment markers.
         if (!isFoldableBranch(node.whenTrue) || !isFoldableBranch(node.whenFalse)) return false
         continue
+      case 'loop':
+        // #2893: a nested loop's per-item resolvability (its array against
+        // the OUTER item, its own body against ITS item) is checked later in
+        // `allExpressionsFoldFor`, where the accumulating bindings map is
+        // available — here just the structural (item-independent) shape.
+        if (node.clientOnly) continue // client-deferred: item-independent, SSR renders nothing for it.
+        if (!isBakeableLoopShape(node) || !isFoldableTree(node.children)) return false
+        continue
       default:
-        // 'loop' | 'component' | 'slot' | 'fragment' | 'if-statement' |
-        // 'provider' | 'async' — none foldable per-item.
+        // 'component' | 'slot' | 'fragment' | 'if-statement' | 'provider' |
+        // 'async' — none foldable per-item.
         return false
     }
   }
@@ -213,7 +281,12 @@ function isFoldableAttrs(element: IRElement): boolean {
 }
 
 /** Per-item pass: every expression actually resolves to a bakeable scalar. */
-function allExpressionsFoldFor(nodes: readonly IRNode[], bindings: ReadonlyMap<string, unknown>): boolean {
+function allExpressionsFoldFor(
+  nodes: readonly IRNode[],
+  bindings: ReadonlyMap<string, unknown>,
+  localConstants: ReadonlyArray<ConstantInfo>,
+  opts?: BakeOpts,
+): boolean {
   for (const node of nodes) {
     if (node.type === 'expression') {
       if (node.clientOnly) continue // renders as an item-independent marker.
@@ -226,15 +299,25 @@ function allExpressionsFoldFor(nodes: readonly IRNode[], bindings: ReadonlyMap<s
         if (attr.value.kind !== 'expression') continue
         if (!attr.value.parsed || !resolvesToScalar(attr.value.parsed, bindings)) return false
       }
-      if (!allExpressionsFoldFor(node.children, bindings)) return false
+      if (!allExpressionsFoldFor(node.children, bindings, localConstants, opts)) return false
       continue
     }
     if (node.type === 'conditional') {
       if (node.clientOnly) continue // renderClientOnlyConditional: item-independent comment markers.
       const parsedCondition = node.parsedCondition ?? parseExpression(node.condition.trim())
       if (classifyBakedCondition(parsedCondition, bindings) === null) return false
-      const branchFolds = (branch: IRNode) => isNullishBranch(branch) || allExpressionsFoldFor([branch], bindings)
+      const branchFolds = (branch: IRNode) => isNullishBranch(branch) || allExpressionsFoldFor([branch], bindings, localConstants, opts)
       if (!branchFolds(node.whenTrue) || !branchFolds(node.whenFalse)) return false
+      continue
+    }
+    if (node.type === 'loop') {
+      // #2893: recurse the WHOLE analysis (shape gates + structural fold +
+      // per-item fold) for the nested loop, seeded with the bindings
+      // accumulated so far — `analyzeBakeableStaticElementLoop` adds its own
+      // param on top before checking ITS body, so a third level nests the
+      // same way a second one does.
+      if (node.clientOnly) continue
+      if (analyzeBakeableStaticElementLoop(node, localConstants, { ...opts, bindings }) === null) return false
       continue
     }
   }
