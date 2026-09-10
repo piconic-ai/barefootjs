@@ -4,7 +4,7 @@
  */
 
 import ts from 'typescript'
-import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode } from '../types.ts'
+import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode, IRFragment, ComponentIR } from '../types.ts'
 import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
@@ -35,6 +35,20 @@ export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loop
  * Short name to minimize client JS bundle size.
  */
 export const PROPS_PARAM = '_p'
+
+/**
+ * True when the component's rendered root is a comment-scoped proxy rather
+ * than an element carrying its own `bf-s`/`bf-h` scope id directly — the
+ * `comment: true` def flag's condition (`emit-registration.ts`), computed
+ * here so `generate-init.ts` can decide the SAME thing before that phase
+ * runs (#2910). Two shapes share this: a genuine `needsScopeComment`
+ * fragment root (SSR wraps it in `<!--bf-scope:-->`) and a root that is
+ * itself a single child-component call (`root.type === 'component'`, #2649)
+ * — the wrapping comment marks a scope with no DOM presence of its own.
+ */
+export function isCommentScopedRoot(root: ComponentIR['root']): boolean {
+  return (root.type === 'fragment' && !!(root as IRFragment).needsScopeComment) || root.type === 'component'
+}
 
 /**
  * Get the data-key attribute name for a given loop depth.

@@ -1806,6 +1806,7 @@ function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
     assignedIdentifiers: extractAssignedIdentifiersFromNode(node),
+    mutatedIdentifiers: extractMutatedIdentifiersFromNode(node),
     // Init statements run inside the component's init function, so they
     // belong to `init` scope. Phase is conservatively `hydrate` (run-once
     // at hydration). relocate() can refine this when consuming the field.
@@ -1896,28 +1897,8 @@ function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
     ) {
       return
     }
-    if (ts.isBinaryExpression(n)) {
-      const op = n.operatorToken.kind
-      if (
-        op === ts.SyntaxKind.EqualsToken ||
-        op === ts.SyntaxKind.PlusEqualsToken ||
-        op === ts.SyntaxKind.MinusEqualsToken ||
-        op === ts.SyntaxKind.AsteriskEqualsToken ||
-        op === ts.SyntaxKind.SlashEqualsToken ||
-        op === ts.SyntaxKind.PercentEqualsToken ||
-        op === ts.SyntaxKind.AsteriskAsteriskEqualsToken ||
-        op === ts.SyntaxKind.AmpersandEqualsToken ||
-        op === ts.SyntaxKind.BarEqualsToken ||
-        op === ts.SyntaxKind.CaretEqualsToken ||
-        op === ts.SyntaxKind.LessThanLessThanEqualsToken ||
-        op === ts.SyntaxKind.GreaterThanGreaterThanEqualsToken ||
-        op === ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken ||
-        op === ts.SyntaxKind.AmpersandAmpersandEqualsToken ||
-        op === ts.SyntaxKind.BarBarEqualsToken ||
-        op === ts.SyntaxKind.QuestionQuestionEqualsToken
-      ) {
-        addFromTarget(n.left)
-      }
+    if (ts.isBinaryExpression(n) && isAssignmentOperator(n.operatorToken.kind)) {
+      addFromTarget(n.left)
     }
     if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) {
       if (
@@ -1938,6 +1919,126 @@ function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
   for (const name of localDecls) ids.delete(name)
 
   return ids
+}
+
+/**
+ * Method names that mutate their receiver in place. Used only to recognise
+ * `<root>.<method>(...)` calls as mutating the root identifier (#2910) —
+ * NOT to model array/collection semantics generally, so this stays a small,
+ * explicit catalogue rather than a heuristic over every possible method.
+ */
+const MUTATING_METHOD_NAMES: ReadonlySet<string> = new Set([
+  'push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin',
+  'set', 'add', 'delete', 'clear',
+])
+
+/**
+ * Collect identifiers mutated IN PLACE by a statement — a property/element
+ * write (`config[k] = …`, `config.a.b += 1`), an `Object.assign(config, …)`
+ * call, or a call to a known mutating method on the receiver
+ * (`items.push(...)`) — as opposed to `extractAssignedIdentifiersFromNode`,
+ * which only tracks reassignment of the BINDING itself (#2910).
+ *
+ * This distinction matters because `expandDynamicPropValue` /
+ * `expandConstantForReactivity` (`ir-to-client-js/prop-handling.ts`) inline
+ * a `localConstants` entry's DECLARATION-TIME initializer text wherever the
+ * bare identifier is referenced. A `const config = {}` later populated by
+ * `for (const s of series) config[s.key] = {...}` never reassigns `config`
+ * itself — `extractAssignedIdentifiersFromNode` (correctly) reports no
+ * assigned identifiers, since `config[s.key] = …` doesn't create an
+ * implicit global — but the compiler must still know `config`'s value is
+ * no longer just `{}` by the time this statement has run, so a consumer
+ * that inlines the stale literal (instead of referencing the live `config`
+ * binding) silently drops everything the mutation was supposed to do. See
+ * `ConstantInfo.mutatedAfterDeclaration` for where this is consumed.
+ */
+function extractMutatedIdentifiersFromNode(node: ts.Node): Set<string> {
+  const ids = new Set<string>()
+
+  function rootIdentifierOf(expr: ts.Expression): string | null {
+    let current: ts.Expression = expr
+    while (true) {
+      if (ts.isIdentifier(current)) return current.text
+      if (ts.isParenthesizedExpression(current)) { current = current.expression; continue }
+      if (ts.isNonNullExpression(current)) { current = current.expression; continue }
+      if (ts.isPropertyAccessExpression(current)) { current = current.expression; continue }
+      if (ts.isElementAccessExpression(current)) { current = current.expression; continue }
+      return null
+    }
+  }
+
+  function visit(n: ts.Node): void {
+    // Same init/sub-init boundary as `extractAssignedIdentifiersFromNode`:
+    // a mutation inside a nested function literal doesn't run at init time.
+    if (
+      ts.isArrowFunction(n) ||
+      ts.isFunctionExpression(n) ||
+      ts.isFunctionDeclaration(n) ||
+      ts.isMethodDeclaration(n) ||
+      ts.isGetAccessorDeclaration(n) ||
+      ts.isSetAccessorDeclaration(n) ||
+      ts.isConstructorDeclaration(n)
+    ) {
+      return
+    }
+
+    if (ts.isBinaryExpression(n) && isAssignmentOperator(n.operatorToken.kind)) {
+      if (ts.isPropertyAccessExpression(n.left) || ts.isElementAccessExpression(n.left)) {
+        const root = rootIdentifierOf(n.left)
+        if (root) ids.add(root)
+      }
+    } else if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) {
+      const isIncDec = n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken
+      if (isIncDec && (ts.isPropertyAccessExpression(n.operand) || ts.isElementAccessExpression(n.operand))) {
+        const root = rootIdentifierOf(n.operand)
+        if (root) ids.add(root)
+      }
+    } else if (ts.isCallExpression(n)) {
+      const callee = n.expression
+      if (ts.isPropertyAccessExpression(callee)) {
+        const methodName = callee.name.text
+        if (MUTATING_METHOD_NAMES.has(methodName)) {
+          const root = rootIdentifierOf(callee.expression)
+          if (root) ids.add(root)
+        } else if (
+          methodName === 'assign' &&
+          ts.isIdentifier(callee.expression) &&
+          callee.expression.text === 'Object' &&
+          n.arguments.length > 0
+        ) {
+          // `Object.assign(target, ...)` mutates `target` in place.
+          const root = rootIdentifierOf(n.arguments[0])
+          if (root) ids.add(root)
+        }
+      }
+    }
+
+    ts.forEachChild(n, visit)
+  }
+
+  visit(node)
+  return ids
+}
+
+function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
+  return (
+    kind === ts.SyntaxKind.EqualsToken ||
+    kind === ts.SyntaxKind.PlusEqualsToken ||
+    kind === ts.SyntaxKind.MinusEqualsToken ||
+    kind === ts.SyntaxKind.AsteriskEqualsToken ||
+    kind === ts.SyntaxKind.SlashEqualsToken ||
+    kind === ts.SyntaxKind.PercentEqualsToken ||
+    kind === ts.SyntaxKind.AsteriskAsteriskEqualsToken ||
+    kind === ts.SyntaxKind.AmpersandEqualsToken ||
+    kind === ts.SyntaxKind.BarEqualsToken ||
+    kind === ts.SyntaxKind.CaretEqualsToken ||
+    kind === ts.SyntaxKind.LessThanLessThanEqualsToken ||
+    kind === ts.SyntaxKind.GreaterThanGreaterThanEqualsToken ||
+    kind === ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken ||
+    kind === ts.SyntaxKind.AmpersandAmpersandEqualsToken ||
+    kind === ts.SyntaxKind.BarBarEqualsToken ||
+    kind === ts.SyntaxKind.QuestionQuestionEqualsToken
+  )
 }
 
 /**
@@ -3899,6 +4000,11 @@ function validateContext(ctx: AnalyzerContext): void {
     }
   }
 
+  // A same-scope statement (typically a `for`/`while` loop) may mutate a
+  // `localConstants` binding after its declaration — flag those bindings so
+  // downstream inlining never re-embeds their stale initializer text (#2910).
+  markMutatedConstants(ctx)
+
   // BF052: init statements that write to an identifier with no visible
   // declaration cause a ReferenceError in ESM strict mode. Flag them
   // at compile time instead of shipping broken client JS. (#933)
@@ -4160,6 +4266,35 @@ function fileHasUseClientDirective(filePath: string): boolean {
   }
   visit(sf)
   return found
+}
+
+/**
+ * Flag every `localConstants` entry a same-scope init statement mutates
+ * after its declaration (#2910) — see `ConstantInfo.mutatedAfterDeclaration`
+ * for why this matters and who reads it. Runs once, after the whole
+ * component (and module-level) body has been walked, since the mutating
+ * statement is a SEPARATE statement from the declaration and may follow it
+ * by any number of lines.
+ *
+ * Deliberately keyed off BOTH `mutatedIdentifiers` (in-place writes) and
+ * `assignedIdentifiers` (whole-binding reassignment, e.g. a `let` later
+ * written to): both leave `ConstantInfo.value` stale, and
+ * `expandDynamicPropValue` inlines `value` for `let` bindings exactly the
+ * same way it does for `const`.
+ */
+function markMutatedConstants(ctx: AnalyzerContext): void {
+  if (ctx.initStatements.length === 0 || ctx.localConstants.length === 0) return
+
+  const mutatedNames = new Set<string>()
+  for (const stmt of ctx.initStatements) {
+    if (stmt.mutatedIdentifiers) for (const name of stmt.mutatedIdentifiers) mutatedNames.add(name)
+    if (stmt.assignedIdentifiers) for (const name of stmt.assignedIdentifiers) mutatedNames.add(name)
+  }
+  if (mutatedNames.size === 0) return
+
+  for (const constant of ctx.localConstants) {
+    if (mutatedNames.has(constant.name)) constant.mutatedAfterDeclaration = true
+  }
 }
 
 function validateInitStatementReferences(ctx: AnalyzerContext): void {

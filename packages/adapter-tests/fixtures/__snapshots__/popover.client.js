@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, provideContext, renderChild, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, trackPosition, useContext } from '@barefootjs/client/runtime'
 
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -242,7 +242,7 @@ hydrate('PopoverClose', { init: initPopoverClose, template: (_p) => `<button dat
 export function PopoverClose(_p, __bfKey) { return createComponent('PopoverClose', _p, __bfKey) }
 export function initPopoverPreviewDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [open, setOpen] = createSignal(false)
 
@@ -278,7 +278,7 @@ hydrate('PopoverPreviewDemo', { init: initPopoverPreviewDemo, template: (_p) => 
 export function PopoverPreviewDemo(_p, __bfKey) { return createComponent('PopoverPreviewDemo', _p, __bfKey) }
 export function initPopoverBasicDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [open, setOpen] = createSignal(false)
 
@@ -314,7 +314,7 @@ hydrate('PopoverBasicDemo', { init: initPopoverBasicDemo, template: (_p) => `${r
 export function PopoverBasicDemo(_p, __bfKey) { return createComponent('PopoverBasicDemo', _p, __bfKey) }
 export function initPopoverFormDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [open, setOpen] = createSignal(false)
   const [saved, setSaved] = createSignal(false)

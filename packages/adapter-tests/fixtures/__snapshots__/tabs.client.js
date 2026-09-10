@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, hydrate, initChild, markupOrEmpty, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, hydrate, initChild, markupOrEmpty, ownScopeId, renderChild } from '@barefootjs/client/runtime'
 
 export function initTabs(__scope, _p = {}) {
   if (!__scope) return
@@ -185,7 +185,7 @@ hydrate('TabsContent', { init: initTabsContent, template: (_p) => `<div data-slo
 export function TabsContent(_p, __bfKey) { return createComponent('TabsContent', _p, __bfKey) }
 export function initTabsBasicDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [activeTab, setActiveTab] = createSignal('account')
   const isAccountSelected = createMemo(() => activeTab() === 'account')
@@ -280,7 +280,7 @@ hydrate('TabsBasicDemo', { init: initTabsBasicDemo, template: (_p) => `${renderC
 export function TabsBasicDemo(_p, __bfKey) { return createComponent('TabsBasicDemo', _p, __bfKey) }
 export function initTabsMultipleDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [activeTab, setActiveTab] = createSignal('overview')
   const isOverviewSelected = createMemo(() => activeTab() === 'overview')
@@ -439,7 +439,7 @@ hydrate('TabsMultipleDemo', { init: initTabsMultipleDemo, template: (_p) => `${r
 export function TabsMultipleDemo(_p, __bfKey) { return createComponent('TabsMultipleDemo', _p, __bfKey) }
 export function initTabsDisabledDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [activeTab, setActiveTab] = createSignal('active')
   const isActiveSelected = createMemo(() => activeTab() === 'active')

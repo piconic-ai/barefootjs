@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, markupOrEmpty, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, markupOrEmpty, ownScopeId, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3185,7 +3185,7 @@ hydrate('AccordionContent', { init: initAccordionContent, template: (_p) => `<di
 export function AccordionContent(_p, __bfKey) { return createComponent('AccordionContent', _p, __bfKey) }
 export function initAccordionSingleOpenDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [openItem, setOpenItem] = createSignal('item-1')
 
@@ -3291,7 +3291,7 @@ hydrate('AccordionAsChildDemo', { init: initAccordionAsChildDemo, template: (_p)
 export function AccordionAsChildDemo(_p, __bfKey) { return createComponent('AccordionAsChildDemo', _p, __bfKey) }
 export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
+  const __scopeId = ownScopeId(__scope)
 
   const [item1Open, setItem1Open] = createSignal(true)
   const [item2Open, setItem2Open] = createSignal(false)

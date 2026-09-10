@@ -10,7 +10,7 @@
 
 import type { ComponentIR } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { PROPS_PARAM } from './utils.ts'
+import { PROPS_PARAM, isCommentScopedRoot } from './utils.ts'
 import { buildReferencesGraph } from './build-references.ts'
 import { computePropUsage } from './compute-prop-usage.ts'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports.ts'
@@ -44,7 +44,21 @@ export function generateInitFunction(
   // Host scope id for (bf-h, bf-m) child lookups inside this init body
   // (#1249). Compile-time selectors emit
   // `[bf-h="${__scopeId}"][bf-m="<slotId>"]` against this value.
-  lines.push(`  const __scopeId = __scope.getAttribute('${BF_SCOPE}')`)
+  //
+  // A comment-scoped root (`comment: true` — a `needsScopeComment` fragment
+  // root, or a root that is itself a single child-component call, #2649) is
+  // mounted on a PROXY element whose OWN `bf-s` attribute names its
+  // host/parent scope, not this component's — this component's real id
+  // lives in the comment-scope registry the proxy was registered under
+  // (`ownScopeId`, #2910). Reading the raw attribute there resolves to the
+  // wrong id, so every `.map()`-produced child this component's init tries
+  // to find via `[bf-h="${__scopeId}"]` silently matches nothing. An
+  // element-scoped root keeps reading the attribute directly.
+  lines.push(
+    isCommentScopedRoot(ir.root)
+      ? `  const __scopeId = ownScopeId(__scope)`
+      : `  const __scopeId = __scope.getAttribute('${BF_SCOPE}')`,
+  )
   lines.push('')
 
   // --- Analysis: one graph, many queries; scope routing as data ---

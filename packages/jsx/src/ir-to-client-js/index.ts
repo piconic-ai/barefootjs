@@ -256,6 +256,12 @@ function hasInitScopeOnlyConstant(ctx: ClientJsContext): boolean {
   for (const c of ctx.localConstants) {
     if (c.isModule || c.isJsx || c.containsArrow || c.systemConstructKind) continue
     if (!c.value) continue
+    // A mutated binding's value is a pre-mutation snapshot (#2910) —
+    // `isInlinableInTemplate` would happily pass a value like `{}` that
+    // looks safe on its own, but the mutating statement that gives it its
+    // real value only runs in init scope, so the const needs init scope
+    // exactly as if the value itself had failed the check.
+    if (c.mutatedAfterDeclaration) return true
     if (!isInlinableInTemplate(c.value, env).ok) return true
   }
   return false

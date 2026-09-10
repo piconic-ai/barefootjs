@@ -61,6 +61,12 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // rewrite targets `formatDate(recv, pattern, tz)`, so the emitted code
   // needs the runtime export when the component didn't import it itself.
   'formatDate',
+  // A comment-scoped component's own scope id (#2910) — reads the
+  // `commentScopeRegistry` entry the proxy element was registered under
+  // (falling back to its `bf-s` attribute for an element-scoped root), so
+  // `[bf-h="${__scopeId}"]` child lookups target THIS component's children
+  // rather than the proxy's host/parent scope. See `generate-init.ts`.
+  'ownScopeId',
 ] as const
 
 /** @deprecated Use RUNTIME_IMPORT_CANDIDATES */

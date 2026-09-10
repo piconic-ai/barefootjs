@@ -6,7 +6,7 @@
 
 import type { ComponentIR, IRFragment, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { PROPS_PARAM } from './utils.ts'
+import { PROPS_PARAM, isCommentScopedRoot } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
@@ -215,7 +215,7 @@ export function emitRegistrationAndHydration(
   //     DOM presence of its own, and `materializeComponent` must leave
   //     `scopeId` null so it doesn't stamp over (or duplicate) the child's.
   const isFragmentRoot = _ir.root.type === 'fragment' && !!(_ir.root as IRFragment).needsScopeComment
-  const isCommentScope = isFragmentRoot || _ir.root.type === 'component'
+  const isCommentScope = isCommentScopedRoot(_ir.root)
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]

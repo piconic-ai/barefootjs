@@ -383,6 +383,32 @@ function materializeComponent(
     _parentScopeId = scopeId
   } else if (slot?.parent) {
     _parentScopeId = slot.parent
+    // A comment wrapper materialized here with a real DESTINATION
+    // (`mountAt`/`rowMount` — the shape `upsertChild`'s CSR-create branch
+    // always produces, e.g. a comment-wrapper component used as an
+    // ordinary named child) is a NESTED/slotted mount, not the top-level
+    // bare mount the `!_parentScopeId` branch below covers (#2910
+    // follow-up — pullfrog review on this PR). Without this,
+    // `wrapperScopeId` stays null, `commentScopeId` below resolves to
+    // null, and this wrapper's proxy never gets a `commentScopeRegistry`
+    // entry — so `ownScopeId()` falls through to the proxy's own `bf-s`
+    // (the wrapped child's scope, not this wrapper's), the exact failure
+    // this PR fixes for hydration, now reached via pure CSR instead.
+    // `derivedScopeId` is this wrapper's own scope identity per the SSR
+    // convention (`${hostScope}_${slotId}`) — it's already computed above
+    // but withheld from `scopeId` for comment wrappers (line 342) because
+    // there's no element of the wrapper's own to stamp it onto; here it
+    // still needs to be registered under, since the wrapped child (this
+    // mount's proxy) doesn't carry it as its own `bf-s`.
+    //
+    // Gated on `mountAt || rowMount` (a real place for the boundary
+    // comments this derivation triggers to land) so a bare mount with a
+    // slot and no destination — #1320's "hoisted-children placeholder
+    // resolves against `slot.parent`" contract, `issue-2757-top-level-
+    // comment-wrapper-scope.test.ts`'s explicitly-pinned "unchanged" case —
+    // keeps returning the bare element instead of a newly-wrapped
+    // DocumentFragment.
+    if (isCommentWrapper && (mountAt || rowMount)) wrapperScopeId = derivedScopeId
   } else if (!_parentScopeId) {
     wrapperScopeId = `${def?.name ?? name}_${generateId()}`
     _parentScopeId = wrapperScopeId
