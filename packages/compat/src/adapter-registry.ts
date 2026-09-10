@@ -44,6 +44,15 @@ const COMPAT_ADAPTERS: CompatAdapterSpec[] = [
   { pkg: '@barefootjs/xslate', className: 'XslateAdapter' },
 ]
 
+/**
+ * The registered `TemplateAdapter` package names, statically available
+ * without dynamic-importing (and therefore building) each package first.
+ * `adapter-doc-catalog.ts` diffs its own family list against this to keep
+ * the README / docs adapter tables from drifting when a package is added
+ * here without a matching catalog entry.
+ */
+export const COMPAT_ADAPTER_PACKAGES: readonly string[] = COMPAT_ADAPTERS.map(a => a.pkg)
+
 export interface LoadedCompatAdapter {
   /** Matrix column id — the adapter's own `.name` (e.g. 'go-template'), NOT the package name. */
   id: string
