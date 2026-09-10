@@ -79,7 +79,7 @@
           ]
         },
         "erb": {
-          "pass": 102,
+          "pass": 101,
           "total": 113,
           "gaps": [
             {
@@ -122,6 +122,10 @@
             },
             {
               "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-nested-loop-shadowed-param",
               "issues": []
             },
             {
@@ -2375,7 +2379,7 @@
           ]
         },
         "erb": {
-          "pass": 367,
+          "pass": 366,
           "total": 386,
           "gaps": [
             {
@@ -2457,6 +2461,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "static-nested-loop-shadowed-param",
+              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -3211,7 +3219,7 @@
           ]
         },
         "erb": {
-          "pass": 297,
+          "pass": 296,
           "total": 309,
           "gaps": [
             {
@@ -3259,6 +3267,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "static-nested-loop-shadowed-param",
+              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -3921,7 +3933,7 @@
           ]
         },
         "erb": {
-          "pass": 210,
+          "pass": 209,
           "total": 228,
           "gaps": [
             {
@@ -3999,6 +4011,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "static-nested-loop-shadowed-param",
+              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -4635,7 +4651,7 @@
           ]
         },
         "erb": {
-          "pass": 89,
+          "pass": 88,
           "total": 92,
           "gaps": [
             {
@@ -4647,6 +4663,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "static-nested-loop-shadowed-param",
+              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -8158,7 +8178,7 @@
           ]
         },
         "erb": {
-          "pass": 135,
+          "pass": 134,
           "total": 140,
           "gaps": [
             {
@@ -8175,6 +8195,10 @@
             },
             {
               "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "static-nested-loop-shadowed-param",
               "issues": []
             },
             {
