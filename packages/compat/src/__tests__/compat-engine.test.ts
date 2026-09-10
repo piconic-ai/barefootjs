@@ -49,22 +49,22 @@ describe('compileForCompat', () => {
     // successor to #2038), #2321 (static-array-from-props computed loop
     // source), #2700 (a `derived` object-literal signal/memo the
     // constructor-time baker can't reproduce, `signal-object-spread-init`),
-    // #2805 (a named jsx-children prop routed into a child's rest bag,
-    // `jsx-element-prop-rest-bag-dynamic`), and #2909 (a signal/memo call
-    // read inside a nested static loop's row, `static-nested-loop-ref`)
-    // surface here even though this test only exercises the
-    // nested-filter-callback shape. Five pins are no longer among them,
-    // each because the shape got a real lowering rather than a narrower
-    // refusal: #2319 (dangerous-inner-html-dynamic → a faithful raw-output
-    // lowering), #2208 (static-array-children → the loop-source gate bakes
-    // a fully-static array-of-objects const), #2448 (loop-row child prop
-    // override feeding a derived field → the child rebuilds itself per row
-    // through `bf_reprops`), #2898 (a conditional inside a static array's
-    // row with no nested loop → `isFoldableTree` now bakes it), and #2893
-    // (a nested `.map()`'s own structural bail → the bake now recurses into
-    // a nested loop; `static-nested-loop-conditional` graduated outright,
-    // `static-nested-loop-ref` still refuses but for the narrower #2909
-    // reason). See `go-template`'s `conformance-pins.ts`.
+    // and #2909 (a signal/memo call read inside a nested static loop's row,
+    // `static-nested-loop-ref`) surface here even though this test only
+    // exercises the nested-filter-callback shape. Six pins are no longer
+    // among them, each because the shape got a real lowering rather than a
+    // narrower refusal: #2319 (dangerous-inner-html-dynamic → a faithful
+    // raw-output lowering), #2208 (static-array-children → the loop-source
+    // gate bakes a fully-static array-of-objects const), #2448 (loop-row
+    // child prop override feeding a derived field → the child rebuilds
+    // itself per row through `bf_reprops`), #2898 (a conditional inside a
+    // static array's row with no nested loop → `isFoldableTree` now bakes
+    // it), #2893 (a nested `.map()`'s own structural bail → the bake now
+    // recurses into a nested loop; `static-nested-loop-conditional`
+    // graduated outright, `static-nested-loop-ref` still refuses but for the
+    // narrower #2909 reason), and #2805 (a named jsx-children prop routed
+    // into a child's rest bag → `bf_with_bag`/`WithBagEntry` delivers it
+    // instead of refusing). See `go-template`'s `conformance-pins.ts`.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
@@ -73,7 +73,6 @@ describe('compileForCompat', () => {
           'https://github.com/piconic-ai/barefootjs/issues/2320',
           'https://github.com/piconic-ai/barefootjs/issues/2321',
           'https://github.com/piconic-ai/barefootjs/issues/2700',
-          'https://github.com/piconic-ai/barefootjs/issues/2805',
           'https://github.com/piconic-ai/barefootjs/issues/2909',
         ],
       },

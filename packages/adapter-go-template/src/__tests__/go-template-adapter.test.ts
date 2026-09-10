@@ -119,15 +119,11 @@ runAdapterConformanceTests({
     'todo-app',
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
-    // `jsx-element-prop-fragment-conditional` (#2703) no longer skipped —
-    // renders correctly since named jsx-children props got the same
-    // `bf_with_props`/`bf_tmpl` dynamic-delivery route reserved `children`
-    // already had.
-    // #2805: this shape refuses with BF101 at compile time (see
-    // `conformance-pins.ts`) — `expectedDiagnostics` covers the diagnostic
-    // contract, and marker comparison can't apply to a fixture that
-    // produces no complete template.
-    'jsx-element-prop-rest-bag-dynamic',
+    // `jsx-element-prop-fragment-conditional` (#2703) and
+    // `jsx-element-prop-rest-bag-dynamic` (#2805) no longer skipped — both
+    // render correctly since named jsx-children props got the same
+    // dynamic-delivery route reserved `children` already had (`bf_with_props`
+    // for a declared field, `bf_with_bag` for a rest-bag key).
   ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {

@@ -199,6 +199,12 @@ func FuncMap() template.FuncMap {
 		// bf_with_children.
 		"bf_with_props": WithProps,
 
+		// Per-row/per-slot override of ONE entry in a child's rest-bag field
+		// (#2805) — the dynamic-delivery route for a jsx-children prop that
+		// only reaches the child through its `{ ...rest }` binding, which
+		// bf_with_props cannot target (no named struct field exists for it).
+		"bf_with_bag": WithBagEntry,
+
 		// Per-row props for a child whose CONSTRUCTOR derives a field from
 		// the overridden prop (#2448). bf_with_props patches fields on the
 		// shared instance and cannot re-run New<Child>Props, so a memo body
@@ -3095,6 +3101,56 @@ func WithProps(props interface{}, kv ...interface{}) (interface{}, error) {
 			return nil, fmt.Errorf("bf_with_props: field %s: %w", name, err)
 		}
 	}
+	return copyPtr.Elem().Interface(), nil
+}
+
+// WithBagEntry returns a shallow copy of props with ONE entry set in its
+// map[string]any rest-bag field (#2805) — the dynamic-delivery counterpart
+// of WithProps for a jsx-children prop that routes into a child's rest bag
+// (captured only via `{ ...rest }`, never a declared named field), which has
+// no struct field WithProps could target directly. Unlike WithProps'
+// unmatched-name passthrough, a missing/non-map bagField is an error here:
+// the compiler only emits this call after resolving a real rest-bag field on
+// the child's shape, so a miss means the generated template and struct
+// disagree — a compiler bug, not a runtime possibility to shrug off.
+func WithBagEntry(props interface{}, bagField, key string, val interface{}) (interface{}, error) {
+	v := reflect.ValueOf(props)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return props, nil
+	}
+	copyPtr := reflect.New(v.Type())
+	copyPtr.Elem().Set(v)
+	target := copyPtr.Elem().FieldByName(bagField)
+	if !target.IsValid() || !target.CanSet() || target.Kind() != reflect.Map || target.Type().Key().Kind() != reflect.String {
+		return nil, fmt.Errorf("bf_with_bag: field %s on %s is not a settable map[string]... rest bag", bagField, v.Type())
+	}
+	// The map is cloned, not mutated in place — the base instance (a
+	// template-shared static slot, or a loop row's shared constructor
+	// output, same sharing WithProps' own doc comment describes) must stay
+	// untouched by one row's override.
+	mapType := target.Type()
+	newMap := reflect.MakeMapWithSize(mapType, target.Len()+1)
+	for _, k := range target.MapKeys() {
+		newMap.SetMapIndex(k, target.MapIndex(k))
+	}
+	elemType := mapType.Elem()
+	valueToSet := reflect.Zero(elemType)
+	if val != nil {
+		rv := reflect.ValueOf(val)
+		switch {
+		case rv.Type().AssignableTo(elemType):
+			valueToSet = rv
+		case rv.Type().ConvertibleTo(elemType):
+			valueToSet = rv.Convert(elemType)
+		default:
+			return nil, fmt.Errorf("bf_with_bag: cannot assign %T to %s value", val, elemType)
+		}
+	}
+	newMap.SetMapIndex(reflect.ValueOf(key), valueToSet)
+	target.Set(newMap)
 	return copyPtr.Elem().Interface(), nil
 }
 
