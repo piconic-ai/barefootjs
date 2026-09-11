@@ -1,0 +1,73 @@
+# CI — Slides
+#
+# The peitho slide decks under site/core/slides/<slug>/ are built at deploy
+# time (deploy.yml), not committed. This job runs the same build on pull
+# requests so a deck that stops compiling — a slot contract violation, a
+# component that no longer builds against the workspace compiler — fails
+# here instead of breaking the production deploy.
+name: CI — Slides
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/core/slides/**'
+      - 'site/core/scripts/build-slides.ts'
+      - '.github/workflows/ci-slides.yml'
+  pull_request:
+    paths:
+      - 'site/core/slides/**'
+      - 'site/core/scripts/build-slides.ts'
+      - '.github/workflows/ci-slides.yml'
+
+permissions:
+  contents: read
+
+# Keep in sync with deploy.yml (same release, same checksum).
+env:
+  PEITHO_VERSION: 1.26.0
+  PEITHO_SHA256: 2c962785f1541de2ed41dcc44d261e9689c361a179ec9051769cedd82cdf7c2f
+
+concurrency:
+  group: ci-slides-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Install peitho
+        run: |
+          NAME="peitho-v${PEITHO_VERSION}-x86_64-unknown-linux-gnu"
+          curl -sSL -o peitho.tar.gz "https://github.com/mizzy/peitho/releases/download/v${PEITHO_VERSION}/${NAME}.tar.gz"
+          echo "${PEITHO_SHA256}  peitho.tar.gz" | sha256sum --check
+          tar -xzf peitho.tar.gz
+          sudo mv "${NAME}/peitho" /usr/local/bin/peitho
+          rm -rf peitho.tar.gz "${NAME}"
+          peitho --version
+
+      - name: Build slide decks
+        run: cd site/core && bun run slides:build --all
+
+      - name: Check output
+        run: |
+          for deck in site/core/slides/*/; do
+            slug=$(basename "$deck")
+            test -f "site/core/public/slides/$slug/index.html" || { echo "::error::no output for $slug"; exit 1; }
+          done

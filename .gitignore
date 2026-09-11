@@ -127,3 +127,6 @@ Gemfile.lock
 benchmarks/results/
 benchmarks/**/.babel-out*/
 benchmarks/ssr/apps/*/.build-temp/
+
+# peitho slide decks: built at deploy time from site/core/slides/<slug>/ (deploy.yml)
+site/core/public/slides/

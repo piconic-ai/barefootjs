@@ -13,6 +13,9 @@
  *   by fixed URL instead of through a bundled chunk)
  * - dist/uno.css + dist/static/globals.css (tokens + globals + landing)
  * - dist/static/logos/, dist/static/snippets/, icons
+ * - dist/slides/ (public/slides/** copied verbatim — peitho decks built by
+ *   `bun run slides:build`, see scripts/build-slides.ts; absent locally
+ *   until you build one)
  * - dist/playground/ (worker + page script + Monaco type bundle)
  * - dist/_headers, dist/llms.txt, dist/robots.txt
  */
@@ -210,6 +213,33 @@ for (const file of logoFiles) {
 }
 if (logoFiles.length > 0) {
   console.log(`Copied: dist/logos/, dist/static/logos/ (${logoFiles.length} files)`)
+}
+
+// ── 8a. Copy public/slides/** → dist/slides/** (peitho decks built by
+// `bun run slides:build`; deploy.yml runs it before this script, so the
+// directory may be absent in a plain local build) ─────────────────
+async function copyDirRecursive(srcDir: string, destDir: string): Promise<number> {
+  let count = 0
+  const entries = await readdir(srcDir, { withFileTypes: true }).catch(() => [])
+  for (const entry of entries) {
+    const srcPath = join(srcDir, entry.name)
+    const destPath = join(destDir, entry.name)
+    if (entry.isDirectory()) {
+      await mkdir(destPath, { recursive: true })
+      count += await copyDirRecursive(srcPath, destPath)
+    } else {
+      await Bun.write(destPath, Bun.file(srcPath))
+      count++
+    }
+  }
+  return count
+}
+const PUBLIC_SLIDES_DIR = resolve(ROOT_DIR, 'public/slides')
+const DIST_SLIDES_DIR = resolve(DIST_DIR, 'slides')
+await mkdir(DIST_SLIDES_DIR, { recursive: true })
+const slidesFileCount = await copyDirRecursive(PUBLIC_SLIDES_DIR, DIST_SLIDES_DIR)
+if (slidesFileCount > 0) {
+  console.log(`Copied: dist/slides/ (${slidesFileCount} files)`)
 }
 
 // ── 8b. Build playground worker + page script ─────────────────

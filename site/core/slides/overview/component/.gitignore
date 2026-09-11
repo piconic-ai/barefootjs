@@ -1,0 +1,4 @@
+# Build output of `bun run slides:build overview` (site/core/scripts/build-slides.ts):
+# vite's dist/ and the entry it writes there. The bundled deck.js lands in
+# site/core/public/slides/overview/assets/, which is gitignored too.
+dist

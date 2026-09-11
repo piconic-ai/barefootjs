@@ -1,0 +1,12 @@
+<section class="peitho-slide layout-command">
+  <header class="head">
+    <div class="head-rule" aria-hidden="true"></div>
+    <h1><slot name="title" accepts="inline" arity="1"></slot></h1>
+  </header>
+  <figure class="code command-code">
+    <slot name="code" accepts="code" arity="1"></slot>
+  </figure>
+  <div class="command-note slot-body-wrap">
+    <slot name="body" accepts="blocks" arity="0..1"></slot>
+  </div>
+</section>

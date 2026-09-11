@@ -1,0 +1,12 @@
+<!--
+  Tetris swallows arrows / Space / Enter at the window capture phase while mounted
+  (see component/Tetris.tsx), so from this slide only PageDown or a click moves on.
+-->
+<section class="peitho-slide layout-game">
+  <header class="head game-head">
+    <div class="head-rule" aria-hidden="true"></div>
+    <h1><slot name="title" accepts="inline" arity="1"></slot></h1>
+    <div class="game-hint slot-body-wrap"><slot name="body" accepts="blocks" arity="0..1"></slot></div>
+  </header>
+  <div class="bf-mount game-mount" data-bf="Tetris"></div>
+</section>
