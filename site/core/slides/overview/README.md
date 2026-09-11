@@ -13,9 +13,8 @@ This is an in-progress prototype, not a polished/final deck.
 - `css/base.css` — deck styling.
 - `css/0-fonts.css` — the deck's web fonts, embedded as data URIs (generated
   from `fontsrc/`, which is not checked in — see below).
-- `assets/hero.mp4` + `assets/hero.jpg` — the cover slide's background video
-  and its poster frame. `assets/SOURCES.md` records where they came from and
-  their license.
+- `assets/SOURCES.md` — the record of any third-party media shipped with the
+  deck (currently none; see "Hero media" below).
 - `component/` — a small Vite project that compiles the deck's interactive
   BarefootJS components (`component/components/*.tsx`) with `@barefootjs/vite`
   and `CSRAdapter`, and bundles the result into a single client script. It
@@ -40,7 +39,7 @@ needs the already-embedded `css/0-fonts.css` at runtime, and `component/dist/`
 
 The output (`site/core/public/slides/overview/`: peitho's distribution viewer,
 `index.html`, `manifest.json`, `peitho.css`, `slides/*.html`, plus
-`assets/{hero.mp4,hero.jpg,deck.js}`) is not committed. The deploy workflow
+`assets/deck.js`) is not committed. The deploy workflow
 installs a pinned peitho release and builds every deck before the site build;
 pull requests touching `slides/**` run the same build (`ci-slides.yml`).
 
@@ -55,8 +54,11 @@ build; point `PEITHO` at it when it is not on PATH.) Then `bun run build` copies
 it into `dist/slides/overview/` and `bun run server.tsx` serves it at
 `/slides/overview/`.
 
-## Hero media license
+## Hero media
 
-`assets/hero.mp4` (7.6 MB) and `assets/hero.jpg` — see
-`assets/SOURCES.md` for the source and license (Mixkit Stock Video Free
-License; free for commercial use, no attribution required).
+The deck ships no third-party media. The cover originally used a Mixkit beach
+clip recorded here as free for commercial use; the clip's own page turned out
+to say "720p version for personal use only" (Mixkit Restricted License), so it
+was removed. `assets/SOURCES.md` records this. Any replacement needs a license
+that clearly permits public commercial use, recorded there with source URL,
+author, license and the date it was checked.
