@@ -46,6 +46,7 @@ type PaginationPropsWithHydration = PaginationProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -56,6 +57,7 @@ type PaginationContentPropsWithHydration = PaginationContentProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -66,6 +68,7 @@ type PaginationItemPropsWithHydration = PaginationItemProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -76,6 +79,7 @@ type PaginationPreviousPropsWithHydration = PaginationPrevNextProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -86,6 +90,7 @@ type PaginationNextPropsWithHydration = PaginationPrevNextProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -96,6 +101,7 @@ type PaginationEllipsisPropsWithHydration = PaginationEllipsisProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -104,7 +110,7 @@ type PaginationEllipsisPropsWithHydration = PaginationEllipsisProps & {
 
 export type { PaginationLinkProps }
 
-export function Pagination({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPropsWithHydration = {} as PaginationPropsWithHydration) {
+export function Pagination({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPropsWithHydration = {} as PaginationPropsWithHydration) {
   const __scopeId = __instanceId || `Pagination_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -114,9 +120,17 @@ export function Pagination({ className = '', children, __instanceId, __bfScope: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -128,7 +142,7 @@ export function Pagination({ className = '', children, __instanceId, __bfScope: 
   )
 }
 
-export function PaginationContent({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationContentPropsWithHydration = {} as PaginationContentPropsWithHydration) {
+export function PaginationContent({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationContentPropsWithHydration = {} as PaginationContentPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationContent_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -138,9 +152,17 @@ export function PaginationContent({ className = '', children, __instanceId, __bf
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -152,7 +174,7 @@ export function PaginationContent({ className = '', children, __instanceId, __bf
   )
 }
 
-export function PaginationItem({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationItemPropsWithHydration = {} as PaginationItemPropsWithHydration) {
+export function PaginationItem({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationItemPropsWithHydration = {} as PaginationItemPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationItem_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -162,9 +184,17 @@ export function PaginationItem({ className = '', children, __instanceId, __bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -176,8 +206,8 @@ export function PaginationItem({ className = '', children, __instanceId, __bfSco
   )
 }
 
-export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `PaginationLink_${Math.random().toString(36).slice(2, 8)}`
   const size = () => props.size ?? 'icon'
 
@@ -188,9 +218,17 @@ export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.isActive === 'object' && props.isActive !== null && 'isEscaped' in props.isActive)) __hydrateProps['isActive'] = props.isActive
     if (!(typeof props.size === 'object' && props.size !== null && 'isEscaped' in props.size)) __hydrateProps['size'] = props.size
@@ -203,7 +241,7 @@ export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?
   )
 }
 
-export function PaginationPrevious({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPreviousPropsWithHydration = {} as PaginationPreviousPropsWithHydration) {
+export function PaginationPrevious({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPreviousPropsWithHydration = {} as PaginationPreviousPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationPrevious_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -213,9 +251,17 @@ export function PaginationPrevious({ className = '', children, __instanceId, __b
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationPrevious', {})
@@ -226,7 +272,7 @@ export function PaginationPrevious({ className = '', children, __instanceId, __b
   )
 }
 
-export function PaginationNext({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationNextPropsWithHydration = {} as PaginationNextPropsWithHydration) {
+export function PaginationNext({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationNextPropsWithHydration = {} as PaginationNextPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationNext_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -236,9 +282,17 @@ export function PaginationNext({ className = '', children, __instanceId, __bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationNext', {})
@@ -249,7 +303,7 @@ export function PaginationNext({ className = '', children, __instanceId, __bfSco
   )
 }
 
-export function PaginationEllipsis({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationEllipsisPropsWithHydration = {} as PaginationEllipsisPropsWithHydration) {
+export function PaginationEllipsis({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationEllipsisPropsWithHydration = {} as PaginationEllipsisPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationEllipsis_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -259,9 +313,17 @@ export function PaginationEllipsis({ className = '', __instanceId, __bfScope: _b
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PaginationEllipsis', {})

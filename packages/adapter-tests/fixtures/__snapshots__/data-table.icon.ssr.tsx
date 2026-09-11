@@ -47,6 +47,7 @@ type CheckIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -57,6 +58,7 @@ type ChevronDownIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -67,6 +69,7 @@ type ChevronUpIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -77,6 +80,7 @@ type ChevronLeftIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -87,6 +91,7 @@ type ChevronRightIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -97,6 +102,7 @@ type XIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -107,6 +113,7 @@ type PlusIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -117,6 +124,7 @@ type MinusIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -127,6 +135,7 @@ type SunIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -137,6 +146,7 @@ type MoonIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -147,6 +157,7 @@ type MonitorIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -157,6 +168,7 @@ type CopyIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -167,6 +179,7 @@ type ClipboardIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -177,6 +190,7 @@ type ClipboardCheckIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -187,6 +201,7 @@ type MenuIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -197,6 +212,7 @@ type ArrowLeftIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -207,6 +223,7 @@ type ArrowRightIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -217,6 +234,7 @@ type ArrowUpDownIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -227,6 +245,7 @@ type EllipsisIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -237,6 +256,7 @@ type GitHubIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -247,6 +267,7 @@ type SettingsIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -257,6 +278,7 @@ type GlobeIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -267,6 +289,7 @@ type LogOutIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -277,6 +300,7 @@ type CircleHelpIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -287,6 +311,7 @@ type SearchIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -297,6 +322,7 @@ type CircleCheckIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -307,6 +333,7 @@ type CircleXIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -317,6 +344,7 @@ type TriangleAlertIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -327,6 +355,7 @@ type InfoIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -337,6 +366,7 @@ type CalendarIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -347,6 +377,7 @@ type GripVerticalIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -357,6 +388,7 @@ type LoaderCircleIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -367,6 +399,7 @@ type PanelLeftIconPropsWithHydration = IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -377,13 +410,14 @@ type IconPropsWithHydration = { name: IconName } & IconProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
   "data-key"?: string | number
 }
 
-export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CheckIconPropsWithHydration = {} as CheckIconPropsWithHydration) {
+export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CheckIconPropsWithHydration = {} as CheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `CheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -394,9 +428,17 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -408,7 +450,7 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronDownIconPropsWithHydration = {} as ChevronDownIconPropsWithHydration) {
+export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronDownIconPropsWithHydration = {} as ChevronDownIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -419,9 +461,17 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -433,7 +483,7 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronUpIconPropsWithHydration = {} as ChevronUpIconPropsWithHydration) {
+export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronUpIconPropsWithHydration = {} as ChevronUpIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronUpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -444,9 +494,17 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -458,7 +516,7 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronLeftIconPropsWithHydration = {} as ChevronLeftIconPropsWithHydration) {
+export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronLeftIconPropsWithHydration = {} as ChevronLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -469,9 +527,17 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -483,7 +549,7 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronRightIconPropsWithHydration = {} as ChevronRightIconPropsWithHydration) {
+export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronRightIconPropsWithHydration = {} as ChevronRightIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -494,9 +560,17 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -508,7 +582,7 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
   )
 }
 
-export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: XIconPropsWithHydration = {} as XIconPropsWithHydration) {
+export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: XIconPropsWithHydration = {} as XIconPropsWithHydration) {
   const __scopeId = __instanceId || `XIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -519,9 +593,17 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -533,7 +615,7 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
   )
 }
 
-export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PlusIconPropsWithHydration = {} as PlusIconPropsWithHydration) {
+export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PlusIconPropsWithHydration = {} as PlusIconPropsWithHydration) {
   const __scopeId = __instanceId || `PlusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -544,9 +626,17 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -558,7 +648,7 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MinusIconPropsWithHydration = {} as MinusIconPropsWithHydration) {
+export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MinusIconPropsWithHydration = {} as MinusIconPropsWithHydration) {
   const __scopeId = __instanceId || `MinusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -569,9 +659,17 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -583,7 +681,7 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SunIconPropsWithHydration = {} as SunIconPropsWithHydration) {
+export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SunIconPropsWithHydration = {} as SunIconPropsWithHydration) {
   const __scopeId = __instanceId || `SunIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -594,9 +692,17 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -608,7 +714,7 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
   )
 }
 
-export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MoonIconPropsWithHydration = {} as MoonIconPropsWithHydration) {
+export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MoonIconPropsWithHydration = {} as MoonIconPropsWithHydration) {
   const __scopeId = __instanceId || `MoonIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -619,9 +725,17 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -633,7 +747,7 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MonitorIconPropsWithHydration = {} as MonitorIconPropsWithHydration) {
+export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MonitorIconPropsWithHydration = {} as MonitorIconPropsWithHydration) {
   const __scopeId = __instanceId || `MonitorIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -644,9 +758,17 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -658,7 +780,7 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
   )
 }
 
-export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CopyIconPropsWithHydration = {} as CopyIconPropsWithHydration) {
+export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CopyIconPropsWithHydration = {} as CopyIconPropsWithHydration) {
   const __scopeId = __instanceId || `CopyIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -669,9 +791,17 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -683,7 +813,7 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardIconPropsWithHydration = {} as ClipboardIconPropsWithHydration) {
+export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardIconPropsWithHydration = {} as ClipboardIconPropsWithHydration) {
   const __scopeId = __instanceId || `ClipboardIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -694,9 +824,17 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -708,7 +846,7 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardCheckIconPropsWithHydration = {} as ClipboardCheckIconPropsWithHydration) {
+export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardCheckIconPropsWithHydration = {} as ClipboardCheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `ClipboardCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -719,9 +857,17 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -733,7 +879,7 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
   )
 }
 
-export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MenuIconPropsWithHydration = {} as MenuIconPropsWithHydration) {
+export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MenuIconPropsWithHydration = {} as MenuIconPropsWithHydration) {
   const __scopeId = __instanceId || `MenuIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -744,9 +890,17 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -758,7 +912,7 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowLeftIconPropsWithHydration = {} as ArrowLeftIconPropsWithHydration) {
+export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowLeftIconPropsWithHydration = {} as ArrowLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -769,9 +923,17 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -783,7 +945,7 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowRightIconPropsWithHydration = {} as ArrowRightIconPropsWithHydration) {
+export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowRightIconPropsWithHydration = {} as ArrowRightIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -794,9 +956,17 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -808,7 +978,7 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
   )
 }
 
-export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowUpDownIconPropsWithHydration = {} as ArrowUpDownIconPropsWithHydration) {
+export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowUpDownIconPropsWithHydration = {} as ArrowUpDownIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowUpDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -819,9 +989,17 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -833,7 +1011,7 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: EllipsisIconPropsWithHydration = {} as EllipsisIconPropsWithHydration) {
+export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: EllipsisIconPropsWithHydration = {} as EllipsisIconPropsWithHydration) {
   const __scopeId = __instanceId || `EllipsisIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -844,9 +1022,17 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -858,7 +1044,7 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GitHubIconPropsWithHydration = {} as GitHubIconPropsWithHydration) {
+export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GitHubIconPropsWithHydration = {} as GitHubIconPropsWithHydration) {
   const __scopeId = __instanceId || `GitHubIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -869,9 +1055,17 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -883,7 +1077,7 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SettingsIconPropsWithHydration = {} as SettingsIconPropsWithHydration) {
+export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SettingsIconPropsWithHydration = {} as SettingsIconPropsWithHydration) {
   const __scopeId = __instanceId || `SettingsIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -894,9 +1088,17 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -908,7 +1110,7 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GlobeIconPropsWithHydration = {} as GlobeIconPropsWithHydration) {
+export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GlobeIconPropsWithHydration = {} as GlobeIconPropsWithHydration) {
   const __scopeId = __instanceId || `GlobeIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -919,9 +1121,17 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -933,7 +1143,7 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LogOutIconPropsWithHydration = {} as LogOutIconPropsWithHydration) {
+export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LogOutIconPropsWithHydration = {} as LogOutIconPropsWithHydration) {
   const __scopeId = __instanceId || `LogOutIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -944,9 +1154,17 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -958,7 +1176,7 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleHelpIconPropsWithHydration = {} as CircleHelpIconPropsWithHydration) {
+export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleHelpIconPropsWithHydration = {} as CircleHelpIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleHelpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -969,9 +1187,17 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -983,7 +1209,7 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
   )
 }
 
-export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SearchIconPropsWithHydration = {} as SearchIconPropsWithHydration) {
+export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SearchIconPropsWithHydration = {} as SearchIconPropsWithHydration) {
   const __scopeId = __instanceId || `SearchIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -994,9 +1220,17 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1008,7 +1242,7 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleCheckIconPropsWithHydration = {} as CircleCheckIconPropsWithHydration) {
+export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleCheckIconPropsWithHydration = {} as CircleCheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1019,9 +1253,17 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1033,7 +1275,7 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleXIconPropsWithHydration = {} as CircleXIconPropsWithHydration) {
+export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleXIconPropsWithHydration = {} as CircleXIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleXIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1044,9 +1286,17 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1058,7 +1308,7 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
   )
 }
 
-export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TriangleAlertIconPropsWithHydration = {} as TriangleAlertIconPropsWithHydration) {
+export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TriangleAlertIconPropsWithHydration = {} as TriangleAlertIconPropsWithHydration) {
   const __scopeId = __instanceId || `TriangleAlertIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1069,9 +1319,17 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1083,7 +1341,7 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
   )
 }
 
-export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: InfoIconPropsWithHydration = {} as InfoIconPropsWithHydration) {
+export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: InfoIconPropsWithHydration = {} as InfoIconPropsWithHydration) {
   const __scopeId = __instanceId || `InfoIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1094,9 +1352,17 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1108,7 +1374,7 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CalendarIconPropsWithHydration = {} as CalendarIconPropsWithHydration) {
+export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CalendarIconPropsWithHydration = {} as CalendarIconPropsWithHydration) {
   const __scopeId = __instanceId || `CalendarIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1119,9 +1385,17 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1133,7 +1407,7 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GripVerticalIconPropsWithHydration = {} as GripVerticalIconPropsWithHydration) {
+export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GripVerticalIconPropsWithHydration = {} as GripVerticalIconPropsWithHydration) {
   const __scopeId = __instanceId || `GripVerticalIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1144,9 +1418,17 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1158,7 +1440,7 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
   )
 }
 
-export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LoaderCircleIconPropsWithHydration = {} as LoaderCircleIconPropsWithHydration) {
+export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LoaderCircleIconPropsWithHydration = {} as LoaderCircleIconPropsWithHydration) {
   const __scopeId = __instanceId || `LoaderCircleIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1169,9 +1451,17 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1183,7 +1473,7 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
   )
 }
 
-export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PanelLeftIconPropsWithHydration = {} as PanelLeftIconPropsWithHydration) {
+export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PanelLeftIconPropsWithHydration = {} as PanelLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `PanelLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
@@ -1194,9 +1484,17 @@ export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -1208,7 +1506,7 @@ export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function Icon({ name, size = 'md', className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: IconPropsWithHydration) {
+export function Icon({ name, size = 'md', className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: IconPropsWithHydration) {
   const __scopeId = __instanceId || `Icon_${Math.random().toString(36).slice(2, 8)}`
   const s = sizeMap[size]
   const path = strokePaths[name as keyof typeof strokePaths]
@@ -1221,9 +1519,17 @@ export function Icon({ name, size = 'md', className = '', __instanceId, __bfScop
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof name === 'object' && name !== null && 'isEscaped' in name)) __hydrateProps['name'] = name
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
@@ -1233,52 +1539,52 @@ export function Icon({ name, size = 'md', className = '', __instanceId, __bfScop
 
   if (name === 'github') {
     return (
-      <GitHubIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s11`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s11'} bf-s={__scopeId} />
+      <GitHubIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s11`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s11'} bf-s={__scopeId} />
     )
   }
   else if (name === 'search') {
     return (
-      <SearchIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s10`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s10'} bf-s={__scopeId} />
+      <SearchIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s10`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s10'} bf-s={__scopeId} />
     )
   }
   else if (name === 'settings') {
     return (
-      <SettingsIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s9`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s9'} bf-s={__scopeId} />
+      <SettingsIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s9`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s9'} bf-s={__scopeId} />
     )
   }
   else if (name === 'globe') {
     return (
-      <GlobeIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s8`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s8'} bf-s={__scopeId} />
+      <GlobeIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s8`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s8'} bf-s={__scopeId} />
     )
   }
   else if (name === 'log-out') {
     return (
-      <LogOutIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s7`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s7'} bf-s={__scopeId} />
+      <LogOutIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s7`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s7'} bf-s={__scopeId} />
     )
   }
   else if (name === 'circle-help') {
     return (
-      <CircleHelpIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s6`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s6'} bf-s={__scopeId} />
+      <CircleHelpIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s6`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s6'} bf-s={__scopeId} />
     )
   }
   else if (name === 'calendar') {
     return (
-      <CalendarIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s5`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s5'} bf-s={__scopeId} />
+      <CalendarIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s5`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s5'} bf-s={__scopeId} />
     )
   }
   else if (name === 'grip-vertical') {
     return (
-      <GripVerticalIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s4`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s4'} bf-s={__scopeId} />
+      <GripVerticalIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s4`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s4'} bf-s={__scopeId} />
     )
   }
   else if (name === 'loader-circle') {
     return (
-      <LoaderCircleIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s3`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s3'} bf-s={__scopeId} />
+      <LoaderCircleIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s3`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s3'} bf-s={__scopeId} />
     )
   }
   else if (name === 'panel-left') {
     return (
-      <PanelLeftIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s2`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s2'} bf-s={__scopeId} />
+      <PanelLeftIcon size={size} className={className} {...props} __instanceId={`${__scopeId}_s2`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s2'} bf-s={__scopeId} />
     )
   }
   return (

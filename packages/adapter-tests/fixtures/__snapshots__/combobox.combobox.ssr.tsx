@@ -153,6 +153,7 @@ type ComboboxSeparatorPropsWithHydration = ComboboxSeparatorProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -161,8 +162,8 @@ type ComboboxSeparatorPropsWithHydration = ComboboxSeparatorProps & {
 
 export type { ComboboxProps, ComboboxTriggerProps, ComboboxValueProps, ComboboxContentProps, ComboboxInputProps, ComboboxEmptyProps, ComboboxItemProps, ComboboxGroupProps, ComboboxSeparatorProps }
 
-export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Combobox_${Math.random().toString(36).slice(2, 8)}`
   const open = () => false
   const setOpen: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
@@ -199,9 +200,17 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
     if (!(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
@@ -234,8 +243,8 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   )
 }
 
-export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxTrigger_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -245,9 +254,17 @@ export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceI
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxTrigger', {})
@@ -258,8 +275,8 @@ export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceI
   )
 }
 
-export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxValue_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -269,9 +286,17 @@ export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxValue', {})
@@ -282,8 +307,8 @@ export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: 
   )
 }
 
-export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxContent_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -293,9 +318,17 @@ export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceI
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     if (!(typeof props.align === 'object' && props.align !== null && 'isEscaped' in props.align)) __hydrateProps['align'] = props.align
@@ -307,8 +340,8 @@ export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceI
   )
 }
 
-export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxInput_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -318,9 +351,17 @@ export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
@@ -332,8 +373,8 @@ export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: 
   )
 }
 
-export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxEmpty_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -343,9 +384,17 @@ export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxEmpty', {})
@@ -356,8 +405,8 @@ export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: 
   )
 }
 
-export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
   const stateClasses = () => isDisabled() ? itemDisabledClasses : itemDefaultClasses
@@ -369,9 +418,17 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
@@ -384,8 +441,8 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
   )
 }
 
-export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxGroup_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -395,9 +452,17 @@ export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.heading === 'object' && props.heading !== null && 'isEscaped' in props.heading)) __hydrateProps['heading'] = props.heading
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
@@ -409,7 +474,7 @@ export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: 
   )
 }
 
-export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ComboboxSeparatorPropsWithHydration = {} as ComboboxSeparatorPropsWithHydration) {
+export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ComboboxSeparatorPropsWithHydration = {} as ComboboxSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `ComboboxSeparator_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -419,9 +484,17 @@ export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bf
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxSeparator', {})

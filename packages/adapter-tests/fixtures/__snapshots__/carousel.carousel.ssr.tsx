@@ -89,8 +89,8 @@ const nextVerticalClasses = '-bottom-12 left-1/2 -translate-x-1/2 rotate-90'
 
 export type { CarouselProps, CarouselContentProps, CarouselItemProps, CarouselPreviousProps, CarouselNextProps }
 
-export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Carousel_${Math.random().toString(36).slice(2, 8)}`
   const canScrollPrev = () => false
   const setCanScrollPrev: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
@@ -108,9 +108,17 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
     if (!(typeof props.opts === 'object' && props.opts !== null && 'isEscaped' in props.opts)) __hydrateProps['opts'] = props.opts
@@ -132,8 +140,8 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   )
 }
 
-export function CarouselContent(__allProps: CarouselContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselContent(__allProps: CarouselContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselContent_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const directionClasses = () => orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'
@@ -145,9 +153,17 @@ export function CarouselContent(__allProps: CarouselContentProps & { __instanceI
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
@@ -159,8 +175,8 @@ export function CarouselContent(__allProps: CarouselContentProps & { __instanceI
   )
 }
 
-export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselItem_${Math.random().toString(36).slice(2, 8)}`
   const paddingClass = () => (props.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4'
 
@@ -171,9 +187,17 @@ export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: st
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
@@ -185,8 +209,8 @@ export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: st
   )
 }
 
-export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselPrevious_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const positionClasses = () => orientation() === 'vertical' ? prevVerticalClasses : prevHorizontalClasses
@@ -198,9 +222,17 @@ export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanc
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselPrevious', {})
@@ -211,8 +243,8 @@ export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanc
   )
 }
 
-export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselNext_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const positionClasses = () => orientation() === 'vertical' ? nextVerticalClasses : nextHorizontalClasses
@@ -224,9 +256,17 @@ export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: st
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselNext', {})

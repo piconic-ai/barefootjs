@@ -148,6 +148,7 @@ type CommandListPropsWithHydration = CommandListProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -158,6 +159,7 @@ type CommandSeparatorPropsWithHydration = CommandSeparatorProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -168,6 +170,7 @@ type CommandShortcutPropsWithHydration = CommandShortcutProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -176,8 +179,8 @@ type CommandShortcutPropsWithHydration = CommandShortcutProps & {
 
 export type { CommandProps, CommandInputProps, CommandListProps, CommandEmptyProps, CommandGroupProps, CommandItemProps, CommandSeparatorProps, CommandShortcutProps, CommandDialogProps }
 
-export function Command(__allProps: CommandProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function Command(__allProps: CommandProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Command_${Math.random().toString(36).slice(2, 8)}`
   const search = () => ''
   const setSearch: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
@@ -211,9 +214,17 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
@@ -239,8 +250,8 @@ export function Command(__allProps: CommandProps & { __instanceId?: string; __bf
   )
 }
 
-export function CommandInput(__allProps: CommandInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CommandInput(__allProps: CommandInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandInput_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -250,9 +261,17 @@ export function CommandInput(__allProps: CommandInputProps & { __instanceId?: st
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
@@ -264,7 +283,7 @@ export function CommandInput(__allProps: CommandInputProps & { __instanceId?: st
   )
 }
 
-export function CommandList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandListPropsWithHydration = {} as CommandListPropsWithHydration) {
+export function CommandList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandListPropsWithHydration = {} as CommandListPropsWithHydration) {
   const __scopeId = __instanceId || `CommandList_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -274,9 +293,17 @@ export function CommandList({ className = '', children, __instanceId, __bfScope:
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -288,8 +315,8 @@ export function CommandList({ className = '', children, __instanceId, __bfScope:
   )
 }
 
-export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandEmpty_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -299,9 +326,17 @@ export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: st
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandEmpty', {})
@@ -312,8 +347,8 @@ export function CommandEmpty(__allProps: CommandEmptyProps & { __instanceId?: st
   )
 }
 
-export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandGroup_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -323,9 +358,17 @@ export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: st
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.heading === 'object' && props.heading !== null && 'isEscaped' in props.heading)) __hydrateProps['heading'] = props.heading
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
@@ -337,8 +380,8 @@ export function CommandGroup(__allProps: CommandGroupProps & { __instanceId?: st
   )
 }
 
-export function CommandItem(__allProps: CommandItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CommandItem(__allProps: CommandItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
 
@@ -349,9 +392,17 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
     if (!(typeof props.keywords === 'object' && props.keywords !== null && 'isEscaped' in props.keywords)) __hydrateProps['keywords'] = props.keywords
@@ -365,7 +416,7 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
   )
 }
 
-export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandSeparatorPropsWithHydration = {} as CommandSeparatorPropsWithHydration) {
+export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandSeparatorPropsWithHydration = {} as CommandSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `CommandSeparator_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -375,9 +426,17 @@ export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfS
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandSeparator', {})
@@ -388,7 +447,7 @@ export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function CommandShortcut({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandShortcutPropsWithHydration = {} as CommandShortcutPropsWithHydration) {
+export function CommandShortcut({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandShortcutPropsWithHydration = {} as CommandShortcutPropsWithHydration) {
   const __scopeId = __instanceId || `CommandShortcut_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -398,9 +457,17 @@ export function CommandShortcut({ className = '', children, __instanceId, __bfSc
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -412,8 +479,8 @@ export function CommandShortcut({ className = '', children, __instanceId, __bfSc
   )
 }
 
-export function CommandDialog(__allProps: CommandDialogProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props } = __allProps
+export function CommandDialog(__allProps: CommandDialogProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CommandDialog_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -423,9 +490,17 @@ export function CommandDialog(__allProps: CommandDialogProps & { __instanceId?: 
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
     if (!(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
@@ -434,6 +509,6 @@ export function CommandDialog(__allProps: CommandDialogProps & { __instanceId?: 
   }
 
   return (
-    <>{bfComment(`scope:${__scopeId}${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}${__bfPropsJson ? `|${__bfPropsJson}` : ""}`)}<Dialog open={props.open ?? false} onOpenChange={props.onOpenChange ?? (() => {})} __instanceId={`${__scopeId}_s3`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s3'} bf-s={__scopeId}><DialogOverlay __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><DialogContent className={`${commandDialogContentClasses} max-w-lg p-0`} __instanceId={`${__scopeId}_s2`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s2'}><Command id={props.id} filter={props.filter} className={`[&_[data-slot=command-input-wrapper]]:h-12`} __instanceId={`${__scopeId}_s1`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s1'}>{props.children}</Command></DialogContent></Dialog>{bfComment(`/scope:${__scopeId}`)}</>
+    <>{bfComment(`scope:${__scopeId}${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}${__bfPropsJson ? `|${__bfPropsJson}` : ""}`)}<Dialog open={props.open ?? false} onOpenChange={props.onOpenChange ?? (() => {})} __instanceId={`${__scopeId}_s3`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s3'} bf-s={__scopeId}><DialogOverlay __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><DialogContent className={`${commandDialogContentClasses} max-w-lg p-0`} __instanceId={`${__scopeId}_s2`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s2'}><Command id={props.id} filter={props.filter} className={`[&_[data-slot=command-input-wrapper]]:h-12`} __instanceId={`${__scopeId}_s1`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s1'}>{props.children}</Command></DialogContent></Dialog>{bfComment(`/scope:${__scopeId}`)}</>
   )
 }

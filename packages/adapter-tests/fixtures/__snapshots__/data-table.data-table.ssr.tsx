@@ -38,6 +38,7 @@ type DataTableColumnHeaderPropsWithHydration = DataTableColumnHeaderProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -48,6 +49,7 @@ type DataTablePaginationPropsWithHydration = DataTablePaginationProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -56,7 +58,7 @@ type DataTablePaginationPropsWithHydration = DataTablePaginationProps & {
 
 export type { DataTableColumnHeaderProps, DataTablePaginationProps, SortDirection }
 
-export function DataTableColumnHeader({ title, sorted = false, onSort, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DataTableColumnHeaderPropsWithHydration) {
+export function DataTableColumnHeader({ title, sorted = false, onSort, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DataTableColumnHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `DataTableColumnHeader_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -66,9 +68,17 @@ export function DataTableColumnHeader({ title, sorted = false, onSort, className
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof title === 'object' && title !== null && 'isEscaped' in title)) __hydrateProps['title'] = title
     if (!(typeof sorted === 'object' && sorted !== null && 'isEscaped' in sorted)) __hydrateProps['sorted'] = sorted
@@ -81,7 +91,7 @@ export function DataTableColumnHeader({ title, sorted = false, onSort, className
   )
 }
 
-export function DataTablePagination({ canPrev, canNext, onPrev, onNext, children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DataTablePaginationPropsWithHydration) {
+export function DataTablePagination({ canPrev, canNext, onPrev, onNext, children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DataTablePaginationPropsWithHydration) {
   const __scopeId = __instanceId || `DataTablePagination_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -91,9 +101,17 @@ export function DataTablePagination({ canPrev, canNext, onPrev, onNext, children
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof canPrev === 'object' && canPrev !== null && 'isEscaped' in canPrev)) __hydrateProps['canPrev'] = canPrev
     if (!(typeof canNext === 'object' && canNext !== null && 'isEscaped' in canNext)) __hydrateProps['canNext'] = canNext

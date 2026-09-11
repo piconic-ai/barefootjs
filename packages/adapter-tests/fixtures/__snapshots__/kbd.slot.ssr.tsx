@@ -18,6 +18,7 @@ type SlotPropsWithHydration = SlotProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -26,7 +27,7 @@ type SlotPropsWithHydration = SlotProps & {
 
 export type { SlotProps }
 
-export function Slot({ children, className, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props }: SlotPropsWithHydration = {} as SlotPropsWithHydration) {
+export function Slot({ children, className, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props }: SlotPropsWithHydration = {} as SlotPropsWithHydration) {
   const __scopeId = __instanceId || `Slot_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
@@ -36,9 +37,17 @@ export function Slot({ children, className, __instanceId, __bfScope: _bfScope, _
   // child mount rather than computed and discarded. This also means a child
   // carrying an otherwise-unserializable prop (a Map, a live function) never
   // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time.
+  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
+  // when this component is itself the JSX root of an enclosing "use client"
+  // component (renderComponent's isRootOfClientComponent branch) — such a
+  // component's props are ALWAYS delivered live via that enclosing
+  // component's own upsertChild/initChild call, regardless of whether the
+  // enclosing component itself ends up mounted as a root or a child, so
+  // serialization is skipped unconditionally for it — independent of, and
+  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
+  // component's OWN actual mount status for hydration/tooling purposes.
   let __bfPropsJson = __bfParentProps
-  if (!__bfChild) {
+  if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -52,7 +61,7 @@ export function Slot({ children, className, __instanceId, __bfScope: _bfScope, _
     const childChildren = childProps.children
     const mergedClass = [className, childClass].filter(Boolean).join(' ')
     return (
-      <Tag {...(children.props)} {...props} className={([className, (((children.props).className) || '')].filter(Boolean).join(' '))} __instanceId={`${__scopeId}_s0`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s0'} bf-s={__scopeId}>{(children.props).children}</Tag>
+      <Tag {...(children.props)} {...props} className={([className, (((children.props).className) || '')].filter(Boolean).join(' '))} __instanceId={`${__scopeId}_s0`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s0'} bf-s={__scopeId}>{(children.props).children}</Tag>
     )
   }
   return (
