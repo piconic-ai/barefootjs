@@ -1,5 +1,6 @@
 // Deck chrome added to peitho's distribution viewer: a thin progress bar, a slide counter,
-// and a word-by-word rise for headlines. No narration, no captions, no autoplay.
+// a word-by-word rise for headlines, and the prefers-reduced-motion gate for the cover's
+// looping clip. No narration, no captions, no auto-advance.
 //
 // Slides are identified by the data-slide-key peitho puts on each slide's root <section>.
 const progress = document.createElement('div')
@@ -44,6 +45,24 @@ function splitHeadline() {
     if (n < words.length - 1) h.append(' ')
   })
 }
+// WCAG 2.2.2: a looping background clip must not be forced on people who asked for reduced
+// motion. The <video> in layouts/cover.html carries `autoplay` so it plays without this
+// script; here, when the OS/browser preference is set, the clip is stopped before it starts
+// and stripped of its sources, so only the poster frame (assets/hero.jpg) is shown and the
+// 16 MB file is never requested. Re-checked on every slide swap because the viewer
+// re-inserts the slide HTML each time.
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
+function gateVideo() {
+  if (!reducedMotion.matches) return
+  for (const v of document.querySelectorAll<HTMLVideoElement>('#peitho-canvas video[autoplay]')) {
+    v.removeAttribute('autoplay')
+    v.removeAttribute('loop')
+    v.pause()
+    for (const source of v.querySelectorAll('source')) source.remove()
+    v.removeAttribute('src')
+    v.load() // no source left: the element settles on its poster
+  }
+}
 function paintProgress() {
   const t = total(); const i = slideIndex()
   if (!t) return
@@ -56,7 +75,7 @@ function paintProgress() {
   if (counter.textContent !== label) counter.textContent = label
 }
 function check() {
-  if (currentKey()) { splitHeadline(); paintProgress() }
+  if (currentKey()) { gateVideo(); splitHeadline(); paintProgress() }
 }
 
 // total slides: from the inlined manifest when present, else from manifest.json next to the page

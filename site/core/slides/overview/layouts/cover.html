@@ -3,6 +3,8 @@
   assets/hero.mp4 + assets/hero.jpg (poster) are copied verbatim into the output's assets/ by
   site/core/scripts/build-slides.ts. Swap the files to change the hero; nothing else references them.
   Source and license: assets/SOURCES.md
+  `autoplay` keeps the clip playing without JS; component/narration.ts stops it and drops the
+  sources when prefers-reduced-motion is set, so those viewers get the poster frame only.
 -->
 <section class="peitho-slide layout-cover">
   <div class="hero" aria-hidden="true">
