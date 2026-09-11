@@ -1,18 +1,11 @@
 /**
  * `liveOnlyProps` classification (Move C, Prop Boundary Contract).
  *
- * `analyzeClientNeeds` (`ir-to-client-js/index.ts`) decides which of a
- * component's props its own client-side code needs LIVE (call it as a
- * function), not JSON-shaped, via `computeLiveOnlyProps`. This is a
- * different question from BF049 (`rich-type-prop-serialization.test.ts`):
- * BF049 fires at DECLARATION time, blind to whether the owning component is
- * ever mounted as a hydration root vs. received live as a child — a
- * function-typed prop is completely fine for a component that's always used
- * as a compiled child. `liveOnlyProps` only classifies; `hono-adapter.ts`'s
- * `__bfChild`-gated `serializeHydrationProps` call decides at RUNTIME
- * whether a specific mount is actually a root and only then does the
- * classification matter (see `serialize-hydration-props.test.ts`'s
- * integration tests for that half).
+ * `computeLiveOnlyProps` (`ir-to-client-js/index.ts`) marks which props the
+ * client code CALLS rather than reads, so they cannot arrive as JSON. It
+ * only classifies — whether that matters for a given mount is decided at
+ * render time by the Hono adapter's gated `serializeHydrationProps` call
+ * (`serialize-hydration-props.test.ts` covers that half).
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -71,6 +64,16 @@ describe('liveOnlyProps — fires', () => {
     expect(analysis.liveOnlyProps).not.toHaveProperty('getValue')
   })
 
+  test('an OPTIONAL function-typed prop still resolves (stripUnion drops the undefined arm)', () => {
+    const analysis = analyze(`
+      'use client'
+      export function Display({ value }: { value?: () => number }) {
+        return <button onClick={() => console.log(value?.())}>go</button>
+      }
+    `)
+    expect(Object.keys(analysis.liveOnlyProps)).toContain('value')
+  })
+
   test('props-object mode (props.value) resolves the same way', () => {
     const analysis = analyze(`
       'use client'
@@ -125,6 +128,24 @@ describe('liveOnlyProps — silent', () => {
     `)
     expect(analysis.usedProps).toContain('value')
     expect(analysis.liveOnlyProps).not.toHaveProperty('value')
+  })
+
+  test('an ALIASED function type is a known conservative miss, not a classification', () => {
+    // `typeNodeToTypeInfo` lowers a named type reference to
+    // `{ kind: 'interface', raw: 'Filter' }` with no member walk, so the
+    // function shape behind the alias is invisible here and the prop keeps
+    // the pre-Move-C silent drop. BF049 has the same blind spot for aliased
+    // rich types. Pinned so a future alias-resolution change is a deliberate
+    // flip of this expectation, not an accident.
+    const analysis = analyze(`
+      'use client'
+      type Filter = (s: string) => boolean
+      export function Display({ filter }: { filter: Filter }) {
+        return <button onClick={() => console.log(filter('x'))}>go</button>
+      }
+    `)
+    expect(analysis.usedProps).toContain('filter')
+    expect(analysis.liveOnlyProps).not.toHaveProperty('filter')
   })
 
   test('a static (non-client) component has no clientAnalysis needs at all — liveOnlyProps is empty', () => {

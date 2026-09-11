@@ -421,22 +421,10 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   const __scopeId = __instanceId || `CheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -454,22 +442,10 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `ChevronDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -487,22 +463,10 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `ChevronUpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -520,22 +484,10 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `ChevronLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -553,22 +505,10 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
   const __scopeId = __instanceId || `ChevronRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -586,22 +526,10 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
   const __scopeId = __instanceId || `XIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -619,22 +547,10 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `PlusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -652,22 +568,10 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   const __scopeId = __instanceId || `MinusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -685,22 +589,10 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
   const __scopeId = __instanceId || `SunIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -718,22 +610,10 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `MoonIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -751,22 +631,10 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
   const __scopeId = __instanceId || `MonitorIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -784,22 +652,10 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `CopyIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -817,22 +673,10 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `ClipboardIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -850,22 +694,10 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
   const __scopeId = __instanceId || `ClipboardCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -883,22 +715,10 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `MenuIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -916,22 +736,10 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `ArrowLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -949,22 +757,10 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
   const __scopeId = __instanceId || `ArrowRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -982,22 +778,10 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `ArrowUpDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1015,22 +799,10 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
   const __scopeId = __instanceId || `EllipsisIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1048,22 +820,10 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
   const __scopeId = __instanceId || `GitHubIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1081,22 +841,10 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
   const __scopeId = __instanceId || `SettingsIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1114,22 +862,10 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   const __scopeId = __instanceId || `GlobeIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1147,22 +883,10 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
   const __scopeId = __instanceId || `LogOutIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1180,22 +904,10 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
   const __scopeId = __instanceId || `CircleHelpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1213,22 +925,10 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
   const __scopeId = __instanceId || `SearchIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1246,22 +946,10 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `CircleCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1279,22 +967,10 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
   const __scopeId = __instanceId || `CircleXIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1312,22 +988,10 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
   const __scopeId = __instanceId || `TriangleAlertIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1345,22 +1009,10 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `InfoIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1378,22 +1030,10 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
   const __scopeId = __instanceId || `CalendarIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1411,22 +1051,10 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
   const __scopeId = __instanceId || `GripVerticalIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1444,22 +1072,10 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
   const __scopeId = __instanceId || `LoaderCircleIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1477,22 +1093,10 @@ export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `PanelLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
@@ -1512,22 +1116,10 @@ export function Icon({ name, size = 'md', className = '', __instanceId, __bfScop
   const path = strokePaths[name as keyof typeof strokePaths]
   const linecap = (buttLinecapIcons as readonly string[]).includes(name) ? 'butt' : 'round'
 
-  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
-  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
-  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
-  // props live via initChild(), so serialization is skipped entirely for a
-  // child mount rather than computed and discarded. This also means a child
-  // carrying an otherwise-unserializable prop (a Map, a live function) never
-  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
-  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only
-  // when this component is itself the JSX root of an enclosing "use client"
-  // component (renderComponent's isRootOfClientComponent branch) — such a
-  // component's props are ALWAYS delivered live via that enclosing
-  // component's own upsertChild/initChild call, regardless of whether the
-  // enclosing component itself ends up mounted as a root or a child, so
-  // serialization is skipped unconditionally for it — independent of, and
-  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this
-  // component's OWN actual mount status for hydration/tooling purposes.
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}

@@ -235,6 +235,54 @@ describe('function-typed prop at the hydration boundary — root vs. child (Move
   })
 })
 
+describe('pass-through wrapper — bf-r and prop serialization are separate questions', () => {
+  // A "use client" component whose ENTIRE JSX body is one nested component
+  // call, with no wrapper DOM element between them (the adapter's
+  // `isRootOfClientComponent` branch). Two flags exist because this shape
+  // needs opposite answers to two questions at the same mount: the nested
+  // component is NOT a child for marker purposes (bf-r must still be
+  // stamped, e2e specs locate the island by it), but it IS always driven
+  // live by the wrapper's own init, so its bf-p is dead weight.
+  const FILTERABLE_SOURCE = `
+    'use client'
+    export function Filterable({ filter }: { filter: (s: string) => number }) {
+      return <button onClick={() => console.log(filter('x'))}>{filter('y')}</button>
+    }
+  `
+
+  const WRAPPER_SOURCE = `
+    'use client'
+    import { Filterable } from './filterable'
+    export function FilterDemo() {
+      const filter = (s: string) => s.length
+      return <Filterable filter={filter} />
+    }
+  `
+
+  test('a live function prop on the wrapped component does not fail SSR', async () => {
+    // Before __bfNoSerialize this 500ed: the nested component saw no
+    // __bfChild, concluded it was a root, and tried to JSON a live function.
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: WRAPPER_SOURCE,
+      components: { './filterable.tsx': FILTERABLE_SOURCE },
+    })
+    expect(html).not.toContain('bf-p=')
+  })
+
+  test('the wrapped component still carries bf-r — __bfNoSerialize must not suppress the marker', async () => {
+    // The opposite regression: forcing __bfChild={true} here (an earlier
+    // attempt at the same fix) silenced bf-r and broke locators of the form
+    // `[bf-s^="FooDemo_"][bf-r]`.
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: WRAPPER_SOURCE,
+      components: { './filterable.tsx': FILTERABLE_SOURCE },
+    })
+    expect(html).toContain('bf-r=')
+  })
+})
+
 describe('serializeHydrationProps — integration via real Hono SSR render', () => {
   // Prop typed `unknown` so BF049 has no static evidence to fire on —
   // exercises the runtime backstop specifically, independent of the

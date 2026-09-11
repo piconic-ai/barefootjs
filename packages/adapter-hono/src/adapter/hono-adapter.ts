@@ -50,6 +50,31 @@ type HonoRenderCtx = {
 }
 import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, escapeHtml } from '@barefootjs/shared'
 
+/**
+ * The synthetic hydration props every generated component accepts, as one
+ * list rendered two ways: the inline `HYDRATION_PROPS_TYPE` annotation and
+ * the named `${Name}PropsWithHydration` alias `generateTypes` emits. They
+ * used to be two hand-kept copies that had to be edited in lockstep.
+ */
+const HYDRATION_PROP_DECLS = [
+  '__instanceId?: string',
+  '__bfScope?: string',
+  '__bfChild?: boolean',
+  '__bfNoSerialize?: boolean',
+  '__bfParentProps?: string',
+  '__bfParent?: string',
+  '__bfMount?: string',
+  '"data-key"?: string | number',
+] as const
+
+/**
+ * Inline form of `HYDRATION_PROP_DECLS`, intersected with the user's own
+ * props type. Needed because Hono's JSX types otherwise reject the
+ * hydration props the emitted SSR template passes to a component without an
+ * explicit Props type. See onboarding round 5 / PR #1450.
+ */
+const HYDRATION_PROPS_TYPE = `{ ${HYDRATION_PROP_DECLS.join('; ')} }`
+
 export interface HonoAdapterOptions {
   /**
    * Base path for client JS files (e.g., '/static/components/')
@@ -360,14 +385,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const propsTypeName = this.getPropsTypeName(ir)
     if (propsTypeName && !ir.metadata.propsObjectName) {
       lines.push(`type ${this.componentName}PropsWithHydration = ${propsTypeName} & {`)
-      lines.push('  __instanceId?: string')
-      lines.push('  __bfScope?: string')
-      lines.push('  __bfChild?: boolean')
-      lines.push('  __bfNoSerialize?: boolean')
-      lines.push('  __bfParentProps?: string')
-      lines.push('  __bfParent?: string')
-      lines.push('  __bfMount?: string')
-      lines.push('  "data-key"?: string | number')
+      for (const decl of HYDRATION_PROP_DECLS) lines.push(`  ${decl}`)
       lines.push('}')
     }
 
@@ -421,19 +439,6 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     let typeAnnotation: string
     let propsExtraction: string | null = null
 
-    // Synthetic hydration-only props the generated wrapper destructures
-    // out of `props` before reaching the user's body. Kept as a shared
-    // constant so the `propsObjectName` (SolidJS-style) and destructured
-    // branches both list every hydration field — the destructured
-    // branch's fallback used to declare only `__instanceId / __bfScope
-    // / __bfChild`, but the generated body destructures `__bfParent /
-    // __bfMount / __bfParentProps / data-key` too, so tsc raised
-    // TS2339 ("Property '__bfParent' does not exist...") on every
-    // emitted SSR template for a component without an explicit Props
-    // type. See onboarding round 5 / PR #1450.
-    const HYDRATION_PROPS_TYPE =
-      '{ __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }'
-
     if (propsObjectName) {
       // SolidJS-style: function Component(props: Props)
       // Accept all props as a single object, then destructure hydration props out
@@ -454,15 +459,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only serialize props that the client JS init function actually reads
     const clientUsedProps = new Set(ir.metadata.clientAnalysis?.usedProps ?? [])
     const needsInit = ir.metadata.clientAnalysis?.needsInit ?? false
-    // Live-only props (Move C, Prop Boundary Contract): props whose declared
-    // type is a function this component's own client code calls. These are
-    // NOT excluded from `propsToSerialize` below (unlike `on*`/`__*`) — a
-    // live-only prop still needs the `__hydrateProps` scaffolding built for
-    // it, because whether it's actually reachable is a RUNTIME fact
-    // (`__bfChild`) this adapter can't decide at codegen time. Instead
-    // `serializeHydrationProps` (utils.ts) receives this map and only
-    // throws for a function value when this mount turns out to be a root
-    // (`!__bfChild`) — see the `hasPropsToSerialize` codegen below.
+    // Live-only props (Move C): props whose declared type is a function this
+    // component's client code calls. Unlike `on*`/`__*` they are NOT dropped
+    // from `propsToSerialize` — whether the value is actually unreachable is
+    // a runtime fact (`__bfChild`), so the map is threaded into
+    // `serializeHydrationProps` (utils.ts), which throws only on a real root
+    // mount carrying a real function value.
     const liveOnlyProps = ir.metadata.clientAnalysis?.liveOnlyProps ?? {}
     const propsToSerialize = ir.metadata.propsParams.filter(p => {
       // Skip event-handler-shaped and internal props
@@ -513,10 +515,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       scopeIdLine,
       // Props serialization references __bfParentProps
       (hasPropsToSerialize || (hasClientInteractivity && isRootComponent)) ? '__bfParentProps' : '',
-      // Props serialization is gated `if (!__bfChild && !__bfNoSerialize)`
-      // (Move C, Prop Boundary Contract, + its own follow-up below) — a
-      // child mount's result is discarded, so serialization only runs for
-      // a root mount.
+      // Props serialization is gated `if (!__bfChild && !__bfNoSerialize)`.
       hasPropsToSerialize ? '__bfChild' : '',
       hasPropsToSerialize ? '__bfNoSerialize' : '',
     ].join('\n')
@@ -524,23 +523,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Rebuild hydration props with _ prefix for unused ones
     const bfScopeAlias = /\b__bfScope\b/.test(bodyRefText) ? '__bfScope' : '__bfScope: _bfScope'
     const bfChildAlias = /\b__bfChild\b/.test(bodyRefText) ? '__bfChild' : '__bfChild: _bfChild'
-    // __bfNoSerialize (Move C follow-up — #command-filter-demo-500,
-    // #popover-preview-demo-e2e): a SEPARATE signal from __bfChild, passed
-    // ONLY by the `isRootOfClientComponent` branch of `renderComponent`
-    // below. __bfChild alone can't distinguish "my own props are always
-    // delivered live, never read from bf-p" (true for EVERY
-    // isRootOfClientComponent nested component, since its enclosing "use
-    // client" component's own init function always drives it via a live
-    // upsertChild/initChild call — see that branch's docstring) from "I am
-    // genuinely this page's hydration root" (bf-r must still be stamped,
-    // for tooling/e2e locators of the form `[bf-s^="FooDemo_"][bf-r]` —
-    // see BF_ROOT's own docstring, packages/shared/src/markers.ts). Both
-    // of those are simultaneously true for a component like Command
-    // nested as CommandFilterDemo's own JSX root when CommandFilterDemo
-    // itself is mounted as a genuine top-level entry (not a compiled
-    // child) — `__bfChild` alone conflates them into one boolean that
-    // can't represent that combination, so a dedicated flag carries the
-    // "always skip serialization" half without touching bf-r/bf-h/bf-m.
+    // __bfNoSerialize: "skip your own bf-p, your props always arrive live".
+    // Deliberately NOT folded into __bfChild — see the `isRootOfClientComponent`
+    // branch of `renderComponent`, the one place that passes it.
     const bfNoSerializeAlias = /\b__bfNoSerialize\b/.test(bodyRefText) ? '__bfNoSerialize' : '__bfNoSerialize: _bfNoSerialize'
     const bfParentPropsAlias = /\b__bfParentProps\b/.test(bodyRefText) ? '__bfParentProps' : '__bfParentProps: _bfParentProps'
     const bfParentAlias = /\b__bfParent\b/.test(bodyRefText) ? '__bfParent' : '__bfParent: _bfParent'
@@ -639,30 +624,18 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only the outermost component reads bf-p via hydrate(); children get props via initChild().
     if (hasPropsToSerialize) {
       lines.push('')
-      lines.push(`  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop`)
-      lines.push(`  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is`)
-      lines.push(`  // only emitted when !__bfChild, see hydrationAttrs below) — children receive`)
-      lines.push(`  // props live via initChild(), so serialization is skipped entirely for a`)
-      lines.push(`  // child mount rather than computed and discarded. This also means a child`)
-      lines.push(`  // carrying an otherwise-unserializable prop (a Map, a live function) never`)
-      lines.push(`  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not`)
-      lines.push(`  // decidable at codegen time. __bfNoSerialize is a SEPARATE signal, set only`)
-      lines.push(`  // when this component is itself the JSX root of an enclosing "use client"`)
-      lines.push(`  // component (renderComponent's isRootOfClientComponent branch) — such a`)
-      lines.push(`  // component's props are ALWAYS delivered live via that enclosing`)
-      lines.push(`  // component's own upsertChild/initChild call, regardless of whether the`)
-      lines.push(`  // enclosing component itself ends up mounted as a root or a child, so`)
-      lines.push(`  // serialization is skipped unconditionally for it — independent of, and`)
-      lines.push(`  // without touching, __bfChild/bf-r/bf-h/bf-m, which must still reflect this`)
-      lines.push(`  // component's OWN actual mount status for hydration/tooling purposes.`)
+      lines.push(`  // Serialize props for client hydration — root mounts only. A child's bf-p`)
+      lines.push(`  // is never read (it gets props live via initChild), and __bfNoSerialize`)
+      lines.push(`  // says the same for a component that is its parent's entire JSX body, so`)
+      lines.push(`  // neither one pays for — or can fail SSR on — a value nothing will read.`)
       lines.push(`  let __bfPropsJson = __bfParentProps`)
       lines.push(`  if (!__bfChild && !__bfNoSerialize) {`)
       lines.push(`    const __hydrateProps: Record<string, unknown> = {}`)
       for (const p of propsToSerialize) {
-        // Skip JSX elements (they can't be JSON serialized) — a function
-        // value is NOT skipped here anymore: `serializeHydrationProps`
-        // below decides, via `liveOnlyProps`, whether this mount actually
-        // needs the value live and throws only then.
+        // Skip JSX elements (they can't be JSON serialized). A function value
+        // deliberately is NOT skipped here: dropping it silently is the bug
+        // Move C fixes — `serializeHydrationProps` below decides, via
+        // `liveOnlyProps`, whether the client actually needed it.
         // Use propsObjectName.propName for SolidJS-style, direct propName for destructured
         const propAccess = propsObjectName ? `${propsObjectName}.${p.name}` : p.name
         // The `bf-p` blob key is always the caller-facing name (#2524 CSR
@@ -1268,41 +1241,34 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (ctx?.isRootOfClientComponent) {
       // Root component: if it has a slotId, include it so client JS can find it
       // with [bf-s$="_sX"] selector. Otherwise pass parent's scope directly.
-      // Note: Do NOT add __bfChild here — this nested component's bf-r/bf-h/
-      // bf-m markers must reflect ITS OWN actual mount status (whatever the
-      // ENCLOSING "use client" component's own __bfChild turns out to be at
-      // runtime), exactly like an ordinary standalone mount — see BF_ROOT's
-      // own docstring (packages/shared/src/markers.ts): "Even when such a
-      // root is itself a slot-attached child of an outer page/layout... bf-r
-      // lets test locators and tooling distinguish it from non-root child
-      // scopes" — i.e. bf-r must still appear here whenever the enclosing
-      // component is genuinely a hydration root (site/ui's PopoverPreviewDemo
-      // → Popover is exactly this: mounted directly on a docs page with
-      // nothing compiled wrapping it, and its e2e spec locates it via
-      // `[bf-s^="PopoverPreviewDemo_"][bf-r]`). Passing __bfChild={true}
-      // unconditionally here (a prior attempt at this same fix) broke
-      // exactly that case by hiding bf-r even when genuinely root.
+      //
+      // This branch is the pass-through wrapper: a "use client" component
+      // whose entire JSX body is this one nested component call, with no
+      // wrapper DOM element between them. Two questions look like one here
+      // and are not, which is why there are two flags:
+      //
+      //   markers (bf-r/bf-h/bf-m) — must reflect this mount's OWN status,
+      //     so NO __bfChild. bf-r is a locator, not a serialization gate
+      //     (BF_ROOT's docstring, packages/shared/src/markers.ts), and e2e
+      //     specs match `[bf-s^="FooDemo_"][bf-r]` on exactly this shape.
+      //   serialization — always skipped, so __bfNoSerialize regardless of
+      //     __bfChild. The enclosing component's init always drives this one
+      //     through a live upsertChild/initChild call, whether or not the
+      //     enclosing component is itself a root, so its bf-p is dead weight
+      //     that can still throw on an unserializable prop.
+      //
+      // A genuinely-root wrapper needs "no" to the first and "yes" to the
+      // second at the same mount, so one boolean cannot carry both.
       //
       // Pass __bfParentProps so child component can use parent's serialized props
       const propsPassAttr = this.currentComponentHasProps ? ' __bfParentProps={__bfPropsJson}' : ''
-      // __bfNoSerialize=true, UNCONDITIONALLY (Move C, Prop Boundary
-      // Contract, follow-up — #command-filter-demo-500): a SEPARATE signal
-      // from __bfChild/bf-r, verified against the real compiled client
-      // bundle (ui/components/ui/command's CommandFilterDemo → Command,
-      // whose `filter` prop surfaced this). The enclosing "use client"
-      // component's ENTIRE JSX body is this one nested component call (no
-      // wrapper DOM element between them — that's why this branch exists at
-      // all), and its own client init function ALWAYS drives this nested
-      // component's hydration via a live upsertChild/initChild call
-      // (`upsertChild(scope, "Command", "s10", { get filter() {...}, ... })`
-      // in the compiled bundle) — REGARDLESS of whether the enclosing
-      // component itself ends up mounted as a genuine root or as someone
-      // else's child. So this nested component's OWN bf-p is never actually
-      // read by anything and SSR-serializing it (which can throw for a
-      // live-only prop like a function, or any other otherwise-unserializable
-      // value) is pure, sometimes-crashing, dead work — skip it always,
-      // independent of whatever bf-r/__bfChild end up being for THIS mount.
-      const bfNoSerializePassAttr = ' __bfNoSerialize={true}'
+      // Gated on the enclosing component actually having client JS, since that
+      // init call is what makes the skip safe. `generateComponent`'s
+      // if-statement-root path enters this branch with
+      // `isRootOfClientComponent: true` hardcoded, so without the gate a
+      // static component's interactive child would lose its bf-p with nothing
+      // live to replace it.
+      const bfNoSerializePassAttr = this.hasClientInteractivity ? ' __bfNoSerialize={true}' : ''
       if (comp.slotId) {
         scopeAttr = ` __instanceId={\`\${__scopeId}_${comp.slotId}\`}${propsPassAttr}${bfNoSerializePassAttr}${bfMountAttr}`
       } else {

@@ -73,25 +73,19 @@ export function bfTextEnd() {
  * today, and the component's own design tolerates that. They stay
  * diagnosable at compile time (BF049) only, not a runtime hard-stop.
  *
- * `liveOnlyProps` (Move C, Prop Boundary Contract, #2760's own follow-up) is
- * a DIFFERENT check bolted onto the same function, not another BF049-style
- * entry in the offender ladder above: a function VALUE is only ever a
- * problem when this specific prop is one this component's own client code
- * actually calls live (`ir.metadata.clientAnalysis.liveOnlyProps`, computed
- * by `computeLiveOnlyProps` in `packages/jsx/src/ir-to-client-js/index.ts`
- * — keyed by the prop's caller-facing name, valued by its declared type's
- * printable text so the error can name it without re-deriving it). A
- * function-typed prop this component declares but never actually reads is
- * simply not in that map, and is left to `JSON.stringify`'s own existing
- * behavior (silently dropped from the payload, exactly like an unused
- * `Symbol`-typed prop already is) — throwing for it would be a false
- * refusal.
+ * `liveOnlyProps` (Move C) is a separate check sharing this function, not
+ * another entry in the offender ladder above. A function VALUE only matters
+ * when the component's own client code calls that prop live — the map
+ * (`clientAnalysis.liveOnlyProps`, built by `computeLiveOnlyProps` in
+ * `packages/jsx/src/ir-to-client-js/index.ts`) is keyed by caller-facing
+ * prop name and valued by the declared type's text, so the error can name
+ * the real shape. A function-typed prop the component never reads is absent
+ * from the map and keeps `JSON.stringify`'s silent drop; throwing for it
+ * would be a false refusal.
  *
- * The caller (`hono-adapter.ts`) only ever invokes this for a ROOT mount
- * (`!__bfChild`) — a CHILD's serialization is skipped entirely at codegen,
- * so a live-only function prop never reaches here for a component that's
- * always used as a compiled child (`initChild`/`createComponent`) the way
- * BF049's own declaration-time check can't distinguish.
+ * Generated code calls this only for a mount that actually reads bf-p, so
+ * the throw can't fire for a component that is always someone's compiled
+ * child — the case BF049's declaration-time check cannot tell apart.
  */
 export function serializeHydrationProps(
   props: Record<string, unknown>,

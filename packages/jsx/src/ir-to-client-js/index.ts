@@ -127,33 +127,31 @@ export function generateClientJsWithSourceMap(
 }
 
 /**
- * A prop the component's own client-side code needs LIVE, not JSON-shaped —
- * its declared type resolves to a function type (`() => number`, or the
- * object-form `Function`). Keyed by the prop's CALLER-FACING name (`p.
- * sourceName ?? p.name`, matching the `bf-p` blob key a renaming destructure
- * serializes under — see `hono-adapter.ts`'s `callerKey`), valued by the
- * declared type's printable text (`TypeInfo.raw`) so a hydration-boundary
- * error can name the exact declared shape without re-deriving it.
+ * Props the component's own client code needs LIVE rather than JSON-shaped:
+ * declared type resolves to a function (`() => number`, or object-form
+ * `Function`). Keyed by CALLER-FACING name (`sourceName ?? name`) to match
+ * the `bf-p` blob key a renaming destructure serializes under
+ * (`hono-adapter.ts`'s `callerKey`), valued by the declared type's printable
+ * text so a hydration-boundary error can name the real shape.
  *
- * This is deliberately NOT the same question BF049
- * (`checkRichTypePropSerialization`, `rich-type-refusal.ts`) answers: BF049
- * fires at DECLARATION time, blind to whether the owning component is ever
- * mounted as a hydration ROOT vs. received live as a CHILD (`initChild`) —
- * a function-typed prop is completely fine for a component that's always
- * used as a compiled child. Whether a specific mount is a root is a RUNTIME
- * fact (`__bfChild`), not visible here, so this set only classifies WHICH
- * props are live-only; the adapter decides whether that matters for a given
- * mount (`hono-adapter.ts`'s `__bfChild`-gated `serializeHydrationProps`
- * call, `packages/adapter-hono/src/utils.ts`).
+ * Classification only. Whether it matters depends on how a given mount is
+ * used, which is a runtime fact (`__bfChild`) invisible here — a
+ * function-typed prop is perfectly fine for a component that is always a
+ * compiled child. That is why this is not BF049
+ * (`checkRichTypePropSerialization`), which must answer at declaration time.
+ *
+ * Known conservative miss: an ALIASED function type
+ * (`type Filter = (s: string) => boolean`) resolves to `kind: 'interface'`
+ * with no member walk, so it is not classified and falls back to the old
+ * silent drop. Same limitation BF049 has for aliased rich types.
  */
 function computeLiveOnlyProps(ir: ComponentIR, neededProps: ReadonlySet<string>): Record<string, string> {
   const liveOnlyProps: Record<string, string> = {}
   for (const param of ir.metadata.propsParams) {
-    // Same exclusions `propsToSerialize` (hono-adapter.ts) and BF049 both
-    // apply: `on*` is the DOM-event-handler-shaped convention (wired via
-    // the compiler's own listener path, never prop serialization), and
-    // `__*` is internal hydration plumbing that never round-trips through
-    // `bf-p` at all.
+    // Same exclusions `propsToSerialize` (hono-adapter.ts) applies: `on*` is
+    // the event-handler convention, wired through the listener path rather
+    // than prop serialization, and `__*` is hydration plumbing that never
+    // round-trips through `bf-p`.
     if (param.isRest || param.name.startsWith('on') || param.name.startsWith('__')) continue
     if (!neededProps.has(param.name)) continue
     const declared = resolvePropDeclaredType(param.sourceName ?? param.name, ir.metadata)
