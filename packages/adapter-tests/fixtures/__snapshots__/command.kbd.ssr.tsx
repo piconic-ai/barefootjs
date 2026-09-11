@@ -58,12 +58,22 @@ export type { KbdProps, KbdGroupProps }
 export function Kbd({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdPropsWithHydration = {} as KbdPropsWithHydration) {
   const __scopeId = __instanceId || `Kbd_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  if (typeof asChild !== 'function' && !(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Kbd')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    if (!(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Kbd', {})
+  }
 
   if (asChild) {
     return (
@@ -78,12 +88,22 @@ export function Kbd({ className = '', asChild = false, children, __instanceId, _
 export function KbdGroup({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdGroupPropsWithHydration = {} as KbdGroupPropsWithHydration) {
   const __scopeId = __instanceId || `KbdGroup_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  if (typeof asChild !== 'function' && !(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'KbdGroup')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    if (!(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'KbdGroup', {})
+  }
 
   if (asChild) {
     return (

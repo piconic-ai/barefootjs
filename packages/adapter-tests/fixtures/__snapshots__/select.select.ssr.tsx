@@ -136,13 +136,23 @@ export function Select(__allProps: SelectProps & { __instanceId?: string; __bfSc
   const setInternalValue: (valueOrFn: string | ((prev: string) => string)) => void = () => {}
   const isControlled = () => props.value !== undefined
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.open !== 'function' && !(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Select')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Select', {})
+  }
 
   return (
     <>{provideContextSSR(SelectContext, {
@@ -162,10 +172,20 @@ export function SelectTrigger(__allProps: SelectTriggerProps & { __instanceId?: 
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `SelectTrigger_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectTrigger')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectTrigger', {})
+  }
 
   return (
     <button data-slot="select-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="none" data-state="closed" className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
@@ -176,10 +196,20 @@ export function SelectValue(__allProps: SelectValueProps & { __instanceId?: stri
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `SelectValue_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.placeholder !== 'function' && !(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectValue')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectValue', {})
+  }
 
   return (
     <span data-slot="select-value" id={props.id} className="pointer-events-none truncate" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{bfText("s0")}{props.placeholder ?? ''}{bfTextEnd()}</span>
@@ -190,11 +220,21 @@ export function SelectContent(__allProps: SelectContentProps & { __instanceId?: 
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `SelectContent_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  if (typeof props.align !== 'function' && !(typeof props.align === 'object' && props.align !== null && 'isEscaped' in props.align)) __hydrateProps['align'] = props.align
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectContent')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    if (!(typeof props.align === 'object' && props.align !== null && 'isEscaped' in props.align)) __hydrateProps['align'] = props.align
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectContent', {})
+  }
 
   return (
     <div data-slot="select-content" data-state="closed" role="listbox" id={props.id} tabindex={-1} className={`${selectContentBaseClasses} ${selectContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
@@ -207,12 +247,22 @@ export function SelectItem(__allProps: SelectItemProps & { __instanceId?: string
   const isDisabled = () => props.disabled ?? false
   const stateClasses = () => isDisabled() ? selectItemDisabledClasses : selectItemDefaultClasses
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectItem')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectItem', {})
+  }
 
   return (
     <div data-slot="select-item" data-value={props.value} data-state="unchecked" role="option" id={props.id} aria-selected="false" aria-disabled={(isDisabled()) || undefined} tabindex={isDisabled() ? -1 : 0} className={`${selectItemBaseClasses} ${stateClasses()} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span data-slot="select-item-indicator" className={`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`} style="display:none"><CheckIcon className="size-4" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></span>{props.children}</div>
@@ -222,11 +272,21 @@ export function SelectItem(__allProps: SelectItemProps & { __instanceId?: string
 export function SelectGroup({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectGroupPropsWithHydration = {} as SelectGroupPropsWithHydration) {
   const __scopeId = __instanceId || `SelectGroup_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectGroup')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectGroup', {})
+  }
 
   return (
     <div data-slot="select-group" role="group" className={className} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</div>
@@ -236,11 +296,21 @@ export function SelectGroup({ children, className = '', __instanceId, __bfScope:
 export function SelectLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectLabelPropsWithHydration = {} as SelectLabelPropsWithHydration) {
   const __scopeId = __instanceId || `SelectLabel_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectLabel')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectLabel', {})
+  }
 
   return (
     <div data-slot="select-label" className={`${selectLabelClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</div>
@@ -250,10 +320,20 @@ export function SelectLabel({ children, className = '', __instanceId, __bfScope:
 export function SelectSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectSeparatorPropsWithHydration = {} as SelectSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `SelectSeparator_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectSeparator')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectSeparator', {})
+  }
 
   return (
     <div data-slot="select-separator" role="separator" className={`${selectSeparatorClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" />

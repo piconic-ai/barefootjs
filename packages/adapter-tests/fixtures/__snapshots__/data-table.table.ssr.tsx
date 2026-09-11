@@ -156,11 +156,21 @@ export type { TableProps, TableHeaderProps, TableBodyProps, TableFooterProps, Ta
 export function Table({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TablePropsWithHydration = {} as TablePropsWithHydration) {
   const __scopeId = __instanceId || `Table_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Table')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Table', {})
+  }
 
   return (
     <div data-slot="table-container" className={`relative w-full overflow-x-auto`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><table data-slot="table" className={`${tableClasses} ${className}`} {...props} bf="s0">{children}</table></div>
@@ -170,11 +180,21 @@ export function Table({ children, className = '', __instanceId, __bfScope: _bfSc
 export function TableHeader({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeaderPropsWithHydration = {} as TableHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `TableHeader_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHeader')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHeader', {})
+  }
 
   return (
     <thead data-slot="table-header" className={`${tableHeaderClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</thead>
@@ -184,11 +204,21 @@ export function TableHeader({ children, className = '', __instanceId, __bfScope:
 export function TableBody({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableBodyPropsWithHydration = {} as TableBodyPropsWithHydration) {
   const __scopeId = __instanceId || `TableBody_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableBody')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableBody', {})
+  }
 
   return (
     <tbody data-slot="table-body" className={`${tableBodyClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tbody>
@@ -198,11 +228,21 @@ export function TableBody({ children, className = '', __instanceId, __bfScope: _
 export function TableFooter({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableFooterPropsWithHydration = {} as TableFooterPropsWithHydration) {
   const __scopeId = __instanceId || `TableFooter_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableFooter')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableFooter', {})
+  }
 
   return (
     <tfoot data-slot="table-footer" className={`${tableFooterClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tfoot>
@@ -212,11 +252,21 @@ export function TableFooter({ children, className = '', __instanceId, __bfScope:
 export function TableRow({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableRowPropsWithHydration = {} as TableRowPropsWithHydration) {
   const __scopeId = __instanceId || `TableRow_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableRow')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableRow', {})
+  }
 
   return (
     <tr data-slot="table-row" className={`${tableRowClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tr>
@@ -226,11 +276,21 @@ export function TableRow({ children, className = '', __instanceId, __bfScope: _b
 export function TableHead({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeadPropsWithHydration = {} as TableHeadPropsWithHydration) {
   const __scopeId = __instanceId || `TableHead_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHead')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHead', {})
+  }
 
   return (
     <th data-slot="table-head" className={`${tableHeadClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</th>
@@ -240,11 +300,21 @@ export function TableHead({ children, className = '', __instanceId, __bfScope: _
 export function TableCell({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCellPropsWithHydration = {} as TableCellPropsWithHydration) {
   const __scopeId = __instanceId || `TableCell_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCell')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCell', {})
+  }
 
   return (
     <td data-slot="table-cell" className={`${tableCellClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</td>
@@ -254,11 +324,21 @@ export function TableCell({ children, className = '', __instanceId, __bfScope: _
 export function TableCaption({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCaptionPropsWithHydration = {} as TableCaptionPropsWithHydration) {
   const __scopeId = __instanceId || `TableCaption_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCaption')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCaption', {})
+  }
 
   return (
     <caption data-slot="table-caption" className={`${tableCaptionClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</caption>

@@ -387,11 +387,21 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   const __scopeId = __instanceId || `CheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CheckIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CheckIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['check']} /></svg>
@@ -402,11 +412,21 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `ChevronDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronDownIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronDownIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['chevron-down']} /></svg>
@@ -417,11 +437,21 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `ChevronUpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronUpIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronUpIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['chevron-up']} /></svg>
@@ -432,11 +462,21 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `ChevronLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronLeftIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronLeftIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['chevron-left']} /></svg>
@@ -447,11 +487,21 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
   const __scopeId = __instanceId || `ChevronRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronRightIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronRightIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['chevron-right']} /></svg>
@@ -462,11 +512,21 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
   const __scopeId = __instanceId || `XIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'XIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'XIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['x']} /></svg>
@@ -477,11 +537,21 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `PlusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PlusIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PlusIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['plus']} /></svg>
@@ -492,11 +562,21 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   const __scopeId = __instanceId || `MinusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MinusIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MinusIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['minus']} /></svg>
@@ -507,11 +587,21 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
   const __scopeId = __instanceId || `SunIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SunIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SunIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['sun']} /></svg>
@@ -522,11 +612,21 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `MoonIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MoonIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MoonIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['moon']} /></svg>
@@ -537,11 +637,21 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
   const __scopeId = __instanceId || `MonitorIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MonitorIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MonitorIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['monitor']} /></svg>
@@ -552,11 +662,21 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `CopyIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CopyIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CopyIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['copy']} /></svg>
@@ -567,11 +687,21 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `ClipboardIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ClipboardIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ClipboardIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['clipboard']} /></svg>
@@ -582,11 +712,21 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
   const __scopeId = __instanceId || `ClipboardCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ClipboardCheckIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ClipboardCheckIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['clipboard-check']} /></svg>
@@ -597,11 +737,21 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `MenuIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MenuIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MenuIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['menu']} /></svg>
@@ -612,11 +762,21 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `ArrowLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowLeftIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowLeftIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['arrow-left']} /></svg>
@@ -627,11 +787,21 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
   const __scopeId = __instanceId || `ArrowRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowRightIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowRightIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['arrow-right']} /></svg>
@@ -642,11 +812,21 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `ArrowUpDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowUpDownIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowUpDownIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['arrow-up-down']} /></svg>
@@ -657,11 +837,21 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
   const __scopeId = __instanceId || `EllipsisIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'EllipsisIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'EllipsisIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
@@ -672,11 +862,21 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
   const __scopeId = __instanceId || `GitHubIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GitHubIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GitHubIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="currentColor" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
@@ -687,11 +887,21 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
   const __scopeId = __instanceId || `SettingsIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SettingsIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SettingsIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>
@@ -702,11 +912,21 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   const __scopeId = __instanceId || `GlobeIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GlobeIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GlobeIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>
@@ -717,11 +937,21 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
   const __scopeId = __instanceId || `LogOutIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'LogOutIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'LogOutIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /></svg>
@@ -732,11 +962,21 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
   const __scopeId = __instanceId || `CircleHelpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleHelpIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleHelpIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
@@ -747,11 +987,21 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
   const __scopeId = __instanceId || `SearchIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SearchIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SearchIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
@@ -762,11 +1012,21 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
   const __scopeId = __instanceId || `CircleCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleCheckIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleCheckIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
@@ -777,11 +1037,21 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
   const __scopeId = __instanceId || `CircleXIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleXIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleXIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
@@ -792,11 +1062,21 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
   const __scopeId = __instanceId || `TriangleAlertIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TriangleAlertIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TriangleAlertIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
@@ -807,11 +1087,21 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   const __scopeId = __instanceId || `InfoIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'InfoIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'InfoIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
@@ -822,11 +1112,21 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
   const __scopeId = __instanceId || `CalendarIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CalendarIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CalendarIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg>
@@ -837,11 +1137,21 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
   const __scopeId = __instanceId || `GripVerticalIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GripVerticalIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GripVerticalIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></svg>
@@ -852,11 +1162,21 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
   const __scopeId = __instanceId || `LoaderCircleIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'LoaderCircleIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'LoaderCircleIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><path d={strokePaths['loader-circle']} /></svg>
@@ -867,11 +1187,21 @@ export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _
   const __scopeId = __instanceId || `PanelLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeAttrs = size ? { width: sizeMap[size], height: sizeMap[size] } : {}
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PanelLeftIcon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PanelLeftIcon', {})
+  }
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" {...sizeAttrs} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={`shrink-0 ${className}`} aria-hidden="true" {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M9 3v18" /></svg>
@@ -884,12 +1214,22 @@ export function Icon({ name, size = 'md', className = '', __instanceId, __bfScop
   const path = strokePaths[name as keyof typeof strokePaths]
   const linecap = (buttLinecapIcons as readonly string[]).includes(name) ? 'butt' : 'round'
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof name !== 'function' && !(typeof name === 'object' && name !== null && 'isEscaped' in name)) __hydrateProps['name'] = name
-  if (typeof size !== 'function' && !(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Icon')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof name === 'object' && name !== null && 'isEscaped' in name)) __hydrateProps['name'] = name
+    if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Icon', {})
+  }
 
   if (name === 'github') {
     return (

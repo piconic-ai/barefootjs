@@ -75,11 +75,21 @@ export type { AccordionProps, AccordionItemProps, AccordionTriggerProps, Accordi
 export function Accordion({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: AccordionPropsWithHydration = {} as AccordionPropsWithHydration) {
   const __scopeId = __instanceId || `Accordion_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Accordion')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Accordion', {})
+  }
 
   return (
     <div data-slot="accordion" className={`${accordionClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</div>
@@ -90,13 +100,23 @@ export function AccordionItem(__allProps: AccordionItemProps & { __instanceId?: 
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `AccordionItem_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.open !== 'function' && !(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionItem')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionItem', {})
+  }
 
   return (
     <>{provideContextSSR(AccordionItemContext, {
@@ -111,12 +131,22 @@ export function AccordionTrigger(__allProps: AccordionTriggerProps & { __instanc
   const __scopeId = __instanceId || `AccordionTrigger_${Math.random().toString(36).slice(2, 8)}`
   const className = props.className ?? ''
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  if (typeof props.asChild !== 'function' && !(typeof props.asChild === 'object' && props.asChild !== null && 'isEscaped' in props.asChild)) __hydrateProps['asChild'] = props.asChild
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionTrigger')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.asChild === 'object' && props.asChild !== null && 'isEscaped' in props.asChild)) __hydrateProps['asChild'] = props.asChild
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionTrigger', {})
+  }
 
   if (props.asChild) {
     return (
@@ -133,10 +163,20 @@ export function AccordionContent(__allProps: AccordionContentProps & { __instanc
   const __scopeId = __instanceId || `AccordionContent_${Math.random().toString(36).slice(2, 8)}`
   const className = () => props.className ?? ''
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionContent')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionContent', {})
+  }
 
   return (
     <div data-slot="accordion-content" id={props.id} role="region" data-state="closed" className={`${accordionContentBaseClasses} ${accordionContentClosedClasses}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><div className={`overflow-hidden text-sm`}><div className={`pt-0 pb-4 ${className()}`} bf="s0">{props.children}</div></div></div>

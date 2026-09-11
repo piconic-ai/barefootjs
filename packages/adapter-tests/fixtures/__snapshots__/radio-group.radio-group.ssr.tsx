@@ -56,13 +56,23 @@ export function RadioGroup(__allProps: RadioGroupProps & { __instanceId?: string
   const isControlled = () => props.value !== undefined
   const currentValue = () => isControlled() ? (controlledValue() ?? '') : internalValue()
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.defaultValue !== 'function' && !(typeof props.defaultValue === 'object' && props.defaultValue !== null && 'isEscaped' in props.defaultValue)) __hydrateProps['defaultValue'] = props.defaultValue
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'RadioGroup')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.defaultValue === 'object' && props.defaultValue !== null && 'isEscaped' in props.defaultValue)) __hydrateProps['defaultValue'] = props.defaultValue
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'RadioGroup', {})
+  }
 
   return (
     <>{provideContextSSR(RadioGroupContext, {
@@ -84,11 +94,21 @@ export function RadioGroupItem(__allProps: RadioGroupItemProps & { __instanceId?
   const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `RadioGroupItem_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'RadioGroupItem')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'RadioGroupItem', {})
+  }
 
   return (
     <button data-slot="radio-group-item" data-state="unchecked" role="radio" aria-checked="false" disabled={(props.disabled ?? false) || undefined} id={props.id} className={`${itemClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><span data-slot="radio-group-indicator" className="flex size-4 items-center justify-center" style="display:none"><span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" /></span></button>

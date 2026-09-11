@@ -453,8 +453,18 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only serialize props that the client JS init function actually reads
     const clientUsedProps = new Set(ir.metadata.clientAnalysis?.usedProps ?? [])
     const needsInit = ir.metadata.clientAnalysis?.needsInit ?? false
+    // Live-only props (Move C, Prop Boundary Contract): props whose declared
+    // type is a function this component's own client code calls. These are
+    // NOT excluded from `propsToSerialize` below (unlike `on*`/`__*`) — a
+    // live-only prop still needs the `__hydrateProps` scaffolding built for
+    // it, because whether it's actually reachable is a RUNTIME fact
+    // (`__bfChild`) this adapter can't decide at codegen time. Instead
+    // `serializeHydrationProps` (utils.ts) receives this map and only
+    // throws for a function value when this mount turns out to be a root
+    // (`!__bfChild`) — see the `hasPropsToSerialize` codegen below.
+    const liveOnlyProps = ir.metadata.clientAnalysis?.liveOnlyProps ?? {}
     const propsToSerialize = ir.metadata.propsParams.filter(p => {
-      // Skip function props and internal props
+      // Skip event-handler-shaped and internal props
       return !p.name.startsWith('on') && !p.name.startsWith('__') && clientUsedProps.has(p.name)
     })
     const hasPropsToSerialize = propsToSerialize.length > 0 && hasClientInteractivity && needsInit
@@ -502,6 +512,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       scopeIdLine,
       // Props serialization references __bfParentProps
       (hasPropsToSerialize || (hasClientInteractivity && isRootComponent)) ? '__bfParentProps' : '',
+      // Props serialization is gated `if (!__bfChild)` (Move C, Prop
+      // Boundary Contract) — a child mount's result is discarded, so
+      // serialization only runs for a root mount.
+      hasPropsToSerialize ? '__bfChild' : '',
     ].join('\n')
 
     // Rebuild hydration props with _ prefix for unused ones
@@ -604,10 +618,22 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only the outermost component reads bf-p via hydrate(); children get props via initChild().
     if (hasPropsToSerialize) {
       lines.push('')
-      lines.push(`  // Serialize props for client hydration`)
-      lines.push(`  const __hydrateProps: Record<string, unknown> = {}`)
+      lines.push(`  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop`)
+      lines.push(`  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is`)
+      lines.push(`  // only emitted when !__bfChild, see hydrationAttrs below) — children receive`)
+      lines.push(`  // props live via initChild(), so serialization is skipped entirely for a`)
+      lines.push(`  // child mount rather than computed and discarded. This also means a child`)
+      lines.push(`  // carrying an otherwise-unserializable prop (a Map, a live function) never`)
+      lines.push(`  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not`)
+      lines.push(`  // decidable at codegen time.`)
+      lines.push(`  let __bfPropsJson = __bfParentProps`)
+      lines.push(`  if (!__bfChild) {`)
+      lines.push(`    const __hydrateProps: Record<string, unknown> = {}`)
       for (const p of propsToSerialize) {
-        // Skip functions and JSX elements (they can't be JSON serialized)
+        // Skip JSX elements (they can't be JSON serialized) — a function
+        // value is NOT skipped here anymore: `serializeHydrationProps`
+        // below decides, via `liveOnlyProps`, whether this mount actually
+        // needs the value live and throws only then.
         // Use propsObjectName.propName for SolidJS-style, direct propName for destructured
         const propAccess = propsObjectName ? `${propsObjectName}.${p.name}` : p.name
         // The `bf-p` blob key is always the caller-facing name (#2524 CSR
@@ -615,9 +641,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
         // so a renaming destructure (`{ n: count }`) must serialize under
         // `n`, not the local binding `count`.
         const callerKey = p.sourceName ?? p.name
-        lines.push(`  if (typeof ${propAccess} !== 'function' && !(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
+        lines.push(`    if (!(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
       }
-      lines.push(`  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, '${name}')`)
+      lines.push(`    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, '${name}', ${JSON.stringify(liveOnlyProps)})`)
+      lines.push(`  }`)
     } else if (hasClientInteractivity && isRootComponent) {
       // No own props, but root is a component — pass through parent's props
       lines.push('')

@@ -2253,6 +2253,16 @@ export interface PropUsage {
 export interface ClientAnalysis {
   needsInit: boolean
   usedProps: string[]
+  /**
+   * Live-only props (Move C, Prop Boundary Contract): a subset of
+   * `usedProps` whose declared type resolves to a function type — this
+   * component's own client-side code needs to CALL these live, not read
+   * them as JSON. Keyed by the prop's caller-facing name (matching the
+   * `bf-p` blob key), valued by the declared type's printable text. See
+   * `computeLiveOnlyProps` (`ir-to-client-js/index.ts`) for the full
+   * rationale and its relationship to BF049.
+   */
+  liveOnlyProps: Record<string, string>
 }
 
 // =============================================================================

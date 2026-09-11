@@ -24,6 +24,7 @@ import { resolveRestSpreadNames } from './prop-handling.ts'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
+import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
 
 export interface ClientJsResult {
   code: string
@@ -126,17 +127,60 @@ export function generateClientJsWithSourceMap(
 }
 
 /**
+ * A prop the component's own client-side code needs LIVE, not JSON-shaped —
+ * its declared type resolves to a function type (`() => number`, or the
+ * object-form `Function`). Keyed by the prop's CALLER-FACING name (`p.
+ * sourceName ?? p.name`, matching the `bf-p` blob key a renaming destructure
+ * serializes under — see `hono-adapter.ts`'s `callerKey`), valued by the
+ * declared type's printable text (`TypeInfo.raw`) so a hydration-boundary
+ * error can name the exact declared shape without re-deriving it.
+ *
+ * This is deliberately NOT the same question BF049
+ * (`checkRichTypePropSerialization`, `rich-type-refusal.ts`) answers: BF049
+ * fires at DECLARATION time, blind to whether the owning component is ever
+ * mounted as a hydration ROOT vs. received live as a CHILD (`initChild`) —
+ * a function-typed prop is completely fine for a component that's always
+ * used as a compiled child. Whether a specific mount is a root is a RUNTIME
+ * fact (`__bfChild`), not visible here, so this set only classifies WHICH
+ * props are live-only; the adapter decides whether that matters for a given
+ * mount (`hono-adapter.ts`'s `__bfChild`-gated `serializeHydrationProps`
+ * call, `packages/adapter-hono/src/utils.ts`).
+ */
+function computeLiveOnlyProps(ir: ComponentIR, neededProps: ReadonlySet<string>): Record<string, string> {
+  const liveOnlyProps: Record<string, string> = {}
+  for (const param of ir.metadata.propsParams) {
+    // Same exclusions `propsToSerialize` (hono-adapter.ts) and BF049 both
+    // apply: `on*` is the DOM-event-handler-shaped convention (wired via
+    // the compiler's own listener path, never prop serialization), and
+    // `__*` is internal hydration plumbing that never round-trips through
+    // `bf-p` at all.
+    if (param.isRest || param.name.startsWith('on') || param.name.startsWith('__')) continue
+    if (!neededProps.has(param.name)) continue
+    const declared = resolvePropDeclaredType(param.sourceName ?? param.name, ir.metadata)
+    const isFunctionTyped =
+      declared?.kind === 'function' ||
+      (declared?.kind === 'interface' && baseTypeName(declared.raw) === 'Function')
+    if (!isFunctionTyped) continue
+    const callerKey = param.sourceName ?? param.name
+    liveOnlyProps[callerKey] = declared!.raw
+  }
+  return liveOnlyProps
+}
+
+/**
  * Pre-pass analysis: determine whether a component needs a client JS init function,
  * and which props the init function actually reads. This runs BEFORE the adapter
  * so the adapter can use the results to optimize bf-p serialization.
  */
-export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedProps: string[] } {
+export function analyzeClientNeeds(
+  ir: ComponentIR,
+): { needsInit: boolean; usedProps: string[]; liveOnlyProps: Record<string, string> } {
   const ctx = createContext(ir, undefined)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
 
   if (!needsClientJs(ctx)) {
-    return { needsInit: false, usedProps: [] }
+    return { needsInit: false, usedProps: [], liveOnlyProps: {} }
   }
 
   // Use the shared reference graph instead of replicating the extraction
@@ -162,7 +206,7 @@ export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedP
     }
   }
 
-  return { needsInit: true, usedProps: [...neededProps] }
+  return { needsInit: true, usedProps: [...neededProps], liveOnlyProps: computeLiveOnlyProps(ir, neededProps) }
 }
 
 /** Initialize an empty ClientJsContext from component IR metadata. */

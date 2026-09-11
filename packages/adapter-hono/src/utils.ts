@@ -72,12 +72,48 @@ export function bfTextEnd() {
  * demo already ships a live `RegExp` `pattern` prop that degrades to `{}`
  * today, and the component's own design tolerates that. They stay
  * diagnosable at compile time (BF049) only, not a runtime hard-stop.
+ *
+ * `liveOnlyProps` (Move C, Prop Boundary Contract, #2760's own follow-up) is
+ * a DIFFERENT check bolted onto the same function, not another BF049-style
+ * entry in the offender ladder above: a function VALUE is only ever a
+ * problem when this specific prop is one this component's own client code
+ * actually calls live (`ir.metadata.clientAnalysis.liveOnlyProps`, computed
+ * by `computeLiveOnlyProps` in `packages/jsx/src/ir-to-client-js/index.ts`
+ * — keyed by the prop's caller-facing name, valued by its declared type's
+ * printable text so the error can name it without re-deriving it). A
+ * function-typed prop this component declares but never actually reads is
+ * simply not in that map, and is left to `JSON.stringify`'s own existing
+ * behavior (silently dropped from the payload, exactly like an unused
+ * `Symbol`-typed prop already is) — throwing for it would be a false
+ * refusal.
+ *
+ * The caller (`hono-adapter.ts`) only ever invokes this for a ROOT mount
+ * (`!__bfChild`) — a CHILD's serialization is skipped entirely at codegen,
+ * so a live-only function prop never reaches here for a component that's
+ * always used as a compiled child (`initChild`/`createComponent`) the way
+ * BF049's own declaration-time check can't distinguish.
  */
-export function serializeHydrationProps(props: Record<string, unknown>, componentName: string): string | undefined {
+export function serializeHydrationProps(
+  props: Record<string, unknown>,
+  componentName: string,
+  liveOnlyProps: Record<string, string> = {},
+): string | undefined {
   const keys = Object.keys(props)
   if (keys.length === 0) return undefined
   for (const key of keys) {
     const value = props[key]
+    if (typeof value === 'function') {
+      const declaredType = liveOnlyProps[key]
+      if (declaredType === undefined) continue
+      throw new TypeError(
+        `[barefootjs] Cannot serialize prop '${key}' of <${componentName}> for hydration: it is declared ` +
+          `\`${declaredType}\` and read by the component's client code, but a function cannot cross the bf-p ` +
+          `JSON boundary (the client would hydrate against \`undefined\` and throw). A function-typed prop can ` +
+          `only reach <${componentName}> live — render <${componentName}> from a compiled parent component ` +
+          `(initChild) or mount it client-side (createComponent); from a route handler pass the data and let the ` +
+          `component own the accessor.`,
+      )
+    }
     const offender =
       typeof value === 'bigint'
         ? 'BigInt'

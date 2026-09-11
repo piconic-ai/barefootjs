@@ -50,12 +50,22 @@ export function Checkbox(__allProps: CheckboxProps & { __instanceId?: string; __
   const classes = () =>
     `${baseClasses} ${focusClasses} ${errorClasses} ${stateClasses} ${props.className ?? ''} grid place-content-center`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.defaultChecked !== 'function' && !(typeof props.defaultChecked === 'object' && props.defaultChecked !== null && 'isEscaped' in props.defaultChecked)) __hydrateProps['defaultChecked'] = props.defaultChecked
-  if (typeof props.checked !== 'function' && !(typeof props.checked === 'object' && props.checked !== null && 'isEscaped' in props.checked)) __hydrateProps['checked'] = props.checked
-  if (typeof props.error !== 'function' && !(typeof props.error === 'object' && props.error !== null && 'isEscaped' in props.error)) __hydrateProps['error'] = props.error
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Checkbox')
+  // Serialize props for client hydration — ROOT MOUNTS ONLY (Move C, Prop
+  // Boundary Contract). A child mount's __bfPropsJson is never read (bf-p is
+  // only emitted when !__bfChild, see hydrationAttrs below) — children receive
+  // props live via initChild(), so serialization is skipped entirely for a
+  // child mount rather than computed and discarded. This also means a child
+  // carrying an otherwise-unserializable prop (a Map, a live function) never
+  // spuriously fails SSR: unreachable-ness is a RUNTIME fact (__bfChild), not
+  // decidable at codegen time.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.defaultChecked === 'object' && props.defaultChecked !== null && 'isEscaped' in props.defaultChecked)) __hydrateProps['defaultChecked'] = props.defaultChecked
+    if (!(typeof props.checked === 'object' && props.checked !== null && 'isEscaped' in props.checked)) __hydrateProps['checked'] = props.checked
+    if (!(typeof props.error === 'object' && props.error !== null && 'isEscaped' in props.error)) __hydrateProps['error'] = props.error
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Checkbox', {})
+  }
 
   return (
     <button data-slot="checkbox" data-state={`${isChecked() ? 'checked' : 'unchecked'}`} role="checkbox" id={props.id} aria-checked={isChecked()} aria-invalid={(props.error) || undefined} disabled={(props.disabled ?? false) || undefined} className={classes()} onClick={() => {}} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s2">{isChecked() ? <>{bfComment("cond-start:s0")}<CheckIcon data-slot="checkbox-indicator" className="size-3.5 text-current" __instanceId={`${__scopeId}_s1`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s1'} />{bfComment("cond-end:s0")}</> : <>{bfComment("cond-start:s0")}{bfComment("cond-end:s0")}</>}</button>
