@@ -26,14 +26,15 @@ This is an in-progress prototype, not a polished/final deck.
   layouts emit and mounts the matching component into them as peitho swaps
   slides in and out of the light-DOM viewer; `component/narration.ts` adds the
   deck's progress bar, slide counter, and headline word-reveal.
-- `build.sh` — builds everything above into a static, host-anywhere output
-  directory (see below).
+- `slide.json` — the page `<title>`.
+
+The build itself is shared by every deck: `site/core/scripts/build-slides.ts`
+(`bun run slides:build <slug>`, see `site/core/slides/README.md`).
 
 Not checked in: `fontsrc/` (the raw `.woff2` files and a scratch
 `fonts.css`/`google.css` used to *generate* `css/0-fonts.css`) — the deck only
 needs the already-embedded `css/0-fonts.css` at runtime, and `component/dist/`
-/ `component/bundle.js` / `component/node_modules/` (build.sh's own working
-output).
+/ `component/node_modules/` (the build script's working output).
 
 ## Rebuilding
 
@@ -48,7 +49,8 @@ Workers Assets actually serves in production.
 To rebuild after changing a source file here, from this directory:
 
 ```sh
-PEITHO=/path/to/peitho ./build.sh ../../public/slides/overview
+cd site/core
+PEITHO=/path/to/peitho bun run slides:build overview
 ```
 
 (`peitho` itself is built from https://github.com/mizzy/peitho and is not
