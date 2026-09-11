@@ -13,8 +13,8 @@ This is an in-progress prototype, not a polished/final deck.
 - `css/base.css` — deck styling.
 - `css/0-fonts.css` — the deck's web fonts, embedded as data URIs (generated
   from `fontsrc/`, which is not checked in — see below).
-- `assets/SOURCES.md` — the record of any third-party media shipped with the
-  deck (currently none; see "Hero media" below).
+- `assets/hero.mp4` + `assets/hero.jpg` — the cover's looping clip and its
+  poster frame (a Pexels clip; see "Hero media" below and `assets/SOURCES.md`).
 - `component/` — a small Vite project that compiles the deck's interactive
   BarefootJS components (`component/components/*.tsx`) with `@barefootjs/vite`
   and `CSRAdapter`, and bundles the result into a single client script. It
@@ -39,7 +39,7 @@ needs the already-embedded `css/0-fonts.css` at runtime, and `component/dist/`
 
 The output (`site/core/public/slides/overview/`: peitho's distribution viewer,
 `index.html`, `manifest.json`, `peitho.css`, `slides/*.html`, plus
-`assets/deck.js`) is not committed. The deploy workflow
+`assets/{hero.mp4,hero.jpg,deck.js}`) is not committed. The deploy workflow
 installs a pinned peitho release and builds every deck before the site build;
 pull requests touching `slides/**` run the same build (`ci-slides.yml`).
 
@@ -56,9 +56,13 @@ it into `dist/slides/overview/` and `bun run server.tsx` serves it at
 
 ## Hero media
 
-The deck ships no third-party media. The cover originally used a Mixkit beach
-clip recorded here as free for commercial use; the clip's own page turned out
-to say "720p version for personal use only" (Mixkit Restricted License), so it
-was removed. `assets/SOURCES.md` records this. Any replacement needs a license
-that clearly permits public commercial use, recorded there with source URL,
-author, license and the date it was checked.
+The cover's clip is Taryn Elliott's "Waves Crashing on the Shoreline" from
+Pexels (video 6624743), used unmodified at 1920x1080 under the Pexels License,
+which permits commercial use without attribution (credit is given anyway in
+`assets/SOURCES.md`, with the source URL, author, license and the date it was
+checked). Any replacement needs a license that clearly permits public commercial
+use, recorded there the same way.
+
+An earlier revision used a Mixkit clip that turned out to be under Mixkit's
+Restricted License ("720p version for personal use only"); it was removed and
+`SOURCES.md` keeps a note of that.
