@@ -54,8 +54,10 @@ export function ReactiveProps() {
   )
 }
 
-// Demonstrates that `props.xxx` access preserves reactivity while
-// destructured props capture the initial value. See spec/compiler.md.
+// `props.xxx` access and destructured props are both fully reactive
+// (Move B, #2760's follow-up made the latter live) — this pair exists to
+// pin that they stay byte-for-byte EQUIVALENT in behavior, not to
+// contrast a working path against a broken one. See spec/compiler.md.
 type PropsStyleChildProps = {
   value: number
   label: string
@@ -73,7 +75,6 @@ function PropsStyleChild(props: PropsStyleChildProps) {
   )
 }
 
-// @bf-ignore props-destructuring
 function DestructuredStyleChild({ value, label }: PropsStyleChildProps) {
   const displayValue = createMemo(() => value * 10)
 
@@ -102,7 +103,7 @@ export function PropsReactivityComparison() {
         <h3>Props Style (Reactive)</h3>
         <PropsStyleChild value={count()} label="Props Style" />
 
-        <h3>Destructured Style (Not Reactive)</h3>
+        <h3>Destructured Style (Reactive)</h3>
         <DestructuredStyleChild value={count()} label="Destructured" />
       </div>
     </div>

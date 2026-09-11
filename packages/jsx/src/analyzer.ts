@@ -25,7 +25,7 @@ import {
   isArrowComponentFunction,
   collectReactiveGetterNames,
 } from './analyzer-context.ts'
-import { createError, createWarning, ErrorCodes, type ErrorCode } from './errors.ts'
+import { createError, ErrorCodes, type ErrorCode } from './errors.ts'
 import { baseTypeName } from './rich-type-evidence.ts'
 import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
@@ -3489,13 +3489,13 @@ function hasIgnoreDirective(
 function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): void {
   // Pattern 1: Destructured props - { prop1, prop2 }
   if (ts.isObjectBindingPattern(param.name)) {
-    // Record destructuring info for deferred BF043 emission (stateful components only)
-    const componentNode = ctx.componentNode
-    const ignored = !!(componentNode && hasIgnoreDirective(componentNode, ctx.sourceFile, 'props-destructuring'))
-    ctx.propsDestructuring = {
-      loc: getSourceLocation(param, ctx.sourceFile, ctx.filePath),
-      hasIgnoreDirective: ignored,
-    }
+    // Record the destructuring pattern's own location — `compiler.ts`'s
+    // `checkRichTypePropSerialization` prefers pointing a rich-type-prop
+    // diagnostic here over the whole component root when the component
+    // destructures its props (destructuring itself no longer carries any
+    // diagnostic of its own since Move B, #2760's follow-up, made it live —
+    // see `props-binding.ts`'s `livePropReadExpr`).
+    ctx.propsDestructuring = { loc: getSourceLocation(param, ctx.sourceFile, ctx.filePath) }
 
     // Resolve each destructured binding's declared type from the param's type
     // annotation, so `{ value }: Props` keeps the same per-prop TypeInfo as the
@@ -3965,20 +3965,6 @@ function extractDependencies(code: string, ctx: AnalyzerContext): string[] {
 // =============================================================================
 
 function validateContext(ctx: AnalyzerContext): void {
-  // BF043: Emit props destructuring warning only for stateful components.
-  // Stateless components can safely destructure props since values are static.
-  const isStateful = ctx.signals.length > 0 || ctx.memos.length > 0 ||
-    ctx.effects.length > 0 || ctx.onMounts.length > 0
-  if (ctx.propsDestructuring && isStateful && !ctx.propsDestructuring.hasIgnoreDirective) {
-    ctx.errors.push(
-      createWarning(ErrorCodes.PROPS_DESTRUCTURING, ctx.propsDestructuring.loc, {
-        suggestion: {
-          message: 'Use props object directly: function Component(props: Props) { ... props.checked ... }',
-        },
-      })
-    )
-  }
-
   // Check for 'use client' directive if any browser-only API is used.
   // Browser-only APIs include signals AND context/portal runtime hooks:
   // their implementations live in `@barefootjs/client/runtime` and require

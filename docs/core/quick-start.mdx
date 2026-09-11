@@ -88,7 +88,7 @@ export function Counter(props: CounterProps) {
 }
 ```
 
-See [Client Directive](./rendering/client-directive.md), [`createSignal`](./reactivity/create-signal.md), and [`createMemo`](./reactivity/create-memo.md) for what each piece does. Props are read via `props.initial`, not destructured — destructuring captures the value once and breaks reactivity, so the compiler emits warning [`BF043`](./advanced/error-codes.md) when it sees that form on a `"use client"` component. [Props Reactivity](./reactivity/props-reactivity.md) covers the full rule.
+See [Client Directive](./rendering/client-directive.md), [`createSignal`](./reactivity/create-signal.md), and [`createMemo`](./reactivity/create-memo.md) for what each piece does. Props are read via `props.initial` here, but `const { initial } = props` in the function parameter works identically — both forms compile to the same live read, so pick whichever reads better. [Props Reactivity](./reactivity/props-reactivity.md) covers the full rule.
 
 The Counter is mounted in `server.tsx`:
 

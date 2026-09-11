@@ -17,6 +17,7 @@ import { toLocaleDatePlugin, foldedArgToClientJs } from '../to-locale-date-lower
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 import { rewriteBarePropRefs } from '../prop-rewrite.ts'
+import { livePropReadExpr } from '../props-binding.ts'
 
 /**
  * Profile mode (#1690, SR3/SR4): the id appended to a DOM-binding effect so the
@@ -214,9 +215,19 @@ export function emitDedupedAttrUpdate(
  * or a name shadowed by an inner binding (`items.map((tag) => tag.x)`).
  * This function used to run its own `\btag\b`-style regex over the raw
  * expression text with no such distinction, so `queryHref(base, { tag: tag })`
- * rewrote the KEY too (`{ _p.tag: _p.tag }`, a syntax error) — #2741. Only
- * the default-value `(_p.x ?? <default>)` wrapping is specific to this call
- * site, supplied via `replacementFor` rather than a second copy of the walk.
+ * rewrote the KEY too (`{ _p.tag: _p.tag }`, a syntax error) — #2741.
+ *
+ * The substitution itself (`_p.x` or `(_p.x ?? <default>)`) is
+ * `livePropReadExpr` (`props-binding.ts`) — the one formula for "how does
+ * a live prop read look," shared with the general init-body rewrite
+ * (`rewriteDestructuredPropReads`) and the controlled-signal sync effect
+ * (`build-declaration-emit.ts`). This call site only supplies the
+ * explicit-default fallback (no `usage`/`usedAsCondition` — an attribute
+ * read is never a loop-array source or a conditional guard the way a
+ * bare init-body reference can be), so it stays idempotent under that
+ * later whole-body rewrite: `_p.x` is a `PropertyAccessExpression` whose
+ * `.name` slot is a non-value position, so nothing here gets touched
+ * twice.
  */
 export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContext): string {
   if (ctx.propsObjectName) return expr
@@ -233,11 +244,10 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
   }
   if (propNames.size === 0) return expr
 
-  const replacementFor = (localName: string, callerKey: string): string => {
-    const defaultVal = propsByName.get(localName)?.defaultValue
-    if (!defaultVal) return `${PROPS_PARAM}.${callerKey}`
-    const defaultContainsArrow = propsByName.get(localName)?.defaultContainsArrow
-    return `(${PROPS_PARAM}.${callerKey} ?? ${defaultContainsArrow ? `(${defaultVal})` : defaultVal})`
+  const replacementFor = (localName: string): string => {
+    const prop = propsByName.get(localName)
+    if (!prop) return `${PROPS_PARAM}.${localName}`
+    return livePropReadExpr(prop, undefined, false)
   }
 
   // Parenthesized so an object-literal or arrow-function expression parses

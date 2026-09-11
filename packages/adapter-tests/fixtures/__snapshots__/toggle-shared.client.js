@@ -44,11 +44,9 @@ export function initToggle(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const toggleItems = _p.toggleItems ?? []
-
   const [_s1] = $(__scope, 's1')
 
-  mapArray(() => toggleItems, _s1, (item) => String(item.label), (item, __idx, __existing) => {
+  mapArray(() => (_p.toggleItems ?? []), _s1, (item) => String(item.label), (item, __idx, __existing) => {
     if (__existing) { initChild('ToggleItem__69f56292', __existing, { get label() { return item().label }, get defaultOn() { return item().defaultOn } }); return __existing }
     return createComponent('ToggleItem__69f56292', { get label() { return item().label }, get defaultOn() { return item().defaultOn } }, item().label)
   }, 'l0')

@@ -29,12 +29,17 @@ import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { nodeContainsJsx } from './reactivity-checker.ts'
 
 /**
- * Deferred info for BF043 (props destructuring warning).
- * Recorded during extractProps(), emitted only for stateful components in validateContext().
+ * The destructuring pattern's own source location, recorded during
+ * `extractProps()` for a component that destructures its props parameter
+ * (`function Child({ value })`). No diagnostic of its own since Move B
+ * (#2760's follow-up) made destructured prop reads live — kept as a more
+ * precise fallback location for OTHER diagnostics about the props
+ * parameter, e.g. `compiler.ts`'s `checkRichTypePropSerialization`, which
+ * prefers pointing at the destructuring pattern over the whole component
+ * root.
  */
 export interface PropsDestructuringInfo {
   loc: SourceLocation
-  hasIgnoreDirective: boolean
 }
 
 /**
@@ -182,7 +187,7 @@ export interface AnalyzerContext {
   restPropsName: string | null
   /** Keys that can be statically expanded from rest props (closed type) */
   restPropsExpandedKeys: string[]
-  /** Deferred BF043 info; emitted only for stateful components in validateContext() */
+  /** Set when the props parameter is a destructuring pattern — see `PropsDestructuringInfo`. */
   propsDestructuring: PropsDestructuringInfo | null
 
   // JSX return — widened to any `ts.Expression` so the Phase 1 dispatcher
@@ -322,9 +327,9 @@ export function createAnalyzerContext(
       // to compiles with no `error`-severity diagnostic: a compile that
       // already refused loudly may take degraded fallback paths whose
       // artifacts are gated by the error — the invariant this trips on is
-      // the SILENT leak. A `warning` (e.g. BF043 props-destructuring) does
-      // not gate anything, so it must not silently disarm this assertion too
-      // (#2867) — only `error` severity does.
+      // the SILENT leak. A `warning`-severity diagnostic does not gate
+      // anything, so it must not silently disarm this assertion too (#2867)
+      // — only `error` severity does.
       if (
         process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' &&
         !this.errors.some((e) => e.severity === 'error') &&

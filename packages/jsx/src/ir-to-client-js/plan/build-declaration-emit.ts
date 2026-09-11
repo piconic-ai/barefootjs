@@ -13,6 +13,7 @@ import type { Declaration } from '../declaration-sort.ts'
 import type { ClientJsContext } from '../types.ts'
 import type { ParamInfo, SignalInfo } from '../../types.ts'
 import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
+import { livePropReadExpr } from '../../props-binding.ts'
 import { ENV_SIGNAL_CLIENT_FACTORY } from '../../adapters/env-signal.ts'
 import type {
   ControlledSignalEffectPlan,
@@ -182,11 +183,14 @@ function buildControlledSignalEffect(
   if (!signal.setter) return null // read-only — no sync needed
 
   const prop = lookups.propByName.get(controlled.propName)
-  // `_p` is always keyed by the caller-facing name (#2524 CSR half).
-  const callerKey = prop?.sourceName ?? controlled.propName
-  const accessorExpr = prop?.defaultValue
-    ? `(${PROPS_PARAM}.${callerKey} ?? ${prop.defaultValue})`
-    : `${PROPS_PARAM}.${callerKey}`
+  // `_p` is always keyed by the caller-facing name (#2524 CSR half). No
+  // `usage`/`usedAsCondition` here — a controlled prop's sync effect reads
+  // it as a plain value, never as a loop array or a conditional guard —
+  // matches the pre-Move-B shape exactly (`livePropReadExpr`, same formula
+  // as `rewriteDestructuredPropReads` and the reactive-attribute rewrite).
+  const accessorExpr = prop
+    ? livePropReadExpr(prop, undefined, false)
+    : `${PROPS_PARAM}.${controlled.propName}`
 
   return { setter: signal.setter, accessorExpr }
 }

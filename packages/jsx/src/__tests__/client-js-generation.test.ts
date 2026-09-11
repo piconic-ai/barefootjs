@@ -301,9 +301,14 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Props used as conditional guards should NOT get ?? {} default
-      expect(content).toContain('const prev = _p.prev\n')
-      expect(content).toContain('const next = _p.next\n')
+      // Props used as conditional guards should NOT get ?? {} default —
+      // and (Move B, #2760's follow-up) there is no captured-once
+      // extraction at all any more; every reference reads `_p.prev` /
+      // `_p.next` live, directly.
+      expect(content).not.toContain('const prev = ')
+      expect(content).not.toContain('const next = ')
+      expect(content).toContain('() => _p.prev,')
+      expect(content).toContain('() => _p.next,')
       expect(content).not.toContain('_p.prev ?? {}')
       expect(content).not.toContain('_p.next ?? {}')
     })
@@ -2874,7 +2879,11 @@ describe('Client JS generation', () => {
       const result = compileJSX(source, 'Probe.tsx', { adapter })
       expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
       const js = result.files.find(f => f.type === 'clientJs')!.content
-      expect(js).toContain('const size = _p.size')
+      // No captured-once extraction (Move B) — the bare `size` inside the
+      // user's own `size ?? 1` is rewritten live to `_p.size`, keeping
+      // their `?? 1` default exactly as written.
+      expect(js).not.toContain('const size = ')
+      expect(js).toContain('createSignal(_p.size ?? 1)')
       expect(js).not.toContain('_p.size ?? 0')
     })
 

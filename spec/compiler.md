@@ -82,26 +82,31 @@ setCount(n => n + 1)  // Updater function
 
 ### Props Access
 
-Props should be accessed via `props.xxx` to maintain reactivity (SolidJS-style):
+Unlike SolidJS, BOTH `props.xxx` access and destructuring the props parameter stay reactive
+in BarefootJS — the compiler rewrites every value-position read of a destructured prop name
+to the same live getter read a `props.xxx` access would compile to (Move B, #2760's
+follow-up; `props-binding.ts`'s `livePropReadExpr`, applied by
+`rewriteDestructuredPropReads` as a final pass over the joined `init*` body). Both forms
+below are equally reactive — the choice is style, not correctness:
 
 | Pattern | Behavior | Use Case |
 |---------|----------|----------|
-| `props.value` | Reactive (may be getter) | In event handlers, JSX |
-| `const { value } = props` | Captured once | Static props / initial values only |
+| `props.value` | Reactive (live getter read) | Either style |
+| `const { value } = props` (destructured param) | Reactive (live getter read) | Either style |
 
 ```tsx
-// ✅ GOOD: Maintains reactivity
+// ✅ Reactive: props.xxx access
 function Child(props: Props) {
   return <p>{props.value}</p>  // Re-evaluates on each access
 }
 
-// ⚠️ Destructuring captures value once - loses reactivity
+// ✅ Equally reactive: destructured parameter
 function Child({ value }: Props) {
-  const captured = value  // If parent passes count(), this is stale
-  return <p>{captured}</p>
+  return <p>{value}</p>  // Compiles to the same live `_p.value` read
 }
 
-// ✅ OK: Destructured value as initial value for local signal
+// ✅ OK: destructured value as the INITIAL value for a local signal — the
+// signal itself is then independent state, same as SolidJS/React
 function Child({ value }: Props) {
   const [local, setLocal] = createSignal(value)
   return <p>{local()}</p>  // local signal is reactive
@@ -145,8 +150,9 @@ function Child(props: Props) {
 | Static value `{"hello"}` | `label: "hello"` | No lazy evaluation needed |
 
 The **consumer** (child) determines when evaluation happens, not the **provider** (parent). This is why:
-- `props.value` → Getter is called → Reactive
-- `const { value } = props` → Getter is called immediately → Value captured once
+- `props.value` → Getter is called at each read site → Reactive
+- `const { value } = props` → the compiler rewrites `value` to the same getter read at each
+  reference site (not a plain local binding) → equally reactive
 
 ### Comparison with SolidJS and React
 
@@ -154,7 +160,7 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 |--------|-----------|---------|-------|
 | Signal access | `count()` | `count()` | `count` (useState) |
 | Props access | Getter-based | Getter-based | Direct access |
-| Destructuring props | ⚠️ Careful | ⚠️ Careful | ✅ Safe |
+| Destructuring props | ✅ Safe (compiler rewrites reads live) | ⚠️ Careful | ✅ Safe |
 | Dependency tracking | Automatic | Automatic | Manual arrays |
 | Rendering | Marked template + Client hydration | All in JS | All in JS |
 
@@ -903,7 +909,6 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
 | BF027 | Component's return statement is a bare identifier naming a local `const`/`let` already proven to hold JSX (`const __root = <jsx/>; return __root`) — return position does not resolve identifiers through their initializer the way JSX-child position does, so this shape produced zero output and zero diagnostics before this code existed (#2720) |
 | BF101 | An adapter has no template-language lowering for the expression (an off-catalogue array/string method, a nested higher-order callback, or a loop array bound to a computed component-scope local) — raised only by non-JS template adapters (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja); a JS-runtime adapter (Hono, CSR) executes the expression verbatim instead. See "Unsupported Expressions (BF101)" below. |
-| BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
 | BF048 | `'use client'` file references a same-file sibling component that produced no template — typically a multi-return JSX `switch`/`if`-`else` dispatch, which only #932's non-client verbatim-preservation path can compile (#2556) |
 | BF049 | A prop typed as a JSON-unsafe host rich type (`Map`, `Set`, `BigInt`, …) is used by this component's own client code (a handler, an effect), regardless of whether a method is called on it — BF021's sibling for the "client-side use" shape BF021's template-only walk can never reach, since the prop still can't survive the `bf-p` JSON hydration boundary (#2643) |
@@ -923,23 +928,6 @@ error[BF001]: 'use client' directive required for components with createSignal
    |
    = help: Add 'use client' at the top of the file
 ```
-
-### Suppressing Warnings
-
-Use `@bf-ignore` comment directive to suppress specific warnings:
-
-```tsx
-// @bf-ignore props-destructuring
-function Component({ checked }: Props) {
-  // Warning suppressed for this component
-}
-```
-
-**Available rules:**
-
-| Rule ID | Error Code | Description |
-|---------|------------|-------------|
-| `props-destructuring` | BF043 | Props destructuring in function parameters |
 
 ### Unsupported Expressions (BF021)
 
@@ -1251,13 +1239,13 @@ The compiler checks for `__reactive` via `checker.getTypeAtLocation(node).getPro
 | `form.isSubmitting()` | Yes | Brand (`Reactive<() => boolean>`) |
 | `props.count` | Yes | Regex (props aren't branded) |
 | `label` (const derived from signal) | Yes | Taint analysis (follows constant value) |
-| `count` (destructured prop) | No | Value captured at definition |
+| `count` (destructured prop) | Yes | Regex (props aren't branded) — same detection as `props.count`; the compiled READ is also rewritten to the same live `_p.count` access (Move B, #2760's follow-up) |
 | `"static string"` | No | Literal value |
 | `CONSTANT` (no reactive deps) | No | Pure constant |
 
 ### Generated Client JS Examples
 
-**Destructured props** - value captured once:
+**Destructured props** — live, same as direct access (Move B):
 
 ```tsx
 // Source
@@ -1265,12 +1253,15 @@ function Counter({ count }: Props) {
   return <div>{count}</div>
 }
 
-// Generated
-const count = props.count  // Captured ONCE at hydration
+// Generated (verified: packages/jsx, compileJSX against TestAdapter)
 createEffect(() => {
-  if (_slot_0) _slot_0.textContent = String(count)
+  const __val = _p.count
+  __bfw_s0('s0', escapeTextOrNode(__val))
 })
 ```
+
+There is no `const count = _p.count` capture — `count`'s only reference inside `init*`
+compiles directly to the live `_p.count` read.
 
 **Direct props access** - reactive:
 

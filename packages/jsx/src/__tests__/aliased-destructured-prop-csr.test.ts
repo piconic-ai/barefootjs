@@ -9,8 +9,16 @@
  * (the caller passes `n`) and the local binding hydrated to `undefined`.
  *
  * Mirrors `ssr-defaults.test.ts`'s aliased-prop describes (#2460) for the
- * SSR-defaults half; this covers the generated `initXxx` extraction and
- * the CSR `template:` lambda.
+ * SSR-defaults half; this covers the generated `initXxx` body and the CSR
+ * `template:` lambda.
+ *
+ * Updated for Move B (#2760's follow-up): a destructured prop no longer
+ * gets a captured-once `const <local> = _p.<callerKey>` extraction line at
+ * all — every value-position reference is rewritten live to `_p.<callerKey>`
+ * directly (`rewriteDestructuredPropReads`, `ir-to-client-js/rewrite-
+ * destructured-props.ts`). The caller-facing-key rule these tests pin is
+ * otherwise unchanged: `_p` is still keyed by `sourceName ?? name`, just
+ * read at every reference site instead of once into a local.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -37,10 +45,12 @@ describe('aliased destructured props reach client JS under the caller-facing key
 
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // `initBadge` extracts the local binding `count` from the
-    // CALLER-facing key `n` — never the local key `count`.
-    expect(clientJs!.content).toContain('const count = _p.n')
+    // No captured-once extraction for the local binding `count` at all
+    // (Move B) — every reference reads the CALLER-facing key `n` live,
+    // never the local key `count`.
+    expect(clientJs!.content).not.toContain('const count = ')
     expect(clientJs!.content).not.toContain('_p.count')
+    expect(clientJs!.content).toContain('console.log(_p.n)')
     // The CSR `template:` lambda (module-scope SSR fallback) reads the
     // same caller-facing key.
     // `escapeTextOrMarkup`, not bare `escapeText` — this slot is
@@ -68,7 +78,12 @@ describe('aliased destructured props reach client JS under the caller-facing key
 
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    expect(clientJs!.content).toContain('const n = _p.n')
+    // No captured-once extraction (Move B) — `n` reads `_p.n` live at
+    // every reference site. `sourceName ?? name` is an identity for an
+    // un-aliased prop, so this is indistinguishable from the aliased case
+    // above once the caller-facing key is substituted.
+    expect(clientJs!.content).not.toContain('const n = ')
+    expect(clientJs!.content).toContain('console.log(_p.n)')
     // `escapeTextOrMarkup`, not bare `escapeText` — this slot is
     // claim-plan `kind: 'markup'` (#2651), unrelated to the #2524 aliasing
     // concern this test pins; only the escape call's name changed.
@@ -112,7 +127,10 @@ describe('aliased destructured props reach client JS under the caller-facing key
 
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    expect(clientJs!.content).toContain('const handlePress = _p.onPress')
+    // No captured-once alias (Move B) — the handler reference reads the
+    // CALLER-facing key `onPress` live, never the local key `handlePress`.
+    expect(clientJs!.content).not.toContain('const handlePress = ')
+    expect(clientJs!.content).toContain('_p.onPress')
     expect(clientJs!.content).not.toContain('_p.handlePress')
   })
 })

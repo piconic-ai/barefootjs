@@ -8,7 +8,6 @@ export function initSlot(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className
   const children = _p.children
 
   const [_s0] = $c(__scope, 's0')
@@ -19,7 +18,7 @@ export function initSlot(__scope, _p = {}) {
   createEffect(() => {
     const [__Tag_s0El] = $c(__scope, 's0')
     if (__Tag_s0El) {
-      { const __x = ([className, (((children.props).className) || '')].filter(Boolean).join(' '))
+      { const __x = ([_p.className, (((children.props).className) || '')].filter(Boolean).join(' '))
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) __Tag_s0El.setAttribute('class', String(__v)); else __Tag_s0El.removeAttribute('class') }
       }
@@ -28,7 +27,7 @@ export function initSlot(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('Tag', _s0, forwardProps(_p, { get className() { return ([className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
+  initChild('Tag', _s0, forwardProps(_p, { get className() { return ([_p.className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
 }
 
 hydrate('Slot', { init: initSlot, template: (_p) => `${_p.children && isValidElement(_p.children) ? `${renderChild('Tag', {className: ([_p.className, (((_p.children.props).className) || '')].filter(Boolean).join(' ')), children: `${escapeText((_p.children.props).children)}`}, undefined, 's0')}` : `${markupOrEmpty(_p.children)}`}` })
@@ -36,8 +35,6 @@ export function Slot(_p, __bfKey) { return createComponent('Slot', _p, __bfKey) 
 export function initKbd(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
 
   const kbdBaseClasses = 'pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3'
 
@@ -63,7 +60,7 @@ export function initKbd(__scope, _p = {}) {
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
-      { const __x = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`
+      { const __x = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
       }
@@ -72,16 +69,14 @@ export function initKbd(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('Slot', _s1, forwardProps(_p, { get className() { return `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}` } }, ["className"]))
+  initChild('Slot', _s1, forwardProps(_p, { get className() { return `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}` } }, ["className"]))
 }
 
-hydrate('Kbd', { init: initKbd, template: (_p) => `${_p.asChild ? `${renderChild('Slot', {className: `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${_p.className}`, children: `${markupOrEmpty(_p.children)}`}, undefined, 's1')}` : `<kbd data-slot="kbd" ${(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${_p.className}`) != null ? 'class="' + escapeAttr(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</kbd>`}` })
+hydrate('Kbd', { init: initKbd, template: (_p) => `${(_p.asChild ?? false) ? `${renderChild('Slot', {className: `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`, children: `${markupOrEmpty(_p.children)}`}, undefined, 's1')}` : `<kbd data-slot="kbd" ${(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</kbd>`}` })
 export function Kbd(_p, __bfKey) { return createComponent('Kbd', _p, __bfKey) }
 export function initKbdGroup(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
-
-  const className = _p.className ?? ''
 
   const kbdGroupBaseClasses = 'inline-flex items-center gap-1'
 
@@ -107,7 +102,7 @@ export function initKbdGroup(__scope, _p = {}) {
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
-      { const __x = `inline-flex items-center gap-1 ${className}`
+      { const __x = `inline-flex items-center gap-1 ${(_p.className ?? '')}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) __Slot_s1El.setAttribute('class', String(__v)); else __Slot_s1El.removeAttribute('class') }
       }
@@ -116,8 +111,8 @@ export function initKbdGroup(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('Slot', _s1, forwardProps(_p, { get className() { return `inline-flex items-center gap-1 ${className}` } }, ["className"]))
+  initChild('Slot', _s1, forwardProps(_p, { get className() { return `inline-flex items-center gap-1 ${(_p.className ?? '')}` } }, ["className"]))
 }
 
-hydrate('KbdGroup', { init: initKbdGroup, template: (_p) => `${_p.asChild ? `${renderChild('Slot', {className: `inline-flex items-center gap-1 ${_p.className}`, children: `${markupOrEmpty(_p.children)}`}, undefined, 's1')}` : `<kbd data-slot="kbd-group" ${(`inline-flex items-center gap-1 ${_p.className}`) != null ? 'class="' + escapeAttr(`inline-flex items-center gap-1 ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</kbd>`}` })
+hydrate('KbdGroup', { init: initKbdGroup, template: (_p) => `${(_p.asChild ?? false) ? `${renderChild('Slot', {className: `inline-flex items-center gap-1 ${(_p.className ?? '')}`, children: `${markupOrEmpty(_p.children)}`}, undefined, 's1')}` : `<kbd data-slot="kbd-group" ${(`inline-flex items-center gap-1 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`inline-flex items-center gap-1 ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</kbd>`}` })
 export function KbdGroup(_p, __bfKey) { return createComponent('KbdGroup', _p, __bfKey) }

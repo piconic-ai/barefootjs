@@ -317,45 +317,14 @@ See [JSX Compatibility](../rendering/jsx-compatibility.md) for the full worked e
 
 ---
 
-## Component Errors (BF043–BF049)
+## Component Errors (BF044–BF049)
 
-<a id="bf043"></a>
-
-### BF043 — Props Destructuring (Warning)
-
-**Trigger:** Props destructured in function parameter.
-
-```tsx
-// ⚠️ BF043
-function Child({ count }: Props) {
-  return <span>{count}</span>  // count is captured once
-}
-```
-
-```
-warning[BF043]: Destructuring props in function parameters captures values once.
-   = help: Use `props.count` for reactive access, or suppress with // @bf-ignore props-destructuring
-```
-
-**Fix options:**
-
-1. Use direct props access:
-
-```tsx
-function Child(props: Props) {
-  return <span>{props.count}</span>  // Reactive
-}
-```
-
-2. Suppress if intentional (static initial value):
-
-```tsx
-// @bf-ignore props-destructuring
-function Child({ initialCount }: Props) {
-  const [count, setCount] = createSignal(initialCount)
-  return <span>{count()}</span>
-}
-```
+<!--
+  BF043 (Props Destructuring warning) is retired — Move B (#2760's
+  follow-up) made every destructured-prop read live, the same as
+  `props.xxx` access already was, so there is no longer a reactivity
+  difference to warn about. See [Props Reactivity](../reactivity/props-reactivity.md).
+-->
 
 <a id="bf044"></a>
 
@@ -466,25 +435,6 @@ export function Page() {
 
 ---
 
-## Suppressing Warnings
-
-Suppress with `@bf-ignore`:
-
-```tsx
-// @bf-ignore props-destructuring
-function Component({ checked }: Props) {
-  // Warning suppressed
-}
-```
-
-**Available rules:**
-
-| Rule ID | Error Code | Description |
-|---------|------------|-------------|
-| `props-destructuring` | BF043 | Props destructuring in function parameters |
-
----
-
 ## Error Code Quick Reference
 
 | Code | Severity | Description |
@@ -495,7 +445,6 @@ function Component({ checked }: Props) {
 | BF013 | Error | Reactive primitive called through an unresolved namespace import |
 | BF021 | Error | Unsupported JSX pattern for SSR |
 | BF023 | Error | Missing key in list |
-| BF043 | Warning | Props destructuring breaks reactivity |
 | BF044 | Error | Signal/memo getter passed without calling it |
 | BF049 | Error | Rich-typed prop read by client code cannot survive hydration |
 | BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |

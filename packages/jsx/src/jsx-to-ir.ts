@@ -41,7 +41,7 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
-import type { IRLoopSort, FunctionInfo, ConstantInfo } from './types.ts'
+import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -51,7 +51,8 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -129,6 +130,23 @@ interface TransformContext {
    * `_p.<local>` (#2524 CSR half: `_p` is always caller-keyed).
    */
   _destructuredPropAliases?: Map<string, string> | null
+  /**
+   * Cached local-name → `ParamInfo` map for `_destructuredPropNames`, same
+   * shadow-filtered eligible set, built alongside it. Move B (#2760's
+   * follow-up): lets `rewriteBarePropRefsCore`'s `replacementFor` apply a
+   * destructured prop's DEFAULT VALUE the same way `livePropReadExpr` does
+   * for the init body — without it, the CSR-only `template:` literal
+   * (`irToComponentTemplate`/`generateCsrTemplate` in `html-template.ts`,
+   * built from THIS Phase-1 rewrite, not the Phase-2 whole-init-body pass
+   * in `rewrite-destructured-props.ts`) emitted a bare `_p.label` for
+   * `data-label={label}` with `label = 'none'` — correct once a value
+   * arrives, but wrong (attribute omitted entirely) for the very first
+   * render before any prop update, since `_p.label` is `undefined` with no
+   * fallback. Caught by the `destructured-props-live` fixture's CSR
+   * conformance check, not by anything in the design doc — this call site
+   * predates Move B and was never routed through `livePropReadExpr`.
+   */
+  _destructuredPropInfoByName?: ReadonlyMap<string, ParamInfo> | null
   /**
    * The active `.map()`/callback binding stack (#2482 Stage 1a) — replaces
    * the former mutable per-name `Set<string>` mutated in lockstep with
@@ -588,7 +606,22 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // for references to those locals and union the matching dep sets.
   const extraPropRefs = collectBranchLocalPropRefsViaSubstitution(expr, ctx)
   const propAliases = getDestructuredPropAliases(ctx)
-  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined)
+  const propInfoByName = getDestructuredPropInfoByName(ctx)
+  // Apply a destructured prop's DEFAULT VALUE the same way `livePropReadExpr`
+  // does for the compiled init body — see `_destructuredPropInfoByName`'s
+  // doc comment. No `usage`/`usedAsCondition` here: those need Phase-2
+  // per-position `PropUsage` data (`compute-prop-usage.ts`) this Phase-1
+  // template rewrite doesn't have, and this call site never emitted the
+  // `?? []` / `?? {}` wrapping either — only the missing default was an
+  // actual regression risk (an attribute/text silently omitted on first
+  // render), so that's the one gap this closes.
+  const replacementFor = propInfoByName
+    ? (localName: string, callerKey: string): string => {
+        const info = propInfoByName.get(localName)
+        return info ? livePropReadExpr(info, undefined, false) : `${PROPS_PARAM}.${callerKey}`
+      }
+    : undefined
+  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined, replacementFor)
 }
 
 /**
@@ -676,8 +709,22 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
     const names = eligible.map(p => p.name)
     ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
     ctx._destructuredPropAliases = buildPropAliasMap(eligible) ?? null
+    const infoByName = new Map<string, ParamInfo>()
+    for (const p of eligible) infoByName.set(p.name, p)
+    ctx._destructuredPropInfoByName = infoByName.size > 0 ? infoByName : null
   }
   return ctx._destructuredPropNames ?? null
+}
+
+/**
+ * Companion to `getDestructuredPropNames`: local-name → `ParamInfo` for the
+ * same shadow-filtered eligible set (see `_destructuredPropInfoByName`'s
+ * doc comment on `TransformContext`). Always call `getDestructuredPropNames`
+ * first — the caches are written together in one pass.
+ */
+function getDestructuredPropInfoByName(ctx: TransformContext): ReadonlyMap<string, ParamInfo> | null {
+  if (ctx._destructuredPropNames === undefined) getDestructuredPropNames(ctx)
+  return ctx._destructuredPropInfoByName ?? null
 }
 
 /**

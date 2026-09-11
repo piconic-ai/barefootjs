@@ -22,6 +22,7 @@ import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-
 import { pruneUnusedPropExtractions } from './prune-unused-prop-extractions.ts'
 import { buildPhaseCtx, PHASES, runPhases } from './phases.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
+import { rewriteDestructuredPropReads } from './rewrite-destructured-props.ts'
 import { buildInlinableConstants } from './emit-registration.ts'
 import { BF_SCOPE } from '@barefootjs/shared'
 
@@ -112,6 +113,14 @@ export function generateInitFunction(
   // `PropRewritten<T>` brand type so missing the rewrite becomes a
   // compile-time error. ---
   let generatedCode = rewritePropsObjectRef(lines.join('\n'), ctx.propsObjectName, ctx.restPropsName)
+  // Live-read rewrite for destructured props (Move B, #2760's follow-up):
+  // every bare value-position read of a destructured prop name becomes a
+  // live `_p.<key>` read, same as props-object mode already reads. Must
+  // run AFTER `rewritePropsObjectRef` (so `_p` itself is already the real
+  // parameter name) and BEFORE the hydrate line / module-constants splice
+  // (a module-level helper's body cannot reference per-instance props, so
+  // it must stay outside this rewrite's reach).
+  generatedCode = rewriteDestructuredPropReads(generatedCode, ctx, propUsage)
   generatedCode += '\n' + hydrateLine
 
   // Substitute module-level declarations BEFORE import detection: a

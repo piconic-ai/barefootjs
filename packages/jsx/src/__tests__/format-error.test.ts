@@ -28,8 +28,14 @@ describe('formatError — diagnostic rendering contract', () => {
   })
 
   test('warning severity also lowercases', () => {
+    // Any code works here — `severity` is an explicit override on
+    // `createError`, independent of the code's own default. BF023 is
+    // just a convenient real code already used elsewhere in this file
+    // (formerly BF043/PROPS_DESTRUCTURING, retired by Move B — #2760's
+    // follow-up made destructured-prop reads live, so there is nothing
+    // left to warn about).
     const err = createError(
-      ErrorCodes.PROPS_DESTRUCTURING,
+      ErrorCodes.MISSING_KEY_IN_LIST,
       {
         file: 'components/Display.tsx',
         start: { line: 1, column: 17 },
@@ -39,7 +45,7 @@ describe('formatError — diagnostic rendering contract', () => {
     )
 
     const out = formatError(err)
-    expect(out).toContain('warning[BF043]:')
+    expect(out).toContain('warning[BF023]:')
   })
 
   test('--> row carries the documented file:line:col location', () => {
@@ -90,7 +96,7 @@ describe('formatError — diagnostic rendering contract', () => {
 
   test('suggestion renders as a `= help:` row at the tail', () => {
     const err = createError(
-      ErrorCodes.PROPS_DESTRUCTURING,
+      ErrorCodes.MISSING_KEY_IN_LIST,
       {
         file: 'Display.tsx',
         start: { line: 1, column: 17 },

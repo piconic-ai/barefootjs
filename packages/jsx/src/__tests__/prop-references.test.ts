@@ -212,7 +212,7 @@ describe('PropReference extraction', () => {
 })
 
 describe('ClientJS generation with semantic prop refs', () => {
-  test('destructured props are captured once, NOT transformed in createEffect', () => {
+  test('destructured props compile to a live _p.open read, no captured-once local (Move B)', () => {
     const source = `
       'use client'
 
@@ -231,10 +231,11 @@ describe('ClientJS generation with semantic prop refs', () => {
 
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // Should have capture: const open = props.open
-    expect(clientJs?.content).toContain('const open = _p.open')
-    // createEffect should use 'open' directly, NOT 'props.open'
-    // (destructured props are static, captured once)
+    // No captured-once local (Move B, #2760's follow-up) — the conditional
+    // reads `_p.open` live, directly.
+    expect(clientJs?.content).not.toContain('const open = ')
+    expect(clientJs?.content).toContain('insert(__scope, \'s0\', () => _p.open,')
+    // Never a stale `props.` prefix either.
     expect(clientJs?.content).not.toMatch(/insert\([^)]*props\.open/)
   })
 
@@ -287,7 +288,7 @@ describe('ClientJS generation with semantic prop refs', () => {
     expect(clientJs?.content).not.toContain('window.props.open')
   })
 
-  test('destructured props with default value are captured once', () => {
+  test('destructured props with default value read live, with the default applied at every read (Move B)', () => {
     const source = `
       'use client'
 
@@ -306,8 +307,10 @@ describe('ClientJS generation with semantic prop refs', () => {
 
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // Should capture with default value: const open = props.open ?? false
-    expect(clientJs?.content).toMatch(/const open = _p\.open \?\? false/)
+    // No captured-once local — the live read carries the default at the
+    // read site itself: `(_p.open ?? false)`.
+    expect(clientJs?.content).not.toContain('const open = ')
+    expect(clientJs?.content).toMatch(/\(_p\.open \?\? false\)/)
   })
 })
 
@@ -319,8 +322,15 @@ describe('ClientJS generation with semantic prop refs', () => {
 // reachable), but was never wired to `ctx.clientOnlyElements` either, so no
 // edge of ANY kind reached `neededProps` and `emitPropsExtraction` had no
 // evidence the prop was used at all.
+//
+// Move B (#2760's follow-up) makes this bug class structurally impossible
+// to reintroduce for a destructured prop: `rewriteDestructuredPropReads`
+// rewrites every occurrence of a destructured prop name found ANYWHERE in
+// the joined init body — it does not consult `neededProps` / the
+// reference graph at all, so there is no "graph edge" for a future
+// emitter to forget to wire up.
 describe('Issue #2634 regression', () => {
-  test('a destructured prop used only inside /* @client */ is extracted from _p', () => {
+  test('a destructured prop used only inside /* @client */ reads _p.label directly (no unbound identifier)', () => {
     const source = `
       interface Props {
         label: string
@@ -336,11 +346,13 @@ describe('Issue #2634 regression', () => {
     expect(result.errors).toHaveLength(0)
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // The prop must be bound before the createEffect body reads it.
-    expect(clientJs?.content).toContain('const label = _p.label')
-    // A bare `label` reference with no preceding binding is exactly the
-    // unbound-identifier shape that threw ReferenceError at hydrate.
-    expect(clientJs?.content).toMatch(/const label = _p\.label[\s\S]*label\.toUpperCase\(\)/)
+    // No captured-once local (Move B) — the createEffect body reads
+    // `_p.label` live, directly. A bare, unbound `label` reference is
+    // exactly the shape that threw ReferenceError at hydrate pre-#2634;
+    // this asserts neither that bug NOR its old fix's captured-once local
+    // survives.
+    expect(clientJs?.content).not.toContain('const label = ')
+    expect(clientJs?.content).toContain('_p.label.toUpperCase()')
   })
 
   test('a props-object member used only inside /* @client */ needs no extraction (already _p.x)', () => {
@@ -362,7 +374,7 @@ describe('Issue #2634 regression', () => {
     expect(clientJs?.content).toContain('_p.label.toUpperCase()')
   })
 
-  test('a prop used both in a normal reactive position AND inside /* @client */ is still extracted once', () => {
+  test('a prop used both in a normal reactive position AND inside /* @client */ reads _p.label live at BOTH sites (no extraction)', () => {
     const source = `
       interface Props {
         label: string
@@ -378,8 +390,11 @@ describe('Issue #2634 regression', () => {
     expect(result.errors).toHaveLength(0)
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    const matches = clientJs?.content.match(/const label = _p\.label/g) ?? []
-    expect(matches).toHaveLength(1)
+    // No captured-once extraction at all (Move B) — each of the two
+    // reference sites reads `_p.label` live independently.
+    expect(clientJs?.content).not.toContain('const label = ')
+    const matches = clientJs?.content.match(/_p\.label/g) ?? []
+    expect(matches.length).toBeGreaterThanOrEqual(2)
   })
 })
 

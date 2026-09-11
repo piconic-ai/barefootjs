@@ -4,10 +4,8 @@ export function initVariantTag(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const variant = _p.variant ?? 'a'
-
   const variantClasses = { a: 'cls-a', b: 'cls-b' }
-  const cls = variantClasses[variant]
+  const cls = variantClasses[(_p.variant ?? 'a')]
 
   const [_s1, _s0] = $(__scope, 's1', 's0')
 
@@ -35,7 +33,7 @@ export function initVariantTag(__scope, _p = {}) {
 
 }
 
-hydrate('VariantTag', { init: initVariantTag, template: (_p) => `${_p.asChild ? `<em data-slot="alt" ${(`${({"a": "cls-a", "b": "cls-b"})[_p.variant]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[_p.variant]}`) + '"' : ''} bf="s1">alt</em>` : `<span data-slot="tag" ${(`${({"a": "cls-a", "b": "cls-b"})[_p.variant]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[_p.variant]}`) + '"' : ''} bf="s0">tag</span>`}` })
+hydrate('VariantTag', { init: initVariantTag, template: (_p) => `${(_p.asChild ?? false) ? `<em data-slot="alt" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) + '"' : ''} bf="s1">alt</em>` : `<span data-slot="tag" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) + '"' : ''} bf="s0">tag</span>`}` })
 export function VariantTag(_p, __bfKey) { return createComponent('VariantTag', _p, __bfKey) }
 export function initBranchRootPropAttr(__scope, _p = {}) {
   if (!__scope) return

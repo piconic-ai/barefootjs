@@ -5,10 +5,12 @@ description: How prop access patterns determine whether reactive updates propaga
 
 # Props Reactivity
 
-**How you access props determines whether updates propagate.** The compiler wraps dynamic prop expressions in getters.
+**Prop reads stay reactive no matter how you write them.** The compiler wraps dynamic prop
+expressions in getters, and every VALUE-POSITION read of a prop — whether written as
+`props.xxx` or as a destructured local — compiles to a live read of that getter.
 
 
-## Direct Access — Reactive
+## Direct Access
 
 `props.xxx` maintains reactivity. Each access calls the underlying getter:
 
@@ -22,55 +24,44 @@ function Display(props: { value: number }) {
 ```
 
 
-## Destructuring — Captures Once
+## Destructuring
 
-Destructuring calls the getter once and stores the result. The value does not update:
+Destructuring is also fully reactive. Every reference to a destructured prop name — in a
+`createEffect` body, a `createMemo` computation, an event handler, a reactive attribute,
+plain text, anywhere — compiles to the same live read `props.xxx` would:
 
 ```tsx
 function Display({ value }: { value: number }) {
   createEffect(() => {
-    console.log(value) // Stale — captured at component init
+    console.log(value) // Re-runs when parent updates value
   })
   return <span>{value}</span>
 }
 ```
 
-The compiler emits `BF043` when it detects props destructuring in a client component:
-
-```
-warning[BF043]: Props destructuring breaks reactivity
-
-  --> src/components/Display.tsx:1:18
-   |
- 1 | function Display({ value }: { value: number }) {
-   |                  ^^^^^^^^^
-   |
-   = help: Access props via `props.value` to maintain reactivity
-```
-
-Suppress with `@bf-ignore` when capturing intentionally (e.g., initial values):
-
-```tsx
-// @bf-ignore props-destructuring
-function Counter({ initial }: { initial: number }) {
-  const [count, setCount] = createSignal(initial)
-  return <button onClick={() => setCount(n => n + 1)}>{count()}</button>
-}
-```
+There is no local variable holding a stale, captured-at-mount copy — `value` above compiles
+to a live read of the parent's getter at every reference site, the same as `props.value`
+would. A destructure default (`{ value = 0 }`) is evaluated live too: it re-applies on every
+read, not just once at mount.
 
 
-## When Destructuring Is Safe
+## When To Prefer Which
 
-Destructuring is safe for **initial values** of local state and for values that never change (`id`, static labels).
+Both forms behave identically at runtime, so the choice is style, not correctness:
+
+- Destructuring reads naturally and is usually the better default for components with a
+  handful of named props.
+- `props.xxx` avoids repeating a long prop list at the call site, and is the natural fit for
+  a component that mostly forwards its props (`...rest`) rather than naming each one.
 
 
 ## Summary
 
-| Pattern | Reactive? | Use when |
-|---------|-----------|----------|
-| `props.value` | Yes | You need live updates from parent |
-| `const { value } = props` | No | Value is used once (e.g., initial state) |
-| `createSignal(props.value)` | `props.value` is reactive, signal is independent | Creating local state from a prop |
+| Pattern | Reactive? |
+|---------|-----------|
+| `props.value` | Yes |
+| `const { value } = props` (destructured param) | Yes |
+| `createSignal(props.value)` | `props.value` is reactive, the signal it seeds is independent thereafter |
 
 
 ## How It Works
@@ -85,7 +76,8 @@ The compiler transforms dynamic prop expressions into getters:
 { get value() { return count() } }
 ```
 
-- `props.value` → calls getter → calls `count()` → dependency tracked
-- `const { value } = props` → calls getter once → stores the number → no further tracking
-
-This is the same model as SolidJS. If you are coming from React, this is the key behavioral difference.
+`props.value` calls the getter directly. A destructured `value` compiles to the exact same
+getter call at every reference site — the compiler rewrites each one, rather than binding a
+plain local that would only read the getter once. This is the same reactive-getter model as
+SolidJS; unlike SolidJS, BarefootJS performs that rewrite regardless of whether you
+destructure, so there is no "don't destructure props" caveat to remember.
