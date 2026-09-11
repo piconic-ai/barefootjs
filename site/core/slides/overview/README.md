@@ -1,8 +1,8 @@
-# barefootjs-in-1min slide deck
+# BarefootJS overview slide deck
 
-Sources for the "BarefootJS in 1 minute" slide deck, built with
-[peitho](https://github.com/piconic-ai/peitho) and served as a static page at
-`https://barefootjs.dev/slides/barefootjs-in-1min/`.
+Sources for the "BarefootJS overview" slide deck (a few-minute walkthrough), built with
+[peitho](https://github.com/mizzy/peitho) and served as a static page at
+`https://barefootjs.dev/slides/overview/`.
 
 This is an in-progress prototype, not a polished/final deck.
 
@@ -38,7 +38,7 @@ output).
 ## Rebuilding
 
 The build output is **committed** at
-`site/core/public/slides/barefootjs-in-1min/` (peitho's distribution viewer:
+`site/core/public/slides/overview/` (peitho's distribution viewer:
 `index.html`, `manifest.json`, `peitho.css`, `slides/*.html`, plus
 `assets/{hero.mp4,hero.jpg,deck.js}`) — CI has no `peitho` binary, so nothing
 rebuilds this deck at deploy time. `bun run build` in `site/core` copies
@@ -48,15 +48,15 @@ Workers Assets actually serves in production.
 To rebuild after changing a source file here, from this directory:
 
 ```sh
-PEITHO=/path/to/peitho ./build.sh ../../public/slides/barefootjs-in-1min
+PEITHO=/path/to/peitho ./build.sh ../../public/slides/overview
 ```
 
-(`peitho` itself is built from https://github.com/piconic-ai/peitho and is not
+(`peitho` itself is built from https://github.com/mizzy/peitho and is not
 part of this repo; point `PEITHO` at wherever you built or installed it. Omit
 the argument to build into a local `dist/` instead, for a quick look before
 overwriting the committed output.)
 
-Then commit the changed files under `site/core/public/slides/barefootjs-in-1min/`
+Then commit the changed files under `site/core/public/slides/overview/`
 alongside your source change.
 
 ## Hero media license

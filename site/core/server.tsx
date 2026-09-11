@@ -33,7 +33,7 @@ server.use('/static/*', serveStatic({
   rewriteRequestPath: (path) => path.replace('/static', ''),
 }))
 
-// Serve committed pre-built static decks (e.g. public/slides/barefootjs-in-1min/,
+// Serve committed pre-built static decks (e.g. public/slides/overview/,
 // copied to dist/slides/ by build.ts) — mirrors how Cloudflare Workers Assets
 // serves dist/ at the site root in production.
 server.use('/slides/*', serveStatic({ root: './dist' }))
