@@ -1195,6 +1195,97 @@ reactivity is a property of the consumer's declared type.**
   this question and deleted without ever being emitted, once `tsc` was confirmed to cover it
   (`packages/jsx/src/__tests__/props-type-mismatch.audit.test.ts`).
 
+#### Cross-component prop elision (Move D) — measured, not implemented
+
+**The question.** Moves A–C established the prop boundary contract above and closed the
+function-prop hydration hole at the Hono root (Adapter API §"`bf-p` Props Serialization").
+The remaining question they left open: after those three moves, should `usedProps` be
+refined a THIRD way — transitively across a component boundary, so a parent elides a prop
+it forwards to a child that never reads it itself (`<Parent x={val}><Child y={x} />
+</Parent>` where `Child`'s own `usedProps` doesn't include `y`)? A design consult (Fable)
+scoped Move D to measuring this, not building it — the working hypothesis was that most of
+what such elision would do is already shipped by two other mechanisms.
+
+**What already elides.**
+
+- **(a) Per-component `usedProps`.** `analyzeClientNeeds`
+  (`packages/jsx/src/ir-to-client-js/index.ts:173`) walks a component's own IR and computes
+  `usedProps` — the subset of a root mount's incoming props its OWN client code actually
+  reads. A prop the component never references client-side is never serialized, regardless
+  of how many props the caller originally passed.
+- **(b) The `__bfChild` / `__bfNoSerialize` gate.** A component compiled as a CHILD of
+  another (`__bfChild` true at runtime) never serializes ANY props at all — it receives them
+  LIVE via `initChild`, not through `bf-p`. This is unconditional per-component: the gate is
+  `if (!__bfChild && !__bfNoSerialize)` in the generated init
+  (`packages/adapter-hono/src/adapter/hono-adapter.ts:632`, decided by `hasPropsToSerialize`
+  around line 518-520 of the same file). See also "`bf-p` Props Serialization" above for
+  the same gate's function-prop-safety side effect from Move C.
+
+Between (a) and (b), the ONLY case a transitive refinement could still improve is narrow: a
+prop a ROOT mount reads client-side for no other reason than forwarding it into a compiled
+child's props, where that child's own code never reads it. That residual case is what Move D
+measured.
+
+**Measured** (CI sandbox, `bun 1.3.11`, linux/x64, 2026-09-11 — reproduce with the script at
+the bottom of this section; absolute numbers are host-dependent, compare shapes/slopes):
+
+- **M1 — per-prop `bf-p` cost**, as the linear-regression slope of `serializeHydrationProps`
+  (stringify) and `JSON.parse` (mirroring the client's `parseProps`,
+  `packages/client/src/runtime/hydrate.ts:326`) cost against prop count N ∈ {1, 5, 20, 50}
+  (the slope isolates per-prop marginal cost from N=1's fixed per-call overhead):
+
+  | value shape | stringify ns/prop | parse ns/prop | bytes/prop |
+  |---|---|---|---|
+  | number | 37.0 | 65.4 | 9.57 |
+  | 16-char string | 48.9 | 98.7 | 24.84 |
+  | `{id, name, tags:[3]}` object | 199.0 | 690.9 | 64.53 |
+
+  Even the heaviest shape measured (a small nested object) costs under 1 microsecond per
+  prop to stringify and under 1 microsecond to parse. This is the ceiling on what eliding
+  any one prop could save.
+
+- **M2 — eligible-population census**, compiling every `.tsx` under `site/ui` (506
+  components) and counting parent → child prop forwards that are a BARE IDENTIFIER naming
+  one of the parent's own `usedProps`:
+
+  | | count |
+  |---|---|
+  | components with a non-empty `usedProps` (candidate parents) | 38 |
+  | total such bare-identifier forwards | 6 |
+  | — of which the child component couldn't be resolved in-corpus | 3 |
+  | **eligible** (child's own `usedProps` does NOT contain the forwarded name) | **0** |
+
+  Zero. Every resolvable forward in `site/ui` turned out to be a prop the child ALSO reads
+  client-side, so nothing is left over-serialized once (a) and (b) are both in place — the
+  residual case Move D targeted essentially doesn't occur in this corpus. Estimated total
+  savings (eligible count × M1 slope) is therefore 0 ns / 0 bytes across every value shape,
+  for this corpus.
+
+**Why not implemented.** Independent of the measured savings being ~0 today, building this
+would cost more than a typical subset extension:
+
+- `analyzeClientNeeds` operates per-IR — one component's tree, compiled in isolation.
+  Transitive refinement needs the CHILD's `usedProps`, which means cross-file resolution
+  reaching into the build hot path (`bf build`), not a local analysis.
+- Every one of the ~9 backend adapters has its OWN `bf-p`-equivalent prop producer. A
+  cross-component answer computed once and consumed nine different ways is exactly the "one
+  decision, two implementations" defect pattern this codebase's CLAUDE.md warns against
+  (see "Reference Adapter" / "One decision, two implementations, no test comparing them")
+  unless it's built as a single shared implementation from day one — real design and
+  maintenance cost for a change the measurement above shows saves nothing today.
+- As a widening of what the compiler elides, it would need conformance fixtures landed in
+  the same PR per `spec/subset-conformance.md`'s change-time coupling rule — more cost for
+  zero measured benefit.
+
+**Revisit when** any of: the M2 eligible fraction exceeds roughly 25% of serialized props in
+a real app (today: 0%); the measured per-prop slope moves from nanoseconds into
+microseconds (e.g. if `JSON.stringify`/`JSON.parse` were ever replaced by a heavier
+deep-revival codec); or profiling shows `bf-p` attribute size actually dominating HTML
+payload weight in practice, rather than staying in the hundreds-of-bytes-per-component range
+(see "Why `"use client"` is cheap here" for the analogous client-JS-bundle-size figure).
+
+**Reproduce:** `bun run packages/adapter-hono/bench/hydration-props-bench.ts`.
+
 ### class= vs className= in JSX
 
 JSX requires `className` for CSS class attributes. `class` is a reserved keyword in JavaScript and cannot be used as a JSX attribute name.
