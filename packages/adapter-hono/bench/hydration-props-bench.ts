@@ -65,7 +65,6 @@ function shapeValue(shape: Shape, i: number): unknown {
     case 'number':
       return i * 7 + 1
     case 'string16':
-      // Exactly 16 characters.
       return 'abcdefghijklmnop'
     case 'object':
       return { id: i, name: `item-${i}`, tags: ['alpha', 'beta', 'gamma'] }
@@ -94,7 +93,6 @@ interface CellResult {
   bytes: number
 }
 
-/** One (N, shape) cell: WARMUP iterations discarded, then RUNS medians of MEASURED iterations each. */
 function benchCell(n: number, shape: Shape): CellResult {
   const props = buildProps(n, shape)
 
@@ -258,27 +256,6 @@ interface ForwardedProp {
   propName: string
 }
 
-/** A prop-bearing occurrence of a child component: an `IRComponent` node
- *  or a loop row (`IRLoopChildComponent`) — both carry `{ name, props }`. */
-interface ComponentOccurrence {
-  name: string
-  props: Array<{ name: string; value: AttrValue }>
-}
-
-function checkOccurrence(
-  occ: ComponentOccurrence,
-  parentName: string,
-  parentUsedProps: ReadonlySet<string>,
-  out: ForwardedProp[],
-): void {
-  for (const prop of occ.props) {
-    const ident = bareIdentifierOf(prop.value)
-    if (ident && parentUsedProps.has(ident)) {
-      out.push({ parentName, childName: occ.name, propName: ident })
-    }
-  }
-}
-
 /** Walk one component's IR tree, recording every bare-identifier prop
  *  forward that names one of the PARENT's own `usedProps`. */
 function collectForwardedProps(
@@ -289,8 +266,11 @@ function collectForwardedProps(
 ): void {
   switch (node.type) {
     case 'component': {
-      checkOccurrence(node, parentName, parentUsedProps, out)
       for (const prop of node.props) {
+        const ident = bareIdentifierOf(prop.value)
+        if (ident && parentUsedProps.has(ident)) {
+          out.push({ parentName, childName: node.name, propName: ident })
+        }
         if (prop.value.kind === 'jsx-children') {
           for (const child of prop.value.children) {
             collectForwardedProps(child, parentName, parentUsedProps, out)
@@ -313,22 +293,14 @@ function collectForwardedProps(
       collectForwardedProps(node.consequent, parentName, parentUsedProps, out)
       if (node.alternate) collectForwardedProps(node.alternate, parentName, parentUsedProps, out)
       break
-    case 'loop': {
+    // `childComponent` and `nestedComponents` are deliberately NOT visited:
+    // both are derived projections of components already reachable through
+    // `children` (`jsx-to-ir.ts`'s `childComponent = children[0]` and
+    // `collectNestedComponents(children)`), so counting them would inflate
+    // the census denominator two- to threefold for every loop body.
+    case 'loop':
       for (const child of node.children) collectForwardedProps(child, parentName, parentUsedProps, out)
-      if (node.childComponent) {
-        checkOccurrence(node.childComponent, parentName, parentUsedProps, out)
-        for (const child of node.childComponent.children) {
-          collectForwardedProps(child, parentName, parentUsedProps, out)
-        }
-      }
-      for (const nested of node.nestedComponents ?? []) {
-        checkOccurrence(nested, parentName, parentUsedProps, out)
-        for (const child of nested.children) {
-          collectForwardedProps(child, parentName, parentUsedProps, out)
-        }
-      }
       break
-    }
     case 'async':
       collectForwardedProps(node.fallback, parentName, parentUsedProps, out)
       for (const child of node.children) collectForwardedProps(child, parentName, parentUsedProps, out)
@@ -342,6 +314,7 @@ function collectForwardedProps(
 
 interface M2Result {
   totalComponents: number
+  nameCollisions: number
   componentsWithUsedProps: number
   totalForwarded: number
   eligible: number
@@ -352,6 +325,13 @@ interface M2Result {
 async function runM2(): Promise<M2Result> {
   const corpus = resolve(import.meta.dirname, '../../../site/ui')
   const files = await findTsxFiles(corpus)
+  // An empty corpus would print the same "0 eligible" as a genuine census,
+  // and 0 is exactly the finding this script exists to report — so refuse
+  // rather than hand back an unfalsifiable zero.
+  if (files.length === 0) {
+    console.error(`No .tsx files found under ${corpus}`)
+    process.exit(1)
+  }
 
   const program = createProgramForCorpus(files, {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX },
@@ -390,10 +370,16 @@ async function runM2(): Promise<M2Result> {
   }
 
   // componentName -> usedProps, built across the WHOLE corpus so a child
-  // defined in a different file than its parent still resolves.
+  // defined in a different file than its parent still resolves. The key is
+  // the bare name, so two same-named components collapse onto one entry and
+  // a forward could be scored against the wrong child's `usedProps` —
+  // counted and reported rather than resolved, since the census only needs
+  // the collision count to stay small enough not to move the result.
   const usedPropsByName = new Map<string, Set<string>>()
+  let nameCollisions = 0
   for (const ir of componentIRs) {
     const usedProps = ir.metadata.clientAnalysis?.usedProps ?? []
+    if (usedPropsByName.has(ir.metadata.componentName)) nameCollisions++
     usedPropsByName.set(ir.metadata.componentName, new Set(usedProps))
   }
 
@@ -423,6 +409,7 @@ async function runM2(): Promise<M2Result> {
 
   return {
     totalComponents: componentIRs.length,
+    nameCollisions,
     componentsWithUsedProps,
     totalForwarded: forwarded.length,
     eligible,
@@ -434,6 +421,7 @@ async function runM2(): Promise<M2Result> {
 function printM2(result: M2Result, slopes: ShapeSlopes[]): void {
   console.log('\n=== M2: eligible-population census (site/ui) ===\n')
   console.log(`components compiled: ${result.totalComponents}`)
+  console.log(`  of which same-named (child lookup is name-keyed, so these collapse): ${result.nameCollisions}`)
   console.log(`components with a non-empty usedProps (candidate parents): ${result.componentsWithUsedProps}`)
   console.log(`total bare-identifier prop forwards matching parent usedProps: ${result.totalForwarded}`)
   console.log(`  of which child component unresolved (skipped from eligible): ${result.unresolvedChild}`)
@@ -475,4 +463,7 @@ async function main(): Promise<void> {
   printM2(m2, slopes)
 }
 
-main()
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})

@@ -1218,7 +1218,7 @@ what such elision would do is already shipped by two other mechanisms.
   LIVE via `initChild`, not through `bf-p`. This is unconditional per-component: the gate is
   `if (!__bfChild && !__bfNoSerialize)` in the generated init
   (`packages/adapter-hono/src/adapter/hono-adapter.ts:632`, decided by `hasPropsToSerialize`
-  around line 518-520 of the same file). See also "`bf-p` Props Serialization" above for
+  at line 473 of the same file). See also "`bf-p` Props Serialization" above for
   the same gate's function-prop-safety side effect from Move C.
 
 Between (a) and (b), the ONLY case a transitive refinement could still improve is narrow: a
@@ -1250,6 +1250,7 @@ the bottom of this section; absolute numbers are host-dependent, compare shapes/
 
   | | count |
   |---|---|
+  | same-named components (the child lookup is name-keyed, so these collapse) | 4 |
   | components with a non-empty `usedProps` (candidate parents) | 38 |
   | total such bare-identifier forwards | 6 |
   | — of which the child component couldn't be resolved in-corpus | 3 |
