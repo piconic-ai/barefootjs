@@ -3542,12 +3542,6 @@
           }
         }
       },
-      "static-nested-loop-shadowed-param": {
-        "erb": {
-          "kind": "render",
-          "reason": "https://github.com/piconic-ai/barefootjs/issues/2922"
-        }
-      },
       "tag-cloud": {
         "blade": {
           "kind": "refusal",
@@ -3731,10 +3725,6 @@
       "static-nested-loop-ref": {
         "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref.ts"
-      },
-      "static-nested-loop-shadowed-param": {
-        "description": "a nested .map() whose param name shadows the outer loop param resolves to the INNER item, not the…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-shadowed-param.ts"
       },
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",

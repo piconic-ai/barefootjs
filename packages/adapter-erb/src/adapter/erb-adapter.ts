@@ -1029,6 +1029,57 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // one temporary drop-to-outer window around the hoisted sort-comparator
     // emission below, since that runs OUTSIDE this loop.
     const preambleDecls = loop.preamble?.declarations ?? []
+
+    // Ruby block parameters this loop binds natively (item/value + index /
+    // key). A real block parameter always shadows a same-named enclosing
+    // local at every nesting depth — unlike a plain `x = ...` assignment
+    // inside the block, which MUTATES an already-visible enclosing `x`
+    // instead of shadowing it. That distinction is the entire bug in #2922:
+    // `items.map(item => item.children.map(item => ...))` reused the same
+    // Ruby local `item` via assignment at both nesting depths, so the inner
+    // loop's second-plus iteration read the PREVIOUS inner item instead of
+    // the stable outer one. Binding the item as a real `each_with_index`
+    // block parameter (instead of `(0...arr.length).each` + a separate
+    // `item = arr[_i]` assignment) fixes this natively — the receiver
+    // (`array`) is evaluated once, in the ENCLOSING scope, before the block
+    // opens, so a nested loop's own array expression (e.g. `item.children`)
+    // still resolves against the OUTER `item` even when the inner loop binds
+    // a same-named fresh one.
+    const itemParam = supportableDestructure ? '__bf_item' : rubyLocal(param)
+    const blockParams: string = loop.objectIteration
+      ? loop.objectIteration === 'entries'
+        ? `${rubyLocal(loop.index ?? param)}, ${rubyLocal(param)}`
+        : rubyLocal(param)
+      : loop.iterationShape === 'keys'
+        ? indexVar
+        : `${itemParam}, ${indexVar}`
+    // Ruby locals this loop introduces by PLAIN ASSIGNMENT inside the block
+    // body (destructure bindings off `__bf_item`, `.map()` preamble locals,
+    // #2447) — as opposed to a real block parameter above. Declared as
+    // explicit Ruby block-local variables (`do |params; locals| ... end`)
+    // so each gets fresh per-block scope unconditionally, the same way a
+    // block parameter does — not only when a collision with an enclosing
+    // scope is actually detected, since that's a no-op for a name with no
+    // outer counterpart. Safe here because none of these assignments' RHS
+    // ever reads its own LHS name: a destructure binding's RHS is always an
+    // accessor off `__bf_item` (itself a block parameter above), and a JS
+    // preamble `const x = ...x...` initializer is a TDZ error, so it can
+    // only read an EARLIER preamble local (already block-local by then) or
+    // the param/index (also block parameters).
+    const blockLocals = new Set<string>()
+    if (!loop.objectIteration && loop.iterationShape !== 'keys' && supportableDestructure) {
+      for (const b of loop.paramBindings ?? []) blockLocals.add(rubyLocal(b.name))
+    }
+    for (const d of preambleDecls) blockLocals.add(rubyLocal(d.name))
+    // Never list a name that's ALSO a block parameter above — Ruby rejects
+    // that as `duplicated argument name` (a JS param/index and a preamble
+    // local/destructure binding can never share a name anyway; JS itself
+    // refuses the duplicate declaration).
+    for (const p of blockParams.split(', ')) blockLocals.delete(p)
+    const blockHeader = blockLocals.size > 0
+      ? `|${blockParams}; ${[...blockLocals].join(', ')}|`
+      : `|${blockParams}|`
+
     const prevScope = this.scope
     this.scope = prevScope.enterLoopRow(loop)
     const renderedChildren = this.renderChildren(loop.children)
@@ -1091,24 +1142,29 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // `objectIteration` (#2168 object-entries-map): Ruby's `Hash`
       // preserves the source object's insertion order natively (unlike
       // Go's `map`/Perl's hash), so this bypasses the index-range form
-      // above entirely and uses Ruby's own native block-param binding
+      // below entirely and uses Ruby's own native block-param binding
       // (`each_pair`/`each_key`/`each_value`) — no `array[index]` lookup
       // needed, since the block directly yields the key/value.
       const method = loop.objectIteration === 'entries'
         ? 'each_pair'
         : loop.objectIteration === 'keys' ? 'each_key' : 'each_value'
-      const blockParams = loop.objectIteration === 'entries'
-        ? `${rubyLocal(loop.index ?? param)}, ${rubyLocal(param)}`
-        : rubyLocal(param)
-      lines.push(`<%- ${array}.${method} do |${blockParams}| -%>`)
+      lines.push(`<%- ${array}.${method} do ${blockHeader} -%>`)
+    } else if (loop.iterationShape === 'keys') {
+      // `.keys().map(k => ...)` — the callback param IS the index; no
+      // per-item value binding needed (or possible: there is no `array[i]`
+      // item to bind).
+      lines.push(`<%- (0...${array}.length).each do ${blockHeader} -%>`)
     } else {
-    lines.push(`<%- (0...${array}.length).each do |${indexVar}| -%>`)
-    if (loop.iterationShape !== 'keys') {
+      // Item + index as REAL Ruby block parameters of `each_with_index`
+      // (rather than an index-range `.each` + a separate `item = arr[_i]`
+      // assignment) — see this method's `blockParams`/`blockLocals` setup
+      // above for why (#2922).
+      lines.push(`<%- ${array}.each_with_index do ${blockHeader} -%>`)
       if (supportableDestructure) {
-        // Per-item local + one local per binding, built off the binding's
-        // structured `segments` path (never `b.path` — repo rule: no
-        // string-parsing of a JS-shaped accessor). See `rubyAccessorFromSegments`.
-        lines.push(`<%- __bf_item = ${array}[${indexVar}] -%>`)
+        // One local per binding, built off the binding's structured
+        // `segments` path (never `b.path` — repo rule: no string-parsing of
+        // a JS-shaped accessor). See `rubyAccessorFromSegments`. `__bf_item`
+        // itself is now the loop's own block parameter (`itemParam` above).
         for (const b of loop.paramBindings ?? []) {
           // Fixed bindings: `segments` is the FULL accessor path from the
           // item to this binding. Rest bindings: `segments` is the PARENT
@@ -1136,10 +1192,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
             lines.push(`<%- ${rubyLocal(b.name)} = ${accessor} -%>`)
           }
         }
-      } else {
-        lines.push(`<%- ${rubyLocal(param)} = ${array}[${indexVar}] -%>`)
       }
-    }
     }
 
     // Per-row preamble locals (#2447), in source order so a later
