@@ -327,6 +327,11 @@ describe('Signal Getter Not Called (BF044)', () => {
         ['component prop, object literal member', '<Child value={{ x: count }} />'],
         ['component prop, ternary', '<Child value={count ? 1 : 2} />'],
         ['component prop, call argument', '<Child value={String(count)} />'],
+        // #2760: a bare getter passed DIRECTLY to a component prop is the
+        // same idiom as the object-literal-wrapped form above, not a
+        // forgotten `()` — the two forms are one decision, not an
+        // inconsistency to resolve by tightening the direct one.
+        ['component prop, bare getter', '<Child value={count} />'],
       ])('%s', (_label, body) => {
         expect(bf044Of(body)).toHaveLength(0)
       })

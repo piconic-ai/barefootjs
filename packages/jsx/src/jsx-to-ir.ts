@@ -41,7 +41,7 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
-import type { IRLoopSort, FunctionInfo, ConstantInfo } from './types.ts'
+import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -51,7 +51,8 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -129,6 +130,15 @@ interface TransformContext {
    * `_p.<local>` (#2524 CSR half: `_p` is always caller-keyed).
    */
   _destructuredPropAliases?: Map<string, string> | null
+  /**
+   * Cached local-name → `ParamInfo` map for the same eligible set, so
+   * `rewriteBarePropRefs` can apply a prop's destructure DEFAULT. Without
+   * it the CSR-only `template:` literal emitted a bare `_p.label` for
+   * `data-label={label}` with `label = 'none'`: correct once the caller
+   * sends a value, but the attribute was omitted entirely on the first
+   * render, where `_p.label` is `undefined`.
+   */
+  _destructuredPropInfoByName?: ReadonlyMap<string, ParamInfo> | null
   /**
    * The active `.map()`/callback binding stack (#2482 Stage 1a) — replaces
    * the former mutable per-name `Set<string>` mutated in lockstep with
@@ -588,7 +598,18 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // for references to those locals and union the matching dep sets.
   const extraPropRefs = collectBranchLocalPropRefsViaSubstitution(expr, ctx)
   const propAliases = getDestructuredPropAliases(ctx)
-  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined)
+  const propInfoByName = getDestructuredPropInfoByName(ctx)
+  // No `usage`/`usedAsCondition`: the `?? []` / `?? {}` fallbacks need
+  // Phase-2 `PropUsage` data this Phase-1 rewrite doesn't have. Only the
+  // explicit destructure default applies here — see
+  // `_destructuredPropInfoByName`.
+  const replacementFor = propInfoByName
+    ? (localName: string, callerKey: string): string => {
+        const info = propInfoByName.get(localName)
+        return info ? livePropReadExpr(info, undefined, false) : `${PROPS_PARAM}.${callerKey}`
+      }
+    : undefined
+  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined, replacementFor)
 }
 
 /**
@@ -676,8 +697,20 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
     const names = eligible.map(p => p.name)
     ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
     ctx._destructuredPropAliases = buildPropAliasMap(eligible) ?? null
+    const infoByName = new Map<string, ParamInfo>()
+    for (const p of eligible) infoByName.set(p.name, p)
+    ctx._destructuredPropInfoByName = infoByName.size > 0 ? infoByName : null
   }
   return ctx._destructuredPropNames ?? null
+}
+
+/**
+ * Companion to `getDestructuredPropNames`: local-name → `ParamInfo` for the
+ * same shadow-filtered eligible set. Both caches are written in one pass.
+ */
+function getDestructuredPropInfoByName(ctx: TransformContext): ReadonlyMap<string, ParamInfo> | null {
+  if (ctx._destructuredPropNames === undefined) getDestructuredPropNames(ctx)
+  return ctx._destructuredPropInfoByName ?? null
 }
 
 /**
@@ -2376,8 +2409,9 @@ function transformExpressionInner(
   // Check for bare signal/memo identifier (BF044). A JSX text child is
   // inherently a RENDERED position — unlike a component prop, `{expr}`
   // here always becomes literal rendered output, never an opaque value
-  // handed to a consumer to call later — so nested descent is always on.
-  checkBareSignalOrMemoIdentifier(expr, ctx, { descendNested: true })
+  // handed to a consumer to call later — so the check (top-level and
+  // nested descent) always fires.
+  checkBareSignalOrMemoIdentifier(expr, ctx, { renderedPosition: true })
 
   // #547: Inline a JSX constant referenced by identifier. Unique to JSX-child
   // position — conditional branches and return position don't resolve
@@ -6621,14 +6655,14 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
     // `processComponentProps`), and only the element-attribute case is
     // a RENDERED position — a component prop is an opaque value handed
     // to the component, and this codebase's Context-Provider idiom
-    // depends on that value being an uncalled accessor (`value={{
-    // open }}`, ui/components/ui/select/index.tsx — calling it eagerly
-    // there would freeze the value at provider-render time and break
-    // every consumer's reactivity). So nested descent is gated on
-    // element-vs-component, derived from the tag this attribute lives
-    // on; the top-level bare-identifier check stays unconditional
-    // either way, unchanged from this diagnostic's original behaviour.
-    checkBareSignalOrMemoIdentifier(expr, ctx, { descendNested: isRenderedElementAttribute(attr, ctx) })
+    // depends on that value being an uncalled accessor, whether passed
+    // directly (`x={open}`, #2760) or nested in an object literal
+    // (`value={{ open }}`, ui/components/ui/select/index.tsx) — calling
+    // it eagerly there would freeze the value at provider-render time
+    // and break every consumer's reactivity. So the entire check (top
+    // level included) is gated on element-vs-component, derived from
+    // the tag this attribute lives on.
+    checkBareSignalOrMemoIdentifier(expr, ctx, { renderedPosition: isRenderedElementAttribute(attr, ctx) })
 
     // Static style object: style={{ key: 'value', ... }} → CSS string at compile time
     if (attr.name.getText(ctx.sourceFile) === 'style' && ts.isObjectLiteralExpression(expr)) {
@@ -7708,15 +7742,16 @@ function processComponentProps(
  * hyphenated (a custom element) is a real DOM node, capitalised or
  * dotted (`Select.Provider`) is a component.
  *
- * Feeds `checkBareSignalOrMemoIdentifier`'s `descendNested` gate: a
+ * Feeds `checkBareSignalOrMemoIdentifier`'s `renderedPosition` gate: a
  * DOM attribute value is a RENDERED position (this is genuinely what
  * ends up in the DOM), so a bare getter buried inside it — `style={{
  * color: val }}` — is exactly as much a forgotten `()` as a top-level
  * one. A component prop is not rendered — it's an opaque value handed
  * to the component — and this codebase's Context-Provider idiom
- * depends on that value being an UNCALLED accessor
+ * depends on that value being an UNCALLED accessor, whether passed
+ * directly (`x={open}`) or nested in an object literal
  * (`ui/components/ui/select/index.tsx`'s `value={{ open, ... }}`), so
- * nested descent must not fire there.
+ * the check must not fire there at all (#2760).
  */
 function isRenderedElementAttribute(attr: ts.JsxAttribute, ctx: TransformContext): boolean {
   const tagName = attr.parent.parent.tagName.getText(ctx.sourceFile)
@@ -7728,22 +7763,25 @@ function isRenderedElementAttribute(attr: ts.JsxAttribute, ctx: TransformContext
  * Emits BF044 when a signal/memo getter is passed without calling it.
  * e.g., value={count} instead of value={count()}
  *
- * The top-level check — is `expr` itself a bare reactive identifier —
- * always runs, unchanged from this diagnostic's original behaviour
- * (`value={count}`, `<Foo x={count} />` keep firing regardless of
- * position). `descendNested` additionally opts into walking INSIDE a
- * composite expression — call arguments, template-literal spans,
+ * `renderedPosition` gates the ENTIRE check, top-level included: only a
+ * RENDERED position (a JSX text child; a DOM element's attribute value
+ * via `isRenderedElementAttribute`) risks a forgotten `()` silently
+ * producing wrong output, so only those positions fire at all. A
+ * component prop is not rendered — it's an opaque value handed to the
+ * component — and a bare getter there is this codebase's deliberate
+ * Context-Provider idiom (measured: 66 such uses across
+ * `ui/components/**`/`site/**`, all legitimate, none a forgotten `()`),
+ * whether written directly (`<Foo x={val} />`) or nested inside an
+ * object literal (`<Foo value={{ val }} />`, already silent before this
+ * gate existed) — #2760 settled the two forms as one idiom, not an
+ * inconsistency to fix by tightening the direct form. When
+ * `renderedPosition` is true, nested descent additionally walks INSIDE
+ * a composite expression — call arguments, template-literal spans,
  * ternary branches (condition + both arms), array/object literal
  * members, binary/logical operands, parenthesized wrappers — to catch
- * a bare reference buried anywhere in that reachable set (#2755,
- * #2751: this is the single upstream gate whose shallow top-level-only
- * check let both downstream bugs through). Callers opt in only for
- * RENDERED positions (a JSX text child; a DOM element's attribute value
- * via `isRenderedElementAttribute`) — never for a component prop, where
- * a bare getter is this codebase's deliberate Context-Provider idiom
- * (measured: 66 such uses across `ui/components/**`/`site/**`, all
- * legitimate, none a forgotten `()` — widening the gate to fire there
- * would be a correctness regression, not a fix).
+ * a bare reference buried anywhere in that reachable set (#2755, #2751:
+ * this is the single upstream gate whose shallow top-level-only check
+ * let both downstream bugs through).
  *
  * Two structural exclusions apply whenever descending, both required
  * so the walk doesn't false-positive on shapes that read the name
@@ -7781,8 +7819,10 @@ function isRenderedElementAttribute(attr: ts.JsxAttribute, ctx: TransformContext
 function checkBareSignalOrMemoIdentifier(
   expr: ts.Expression,
   ctx: TransformContext,
-  options?: { descendNested?: boolean }
+  options?: { renderedPosition?: boolean }
 ): void {
+  if (!options?.renderedPosition) return
+
   const reactiveNames = new Map<string, 'signal' | 'memo'>()
   for (const signal of ctx.analyzer.signals) reactiveNames.set(signal.getter, 'signal')
   for (const memo of ctx.analyzer.memos) reactiveNames.set(memo.name, 'memo')
@@ -7804,28 +7844,26 @@ function checkBareSignalOrMemoIdentifier(
     )
   }
 
-  // Top-level check — unchanged from this diagnostic's original
-  // position-gating (fires unconditionally, everywhere), but NOW also
-  // respects the ambient loop/callback `BindingScope` a shadowed name
-  // needs — a pre-existing gap (the original single-line
-  // `if (!ts.isIdentifier(expr)) return` never consulted scope either)
-  // that stayed invisible only because a bare top-level identifier
-  // shadowed by a `.map(name => ...)` row param never happened to be
-  // exercised by any prior test. `ctx.scope` is the LIVE scope at this
-  // JSX node — already entered for the current loop row/callback frame
-  // by the time an attribute/child expression under it is checked
-  // (`enterLoopRow`/`enterCallback`, `scope/binding-scope.ts`) — so
-  // `isBound` here is a shadow-guard read in exactly the sense
-  // `spec/compiler.md`'s `BindingScope` section describes: is a signal
-  // getter of this name shadowed HERE, not "does this expression need
-  // its own reactive slot".
+  // Top-level check — `renderedPosition` (checked above) has already
+  // ruled out a component-prop position, so any call reaching here is a
+  // genuinely rendered one. Also respects the ambient loop/callback
+  // `BindingScope` a shadowed name needs — a pre-existing gap (the
+  // original single-line `if (!ts.isIdentifier(expr)) return` never
+  // consulted scope either) that stayed invisible only because a bare
+  // top-level identifier shadowed by a `.map(name => ...)` row param
+  // never happened to be exercised by any prior test. `ctx.scope` is
+  // the LIVE scope at this JSX node — already entered for the current
+  // loop row/callback frame by the time an attribute/child expression
+  // under it is checked (`enterLoopRow`/`enterCallback`,
+  // `scope/binding-scope.ts`) — so `isBound` here is a shadow-guard
+  // read in exactly the sense `spec/compiler.md`'s `BindingScope`
+  // section describes: is a signal getter of this name shadowed HERE,
+  // not "does this expression need its own reactive slot".
   if (ts.isIdentifier(expr)) {
     const kind = reactiveNames.get(expr.text)
     if (kind && !ctx.scope.isBound(expr.text)) report(expr, expr.text, kind)
     return
   }
-
-  if (!options?.descendNested) return
 
   const boundStack: Array<Set<string>> = []
   const isBound = (name: string): boolean => {

@@ -28,7 +28,7 @@ export function initTabs(__scope, _p = {}) {
 
 }
 
-hydrate('Tabs', { init: initTabs, template: (_p) => `<div data-slot="tabs" ${(_p.value || _p.defaultValue) != null ? 'data-value="' + escapeAttr(_p.value || _p.defaultValue) + '"' : ''} ${(`${('flex flex-col gap-2 w-full')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 w-full')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
+hydrate('Tabs', { init: initTabs, template: (_p) => `<div data-slot="tabs" ${(_p.value || _p.defaultValue) != null ? 'data-value="' + escapeAttr(_p.value || _p.defaultValue) + '"' : ''} ${(`${('flex flex-col gap-2 w-full')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 w-full')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function Tabs(_p, __bfKey) { return createComponent('Tabs', _p, __bfKey) }
 export function initTabsList(__scope, _p = {}) {
   if (!__scope) return
@@ -53,7 +53,7 @@ export function initTabsList(__scope, _p = {}) {
 
 }
 
-hydrate('TabsList', { init: initTabsList, template: (_p) => `<div data-slot="tabs-list" role="tablist" ${(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
+hydrate('TabsList', { init: initTabsList, template: (_p) => `<div data-slot="tabs-list" role="tablist" ${(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function TabsList(_p, __bfKey) { return createComponent('TabsList', _p, __bfKey) }
 export function initTabsTrigger(__scope, _p = {}) {
   if (!__scope) return

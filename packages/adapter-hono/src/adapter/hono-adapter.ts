@@ -50,6 +50,31 @@ type HonoRenderCtx = {
 }
 import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, escapeHtml } from '@barefootjs/shared'
 
+/**
+ * The synthetic hydration props every generated component accepts, as one
+ * list rendered two ways: the inline `HYDRATION_PROPS_TYPE` annotation and
+ * the named `${Name}PropsWithHydration` alias `generateTypes` emits. They
+ * used to be two hand-kept copies that had to be edited in lockstep.
+ */
+const HYDRATION_PROP_DECLS = [
+  '__instanceId?: string',
+  '__bfScope?: string',
+  '__bfChild?: boolean',
+  '__bfNoSerialize?: boolean',
+  '__bfParentProps?: string',
+  '__bfParent?: string',
+  '__bfMount?: string',
+  '"data-key"?: string | number',
+] as const
+
+/**
+ * Inline form of `HYDRATION_PROP_DECLS`, intersected with the user's own
+ * props type. Needed because Hono's JSX types otherwise reject the
+ * hydration props the emitted SSR template passes to a component without an
+ * explicit Props type. See onboarding round 5 / PR #1450.
+ */
+const HYDRATION_PROPS_TYPE = `{ ${HYDRATION_PROP_DECLS.join('; ')} }`
+
 export interface HonoAdapterOptions {
   /**
    * Base path for client JS files (e.g., '/static/components/')
@@ -360,13 +385,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const propsTypeName = this.getPropsTypeName(ir)
     if (propsTypeName && !ir.metadata.propsObjectName) {
       lines.push(`type ${this.componentName}PropsWithHydration = ${propsTypeName} & {`)
-      lines.push('  __instanceId?: string')
-      lines.push('  __bfScope?: string')
-      lines.push('  __bfChild?: boolean')
-      lines.push('  __bfParentProps?: string')
-      lines.push('  __bfParent?: string')
-      lines.push('  __bfMount?: string')
-      lines.push('  "data-key"?: string | number')
+      for (const decl of HYDRATION_PROP_DECLS) lines.push(`  ${decl}`)
       lines.push('}')
     }
 
@@ -420,19 +439,6 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     let typeAnnotation: string
     let propsExtraction: string | null = null
 
-    // Synthetic hydration-only props the generated wrapper destructures
-    // out of `props` before reaching the user's body. Kept as a shared
-    // constant so the `propsObjectName` (SolidJS-style) and destructured
-    // branches both list every hydration field — the destructured
-    // branch's fallback used to declare only `__instanceId / __bfScope
-    // / __bfChild`, but the generated body destructures `__bfParent /
-    // __bfMount / __bfParentProps / data-key` too, so tsc raised
-    // TS2339 ("Property '__bfParent' does not exist...") on every
-    // emitted SSR template for a component without an explicit Props
-    // type. See onboarding round 5 / PR #1450.
-    const HYDRATION_PROPS_TYPE =
-      '{ __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }'
-
     if (propsObjectName) {
       // SolidJS-style: function Component(props: Props)
       // Accept all props as a single object, then destructure hydration props out
@@ -453,8 +459,15 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only serialize props that the client JS init function actually reads
     const clientUsedProps = new Set(ir.metadata.clientAnalysis?.usedProps ?? [])
     const needsInit = ir.metadata.clientAnalysis?.needsInit ?? false
+    // Live-only props (Move C): props whose declared type is a function this
+    // component's client code calls. Unlike `on*`/`__*` they are NOT dropped
+    // from `propsToSerialize` — whether the value is actually unreachable is
+    // a runtime fact (`__bfChild`), so the map is threaded into
+    // `serializeHydrationProps` (utils.ts), which throws only on a real root
+    // mount carrying a real function value.
+    const liveOnlyProps = ir.metadata.clientAnalysis?.liveOnlyProps ?? {}
     const propsToSerialize = ir.metadata.propsParams.filter(p => {
-      // Skip function props and internal props
+      // Skip event-handler-shaped and internal props
       return !p.name.startsWith('on') && !p.name.startsWith('__') && clientUsedProps.has(p.name)
     })
     const hasPropsToSerialize = propsToSerialize.length > 0 && hasClientInteractivity && needsInit
@@ -502,20 +515,27 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       scopeIdLine,
       // Props serialization references __bfParentProps
       (hasPropsToSerialize || (hasClientInteractivity && isRootComponent)) ? '__bfParentProps' : '',
+      // Props serialization is gated `if (!__bfChild && !__bfNoSerialize)`.
+      hasPropsToSerialize ? '__bfChild' : '',
+      hasPropsToSerialize ? '__bfNoSerialize' : '',
     ].join('\n')
 
     // Rebuild hydration props with _ prefix for unused ones
     const bfScopeAlias = /\b__bfScope\b/.test(bodyRefText) ? '__bfScope' : '__bfScope: _bfScope'
     const bfChildAlias = /\b__bfChild\b/.test(bodyRefText) ? '__bfChild' : '__bfChild: _bfChild'
+    // __bfNoSerialize: "skip your own bf-p, your props always arrive live".
+    // Deliberately NOT folded into __bfChild — see the `isRootOfClientComponent`
+    // branch of `renderComponent`, the one place that passes it.
+    const bfNoSerializeAlias = /\b__bfNoSerialize\b/.test(bodyRefText) ? '__bfNoSerialize' : '__bfNoSerialize: _bfNoSerialize'
     const bfParentPropsAlias = /\b__bfParentProps\b/.test(bodyRefText) ? '__bfParentProps' : '__bfParentProps: _bfParentProps'
     const bfParentAlias = /\b__bfParent\b/.test(bodyRefText) ? '__bfParent' : '__bfParent: _bfParent'
     const bfMountAlias = /\b__bfMount\b/.test(bodyRefText) ? '__bfMount' : '__bfMount: _bfMount'
     const dataKeyAlias = /\b__dataKey\b/.test(bodyRefText) ? '"data-key": __dataKey' : '"data-key": _dataKey'
 
     if (propsObjectName) {
-      propsExtraction = `  const { __instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}, ...${propsObjectName} } = __allProps`
+      propsExtraction = `  const { __instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfNoSerializeAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}, ...${propsObjectName} } = __allProps`
     } else {
-      const hydrationProps = `__instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}`
+      const hydrationProps = `__instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfNoSerializeAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}`
       const parts: string[] = []
       // Rename-aware `key: local` bindings (b4f5075), shared with
       // TestAdapter via `propsDestructureBinding` — see its docstring for
@@ -604,10 +624,18 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only the outermost component reads bf-p via hydrate(); children get props via initChild().
     if (hasPropsToSerialize) {
       lines.push('')
-      lines.push(`  // Serialize props for client hydration`)
-      lines.push(`  const __hydrateProps: Record<string, unknown> = {}`)
+      lines.push(`  // Serialize props for client hydration — root mounts only. A child's bf-p`)
+      lines.push(`  // is never read (it gets props live via initChild), and __bfNoSerialize`)
+      lines.push(`  // says the same for a component that is its parent's entire JSX body, so`)
+      lines.push(`  // neither one pays for — or can fail SSR on — a value nothing will read.`)
+      lines.push(`  let __bfPropsJson = __bfParentProps`)
+      lines.push(`  if (!__bfChild && !__bfNoSerialize) {`)
+      lines.push(`    const __hydrateProps: Record<string, unknown> = {}`)
       for (const p of propsToSerialize) {
-        // Skip functions and JSX elements (they can't be JSON serialized)
+        // Skip JSX elements (they can't be JSON serialized). A function value
+        // deliberately is NOT skipped here: dropping it silently is the bug
+        // Move C fixes — `serializeHydrationProps` below decides, via
+        // `liveOnlyProps`, whether the client actually needed it.
         // Use propsObjectName.propName for SolidJS-style, direct propName for destructured
         const propAccess = propsObjectName ? `${propsObjectName}.${p.name}` : p.name
         // The `bf-p` blob key is always the caller-facing name (#2524 CSR
@@ -615,9 +643,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
         // so a renaming destructure (`{ n: count }`) must serialize under
         // `n`, not the local binding `count`.
         const callerKey = p.sourceName ?? p.name
-        lines.push(`  if (typeof ${propAccess} !== 'function' && !(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
+        lines.push(`    if (!(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
       }
-      lines.push(`  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, '${name}')`)
+      lines.push(`    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, '${name}', ${JSON.stringify(liveOnlyProps)})`)
+      lines.push(`  }`)
     } else if (hasClientInteractivity && isRootComponent) {
       // No own props, but root is a component — pass through parent's props
       lines.push('')
@@ -1212,13 +1241,38 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (ctx?.isRootOfClientComponent) {
       // Root component: if it has a slotId, include it so client JS can find it
       // with [bf-s$="_sX"] selector. Otherwise pass parent's scope directly.
-      // Note: Do NOT add __bfChild here - the root is the main hydration target, not a child.
+      //
+      // This branch is the pass-through wrapper: a "use client" component
+      // whose entire JSX body is this one nested component call, with no
+      // wrapper DOM element between them. Two questions look like one here
+      // and are not, which is why there are two flags:
+      //
+      //   markers (bf-r/bf-h/bf-m) — must reflect this mount's OWN status,
+      //     so NO __bfChild. bf-r is a locator, not a serialization gate
+      //     (BF_ROOT's docstring, packages/shared/src/markers.ts), and e2e
+      //     specs match `[bf-s^="FooDemo_"][bf-r]` on exactly this shape.
+      //   serialization — always skipped, so __bfNoSerialize regardless of
+      //     __bfChild. The enclosing component's init always drives this one
+      //     through a live upsertChild/initChild call, whether or not the
+      //     enclosing component is itself a root, so its bf-p is dead weight
+      //     that can still throw on an unserializable prop.
+      //
+      // A genuinely-root wrapper needs "no" to the first and "yes" to the
+      // second at the same mount, so one boolean cannot carry both.
+      //
       // Pass __bfParentProps so child component can use parent's serialized props
       const propsPassAttr = this.currentComponentHasProps ? ' __bfParentProps={__bfPropsJson}' : ''
+      // Gated on the enclosing component actually having client JS, since that
+      // init call is what makes the skip safe. `generateComponent`'s
+      // if-statement-root path enters this branch with
+      // `isRootOfClientComponent: true` hardcoded, so without the gate a
+      // static component's interactive child would lose its bf-p with nothing
+      // live to replace it.
+      const bfNoSerializePassAttr = this.hasClientInteractivity ? ' __bfNoSerialize={true}' : ''
       if (comp.slotId) {
-        scopeAttr = ` __instanceId={\`\${__scopeId}_${comp.slotId}\`}${propsPassAttr}${bfMountAttr}`
+        scopeAttr = ` __instanceId={\`\${__scopeId}_${comp.slotId}\`}${propsPassAttr}${bfNoSerializePassAttr}${bfMountAttr}`
       } else {
-        scopeAttr = ` __instanceId={__scopeId}${propsPassAttr}`
+        scopeAttr = ` __instanceId={__scopeId}${propsPassAttr}${bfNoSerializePassAttr}`
       }
       // Also pass bf-s for asChild/Slot patterns where the component
       // forwards props to a DOM element via {...props}.

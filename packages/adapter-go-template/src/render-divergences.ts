@@ -37,4 +37,19 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // #2925: a plain (non-Context) child-component prop whose value is a
+  // local signal/memo getter — `<Display value={count} />`, and identically
+  // `<Display value={{ v: count }} />` — compiles clean, but
+  // `NewCounterProps`'s constructor-time build of the nested `DisplaySlot0`
+  // field silently omits `Value` from the `DisplayInput{...}` literal, so Go
+  // renders the field as its zero value instead of the signal's value.
+  // `count`'s own SSR-default baking works fine (`Count: 5` lands); the gap
+  // is specifically in threading a signal-getter-valued prop into a NESTED
+  // child's own constructor-time `Input` struct. Predates #2760 (reproduces
+  // identically with the already-legal object-literal-wrapped form) — #2760
+  // only added the first fixture to exercise this idiom outside a Context
+  // Provider, which routes through `provideContext`/`useContext` instead and
+  // never hit this baker path.
+  'component-prop-bare-getter': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
+}

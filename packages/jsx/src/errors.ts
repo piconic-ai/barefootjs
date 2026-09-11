@@ -51,8 +51,9 @@ export const ErrorCodes = {
   // to resolve the identifier at return position too.
   RETURN_VALUE_NOT_JSX: 'BF027',
 
-  // Component errors (BF043-BF049)
-  PROPS_DESTRUCTURING: 'BF043',
+  // Component errors (BF043-BF049). BF043 is retired (it warned that props
+  // destructuring broke reactivity, which it no longer does) and is the next
+  // free slot.
   SIGNAL_GETTER_NOT_CALLED: 'BF044',
   JSX_IN_LOCAL_FUNCTION: 'BF045',
   COMPONENT_REQUIRED_PROP_MISSING: 'BF046',
@@ -181,8 +182,6 @@ const errorMessages: Record<ErrorCode, string> = {
   [ErrorCodes.RETURN_VALUE_NOT_JSX]:
     "Component's return value is not recognized as JSX — return the JSX expression directly instead of binding it to a local variable first.",
 
-  [ErrorCodes.PROPS_DESTRUCTURING]:
-    'Props destructuring in function parameters breaks reactivity. Use props object directly.',
   [ErrorCodes.SIGNAL_GETTER_NOT_CALLED]:
     'Signal/memo getter passed without calling it. Use getter() to read the value.',
   [ErrorCodes.JSX_IN_LOCAL_FUNCTION]:
@@ -382,10 +381,10 @@ export function formatError(
   options?: { projectDir?: string },
 ): string {
   // Lowercase severity matches the prose convention in
-  // `docs/core/advanced/error-codes.md` (`error[BF001]:`,
-  // `warning[BF043]:`) — that doc IS the rendering contract referenced
-  // by `bf guide advanced/error-codes`, so keep the wire format aligned
-  // with the reference rather than the function's old uppercase shape.
+  // `docs/core/advanced/error-codes.md` (`error[BF001]:`) — that doc IS the
+  // rendering contract referenced by `bf guide advanced/error-codes`, so
+  // keep the wire format aligned with the reference rather than the
+  // function's old uppercase shape.
   const severityLabel = error.severity
   const lines: string[] = []
 

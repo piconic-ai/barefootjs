@@ -89,8 +89,8 @@ const nextVerticalClasses = '-bottom-12 left-1/2 -translate-x-1/2 rotate-90'
 
 export type { CarouselProps, CarouselContentProps, CarouselItemProps, CarouselPreviousProps, CarouselNextProps }
 
-export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Carousel_${Math.random().toString(36).slice(2, 8)}`
   const canScrollPrev = () => false
   const setCanScrollPrev: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
@@ -101,12 +101,18 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   const scrollPrev = () => emblaApi?.scrollPrev()
   const scrollNext = () => emblaApi?.scrollNext()
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.orientation !== 'function' && !(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
-  if (typeof props.opts !== 'function' && !(typeof props.opts === 'object' && props.opts !== null && 'isEscaped' in props.opts)) __hydrateProps['opts'] = props.opts
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Carousel')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
+    if (!(typeof props.opts === 'object' && props.opts !== null && 'isEscaped' in props.opts)) __hydrateProps['opts'] = props.opts
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Carousel', {})
+  }
 
   return (
     <>{provideContextSSR(CarouselContext, {
@@ -122,65 +128,89 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   )
 }
 
-export function CarouselContent(__allProps: CarouselContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselContent(__allProps: CarouselContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselContent_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const directionClasses = () => orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  if (typeof props.orientation !== 'function' && !(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselContent')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselContent', {})
+  }
 
   return (
     <div data-slot="carousel-viewport" className="overflow-hidden" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><div data-slot="carousel-content" className={`${directionClasses()} ${props.className ?? ''}`} bf="s0">{props.children}</div></div>
   )
 }
 
-export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselItem(__allProps: CarouselItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselItem_${Math.random().toString(36).slice(2, 8)}`
   const paddingClass = () => (props.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4'
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.orientation !== 'function' && !(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselItem')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselItem', {})
+  }
 
   return (
     <div data-slot="carousel-item" role="group" aria-roledescription="slide" className={`${carouselItemClasses} ${paddingClass()} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
   )
 }
 
-export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselPrevious(__allProps: CarouselPreviousProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselPrevious_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const positionClasses = () => orientation() === 'vertical' ? prevVerticalClasses : prevHorizontalClasses
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.orientation !== 'function' && !(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselPrevious')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselPrevious', {})
+  }
 
   return (
     <button data-slot="carousel-previous" type="button" className={`${carouselButtonBaseClasses} ${positionClasses()} ${props.className ?? ''}`} disabled aria-label="Previous slide" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><ChevronLeftIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><span className="sr-only">Previous slide</span></button>
   )
 }
 
-export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `CarouselNext_${Math.random().toString(36).slice(2, 8)}`
   const orientation = () => props.orientation ?? 'horizontal'
   const positionClasses = () => orientation() === 'vertical' ? nextVerticalClasses : nextHorizontalClasses
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.orientation !== 'function' && !(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselNext')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.orientation === 'object' && props.orientation !== null && 'isEscaped' in props.orientation)) __hydrateProps['orientation'] = props.orientation
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CarouselNext', {})
+  }
 
   return (
     <button data-slot="carousel-next" type="button" className={`${carouselButtonBaseClasses} ${positionClasses()} ${props.className ?? ''}`} disabled aria-label="Next slide" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><ChevronRightIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><span className="sr-only">Next slide</span></button>

@@ -10,9 +10,49 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import { compileJSX } from '@barefootjs/jsx'
+import { resolve } from 'node:path'
+import { rm } from 'node:fs/promises'
 import { serializeHydrationProps } from '../utils'
 import { renderHonoComponent } from '../test-render'
 import { HonoAdapter } from '../adapter/hono-adapter'
+
+/**
+ * Compile a single-component source with `HonoAdapter` and call the
+ * generated function DIRECTLY (bypassing `renderHonoComponent`'s
+ * `app.request()`) so a thrown error's exact message survives — Hono's
+ * default error handler (no custom `app.onError`) collapses any thrown
+ * error into a generic "Internal Server Error" 500 body, which is why the
+ * Map/BigInt integration tests below only assert "the request fails", not
+ * the message (already pinned by the direct unit tests above). The Move C
+ * root-scope function-prop case additionally needs the message itself
+ * pinned through REAL generated code (not just the `serializeHydrationProps`
+ * unit above), so this bypasses HTTP entirely and calls the compiled
+ * component like a plain function.
+ */
+async function callComponentDirect(source: string, props: Record<string, unknown>): Promise<unknown> {
+  const result = compileJSX(source, 'component.tsx', { adapter: new HonoAdapter() })
+  const errors = result.errors.filter((e) => e.severity === 'error')
+  if (errors.length > 0) {
+    throw new Error(`Compilation errors:\n${errors.map((e) => e.message).join('\n')}`)
+  }
+  const templateFile = result.files.find((f) => f.type === 'markedTemplate')
+  if (!templateFile) throw new Error('No marked template in compile output')
+  const code = `/** @jsxImportSource hono/jsx */\n${templateFile.content}`
+  // Same temp dir `test-render.ts` uses — inside the hono package so
+  // `hono/jsx` resolves.
+  const tempDir = resolve(import.meta.dir, '../../.render-temp')
+  const tempFile = resolve(tempDir, `direct-${Date.now()}-${Math.random().toString(36).slice(2)}.tsx`)
+  await Bun.write(tempFile, code)
+  try {
+    const mod = await import(tempFile)
+    const name = Object.keys(mod).find((k) => typeof mod[k] === 'function')
+    if (!name) throw new Error('No component function found in compiled module')
+    return mod[name]({ __instanceId: 'test', __bfChild: false, ...props })
+  } finally {
+    await rm(tempFile, { force: true }).catch(() => {})
+  }
+}
 
 describe('serializeHydrationProps — unit', () => {
   test('empty props return undefined', () => {
@@ -63,6 +103,183 @@ describe('serializeHydrationProps — unit', () => {
     expect(() => serializeHydrationProps({ pattern: /x/ }, 'Foo')).not.toThrow()
     expect(() => serializeHydrationProps({ err: new Error('x') }, 'Foo')).not.toThrow()
     expect(() => serializeHydrationProps({ q: new URLSearchParams('a=1') }, 'Foo')).not.toThrow()
+  })
+})
+
+describe('serializeHydrationProps — liveOnlyProps (Move C, Prop Boundary Contract)', () => {
+  test('a function value for a prop NOT in liveOnlyProps is silently dropped, like JSON.stringify already drops a function', () => {
+    expect(serializeHydrationProps({ cb: () => 1, a: 1 }, 'Foo')).toBe(JSON.stringify({ a: 1 }))
+  })
+
+  test('a function value for a prop IN liveOnlyProps throws a clear, actionable TypeError', () => {
+    const fn = () => 1
+    expect(() =>
+      serializeHydrationProps({ value: fn }, 'Display', { value: '() => number' }),
+    ).toThrow(TypeError)
+  })
+
+  test('the thrown message is pinned to the documented wording', () => {
+    const fn = () => 1
+    try {
+      serializeHydrationProps({ value: fn }, 'Display', { value: '() => number' })
+      throw new Error('expected a throw')
+    } catch (e) {
+      expect((e as Error).message).toBe(
+        "[barefootjs] Cannot serialize prop 'value' of <Display> for hydration: it is declared `() => number` " +
+          "and read by the component's client code, but a function cannot cross the bf-p JSON boundary (the " +
+          'client would hydrate against `undefined` and throw). A function-typed prop can only reach <Display> ' +
+          'live — render <Display> from a compiled parent component (initChild) or mount it client-side ' +
+          '(createComponent); from a route handler pass the data and let the component own the accessor.',
+      )
+    }
+  })
+
+  test('a live-only prop alongside an unrelated non-function prop still serializes the rest', () => {
+    expect(() =>
+      serializeHydrationProps({ value: () => 1, label: 'x' }, 'Display', { value: '() => number' }),
+    ).toThrow(TypeError)
+  })
+})
+
+describe('function-typed prop at the hydration boundary — root vs. child (Move C, Prop Boundary Contract)', () => {
+  // `Display` reads `value` LIVE (calls it, both in the click handler and
+  // in the rendered text) — exactly #2760's own example
+  // (`<Display value={count} />`), and the shape the background section of
+  // this Move calls out as silently dropped before this fix.
+  const DISPLAY_SOURCE = `
+    'use client'
+    export function Display({ value }: { value: () => number }) {
+      return <button onClick={() => console.log(value())}>{value()}</button>
+    }
+  `
+
+  test('positive: as the hydration ROOT, a live function-typed prop fails SSR with the pinned message', async () => {
+    await expect(callComponentDirect(DISPLAY_SOURCE, { value: () => 42 })).rejects.toThrow(
+      "[barefootjs] Cannot serialize prop 'value' of <Display> for hydration: it is declared `() => number` " +
+        "and read by the component's client code, but a function cannot cross the bf-p JSON boundary (the " +
+        'client would hydrate against `undefined` and throw). A function-typed prop can only reach <Display> ' +
+        'live — render <Display> from a compiled parent component (initChild) or mount it client-side ' +
+        '(createComponent); from a route handler pass the data and let the component own the accessor.',
+    )
+  })
+
+  test('negative — client parent: the same component, rendered as a child of a "use client" parent, renders successfully', async () => {
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { Display } from './display'
+        export function ClientParent() {
+          const [count] = createSignal(() => 42)
+          return <div><Display value={count} /></div>
+        }
+      `,
+      components: { './display.tsx': DISPLAY_SOURCE },
+    })
+    // A child never carries bf-p; it hydrates via initChild instead.
+    expect(html).toContain('bf-h=')
+    expect(html).not.toContain('bf-p=')
+  })
+
+  test('negative — server parent: the same component, rendered as a child of a plain (non-"use client") server component, renders successfully', async () => {
+    // The function value originates as a LOCAL constant in the server
+    // parent's own body, never crossing that parent's own hydration
+    // boundary (the parent has no props of its own to serialize) — the
+    // legitimate "always used as a compiled child" pattern the Move A/C
+    // design calls out (Context-provider-style components). The parent
+    // still ends up needing its own client wiring (`__bfChild={true}`
+    // passed to `Display`) purely because it renders an interactive child.
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: `
+        import { Display } from './display'
+        export function ServerParent() {
+          const getValue = () => 42
+          return <div><Display value={getValue} /></div>
+        }
+      `,
+      components: { './display.tsx': DISPLAY_SOURCE },
+    })
+    expect(html).toContain('bf-h=')
+    expect(html).not.toContain('bf-p=')
+  })
+
+  test('gating regression: a CHILD-scope component with an unrelated rich-type (Map) prop now renders successfully instead of 500ing', async () => {
+    // Before the __bfChild gate (Move C step 2), `serializeHydrationProps`
+    // ran unconditionally even for a child mount whose __bfPropsJson is
+    // never read — so a child carrying ANY offender-shaped prop (a Map
+    // here, nothing to do with functions) used to fail SSR for a value
+    // that was always going to be discarded. `data` is typed `unknown` so
+    // BF049 has no static evidence to refuse it at compile time either.
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: `
+        import { Leaf } from './leaf'
+        export function MapParent() {
+          const data = new Map([['x', 1]])
+          return <div><Leaf data={data} /></div>
+        }
+      `,
+      components: {
+        './leaf.tsx': `
+          'use client'
+          export function Leaf({ data }: { data: unknown }) {
+            return <button onClick={() => console.log(data)}>go</button>
+          }
+        `,
+      },
+    })
+    expect(html).toContain('bf-h=')
+    expect(html).not.toContain('bf-p=')
+  })
+})
+
+describe('pass-through wrapper — bf-r and prop serialization are separate questions', () => {
+  // A "use client" component whose ENTIRE JSX body is one nested component
+  // call, with no wrapper DOM element between them (the adapter's
+  // `isRootOfClientComponent` branch). Two flags exist because this shape
+  // needs opposite answers to two questions at the same mount: the nested
+  // component is NOT a child for marker purposes (bf-r must still be
+  // stamped, e2e specs locate the island by it), but it IS always driven
+  // live by the wrapper's own init, so its bf-p is dead weight.
+  const FILTERABLE_SOURCE = `
+    'use client'
+    export function Filterable({ filter }: { filter: (s: string) => number }) {
+      return <button onClick={() => console.log(filter('x'))}>{filter('y')}</button>
+    }
+  `
+
+  const WRAPPER_SOURCE = `
+    'use client'
+    import { Filterable } from './filterable'
+    export function FilterDemo() {
+      const filter = (s: string) => s.length
+      return <Filterable filter={filter} />
+    }
+  `
+
+  test('a live function prop on the wrapped component does not fail SSR', async () => {
+    // Before __bfNoSerialize this 500ed: the nested component saw no
+    // __bfChild, concluded it was a root, and tried to JSON a live function.
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: WRAPPER_SOURCE,
+      components: { './filterable.tsx': FILTERABLE_SOURCE },
+    })
+    expect(html).not.toContain('bf-p=')
+  })
+
+  test('the wrapped component still carries bf-r — __bfNoSerialize must not suppress the marker', async () => {
+    // The opposite regression: forcing __bfChild={true} here (an earlier
+    // attempt at the same fix) silenced bf-r and broke locators of the form
+    // `[bf-s^="FooDemo_"][bf-r]`.
+    const html = await renderHonoComponent({
+      adapter: new HonoAdapter(),
+      source: WRAPPER_SOURCE,
+      components: { './filterable.tsx': FILTERABLE_SOURCE },
+    })
+    expect(html).toContain('bf-r=')
   })
 })
 

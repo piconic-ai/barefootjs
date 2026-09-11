@@ -5,11 +5,6 @@ export function initTextarea(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const onInput = _p.onInput ?? (() => {})
-  const onChange = _p.onChange ?? (() => {})
-  const onBlur = _p.onBlur ?? (() => {})
-  const onFocus = _p.onFocus ?? (() => {})
-
   const baseClasses = 'placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
   const focusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
   const errorClasses = 'aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive'
@@ -61,11 +56,11 @@ export function initTextarea(__scope, _p = {}) {
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","placeholder","value","disabled","readonly","error","describedBy","rows","onInput","onChange","onBlur","onFocus","data-slot","class","aria-invalid"])
 
-  if (_s0) _s0.addEventListener('input', onInput)
-  if (_s0) _s0.addEventListener('change', onChange)
-  if (_s0) _s0.addEventListener('blur', onBlur)
-  if (_s0) _s0.addEventListener('focus', onFocus)
+  if (_s0) _s0.addEventListener('input', (_p.onInput ?? (() => {})))
+  if (_s0) _s0.addEventListener('change', (_p.onChange ?? (() => {})))
+  if (_s0) _s0.addEventListener('blur', (_p.onBlur ?? (() => {})))
+  if (_s0) _s0.addEventListener('focus', (_p.onFocus ?? (() => {})))
 }
 
-hydrate('Textarea', { init: initTextarea, template: (_p) => `<textarea ${spreadAttrs({"data-slot": "textarea", "class": `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${_p.className}`, "placeholder": _p.placeholder, "disabled": _p.disabled, "readonly": _p.readonly, "rows": _p.rows, "aria-invalid": _p.error, ...((_p.describedBy ? { 'aria-describedby': _p.describedBy } : {}))})} bf="s0">${escapeText(_p.value)}</textarea>` })
+hydrate('Textarea', { init: initTextarea, template: (_p) => `<textarea ${spreadAttrs({"data-slot": "textarea", "class": `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${(_p.className ?? '')}`, "placeholder": (_p.placeholder ?? ''), "disabled": (_p.disabled ?? false), "readonly": (_p.readonly ?? false), "rows": _p.rows, "aria-invalid": (_p.error ?? false), ...((_p.describedBy ? { 'aria-describedby': _p.describedBy } : {}))})} bf="s0">${escapeText((_p.value ?? ''))}</textarea>` })
 export function Textarea(_p, __bfKey) { return createComponent('Textarea', _p, __bfKey) }

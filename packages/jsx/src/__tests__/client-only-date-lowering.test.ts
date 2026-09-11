@@ -70,7 +70,9 @@ describe('#2640 — /* @client */ text expressions route catalogued calls throug
       }
     `)
     expect(bf021).toHaveLength(0)
-    expect(clientJs).toContain('date(createdAt, "toISOString")')
+    // The receiver is a destructured prop, so it reads live as
+    // `_p.createdAt`; the catalogued-call lowering itself is unaffected.
+    expect(clientJs).toContain('date(_p.createdAt, "toISOString")')
     expect(clientJs).not.toContain('createdAt.toISOString()')
     expect(clientJs).toMatch(/import\s*\{[^}]*\bdate\b[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
   })
@@ -82,7 +84,8 @@ describe('#2640 — /* @client */ text expressions route catalogued calls throug
       }
     `)
     expect(bf021).toHaveLength(0)
-    expect(clientJs).toContain('formatDate(createdAt, "YYYY/M/D", "UTC")')
+    // Same live-receiver rewrite as the zero-arg case above.
+    expect(clientJs).toContain('formatDate(_p.createdAt, "YYYY/M/D", "UTC")')
     expect(clientJs).not.toContain(".toLocaleDateString('ja-JP'")
   })
 

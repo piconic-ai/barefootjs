@@ -82,26 +82,32 @@ setCount(n => n + 1)  // Updater function
 
 ### Props Access
 
-Props should be accessed via `props.xxx` to maintain reactivity (SolidJS-style):
+Unlike SolidJS, BOTH `props.xxx` access and destructuring the props parameter stay reactive
+in BarefootJS — the compiler rewrites every value-position read of a destructured prop name
+to the same live getter read a `props.xxx` access would compile to (`props-binding.ts`'s
+`livePropReadExpr`, applied by `rewriteDestructuredPropReads` as a final pass over the
+joined `init*` body). Both forms below are equally reactive — the choice is style, not
+correctness:
 
 | Pattern | Behavior | Use Case |
 |---------|----------|----------|
-| `props.value` | Reactive (may be getter) | In event handlers, JSX |
-| `const { value } = props` | Captured once | Static props / initial values only |
+| `props.value` | Reactive (live getter read) | Either style |
+| `function C({ value }: Props)` (parameter destructuring) | Reactive (live getter read) | Either style |
+| `const { value } = props` (body destructuring) | Captured once | Initial values only |
 
 ```tsx
-// ✅ GOOD: Maintains reactivity
+// ✅ Reactive: props.xxx access
 function Child(props: Props) {
   return <p>{props.value}</p>  // Re-evaluates on each access
 }
 
-// ⚠️ Destructuring captures value once - loses reactivity
+// ✅ Equally reactive: destructured parameter
 function Child({ value }: Props) {
-  const captured = value  // If parent passes count(), this is stale
-  return <p>{captured}</p>
+  return <p>{value}</p>  // Compiles to the same live `_p.value` read
 }
 
-// ✅ OK: Destructured value as initial value for local signal
+// ✅ OK: destructured value as the INITIAL value for a local signal — the
+// signal itself is then independent state, same as SolidJS/React
 function Child({ value }: Props) {
   const [local, setLocal] = createSignal(value)
   return <p>{local()}</p>  // local signal is reactive
@@ -145,8 +151,11 @@ function Child(props: Props) {
 | Static value `{"hello"}` | `label: "hello"` | No lazy evaluation needed |
 
 The **consumer** (child) determines when evaluation happens, not the **provider** (parent). This is why:
-- `props.value` → Getter is called → Reactive
-- `const { value } = props` → Getter is called immediately → Value captured once
+- `props.value` → Getter is called at each read site → Reactive
+- `function C({ value }: Props)` → the compiler rewrites `value` to the same getter read at
+  each reference site (not a plain local binding) → equally reactive
+- `const { value } = props` in the BODY → a plain local binding, so the getter is called once
+  → captured (`rewriteDestructuredPropReads` only covers the parameter form)
 
 ### Comparison with SolidJS and React
 
@@ -154,7 +163,7 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 |--------|-----------|---------|-------|
 | Signal access | `count()` | `count()` | `count` (useState) |
 | Props access | Getter-based | Getter-based | Direct access |
-| Destructuring props | ⚠️ Careful | ⚠️ Careful | ✅ Safe |
+| Destructuring props | ✅ Safe in the parameter (compiler rewrites reads live); ⚠️ captured once in the body | ⚠️ Careful | ✅ Safe |
 | Dependency tracking | Automatic | Automatic | Manual arrays |
 | Rendering | Marked template + Client hydration | All in JS | All in JS |
 
@@ -773,6 +782,10 @@ Components with client-side interactivity need initial props serialized in `bf-p
 
 **Encoding caution:** For non-JS backends, ensure the JSON is a character string (not byte string) when embedded in templates. In Perl, use `to_json` (character string) instead of `encode_json` (byte string) to prevent double UTF-8 encoding.
 
+**Function-typed live-only props (Move C, Prop Boundary Contract).** A CHILD component (nested inside a compiled parent, `__bfChild` true at runtime) never reads `bf-p` — it receives its props LIVE via `initChild`/`upsertChild`, regardless of whether the parent is `"use client"` or a plain server component that merely renders an interactive descendant. Only a hydration ROOT (`!__bfChild`) ever needs `bf-p`, and only a root's serialization can be unsound for a prop whose declared type is a function (`() => number`, `Function`) that the component's own client code actually calls — a function cannot cross the JSON boundary. `analyzeClientNeeds` (`packages/jsx/src/ir-to-client-js/index.ts`) computes `ir.metadata.clientAnalysis.liveOnlyProps`, a map of such prop names (keyed by their caller-facing/`bf-p` name) to their declared type text; the Hono adapter (the reference adapter — every other adapter's `bf-p` behavior is measured against it) gates the whole `__hydrateProps`/`serializeHydrationProps` computation behind a generated `if (!__bfChild)` check and threads `liveOnlyProps` into `serializeHydrationProps` (`packages/adapter-hono/src/utils.ts`) so it throws a clear, actionable error ONLY when a live-only prop's value is actually a function AND this mount is actually a root. This is deliberately a RUNTIME check, not a new BF-prefixed compile-time diagnostic like BF049 below: whether a given component is ever mounted as a root is not decidable from its own declaration — a component that takes a function-typed prop and is always used as a compiled child (e.g. a Context-provider-style component) is completely fine and never reaches this check. The `__bfChild` gate has a second, independent effect: a child's serialization is skipped entirely, so a child carrying ANY other otherwise-unserializable prop (a `Map`, a `BigInt`, …) no longer spuriously fails SSR for a `__bfPropsJson` value that was always going to be discarded.
+
+**`__bfNoSerialize` — why the gate takes two flags, not one.** The generated gate is `if (!__bfChild && !__bfNoSerialize)`. `__bfNoSerialize` is a second synthetic hydration prop, passed by exactly one site: the adapter's `isRootOfClientComponent` branch, i.e. a *pass-through wrapper* — a `"use client"` component whose entire JSX body is a single nested component call, with no wrapper DOM element between them (`function FilterDemo() { return <Filterable filter={f} /> }`). That nested component is always driven by the wrapper's own init through a live `upsertChild`/`initChild` call, whether or not the wrapper is itself a root, so its own `bf-p` is never read. But its `bf-r`/`bf-h`/`bf-m` markers must still reflect its OWN mount status, because `bf-r` is a locator marker rather than a serialization gate (see `BF_ROOT` in `packages/shared/src/markers.ts`; e2e specs match `[bf-s^="FooDemo_"][bf-r]` on precisely this shape). When the wrapper genuinely IS the page's hydration root, those two answers differ at the same mount — "not a child" for markers, "skip serialization" for `bf-p` — which one boolean cannot express. Hence `__bfChild` keeps answering only the marker question (unchanged from before Move C) and `__bfNoSerialize` only the serialization one. It is passed only when the enclosing component actually has client JS, since that init call is what makes the skip safe.
+
 #### IRIfStatement (Conditional Returns)
 
 When `ir.root.type === 'if-statement'`, the adapter must render the if/else branches. The root node is not a standard element — it requires special handling before `renderNode()`.
@@ -903,7 +916,6 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
 | BF027 | Component's return statement is a bare identifier naming a local `const`/`let` already proven to hold JSX (`const __root = <jsx/>; return __root`) — return position does not resolve identifiers through their initializer the way JSX-child position does, so this shape produced zero output and zero diagnostics before this code existed (#2720) |
 | BF101 | An adapter has no template-language lowering for the expression (an off-catalogue array/string method, a nested higher-order callback, or a loop array bound to a computed component-scope local) — raised only by non-JS template adapters (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja); a JS-runtime adapter (Hono, CSR) executes the expression verbatim instead. See "Unsupported Expressions (BF101)" below. |
-| BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
 | BF048 | `'use client'` file references a same-file sibling component that produced no template — typically a multi-return JSX `switch`/`if`-`else` dispatch, which only #932's non-client verbatim-preservation path can compile (#2556) |
 | BF049 | A prop typed as a JSON-unsafe host rich type (`Map`, `Set`, `BigInt`, …) is used by this component's own client code (a handler, an effect), regardless of whether a method is called on it — BF021's sibling for the "client-side use" shape BF021's template-only walk can never reach, since the prop still can't survive the `bf-p` JSON hydration boundary (#2643) |
@@ -923,23 +935,6 @@ error[BF001]: 'use client' directive required for components with createSignal
    |
    = help: Add 'use client' at the top of the file
 ```
-
-### Suppressing Warnings
-
-Use `@bf-ignore` comment directive to suppress specific warnings:
-
-```tsx
-// @bf-ignore props-destructuring
-function Component({ checked }: Props) {
-  // Warning suppressed for this component
-}
-```
-
-**Available rules:**
-
-| Rule ID | Error Code | Description |
-|---------|------------|-------------|
-| `props-destructuring` | BF043 | Props destructuring in function parameters |
 
 ### Unsupported Expressions (BF021)
 
@@ -1155,6 +1150,142 @@ error[BF044]: Signal getter 'count' passed without calling it
 | `onChange={setCount}` | No | Setter, not getter |
 | `value={props.checked}` | No | Property access, not bare identifier |
 | `value={count() + 1}` | No | Expression, not bare identifier |
+| `<Child x={count} />` | No | Component prop — see below |
+| `<Child x={{ v: count }} />` | No | Component prop — see below |
+
+**Component props are exempt.** The table above covers DOM element attributes and JSX text
+children — positions that are genuinely RENDERED, where a forgotten `()` silently produces
+wrong output. A component prop is not rendered; it is an opaque value handed to the child,
+and passing a live, uncalled accessor there is this codebase's deliberate Context-Provider
+idiom — `<SelectContext.Provider value={{ open, value: () => … }}>` hands descendants an
+accessor so each consumer subscribes reactively at its own read site, rather than freezing
+the value at provider-render time. This applies equally whether the accessor is passed
+directly (`<Child x={count} />`) or nested inside an object literal
+(`<Child x={{ v: count }} />`) — the two forms are one idiom, not an inconsistency (#2760).
+
+#### The prop boundary contract
+
+The exemption above is one instance of a general rule for every component-prop boundary,
+not a special case scoped to BF044: **deferral is a property of the producer's syntax;
+reactivity is a property of the consumer's declared type.**
+
+- **Producer (parent) side — syntactic, not semantic.** Whether a prop expression is
+  wrapped in a `createEffect` so it re-evaluates (`decideWrapForChildProp`,
+  `ir-to-client-js/reactivity.ts`) is decided from the expression's own shape: a call, or a
+  forwarded `props.x` access, would otherwise freeze at its SSR value, so it is wrapped; a
+  bare identifier or literal is not, because its SSR value is already in the DOM and there
+  is nothing to re-read. The decision never asks "is this specifically a signal" — `count`
+  (a signal getter) and `plainVar` (an ordinary local) both pass through unwrapped, because
+  the question is evaluation timing, not what kind of value flows through. Deliberately
+  conservative in the safe direction (#942): over-wrapping costs an effect that subscribes
+  to nothing, under-wrapping silently freezes the child.
+- **Consumer (child) side — the declared prop type, not the caller's expression, decides
+  what a prop means.** A child that declares `value: () => number` is asking for a live
+  accessor it will call at its own read site; a child that declares `value: number` is
+  asking for an already-resolved value. The compiler never consults that type to judge the
+  parent's expression — which is what lets the exemption above be unconditional rather than
+  a signal-detection special case.
+- **A real forgotten-`()` is a type error, and `tsc` already reports it.**
+  `<Child x={count} />` where the child declares `x: number` is ts(2322) ("Type `() =>
+  number` is not assignable to type `number`"); the `<Child x={count ? 1 : 2} />` shape is
+  ts(2774) ("This condition will always return true … Did you mean to call it instead?").
+  BarefootJS does not re-implement a parallel type checker for prop assignability, whatever
+  `CompileOptions.program` access it happens to hold for its *other* reactivity
+  classification needs. Precedent: `BF031` ("props type mismatch") was reserved for exactly
+  this question and deleted without ever being emitted, once `tsc` was confirmed to cover it
+  (`packages/jsx/src/__tests__/props-type-mismatch.audit.test.ts`).
+
+#### Cross-component prop elision (Move D) — measured, not implemented
+
+**The question.** Moves A–C established the prop boundary contract above and closed the
+function-prop hydration hole at the Hono root (Adapter API §"`bf-p` Props Serialization").
+The remaining question they left open: after those three moves, should `usedProps` be
+refined a THIRD way — transitively across a component boundary, so a parent elides a prop
+it forwards to a child that never reads it itself (`<Parent x={val}><Child y={x} />
+</Parent>` where `Child`'s own `usedProps` doesn't include `y`)? A design consult (Fable)
+scoped Move D to measuring this, not building it — the working hypothesis was that most of
+what such elision would do is already shipped by two other mechanisms.
+
+**What already elides.**
+
+- **(a) Per-component `usedProps`.** `analyzeClientNeeds`
+  (`packages/jsx/src/ir-to-client-js/index.ts:173`) walks a component's own IR and computes
+  `usedProps` — the subset of a root mount's incoming props its OWN client code actually
+  reads. A prop the component never references client-side is never serialized, regardless
+  of how many props the caller originally passed.
+- **(b) The `__bfChild` / `__bfNoSerialize` gate.** A component compiled as a CHILD of
+  another (`__bfChild` true at runtime) never serializes ANY props at all — it receives them
+  LIVE via `initChild`, not through `bf-p`. This is unconditional per-component: the gate is
+  `if (!__bfChild && !__bfNoSerialize)` in the generated init
+  (`packages/adapter-hono/src/adapter/hono-adapter.ts:632`, decided by `hasPropsToSerialize`
+  at line 473 of the same file). See also "`bf-p` Props Serialization" above for
+  the same gate's function-prop-safety side effect from Move C.
+
+Between (a) and (b), the ONLY case a transitive refinement could still improve is narrow: a
+prop a ROOT mount reads client-side for no other reason than forwarding it into a compiled
+child's props, where that child's own code never reads it. That residual case is what Move D
+measured.
+
+**Measured** (CI sandbox, `bun 1.3.11`, linux/x64, 2026-09-11 — reproduce with the script at
+the bottom of this section; absolute numbers are host-dependent, compare shapes/slopes):
+
+- **M1 — per-prop `bf-p` cost**, as the linear-regression slope of `serializeHydrationProps`
+  (stringify) and `JSON.parse` (mirroring the client's `parseProps`,
+  `packages/client/src/runtime/hydrate.ts:326`) cost against prop count N ∈ {1, 5, 20, 50}
+  (the slope isolates per-prop marginal cost from N=1's fixed per-call overhead):
+
+  | value shape | stringify ns/prop | parse ns/prop | bytes/prop |
+  |---|---|---|---|
+  | number | 37.0 | 65.4 | 9.57 |
+  | 16-char string | 48.9 | 98.7 | 24.84 |
+  | `{id, name, tags:[3]}` object | 199.0 | 690.9 | 64.53 |
+
+  Even the heaviest shape measured (a small nested object) costs under 1 microsecond per
+  prop to stringify and under 1 microsecond to parse. This is the ceiling on what eliding
+  any one prop could save.
+
+- **M2 — eligible-population census**, compiling every `.tsx` under `site/ui` (506
+  components) and counting parent → child prop forwards that are a BARE IDENTIFIER naming
+  one of the parent's own `usedProps`:
+
+  | | count |
+  |---|---|
+  | same-named components (the child lookup is name-keyed, so these collapse) | 4 |
+  | components with a non-empty `usedProps` (candidate parents) | 38 |
+  | total such bare-identifier forwards | 6 |
+  | — of which the child component couldn't be resolved in-corpus | 3 |
+  | **eligible** (child's own `usedProps` does NOT contain the forwarded name) | **0** |
+
+  Zero. Every resolvable forward in `site/ui` turned out to be a prop the child ALSO reads
+  client-side, so nothing is left over-serialized once (a) and (b) are both in place — the
+  residual case Move D targeted essentially doesn't occur in this corpus. Estimated total
+  savings (eligible count × M1 slope) is therefore 0 ns / 0 bytes across every value shape,
+  for this corpus.
+
+**Why not implemented.** Independent of the measured savings being ~0 today, building this
+would cost more than a typical subset extension:
+
+- `analyzeClientNeeds` operates per-IR — one component's tree, compiled in isolation.
+  Transitive refinement needs the CHILD's `usedProps`, which means cross-file resolution
+  reaching into the build hot path (`bf build`), not a local analysis.
+- Every one of the ~9 backend adapters has its OWN `bf-p`-equivalent prop producer. A
+  cross-component answer computed once and consumed nine different ways is exactly the "one
+  decision, two implementations" defect pattern this codebase's CLAUDE.md warns against
+  (see "Reference Adapter" / "One decision, two implementations, no test comparing them")
+  unless it's built as a single shared implementation from day one — real design and
+  maintenance cost for a change the measurement above shows saves nothing today.
+- As a widening of what the compiler elides, it would need conformance fixtures landed in
+  the same PR per `spec/subset-conformance.md`'s change-time coupling rule — more cost for
+  zero measured benefit.
+
+**Revisit when** any of: the M2 eligible fraction exceeds roughly 25% of serialized props in
+a real app (today: 0%); the measured per-prop slope moves from nanoseconds into
+microseconds (e.g. if `JSON.stringify`/`JSON.parse` were ever replaced by a heavier
+deep-revival codec); or profiling shows `bf-p` attribute size actually dominating HTML
+payload weight in practice, rather than staying in the hundreds-of-bytes-per-component range
+(see "Why `"use client"` is cheap here" for the analogous client-JS-bundle-size figure).
+
+**Reproduce:** `bun run packages/adapter-hono/bench/hydration-props-bench.ts`.
 
 ### class= vs className= in JSX
 
@@ -1207,13 +1338,13 @@ The compiler checks for `__reactive` via `checker.getTypeAtLocation(node).getPro
 | `form.isSubmitting()` | Yes | Brand (`Reactive<() => boolean>`) |
 | `props.count` | Yes | Regex (props aren't branded) |
 | `label` (const derived from signal) | Yes | Taint analysis (follows constant value) |
-| `count` (destructured prop) | No | Value captured at definition |
+| `count` (destructured prop) | Yes | Regex (props aren't branded) — same detection as `props.count`; the compiled READ is also rewritten to the same live `_p.count` access |
 | `"static string"` | No | Literal value |
 | `CONSTANT` (no reactive deps) | No | Pure constant |
 
 ### Generated Client JS Examples
 
-**Destructured props** - value captured once:
+**Destructured props** — live, same as direct access:
 
 ```tsx
 // Source
@@ -1221,12 +1352,15 @@ function Counter({ count }: Props) {
   return <div>{count}</div>
 }
 
-// Generated
-const count = props.count  // Captured ONCE at hydration
+// Generated (verified: packages/jsx, compileJSX against TestAdapter)
 createEffect(() => {
-  if (_slot_0) _slot_0.textContent = String(count)
+  const __val = _p.count
+  __bfw_s0('s0', escapeTextOrNode(__val))
 })
 ```
+
+There is no `const count = _p.count` capture — `count`'s only reference inside `init*`
+compiles directly to the live `_p.count` read.
 
 **Direct props access** - reactive:
 

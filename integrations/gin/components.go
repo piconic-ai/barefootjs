@@ -114,6 +114,56 @@ type CounterProps struct {
 	Doubled int `json:"-"`
 }
 
+// LiveChildInput is the user-facing input type.
+type LiveChildInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Value int
+	Label string
+	OnPick interface{}
+}
+
+// LiveChildProps is the props type for the LiveChild component.
+type LiveChildProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Value int `json:"value"`
+	Label string `json:"label"`
+	OnPick interface{} `json:"onPick"`
+	Seen int `json:"-"`
+	Doubled interface{} `json:"-"`
+}
+
+// DestructuredPropsLiveInput is the user-facing input type.
+type DestructuredPropsLiveInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// DestructuredPropsLiveProps is the props type for the DestructuredPropsLive component.
+type DestructuredPropsLiveProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Count int `json:"-"`
+	Picked int `json:"-"`
+	Named bool `json:"-"`
+	LiveChildSlot6 LiveChildProps `json:"-"`
+}
+
 // DetailsFaqInput is the user-facing input type.
 type DetailsFaqInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -875,6 +925,57 @@ func NewCounterProps(in CounterInput) CounterProps {
 		Initial: in.Initial,
 		Count: in.Initial,
 		Doubled: in.Initial * 2,
+	}
+}
+
+// NewLiveChildProps creates LiveChildProps from LiveChildInput.
+func NewLiveChildProps(in LiveChildInput) LiveChildProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "LiveChild_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+	bfCallerProps["value"] = in.Value
+	bfCallerProps["label"] = in.Label
+	bfCallerProps["onPick"] = in.OnPick
+
+	return LiveChildProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Value: in.Value,
+		Label: func() string { if in.Label == "" { return "none" }; return in.Label }(),
+		OnPick: in.OnPick,
+		Seen: 0,
+		Doubled: in.Value * 2,
+	}
+}
+
+// NewDestructuredPropsLiveProps creates DestructuredPropsLiveProps from DestructuredPropsLiveInput.
+func NewDestructuredPropsLiveProps(in DestructuredPropsLiveInput) DestructuredPropsLiveProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "DestructuredPropsLive_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+
+	return DestructuredPropsLiveProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Count: 1,
+		Picked: 0,
+		Named: false,
+		LiveChildSlot6: NewLiveChildProps(LiveChildInput{
+			ScopeID: scopeID + "_s6",
+			BfParent: scopeID,
+			BfMount: "s6",
+			Value: 1,
+		}),
 	}
 }
 

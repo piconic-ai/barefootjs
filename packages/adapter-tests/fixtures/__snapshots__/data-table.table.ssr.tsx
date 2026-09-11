@@ -75,6 +75,7 @@ type TablePropsWithHydration = TableProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -85,6 +86,7 @@ type TableHeaderPropsWithHydration = TableHeaderProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -95,6 +97,7 @@ type TableBodyPropsWithHydration = TableBodyProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -105,6 +108,7 @@ type TableFooterPropsWithHydration = TableFooterProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -115,6 +119,7 @@ type TableRowPropsWithHydration = TableRowProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -125,6 +130,7 @@ type TableHeadPropsWithHydration = TableHeadProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -135,6 +141,7 @@ type TableCellPropsWithHydration = TableCellProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -145,6 +152,7 @@ type TableCaptionPropsWithHydration = TableCaptionProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -153,112 +161,160 @@ type TableCaptionPropsWithHydration = TableCaptionProps & {
 
 export type { TableProps, TableHeaderProps, TableBodyProps, TableFooterProps, TableRowProps, TableHeadProps, TableCellProps, TableCaptionProps }
 
-export function Table({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TablePropsWithHydration = {} as TablePropsWithHydration) {
+export function Table({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TablePropsWithHydration = {} as TablePropsWithHydration) {
   const __scopeId = __instanceId || `Table_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Table')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Table', {})
+  }
 
   return (
     <div data-slot="table-container" className={`relative w-full overflow-x-auto`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><table data-slot="table" className={`${tableClasses} ${className}`} {...props} bf="s0">{children}</table></div>
   )
 }
 
-export function TableHeader({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeaderPropsWithHydration = {} as TableHeaderPropsWithHydration) {
+export function TableHeader({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeaderPropsWithHydration = {} as TableHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `TableHeader_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHeader')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHeader', {})
+  }
 
   return (
     <thead data-slot="table-header" className={`${tableHeaderClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</thead>
   )
 }
 
-export function TableBody({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableBodyPropsWithHydration = {} as TableBodyPropsWithHydration) {
+export function TableBody({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableBodyPropsWithHydration = {} as TableBodyPropsWithHydration) {
   const __scopeId = __instanceId || `TableBody_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableBody')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableBody', {})
+  }
 
   return (
     <tbody data-slot="table-body" className={`${tableBodyClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tbody>
   )
 }
 
-export function TableFooter({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableFooterPropsWithHydration = {} as TableFooterPropsWithHydration) {
+export function TableFooter({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableFooterPropsWithHydration = {} as TableFooterPropsWithHydration) {
   const __scopeId = __instanceId || `TableFooter_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableFooter')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableFooter', {})
+  }
 
   return (
     <tfoot data-slot="table-footer" className={`${tableFooterClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tfoot>
   )
 }
 
-export function TableRow({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableRowPropsWithHydration = {} as TableRowPropsWithHydration) {
+export function TableRow({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableRowPropsWithHydration = {} as TableRowPropsWithHydration) {
   const __scopeId = __instanceId || `TableRow_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableRow')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableRow', {})
+  }
 
   return (
     <tr data-slot="table-row" className={`${tableRowClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</tr>
   )
 }
 
-export function TableHead({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeadPropsWithHydration = {} as TableHeadPropsWithHydration) {
+export function TableHead({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeadPropsWithHydration = {} as TableHeadPropsWithHydration) {
   const __scopeId = __instanceId || `TableHead_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHead')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableHead', {})
+  }
 
   return (
     <th data-slot="table-head" className={`${tableHeadClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</th>
   )
 }
 
-export function TableCell({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCellPropsWithHydration = {} as TableCellPropsWithHydration) {
+export function TableCell({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCellPropsWithHydration = {} as TableCellPropsWithHydration) {
   const __scopeId = __instanceId || `TableCell_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCell')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCell', {})
+  }
 
   return (
     <td data-slot="table-cell" className={`${tableCellClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</td>
   )
 }
 
-export function TableCaption({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCaptionPropsWithHydration = {} as TableCaptionPropsWithHydration) {
+export function TableCaption({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCaptionPropsWithHydration = {} as TableCaptionPropsWithHydration) {
   const __scopeId = __instanceId || `TableCaption_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCaption')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TableCaption', {})
+  }
 
   return (
     <caption data-slot="table-caption" className={`${tableCaptionClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{children}</caption>

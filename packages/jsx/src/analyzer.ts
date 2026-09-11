@@ -25,7 +25,7 @@ import {
   isArrowComponentFunction,
   collectReactiveGetterNames,
 } from './analyzer-context.ts'
-import { createError, createWarning, ErrorCodes, type ErrorCode } from './errors.ts'
+import { createError, ErrorCodes, type ErrorCode } from './errors.ts'
 import { baseTypeName } from './rich-type-evidence.ts'
 import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
@@ -3432,70 +3432,13 @@ function collectConstant(
 }
 
 // =============================================================================
-// Ignore Directive Detection
-// =============================================================================
-
-/**
- * Check if a node has an ignore directive comment for the specified rule.
- * Supports: // @bf-ignore rule-id
- *
- * For arrow function components, also checks the parent VariableStatement.
- */
-function hasIgnoreDirective(
-  node: ts.Node,
-  sourceFile: ts.SourceFile,
-  ruleId: string
-): boolean {
-  const checkComments = (targetNode: ts.Node): boolean => {
-    const fullStart = targetNode.getFullStart()
-    const leadingComments = ts.getLeadingCommentRanges(
-      sourceFile.getFullText(),
-      fullStart
-    )
-    if (!leadingComments) return false
-
-    for (const range of leadingComments) {
-      const text = sourceFile.getFullText().slice(range.pos, range.end)
-      if (text.includes(`@bf-ignore ${ruleId}`)) {
-        return true
-      }
-    }
-    return false
-  }
-
-  // Check the node itself
-  if (checkComments(node)) return true
-
-  // For arrow functions, check the parent VariableStatement
-  // AST structure: VariableStatement > VariableDeclarationList > VariableDeclaration > ArrowFunction
-  if (ts.isArrowFunction(node)) {
-    let current: ts.Node | undefined = node.parent
-    while (current) {
-      if (ts.isVariableStatement(current)) {
-        if (checkComments(current)) return true
-        break
-      }
-      current = current.parent
-    }
-  }
-
-  return false
-}
-
-// =============================================================================
 // Props Extraction
 // =============================================================================
 
 function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): void {
   // Pattern 1: Destructured props - { prop1, prop2 }
   if (ts.isObjectBindingPattern(param.name)) {
-    // Record destructuring info for deferred BF043 emission (stateful components only)
-    const componentNode = ctx.componentNode
-    const ignored = !!(componentNode && hasIgnoreDirective(componentNode, ctx.sourceFile, 'props-destructuring'))
-    ctx.propsDestructuring = {
-      loc: getSourceLocation(param, ctx.sourceFile, ctx.filePath),
-      hasIgnoreDirective: ignored,
-    }
+    ctx.propsDestructuring = { loc: getSourceLocation(param, ctx.sourceFile, ctx.filePath) }
 
     // Resolve each destructured binding's declared type from the param's type
     // annotation, so `{ value }: Props` keeps the same per-prop TypeInfo as the
@@ -3965,20 +3908,6 @@ function extractDependencies(code: string, ctx: AnalyzerContext): string[] {
 // =============================================================================
 
 function validateContext(ctx: AnalyzerContext): void {
-  // BF043: Emit props destructuring warning only for stateful components.
-  // Stateless components can safely destructure props since values are static.
-  const isStateful = ctx.signals.length > 0 || ctx.memos.length > 0 ||
-    ctx.effects.length > 0 || ctx.onMounts.length > 0
-  if (ctx.propsDestructuring && isStateful && !ctx.propsDestructuring.hasIgnoreDirective) {
-    ctx.errors.push(
-      createWarning(ErrorCodes.PROPS_DESTRUCTURING, ctx.propsDestructuring.loc, {
-        suggestion: {
-          message: 'Use props object directly: function Component(props: Props) { ... props.checked ... }',
-        },
-      })
-    )
-  }
-
   // Check for 'use client' directive if any browser-only API is used.
   // Browser-only APIs include signals AND context/portal runtime hooks:
   // their implementations live in `@barefootjs/client/runtime` and require

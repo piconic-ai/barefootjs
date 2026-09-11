@@ -6,6 +6,11 @@
  * function / constant or destructured prop), emit
  * `const handlerName = _p.handlerName`. Subsequent emission can call
  * `handlerName(...)` without writing the prop accessor inline.
+ *
+ * Only for props-object mode, where a bare `handlerName` would otherwise be
+ * a `ReferenceError`. In destructured mode `rewriteDestructuredPropReads`
+ * already turns every handler-name read into a live `_p.handlerName`, so the
+ * alias would only be emitted to be left unused.
  */
 
 import type { ClientJsContext } from '../types.ts'
@@ -17,6 +22,7 @@ export function emitPropsEventHandlers(
   usedFunctions: Set<string>,
   neededProps: Set<string>,
 ): void {
+  if (ctx.propsObjectName === null) return
   const localNames = new Set<string>([
     ...ctx.localFunctions.map(f => f.name),
     ...ctx.localConstants.map(c => c.name),

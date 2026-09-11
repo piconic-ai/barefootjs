@@ -4,11 +4,9 @@ export function initTag(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const id = _p.id
-
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = id
+    const __val = _p.id
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 

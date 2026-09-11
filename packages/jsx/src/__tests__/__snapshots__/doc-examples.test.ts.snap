@@ -1211,8 +1211,6 @@ export function initReactionBarByProp(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const entries = _p.entries ?? []
-
   const [_s2] = $(__scope, 's2')
 
   const __tpl_l0 = document.createElement('template')
@@ -1220,7 +1218,7 @@ export function initReactionBarByProp(__scope, _p = {}) {
   const __lzp_l0 = [[0], [3]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }, { id: 's1', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }, { id: 's1', kind: 'text', path: __lzp_l0[1] }]
-  mapArrayLazy(() => entries, _s2, ([emoji, users]) => String(emoji), {
+  mapArrayLazy(() => (_p.entries ?? []), _s2, ([emoji, users]) => String(emoji), {
     createRow: (__e, __idx) => {
       const __bfItem = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
@@ -1449,13 +1447,11 @@ export function initSortedList(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const items = _p.items
-
   const [_s1] = $(__scope, 's1')
 
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
-  mapArray(() => items.sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+  mapArray(() => _p.items.sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
     createEffect(() => { __bfw_s0('s0', String(item().name)) })
@@ -2643,7 +2639,7 @@ hydrate('Gallery', { init: initGallery, template: (_p) => \`<div><button bf="s0"
 export function Gallery(_p, __bfKey) { return createComponent('Gallery', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L16 — (no label) 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L19 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -2652,7 +2648,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L30 — (no label) 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L36 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -2661,7 +2657,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L55 — @bf-ignore props-destructuring 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L55 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -2670,7 +2666,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L82 — Parent 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L92 — Parent 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $c, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Child */'
 
@@ -2744,7 +2740,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild(
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L85 — Compiled props object 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L95 — Compiled props object 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, escapeText } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2804,11 +2800,9 @@ export function initGreeting(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const name = _p.name
-
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = name
+    const __val = _p.name
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
@@ -4012,7 +4006,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/props-type-safety.md doc-examples L42 — @bf-ignore props-destructuring 1`] = `
+exports[`docs/core/components/props-type-safety.md doc-examples L43 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -4021,7 +4015,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/props-type-safety.md doc-examples L54 — (no label) 1`] = `
+exports[`docs/core/components/props-type-safety.md doc-examples L55 — (no label) 1`] = `
 "import { $, applyRestAttrs, createComponent, createEffect, escapeAttr, hydrate, markupOrEmpty } from '@barefootjs/client/runtime'
 
 
@@ -4054,7 +4048,7 @@ hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${(
 export function Button(_p, __bfKey) { return createComponent('Button__b3c36eee', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/props-type-safety.md doc-examples L78 — (no label) 1`] = `
+exports[`docs/core/components/props-type-safety.md doc-examples L79 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -4063,7 +4057,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/props-type-safety.md doc-examples L89 — (no label) 1`] = `
+exports[`docs/core/components/props-type-safety.md doc-examples L90 — (no label) 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $c, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
@@ -4196,20 +4190,18 @@ export function initProductPage(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const product = _p.product ?? {}
-
   const [_s4] = $(__scope, 's4')
   const [_s5, _s6] = $c(__scope, 's5', 's6')
 
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = product.name
+    const __val = (_p.product ?? {}).name
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = product.description
+    const __val = (_p.product ?? {}).description
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
@@ -4230,7 +4222,7 @@ export function initProductPage(__scope, _p = {}) {
   createEffect(() => {
     const [__ReviewStars_s5El] = $c(__scope, 's5')
     if (__ReviewStars_s5El) {
-      { const __x = product.rating
+      { const __x = (_p.product ?? {}).rating
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
       }
@@ -4238,7 +4230,7 @@ export function initProductPage(__scope, _p = {}) {
     }
     const [__AddToCart_s6El] = $c(__scope, 's6')
     if (__AddToCart_s6El) {
-      { const __x = product.id
+      { const __x = (_p.product ?? {}).id
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
       }
@@ -4247,8 +4239,8 @@ export function initProductPage(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('ReviewStars', _s5, { get rating() { return product.rating } })
-  initChild('AddToCart', _s6, { get productId() { return product.id } })
+  initChild('ReviewStars', _s5, { get rating() { return (_p.product ?? {}).rating } })
+  initChild('AddToCart', _s6, { get productId() { return (_p.product ?? {}).id } })
 }
 
 hydrate('ProductPage', { init: initProductPage, template: (_p) => \`<div><h1 bf="s1"><!--bf:s0-->\${escapeTextOrMarkup(_p.product.name)}<!--/--></h1><p bf="s3"><!--bf:s2-->\${escapeTextOrMarkup(_p.product.description)}<!--/--></p><img \${(_p.product.image) != null ? 'src="' + escapeAttr(_p.product.image) + '"' : ''} bf="s4" />\${renderChild('ReviewStars', {rating: _p.product.rating}, undefined, 's5')}\${renderChild('AddToCart', {productId: _p.product.id}, undefined, 's6')}</div>\` })
@@ -4898,11 +4890,9 @@ export function initTodoList(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const items = _p.items ?? []
-
   const [_s1] = $(__scope, 's1')
 
-  mapArray(() => items, _s1, (item) => String(item.id), (item, __idx, __existing) => {
+  mapArray(() => (_p.items ?? []), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     if (__existing) { initChild('TodoItem', __existing, { get "..."() { return item() } }); return __existing }
     return createComponent('TodoItem', { get "..."() { return item() } }, item().id)
   }, 'l0')
@@ -5243,7 +5233,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
+exports[`docs/core/advanced/compiler-internals.md doc-examples L131 — (no label) 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, escapeAttr, escapeText, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -5324,7 +5314,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/advanced/compiler-internals.md doc-examples L180 — (no label) 1`] = `
+exports[`docs/core/advanced/compiler-internals.md doc-examples L185 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}

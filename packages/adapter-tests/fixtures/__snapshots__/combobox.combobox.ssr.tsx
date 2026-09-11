@@ -153,6 +153,7 @@ type ComboboxSeparatorPropsWithHydration = ComboboxSeparatorProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -161,8 +162,8 @@ type ComboboxSeparatorPropsWithHydration = ComboboxSeparatorProps & {
 
 export type { ComboboxProps, ComboboxTriggerProps, ComboboxValueProps, ComboboxContentProps, ComboboxInputProps, ComboboxEmptyProps, ComboboxItemProps, ComboboxGroupProps, ComboboxSeparatorProps }
 
-export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `Combobox_${Math.random().toString(36).slice(2, 8)}`
   const open = () => false
   const setOpen: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
@@ -192,12 +193,18 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   }
   const matches = (entry: ComboboxItemEntry, s: string): boolean => filterFn()(entry.label(), s)
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.filter !== 'function' && !(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Combobox')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.filter === 'object' && props.filter !== null && 'isEscaped' in props.filter)) __hydrateProps['filter'] = props.filter
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Combobox', {"filter":"(value: string, search: string) => boolean"})
+  }
 
   return (
     <>{provideContextSSR(ComboboxContext, {
@@ -224,118 +231,166 @@ export function Combobox(__allProps: ComboboxProps & { __instanceId?: string; __
   )
 }
 
-export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxTrigger_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxTrigger')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxTrigger', {})
+  }
 
   return (
     <button data-slot="combobox-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
   )
 }
 
-export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxValue(__allProps: ComboboxValueProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxValue_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.placeholder !== 'function' && !(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxValue')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxValue', {})
+  }
 
   return (
     <span data-slot="combobox-value" id={props.id} className="pointer-events-none truncate" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{bfText("s0")}{props.placeholder ?? ''}{bfTextEnd()}</span>
   )
 }
 
-export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxContent(__allProps: ComboboxContentProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxContent_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  if (typeof props.align !== 'function' && !(typeof props.align === 'object' && props.align !== null && 'isEscaped' in props.align)) __hydrateProps['align'] = props.align
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxContent')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    if (!(typeof props.align === 'object' && props.align !== null && 'isEscaped' in props.align)) __hydrateProps['align'] = props.align
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxContent', {})
+  }
 
   return (
     <div data-slot="combobox-content" data-state="closed" role="listbox" id={props.id} tabindex={-1} className={`${contentBaseClasses} ${contentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
   )
 }
 
-export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxInput(__allProps: ComboboxInputProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxInput_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.placeholder !== 'function' && !(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxInput')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.placeholder === 'object' && props.placeholder !== null && 'isEscaped' in props.placeholder)) __hydrateProps['placeholder'] = props.placeholder
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxInput', {})
+  }
 
   return (
     <div data-slot="combobox-input-wrapper" className={`flex items-center border-b px-3`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s2"><SearchIcon className="mr-2 size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><input data-slot="combobox-input" id={props.id} type="text" placeholder={props.placeholder} disabled={(props.disabled ?? false) || undefined} className={`${inputClasses} ${props.className ?? ''}`} autocomplete="off" bf="s1" /></div>
   )
 }
 
-export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxEmpty(__allProps: ComboboxEmptyProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxEmpty_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxEmpty')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxEmpty', {})
+  }
 
   return (
     <div data-slot="combobox-empty" id={props.id} hidden className={`${emptyClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
   )
 }
 
-export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxItem_${Math.random().toString(36).slice(2, 8)}`
   const isDisabled = () => props.disabled ?? false
   const stateClasses = () => isDisabled() ? itemDisabledClasses : itemDefaultClasses
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.value !== 'function' && !(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
-  if (typeof props.disabled !== 'function' && !(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxItem')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
+    if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxItem', {})
+  }
 
   return (
     <div data-slot="combobox-item" data-value={props.value} data-state="unchecked" data-selected="false" role="option" id={props.id} aria-selected="false" aria-disabled={(isDisabled()) || undefined} tabindex={-1} className={`${itemBaseClasses} ${stateClasses()} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span data-slot="combobox-item-indicator" className={`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`} style="display:none"><CheckIcon className="size-4" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></span>{props.children}</div>
   )
 }
 
-export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
-  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
+export function ComboboxGroup(__allProps: ComboboxGroupProps & { __instanceId?: string; __bfScope?: string; __bfChild?: boolean; __bfNoSerialize?: boolean; __bfParentProps?: string; __bfParent?: string; __bfMount?: string; "data-key"?: string | number }) {
+  const { __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props } = __allProps
   const __scopeId = __instanceId || `ComboboxGroup_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof props.heading !== 'function' && !(typeof props.heading === 'object' && props.heading !== null && 'isEscaped' in props.heading)) __hydrateProps['heading'] = props.heading
-  if (typeof props.children !== 'function' && !(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxGroup')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.heading === 'object' && props.heading !== null && 'isEscaped' in props.heading)) __hydrateProps['heading'] = props.heading
+    if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxGroup', {})
+  }
 
   return (
     <div data-slot="combobox-group" id={props.id} role="group" className={`${groupClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s3">{props.heading ? <div bf-c="s0" data-slot="combobox-group-heading" aria-hidden="true" bf="s2">{bfText("s1")}{props.heading}{bfTextEnd()}</div> : <>{bfComment("cond-start:s0")}{bfComment("cond-end:s0")}</>}{props.children}</div>
   )
 }
 
-export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ComboboxSeparatorPropsWithHydration = {} as ComboboxSeparatorPropsWithHydration) {
+export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ComboboxSeparatorPropsWithHydration = {} as ComboboxSeparatorPropsWithHydration) {
   const __scopeId = __instanceId || `ComboboxSeparator_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxSeparator')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxSeparator', {})
+  }
 
   return (
     <div data-slot="combobox-separator" role="separator" className={`${separatorClasses} ${className}`} {...props} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" />

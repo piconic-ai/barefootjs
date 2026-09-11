@@ -86,39 +86,39 @@ export function reactivePropsTests(baseUrl: string) {
         })
       })
 
-      test.describe('destructured props (captures initial value)', () => {
-        test('raw value does NOT update when parent changes (static)', async ({ page }) => {
+      test.describe('destructured props (maintains reactivity)', () => {
+        test('raw value updates when parent changes', async ({ page }) => {
           const destructuredStyle = page.locator('.destructured-style-child')
 
           // Initial value is 1
           await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('1')
 
-          // Raw value stays at initial because destructured props are captured once
+          // Destructured props read live, same as `props.xxx`
           await page.click('.btn-increment')
-          await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('1')
+          await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('2')
 
           await page.click('.btn-increment')
-          await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('1')
+          await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('3')
         })
 
-        test('computed value (createMemo) does NOT update', async ({ page }) => {
+        test('computed value (createMemo) updates when parent changes', async ({ page }) => {
           const destructuredStyle = page.locator('.destructured-style-child')
 
           // Initial computed value
           await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('10')
 
-          // After increment, computed value should still be 10 (captured at initial render)
+          // After increment, computed value tracks the live prop (2 * 10 = 20)
           await page.click('.btn-increment')
-          await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('10')
+          await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('20')
 
-          // After another increment, still 10
+          // After another increment, 3 * 10 = 30
           await page.click('.btn-increment')
-          await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('10')
+          await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('30')
         })
       })
 
       test.describe('comparison', () => {
-        test('props.xxx updates, destructured stays at initial value', async ({ page }) => {
+        test('props.xxx and destructured props update identically', async ({ page }) => {
           const propsStyle = page.locator('.props-style-child')
           const destructuredStyle = page.locator('.destructured-style-child')
 
@@ -127,8 +127,8 @@ export function reactivePropsTests(baseUrl: string) {
           // Props style: computed value updates to 20
           await expect(propsStyle.locator('.child-computed-value')).toHaveText('20')
 
-          // Destructured style: computed value stays at 10 (initial)
-          await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('10')
+          // Destructured style: computed value updates to 20 too
+          await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('20')
         })
       })
     })

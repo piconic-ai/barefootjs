@@ -22,6 +22,7 @@ import { fixture as conditionalReturnButton } from './conditional-return-button'
 import { fixture as conditionalReturnLink } from './conditional-return-link'
 import { fixture as reactiveProps } from './reactive-props'
 import { fixture as propsReactivityComparison } from './props-reactivity-comparison'
+import { fixture as destructuredPropsLive } from './destructured-props-live'
 import { fixture as form } from './form'
 import { fixture as portal } from './portal'
 import { fixture as todoApp } from './todo-app'
@@ -637,6 +638,10 @@ import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
 // #2868: a reactive conditional branch's own root tag collides with the
 // enclosing loop's item param name — must not corrupt the tag on re-render.
 import { fixture as condArmTagCollision } from './cond-arm-tag-collision'
+// #2760: a signal getter passed DIRECTLY (unwrapped) to a component prop —
+// BF044 used to refuse this while the structurally identical object-literal
+// wrapped form (`context-provider-nullish-object-fallback.ts`) passed silently.
+import { fixture as componentPropBareGetter } from './component-prop-bare-getter'
 
 import type { JSXFixture } from '../src/types'
 
@@ -649,6 +654,7 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalReturnLink,
   reactiveProps,
   propsReactivityComparison,
+  destructuredPropsLive,
   form,
   portal,
   todoApp,
@@ -1074,4 +1080,5 @@ export const jsxFixtures: JSXFixture[] = [
   keyedLoopIndexReorder,
   lazyRowIndexReorder,
   condArmTagCollision,
+  componentPropBareGetter,
 ]

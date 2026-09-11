@@ -72,12 +72,42 @@ export function bfTextEnd() {
  * demo already ships a live `RegExp` `pattern` prop that degrades to `{}`
  * today, and the component's own design tolerates that. They stay
  * diagnosable at compile time (BF049) only, not a runtime hard-stop.
+ *
+ * `liveOnlyProps` (Move C) is a separate check sharing this function, not
+ * another entry in the offender ladder above. A function VALUE only matters
+ * when the component's own client code calls that prop live — the map
+ * (`clientAnalysis.liveOnlyProps`, built by `computeLiveOnlyProps` in
+ * `packages/jsx/src/ir-to-client-js/index.ts`) is keyed by caller-facing
+ * prop name and valued by the declared type's text, so the error can name
+ * the real shape. A function-typed prop the component never reads is absent
+ * from the map and keeps `JSON.stringify`'s silent drop; throwing for it
+ * would be a false refusal.
+ *
+ * Generated code calls this only for a mount that actually reads bf-p, so
+ * the throw can't fire for a component that is always someone's compiled
+ * child — the case BF049's declaration-time check cannot tell apart.
  */
-export function serializeHydrationProps(props: Record<string, unknown>, componentName: string): string | undefined {
+export function serializeHydrationProps(
+  props: Record<string, unknown>,
+  componentName: string,
+  liveOnlyProps: Record<string, string> = {},
+): string | undefined {
   const keys = Object.keys(props)
   if (keys.length === 0) return undefined
   for (const key of keys) {
     const value = props[key]
+    if (typeof value === 'function') {
+      const declaredType = liveOnlyProps[key]
+      if (declaredType === undefined) continue
+      throw new TypeError(
+        `[barefootjs] Cannot serialize prop '${key}' of <${componentName}> for hydration: it is declared ` +
+          `\`${declaredType}\` and read by the component's client code, but a function cannot cross the bf-p ` +
+          `JSON boundary (the client would hydrate against \`undefined\` and throw). A function-typed prop can ` +
+          `only reach <${componentName}> live — render <${componentName}> from a compiled parent component ` +
+          `(initChild) or mount it client-side (createComponent); from a route handler pass the data and let the ` +
+          `component own the accessor.`,
+      )
+    }
     const offender =
       typeof value === 'bigint'
         ? 'BigInt'

@@ -270,7 +270,7 @@ export function initDialogHeader(__scope, _p = {}) {
 
 }
 
-hydrate('DialogHeader', { init: initDialogHeader, template: (_p) => `<div data-slot="dialog-header" ${(`${('flex flex-col gap-2 text-center sm:text-left')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 text-center sm:text-left')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
+hydrate('DialogHeader', { init: initDialogHeader, template: (_p) => `<div data-slot="dialog-header" ${(`${('flex flex-col gap-2 text-center sm:text-left')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 text-center sm:text-left')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DialogHeader(_p, __bfKey) { return createComponent('DialogHeader', _p, __bfKey) }
 export function initDialogTitle(__scope, _p = {}) {
   if (!__scope) return
@@ -300,7 +300,7 @@ export function initDialogTitle(__scope, _p = {}) {
 
 }
 
-hydrate('DialogTitle', { init: initDialogTitle, template: (_p) => `<h2 data-slot="dialog-title" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-lg leading-none font-semibold')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-lg leading-none font-semibold')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</h2>` })
+hydrate('DialogTitle', { init: initDialogTitle, template: (_p) => `<h2 data-slot="dialog-title" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-lg leading-none font-semibold')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('text-lg leading-none font-semibold')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</h2>` })
 export function DialogTitle(_p, __bfKey) { return createComponent('DialogTitle', _p, __bfKey) }
 export function initDialogDescription(__scope, _p = {}) {
   if (!__scope) return
@@ -330,7 +330,7 @@ export function initDialogDescription(__scope, _p = {}) {
 
 }
 
-hydrate('DialogDescription', { init: initDialogDescription, template: (_p) => `<p data-slot="dialog-description" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-muted-foreground text-sm')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('text-muted-foreground text-sm')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</p>` })
+hydrate('DialogDescription', { init: initDialogDescription, template: (_p) => `<p data-slot="dialog-description" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('text-muted-foreground text-sm')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('text-muted-foreground text-sm')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</p>` })
 export function DialogDescription(_p, __bfKey) { return createComponent('DialogDescription', _p, __bfKey) }
 export function initDialogFooter(__scope, _p = {}) {
   if (!__scope) return
@@ -355,7 +355,7 @@ export function initDialogFooter(__scope, _p = {}) {
 
 }
 
-hydrate('DialogFooter', { init: initDialogFooter, template: (_p) => `<div data-slot="dialog-footer" ${(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${_p.className}`) != null ? 'class="' + escapeAttr(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${_p.className}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
+hydrate('DialogFooter', { init: initDialogFooter, template: (_p) => `<div data-slot="dialog-footer" ${(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function DialogFooter(_p, __bfKey) { return createComponent('DialogFooter', _p, __bfKey) }
 var DialogContext = DialogContext ?? createContext()
 

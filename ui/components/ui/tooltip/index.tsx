@@ -91,7 +91,7 @@ interface TooltipProps extends HTMLBaseAttributes {
 
 /**
  * Tooltip component that displays on hover/focus.
- * Uses props.xxx pattern (BF043) for reactivity.
+ * Uses the props.xxx pattern for reactivity (destructuring would be equally reactive).
  *
  * Timer IDs are stored on the DOM element (dataset) to ensure
  * they are shared across event handler closures after hydration.

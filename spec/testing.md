@@ -49,7 +49,7 @@ Test the compiler's internal logic: parsing, analysis, transformation rules, and
 ### What to test here
 
 - **Analysis:** Signal/memo/effect detection, props extraction, import resolution
-- **Error codes:** BF001, BF021, BF043, BF044, etc.
+- **Error codes:** BF001, BF021, BF044, etc.
 - **Expression parsing:** Ternary evaluation, filter/sort pattern detection, constant resolution
 - **Client JS generation:** Import deduplication, module combination, declaration ordering
 - **CSS processing:** `@layer` prefixing, type stripping
@@ -68,7 +68,7 @@ Each test file should focus on a single concern:
 packages/jsx/src/__tests__/
   expression-parser.test.ts       — Expression parsing and resolution
   reactive-type-detection.test.ts — Signal/memo/effect detection
-  props-destructuring.test.ts     — BF043: destructuring breaks reactivity
+  destructured-props-live.test.ts — destructured prop reads stay live
   signal-getter-not-called.test.ts— BF044: signal getter not called
   unsupported-expression.test.ts  — BF021: complex filter/sort predicates
   css-layer-prefixer.test.ts      — CSS @layer directive handling
@@ -95,15 +95,17 @@ function Counter() {
   expect(ctx.signals[0].getter).toBe('count')
 })
 
-test('emits BF043 for props destructuring in stateful component', () => {
+test('destructured prop reads compile to a live _p.* read, not a captured local', () => {
   const source = `"use client"
-import { createSignal } from "@barefootjs/client"
+import { createSignal, createMemo } from "@barefootjs/client"
 function Comp({ value }: Props) {
-  const [x] = createSignal(value)
-  return <span>{x()}</span>
+  const doubled = createMemo(() => value * 2)
+  return <span>{doubled()}</span>
 }`
-  const ctx = analyzeComponent(source, 'test.tsx')
-  expect(ctx.errors.map(e => e.code)).toContain('BF043')
+  const result = compileJSX(source, 'test.tsx', { adapter })
+  const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+  expect(clientJs).not.toContain('const value = _p.value')
+  expect(clientJs).toContain('_p.value * 2')
 })
 ```
 

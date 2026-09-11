@@ -37,6 +37,7 @@ type KbdPropsWithHydration = KbdProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -47,6 +48,7 @@ type KbdGroupPropsWithHydration = KbdGroupProps & {
   __instanceId?: string
   __bfScope?: string
   __bfChild?: boolean
+  __bfNoSerialize?: boolean
   __bfParentProps?: string
   __bfParent?: string
   __bfMount?: string
@@ -55,19 +57,25 @@ type KbdGroupPropsWithHydration = KbdGroupProps & {
 
 export type { KbdProps, KbdGroupProps }
 
-export function Kbd({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdPropsWithHydration = {} as KbdPropsWithHydration) {
+export function Kbd({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdPropsWithHydration = {} as KbdPropsWithHydration) {
   const __scopeId = __instanceId || `Kbd_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  if (typeof asChild !== 'function' && !(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Kbd')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    if (!(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'Kbd', {})
+  }
 
   if (asChild) {
     return (
-      <Slot className={`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`} {...props} __instanceId={`${__scopeId}_s1`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s1'} bf-s={__scopeId}>{children}</Slot>
+      <Slot className={`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`} {...props} __instanceId={`${__scopeId}_s1`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s1'} bf-s={__scopeId}>{children}</Slot>
     )
   }
   return (
@@ -75,19 +83,25 @@ export function Kbd({ className = '', asChild = false, children, __instanceId, _
   )
 }
 
-export function KbdGroup({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdGroupPropsWithHydration = {} as KbdGroupPropsWithHydration) {
+export function KbdGroup({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfNoSerialize, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdGroupPropsWithHydration = {} as KbdGroupPropsWithHydration) {
   const __scopeId = __instanceId || `KbdGroup_${Math.random().toString(36).slice(2, 8)}`
 
-  // Serialize props for client hydration
-  const __hydrateProps: Record<string, unknown> = {}
-  if (typeof className !== 'function' && !(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
-  if (typeof asChild !== 'function' && !(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
-  if (typeof children !== 'function' && !(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
-  const __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'KbdGroup')
+  // Serialize props for client hydration — root mounts only. A child's bf-p
+  // is never read (it gets props live via initChild), and __bfNoSerialize
+  // says the same for a component that is its parent's entire JSX body, so
+  // neither one pays for — or can fail SSR on — a value nothing will read.
+  let __bfPropsJson = __bfParentProps
+  if (!__bfChild && !__bfNoSerialize) {
+    const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
+    if (!(typeof asChild === 'object' && asChild !== null && 'isEscaped' in asChild)) __hydrateProps['asChild'] = asChild
+    if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
+    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'KbdGroup', {})
+  }
 
   if (asChild) {
     return (
-      <Slot className={`inline-flex items-center gap-1 ${className}`} {...props} __instanceId={`${__scopeId}_s1`} __bfParentProps={__bfPropsJson} __bfParent={__scopeId} __bfMount={'s1'} bf-s={__scopeId}>{children}</Slot>
+      <Slot className={`inline-flex items-center gap-1 ${className}`} {...props} __instanceId={`${__scopeId}_s1`} __bfParentProps={__bfPropsJson} __bfNoSerialize={true} __bfParent={__scopeId} __bfMount={'s1'} bf-s={__scopeId}>{children}</Slot>
     )
   }
   return (

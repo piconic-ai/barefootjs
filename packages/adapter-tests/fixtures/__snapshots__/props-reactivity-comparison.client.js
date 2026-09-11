@@ -109,20 +109,17 @@ export function initDestructuredStyleChild(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const label = _p.label
-  const value = _p.value
-
-  const displayValue = createMemo(() => value * 10)
+  const displayValue = createMemo(() => _p.value * 10)
 
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = label
+    const __val = _p.label
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = value
+    const __val = _p.value
     __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
@@ -181,5 +178,5 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   initChild('DestructuredStyleChild__aca6fc98', _s4, { get value() { return count() }, label: "Destructured" })
 }
 
-hydrate('PropsReactivityComparison', { init: initPropsReactivityComparison, template: (_p) => `<div class="props-reactivity-comparison"><div class="parent-section"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><button class="btn-increment" bf="s2"> Increment </button></div><div class="children-section"><h3>Props Style (Reactive)</h3>${renderChild('PropsStyleChild__aca6fc98', {value: (1), label: "Props Style"}, undefined, 's3')}<h3>Destructured Style (Not Reactive)</h3>${renderChild('DestructuredStyleChild__aca6fc98', {value: (1), label: "Destructured"}, undefined, 's4')}</div></div>` })
+hydrate('PropsReactivityComparison', { init: initPropsReactivityComparison, template: (_p) => `<div class="props-reactivity-comparison"><div class="parent-section"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><button class="btn-increment" bf="s2"> Increment </button></div><div class="children-section"><h3>Props Style (Reactive)</h3>${renderChild('PropsStyleChild__aca6fc98', {value: (1), label: "Props Style"}, undefined, 's3')}<h3>Destructured Style (Reactive)</h3>${renderChild('DestructuredStyleChild__aca6fc98', {value: (1), label: "Destructured"}, undefined, 's4')}</div></div>` })
 export function PropsReactivityComparison(_p, __bfKey) { return createComponent('PropsReactivityComparison', _p, __bfKey) }

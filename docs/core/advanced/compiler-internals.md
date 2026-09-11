@@ -75,17 +75,22 @@ Files with reactive APIs but no `"use client"` emit **BF001**:
 error[BF001]: 'use client' directive required for components with createSignal
 ```
 
-### Props Destructuring Detection
+### Destructured Props Stay Live
 
 ```tsx
-// ⚠️ BF043: Destructuring captures values once — may lose reactivity
 function Child({ count }: Props) { ... }
 
-// ✅ No warning — direct access maintains reactivity
+// Compiles identically to direct access:
 function Child(props: Props) { ... }
 ```
 
-Suppress with `// @bf-ignore props-destructuring`.
+Both forms record the same `propsParams` metadata in Phase 1. Phase 2 (client JS emission)
+rewrites every value-position read of a name bound by the destructured PARAMETER — inside
+effects, memos, handlers, text, reactive attributes, anywhere in the generated `init*` body —
+to a live `_p.<key>` read, the same read `props.xxx` compiles to. See
+`rewriteDestructuredPropReads` (`ir-to-client-js/rewrite-destructured-props.ts`) and
+`livePropReadExpr` (`props-binding.ts`). Destructuring in the function BODY
+(`const { count } = props`) is an ordinary local binding and is not rewritten.
 
 ---
 

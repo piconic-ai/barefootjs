@@ -24,6 +24,7 @@ import { resolveRestSpreadNames } from './prop-handling.ts'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
+import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
 
 export interface ClientJsResult {
   code: string
@@ -126,17 +127,58 @@ export function generateClientJsWithSourceMap(
 }
 
 /**
+ * Props the component's own client code needs LIVE rather than JSON-shaped:
+ * declared type resolves to a function (`() => number`, or object-form
+ * `Function`). Keyed by CALLER-FACING name (`sourceName ?? name`) to match
+ * the `bf-p` blob key a renaming destructure serializes under
+ * (`hono-adapter.ts`'s `callerKey`), valued by the declared type's printable
+ * text so a hydration-boundary error can name the real shape.
+ *
+ * Classification only. Whether it matters depends on how a given mount is
+ * used, which is a runtime fact (`__bfChild`) invisible here — a
+ * function-typed prop is perfectly fine for a component that is always a
+ * compiled child. That is why this is not BF049
+ * (`checkRichTypePropSerialization`), which must answer at declaration time.
+ *
+ * Known conservative miss: an ALIASED function type
+ * (`type Filter = (s: string) => boolean`) resolves to `kind: 'interface'`
+ * with no member walk, so it is not classified and falls back to the old
+ * silent drop. Same limitation BF049 has for aliased rich types.
+ */
+function computeLiveOnlyProps(ir: ComponentIR, neededProps: ReadonlySet<string>): Record<string, string> {
+  const liveOnlyProps: Record<string, string> = {}
+  for (const param of ir.metadata.propsParams) {
+    // Same exclusions `propsToSerialize` (hono-adapter.ts) applies: `on*` is
+    // the event-handler convention, wired through the listener path rather
+    // than prop serialization, and `__*` is hydration plumbing that never
+    // round-trips through `bf-p`.
+    if (param.isRest || param.name.startsWith('on') || param.name.startsWith('__')) continue
+    if (!neededProps.has(param.name)) continue
+    const declared = resolvePropDeclaredType(param.sourceName ?? param.name, ir.metadata)
+    const isFunctionTyped =
+      declared?.kind === 'function' ||
+      (declared?.kind === 'interface' && baseTypeName(declared.raw) === 'Function')
+    if (!isFunctionTyped) continue
+    const callerKey = param.sourceName ?? param.name
+    liveOnlyProps[callerKey] = declared!.raw
+  }
+  return liveOnlyProps
+}
+
+/**
  * Pre-pass analysis: determine whether a component needs a client JS init function,
  * and which props the init function actually reads. This runs BEFORE the adapter
  * so the adapter can use the results to optimize bf-p serialization.
  */
-export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedProps: string[] } {
+export function analyzeClientNeeds(
+  ir: ComponentIR,
+): { needsInit: boolean; usedProps: string[]; liveOnlyProps: Record<string, string> } {
   const ctx = createContext(ir, undefined)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
 
   if (!needsClientJs(ctx)) {
-    return { needsInit: false, usedProps: [] }
+    return { needsInit: false, usedProps: [], liveOnlyProps: {} }
   }
 
   // Use the shared reference graph instead of replicating the extraction
@@ -162,7 +204,7 @@ export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedP
     }
   }
 
-  return { needsInit: true, usedProps: [...neededProps] }
+  return { needsInit: true, usedProps: [...neededProps], liveOnlyProps: computeLiveOnlyProps(ir, neededProps) }
 }
 
 /** Initialize an empty ClientJsContext from component IR metadata. */

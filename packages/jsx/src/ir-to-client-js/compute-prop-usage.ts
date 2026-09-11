@@ -67,3 +67,22 @@ export function propHasPropertyAccess(u: PropUsage | undefined): boolean {
   if (!u) return false
   return u.accessKinds.has('property') || u.accessKinds.has('index')
 }
+
+/**
+ * Which of `propNames` guard a conditional branch. A prop in this set must
+ * NOT get a `{}` fallback even when it has property access — `{}` is truthy,
+ * so the branch would always render when the caller omits the prop.
+ */
+export function computePropsUsedAsConditions(
+  ctx: Pick<ClientJsContext, 'conditionalElements' | 'clientOnlyConditionals'>,
+  propNames: ReadonlySet<string>,
+): Set<string> {
+  const result = new Set<string>()
+  for (const cond of ctx.conditionalElements) {
+    if (propNames.has(cond.condition)) result.add(cond.condition)
+  }
+  for (const cond of ctx.clientOnlyConditionals) {
+    if (propNames.has(cond.condition)) result.add(cond.condition)
+  }
+  return result
+}

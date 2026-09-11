@@ -61,6 +61,19 @@ const KNOWN_UNDECLARED: Record<string, KnownHole> = {
   // `rewritePropsObjectRef` door the init body already used (#2723), so
   // `rest.x` resolves to `_p.x` in the template the same way it always did
   // in init.
+  'component-prop-bare-getter': {
+    // #2924: a component prop whose value is a local signal/memo getter
+    // (`<Display value={count} />`) — `rewritePropsObjectRef` only knows
+    // how to rewrite references to the CURRENT component's own props/rest
+    // object; `count` is a local signal, not a prop, so there is no `_p.count`
+    // to rewrite to. The module-scope `template` lambda's `renderChild(...)`
+    // props literal keeps the bare source-level `count`, unreachable outside
+    // `initCounter`. Reproduces identically with the object-literal-wrapped
+    // form (`value={{ v: count }}`), so this predates #2760 and is orthogonal
+    // to its diagnostic-gate decision.
+    names: ['count'],
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/2924',
+  },
 }
 
 /** One virtual .ts file per emitted client-JS artifact. */

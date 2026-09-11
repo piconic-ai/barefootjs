@@ -35,10 +35,11 @@ function Button(props: { variant?: 'default' | 'primary'; children?: Child }) {
 }
 ```
 
-For initial-value-only props, default parameter syntax works. Add `@bf-ignore` to suppress the `BF043` destructuring warning:
+For initial-value-only props, default parameter syntax works — destructuring is fully
+reactive (see [Props Reactivity](../reactivity/props-reactivity.md)), so there is nothing to
+suppress:
 
 ```tsx
-// @bf-ignore props-destructuring
 function Counter({ initial = 0 }: { initial?: number }) {
   const [count, setCount] = createSignal(initial)
   return <button onClick={() => setCount(n => n + 1)}>{count()}</button>

@@ -2253,6 +2253,13 @@ export interface PropUsage {
 export interface ClientAnalysis {
   needsInit: boolean
   usedProps: string[]
+  /**
+   * The subset of `usedProps` whose declared type is a function — the client
+   * code CALLS these, so they cannot arrive as JSON. Keyed by caller-facing
+   * name (the `bf-p` blob key), valued by the declared type's printable
+   * text. See `computeLiveOnlyProps` (`ir-to-client-js/index.ts`).
+   */
+  liveOnlyProps: Record<string, string>
 }
 
 // =============================================================================

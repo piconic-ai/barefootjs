@@ -1,5 +1,7 @@
 import ts from 'typescript'
-import type { ConstantInfo, ParamInfo } from './types.ts'
+import type { ConstantInfo, ParamInfo, PropUsage } from './types.ts'
+import { propHasPropertyAccess } from './ir-to-client-js/compute-prop-usage.ts'
+import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 
 /**
  * Authoritative IdentifierName classification for a destructure-pattern
@@ -129,6 +131,62 @@ export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> 
 }
 
 const EMPTY_SET: ReadonlySet<string> = new Set()
+
+/** `_p.<callerKey>` — `_p` is always keyed by the caller-facing name (#2524 CSR half). */
+export function propReadBase(p: ParamInfo): string {
+  return `${PROPS_PARAM}.${p.sourceName ?? p.name}`
+}
+
+/**
+ * The `??` right-hand side for a prop read, or null when the bare read is
+ * correct. Precedence:
+ *   1. an explicit destructure default (`{ x = 1 }`) — an arrow default gets
+ *      an extra paren, since `??` binds tighter than the arrow head and
+ *      `_p.onInput ?? () => {}` would be a syntax error.
+ *   2. `usedAsLoopArray` → `[]`.
+ *   3. property/index access → `{}`, UNLESS the prop also guards a
+ *      conditional: `{}` is truthy, so that would always render the branch.
+ *   4. otherwise null — a defaultless optional reads `undefined` when
+ *      absent, which is what the JS binding did and what SSR produces. A
+ *      synthesized zero default would diverge from SSR instead (`size ?? 1`
+ *      seeds 1 server-side; a `_p.size ?? 0` read would hydrate to 0).
+ */
+export function propReadFallback(
+  p: ParamInfo,
+  usage: PropUsage | undefined,
+  usedAsCondition: boolean,
+): string | null {
+  if (p.defaultValue) return p.defaultContainsArrow ? `(${p.defaultValue})` : p.defaultValue
+  if (usage?.usedAsLoopArray) return '[]'
+  if (propHasPropertyAccess(usage) && !usedAsCondition) return '{}'
+  return null
+}
+
+/**
+ * The live read of a destructured prop inside init scope, in the same shape
+ * props-object mode emits for `props.X`. The one formula every live-read
+ * call site shares: the whole-init-body rewrite
+ * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
+ * (`emit-reactive.ts`), the controlled-signal sync effect
+ * (`build-declaration-emit.ts`), and the Phase-1 CSR `template:` rewrite
+ * (`jsx-to-ir.ts`).
+ *
+ * Parenthesized whenever a fallback is present so it splices safely into an
+ * arbitrary read position (a member access, a call argument, …).
+ * `emitPropsExtraction` deliberately does NOT use this: its `children` line
+ * must stay an unparenthesized `const X = _p.X [?? d]` for
+ * `pruneUnusedPropExtractions`'s AST matcher, so it composes
+ * `propReadBase`/`propReadFallback` itself.
+ */
+export function livePropReadExpr(
+  p: ParamInfo,
+  usage: PropUsage | undefined,
+  usedAsCondition: boolean,
+): string {
+  const base = propReadBase(p)
+  const fallback = propReadFallback(p, usage, usedAsCondition)
+  return fallback === null ? base : `(${base} ?? ${fallback})`
+}
 
 /**
  * The two component bindings that forward the caller's leftover props:

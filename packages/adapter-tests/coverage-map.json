@@ -1360,6 +1360,20 @@
         "text"
       ]
     },
+    "component-prop-bare-getter": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-row-loop-preamble-handler": {
       "kinds": [
         "array-literal",
@@ -2014,6 +2028,25 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "destructured-props-live": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -6617,14 +6650,14 @@
     "array-literal": 113,
     "array-method": 71,
     "arrow": 74,
-    "binary": 104,
-    "call": 274,
-    "conditional": 31,
-    "identifier": 387,
+    "binary": 105,
+    "call": 276,
+    "conditional": 32,
+    "identifier": 389,
     "index-access": 14,
-    "literal": 309,
+    "literal": 311,
     "logical": 49,
-    "member": 229,
+    "member": 230,
     "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
@@ -6658,7 +6691,7 @@
     "binary:!=": 2,
     "binary:!==": 12,
     "binary:%": 1,
-    "binary:*": 12,
+    "binary:*": 13,
     "binary:+": 24,
     "binary:-": 12,
     "binary:/": 1,
@@ -6666,10 +6699,10 @@
     "binary:===": 54,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 69,
+    "literal:boolean": 70,
     "literal:null": 26,
-    "literal:number": 140,
-    "literal:string": 211,
+    "literal:number": 142,
+    "literal:string": 212,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,

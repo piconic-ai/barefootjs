@@ -84,4 +84,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // child needs no `$c` lookup at all (it IS `__scope`) — see
   // `ClientJsContext.commentScopeRootSlotId` and
   // `comment-wrapper-grandchild-slot-collision.test.ts`.
+  // #2924: a component prop whose value is (or contains) a local signal/memo
+  // getter — `<Display value={count} />` — compiles, but the PARENT's own
+  // module-scope `template` lambda (used on CSR-fresh-mount, not hydration)
+  // references `count` directly in `renderChild(...)`'s props literal, and
+  // `count` is only in scope inside `initCounter`, not `template`. Real
+  // divergence (a genuine `ReferenceError`, reproduced against the actual
+  // `@barefootjs/client` runtime), not a harness artifact — predates #2760
+  // and reproduces identically with the object-literal-wrapped form.
+  'component-prop-bare-getter',
 ])

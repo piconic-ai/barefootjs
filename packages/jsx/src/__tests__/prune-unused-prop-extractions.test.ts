@@ -52,9 +52,12 @@ export { Wrap }
     expect(js).not.toContain('const children = _p.children')
   })
 
-  test('props the init genuinely reads keep their extraction', () => {
-    // `config` is read by a handler, `items` by an init-scope constant —
-    // both local bindings are real and must survive the prune.
+  test('props the init genuinely reads compile to live `_p.x` reads, with no extraction to prune at all', () => {
+    // `config` is read by a handler, `items` by an init-scope constant.
+    // Neither produces an extraction for this pruner to decide about any
+    // more: both read live, with the same `?? {}` / `?? []` fallback at
+    // each read site. Only `children` (the test above) still goes through
+    // the pruner.
     const js = clientJsOf(
       `"use client"
 
@@ -72,7 +75,10 @@ export { Widget }
 `,
       '/virtual/widget.tsx',
     )
-    expect(js).toContain('const config = _p.config ?? {}')
-    expect(js).toContain('const items = _p.items ?? []')
+    expect(js).not.toContain('const config = ')
+    expect(js).not.toContain('const items = ')
+    expect(js).toContain('(_p.config ?? {}).startOpen')
+    expect(js).toContain('(_p.items ?? []).length')
+    expect(js).toContain('(_p.items ?? [])[0]')
   })
 })
