@@ -6,6 +6,7 @@ export function initLiveChild(__scope, _p = {}) {
 
   const doubled = createMemo(() => _p.value * 2)
   const [seen, setSeen] = createSignal(0)
+  let mounted = false
 
   const [_s6, _s7] = $(__scope, 's6', 's7')
 
@@ -40,7 +41,12 @@ export function initLiveChild(__scope, _p = {}) {
 
   if (_s6) _s6.addEventListener('click', () => { _p.onPick(_p.value) })
   createEffect(() => {
-    setSeen(_p.value)
+    const current = _p.value
+    if (!mounted) {
+      mounted = true
+      return
+    }
+    setSeen(current)
   })
 }
 
