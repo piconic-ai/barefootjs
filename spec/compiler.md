@@ -1168,6 +1168,38 @@ the value at provider-render time. This applies equally whether the accessor is 
 directly (`<Child x={count} />`) or nested inside an object literal
 (`<Child x={{ v: count }} />`) — the two forms are one idiom, not an inconsistency (#2760).
 
+#### The prop boundary contract
+
+The exemption above is one instance of a general rule for every component-prop boundary,
+not a special case scoped to BF044: **deferral is a property of the producer's syntax;
+reactivity is a property of the consumer's declared type.**
+
+- **Producer (parent) side — syntactic, not semantic.** Whether a prop expression is
+  wrapped in a `createEffect` so it re-evaluates (`decideWrapForChildProp`,
+  `ir-to-client-js/reactivity.ts`) is decided from the expression's own shape: a call, or a
+  forwarded `props.x` access, would otherwise freeze at its SSR value, so it is wrapped; a
+  bare identifier or literal is not, because its SSR value is already in the DOM and there
+  is nothing to re-read. The decision never asks "is this specifically a signal" — `count`
+  (a signal getter) and `plainVar` (an ordinary local) both pass through unwrapped, because
+  the question is evaluation timing, not what kind of value flows through. Deliberately
+  conservative in the safe direction (#942): over-wrapping costs an effect that subscribes
+  to nothing, under-wrapping silently freezes the child.
+- **Consumer (child) side — the declared prop type, not the caller's expression, decides
+  what a prop means.** A child that declares `value: () => number` is asking for a live
+  accessor it will call at its own read site; a child that declares `value: number` is
+  asking for an already-resolved value. The compiler never consults that type to judge the
+  parent's expression — which is what lets the exemption above be unconditional rather than
+  a signal-detection special case.
+- **A real forgotten-`()` is a type error, and `tsc` already reports it.**
+  `<Child x={count} />` where the child declares `x: number` is ts(2322) ("Type `() =>
+  number` is not assignable to type `number`"); the `<Child x={count ? 1 : 2} />` shape is
+  ts(2774) ("This condition will always return true … Did you mean to call it instead?").
+  BarefootJS does not re-implement a parallel type checker for prop assignability, whatever
+  `CompileOptions.program` access it happens to hold for its *other* reactivity
+  classification needs. Precedent: `BF031` ("props type mismatch") was reserved for exactly
+  this question and deleted without ever being emitted, once `tsc` was confirmed to cover it
+  (`packages/jsx/src/__tests__/props-type-mismatch.audit.test.ts`).
+
 ### class= vs className= in JSX
 
 JSX requires `className` for CSS class attributes. `class` is a reserved keyword in JavaScript and cannot be used as a JSX attribute name.
