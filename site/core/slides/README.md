@@ -22,9 +22,12 @@ cd site/core
 bun run slides:build <slug>
 ```
 
-The output lands in `public/slides/<slug>/` and is **committed**: CI has no peitho binary, so
-`bun run build` only copies `public/slides/**` into `dist/slides/**`, which Cloudflare Workers
-Assets serves as-is. Rebuild and commit the output whenever the sources change.
+The output lands in `public/slides/<slug>/`, which is gitignored: the deploy workflow
+(`.github/workflows/deploy.yml`) installs a pinned peitho release and runs
+`bun run slides:build --all` before `bun run build`, which copies `public/slides/**` into
+`dist/slides/**` for Cloudflare Workers Assets. Pull requests that touch `slides/**` run the
+same build in `.github/workflows/ci-slides.yml`, so a deck that no longer builds fails there.
+To bump peitho, change `PEITHO_VERSION` and `PEITHO_SHA256` in both workflows.
 
 To add a deck: `peitho new slides/<slug>` (or copy an existing directory), write `deck.md`,
-run `bun run slides:build <slug>`, commit both the sources and `public/slides/<slug>/`.
+run `bun run slides:build <slug>` to check it locally, and commit the sources only.

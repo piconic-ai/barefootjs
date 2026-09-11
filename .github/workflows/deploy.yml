@@ -45,6 +45,12 @@ on:
 permissions:
   contents: read
 
+# PEITHO_SHA256 is the x86_64-unknown-linux-gnu line from the release's
+# .sha256 asset (https://github.com/mizzy/peitho/releases).
+env:
+  PEITHO_VERSION: 1.26.0
+  PEITHO_SHA256: 2c962785f1541de2ed41dcc44d261e9689c361a179ec9051769cedd82cdf7c2f
+
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
@@ -79,6 +85,22 @@ jobs:
           bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/hono' build
+
+      # Slide decks under site/core/slides/<slug>/ are peitho decks; their
+      # output (public/slides/<slug>/) is not committed, it is built here.
+      # Pinned release + checksum, same pattern as Vale in ci-docs.yml.
+      - name: Install peitho
+        run: |
+          NAME="peitho-v${PEITHO_VERSION}-x86_64-unknown-linux-gnu"
+          curl -sSL -o peitho.tar.gz "https://github.com/mizzy/peitho/releases/download/v${PEITHO_VERSION}/${NAME}.tar.gz"
+          echo "${PEITHO_SHA256}  peitho.tar.gz" | sha256sum --check
+          tar -xzf peitho.tar.gz
+          sudo mv "${NAME}/peitho" /usr/local/bin/peitho
+          rm -rf peitho.tar.gz "${NAME}"
+          peitho --version
+
+      - name: Build slide decks
+        run: cd site/core && bun run slides:build --all
 
       - name: Build site
         run: cd site/core && bun run build

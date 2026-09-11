@@ -36,33 +36,27 @@ Not checked in: `fontsrc/` (the raw `.woff2` files and a scratch
 needs the already-embedded `css/0-fonts.css` at runtime, and `component/dist/`
 / `component/node_modules/` (the build script's working output).
 
-## Rebuilding
+## Building
 
-The build output is **committed** at
-`site/core/public/slides/overview/` (peitho's distribution viewer:
+The output (`site/core/public/slides/overview/`: peitho's distribution viewer,
 `index.html`, `manifest.json`, `peitho.css`, `slides/*.html`, plus
-`assets/{hero.mp4,hero.jpg,deck.js}`) — CI has no `peitho` binary, so nothing
-rebuilds this deck at deploy time. `bun run build` in `site/core` copies
-`public/` (this deck included) straight into `dist/`, which is what Cloudflare
-Workers Assets actually serves in production.
+`assets/{hero.mp4,hero.jpg,deck.js}`) is not committed. The deploy workflow
+installs a pinned peitho release and builds every deck before the site build;
+pull requests touching `slides/**` run the same build (`ci-slides.yml`).
 
-To rebuild after changing a source file here, from this directory:
+To build locally, from `site/core`:
 
 ```sh
-cd site/core
 PEITHO=/path/to/peitho bun run slides:build overview
 ```
 
-(`peitho` itself is built from https://github.com/mizzy/peitho and is not
-part of this repo; point `PEITHO` at wherever you built or installed it. Omit
-the argument to build into a local `dist/` instead, for a quick look before
-overwriting the committed output.)
-
-Then commit the changed files under `site/core/public/slides/overview/`
-alongside your source change.
+(`peitho` is https://github.com/mizzy/peitho — a prebuilt release or your own
+build; point `PEITHO` at it when it is not on PATH.) Then `bun run build` copies
+it into `dist/slides/overview/` and `bun run server.tsx` serves it at
+`/slides/overview/`.
 
 ## Hero media license
 
-`assets/hero.mp4` (7.6 MB, committed) and `assets/hero.jpg` — see
+`assets/hero.mp4` (7.6 MB) and `assets/hero.jpg` — see
 `assets/SOURCES.md` for the source and license (Mixkit Stock Video Free
 License; free for commercial use, no attribution required).

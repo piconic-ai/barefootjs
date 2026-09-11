@@ -14,8 +14,9 @@
  *                                  non-component entries are bundled into assets/deck.js and
  *                                  injected into index.html
  *
- * The output is committed: CI has no peitho binary, so `bun run build` only copies
- * public/slides/** into dist/slides/**. Set PEITHO to the binary path when it is not on PATH.
+ * The output (public/slides/<slug>/) is gitignored: deploy.yml installs a pinned peitho
+ * release and runs `bun run slides:build --all` before the site build, and ci-slides.yml
+ * does the same on pull requests. Set PEITHO to the binary path when it is not on PATH.
  */
 import { existsSync, readdirSync, statSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'node:fs'
 import { resolve, join, dirname } from 'node:path'
