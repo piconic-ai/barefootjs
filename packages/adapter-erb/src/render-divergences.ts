@@ -15,16 +15,4 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // at value position and the runtime evaluator's `object-literal` case
 // now merges it, so the seed classifies `derived` and SSRs identically
 // to Hono.
-export const renderDivergences: RenderDivergences = {
-  // #2922: the static-nested-loop bake reuses the SAME Ruby local variable
-  // name (`item`, the JS source's own param name) for both the outer and
-  // inner loop via plain assignment rather than a block parameter — Ruby
-  // assignment to a name already visible in an enclosing scope mutates
-  // that shared variable instead of shadowing it. On the inner loop's
-  // second-plus iteration, `item = item[:children][_i]` reads `item` as
-  // whatever the PREVIOUS inner iteration left it (a leaf child, no
-  // `:children` key), not the stable outer item — `nil[_i]` raises
-  // `NoMethodError`. Compiles clean (no diagnostic); crashes on render.
-  'static-nested-loop-shadowed-param':
-    'https://github.com/piconic-ai/barefootjs/issues/2922',
-}
+export const renderDivergences: RenderDivergences = {}
