@@ -88,7 +88,7 @@ export function Counter(props: CounterProps) {
 }
 ```
 
-See [Client Directive](./rendering/client-directive.md), [`createSignal`](./reactivity/create-signal.md), and [`createMemo`](./reactivity/create-memo.md) for what each piece does. Props are read via `props.initial` here, but `const { initial } = props` in the function parameter works identically — both forms compile to the same live read, so pick whichever reads better. [Props Reactivity](./reactivity/props-reactivity.md) covers the full rule.
+See [Client Directive](./rendering/client-directive.md), [`createSignal`](./reactivity/create-signal.md), and [`createMemo`](./reactivity/create-memo.md) for what each piece does. Props are read via `props.initial` here, but destructuring them in the function parameter (`function Counter({ initial }: CounterProps)`) works identically — both forms compile to the same live read, so pick whichever reads better. [Props Reactivity](./reactivity/props-reactivity.md) covers the full rule.
 
 The Counter is mounted in `server.tsx`:
 

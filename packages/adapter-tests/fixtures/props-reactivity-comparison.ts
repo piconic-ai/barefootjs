@@ -2,22 +2,12 @@
  * PropsReactivityComparison fixture — second export of
  * `integrations/shared/components/ReactiveProps.tsx`.
  *
- * Sibling of `reactive-props`. Historically (pre-Move-B, #2760's
- * follow-up) this fixture's point was what did NOT update: `props.xxx`
- * access (reactive — `createMemo` picks up the proxy read as a
- * dependency) against destructured `{ value, label } = props` (captured
- * once at component invocation, so later parent updates never
- * propagated).
- *
- * Move B made destructured-prop reads live too (every value-position
- * read of a destructured prop compiles to a live `_p.x` read, same as
- * `props.x` already was — see `props-binding.ts`'s `livePropReadExpr`),
- * so this fixture's point is now the OPPOSITE: `props.xxx` access and
- * destructured access are BYTE-FOR-BYTE EQUIVALENT in behavior. Both
- * children's raw + computed values track the parent's signal identically.
- * `destructured-props-live` is the fuller positive-behavior fixture
- * (text/memo/effect/handler/attribute positions); this one stays focused
- * on the props-object-vs-destructured PARITY question its name promises.
+ * Sibling of `reactive-props`. Pins PARITY between the two ways to read a
+ * prop: `props.xxx` access and destructured `{ value, label }` must behave
+ * identically, so a change that makes one of them capture-once shows up
+ * here as a divergence between the two children rather than as a
+ * plausible-looking value. `destructured-props-live` is the fuller
+ * positive-behavior fixture (text/memo/effect/handler/attribute positions).
  *
  * Locked behavior from spec/compiler.md:
  *   - PropsStyleChild's raw + computed values track parent's signal
@@ -40,7 +30,7 @@ export const spec: SharedFixtureSpec = {
   // since it differs from the component name.
   sourceFile: 'ReactiveProps',
   description:
-    'props.xxx vs destructured prop access — both fully reactive and byte-for-byte equivalent since Move B',
+    'props.xxx vs destructured prop access — both fully reactive, and behaviourally identical',
   // PropsReactivityComparison seeds its internal signal at 1 (not 0); both
   // children render with that initial value.
   props: {},

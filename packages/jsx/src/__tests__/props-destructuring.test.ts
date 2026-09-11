@@ -1,14 +1,10 @@
 /**
  * Destructured-Props Type Resolution Tests
  *
- * BF043 ("props destructuring breaks reactivity") is retired — Move B
- * (#2760's follow-up) made every destructured-prop read live (see
- * `props-binding.ts`'s `livePropReadExpr` and
- * `destructured-props-live.test.ts`'s coverage of the rewrite itself), so
- * there is nothing left to warn about. This file now only pins that a
- * destructured prop's declared TYPE still resolves correctly from the
- * param's type annotation (#2150) — the same guarantee the old BF043
- * describe block's sibling tests already carried, kept below unchanged.
+ * Pins that a destructured prop's declared TYPE resolves from the param's
+ * type annotation (#2150). The reactivity half of this file is gone: BF043
+ * ("props destructuring breaks reactivity") is retired, and the live-read
+ * rewrite that replaced it is covered by `destructured-props-live.test.ts`.
  */
 
 import { describe, test, expect } from 'bun:test'

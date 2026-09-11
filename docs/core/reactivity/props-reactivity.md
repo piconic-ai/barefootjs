@@ -5,9 +5,10 @@ description: How prop access patterns determine whether reactive updates propaga
 
 # Props Reactivity
 
-**Prop reads stay reactive no matter how you write them.** The compiler wraps dynamic prop
-expressions in getters, and every VALUE-POSITION read of a prop — whether written as
-`props.xxx` or as a destructured local — compiles to a live read of that getter.
+**`props.xxx` access and destructuring the props parameter are equally reactive.** The
+compiler wraps dynamic prop expressions in getters, and every value-position read of a prop
+— written either way — compiles to a live read of that getter. Destructuring inside the
+function body is the one form that still captures once.
 
 
 ## Direct Access
@@ -24,11 +25,12 @@ function Display(props: { value: number }) {
 ```
 
 
-## Destructuring
+## Destructuring In The Parameter
 
-Destructuring is also fully reactive. Every reference to a destructured prop name — in a
-`createEffect` body, a `createMemo` computation, an event handler, a reactive attribute,
-plain text, anywhere — compiles to the same live read `props.xxx` would:
+Destructuring the props **parameter** is also fully reactive. Every reference to a
+destructured prop name — in a `createEffect` body, a `createMemo` computation, an event
+handler, a reactive attribute, plain text, anywhere — compiles to the same live read
+`props.xxx` would:
 
 ```tsx
 function Display({ value }: { value: number }) {
@@ -45,9 +47,25 @@ would. A destructure default (`{ value = 0 }`) is evaluated live too: it re-appl
 read, not just once at mount.
 
 
+## Destructuring In The Body — Captures Once
+
+Destructuring inside the function body is a different thing, and it is **not** reactive:
+
+```tsx
+function Display(props: { value: number }) {
+  const { value } = props // calls the getter ONCE, stores the number
+  return <span>{value}</span> // never updates
+}
+```
+
+This is an ordinary local binding, so it behaves the way it does in SolidJS. Use the
+parameter form, or read `props.value` at the point of use.
+
+
 ## When To Prefer Which
 
-Both forms behave identically at runtime, so the choice is style, not correctness:
+The two reactive forms — `props.xxx` and parameter destructuring — behave identically at
+runtime, so the choice between them is style, not correctness:
 
 - Destructuring reads naturally and is usually the better default for components with a
   handful of named props.
@@ -60,7 +78,8 @@ Both forms behave identically at runtime, so the choice is style, not correctnes
 | Pattern | Reactive? |
 |---------|-----------|
 | `props.value` | Yes |
-| `const { value } = props` (destructured param) | Yes |
+| `function C({ value }: Props)` — parameter destructuring | Yes |
+| `const { value } = props` — body destructuring | No, captured once |
 | `createSignal(props.value)` | `props.value` is reactive, the signal it seeds is independent thereafter |
 
 
@@ -76,8 +95,9 @@ The compiler transforms dynamic prop expressions into getters:
 { get value() { return count() } }
 ```
 
-`props.value` calls the getter directly. A destructured `value` compiles to the exact same
-getter call at every reference site — the compiler rewrites each one, rather than binding a
-plain local that would only read the getter once. This is the same reactive-getter model as
-SolidJS; unlike SolidJS, BarefootJS performs that rewrite regardless of whether you
-destructure, so there is no "don't destructure props" caveat to remember.
+`props.value` calls the getter directly. A `value` destructured in the PARAMETER compiles to
+the exact same getter call at every reference site — the compiler rewrites each one, rather
+than binding a plain local that would only read the getter once. (A `const { value } = props`
+in the body is just that plain local, which is why it does not update.) This is the same
+reactive-getter model as SolidJS; unlike SolidJS, BarefootJS performs that rewrite for the
+parameter form, so the "don't destructure props" caveat only applies to the body form.

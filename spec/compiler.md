@@ -84,15 +84,16 @@ setCount(n => n + 1)  // Updater function
 
 Unlike SolidJS, BOTH `props.xxx` access and destructuring the props parameter stay reactive
 in BarefootJS — the compiler rewrites every value-position read of a destructured prop name
-to the same live getter read a `props.xxx` access would compile to (Move B, #2760's
-follow-up; `props-binding.ts`'s `livePropReadExpr`, applied by
-`rewriteDestructuredPropReads` as a final pass over the joined `init*` body). Both forms
-below are equally reactive — the choice is style, not correctness:
+to the same live getter read a `props.xxx` access would compile to (`props-binding.ts`'s
+`livePropReadExpr`, applied by `rewriteDestructuredPropReads` as a final pass over the
+joined `init*` body). Both forms below are equally reactive — the choice is style, not
+correctness:
 
 | Pattern | Behavior | Use Case |
 |---------|----------|----------|
 | `props.value` | Reactive (live getter read) | Either style |
-| `const { value } = props` (destructured param) | Reactive (live getter read) | Either style |
+| `function C({ value }: Props)` (parameter destructuring) | Reactive (live getter read) | Either style |
+| `const { value } = props` (body destructuring) | Captured once | Initial values only |
 
 ```tsx
 // ✅ Reactive: props.xxx access
@@ -151,8 +152,10 @@ function Child(props: Props) {
 
 The **consumer** (child) determines when evaluation happens, not the **provider** (parent). This is why:
 - `props.value` → Getter is called at each read site → Reactive
-- `const { value } = props` → the compiler rewrites `value` to the same getter read at each
-  reference site (not a plain local binding) → equally reactive
+- `function C({ value }: Props)` → the compiler rewrites `value` to the same getter read at
+  each reference site (not a plain local binding) → equally reactive
+- `const { value } = props` in the BODY → a plain local binding, so the getter is called once
+  → captured (`rewriteDestructuredPropReads` only covers the parameter form)
 
 ### Comparison with SolidJS and React
 
@@ -160,7 +163,7 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 |--------|-----------|---------|-------|
 | Signal access | `count()` | `count()` | `count` (useState) |
 | Props access | Getter-based | Getter-based | Direct access |
-| Destructuring props | ✅ Safe (compiler rewrites reads live) | ⚠️ Careful | ✅ Safe |
+| Destructuring props | ✅ Safe in the parameter (compiler rewrites reads live); ⚠️ captured once in the body | ⚠️ Careful | ✅ Safe |
 | Dependency tracking | Automatic | Automatic | Manual arrays |
 | Rendering | Marked template + Client hydration | All in JS | All in JS |
 
@@ -1241,13 +1244,13 @@ The compiler checks for `__reactive` via `checker.getTypeAtLocation(node).getPro
 | `form.isSubmitting()` | Yes | Brand (`Reactive<() => boolean>`) |
 | `props.count` | Yes | Regex (props aren't branded) |
 | `label` (const derived from signal) | Yes | Taint analysis (follows constant value) |
-| `count` (destructured prop) | Yes | Regex (props aren't branded) — same detection as `props.count`; the compiled READ is also rewritten to the same live `_p.count` access (Move B, #2760's follow-up) |
+| `count` (destructured prop) | Yes | Regex (props aren't branded) — same detection as `props.count`; the compiled READ is also rewritten to the same live `_p.count` access |
 | `"static string"` | No | Literal value |
 | `CONSTANT` (no reactive deps) | No | Pure constant |
 
 ### Generated Client JS Examples
 
-**Destructured props** — live, same as direct access (Move B):
+**Destructured props** — live, same as direct access:
 
 ```tsx
 // Source

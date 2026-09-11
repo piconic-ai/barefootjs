@@ -3432,69 +3432,12 @@ function collectConstant(
 }
 
 // =============================================================================
-// Ignore Directive Detection
-// =============================================================================
-
-/**
- * Check if a node has an ignore directive comment for the specified rule.
- * Supports: // @bf-ignore rule-id
- *
- * For arrow function components, also checks the parent VariableStatement.
- */
-function hasIgnoreDirective(
-  node: ts.Node,
-  sourceFile: ts.SourceFile,
-  ruleId: string
-): boolean {
-  const checkComments = (targetNode: ts.Node): boolean => {
-    const fullStart = targetNode.getFullStart()
-    const leadingComments = ts.getLeadingCommentRanges(
-      sourceFile.getFullText(),
-      fullStart
-    )
-    if (!leadingComments) return false
-
-    for (const range of leadingComments) {
-      const text = sourceFile.getFullText().slice(range.pos, range.end)
-      if (text.includes(`@bf-ignore ${ruleId}`)) {
-        return true
-      }
-    }
-    return false
-  }
-
-  // Check the node itself
-  if (checkComments(node)) return true
-
-  // For arrow functions, check the parent VariableStatement
-  // AST structure: VariableStatement > VariableDeclarationList > VariableDeclaration > ArrowFunction
-  if (ts.isArrowFunction(node)) {
-    let current: ts.Node | undefined = node.parent
-    while (current) {
-      if (ts.isVariableStatement(current)) {
-        if (checkComments(current)) return true
-        break
-      }
-      current = current.parent
-    }
-  }
-
-  return false
-}
-
-// =============================================================================
 // Props Extraction
 // =============================================================================
 
 function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): void {
   // Pattern 1: Destructured props - { prop1, prop2 }
   if (ts.isObjectBindingPattern(param.name)) {
-    // Record the destructuring pattern's own location — `compiler.ts`'s
-    // `checkRichTypePropSerialization` prefers pointing a rich-type-prop
-    // diagnostic here over the whole component root when the component
-    // destructures its props (destructuring itself no longer carries any
-    // diagnostic of its own since Move B, #2760's follow-up, made it live —
-    // see `props-binding.ts`'s `livePropReadExpr`).
     ctx.propsDestructuring = { loc: getSourceLocation(param, ctx.sourceFile, ctx.filePath) }
 
     // Resolve each destructured binding's declared type from the param's type

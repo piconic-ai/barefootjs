@@ -29,14 +29,10 @@ import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { nodeContainsJsx } from './reactivity-checker.ts'
 
 /**
- * The destructuring pattern's own source location, recorded during
- * `extractProps()` for a component that destructures its props parameter
- * (`function Child({ value })`). No diagnostic of its own since Move B
- * (#2760's follow-up) made destructured prop reads live — kept as a more
- * precise fallback location for OTHER diagnostics about the props
- * parameter, e.g. `compiler.ts`'s `checkRichTypePropSerialization`, which
- * prefers pointing at the destructuring pattern over the whole component
- * root.
+ * The props destructuring pattern's own source location. Carries no
+ * diagnostic of its own — it is the more precise location other
+ * props-parameter diagnostics point at instead of the component root (see
+ * `compiler.ts`'s `checkRichTypePropSerialization`).
  */
 export interface PropsDestructuringInfo {
   loc: SourceLocation

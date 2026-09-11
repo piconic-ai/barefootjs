@@ -52,17 +52,12 @@ export { Wrap }
     expect(js).not.toContain('const children = _p.children')
   })
 
-  test('props the init genuinely reads compile to live `_p.x` reads, with no extraction to prune at all (Move B)', () => {
+  test('props the init genuinely reads compile to live `_p.x` reads, with no extraction to prune at all', () => {
     // `config` is read by a handler, `items` by an init-scope constant.
-    // Before Move B (#2760's follow-up) both got a captured-once
-    // `const config = _p.config ?? {}` / `const items = _p.items ?? []`
-    // extraction line that this pruner had to keep alive because the init
-    // body genuinely referenced the local. Move B removed that extraction
-    // entirely — every reference now reads `_p.config` / `_p.items` live,
-    // with the SAME `?? {}` / `?? []` fallback preserved at each read
-    // site — so there is nothing left for THIS pruner to decide about for
-    // either name; only `children` (see the test above) still goes
-    // through it.
+    // Neither produces an extraction for this pruner to decide about any
+    // more: both read live, with the same `?? {}` / `?? []` fallback at
+    // each read site. Only `children` (the test above) still goes through
+    // the pruner.
     const js = clientJsOf(
       `"use client"
 

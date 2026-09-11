@@ -113,13 +113,10 @@ export function generateInitFunction(
   // `PropRewritten<T>` brand type so missing the rewrite becomes a
   // compile-time error. ---
   let generatedCode = rewritePropsObjectRef(lines.join('\n'), ctx.propsObjectName, ctx.restPropsName)
-  // Live-read rewrite for destructured props (Move B, #2760's follow-up):
-  // every bare value-position read of a destructured prop name becomes a
-  // live `_p.<key>` read, same as props-object mode already reads. Must
-  // run AFTER `rewritePropsObjectRef` (so `_p` itself is already the real
-  // parameter name) and BEFORE the hydrate line / module-constants splice
-  // (a module-level helper's body cannot reference per-instance props, so
-  // it must stay outside this rewrite's reach).
+  // Must run AFTER `rewritePropsObjectRef` (so `_p` is already the real
+  // parameter name) and BEFORE the hydrate line / module-constants splice:
+  // both live at module scope, where a per-instance `_p` read would be
+  // wrong.
   generatedCode = rewriteDestructuredPropReads(generatedCode, ctx, propUsage)
   generatedCode += '\n' + hydrateLine
 

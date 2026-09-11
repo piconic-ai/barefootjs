@@ -93,7 +93,7 @@ export function reactivePropsTests(baseUrl: string) {
           // Initial value is 1
           await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('1')
 
-          // Move B: destructured props read live, same as `props.xxx`
+          // Destructured props read live, same as `props.xxx`
           await page.click('.btn-increment')
           await expect(destructuredStyle.locator('.child-raw-value')).toHaveText('2')
 
@@ -127,7 +127,7 @@ export function reactivePropsTests(baseUrl: string) {
           // Props style: computed value updates to 20
           await expect(propsStyle.locator('.child-computed-value')).toHaveText('20')
 
-          // Destructured style: computed value updates to 20 too (Move B parity)
+          // Destructured style: computed value updates to 20 too
           await expect(destructuredStyle.locator('.child-computed-value')).toHaveText('20')
         })
       })

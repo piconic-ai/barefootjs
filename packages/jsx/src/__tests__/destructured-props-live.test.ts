@@ -1,15 +1,9 @@
 /**
- * Move B (#2760's follow-up): destructured props stay reactive.
- *
- * Replaces the deleted BF043 describe block (`props-destructuring.test.ts`)
- * conceptually — instead of pinning a warning that steered users away from
- * destructuring, this pins that destructuring no longer needs a warning at
- * all. Every value-position read of a destructured prop name in the
- * compiled `init*` body now compiles to a live `_p.<key>` read (or
- * `(_p.<key> ?? <fallback>)`), the same shape `props.xxx` access already
- * compiled to — see `props-binding.ts`'s `livePropReadExpr` and
- * `ir-to-client-js/rewrite-destructured-props.ts`'s
- * `rewriteDestructuredPropReads`.
+ * Destructured props stay reactive: every value-position read of a
+ * destructured prop name in the compiled `init*` body is a live `_p.<key>`
+ * read (or `(_p.<key> ?? <fallback>)`), the same shape `props.xxx` access
+ * compiles to. See `props-binding.ts`'s `livePropReadExpr` and
+ * `ir-to-client-js/rewrite-destructured-props.ts`.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -28,10 +22,9 @@ function compileClientJs(source: string, filename = 'Component.tsx') {
   return { content: clientJs!.content, result }
 }
 
-describe('destructured props compile to live reads (Move B)', () => {
+describe('destructured props compile to live reads', () => {
   test('BF043 no longer exists as an error code', () => {
-    // Retired — Move B made the warning it described untrue. Checked by
-    // string value (not by referencing a removed `ErrorCodes` key, which
+    // Checked by string value, not by a removed `ErrorCodes` key (that
     // would be a compile error) — same convention as
     // `invalid-signal-usage.audit.test.ts`'s BF012 deletion audit.
     expect(Object.values(ErrorCodes)).not.toContain('BF043')

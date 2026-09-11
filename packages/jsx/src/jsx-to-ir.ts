@@ -131,20 +131,12 @@ interface TransformContext {
    */
   _destructuredPropAliases?: Map<string, string> | null
   /**
-   * Cached local-name → `ParamInfo` map for `_destructuredPropNames`, same
-   * shadow-filtered eligible set, built alongside it. Move B (#2760's
-   * follow-up): lets `rewriteBarePropRefsCore`'s `replacementFor` apply a
-   * destructured prop's DEFAULT VALUE the same way `livePropReadExpr` does
-   * for the init body — without it, the CSR-only `template:` literal
-   * (`irToComponentTemplate`/`generateCsrTemplate` in `html-template.ts`,
-   * built from THIS Phase-1 rewrite, not the Phase-2 whole-init-body pass
-   * in `rewrite-destructured-props.ts`) emitted a bare `_p.label` for
-   * `data-label={label}` with `label = 'none'` — correct once a value
-   * arrives, but wrong (attribute omitted entirely) for the very first
-   * render before any prop update, since `_p.label` is `undefined` with no
-   * fallback. Caught by the `destructured-props-live` fixture's CSR
-   * conformance check, not by anything in the design doc — this call site
-   * predates Move B and was never routed through `livePropReadExpr`.
+   * Cached local-name → `ParamInfo` map for the same eligible set, so
+   * `rewriteBarePropRefs` can apply a prop's destructure DEFAULT. Without
+   * it the CSR-only `template:` literal emitted a bare `_p.label` for
+   * `data-label={label}` with `label = 'none'`: correct once the caller
+   * sends a value, but the attribute was omitted entirely on the first
+   * render, where `_p.label` is `undefined`.
    */
   _destructuredPropInfoByName?: ReadonlyMap<string, ParamInfo> | null
   /**
@@ -607,14 +599,10 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   const extraPropRefs = collectBranchLocalPropRefsViaSubstitution(expr, ctx)
   const propAliases = getDestructuredPropAliases(ctx)
   const propInfoByName = getDestructuredPropInfoByName(ctx)
-  // Apply a destructured prop's DEFAULT VALUE the same way `livePropReadExpr`
-  // does for the compiled init body — see `_destructuredPropInfoByName`'s
-  // doc comment. No `usage`/`usedAsCondition` here: those need Phase-2
-  // per-position `PropUsage` data (`compute-prop-usage.ts`) this Phase-1
-  // template rewrite doesn't have, and this call site never emitted the
-  // `?? []` / `?? {}` wrapping either — only the missing default was an
-  // actual regression risk (an attribute/text silently omitted on first
-  // render), so that's the one gap this closes.
+  // No `usage`/`usedAsCondition`: the `?? []` / `?? {}` fallbacks need
+  // Phase-2 `PropUsage` data this Phase-1 rewrite doesn't have. Only the
+  // explicit destructure default applies here — see
+  // `_destructuredPropInfoByName`.
   const replacementFor = propInfoByName
     ? (localName: string, callerKey: string): string => {
         const info = propInfoByName.get(localName)
@@ -718,9 +706,7 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
 
 /**
  * Companion to `getDestructuredPropNames`: local-name → `ParamInfo` for the
- * same shadow-filtered eligible set (see `_destructuredPropInfoByName`'s
- * doc comment on `TransformContext`). Always call `getDestructuredPropNames`
- * first — the caches are written together in one pass.
+ * same shadow-filtered eligible set. Both caches are written in one pass.
  */
 function getDestructuredPropInfoByName(ctx: TransformContext): ReadonlyMap<string, ParamInfo> | null {
   if (ctx._destructuredPropNames === undefined) getDestructuredPropNames(ctx)
