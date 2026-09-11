@@ -1,16 +1,11 @@
 <!--
-  Cover: full-bleed looping clip, the wordmark (no entrance animation), then the stack rotator.
-  assets/hero.mp4 + assets/hero.jpg (poster) are copied verbatim into the output's assets/ by
-  site/core/scripts/build-slides.ts. Swap the files to change the hero; nothing else references them.
-  Source and license: assets/SOURCES.md
+  Cover: the wordmark (no entrance animation), then the stack rotator, on the paper ground.
+  No hero media ships with the deck for now (see assets/SOURCES.md). To add one, drop
+  assets/hero.mp4 + assets/hero.jpg in, record the license in SOURCES.md, and restore the
+  <video> block inside .hero.
 -->
 <section class="peitho-slide layout-cover">
-  <div class="hero" aria-hidden="true">
-    <video class="hero-img" autoplay muted loop playsinline poster="assets/hero.jpg">
-      <source src="assets/hero.mp4" type="video/mp4">
-    </video>
-    <div class="hero-shade"></div>
-  </div>
+  <div class="hero" aria-hidden="true"></div>
   <div class="cover-inner">
     <h1><slot name="title" accepts="inline" arity="1"></slot></h1>
     <div class="cover-rule" aria-hidden="true"></div>

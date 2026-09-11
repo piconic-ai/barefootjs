@@ -1,9 +1,9 @@
 # Hero media sources
 
-| File | Source | License |
-| --- | --- | --- |
-| `hero.mp4` | Mixkit, "Blue waves breaking by footprints" (id 26537), 720p, 7.6 MB — https://mixkit.co/free-stock-video/blue-waves-breaking-by-footprints-26537/ | Mixkit Stock Video Free License (free for commercial use, no attribution required) — https://mixkit.co/license/#videoFree |
-| `hero.jpg` | Poster frame of the same clip (Mixkit thumbnail) | same |
+No third-party media is currently shipped with this deck.
 
-Lighter alternative (3.4 MB, turquoise water from above, no shore): Mixkit id 5370, "Beautiful clear water of a beach" —
-https://mixkit.co/free-stock-video/beautiful-clear-water-of-a-beach-5370/
+The cover previously used a Mixkit clip; on checking the clip's page it is
+distributed under the Mixkit *Restricted* License ("720p version for personal
+use only"), which does not cover use on barefootjs.dev, so it was removed.
+Any replacement must have a license that clearly permits public, commercial
+use and be recorded here (source URL, author, license, date checked).
