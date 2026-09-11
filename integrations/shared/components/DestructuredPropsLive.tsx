@@ -19,8 +19,29 @@ type LiveChildProps = {
 function LiveChild({ value, label = 'none', onPick }: LiveChildProps) {
   const doubled = createMemo(() => value * 2)
   const [seen, setSeen] = createSignal(0)
+  // Skip the effect's own FIRST synchronous run's write: SSR bakes `seen`'s
+  // *declared* initial value (`createSignal(0)` → `0`) into the markup —
+  // it has no way to predict what an arbitrary effect body will compute —
+  // so a write on the effect's first run (same run that fires at mount in
+  // CSR-only creation AND again as hydration attaches) would change the
+  // DOM out from under the SSR bytes it just hydrated onto, which the
+  // hydration-parity oracle (`fixture-hydrate`) correctly flags as a
+  // mismatch. This reproduces identically for a `props.value`-style
+  // (non-destructured) equivalent of this same component — verified by a
+  // throwaway control fixture during Move B's review — so it is a general
+  // "an effect's first run may disagree with the static SSR value"
+  // property of effect-seeded signals, not something Move B's live-prop
+  // rewrite introduced. `value` is still read unconditionally on every
+  // run (including the skipped one) so the effect keeps tracking it as a
+  // dependency; only the `setSeen` WRITE is deferred past mount.
+  let mounted = false
   createEffect(() => {
-    setSeen(value)
+    const current = value
+    if (!mounted) {
+      mounted = true
+      return
+    }
+    setSeen(current)
   })
 
   return (
