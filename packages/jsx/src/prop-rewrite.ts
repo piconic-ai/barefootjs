@@ -100,15 +100,11 @@ function walkWithScope(
  * latter was excluded, so a substituted name colliding with the SOURCE key
  * still corrupted to invalid JS (`const { (_p.tag): renamed } = obj`).
  *
- * The getter/setter/method NAME checks matter for the same reason: an
- * object-literal getter/method whose NAME happens to equal a destructured
- * prop (`{ get className() { return className } }`, emitted by the
- * reactive-child-props forwarding machinery) has its name slot walked by
- * `ts.forEachChild` same as any other identifier. Move B's whole-init-body
- * rewrite (`rewriteDestructuredPropReads`) is the first caller of this walk
- * over text that can contain such a shape — a per-attribute-expression
- * rewrite never reached one — and without this guard the name slot
- * corrupted to invalid JS (`get (_p.className ?? '')() { ... }`).
+ * The accessor/method/property NAME checks close the same gap for
+ * `{ get className() { return className } }` (the shape the
+ * reactive-child-props forwarding machinery emits): the name slot is walked
+ * like any other identifier, and substituting there yields
+ * `get (_p.className ?? '')() { ... }`.
  */
 function isNonValuePosition(n: ts.Identifier, parent: ts.Node | undefined): boolean {
   if (!parent) return false

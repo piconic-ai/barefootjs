@@ -7,19 +7,10 @@
  * `const handlerName = _p.handlerName`. Subsequent emission can call
  * `handlerName(...)` without writing the prop accessor inline.
  *
- * Destructured-props mode (`ctx.propsObjectName === null`) is skipped
- * entirely (Move B, #2760's follow-up): `rewriteDestructuredPropReads`
- * (`generate-init.ts`) already rewrites every bare handler-name read in
- * the finished init body to a live `_p.handlerName` call, so this alias
- * would be dead weight — and worse than dead. A surviving `const
- * handlerName = ...` at init-body top level lands in the init `Block`
- * scope frame that pass's binding walk tracks (`prop-rewrite.ts`'s
- * `scopeFrameOf`), which would then treat every `handlerName` reference
- * as SHADOWED by this very alias and silently skip rewriting it —
- * reinstating the captured-once bug this alias was written to route
- * around. Props-object mode (`propsObjectName != null`) still needs this
- * phase: there `handlerName` is never `_p`-prefixed automatically, so a
- * bare reference would otherwise be a `ReferenceError`.
+ * Only for props-object mode, where a bare `handlerName` would otherwise be
+ * a `ReferenceError`. In destructured mode `rewriteDestructuredPropReads`
+ * already turns every handler-name read into a live `_p.handlerName`, so the
+ * alias would only be emitted to be left unused.
  */
 
 import type { ClientJsContext } from '../types.ts'

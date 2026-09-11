@@ -22,10 +22,6 @@ import { fixture as conditionalReturnButton } from './conditional-return-button'
 import { fixture as conditionalReturnLink } from './conditional-return-link'
 import { fixture as reactiveProps } from './reactive-props'
 import { fixture as propsReactivityComparison } from './props-reactivity-comparison'
-// Move B (#2760's follow-up): the positive counterpart to
-// `propsReactivityComparison` above — a destructured-props child stays
-// fully reactive across text/memo/effect/handler/attribute positions now
-// that destructuring no longer breaks reactivity.
 import { fixture as destructuredPropsLive } from './destructured-props-live'
 import { fixture as form } from './form'
 import { fixture as portal } from './portal'

@@ -217,17 +217,11 @@ export function emitDedupedAttrUpdate(
  * expression text with no such distinction, so `queryHref(base, { tag: tag })`
  * rewrote the KEY too (`{ _p.tag: _p.tag }`, a syntax error) — #2741.
  *
- * The substitution itself (`_p.x` or `(_p.x ?? <default>)`) is
- * `livePropReadExpr` (`props-binding.ts`) — the one formula for "how does
- * a live prop read look," shared with the general init-body rewrite
- * (`rewriteDestructuredPropReads`) and the controlled-signal sync effect
- * (`build-declaration-emit.ts`). This call site only supplies the
- * explicit-default fallback (no `usage`/`usedAsCondition` — an attribute
- * read is never a loop-array source or a conditional guard the way a
- * bare init-body reference can be), so it stays idempotent under that
- * later whole-body rewrite: `_p.x` is a `PropertyAccessExpression` whose
- * `.name` slot is a non-value position, so nothing here gets touched
- * twice.
+ * No `usage`/`usedAsCondition` is passed to `livePropReadExpr`: an attribute
+ * read is never a loop-array source or a conditional guard, so only the
+ * explicit destructure default applies here. The result survives the later
+ * whole-init-body rewrite (`rewriteDestructuredPropReads`) untouched — the
+ * `.name` slot of the `_p.x` it produces is a non-value position.
  */
 export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContext): string {
   if (ctx.propsObjectName) return expr

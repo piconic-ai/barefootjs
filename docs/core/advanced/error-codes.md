@@ -320,10 +320,9 @@ See [JSX Compatibility](../rendering/jsx-compatibility.md) for the full worked e
 ## Component Errors (BF044–BF049)
 
 <!--
-  BF043 (Props Destructuring warning) is retired — Move B (#2760's
-  follow-up) made every destructured-prop read live, the same as
-  `props.xxx` access already was, so there is no longer a reactivity
-  difference to warn about. See [Props Reactivity](../reactivity/props-reactivity.md).
+  BF043 (Props Destructuring warning) is retired: destructured props read
+  live, the same as `props.xxx` access, so there is no reactivity difference
+  left to warn about. See [Props Reactivity](../reactivity/props-reactivity.md).
 -->
 
 <a id="bf044"></a>

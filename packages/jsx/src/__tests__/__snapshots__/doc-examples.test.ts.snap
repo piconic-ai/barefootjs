@@ -2639,7 +2639,7 @@ hydrate('Gallery', { init: initGallery, template: (_p) => \`<div><button bf="s0"
 export function Gallery(_p, __bfKey) { return createComponent('Gallery', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L18 — (no label) 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L19 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -2648,7 +2648,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L34 — (no label) 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L36 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -2657,7 +2657,16 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L73 — Parent 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L55 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L92 — Parent 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $c, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Child */'
 
@@ -2731,7 +2740,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild(
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L76 — Compiled props object 1`] = `
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L95 — Compiled props object 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, escapeText } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -5224,7 +5233,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/advanced/compiler-internals.md doc-examples L130 — (no label) 1`] = `
+exports[`docs/core/advanced/compiler-internals.md doc-examples L131 — (no label) 1`] = `
 "import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, escapeAttr, escapeText, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -5305,7 +5314,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/advanced/compiler-internals.md doc-examples L184 — (no label) 1`] = `
+exports[`docs/core/advanced/compiler-internals.md doc-examples L185 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}

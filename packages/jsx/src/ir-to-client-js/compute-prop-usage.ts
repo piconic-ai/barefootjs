@@ -69,13 +69,9 @@ export function propHasPropertyAccess(u: PropUsage | undefined): boolean {
 }
 
 /**
- * Which of `propNames` guard a conditional branch (`ctx.conditionalElements`
- * / `ctx.clientOnlyConditionals`'s `.condition`). A prop in this set must
- * NOT get a `{}` fallback (truthy) when it also has property access — the
- * conditional needs it to stay falsy when the caller omits it. Shared by
- * `emitPropsExtraction`'s (legacy, `children`-only) extraction line and
- * `rewriteDestructuredPropReads`'s live-read rewrite so the two agree on
- * the same set (previously computed independently at each call site).
+ * Which of `propNames` guard a conditional branch. A prop in this set must
+ * NOT get a `{}` fallback even when it has property access — `{}` is truthy,
+ * so the branch would always render when the caller omits the prop.
  */
 export function computePropsUsedAsConditions(
   ctx: Pick<ClientJsContext, 'conditionalElements' | 'clientOnlyConditionals'>,

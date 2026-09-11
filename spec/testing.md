@@ -68,7 +68,7 @@ Each test file should focus on a single concern:
 packages/jsx/src/__tests__/
   expression-parser.test.ts       — Expression parsing and resolution
   reactive-type-detection.test.ts — Signal/memo/effect detection
-  destructured-props-live.test.ts — Move B: destructured prop reads stay live
+  destructured-props-live.test.ts — destructured prop reads stay live
   signal-getter-not-called.test.ts— BF044: signal getter not called
   unsupported-expression.test.ts  — BF021: complex filter/sort predicates
   css-layer-prefixer.test.ts      — CSS @layer directive handling

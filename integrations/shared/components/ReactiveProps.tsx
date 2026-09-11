@@ -54,10 +54,9 @@ export function ReactiveProps() {
   )
 }
 
-// `props.xxx` access and destructured props are both fully reactive
-// (Move B, #2760's follow-up made the latter live) — this pair exists to
-// pin that they stay byte-for-byte EQUIVALENT in behavior, not to
-// contrast a working path against a broken one. See spec/compiler.md.
+// `props.xxx` access and destructured props are both fully reactive — this
+// pair exists to pin that they behave identically, not to contrast a
+// working path against a broken one. See spec/compiler.md.
 type PropsStyleChildProps = {
   value: number
   label: string

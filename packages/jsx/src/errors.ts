@@ -51,12 +51,9 @@ export const ErrorCodes = {
   // to resolve the identifier at return position too.
   RETURN_VALUE_NOT_JSX: 'BF027',
 
-  // Component errors (BF043-BF049). BF043 is retired — it warned that
-  // destructuring the props parameter broke reactivity, which Move B
-  // (#2760's follow-up) fixed by making every destructured-prop read a
-  // live `_p.x` read (`props-binding.ts`'s `livePropReadExpr`), same as
-  // `function Component(props)` mode already was. BF043 is the next free
-  // slot.
+  // Component errors (BF043-BF049). BF043 is retired (it warned that props
+  // destructuring broke reactivity, which it no longer does) and is the next
+  // free slot.
   SIGNAL_GETTER_NOT_CALLED: 'BF044',
   JSX_IN_LOCAL_FUNCTION: 'BF045',
   COMPONENT_REQUIRED_PROP_MISSING: 'BF046',
@@ -384,10 +381,10 @@ export function formatError(
   options?: { projectDir?: string },
 ): string {
   // Lowercase severity matches the prose convention in
-  // `docs/core/advanced/error-codes.md` (`error[BF001]:`, `warning[BFxxx]:`)
-  // — that doc IS the rendering contract referenced by `bf guide
-  // advanced/error-codes`, so keep the wire format aligned with the
-  // reference rather than the function's old uppercase shape.
+  // `docs/core/advanced/error-codes.md` (`error[BF001]:`) — that doc IS the
+  // rendering contract referenced by `bf guide advanced/error-codes`, so
+  // keep the wire format aligned with the reference rather than the
+  // function's old uppercase shape.
   const severityLabel = error.severity
   const lines: string[] = []
 

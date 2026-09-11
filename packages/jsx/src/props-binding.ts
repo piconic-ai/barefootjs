@@ -132,54 +132,60 @@ export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> 
 
 const EMPTY_SET: ReadonlySet<string> = new Set()
 
+/** `_p.<callerKey>` — `_p` is always keyed by the caller-facing name (#2524 CSR half). */
+export function propReadBase(p: ParamInfo): string {
+  return `${PROPS_PARAM}.${p.sourceName ?? p.name}`
+}
+
 /**
- * The live read of a destructured prop inside init scope — `_p.<callerKey>`
- * or `(_p.<callerKey> ?? <fallback>)`, exactly the shape props-object mode
- * already emits for `props.X` reads. This is the ONE formula for "how does
- * a prop value get read live" (Move B, #2760's follow-up): every call site
- * that used to synthesize its own `_p.X [?? default]` string routes through
- * here instead (CLAUDE.md's "one decision, one implementation" rule) —
- * `emitPropsExtraction`'s legacy per-prop extraction line, the reactive
- * attribute rewrite (`emit-reactive.ts`), and the controlled-signal sync
- * effect (`build-declaration-emit.ts`).
+ * The `??` right-hand side for a prop read, or null when the bare read is
+ * correct. Precedence:
+ *   1. an explicit destructure default (`{ x = 1 }`) — an arrow default gets
+ *      an extra paren, since `??` binds tighter than the arrow head and
+ *      `_p.onInput ?? () => {}` would be a syntax error.
+ *   2. `usedAsLoopArray` → `[]`.
+ *   3. property/index access → `{}`, UNLESS the prop also guards a
+ *      conditional: `{}` is truthy, so that would always render the branch.
+ *   4. otherwise null — a defaultless optional reads `undefined` when
+ *      absent, which is what the JS binding did and what SSR produces. A
+ *      synthesized zero default would diverge from SSR instead (`size ?? 1`
+ *      seeds 1 server-side; a `_p.size ?? 0` read would hydrate to 0).
+ */
+export function propReadFallback(
+  p: ParamInfo,
+  usage: PropUsage | undefined,
+  usedAsCondition: boolean,
+): string | null {
+  if (p.defaultValue) return p.defaultContainsArrow ? `(${p.defaultValue})` : p.defaultValue
+  if (usage?.usedAsLoopArray) return '[]'
+  if (propHasPropertyAccess(usage) && !usedAsCondition) return '{}'
+  return null
+}
+
+/**
+ * The live read of a destructured prop inside init scope, in the same shape
+ * props-object mode emits for `props.X`. The one formula every live-read
+ * call site shares: the whole-init-body rewrite
+ * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
+ * (`emit-reactive.ts`), the controlled-signal sync effect
+ * (`build-declaration-emit.ts`), and the Phase-1 CSR `template:` rewrite
+ * (`jsx-to-ir.ts`).
  *
- * Fallback precedence, in order:
- *   1. an explicit destructure default (`{ x = 1 }`) — arrow/function
- *      defaults get an extra paren so `_p.onInput ?? () => {}` (a syntax
- *      error — `??` binds tighter than the arrow head) can't happen.
- *   2. `usage.usedAsLoopArray` → `[]` (the prop feeds a `.map()` source).
- *   3. `propHasPropertyAccess(usage)` → `{}`, UNLESS the same prop also
- *      guards a conditional (`usedAsCondition`) — `{}` is truthy, so
- *      defaulting a falsy-guard prop to it would always render the branch.
- *   4. otherwise the bare `_p.<callerKey>` — an optional prop with no
- *      default reads `undefined` when absent, matching what the JS binding
- *      would have been (and what SSR already produces).
- *
- * The whole expression is parenthesized whenever a `??` fallback is
- * present so it splices safely into an arbitrary read position (a member
- * access, a call argument, …) — precedent: `emit-reactive.ts`'s prior
- * per-callsite `(${PROPS_PARAM}.${callerKey} ?? ${defaultVal})`.
- *
- * NOT used for the one place a captured-once prop extraction survives
- * (`children` — see `emitPropsExtraction`'s docstring): that call site's
- * output must stay recognizable as `const X = _p.X [?? default]` with NO
- * outer parens for `pruneUnusedPropExtractions`'s shape matcher to prune
- * it when dead, so it keeps its own copy of this formula deliberately.
+ * Parenthesized whenever a fallback is present so it splices safely into an
+ * arbitrary read position (a member access, a call argument, …).
+ * `emitPropsExtraction` deliberately does NOT use this: its `children` line
+ * must stay an unparenthesized `const X = _p.X [?? d]` for
+ * `pruneUnusedPropExtractions`'s AST matcher, so it composes
+ * `propReadBase`/`propReadFallback` itself.
  */
 export function livePropReadExpr(
   p: ParamInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
 ): string {
-  const callerKey = p.sourceName ?? p.name
-  const base = `${PROPS_PARAM}.${callerKey}`
-  if (p.defaultValue) {
-    const wrappedDefault = p.defaultContainsArrow ? `(${p.defaultValue})` : p.defaultValue
-    return `(${base} ?? ${wrappedDefault})`
-  }
-  if (usage?.usedAsLoopArray) return `(${base} ?? [])`
-  if (propHasPropertyAccess(usage) && !usedAsCondition) return `(${base} ?? {})`
-  return base
+  const base = propReadBase(p)
+  const fallback = propReadFallback(p, usage, usedAsCondition)
+  return fallback === null ? base : `(${base} ?? ${fallback})`
 }
 
 /**

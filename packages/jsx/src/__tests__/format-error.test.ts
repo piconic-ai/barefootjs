@@ -28,12 +28,8 @@ describe('formatError — diagnostic rendering contract', () => {
   })
 
   test('warning severity also lowercases', () => {
-    // Any code works here — `severity` is an explicit override on
-    // `createError`, independent of the code's own default. BF023 is
-    // just a convenient real code already used elsewhere in this file
-    // (formerly BF043/PROPS_DESTRUCTURING, retired by Move B — #2760's
-    // follow-up made destructured-prop reads live, so there is nothing
-    // left to warn about).
+    // Any code works: `severity` is an explicit override on `createError`,
+    // independent of the code's own default.
     const err = createError(
       ErrorCodes.MISSING_KEY_IN_LIST,
       {

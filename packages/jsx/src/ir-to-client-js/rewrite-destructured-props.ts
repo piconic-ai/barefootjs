@@ -1,71 +1,49 @@
 /**
- * Live-read rewrite for destructured props (Move B, #2760's follow-up).
+ * Live-read rewrite for destructured props.
  *
- * A destructured-props component (`function Child({ value, onClick })`)
- * used to get exactly one `const value = _p.value` extraction line per
- * prop at the top of `init*`, and every downstream reference — effect
- * bodies, memo computations, handlers, text slots, `.map()` row bodies —
- * read that captured-once local. The parent side was always live
- * (`initChild('Display', _s0, { get value() { return count() } })`), so
- * the child silently never saw an update past its first render — the
- * BF043 warning existed to steer users away from this shape entirely.
- *
- * This pass makes destructuring behave exactly like today's
- * `function Component(props)` mode already does: every VALUE-POSITION
- * read of a destructured prop name, anywhere in the FINISHED init body,
- * becomes a live `_p.<callerKey>` read (or `(_p.<callerKey> ?? <fallback>)`
- * — see `livePropReadExpr`, `props-binding.ts`). Not a per-emitter fix:
- * a destructured name can appear bare in a dozen raw-captured text
- * shapes (effect bodies, memo computations, signal initials, handler
- * bodies, `mapArray` row bodies, conditional thunks, …), so the single
- * door is the joined body, same precedent as `rewritePropsObjectRef`
+ * A destructured name can appear bare in a dozen raw-captured text shapes
+ * (effect bodies, memo computations, signal initials, handler bodies,
+ * `mapArray` row bodies, conditional thunks, …), so rewriting it per
+ * emitter would mean N places to keep in sync; the single door is the
+ * joined init body, same precedent as `rewritePropsObjectRef`
  * (`rewrite-props-object.ts`) one step earlier in the same pipeline.
- *
- * `rewriteScopedValueRefs` (`prop-rewrite.ts`) is the walk: it carries a
- * real binding-scope stack, so `items.map((title) => title.a)` and a
- * handler-local `const title = 'local'` are never touched even when
- * `title` also happens to be a destructured prop name — only genuinely
- * free references are live-read.
  */
 
 import type { ParamInfo, PropUsage } from '../types.ts'
 import { computePropsUsedAsConditions } from './compute-prop-usage.ts'
 import { boundPropLocalNames, livePropReadExpr } from '../props-binding.ts'
 import { rewriteScopedValueRefs } from '../prop-rewrite.ts'
+import { PROPS_PARAM } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
 
 /**
  * Rewrite every bare value-position read of a destructured prop in `code`
- * (the joined `init*` body, already past `rewritePropsObjectRef`) to a
- * live `_p.<key>` read. No-op when the component uses props-object mode
- * (`ctx.propsObjectName != null`) — there every prop read is already
- * `_p.X` via that late-stage rename, so there is nothing captured to fix.
+ * (the joined `init*` body, already past `rewritePropsObjectRef`) to a live
+ * `_p.<key>` read. No-op in props-object mode — there every prop read is
+ * already `_p.X` via that rename.
  *
- * `children` is excluded (see `emitPropsExtraction`'s docstring): its
- * one-time `const children = _p.children` extraction is deliberately
- * kept, so a bare `children` reference downstream is a real local
- * binding, not a stray capture — rewriting it here would both be
- * redundant AND (per `scopeFrameOf`) never fire anyway, since that const
- * shadows `children` for the rest of the init `Block`.
+ * The walk is `rewriteScopedValueRefs` (`prop-rewrite.ts`), which carries a
+ * binding-scope stack, so `items.map((title) => title.a)` and a
+ * handler-local `const title = 'local'` keep their own binding even when
+ * `title` is also a prop name.
  *
- * `rewriteScopedValueRefs` is asked to parse `code` — the PRISTINE joined
- * body, before this function has made any edit — so a `null` return can
- * only mean `code` itself didn't already parse as JS/TSX, never that a
- * substitution THIS function made broke otherwise-good syntax (every
- * substituted string is a well-formed `_p.x` / `(_p.x ?? y)` expression
- * spliced at a position the walk already proved was a valid identifier).
- * The one shape that trips this today is a documented, tracked
- * pre-existing hole (`map-body-no-silent-divergence.test.ts`'s
- * `KNOWN_HOLES`): a `.map()` preamble that pushes raw JSX into an array
- * leaks that JSX verbatim into the emitted "client JS" text — already
- * unparseable, already non-functional (a browser `SyntaxError` before any
- * of this code runs), with or without this rewrite. Throwing here would
- * turn that TRACKED, silently-broken-but-still-compiling shape into a
- * hard compiler crash — a strictly worse outcome the trichotomy contract
- * (`compiles clean AND sound`, XOR `loud BF error` — never a THIRD, crash
- * outcome) doesn't ask for. So: warn (matching `pruneUnusedPropExtractions`'s
- * identical parse-failure precedent) and pass `code` through unchanged —
- * safe specifically because the input was never going to run either way.
+ * Excluding `children` is load-bearing, not belt-and-braces: its one-time
+ * `const children = _p.children` extraction sits at the TOP LEVEL of this
+ * text, which parses as a statement list, and `scopeFrameOf` only opens a
+ * frame for a `Block` — so the walk would NOT see that const as a shadow
+ * and would rewrite the references it binds. Reading `_p.children` live
+ * re-invokes a getter that instantiates child components (see
+ * `emitPropsExtraction`).
+ *
+ * A null result can only mean `code` did not parse — never that a
+ * substitution broke it, since the walk parses the pristine input and every
+ * substituted string is a well-formed expression spliced where the walk
+ * already proved an identifier sat. The one shape that trips it is a
+ * tracked pre-existing hole (`map-body-no-silent-divergence.test.ts`'s
+ * `KNOWN_HOLES`): a `.map()` preamble leaking raw JSX, which is already a
+ * browser `SyntaxError` with or without this rewrite. Warning and passing
+ * the code through keeps that a tracked silent hole instead of promoting it
+ * to a compiler crash — same precedent as `pruneUnusedPropExtractions`.
  */
 export function rewriteDestructuredPropReads(
   code: string,
@@ -83,11 +61,10 @@ export function rewriteDestructuredPropReads(
   for (const p of ctx.propsParams) propByName.set(p.name, p)
 
   const replacementFor = (name: string): string => {
+    // `names` comes from `ctx.propsParams`, so the fallback is unreachable —
+    // kept over a non-null assertion.
     const prop = propByName.get(name)
-    // Every name in `names` came from `ctx.propsParams` itself, so this
-    // is unreachable in practice — kept as a safe fallback rather than a
-    // non-null assertion.
-    if (!prop) return `_p.${name}`
+    if (!prop) return `${PROPS_PARAM}.${name}`
     return livePropReadExpr(prop, propUsage.get(name), propsUsedAsConditions.has(name))
   }
 

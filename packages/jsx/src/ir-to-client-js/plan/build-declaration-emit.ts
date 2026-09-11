@@ -183,11 +183,8 @@ function buildControlledSignalEffect(
   if (!signal.setter) return null // read-only — no sync needed
 
   const prop = lookups.propByName.get(controlled.propName)
-  // `_p` is always keyed by the caller-facing name (#2524 CSR half). No
-  // `usage`/`usedAsCondition` here — a controlled prop's sync effect reads
-  // it as a plain value, never as a loop array or a conditional guard —
-  // matches the pre-Move-B shape exactly (`livePropReadExpr`, same formula
-  // as `rewriteDestructuredPropReads` and the reactive-attribute rewrite).
+  // No `usage`/`usedAsCondition`: a controlled prop's sync effect reads it
+  // as a plain value, never as a loop array or a conditional guard.
   const accessorExpr = prop
     ? livePropReadExpr(prop, undefined, false)
     : `${PROPS_PARAM}.${controlled.propName}`
