@@ -6,7 +6,7 @@
  * handles event binding for both branches.
  */
 
-import { createEffect, untrack } from '@barefootjs/client/reactive'
+import { createEffect, createRoot, untrack } from '@barefootjs/client/reactive'
 import { find, findCondTarget, commentsInScope } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
 import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
@@ -193,6 +193,40 @@ function evalBranchTemplate(branch: BranchConfig): BranchTemplateResult {
   return untrack(() => normalizeTemplate(branch.template()))
 }
 
+/**
+ * Single chokepoint for every `branch.bindEvents()` call in this module.
+ *
+ * `bindEvents()`'s own return value only captures cleanup the *compiler*
+ * knew to enumerate (reactive attrs, text effects, nested loops/conditionals
+ * — see `emitArmBody` in the compiler). It can't capture disposers created
+ * by opaque user code the compiler never parses, most notably `createEffect()`
+ * called from inside a `ref` callback (#2927): `createEffect()` returns
+ * `void`, so there is nothing for the compiler to collect in the first
+ * place, and the `ref` callback body is carried as unparsed source text.
+ *
+ * Wrapping the call in `createRoot()` closes that gap structurally instead:
+ * whatever reactive primitives run during `bindEvents()` (tracked or not,
+ * enumerated by the compiler or not) become children of this activation's
+ * root, exactly like `mapArray()` gives each row its own root. Disposing
+ * the root when the branch deactivates disposes all of them, without the
+ * compiler needing to know what they were.
+ */
+function activateBranch(
+  branch: BranchConfig,
+  scope: Element,
+  isFirstRun: boolean
+): () => void {
+  let cleanup: (() => void) | void
+  const disposeRoot = createRoot((dispose) => {
+    cleanup = branch.bindEvents(scope, { isFirstRun })
+    return dispose
+  })
+  return () => {
+    if (typeof cleanup === 'function') cleanup()
+    disposeRoot()
+  }
+}
+
 
 /**
  * Handle conditional DOM updates using branch configurations.
@@ -319,8 +353,7 @@ export function insert(
       // so branch composite loops can skip the wipe-then-rebuild path that
       // is only needed for subsequent branch swaps (the SSR-rendered DOM
       // already matches the data and mapArray reconciles by key from it).
-      const cleanup = branch.bindEvents(region.bindScope, { isFirstRun: true })
-      branchCleanup = typeof cleanup === 'function' ? cleanup : null
+      branchCleanup = activateBranch(branch, region.bindScope, true)
 
       // Auto-focus on first run too (for components created via createComponent with editing=true)
       autoFocusConditionalElement(region, id)
@@ -351,8 +384,7 @@ export function insert(
     }
 
     // Bind events to the newly inserted element (branch swap: not first run).
-    const cleanup = branch.bindEvents(region.bindScope, { isFirstRun: false })
-    branchCleanup = typeof cleanup === 'function' ? cleanup : null
+    branchCleanup = activateBranch(branch, region.bindScope, false)
 
     // Auto-focus elements with autofocus attribute (for dynamically created elements)
     autoFocusConditionalElement(region, id)
