@@ -227,7 +227,6 @@ function activateBranch(
   }
 }
 
-
 /**
  * Handle conditional DOM updates using branch configurations.
  *
