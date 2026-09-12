@@ -16,7 +16,7 @@ WORKDIR /workspace/integrations/sinatra
 # rest of this directory with the host source at container start, but gem
 # installs live under Ruby's system gem path (outside /workspace), so they
 # survive the overlay.
-COPY Gemfile Gemfile.lock ./
+COPY integrations/sinatra/Gemfile integrations/sinatra/Gemfile.lock ./
 RUN bundle install
 
 EXPOSE 3010
