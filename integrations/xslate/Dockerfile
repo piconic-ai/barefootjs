@@ -12,7 +12,17 @@ RUN apt-get update \
 # Install CPAN deps into a self-contained prefix the runtime stage copies whole.
 # Text::Xslate is XS (needs the compiler above); Starman is the PSGI server
 # (prefork, so the SSE routes — AI chat, dev reload — don't block other workers).
-RUN cpanm --notest --local-lib=/opt/perl-deps Text::Xslate Plack Starman
+# Retried: the CPAN mirror occasionally serves a truncated/corrupt tarball
+# (e.g. a gzip that fails to unpack), which cpanm treats as a hard failure.
+# Clear its download cache between attempts so a retry re-fetches instead of
+# re-unpacking the same bad file.
+RUN for i in 1 2 3; do \
+      cpanm --notest --local-lib=/opt/perl-deps Text::Xslate Plack Starman && exit 0; \
+      echo "cpanm attempt $i failed, retrying..." >&2; \
+      rm -rf /opt/perl-deps ~/.cpanm; \
+      sleep 5; \
+    done; \
+    exit 1
 
 FROM perl:5.40-slim
 RUN useradd -m -r -s /bin/false app
