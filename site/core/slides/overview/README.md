@@ -4,12 +4,22 @@ Sources for the "BarefootJS overview" slide deck (a few-minute walkthrough), bui
 [peitho](https://github.com/mizzy/peitho) and served as a static page at
 `https://barefootjs.dev/slides/overview/`.
 
+The deck follows the Golden Circle: **Why** (keep the backend you love; the web already
+knew how; agents need a check they can run), **How** (declare it and let the compiler wire
+it; compile, don't run; only what changed changes; server first; verifiable by humans and
+agents), **What** (what ships; the component page; the arcade; one command).
+
 This is an in-progress prototype, not a polished/final deck.
 
 ## Layout
 
 - `deck.md` — the slide script (peitho's markdown-driven deck format).
-- `layouts/*.html` — per-slide-kind HTML layouts referenced from `deck.md`.
+- `layouts/*.html` — per-slide-kind HTML layouts referenced from `deck.md`:
+  `cover`, `belief` (one statement + optional sources), `split` (prose + one terminal
+  panel), `wire` (what you write / what the compiler emits), `compiler`, `trace`,
+  `terminal`, `ships` (six tiles), `showcase` (the composed UI-kit page), `arcade`
+  (the full-bleed shooter), `command`, `end`. Layout-specific CSS for the last two lives
+  in `css/showcase.css` and `css/arcade.css`.
 - `css/base.css` — deck styling.
 - `css/0-fonts.css` — the deck's web fonts, embedded as data URIs (generated
   from `fontsrc/`, which is not checked in — see below).
@@ -26,6 +36,12 @@ This is an in-progress prototype, not a polished/final deck.
   slides in and out of the light-DOM viewer; `component/narration.ts` adds the
   deck's progress bar, slide counter, and headline word-reveal.
 - `slide.json` — the page `<title>`.
+- `css/1-ui-kit.css` — theme tokens, minimal base resets, and UnoCSS utilities
+  for the `ui/components/ui/*` components the "62 components, designed after
+  shadcn/ui" slide (`layouts/showcase.html` + `component/components/Showcase.tsx`)
+  composes. Everything in it is scoped under `.showcase` so it never affects
+  any other slide. Generated, not hand-authored — see "Regenerating
+  css/1-ui-kit.css" below.
 
 The build itself is shared by every deck: `site/core/scripts/build-slides.ts`
 (`bun run slides:build <slug>`, see `site/core/slides/README.md`).
@@ -53,6 +69,48 @@ PEITHO=/path/to/peitho bun run slides:build overview
 build; point `PEITHO` at it when it is not on PATH.) Then `bun run build` copies
 it into `dist/slides/overview/` and `bun run server.tsx` serves it at
 `/slides/overview/`.
+
+## Regenerating css/1-ui-kit.css
+
+`css/1-ui-kit.css` has three parts: (a) a hand-written `.showcase { --token: ... }`
+block (the OKLCH design tokens from `site/shared/tokens/tokens.json` +
+`site/ui/tokens.json`, with `--primary`/`--primary-foreground` swapped for the
+deck's ink/white and `--border`/`--input` darkened so hairlines read on the
+deck's paper ground), (b) hand-written base resets scoped under `.showcase`
+(box-sizing, button/input font-inherit, heading/list margin resets — wrapped
+in `@layer base` so they always lose to the generated utilities in (c),
+regardless of selector specificity), and (c) UnoCSS utility classes for the
+`ui/components/ui/*` components `Showcase.tsx` composes, which alone is
+machine-generated and needs regenerating whenever `Showcase.tsx` or the
+composed kit components start using a class it doesn't already emit.
+
+Regenerate (c) from `site/ui` (which has `@unocss/cli` installed), scoping the
+scan to exactly the `.tsx` files that matter — the config
+(`component/uno.config.ts`) reuses `site/ui/uno.config.ts`'s own theme so
+class → `var(--x)` output matches, but disables preset-wind4's own preflight
+(reset) since (b) above already covers that, scoped:
+
+```sh
+cd site/ui && bunx unocss \
+  "../../ui/components/ui/{card,button,input,label,checkbox,switch,avatar,badge,separator,slot,icon}/index.tsx" \
+  "../core/slides/overview/component/components/Showcase.tsx" \
+  -c ../core/slides/overview/component/uno.config.ts \
+  --split-css false \
+  -o /tmp/1-ui-kit-generated.css
+```
+
+Then splice the output's `@property ...` and utility-class sections in place
+of the current (c) block in `css/1-ui-kit.css` (drop the `:root, :host { ... }`
+theme-variable block the CLI also emits — those are already hand-written into
+(a)/(b) above, concretely, to avoid a self-referential `--tracking-tight:
+var(--tracking-tight)` the CLI's own theme layer emits, which is only ever
+correct when a separate `tokens.css` defining the concrete value loads BEFORE
+it, as on the real site — this deck has no such second file). Keep (a) and (b)
+in sync by hand if `ui/*/tokens.json` or `site/ui/styles/globals.css`'s
+`@layer base` change. Verify visually (a screenshot of the showcase slide)
+after regenerating — a new utility class the composed components need but the
+scanned file list doesn't cover fails silently (an unstyled element), not
+loudly.
 
 ## Hero media
 

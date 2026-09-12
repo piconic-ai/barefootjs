@@ -32,18 +32,30 @@ function splitHeadline() {
   const h = document.querySelector<HTMLElement>('#peitho-canvas .slot-title')
   if (!h || h.dataset.split) return
   h.dataset.split = '1'
-  const text = h.textContent ?? ''
   if (currentKey() === 'cover') return // the wordmark stays whole
-  h.textContent = ''
-  const words = text.split(' ')
-  words.forEach((w, n) => {
-    const s = document.createElement('span')
-    s.className = 'hl-word'
-    s.style.setProperty('--w', String(n))
-    s.textContent = w
-    h.append(s)
-    if (n < words.length - 1) h.append(' ')
-  })
+  // Wrap each word in a span, keeping inline markup (<em> for the green word) in place:
+  // only text nodes are split, so "Compile, *don't run*." keeps its emphasis.
+  let n = 0
+  const wrap = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const frag = document.createDocumentFragment()
+      const words = (node.textContent ?? '').split(' ')
+      words.forEach((w, i) => {
+        if (w) {
+          const s = document.createElement('span')
+          s.className = 'hl-word'
+          s.style.setProperty('--w', String(n++))
+          s.textContent = w
+          frag.append(s)
+        }
+        if (i < words.length - 1) frag.append(' ')
+      })
+      node.parentNode?.replaceChild(frag, node)
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      for (const child of Array.from(node.childNodes)) wrap(child)
+    }
+  }
+  for (const child of Array.from(h.childNodes)) wrap(child)
 }
 // WCAG 2.2.2: a looping background clip must not be forced on people who asked for reduced
 // motion. The <video> in layouts/cover.html carries `autoplay` so it plays without this

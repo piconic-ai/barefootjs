@@ -1,0 +1,340 @@
+/*
+ * UI kit for the "components, designed after shadcn/ui" showcase slide.
+ *
+ * Everything here is scoped to `.showcase` (Showcase.tsx's root element) so
+ * none of it leaks onto the rest of the deck. Three pieces, concatenated:
+ *
+ *   (a) design tokens — the OKLCH color set from site/shared/tokens/tokens.json
+ *       + site/ui/tokens.json (the values every ui/components/ui/* component
+ *       reads via `var(--x)`), with --primary/--primary-foreground swapped for
+ *       the deck's ink/white so kit buttons render black, and --border/--input
+ *       darkened slightly from the kit's near-invisible default so hairlines
+ *       read against the deck's paper ground.
+ *   (b) the minimal base resets from site/ui/styles/globals.css's `@layer base`
+ *       (box-sizing, button/input font-inherit, heading/list margin resets) —
+ *       re-scoped under `.showcase` instead of the page-global `*`/`body` the
+ *       real site uses, so nothing here touches sibling slide layouts.
+ *   (c) UnoCSS utilities for the classes actually used by the composed kit
+ *       components (card/button/input/label/checkbox/switch/avatar/badge/
+ *       separator/slot/icon) and Showcase.tsx itself.
+ *
+ * (c) is machine-generated and must be regenerated whenever Showcase.tsx (or
+ * the composed kit components) start using a new utility class — see this
+ * deck's README, "Regenerating css/1-ui-kit.css", for the exact command.
+ * (a)/(b) are hand-written; keep them in sync with the sources named above
+ * by hand if those change.
+ */
+
+.showcase {
+  /* ── (a) design tokens ─────────────────────────────────────────── */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --primary: #0a0a0a; /* deck ink, overriding the kit's neutral oklch default */
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.88 0 0); /* darker than the kit's oklch(0.96) default: visible hairlines */
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+
+  /* the deck's own fonts (base.css), not the kit's system-font stack */
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+
+  /* UnoCSS theme layer: implementation variables the utilities in (c) read.
+   * Normally emitted at a global `:root` by `unocss`'s own theme layer;
+   * inlined here (and scoped) instead so nothing leaks page-wide. */
+  --spacing: 0.25rem;
+  --radius-xl: 0.75rem;
+  --fontWeight-medium: 500;
+  --fontWeight-semibold: 600;
+  --default-transition-timingFunction: cubic-bezier(0.4, 0, 0.2, 1);
+  --default-transition-duration: 150ms;
+  --colors-white: #fff;
+  --text-xs-fontSize: 0.75rem;
+  --text-xs-lineHeight: 1rem;
+  --text-sm-fontSize: 0.875rem;
+  --text-sm-lineHeight: 1.25rem;
+  --text-lg-fontSize: 1.125rem;
+  --text-lg-lineHeight: 1.75rem;
+  --text-base-fontSize: 1rem;
+  --text-base-lineHeight: 1.5rem;
+  --leading-tight: 1.25;
+  --leading-none: 1;
+  --tracking-tight: -0.025em;
+}
+
+/* ── (b) base resets, scoped ─────────────────────────────────────── */
+/* Wrapped in a named layer (unlike (c) below, which stays unlayered) so
+ * it ALWAYS loses to the generated utility classes regardless of selector
+ * specificity — an explicit CSS layer beats any specificity from an
+ * unlayered rule. Matches the real site's own cascade (globals.css's
+ * `@layer base` vs. uno.css's `@layer components`/unlayered overrides):
+ * without this, `.showcase button { background-color: transparent; ... }`
+ * (specificity 0,1,1) silently beat Button's own `bg-primary` /
+ * `text-primary-foreground` utility classes (0,1,0) here, since nothing
+ * else scopes them to a layer — every kit button rendered chromeless
+ * until this was caught by screenshot review (`--primary-foreground`
+ * looked "swapped" because the reset's `color: inherit` was winning, not
+ * because the token itself was wrong). */
+@layer base {
+  .showcase,
+  .showcase *,
+  .showcase *::before,
+  .showcase *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: var(--border);
+  }
+  .showcase button {
+    border-width: 0;
+    border-style: solid;
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .showcase input,
+  .showcase select,
+  .showcase textarea {
+    color: inherit;
+    font: inherit;
+  }
+  .showcase h1, .showcase h2, .showcase h3, .showcase h4, .showcase h5, .showcase h6,
+  .showcase blockquote, .showcase dl, .showcase dd, .showcase figure, .showcase p, .showcase pre, .showcase hr {
+    margin: 0;
+  }
+  .showcase ol, .showcase ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* ── (c) UnoCSS utilities — generated, see README ─────────────────── */
+/* layer: properties */
+@property --un-text-opacity{syntax:"<percentage>";inherits:false;initial-value:100%;}
+@property --un-leading{syntax:"*";inherits:false;}
+@property --un-outline-style{syntax:"*";inherits:false;initial-value:solid;}
+@property --un-border-opacity{syntax:"<percentage>";inherits:false;initial-value:100%;}
+@property --un-bg-opacity{syntax:"<percentage>";inherits:false;initial-value:100%;}
+@property --un-ring-opacity{syntax:"<percentage>";inherits:false;initial-value:100%;}
+@property --un-inset-ring-color{syntax:"*";inherits:false;}
+@property --un-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000;}
+@property --un-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000;}
+@property --un-inset-shadow-color{syntax:"*";inherits:false;}
+@property --un-ring-color{syntax:"*";inherits:false;}
+@property --un-ring-inset{syntax:"*";inherits:false;}
+@property --un-ring-offset-color{syntax:"*";inherits:false;}
+@property --un-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000;}
+@property --un-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0px;}
+@property --un-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000;}
+@property --un-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000;}
+@property --un-shadow-color{syntax:"*";inherits:false;}
+@property --un-translate-x{syntax:"*";inherits:false;initial-value:0;}
+@property --un-translate-y{syntax:"*";inherits:false;initial-value:0;}
+@property --un-translate-z{syntax:"*";inherits:false;initial-value:0;}
+/* layer: default */
+.text-base{font-size:var(--text-base-fontSize);line-height:var(--un-leading, var(--text-base-lineHeight));}
+.text-lg{font-size:var(--text-lg-fontSize);line-height:var(--un-leading, var(--text-lg-lineHeight));}
+.text-sm{font-size:var(--text-sm-fontSize);line-height:var(--un-leading, var(--text-sm-lineHeight));}
+.text-xs{font-size:var(--text-xs-fontSize);line-height:var(--un-leading, var(--text-xs-lineHeight));}
+.file\:text-sm::file-selector-button{font-size:var(--text-sm-fontSize);line-height:var(--un-leading, var(--text-sm-lineHeight));}
+.\[\&\[data-state\=checked\]\]\:text-primary-foreground[data-state=checked],
+.selection\:text-primary-foreground *::selection,
+.selection\:text-primary-foreground::selection,
+.text-primary-foreground{color:color-mix(in srgb, var(--primary-foreground) var(--un-text-opacity), transparent);}
+.text-card-foreground{color:color-mix(in srgb, var(--card-foreground) var(--un-text-opacity), transparent);}
+.text-current{color:currentColor;}
+.text-destructive{color:color-mix(in srgb, var(--destructive) var(--un-text-opacity), transparent);}
+.text-foreground{color:color-mix(in srgb, var(--foreground) var(--un-text-opacity), transparent);}
+.text-muted-foreground{color:color-mix(in srgb, var(--muted-foreground) var(--un-text-opacity), transparent);}
+.text-secondary-foreground{color:color-mix(in srgb, var(--secondary-foreground) var(--un-text-opacity), transparent);}
+.text-white{color:color-mix(in srgb, var(--colors-white) var(--un-text-opacity), transparent);}
+.hover\:text-accent-foreground:hover{color:color-mix(in srgb, var(--accent-foreground) var(--un-text-opacity), transparent);}
+.hover\:text-primary:hover{color:color-mix(in srgb, var(--primary) var(--un-text-opacity), transparent);}
+a.\[a\&\]\:hover\:text-accent-foreground:hover{color:color-mix(in srgb, var(--accent-foreground) var(--un-text-opacity), transparent);}
+.placeholder\:text-muted-foreground::placeholder{color:color-mix(in srgb, var(--muted-foreground) var(--un-text-opacity), transparent);}
+.file\:text-foreground::file-selector-button{color:color-mix(in srgb, var(--foreground) var(--un-text-opacity), transparent);}
+.leading-none{--un-leading:var(--leading-none);line-height:var(--leading-none);}
+.leading-tight{--un-leading:var(--leading-tight);line-height:var(--leading-tight);}
+.tracking-tight{--un-tracking:var(--tracking-tight);letter-spacing:var(--tracking-tight);}
+.font-medium{--un-font-weight:var(--fontWeight-medium);font-weight:var(--fontWeight-medium);}
+.font-semibold{--un-font-weight:var(--fontWeight-semibold);font-weight:var(--fontWeight-semibold);}
+.file\:font-medium::file-selector-button{--un-font-weight:var(--fontWeight-medium);font-weight:var(--fontWeight-medium);}
+.m12{margin:calc(var(--spacing) * 12);}
+.m15{margin:calc(var(--spacing) * 15);}
+.m16{margin:calc(var(--spacing) * 16);}
+.m18{margin:calc(var(--spacing) * 18);}
+.m21{margin:calc(var(--spacing) * 21);}
+.m21\.73{margin:calc(var(--spacing) * 21.73);}
+.m6{margin:calc(var(--spacing) * 6);}
+.m9{margin:calc(var(--spacing) * 9);}
+.my-4{margin-block:calc(var(--spacing) * 4);}
+.me{margin-inline-end:calc(var(--spacing) * 4);}
+.p-0\.5{padding:calc(var(--spacing) * 0.5);}
+.has-\[\>svg\]\:px-2\.5:has(>svg){padding-inline:calc(var(--spacing) * 2.5);}
+.has-\[\>svg\]\:px-3:has(>svg),
+.px-3{padding-inline:calc(var(--spacing) * 3);}
+.has-\[\>svg\]\:px-4:has(>svg),
+.px-4{padding-inline:calc(var(--spacing) * 4);}
+.px-2{padding-inline:calc(var(--spacing) * 2);}
+.px-6{padding-inline:calc(var(--spacing) * 6);}
+.py-0\.5{padding-block:calc(var(--spacing) * 0.5);}
+.py-1{padding-block:calc(var(--spacing) * 1);}
+.py-2{padding-block:calc(var(--spacing) * 2);}
+.py-6{padding-block:calc(var(--spacing) * 6);}
+.outline{outline-style:var(--un-outline-style);outline-width:1px;}
+.outline-none{--un-outline-style:none;outline-style:none;}
+.border{border-width:1px;}
+.file\:border-0::file-selector-button{border-width:0px;}
+.\[\&\[data-state\=checked\]\]\:border-primary[data-state=checked]{border-color:color-mix(in srgb, var(--primary) var(--un-border-opacity), transparent);}
+.\[\&\[data-state\=unchecked\]\]\:border-input[data-state=unchecked],
+.border-input{border-color:color-mix(in srgb, var(--input) var(--un-border-opacity), transparent);}
+.aria-\[invalid\]\:border-destructive[aria-invalid]{border-color:color-mix(in srgb, var(--destructive) var(--un-border-opacity), transparent);}
+.border-transparent{border-color:transparent;}
+.focus-visible\:border-ring:focus-visible{border-color:color-mix(in srgb, var(--ring) var(--un-border-opacity), transparent);}
+.rounded-\[4px\]{border-radius:4px;}
+.rounded-full{border-radius:calc(infinity * 1px);}
+.rounded-md{border-radius:var(--radius-md);}
+.rounded-xl{border-radius:var(--radius-xl);}
+.\[\&\[data-state\=checked\]\]\:bg-primary[data-state=checked],
+.bg-primary,
+.selection\:bg-primary *::selection,
+.selection\:bg-primary::selection{background-color:color-mix(in srgb, var(--primary) var(--un-bg-opacity), transparent);}
+.\[\&\[data-state\=unchecked\]\]\:bg-background[data-state=unchecked],
+.bg-background{background-color:color-mix(in srgb, var(--background) var(--un-bg-opacity), transparent);}
+.\[\&\[data-state\=unchecked\]\]\:bg-input[data-state=unchecked]{background-color:color-mix(in srgb, var(--input) var(--un-bg-opacity), transparent);}
+.bg-border{background-color:color-mix(in srgb, var(--border) var(--un-bg-opacity), transparent);}
+.bg-card{background-color:color-mix(in srgb, var(--card) var(--un-bg-opacity), transparent);}
+.bg-destructive{background-color:color-mix(in srgb, var(--destructive) var(--un-bg-opacity), transparent);}
+.bg-muted{background-color:color-mix(in srgb, var(--muted) var(--un-bg-opacity), transparent);}
+.bg-secondary{background-color:color-mix(in srgb, var(--secondary) var(--un-bg-opacity), transparent);}
+.bg-transparent{background-color:transparent;}
+.dark .dark\:\[\&\[data-state\=checked\]\]\:bg-primary-foreground[data-state=checked]{background-color:color-mix(in srgb, var(--primary-foreground) var(--un-bg-opacity), transparent);}
+.dark .dark\:\[\&\[data-state\=unchecked\]\]\:bg-foreground[data-state=unchecked]{background-color:color-mix(in srgb, var(--foreground) var(--un-bg-opacity), transparent);}
+.dark .dark\:\[\&\[data-state\=unchecked\]\]\:bg-input\/30[data-state=unchecked],
+.dark .dark\:bg-input\/30{background-color:color-mix(in srgb, var(--input) 30%, transparent);}
+.dark .dark\:\[\&\[data-state\=unchecked\]\]\:bg-input\/80[data-state=unchecked]{background-color:color-mix(in srgb, var(--input) 80%, transparent);}
+.dark .dark\:bg-destructive\/60{background-color:color-mix(in srgb, var(--destructive) 60%, transparent);}
+.dark .dark\:hover\:bg-accent\/50:hover{background-color:color-mix(in srgb, var(--accent) 50%, transparent);}
+.dark .dark\:hover\:bg-input\/50:hover{background-color:color-mix(in srgb, var(--input) 50%, transparent);}
+.hover\:bg-accent:hover{background-color:color-mix(in srgb, var(--accent) var(--un-bg-opacity), transparent);}
+.hover\:bg-destructive\/90:hover{background-color:color-mix(in srgb, var(--destructive) 90%, transparent);}
+.hover\:bg-primary\/90:hover{background-color:color-mix(in srgb, var(--primary) 90%, transparent);}
+.hover\:bg-secondary\/80:hover{background-color:color-mix(in srgb, var(--secondary) 80%, transparent);}
+a.\[a\&\]\:hover\:bg-accent:hover{background-color:color-mix(in srgb, var(--accent) var(--un-bg-opacity), transparent);}
+a.\[a\&\]\:hover\:bg-destructive\/90:hover{background-color:color-mix(in srgb, var(--destructive) 90%, transparent);}
+a.\[a\&\]\:hover\:bg-primary\/90:hover{background-color:color-mix(in srgb, var(--primary) 90%, transparent);}
+a.\[a\&\]\:hover\:bg-secondary\/90:hover{background-color:color-mix(in srgb, var(--secondary) 90%, transparent);}
+.file\:bg-transparent::file-selector-button{background-color:transparent;}
+.disabled\:opacity-50:disabled{opacity:50%;}
+.peer:disabled~.peer-disabled\:opacity-50{opacity:50%;}
+.underline{text-decoration-line:underline;}
+.hover\:underline:hover{text-decoration-line:underline;}
+.underline-offset-4{text-underline-offset:4px;}
+.flex{display:flex;}
+.inline-flex{display:inline-flex;}
+.file\:inline-flex::file-selector-button{display:inline-flex;}
+.\[\&_svg\]\:shrink-0 svg,
+.shrink-0{flex-shrink:0;}
+.flex-col{flex-direction:column;}
+.gap-1{gap:calc(var(--spacing) * 1);}
+.gap-1\.5{gap:calc(var(--spacing) * 1.5);}
+.gap-2{gap:calc(var(--spacing) * 2);}
+.gap-6{gap:calc(var(--spacing) * 6);}
+.grid{display:grid;}
+.row-span-1{grid-row:span 1/span 1;}
+.col-start-2{grid-column-start:2;}
+.row-start-1{grid-row-start:1;}
+.auto-rows-min{grid-auto-rows:min-content;}
+.grid-rows-\[auto_auto\]{grid-template-rows:auto auto;}
+.\[\&_svg\:not\(\[class\*\=\"size-\"\]\)\]\:size-4 svg:not([class*="size-"]),
+.size-4{width:calc(var(--spacing) * 4);height:calc(var(--spacing) * 4);}
+.\[\&\>svg\]\:size-3>svg{width:calc(var(--spacing) * 3);height:calc(var(--spacing) * 3);}
+.size-10{width:calc(var(--spacing) * 10);height:calc(var(--spacing) * 10);}
+.size-3\.5{width:calc(var(--spacing) * 3.5);height:calc(var(--spacing) * 3.5);}
+.size-8{width:calc(var(--spacing) * 8);height:calc(var(--spacing) * 8);}
+.size-9{width:calc(var(--spacing) * 9);height:calc(var(--spacing) * 9);}
+.size-full{width:100%;height:100%;}
+.h-10{height:calc(var(--spacing) * 10);}
+.h-5{height:calc(var(--spacing) * 5);}
+.h-8{height:calc(var(--spacing) * 8);}
+.h-9{height:calc(var(--spacing) * 9);}
+.h-px{height:1px;}
+.min-w-0{min-width:calc(var(--spacing) * 0);}
+.w-9{width:calc(var(--spacing) * 9);}
+.w-fit{width:fit-content;}
+.w-full{width:100%;}
+.w-px{width:1px;}
+.file\:h-7::file-selector-button{height:calc(var(--spacing) * 7);}
+.aspect-square{aspect-ratio:1/1;}
+.aspect-video{aspect-ratio:16/9;}
+.block{display:block;}
+.visible{visibility:visible;}
+.disabled\:cursor-not-allowed:disabled{cursor:not-allowed;}
+.peer:disabled~.peer-disabled\:cursor-not-allowed{cursor:not-allowed;}
+.\[\&_svg\]\:pointer-events-none svg,
+.\[\&\>svg\]\:pointer-events-none>svg,
+.pointer-events-none{pointer-events:none;}
+.disabled\:pointer-events-none:disabled{pointer-events:none;}
+.select-none{-webkit-user-select:none;user-select:none;}
+.whitespace-nowrap{white-space:nowrap;}
+.ring-0{--un-ring-shadow:var(--un-ring-inset,) 0 0 0 calc(0px + var(--un-ring-offset-width)) var(--un-ring-color, currentColor);box-shadow:var(--un-inset-shadow), var(--un-inset-ring-shadow), var(--un-ring-offset-shadow), var(--un-ring-shadow), var(--un-shadow);}
+.focus-visible\:ring-\[3px\]:focus-visible{--un-ring-shadow:var(--un-ring-inset,) 0 0 0 calc(3px + var(--un-ring-offset-width)) var(--un-ring-color, currentColor);box-shadow:var(--un-inset-shadow), var(--un-inset-ring-shadow), var(--un-ring-offset-shadow), var(--un-ring-shadow), var(--un-shadow);}
+.aria-\[invalid\]\:ring-destructive\/20[aria-invalid]{--un-ring-color:color-mix(in srgb, var(--destructive) 20%, transparent);}
+.dark .dark\:aria-\[invalid\]\:ring-destructive\/40[aria-invalid]{--un-ring-color:color-mix(in srgb, var(--destructive) 40%, transparent);}
+.dark .dark\:focus-visible\:ring-destructive\/40:focus-visible{--un-ring-color:color-mix(in srgb, var(--destructive) 40%, transparent);}
+.focus-visible\:ring-destructive\/20:focus-visible{--un-ring-color:color-mix(in srgb, var(--destructive) 20%, transparent);}
+.focus-visible\:ring-ring\/50:focus-visible{--un-ring-color:color-mix(in srgb, var(--ring) 50%, transparent);}
+.shadow-sm{--un-shadow:var(--shadow-sm);box-shadow:var(--un-inset-shadow), var(--un-inset-ring-shadow), var(--un-ring-offset-shadow), var(--un-ring-shadow), var(--un-shadow);}
+.shadow-xs{--un-shadow:0 1px 2px 0 var(--un-shadow-color, rgb(0 0 0 / 0.05));box-shadow:var(--un-inset-shadow), var(--un-inset-ring-shadow), var(--un-ring-offset-shadow), var(--un-ring-shadow), var(--un-shadow);}
+.\[\&\[data-state\=checked\]\]\:translate-x-4[data-state=checked]{--un-translate-x:calc(var(--spacing) * 4);translate:var(--un-translate-x) var(--un-translate-y);}
+.\[\&\[data-state\=unchecked\]\]\:translate-x-0[data-state=unchecked]{--un-translate-x:calc(var(--spacing) * 0);translate:var(--un-translate-x) var(--un-translate-y);}
+.transition-\[color\,box-shadow\]{transition-property:color,box-shadow;transition-timing-function:var(--un-ease, var(--default-transition-timingFunction));transition-duration:var(--un-duration, var(--default-transition-duration));}
+.transition-all{transition-property:all;transition-timing-function:var(--un-ease, var(--default-transition-timingFunction));transition-duration:var(--un-duration, var(--default-transition-duration));}
+.transition-shadow{transition-property:box-shadow;transition-timing-function:var(--un-ease, var(--default-transition-timingFunction));transition-duration:var(--un-duration, var(--default-transition-duration));}
+.transition-transform{transition-property:transform,translate,scale,rotate;transition-timing-function:var(--un-ease, var(--default-transition-timingFunction));transition-duration:var(--un-duration, var(--default-transition-duration));}
+.items-start{align-items:flex-start;}
+.items-center{align-items:center;}
+.self-center{align-self:center;}
+.self-stretch{align-self:stretch;}
+.justify-center{justify-content:center;}
+.justify-self-end{justify-self:end;}
+.place-content-center{place-content:center;}
+.relative{position:relative;}
+.overflow-hidden{overflow:hidden;}
+.object-cover{object-fit:cover;}
+.group-data-\[disabled\=true\]\:opacity-50{
+&:is(:where(.group)[data-disabled=true] *){opacity:50%;}
+}
+.group-data-\[disabled\=true\]\:pointer-events-none{
+&:is(:where(.group)[data-disabled=true] *){pointer-events:none;}
+}
+.has-data-\[slot\=card-action\]\:grid-cols-\[1fr_auto\]{
+&:has(*[data-slot=card-action]){grid-template-columns:1fr auto;}
+}
+.has-data-\[slot\=card-image\]\:overflow-hidden{
+&:has(*[data-slot=card-image]){overflow:hidden;}
+}
+.has-data-\[slot\=card-image\]\:pt-0{
+&:has(*[data-slot=card-image]){padding-top:calc(var(--spacing) * 0);}
+}
+@supports (color: color-mix(in lab, red, red)){
+.text-white{color:color-mix(in oklab, var(--colors-white) var(--un-text-opacity), transparent);}
+}
+@media (min-width: 48rem){
+.md\:text-sm{font-size:var(--text-sm-fontSize);line-height:var(--un-leading, var(--text-sm-lineHeight));}
+}
