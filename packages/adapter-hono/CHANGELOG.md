@@ -1,5 +1,23 @@
 # @barefootjs/hono
 
+## 0.35.6
+
+### Patch Changes
+
+- e8cf360: Fixes #2943: a BODY-destructured prop's default (`function Foo(props: Props) { const { label = 'none' } = props; ... }`, renamed or not) now renders correctly on SSR across every backend, matching the parameter-destructured form (`function Foo({ label = 'none' })`). Previously `extractPropsFromTypeMembers` built `propsParams` purely from the TYPE annotation, with no notion of a body destructure's own default — every template-based adapter's presence-guard classification (`collectNullableOptionalProps` and its per-language equivalents) treated the prop as defaultless and OMITTED the attribute entirely when the caller didn't pass it, instead of falling back to the default the way Hono's real JS destructuring naturally does. A RENAMED default (`const { label: text = 'none' } = props`) was worse: it had no `propsParams` entry at all, so Jinja/Xslate/ERB/Blade/Twig/Rust read an undefined template variable unconditionally, Mojolicious fataled under Perl strict mode, and Go's Input struct had no field mapping for it — a `go run` compile error, not a soft divergence.
+  
+  Fixed at the source: the analyzer now overlays a body-destructure default directly onto `ir.metadata.propsParams` (an unrenamed default overlays the existing type-member entry; a renamed one ADDS a second entry carrying `sourceName`, so the original un-renamed prop stays correctly classified too) — the same shared `ParamInfo` every consumer (each adapter's SSR classification, `extractSsrDefaults`'s stash seed, the CSR-fresh-mount `template:` lambda) already reads for a parameter-destructured default. A previous, narrower workaround in `jsx-to-ir.ts` (`_destructuredPropInfoByName`'s overlay, added for #2934) is removed as redundant now that the default lives on `propsParams` itself.
+  
+  Two adapter-specific fixes were needed for the renamed+default shape: Hono's hydration-payload serialization now reads `props[sourceName ?? name]` instead of `props[name]` (a renamed synthesized entry has no real property under its local name), and Go's generated Input struct de-duplicates fields that share a caller-facing name, with an `interface{}`-safe fallback extraction for the case where the SAME underlying prop is also read bare elsewhere in the same component (which independently flips that field to a nillable `interface{}` type).
+  
+  Graduates the `body-destructured-props-live` fixture on all 8 non-Hono adapters (their `renderDivergences` pins are removed) and adds `body-destructured-prop-default-renamed`, a new fixture covering the renamed+default shape across all 9 adapters.
+- 07dd6b1: Tightens the boundary between a prop as **data** (must survive the SSR → JSON → CSR hydration round trip) and a prop as a **live binding** (a call-through reference resolved lazily at its own read site), across a four-part design pass:
+  
+  - BF044 no longer refuses a signal/memo getter passed bare to a component prop (`<Foo x={val} />`) — it already allowed the object-literal-wrapped form (`<Foo x={{ val }} />`), and both are this codebase's deliberate context-provider idiom: the child decides *when* to call the accessor, so it can subscribe at its own read site instead of the value freezing at the parent's render time.
+  - A destructured `"use client"` prop (`function Foo({ count })`) now reads live, matching the reactivity that props-object mode (`props.count`) already had. Previously the two syntactically equivalent forms diverged silently: destructuring captured the value once at mount and never saw later updates from the parent.
+  - A function-typed prop a component calls itself (not merely forwards to a child) is now rejected with a pinned, actionable error instead of silently hydrating against `undefined`. JSON can't carry a function, so `bf-p` serialization always dropped it — this makes that boundary loud exactly where dropping it would break the mount, and only there; a pure pass-through function prop keeps working unchanged.
+  - Elision of a prop across a component boundary (a parent skipping serialization of a prop it only forwards to a child that never reads it) was measured, not built: real corpus census plus a per-prop cost benchmark showed the residual case is already covered by existing elision (only-used props are serialized; children never serialize at all) and not worth the cross-adapter surface it would add. See `spec/compiler.md`'s "Cross-component prop elision" section and the benchmark script it links for the numbers and the reasoning.
+
 ## 0.35.5
 
 No changes in this release.
