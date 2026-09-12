@@ -7,11 +7,12 @@
   bottom-left corner are the proof, so they are styled as instrumentation and
   kept away from the game's own score panel.
 
-  Sprites are data-URI SVG backgrounds drawn at 3px per art pixel (the ASCII
-  map above each rule is the source art; regenerate with the same maps if you
-  edit one). One class per species AND FRAME — `px-<kind><frame>` — so a sprite
-  animates by swapping one class on the same element, which is one more signal
-  write per frame change and nothing else.
+  Sprites are data-URI SVG backgrounds drawn at 3px per art pixel — 6px for the
+  mothership (the ASCII map above each rule is the source art; redraw the map
+  and regenerate if you edit one). One class per sprite AND FRAME —
+  `px-<kind><frame>` — so a sprite animates by swapping one class on the same
+  element, which is one more signal write per frame change and nothing else.
+  Both alien species and the mothership are original drawings.
 
   Every rule is scoped under .layout-arcade / .arcade so this file can sit next
   to base.css in any order: the two-class selectors outrank the single-class
@@ -83,120 +84,181 @@
   will-change: transform;
 }
 
-/* flat-colour sprites need no art */
+/* flat-colour sprites need no art: the shot, the sparks a pop throws out
+   (plain squares in the victim's colour — never anything body-shaped), and the
+   two star layers */
 .px-shot0 { width: 3px; height: 9px; margin: -5px 0 0 -2px; background-color: #fff; }
-.px-bit0 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #3fa45b; }
-.px-bit20 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #8fd19e; }
-.px-bit30 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #fff; }
+.px-sl0 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #8fd19e; }
+.px-sg0 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #3fa45b; }
+.px-sw0 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #fff; }
 .px-star0 { width: 1px; height: 1px; background-color: #fff; }
 .px-star1 { width: 2px; height: 2px; background-color: #fff; }
 
 /*
-  ..g.....g..
-  ...g...g...
-  ..ggggggg..
-  .gg.www.gg.
-  ggggggggggg
-  g.ggggggg.g
-  g.g.....g.g
-  ...gg.gg...
+  species A (big-eyed), frame 0 — 30 points
+  ..X.........X..
+  ...X.......X...
+  ....XXXXXXX....
+  ..XXXXXXXXXXX..
+  .XXXXXXXXXXXXX.
+  .XXwwwXXXwwwXX.
+  .XwwwwXXXwwwwX.
+  ..XXXXXXXXXXX..
+  ...XXXXXXXXX...
+  .....XXXXX.....
+  ..XX.XXXXX.XX..
 */
-.px-e10 {
-  width: 33px;
-  height: 24px;
-  margin: -12.0px 0 0 -16.5px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M4 3h3v1h-3z'/%3E%3Cpath fill='%233fa45b' d='M2 0h1v1h-1zM8 0h1v1h-1zM3 1h1v1h-1zM7 1h1v1h-1zM2 2h7v1h-7zM1 3h2v1h-2zM8 3h2v1h-2zM0 4h11v1h-11zM0 5h1v1h-1zM2 5h7v1h-7zM10 5h1v1h-1zM0 6h1v1h-1zM2 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM3 7h2v1h-2zM6 7h2v1h-2z'/%3E%3C/svg%3E");
+.px-a0 {
+  width: 45px;
+  height: 33px;
+  margin: -16.5px 0 0 -22.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 11' shape-rendering='crispEdges'%3E%3Cpath fill='%238fd19e' d='M2 0h1v1h-1zM12 0h1v1h-1zM3 1h1v1h-1zM11 1h1v1h-1zM4 2h7v1h-7zM2 3h11v1h-11zM1 4h13v1h-13zM1 5h2v1h-2zM6 5h3v1h-3zM12 5h2v1h-2zM1 6h1v1h-1zM6 6h3v1h-3zM13 6h1v1h-1zM2 7h11v1h-11zM3 8h9v1h-9zM5 9h5v1h-5zM2 10h2v1h-2zM5 10h5v1h-5zM11 10h2v1h-2z'/%3E%3Cpath fill='%23ffffff' d='M3 5h3v1h-3zM9 5h3v1h-3zM2 6h4v1h-4zM9 6h4v1h-4z'/%3E%3C/svg%3E");
 }
 /*
-  ..g.....g..
-  g..g...g..g
-  g.ggggggg.g
-  ggg.www.ggg
-  ggggggggggg
-  .ggggggggg.
-  ..g.....g..
-  .g.......g.
+  species A, frame 1 — blink + antenna twitch
+  ...X.......X...
+  ...X.......X...
+  ....XXXXXXX....
+  ..XXXXXXXXXXX..
+  .XXXXXXXXXXXXX.
+  .XXXXXXXXXXXXX.
+  .XXwwwXXXwwwXX.
+  ..XXXXXXXXXXX..
+  ...XXXXXXXXX...
+  .....XXXXX.....
+  .XX...XXXXX..XX
 */
-.px-e11 {
-  width: 33px;
-  height: 24px;
-  margin: -12.0px 0 0 -16.5px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M4 3h3v1h-3z'/%3E%3Cpath fill='%233fa45b' d='M2 0h1v1h-1zM8 0h1v1h-1zM0 1h1v1h-1zM3 1h1v1h-1zM7 1h1v1h-1zM10 1h1v1h-1zM0 2h1v1h-1zM2 2h7v1h-7zM10 2h1v1h-1zM0 3h3v1h-3zM8 3h3v1h-3zM0 4h11v1h-11zM1 5h9v1h-9zM2 6h1v1h-1zM8 6h1v1h-1zM1 7h1v1h-1zM9 7h1v1h-1z'/%3E%3C/svg%3E");
+.px-a1 {
+  width: 45px;
+  height: 33px;
+  margin: -16.5px 0 0 -22.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 11' shape-rendering='crispEdges'%3E%3Cpath fill='%238fd19e' d='M3 0h1v1h-1zM11 0h1v1h-1zM3 1h1v1h-1zM11 1h1v1h-1zM4 2h7v1h-7zM2 3h11v1h-11zM1 4h13v1h-13zM1 5h13v1h-13zM1 6h2v1h-2zM6 6h3v1h-3zM12 6h2v1h-2zM2 7h11v1h-11zM3 8h9v1h-9zM5 9h5v1h-5zM1 10h2v1h-2zM6 10h5v1h-5zM13 10h2v1h-2z'/%3E%3Cpath fill='%23ffffff' d='M3 6h3v1h-3zM9 6h3v1h-3z'/%3E%3C/svg%3E");
 }
 /*
-  ....l....
-  ...lll...
-  ..lllll..
-  .ll.l.ll.
-  lllwlwlll
-  ..lllll..
-  .l.l.l.l.
-  l.l...l.l
+  species B (saucer-rider), frame 0 — 20 points
+  ......XXX......
+  .....XXXXX.....
+  .....XwXwX.....
+  .....XXXXX.....
+  ..XXXXXXXXXXX..
+  XXXXXXXXXXXXXXX
+  ..XXXXXXXXXXX..
+  ...............
+  ...w...w...w...
 */
-.px-e20 {
-  width: 27px;
-  height: 24px;
-  margin: -12.0px 0 0 -13.5px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M3 4h1v1h-1zM5 4h1v1h-1z'/%3E%3Cpath fill='%238fd19e' d='M4 0h1v1h-1zM3 1h3v1h-3zM2 2h5v1h-5zM1 3h2v1h-2zM4 3h1v1h-1zM6 3h2v1h-2zM0 4h3v1h-3zM4 4h1v1h-1zM6 4h3v1h-3zM2 5h5v1h-5zM1 6h1v1h-1zM3 6h1v1h-1zM5 6h1v1h-1zM7 6h1v1h-1zM0 7h1v1h-1zM2 7h1v1h-1zM6 7h1v1h-1zM8 7h1v1h-1z'/%3E%3C/svg%3E");
+.px-b0 {
+  width: 45px;
+  height: 27px;
+  margin: -13.5px 0 0 -22.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 9' shape-rendering='crispEdges'%3E%3Cpath fill='%233fa45b' d='M6 0h3v1h-3zM5 1h5v1h-5zM5 2h1v1h-1zM7 2h1v1h-1zM9 2h1v1h-1zM5 3h5v1h-5zM2 4h11v1h-11zM0 5h15v1h-15zM2 6h11v1h-11z'/%3E%3Cpath fill='%23ffffff' d='M6 2h1v1h-1zM8 2h1v1h-1zM3 8h1v1h-1zM7 8h1v1h-1zM11 8h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  ....l....
-  ...lll...
-  ..lllll..
-  .ll.l.ll.
-  lllwlwlll
-  ..lllll..
-  .l.lll.l.
-  .l.....l.
+  species B, frame 1 — hull bob + light chase
+  ......XXX......
+  .....XXXXX.....
+  .....XwXwX.....
+  .....XXXXX.....
+  ...XXXXXXXXX...
+  .XXXXXXXXXXXXX.
+  XXXXXXXXXXXXXXX
+  ...............
+  .w.....w.....w.
 */
-.px-e21 {
-  width: 27px;
-  height: 24px;
-  margin: -12.0px 0 0 -13.5px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M3 4h1v1h-1zM5 4h1v1h-1z'/%3E%3Cpath fill='%238fd19e' d='M4 0h1v1h-1zM3 1h3v1h-3zM2 2h5v1h-5zM1 3h2v1h-2zM4 3h1v1h-1zM6 3h2v1h-2zM0 4h3v1h-3zM4 4h1v1h-1zM6 4h3v1h-3zM2 5h5v1h-5zM1 6h1v1h-1zM3 6h3v1h-3zM7 6h1v1h-1zM1 7h1v1h-1zM7 7h1v1h-1z'/%3E%3C/svg%3E");
+.px-b1 {
+  width: 45px;
+  height: 27px;
+  margin: -13.5px 0 0 -22.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 9' shape-rendering='crispEdges'%3E%3Cpath fill='%233fa45b' d='M6 0h3v1h-3zM5 1h5v1h-5zM5 2h1v1h-1zM7 2h1v1h-1zM9 2h1v1h-1zM5 3h5v1h-5zM3 4h9v1h-9zM1 5h13v1h-13zM0 6h15v1h-15z'/%3E%3Cpath fill='%23ffffff' d='M6 2h1v1h-1zM8 2h1v1h-1zM1 8h1v1h-1zM7 8h1v1h-1zM13 8h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  .....gg.....
-  ....gggg....
-  ...gg..gg...
-  ..gggwwggg..
-  .gggwwwwggg.
-  gg.gggggg.gg
-  g...gggg...g
-  ....g..g....
+  mothership, frame 0 — 300 points
+  ........XXXXXXX........
+  .......XXXXXXXXX.......
+  ......XXgXXXXXgXX......
+  .....XXXXXXXXXXXXX.....
+  ..XXXXXXXXXXXXXXXXXXX..
+  XXXXXXXXXXXXXXXXXXXXXXX
+  .XXXXXXXXXXXXXXXXXXXXX.
+  ....XXXXXXXXXXXXXXX....
+  .......................
+  .....g.....g.....g.....
 */
-.px-e30 {
-  width: 36px;
-  height: 24px;
-  margin: -12.0px 0 0 -18.0px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M5 3h2v1h-2zM4 4h4v1h-4z'/%3E%3Cpath fill='%233fa45b' d='M5 0h2v1h-2zM4 1h4v1h-4zM3 2h2v1h-2zM7 2h2v1h-2zM2 3h3v1h-3zM7 3h3v1h-3zM1 4h3v1h-3zM8 4h3v1h-3zM0 5h2v1h-2zM3 5h6v1h-6zM10 5h2v1h-2zM0 6h1v1h-1zM4 6h4v1h-4zM11 6h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1z'/%3E%3C/svg%3E");
+.px-ufo0 {
+  width: 138px;
+  height: 60px;
+  margin: -30px 0 0 -69px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 10' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M8 0h7v1h-7zM7 1h9v1h-9zM6 2h2v1h-2zM9 2h5v1h-5zM15 2h2v1h-2zM5 3h13v1h-13zM2 4h19v1h-19zM0 5h23v1h-23zM1 6h21v1h-21zM4 7h15v1h-15z'/%3E%3Cpath fill='%233fa45b' d='M8 2h1v1h-1zM14 2h1v1h-1zM5 9h1v1h-1zM11 9h1v1h-1zM17 9h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  .....gg.....
-  ....gggg....
-  g..gg..gg..g
-  g.gggwwggg.g
-  gggwwwwwwggg
-  .g.gggggg.g.
-  ....gggg....
-  ...g....g...
+  mothership, frame 1 — lights chase
+  ........XXXXXXX........
+  .......XXXXXXXXX.......
+  ......XXgXXXXXgXX......
+  .....XXXXXXXXXXXXX.....
+  ..XXXXXXXXXXXXXXXXXXX..
+  XXXXXXXXXXXXXXXXXXXXXXX
+  .XXXXXXXXXXXXXXXXXXXXX.
+  ....XXXXXXXXXXXXXXX....
+  .......................
+  ...g.......g.......g...
 */
-.px-e31 {
-  width: 36px;
-  height: 24px;
-  margin: -12.0px 0 0 -18.0px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M5 3h2v1h-2zM3 4h6v1h-6z'/%3E%3Cpath fill='%233fa45b' d='M5 0h2v1h-2zM4 1h4v1h-4zM0 2h1v1h-1zM3 2h2v1h-2zM7 2h2v1h-2zM11 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM7 3h3v1h-3zM11 3h1v1h-1zM0 4h3v1h-3zM9 4h3v1h-3zM1 5h1v1h-1zM3 5h6v1h-6zM10 5h1v1h-1zM4 6h4v1h-4zM3 7h1v1h-1zM8 7h1v1h-1z'/%3E%3C/svg%3E");
+.px-ufo1 {
+  width: 138px;
+  height: 60px;
+  margin: -30px 0 0 -69px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 10' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M8 0h7v1h-7zM7 1h9v1h-9zM6 2h2v1h-2zM9 2h5v1h-5zM15 2h2v1h-2zM5 3h13v1h-13zM2 4h19v1h-19zM0 5h23v1h-23zM1 6h21v1h-21zM4 7h15v1h-15z'/%3E%3Cpath fill='%233fa45b' d='M8 2h1v1h-1zM14 2h1v1h-1zM3 9h1v1h-1zM11 9h1v1h-1zM19 9h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  ......w......
-  .....www.....
-  .....www.....
-  ..wwwwwwwww..
-  .wwwwwwwwwww.
-  wwwwwwwwwwwww
-  ww.wwwwwww.ww
-  ww.........ww
-  ...g.....g...
+  the pop: a white flash where an alien died (frame 0)
+  ..X..X...X..X..
+  ...X.XX.XX.X...
+  .X..XXXXXXX..X.
+  ..XXXXXXXXXXX..
+  .XXXXXXXXXXXXX.
+  XXXXXXXXXXXXXXX
+  .XXXXXXXXXXXXX.
+  ..XXXXXXXXXXX..
+  .X..XXXXXXX..X.
+  ...X.XX.XX.X...
+  ..X..X...X..X..
+*/
+.px-pop0 {
+  width: 60px;
+  height: 44px;
+  margin: -22px 0 0 -30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 11' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M2 0h1v1h-1zM5 0h1v1h-1zM9 0h1v1h-1zM12 0h1v1h-1zM3 1h1v1h-1zM5 1h2v1h-2zM8 1h2v1h-2zM11 1h1v1h-1zM1 2h1v1h-1zM4 2h7v1h-7zM13 2h1v1h-1zM2 3h11v1h-11zM1 4h13v1h-13zM0 5h15v1h-15zM1 6h13v1h-13zM2 7h11v1h-11zM1 8h1v1h-1zM4 8h7v1h-7zM13 8h1v1h-1zM3 9h1v1h-1zM5 9h2v1h-2zM8 9h2v1h-2zM11 9h1v1h-1zM2 10h1v1h-1zM5 10h1v1h-1zM9 10h1v1h-1zM12 10h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  the pop (frame 1, same drawing)
+  ..X..X...X..X..
+  ...X.XX.XX.X...
+  .X..XXXXXXX..X.
+  ..XXXXXXXXXXX..
+  .XXXXXXXXXXXXX.
+  XXXXXXXXXXXXXXX
+  .XXXXXXXXXXXXX.
+  ..XXXXXXXXXXX..
+  .X..XXXXXXX..X.
+  ...X.XX.XX.X...
+  ..X..X...X..X..
+*/
+.px-pop1 {
+  width: 60px;
+  height: 44px;
+  margin: -22px 0 0 -30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 11' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M2 0h1v1h-1zM5 0h1v1h-1zM9 0h1v1h-1zM12 0h1v1h-1zM3 1h1v1h-1zM5 1h2v1h-2zM8 1h2v1h-2zM11 1h1v1h-1zM1 2h1v1h-1zM4 2h7v1h-7zM13 2h1v1h-1zM2 3h11v1h-11zM1 4h13v1h-13zM0 5h15v1h-15zM1 6h13v1h-13zM2 7h11v1h-11zM1 8h1v1h-1zM4 8h7v1h-7zM13 8h1v1h-1zM3 9h1v1h-1zM5 9h2v1h-2zM8 9h2v1h-2zM11 9h1v1h-1zM2 10h1v1h-1zM5 10h1v1h-1zM9 10h1v1h-1zM12 10h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  player ship, frame 0
+  ......X......
+  .....XXX.....
+  .....XXX.....
+  ..XXXXXXXXX..
+  .XXXXXXXXXXX.
+  XXXXXXXXXXXXX
+  XX.XXXXXXX.XX
+  XX.........XX
+  ...o.....o...
 */
 .px-ship0 {
   width: 39px;
@@ -205,15 +267,16 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M6 0h1v1h-1zM5 1h3v1h-3zM5 2h3v1h-3zM2 3h9v1h-9zM1 4h11v1h-11zM0 5h13v1h-13zM0 6h2v1h-2zM3 6h7v1h-7zM11 6h2v1h-2zM0 7h2v1h-2zM11 7h2v1h-2z'/%3E%3Cpath fill='%233fa45b' d='M3 8h1v1h-1zM9 8h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  ......w......
-  .....www.....
-  .....www.....
-  ..wwwwwwwww..
-  .wwwwwwwwwww.
-  wwwwwwwwwwwww
-  ww.wwwwwww.ww
-  ww.........ww
-  ....l...l....
+  player ship, frame 1 — thruster flicker
+  ......X......
+  .....XXX.....
+  .....XXX.....
+  ..XXXXXXXXX..
+  .XXXXXXXXXXX.
+  XXXXXXXXXXXXX
+  XX.XXXXXXX.XX
+  XX.........XX
+  ....p...p....
 */
 .px-ship1 {
   width: 39px;
@@ -222,65 +285,37 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M6 0h1v1h-1zM5 1h3v1h-3zM5 2h3v1h-3zM2 3h9v1h-9zM1 4h11v1h-11zM0 5h13v1h-13zM0 6h2v1h-2zM3 6h7v1h-7zM11 6h2v1h-2zM0 7h2v1h-2zM11 7h2v1h-2z'/%3E%3Cpath fill='%238fd19e' d='M4 8h1v1h-1zM8 8h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  .......wwwwwwww.......
-  .....llllllllllll.....
-  ...llllllllllllllll...
-  ..llllllllllllllllll..
-  .llll.ww.llll.ww.llll.
-  llllllllllllllllllllll
-  ..ll...ll...ll...ll...
-*/
-.px-boss0 {
-  width: 66px;
-  height: 21px;
-  margin: -10.5px 0 0 -33.0px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 7' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M7 0h8v1h-8zM6 4h2v1h-2zM14 4h2v1h-2z'/%3E%3Cpath fill='%238fd19e' d='M5 1h12v1h-12zM3 2h16v1h-16zM2 3h18v1h-18zM1 4h4v1h-4zM9 4h4v1h-4zM17 4h4v1h-4zM0 5h22v1h-22zM2 6h2v1h-2zM7 6h2v1h-2zM12 6h2v1h-2zM17 6h2v1h-2z'/%3E%3C/svg%3E");
-}
-/*
-  .......wwwwwwww.......
-  .....llllllllllll.....
-  ...llllllllllllllll...
-  ..llllllllllllllllll..
-  .llll.gg.llll.gg.llll.
-  llllllllllllllllllllll
-  ...ll...ll...ll...ll..
-*/
-.px-boss1 {
-  width: 66px;
-  height: 21px;
-  margin: -10.5px 0 0 -33.0px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 7' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M7 0h8v1h-8z'/%3E%3Cpath fill='%233fa45b' d='M6 4h2v1h-2zM14 4h2v1h-2z'/%3E%3Cpath fill='%238fd19e' d='M5 1h12v1h-12zM3 2h16v1h-16zM2 3h18v1h-18zM1 4h4v1h-4zM9 4h4v1h-4zM17 4h4v1h-4zM0 5h22v1h-22zM3 6h2v1h-2zM8 6h2v1h-2zM13 6h2v1h-2zM18 6h2v1h-2z'/%3E%3C/svg%3E");
-}
-/*
-  .g.
-  g..
-  .g.
-  ..g
-  .g.
-  g..
-  .g.
-  ..g
+  alien bolt, frame 0
+  .X.
+  X..
+  .X.
+  ..X
+  .X.
+  X..
+  .X.
+  ..X
 */
 .px-bolt0 {
   width: 9px;
   height: 24px;
-  margin: -12.0px 0 0 -4.5px;
+  margin: -12px 0 0 -4.5px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 8' shape-rendering='crispEdges'%3E%3Cpath fill='%233fa45b' d='M1 0h1v1h-1zM0 1h1v1h-1zM1 2h1v1h-1zM2 3h1v1h-1zM1 4h1v1h-1zM0 5h1v1h-1zM1 6h1v1h-1zM2 7h1v1h-1z'/%3E%3C/svg%3E");
 }
 /*
-  .g.
-  ..g
-  .g.
-  g..
-  .g.
-  ..g
-  .g.
-  g..
+  alien bolt, frame 1
+  .X.
+  ..X
+  .X.
+  X..
+  .X.
+  ..X
+  .X.
+  X..
 */
 .px-bolt1 {
   width: 9px;
   height: 24px;
-  margin: -12.0px 0 0 -4.5px;
+  margin: -12px 0 0 -4.5px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 8' shape-rendering='crispEdges'%3E%3Cpath fill='%233fa45b' d='M1 0h1v1h-1zM2 1h1v1h-1zM1 2h1v1h-1zM0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM1 6h1v1h-1zM0 7h1v1h-1z'/%3E%3C/svg%3E");
 }
 
@@ -292,14 +327,14 @@
   background-repeat: no-repeat;
   background-size: 100% 100%;
   image-rendering: pixelated;
-  transform: scale(1.9);
+  transform: scale(1.7);
 }
 
 /* ---------- score panel: the game's own UI, top-right ---------- */
 .arcade-score {
   position: absolute;
   right: 56px;
-  top: 88px;
+  top: 44px;
   z-index: 5;
   display: grid;
   gap: 9px;
@@ -313,7 +348,7 @@
 .a-demo {
   position: absolute;
   left: 56px;
-  top: 92px;
+  top: 44px;
   z-index: 5;
   display: none;
   font-size: 15px;
@@ -369,7 +404,7 @@
 .a-panel.is-title .a-wordmark, .a-panel.is-title .a-final { display: none; }
 .a-panel.is-over .a-logo { display: none; }
 
-.a-logo { display: flex; align-items: center; gap: 56px; height: 58px; }
+.a-logo { display: flex; align-items: center; gap: 48px; height: 58px; }
 .a-wordmark {
   font-size: 54px;
   font-weight: 500;
@@ -417,9 +452,9 @@
 .layout-arcade .arcade-caption {
   position: absolute;
   right: 56px;
-  bottom: 66px;
+  bottom: 62px;
   z-index: 5;
-  max-width: 640px;
+  max-width: 720px;
   text-align: right;
 }
 .layout-arcade .arcade-title {

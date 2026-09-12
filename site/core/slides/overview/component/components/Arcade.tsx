@@ -3,14 +3,14 @@
 // "Every bullet is a DOM node."
 //
 // A retro arcade cabinet on the deck's black slide. Every sprite — every
-// invader, bullet, explosion fragment and star — is one real DOM element
-// driven by its own signals. Nothing is diffed and nothing is redrawn
-// wholesale: an entity owns (x, y, o, frame) signals and is rendered by one
-// <Sprite/> instance, so the compiler emits exactly one effect per element.
-// Moving an entity re-runs that one effect and rewrites one `style`; animating
-// it (the two-frame invader walk, the zig-zag bolt, the thruster flicker)
-// swaps one class through the SAME effect. The metrics in the bottom-left
-// corner count all of it every 500 ms.
+// alien, bullet, spark and star — is one real DOM element driven by its own
+// signals. Nothing is diffed and nothing is redrawn wholesale: an entity owns
+// (x, y, o, frame) signals and is rendered by one <Sprite/> instance, so the
+// compiler emits exactly one effect per element. Moving an entity re-runs that
+// one effect and rewrites one `style`; animating it (the two-frame alien
+// idle, the zig-zag bolt, the thruster flicker, the white pop of a kill) swaps
+// one class through the SAME effect. The metrics in the bottom-left corner
+// count all of it every 500 ms.
 //
 // The keyed `.map()` rows below hold COMPONENTS, not bare elements: a component
 // row is rendered through the eager `mapArray` path, where the row body is its
@@ -33,11 +33,14 @@ const STARS_NEAR = 22
 
 const COLS = 10
 const ROWS = 5
-const FOE_COL = 70
-const FOE_ROW = 42
-const FOE_TOP = 196
-const MARCH_LIMIT = 190
-const FOE_FLOOR = 452
+const ALIEN_COL = 74
+const ALIEN_ROW = 42
+const ALIEN_TOP = 212
+const SWARM_LIMIT = 185
+const ALIEN_FLOOR = 452
+const UFO_LANE = 160
+/** frames a killed alien stays on screen as the white pop */
+const POP_FRAMES = 5
 
 type Ent = {
   id: number
@@ -122,12 +125,12 @@ function Sprite(props: { e: Ent }) {
 export function Arcade() {
   // membership signals — one per entity class, published on spawn/death only
   const [stars, setStars] = createSignal<Ent[]>([])
-  const [foes, setFoes] = createSignal<Ent[]>([])
-  const [bosses, setBosses] = createSignal<Ent[]>([])
+  const [aliens, setAliens] = createSignal<Ent[]>([])
+  const [ufos, setUfos] = createSignal<Ent[]>([])
   const [bolts, setBolts] = createSignal<Ent[]>([])
   const [shots, setShots] = createSignal<Ent[]>([])
   const [ships, setShips] = createSignal<Ent[]>([])
-  const [bits, setBits] = createSignal<Ent[]>([])
+  const [sparks, setSparks] = createSignal<Ent[]>([])
 
   // 'title' | 'play' | 'demo' | 'over'
   const [screen, setScreen] = createSignal('title')
@@ -160,20 +163,20 @@ export function Arcade() {
   const keysClass = createMemo(() => (screen() === 'play' ? 'a-keys is-on' : 'a-keys'))
 
   const starList: Ent[] = []
-  const foeList: Ent[] = []
-  const bossList: Ent[] = []
+  const alienList: Ent[] = []
+  const ufoList: Ent[] = []
   const boltList: Ent[] = []
   const shotList: Ent[] = []
   const shipList: Ent[] = []
-  const bitList: Ent[] = []
+  const sparkList: Ent[] = []
 
   let starsDirty = false
-  let foesDirty = false
-  let bossDirty = false
+  let aliensDirty = false
+  let ufoDirty = false
   let boltsDirty = false
   let shotsDirty = false
   let shipsDirty = false
-  let bitsDirty = false
+  let sparksDirty = false
 
   let writeCount = 0
   let frameAcc = 0
@@ -185,20 +188,22 @@ export function Arcade() {
   let running = false
 
   let player: Ent | null = null
-  let marchX = 0
-  let marchY = 0
-  let marchDir = 1
+  let swarmX = 0
+  let swarmY = 0
+  let swarmDir = 1
   let alive = 0
   let invuln = 0
   let lastShot = 0
   let nextDive = 0
-  let nextBoss = 0
+  let nextUfo = 0
   let overAt = 0
   let wasDemo = false
-  let walkAt = 0
-  let walkFrame = 0
+  let idleAt = 0
+  let idleFrame = 0
   let boltAt = 0
   let boltFrame = 0
+  let ufoAt = 0
+  let ufoFrame = 0
   let thrustAt = 0
   let thrustFrame = 0
   let leftDown = false
@@ -208,12 +213,12 @@ export function Arcade() {
 
   const publish = () => {
     if (starsDirty) { setStars(starList.slice()); starsDirty = false }
-    if (foesDirty) { setFoes(foeList.slice()); foesDirty = false }
-    if (bossDirty) { setBosses(bossList.slice()); bossDirty = false }
+    if (aliensDirty) { setAliens(alienList.slice()); aliensDirty = false }
+    if (ufoDirty) { setUfos(ufoList.slice()); ufoDirty = false }
     if (boltsDirty) { setBolts(boltList.slice()); boltsDirty = false }
     if (shotsDirty) { setShots(shotList.slice()); shotsDirty = false }
     if (shipsDirty) { setShips(shipList.slice()); shipsDirty = false }
-    if (bitsDirty) { setBits(bitList.slice()); bitsDirty = false }
+    if (sparksDirty) { setSparks(sparkList.slice()); sparksDirty = false }
   }
 
   // Every write to an entity goes through these, so `writes / frame` is a count
@@ -278,38 +283,60 @@ export function Arcade() {
   }
 
   const spawnWave = () => {
-    const kinds = ['e3', 'e1', 'e1', 'e2', 'e2']
-    const points = [30, 20, 20, 10, 10]
-    const left = (W - (COLS - 1) * FOE_COL) / 2
+    // two species: the light-green big-eyes hold the top two rows, the green
+    // saucer-riders the bottom three. Colour is the point value.
+    const kinds = ['a', 'a', 'b', 'b', 'b']
+    const points = [30, 30, 20, 20, 20]
+    const left = (W - (COLS - 1) * ALIEN_COL) / 2
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        const e = makeEnt(kinds[r], left + c * FOE_COL, FOE_TOP + r * FOE_ROW, 1, walkFrame)
-        e.hx = left + c * FOE_COL
-        e.hy = FOE_TOP + r * FOE_ROW
+        const e = makeEnt(kinds[r], left + c * ALIEN_COL, ALIEN_TOP + r * ALIEN_ROW, 1, idleFrame)
+        e.hx = left + c * ALIEN_COL
+        e.hy = ALIEN_TOP + r * ALIEN_ROW
         e.pts = points[r]
-        foeList.push(e)
+        alienList.push(e)
       }
     }
     alive = COLS * ROWS
-    marchX = 0
-    marchY = 0
-    marchDir = 1
-    foesDirty = true
+    swarmX = 0
+    swarmY = 0
+    swarmDir = 1
+    aliensDirty = true
   }
 
-  const burst = (x: number, y: number, n: number, spread: number) => {
-    const kinds = ['bit', 'bit2', 'bit3']
+  /**
+   * The arcade pop: a ring of plain square sparks in the victim's colour, a few
+   * of them white, thrown outward and faded. Deliberately abstract — nothing
+   * here is ever shaped like a piece of the thing that died.
+   */
+  const burst = (x: number, y: number, n: number, spread: number, tint: string) => {
     for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2
-      const sp = 0.8 + Math.random() * spread
-      const p = makeEnt(kinds[i % 3], x, y, 1, 0)
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.35
+      const sp = 1.1 + Math.random() * spread
+      const p = makeEnt(i % 5 === 0 ? 'sw' : tint, x, y, 1, 0)
       p.vx = Math.cos(a) * sp
-      p.vy = Math.sin(a) * sp - 0.5
-      p.span = 34 + Math.floor(Math.random() * 26)
+      p.vy = Math.sin(a) * sp - 0.4
+      p.span = 38 + Math.floor(Math.random() * 28)
       p.life = p.span
-      bitList.push(p)
+      sparkList.push(p)
     }
-    bitsDirty = true
+    sparksDirty = true
+  }
+
+  /** the colour a species' sparks take */
+  const tintOf = (kind: string): string => (kind === 'a' ? 'sl' : kind === 'b' ? 'sg' : 'sw')
+
+  /**
+   * A kill: the alien becomes the white pop for a few frames (one class swap on
+   * the same element — one extra write, no new node) and then leaves.
+   */
+  const popAlien = (e: Ent) => {
+    burst(e.x(), e.y(), 26, 2.6, tintOf(e.kind))
+    e.kind = 'pop'
+    e.state = 3
+    e.t = 0
+    frame(e, e.fr() === 0 ? 1 : 0)
+    alive -= 1
   }
 
   const fire = (now: number) => {
@@ -321,7 +348,7 @@ export function Arcade() {
     shotsDirty = true
   }
 
-  const foeFire = (e: Ent) => {
+  const alienFire = (e: Ent) => {
     const b = makeEnt('bolt', e.x(), e.y() + 16, 1, boltFrame)
     b.vy = 4.2 + Math.random() * 2.2
     boltList.push(b)
@@ -337,11 +364,11 @@ export function Arcade() {
 
   // ---------- modes
   const wipe = () => {
-    clear(foeList); foesDirty = true
-    clear(bossList); bossDirty = true
+    clear(alienList); aliensDirty = true
+    clear(ufoList); ufoDirty = true
     clear(boltList); boltsDirty = true
     clear(shotList); shotsDirty = true
-    clear(bitList); bitsDirty = true
+    clear(sparkList); sparksDirty = true
     clear(shipList); shipsDirty = true
     player = null
   }
@@ -365,7 +392,7 @@ export function Arcade() {
       fireTap = false
       const now = performance.now()
       nextDive = now + 1600
-      nextBoss = now + 9000
+      nextUfo = now + 9000
       publish()
     })
   }
@@ -381,8 +408,8 @@ export function Arcade() {
   const endGame = (now: number) => {
     wasDemo = screen() === 'demo'
     overAt = now
-    clear(foeList); foesDirty = true
-    clear(bossList); bossDirty = true
+    clear(alienList); aliensDirty = true
+    clear(ufoList); ufoDirty = true
     clear(boltList); boltsDirty = true
     clear(shotList); shotsDirty = true
     clear(shipList); shipsDirty = true
@@ -394,7 +421,7 @@ export function Arcade() {
     if (invuln > 0 || !player) return
     const left = lives() - 1
     setLives(left)
-    burst(player.x(), SHIP_Y, 30, 3.6)
+    burst(player.x(), SHIP_Y, 34, 3.8, 'sw')
     setFlash(0.45)
     if (left <= 0) {
       endGame(now)
@@ -415,14 +442,15 @@ export function Arcade() {
     }
     let target: Ent | null = null
     let best = 1e9
-    for (const e of foeList) {
+    for (const e of alienList) {
+      if (e.state === 3) continue
       const d = Math.abs(e.x() - here) + (H - e.y()) * (e.state === 1 ? 0.02 : 0.07)
       if (d < best) {
         best = d
         target = e
       }
     }
-    for (const b of bossList) {
+    for (const b of ufoList) {
       const d = Math.abs(b.x() - here) * 0.6
       if (d < best) {
         best = d
@@ -459,23 +487,30 @@ export function Arcade() {
     }
   }
 
-  const runFoes = (f: number, now: number) => {
-    // the formation marches, and speeds up as it thins — the classic tell
+  const runAliens = (f: number, now: number) => {
+    // the swarm sweeps side to side and steps down, speeding up as it thins
     const speed = 0.45 + (1 - alive / (COLS * ROWS)) * 2.8 + (wave() - 1) * 0.22
-    marchX += marchDir * speed * f
-    if (marchX > MARCH_LIMIT) { marchX = MARCH_LIMIT; marchDir = -1; marchY += 15 }
-    if (marchX < -MARCH_LIMIT) { marchX = -MARCH_LIMIT; marchDir = 1; marchY += 15 }
+    swarmX += swarmDir * speed * f
+    if (swarmX > SWARM_LIMIT) { swarmX = SWARM_LIMIT; swarmDir = -1; swarmY += 15 }
+    if (swarmX < -SWARM_LIMIT) { swarmX = -SWARM_LIMIT; swarmDir = 1; swarmY += 15 }
 
-    if (now > walkAt) {
-      walkAt = now + 460
-      walkFrame = walkFrame === 0 ? 1 : 0
-      for (const e of foeList) if (e.state === 0) frame(e, walkFrame)
+    if (now > idleAt) {
+      idleAt = now + 460
+      idleFrame = idleFrame === 0 ? 1 : 0
+      for (const e of alienList) if (e.state === 0) frame(e, idleFrame)
     }
 
-    for (const e of foeList) {
-      if (e.state === 1) {
-        // a dive: a Galaga-ish sweep that leaves the formation and comes back
-        // around the top
+    for (const e of alienList) {
+      if (e.state === 3) {
+        // popped: hold the white flash a few frames, then leave
+        e.t += f
+        if (e.t > POP_FRAMES) {
+          e.dead = true
+          aliensDirty = true
+        }
+      } else if (e.state === 1) {
+        // a dive: a sine sweep that leaves the swarm, exits the bottom and
+        // comes back around the top
         e.t += f
         const nx = e.sx + Math.sin(e.t * 0.052) * 215 * e.dir
         const ny = e.sy + e.t * 3.05
@@ -483,26 +518,26 @@ export function Arcade() {
         // a diver leaves through the bottom band where the caption and the
         // metrics live, so it dims out before it gets there
         if (ny > 548) fade(e, Math.max(0, 1 - (ny - 548) / 90))
-        if (Math.random() < 0.019 * f) foeFire(e)
+        if (Math.random() < 0.019 * f) alienFire(e)
         if (ny > H + 50) {
           e.state = 2
-          move(e, e.hx + marchX, -50)
+          move(e, e.hx + swarmX, -50)
           fade(e, 1)
         }
       } else if (e.state === 2) {
-        const ty = e.hy + marchY
+        const ty = e.hy + swarmY
         const ny = e.y() + 4.6 * f
-        const nx = e.x() + (e.hx + marchX - e.x()) * Math.min(1, 0.06 * f)
+        const nx = e.x() + (e.hx + swarmX - e.x()) * Math.min(1, 0.06 * f)
         if (ny >= ty) {
           e.state = 0
-          move(e, e.hx + marchX, ty)
-          frame(e, walkFrame)
+          move(e, e.hx + swarmX, ty)
+          frame(e, idleFrame)
         } else {
           move(e, nx, ny)
         }
       } else {
-        move(e, e.hx + marchX, e.hy + marchY)
-        if (Math.random() < 0.0009 * f) foeFire(e)
+        move(e, e.hx + swarmX, e.hy + swarmY)
+        if (Math.random() < 0.0013 * f) alienFire(e)
       }
     }
 
@@ -512,7 +547,7 @@ export function Arcade() {
       let picked: Ent | null = null
       let tries = 0
       while (tries < 14 && picked === null) {
-        const c = foeList[Math.floor(Math.random() * foeList.length)]
+        const c = alienList[Math.floor(Math.random() * alienList.length)]
         if (c && c.state === 0) picked = c
         tries += 1
       }
@@ -527,24 +562,29 @@ export function Arcade() {
     }
 
     // the mothership crosses the top for a bonus
-    if (now > nextBoss && bossList.length === 0) {
-      nextBoss = now + 13000 + Math.random() * 6000
-      const b = makeEnt('boss', -70, 56, 1, 0)
-      b.vx = 2.3
+    if (now > nextUfo && ufoList.length === 0) {
+      nextUfo = now + 13000 + Math.random() * 6000
+      const b = makeEnt('ufo', -90, UFO_LANE, 1, 0)
+      b.vx = 2.9
       b.pts = 300
-      bossList.push(b)
-      bossDirty = true
+      ufoList.push(b)
+      ufoDirty = true
     }
-    for (const b of bossList) {
+    if (now > ufoAt) {
+      ufoAt = now + 240
+      ufoFrame = ufoFrame === 0 ? 1 : 0
+      for (const b of ufoList) frame(b, ufoFrame)
+    }
+    for (const b of ufoList) {
       move(b, b.x() + b.vx * f, b.y())
-      if (b.x() > W + 70) {
+      if (b.x() > W + 90) {
         b.dead = true
-        bossDirty = true
+        ufoDirty = true
       }
     }
 
-    if (FOE_TOP + (ROWS - 1) * FOE_ROW + marchY > FOE_FLOOR) {
-      marchY = 0
+    if (ALIEN_TOP + (ROWS - 1) * ALIEN_ROW + swarmY > ALIEN_FLOOR) {
+      swarmY = 0
       loseLife(now)
     }
   }
@@ -573,8 +613,8 @@ export function Arcade() {
     }
   }
 
-  const runBits = (f: number) => {
-    for (const p of bitList) {
+  const runSparks = (f: number) => {
+    for (const p of sparkList) {
       // drag + a touch of gravity: the burst blooms, then settles
       const k = 1 - 0.055 * f
       p.vx *= k
@@ -584,7 +624,7 @@ export function Arcade() {
       fade(p, Math.max(0, p.life / p.span))
       if (p.life <= 0) {
         p.dead = true
-        bitsDirty = true
+        sparksDirty = true
       }
     }
   }
@@ -594,28 +634,25 @@ export function Arcade() {
       if (s.dead) continue
       const sx = s.x()
       const sy = s.y()
-      for (const e of foeList) {
-        if (e.dead) continue
-        if (Math.abs(e.x() - sx) < 19 && Math.abs(e.y() - sy) < 15) {
+      for (const e of alienList) {
+        if (e.dead || e.state === 3) continue
+        if (Math.abs(e.x() - sx) < 22 && Math.abs(e.y() - sy) < 16) {
           s.dead = true
-          e.dead = true
-          alive -= 1
           shotsDirty = true
-          foesDirty = true
-          burst(e.x(), e.y(), 20, 2.6)
           addScore(e.pts)
+          popAlien(e)
           break
         }
       }
       if (s.dead) continue
-      for (const b of bossList) {
+      for (const b of ufoList) {
         if (b.dead) continue
-        if (Math.abs(b.x() - sx) < 34 && Math.abs(b.y() - sy) < 13) {
+        if (Math.abs(b.x() - sx) < 68 && Math.abs(b.y() - sy) < 26) {
           s.dead = true
           b.dead = true
           shotsDirty = true
-          bossDirty = true
-          burst(b.x(), b.y(), 28, 3.2)
+          ufoDirty = true
+          burst(b.x(), b.y(), 34, 3.6, 'sw')
           addScore(b.pts)
           break
         }
@@ -631,12 +668,12 @@ export function Arcade() {
           loseLife(now)
         }
       }
-      for (const e of foeList) {
+      for (const e of alienList) {
         if (e.dead || e.state !== 1) continue
         if (Math.abs(e.x() - here) < 20 && Math.abs(e.y() - SHIP_Y) < 17) {
           e.dead = true
           alive -= 1
-          foesDirty = true
+          aliensDirty = true
           burst(e.x(), e.y(), 20, 2.6)
           loseLife(now)
         }
@@ -665,15 +702,15 @@ export function Arcade() {
         if (invuln <= 0) invuln = 0
       }
 
-      runFoes(f, now)
+      runAliens(f, now)
       runBullets(f, now)
       runHits(now)
 
       if (prune(shotList)) shotsDirty = true
       if (prune(boltList)) boltsDirty = true
-      if (prune(foeList)) foesDirty = true
-      if (prune(bossList)) bossDirty = true
-      if (alive <= 0 && foeList.length === 0) {
+      if (prune(alienList)) aliensDirty = true
+      if (prune(ufoList)) ufoDirty = true
+      if (alive <= 0 && alienList.length === 0) {
         setWave(wave() + 1)
         spawnWave()
       }
@@ -681,8 +718,8 @@ export function Arcade() {
       begin('demo')
     }
 
-    runBits(f)
-    if (prune(bitList)) bitsDirty = true
+    runSparks(f)
+    if (prune(sparkList)) sparksDirty = true
     publish()
   }
 
@@ -757,11 +794,11 @@ export function Arcade() {
       else start()
     }
 
-    // Swallow the game keys at the capture phase WHILE PLAYING, exactly like
-    // Tetris: the peitho viewer navigates on document keydown, and a leaked
-    // arrow would re-inject this slide's HTML and remount the cabinet
-    // mid-frame. Escape is read but never swallowed — it belongs to the viewer
-    // too — and PageUp / PageDown are never touched.
+    // Swallow the game keys at the capture phase WHILE PLAYING: the peitho
+    // viewer navigates on document keydown, and a leaked arrow would re-inject
+    // this slide's HTML and remount the cabinet mid-frame. Escape is read but
+    // never swallowed — it belongs to the viewer too — and PageUp / PageDown
+    // are never touched.
     const LEFT = new Set(['ArrowLeft', 'a', 'A'])
     const RIGHT = new Set(['ArrowRight', 'd', 'D'])
     const FIRE = new Set([' ', 'Spacebar', 'ArrowUp', 'w', 'W'])
@@ -810,10 +847,10 @@ export function Arcade() {
         {stars().map((e) => (
           <Sprite key={e.id} e={e} />
         ))}
-        {bosses().map((e) => (
+        {ufos().map((e) => (
           <Sprite key={e.id} e={e} />
         ))}
-        {foes().map((e) => (
+        {aliens().map((e) => (
           <Sprite key={e.id} e={e} />
         ))}
         {bolts().map((e) => (
@@ -825,7 +862,7 @@ export function Arcade() {
         {ships().map((e) => (
           <Sprite key={e.id} e={e} />
         ))}
-        {bits().map((e) => (
+        {sparks().map((e) => (
           <Sprite key={e.id} e={e} />
         ))}
       </div>
@@ -856,11 +893,11 @@ export function Arcade() {
 
       <div className={panelClass()}>
         <div className="a-logo" aria-hidden="true">
-          <i className="a-glyph px-e30"></i>
-          <i className="a-glyph px-e10"></i>
-          <i className="a-glyph px-e20"></i>
-          <i className="a-glyph px-e10"></i>
-          <i className="a-glyph px-e30"></i>
+          <i className="a-glyph px-a0"></i>
+          <i className="a-glyph px-b0"></i>
+          <i className="a-glyph px-a0"></i>
+          <i className="a-glyph px-b0"></i>
+          <i className="a-glyph px-a0"></i>
         </div>
         <div className="a-wordmark">game over</div>
         <div className="a-final">final score {scoreText()}</div>
