@@ -11,7 +11,7 @@
 
 import type { ParamInfo, PropUsage } from '../types.ts'
 import { computePropsUsedAsConditions } from './compute-prop-usage.ts'
-import { boundPropLocalNames, livePropReadExpr } from '../props-binding.ts'
+import { boundPropLocalNames, bodyDestructuredPropParams, livePropReadExpr } from '../props-binding.ts'
 import { rewriteScopedValueRefs } from '../prop-rewrite.ts'
 import { PROPS_PARAM } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
@@ -19,21 +19,45 @@ import type { ClientJsContext } from './types.ts'
 /**
  * Rewrite every bare value-position read of a destructured prop in `code`
  * (the joined `init*` body, already past `rewritePropsObjectRef`) to a live
- * `_p.<key>` read. No-op in props-object mode — there every prop read is
- * already `_p.X` via that rename.
+ * `_p.<key>` read. Covers both destructuring shapes:
+ *
+ *   - PARAMETER form (`function Child({ value })`, `propsObjectName ===
+ *     null`) — bindings come from `ctx.propsParams` via
+ *     `boundPropLocalNames`.
+ *   - BODY form in props-object mode (`function Child(props) { const
+ *     { value } = props }`) — bindings come from
+ *     `bodyDestructuredPropParams(ctx.localConstants, ctx.propsObjectName)`.
+ *     The alias declaration line (`const value = _p.value`) this synthesizes
+ *     a live read FOR must already be absent from `code` by this point
+ *     (suppressed at emission in `emitSortedDeclarations`,
+ *     `init-declarations.ts`) — see the note below on why that suppression
+ *     is mandatory, not optional.
+ *
+ * A no-op when neither mode has any eligible bindings.
  *
  * The walk is `rewriteScopedValueRefs` (`prop-rewrite.ts`), which carries a
  * binding-scope stack, so `items.map((title) => title.a)` and a
  * handler-local `const title = 'local'` keep their own binding even when
  * `title` is also a prop name.
  *
- * Excluding `children` is load-bearing, not belt-and-braces: its one-time
- * `const children = _p.children` extraction sits at the TOP LEVEL of this
- * text, which parses as a statement list, and `scopeFrameOf` only opens a
- * frame for a `Block` — so the walk would NOT see that const as a shadow
- * and would rewrite the references it binds. Reading `_p.children` live
- * re-invokes a getter that instantiates child components (see
- * `emitPropsExtraction`).
+ * Excluding `children` is load-bearing, not belt-and-braces, in BOTH modes:
+ * `code` at this point is the WHOLE `export function init<Name>(__scope, _p
+ * = {}) { … }` function — a `FunctionDeclaration` whose body is a `ts.Block`
+ * — and `scopeFrameOf` (`prop-rewrite.ts`) DOES open a frame for a `Block`
+ * and collect every one of its statement-level `const`s as a shadow. So a
+ * `const children = _p.children` (or `const kids = _p.children`) surviving
+ * at that level is seen as a local binding shadowing its own name, and the
+ * walk correctly leaves references to it alone WITHOUT needing to be told —
+ * but only because that line is still IN `code`. This is exactly why the
+ * body-form live-read candidates must have their OWN alias line suppressed
+ * before it reaches this rewrite: leaving `const value = _p.value` in place
+ * and relying on the same shadow mechanism to protect it would make the
+ * "live read" rewrite silently rewrite nothing for that name at all (the
+ * shadow hides every reference from the walk, not just protects it) —
+ * `bodyDestructuredPropParams` and its caller in `init-declarations.ts`
+ * exist so `children`/`kids` gets that protection on purpose while every
+ * other body-destructured binding does NOT (its declaration line is never
+ * emitted, so there is no shadow to hide behind).
  *
  * A null result can only mean `code` did not parse — never that a
  * substitution broke it, since the walk parses the pristine input and every
@@ -50,22 +74,41 @@ export function rewriteDestructuredPropReads(
   ctx: ClientJsContext,
   propUsage: ReadonlyMap<string, PropUsage>,
 ): string {
-  if (ctx.propsObjectName !== null) return code
-
-  const names = new Set(boundPropLocalNames(ctx))
-  names.delete('children')
-  if (names.size === 0) return code
-
-  const propsUsedAsConditions = computePropsUsedAsConditions(ctx, names)
   const propByName = new Map<string, ParamInfo>()
-  for (const p of ctx.propsParams) propByName.set(p.name, p)
+  let names: Set<string>
+  let replacementFor: (name: string) => string
 
-  const replacementFor = (name: string): string => {
-    // `names` comes from `ctx.propsParams`, so the fallback is unreachable —
-    // kept over a non-null assertion.
-    const prop = propByName.get(name)
-    if (!prop) return `${PROPS_PARAM}.${name}`
-    return livePropReadExpr(prop, propUsage.get(name), propsUsedAsConditions.has(name))
+  if (ctx.propsObjectName !== null) {
+    // Body-destructured props-object mode (#2934).
+    const bindings = bodyDestructuredPropParams(ctx.localConstants, ctx.propsObjectName)
+    if (bindings.size === 0) return code
+    names = new Set(bindings.keys())
+    for (const [name, param] of bindings) propByName.set(name, param)
+    replacementFor = (name) => {
+      const prop = propByName.get(name)
+      // `names` comes straight from `bindings`' keys, so the fallback is
+      // unreachable — kept over a non-null assertion.
+      if (!prop) return `${PROPS_PARAM}.${name}`
+      // Explicit destructure-default only, no synthesized
+      // `PropUsage`-derived fallback — matches what the (now-suppressed)
+      // captured-once line did, and matches direct-read props-object mode
+      // (`props.items.length` → `_p.items.length`, no fallback either).
+      return livePropReadExpr(prop, undefined, false)
+    }
+  } else {
+    // Parameter-destructure mode.
+    names = new Set(boundPropLocalNames(ctx))
+    names.delete('children')
+    if (names.size === 0) return code
+    for (const p of ctx.propsParams) propByName.set(p.name, p)
+    const propsUsedAsConditions = computePropsUsedAsConditions(ctx, names)
+    replacementFor = (name) => {
+      const prop = propByName.get(name)
+      // `names` comes from `ctx.propsParams`, so the fallback is
+      // unreachable — kept over a non-null assertion.
+      if (!prop) return `${PROPS_PARAM}.${name}`
+      return livePropReadExpr(prop, propUsage.get(name), propsUsedAsConditions.has(name))
+    }
   }
 
   const result = rewriteScopedValueRefs(code, names, replacementFor, { allowStatements: true })

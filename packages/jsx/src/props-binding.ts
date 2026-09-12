@@ -108,6 +108,69 @@ export function resolveBodyDestructuredPropAliases(
 }
 
 /**
+ * Synthesized `ParamInfo`s for the body-level `const { … } = props`
+ * bindings (props-object mode) eligible for a LIVE `_p.<key>` read
+ * instead of a captured-once local — the body-destructure twin of the
+ * parameter form's `ParamInfo`s already in `propsParams`. Keyed by the
+ * LOCAL binding name (`c.name`), same key convention as
+ * `boundPropLocalNames`.
+ *
+ * Eligibility mirrors what the removed captured-once line used to do,
+ * minus the one binding that must stay captured-once:
+ *   - `c.propDestructure` must be set — only entries the analyzer
+ *     expanded from an actual body destructure of `props`
+ *     (`collectConstant`, `analyzer.ts`) qualify; a plain
+ *     `const value = props.value` written by hand does NOT (no
+ *     `propDestructure` stamped), by design — this only covers what a
+ *     real destructure PATTERN said.
+ *   - `declarationKind === 'const'` and `!mutatedAfterDeclaration` — a
+ *     `let { value } = props` that gets reassigned later is a real,
+ *     captured, mutable local; a live-read rewrite would silently
+ *     discard the reassignment.
+ *   - `!isModule` — module-scope constants don't have a live `_p` to
+ *     read from (no per-instance props there).
+ *   - `propDestructure.key !== 'children'` — `children`'s value is a
+ *     GETTER that instantiates child components on read
+ *     (`emitPropsExtraction`'s docstring); re-invoking it live on every
+ *     read would re-mount them. Excluded by CALLER KEY, not local name,
+ *     so a rename (`const { children: kids } = props`) is caught too.
+ *
+ * Returns an empty map for a parameter-destructuring component
+ * (`propsObjectName === null`) — that shape's live-read rewrite is
+ * already fully covered by `boundPropLocalNames` + `ctx.propsParams`.
+ */
+export function bodyDestructuredPropParams(
+  localConstants: readonly ConstantInfo[],
+  propsObjectName: string | null,
+): Map<string, ParamInfo> {
+  const params = new Map<string, ParamInfo>()
+  if (propsObjectName === null) return params
+  for (const c of localConstants) {
+    const d = c.propDestructure
+    if (!d) continue
+    if (d.key === 'children') continue
+    if (c.isModule) continue
+    if (c.declarationKind !== 'const') continue
+    if (c.mutatedAfterDeclaration) continue
+    params.set(c.name, {
+      name: c.name,
+      sourceName: d.key !== c.name ? d.key : undefined,
+      defaultValue: d.defaultValue,
+      defaultContainsArrow: d.defaultContainsArrow,
+      optional: true,
+      isRest: false,
+      // No real TypeScript type is available for a synthesized param
+      // (the analyzer's destructure expansion doesn't type-check the
+      // pattern) — `.type` is read only for TS-emission consumers this
+      // path never reaches (`livePropReadExpr`/`propReadFallback` never
+      // touch it), so a permissive `unknown` placeholder is safe.
+      type: { kind: 'unknown', raw: 'unknown' },
+    })
+  }
+  return params
+}
+
+/**
  * The props-parameter shape needed to answer "is `name` an actual local
  * binding introduced by the props parameter" — as opposed to
  * `ctx.patterns.props`, which for a whole `(props: Props)` parameter holds

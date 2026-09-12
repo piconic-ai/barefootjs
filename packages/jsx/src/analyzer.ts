@@ -3190,6 +3190,11 @@ function collectConstant(
         // Body-level destructure-from-props is collected only when
         // _isModule === false; binding lives in init scope.
         origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
+        propDestructure: {
+          key: sourceKey,
+          defaultValue: defaultValueExpr,
+          defaultContainsArrow: containsArrow || undefined,
+        },
       })
     }
     return

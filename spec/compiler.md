@@ -82,18 +82,30 @@ setCount(n => n + 1)  // Updater function
 
 ### Props Access
 
-Unlike SolidJS, BOTH `props.xxx` access and destructuring the props parameter stay reactive
-in BarefootJS — the compiler rewrites every value-position read of a destructured prop name
-to the same live getter read a `props.xxx` access would compile to (`props-binding.ts`'s
-`livePropReadExpr`, applied by `rewriteDestructuredPropReads` as a final pass over the
-joined `init*` body). Both forms below are equally reactive — the choice is style, not
-correctness:
+Unlike SolidJS, `props.xxx` access, destructuring the props PARAMETER, and destructuring
+`props` in the component BODY all stay reactive in BarefootJS — the compiler rewrites every
+value-position read of a destructured prop name to the same live getter read a `props.xxx`
+access would compile to (`props-binding.ts`'s `livePropReadExpr`, applied by
+`rewriteDestructuredPropReads` as a final pass over the joined `init*` body; the parameter
+form's bindings come from `boundPropLocalNames`, the body form's from
+`bodyDestructuredPropParams`, #2934). All three forms below are equally reactive — the
+choice is style, not correctness — with two narrow, intentional exceptions:
+
+- **`children`** stays captured once, by design, in BOTH the parameter and body forms —
+  its value is a getter that INSTANTIATES child components on read, so a live re-read would
+  re-mount them on every access (`emitPropsExtraction`'s docstring).
+- **A `let`-declared or later-reassigned body binding** (`let { value } = props`, or a
+  `const` binding mutated afterward) stays a real, captured, mutable local — the whole point
+  of `let` there is to diverge from the prop after the initial read, so rewriting every
+  reference to a live `_p.value` read would silently discard the reassignment.
 
 | Pattern | Behavior | Use Case |
 |---------|----------|----------|
 | `props.value` | Reactive (live getter read) | Either style |
 | `function C({ value }: Props)` (parameter destructuring) | Reactive (live getter read) | Either style |
-| `const { value } = props` (body destructuring) | Captured once | Initial values only |
+| `const { value } = props` (body destructuring) | Reactive (live getter read) | Either style |
+| `const { children } = props` (either form) | Captured once | Instantiates child components once |
+| `let { value } = props` (body, mutated later) | Captured, mutable local | Diverges from the prop on purpose |
 
 ```tsx
 // ✅ Reactive: props.xxx access
@@ -104,6 +116,14 @@ function Child(props: Props) {
 // ✅ Equally reactive: destructured parameter
 function Child({ value }: Props) {
   return <p>{value}</p>  // Compiles to the same live `_p.value` read
+}
+
+// ✅ Equally reactive: destructured in the body
+function Child(props: Props) {
+  const { value } = props
+  return <p>{value}</p>  // Compiles to the same live `_p.value` read — the
+                          // `const value = _p.value` alias line itself is
+                          // never emitted (#2934)
 }
 
 // ✅ OK: destructured value as the INITIAL value for a local signal — the
@@ -154,8 +174,11 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 - `props.value` → Getter is called at each read site → Reactive
 - `function C({ value }: Props)` → the compiler rewrites `value` to the same getter read at
   each reference site (not a plain local binding) → equally reactive
-- `const { value } = props` in the BODY → a plain local binding, so the getter is called once
-  → captured (`rewriteDestructuredPropReads` only covers the parameter form)
+- `const { value } = props` in the BODY → the compiler suppresses the alias declaration
+  entirely and rewrites `value` to the same getter read at each reference site → equally
+  reactive (#2934) — except `children` (a real captured-once local, always) and a
+  `let`/later-mutated binding (a real captured, mutable local, since it diverges from the
+  prop on purpose)
 
 ### Comparison with SolidJS and React
 
@@ -163,7 +186,7 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 |--------|-----------|---------|-------|
 | Signal access | `count()` | `count()` | `count` (useState) |
 | Props access | Getter-based | Getter-based | Direct access |
-| Destructuring props | ✅ Safe in the parameter (compiler rewrites reads live); ⚠️ captured once in the body | ⚠️ Careful | ✅ Safe |
+| Destructuring props | ✅ Safe in the parameter AND the body (compiler rewrites reads live in both, `children`/mutated `let` bindings excepted) | ⚠️ Careful | ✅ Safe |
 | Dependency tracking | Automatic | Automatic | Manual arrays |
 | Rendering | Marked template + Client hydration | All in JS | All in JS |
 
@@ -1549,6 +1572,7 @@ The contract: **analyzer is the single source of truth, emit reads from IR**.
 | `FunctionInfo.isGenerator` | `FunctionInfo` | analyzer | `emit-module-level.ts` (preserves `function*`) |
 | `FunctionInfo.declarationKind` | `FunctionInfo` | analyzer | `module-exports.ts`, `jsx-adapter.ts`, `plan/build-declaration-emit.ts` |
 | `InitStatementInfo.needsLeadingSemi` | `InitStatementInfo` | analyzer (detects ASI hazard prefix `(`/`[`/`` ` ``/`+`/`-`/`/`) | `phases/init-statements.ts` (prepends `;`) |
+| `ConstantInfo.propDestructure { key, defaultValue?, defaultContainsArrow? }` | `ConstantInfo` (props-object mode only) | analyzer's `collectConstant`, expanding a body-level `const { … } = props` | `bodyDestructuredPropParams` (`props-binding.ts`) — synthesizes a `ParamInfo` per eligible binding for the live-`_p.<key>`-read rewrite (#2934) |
 
 ### See also
 

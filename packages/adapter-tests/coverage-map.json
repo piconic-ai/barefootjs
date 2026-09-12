@@ -2037,13 +2037,16 @@
         "call",
         "conditional",
         "identifier",
-        "literal"
+        "literal",
+        "logical",
+        "member"
       ],
       "axes": [
         "binary:*",
         "literal:boolean",
         "literal:number",
-        "literal:string"
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "attribute",
@@ -6656,8 +6659,8 @@
     "identifier": 389,
     "index-access": 14,
     "literal": 311,
-    "logical": 49,
-    "member": 230,
+    "logical": 50,
+    "member": 231,
     "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
@@ -6704,7 +6707,7 @@
     "literal:number": 142,
     "literal:string": 212,
     "logical:&&": 7,
-    "logical:??": 41,
+    "logical:??": 42,
     "logical:||": 16,
     "lowering:date": 4,
     "lowering:formatDate": 2,

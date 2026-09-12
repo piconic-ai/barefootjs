@@ -51,7 +51,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, bodyDestructuredPropParams, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
@@ -694,11 +694,30 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
       }
     }
     const eligible = ctx.analyzer.propsParams.filter(p => !shadowed.has(p.name))
-    const names = eligible.map(p => p.name)
-    ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
-    ctx._destructuredPropAliases = buildPropAliasMap(eligible) ?? null
+    const names = new Set(eligible.map(p => p.name))
+    const aliases = buildPropAliasMap(eligible) ?? new Map<string, string>()
     const infoByName = new Map<string, ParamInfo>()
     for (const p of eligible) infoByName.set(p.name, p)
+
+    // Merge in body-destructured props-object live-read bindings (#2934) so
+    // a defaulted body destructure (`const { label = 'n' } = props`) gets
+    // the SAME `(_p.label ?? 'n')` treatment in the CSR `template:` lambda
+    // that a parameter-destructured default already gets — without this,
+    // `infoByName` only ever held type-member `ParamInfo`s (no
+    // `defaultValue`, since `extractPropsFromTypeMembers` doesn't carry
+    // one), so this branch silently emitted a bare `_p.label` while Hono's
+    // SSR applied the default, a silent CSR/SSR divergence. Overrides any
+    // existing type-member entry for the same name so the destructure's
+    // own default wins.
+    const bodyParams = bodyDestructuredPropParams(ctx.analyzer.localConstants, ctx.analyzer.propsObjectName)
+    for (const [name, param] of bodyParams) {
+      names.add(name)
+      if (param.sourceName) aliases.set(name, param.sourceName)
+      infoByName.set(name, param)
+    }
+
+    ctx._destructuredPropNames = names.size > 0 ? names : null
+    ctx._destructuredPropAliases = aliases.size > 0 ? aliases : null
     ctx._destructuredPropInfoByName = infoByName.size > 0 ? infoByName : null
   }
   return ctx._destructuredPropNames ?? null

@@ -2026,6 +2026,24 @@ export interface ConstantInfo {
    * `module`. Optional during the staged-IR migration.
    */
   origin?: OriginInfo
+  /**
+   * Set only on entries produced by expanding a body-level
+   * `const { … } = props` (analyzer's `collectConstant`, props-object
+   * mode). Carries what the destructure pattern itself said — the
+   * caller-facing source key and any explicit default — as structured
+   * data rather than re-deriving it from `value`/`parsed` downstream, so
+   * the live-prop-read rewrite (`bodyDestructuredPropParams`,
+   * `props-binding.ts`) can synthesize a `ParamInfo` for each binding
+   * without a second AST walk of the pattern.
+   */
+  propDestructure?: {
+    /** The caller-facing key (`el.propertyName ?? el.name`), e.g. `n` in `{ n: count }`. */
+    key: string
+    /** The destructure default's source text (`{ label = 'n' }` → `'n'`), verbatim. */
+    defaultValue?: string
+    /** True when `defaultValue` contains an arrow function (needs parens after `??`). */
+    defaultContainsArrow?: boolean
+  }
 }
 
 export interface TypeDefinition {

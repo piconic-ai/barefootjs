@@ -30,6 +30,7 @@ import type {
 import { computeDeclarationScopes } from './compute-scope.ts'
 import { graphUsedIdentifiers } from './build-references.ts'
 import { getControlledPropName } from './prop-handling.ts'
+import { bodyDestructuredPropParams } from '../props-binding.ts'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort.ts'
 import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit.ts'
 import { stringifyDeclarationEmit } from './stringify/declaration-emit.ts'
@@ -140,7 +141,22 @@ export function emitSortedDeclarations(
   const { neededConstants, initScopeFunctions, controlledSignals } = classification
   const declarations: Declaration[] = []
 
+  // Suppress the captured-once alias declaration (`const value = _p.value`)
+  // for every body-destructured binding that will instead get a LIVE
+  // `_p.value` read spliced at every USE site by `rewriteDestructuredPropReads`
+  // (#2934). This must happen here, at emission, not as a post-hoc prune:
+  // that rewrite walks the whole init-body TEXT with a scope-aware AST walk
+  // (`rewriteScopedValueRefs`), and a `const`-statement still sitting at the
+  // top of that body's `Block` is picked up as a REAL shadowing local (see
+  // `rewrite-destructured-props.ts`'s docstring) — so leaving the line in
+  // place would make the live-read rewrite silently skip every reference to
+  // it, exactly the failure mode this fix exists to close. `children`
+  // (by caller key) is excluded from `bodyDestructuredPropParams` and so
+  // keeps its captured-once declaration here unchanged.
+  const liveBodyPropParams = bodyDestructuredPropParams(ctx.localConstants, ctx.propsObjectName)
+
   for (const constant of neededConstants) {
+    if (constant.propDestructure && liveBodyPropParams.has(constant.name)) continue
     declarations.push({
       kind: 'constant',
       info: constant,

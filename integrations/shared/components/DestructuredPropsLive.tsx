@@ -5,6 +5,14 @@
 // computation, a `createEffect` body, an event handler, and a reactive
 // attribute (`data-label`) — must track the parent's CURRENT value, not the
 // value captured at mount. See spec/compiler.md's "Prop Boundary Contract".
+//
+// `LiveChild` covers the PARAMETER-destructure form
+// (`function LiveChild({ value })`). `BodyLiveChild` is its props-object
+// twin — `function BodyLiveChild(props) { const { value } = props }` —
+// covering the BODY-destructure form the same live-read rewrite was
+// extended to cover in #2934. Same structure, same signals wired from the
+// same parent state, so both children track one source and a click on
+// either is independently observable against a shared `picked` signal.
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 
@@ -47,6 +55,33 @@ function LiveChild({ value, label = 'none', onPick }: LiveChildProps) {
   )
 }
 
+function BodyLiveChild(props: LiveChildProps) {
+  const { value, label = 'none', onPick } = props
+  const doubled = createMemo(() => value * 2)
+  const [seen, setSeen] = createSignal(0)
+  // Same first-run skip as `LiveChild` — see its comment above.
+  let mounted = false
+  createEffect(() => {
+    const current = value
+    if (!mounted) {
+      mounted = true
+      return
+    }
+    setSeen(current)
+  })
+
+  return (
+    <div className="body-live-child" data-label={label}>
+      <span className="raw">{value}</span>
+      <span className="memo">{doubled()}</span>
+      <span className="effect">{seen()}</span>
+      <button className="btn-pick" onClick={() => onPick(value)}>
+        pick
+      </button>
+    </div>
+  )
+}
+
 export function DestructuredPropsLive() {
   const [count, setCount] = createSignal(1)
   const [picked, setPicked] = createSignal(0)
@@ -63,6 +98,7 @@ export function DestructuredPropsLive() {
         name
       </button>
       <LiveChild value={count()} label={named() ? 'named' : undefined} onPick={setPicked} />
+      <BodyLiveChild value={count()} label={named() ? 'named' : undefined} onPick={setPicked} />
     </div>
   )
 }
