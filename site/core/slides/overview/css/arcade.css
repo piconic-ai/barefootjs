@@ -1,24 +1,45 @@
 /*
   layout-arcade — "Every bullet is a DOM node."
 
-  Full-bleed: the slide's own paper ground is the playfield, so nothing here
-  paints a background. Sprites are flat ink shapes with 1.5px strokes; the one
-  colour is the deck's green, used only for the player's shots and half of the
-  debris. Every rule is scoped under .layout-arcade / .arcade so this file can
-  sit next to base.css in any order — the two-class selectors outrank the
-  single-class ones base.css uses for the same properties.
+  A retro arcade cabinet screen: black stage, pixel-art sprites, a scrolling
+  starfield. Everything on the stage is one DOM element positioned by a
+  `transform` that one compiler-generated effect writes — the metrics in the
+  bottom-left corner are the proof, so they are styled as instrumentation and
+  kept away from the game's own score panel.
+
+  Sprites are data-URI SVG backgrounds drawn at 3px per art pixel (the ASCII
+  map above each rule is the source art; regenerate with the same maps if you
+  edit one). One class per species AND FRAME — `px-<kind><frame>` — so a sprite
+  animates by swapping one class on the same element, which is one more signal
+  write per frame change and nothing else.
+
+  Every rule is scoped under .layout-arcade / .arcade so this file can sit next
+  to base.css in any order: the two-class selectors outrank the single-class
+  ones base.css uses for the same properties.
 */
 
-/* the slide is the canvas: no padding, no column flow, no entrance */
+/* ---------- the slide becomes the cabinet ---------- */
 .peitho-slide.layout-arcade {
   display: block;
   padding: 0;
   gap: 0;
+  background: #0a0a0a;
+  color: #fff;
 }
+/* the paper grain belongs to the paper slides */
+.peitho-slide.layout-arcade::before { display: none; }
 .peitho-slide.layout-arcade > * { animation: none; }
 
 .arcade-mount,
 .layout-arcade .arcade { position: absolute; inset: 0; }
+
+.arcade {
+  --arc-dim: #6f7a72;
+  --arc-grey: #a9b3ac;
+  --arc-green: #3fa45b;
+  --arc-light: #8fd19e;
+  font-family: var(--mono);
+}
 
 .arcade-stage {
   position: absolute;
@@ -27,120 +48,399 @@
   contain: strict;
 }
 
+/* CRT, quietly: 1px scanlines and a soft vignette, no glow */
+.arcade-crt,
+.arcade-vig {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.arcade-crt {
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 0 1px, rgba(255, 255, 255, 0) 1px 3px);
+}
+.arcade-vig {
+  background: radial-gradient(118% 96% at 50% 46%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.62) 100%);
+}
+.arcade-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  background: #fff;
+  pointer-events: none;
+}
+
 /* ---------- sprites: one element each, positioned by transform ---------- */
 .a-ent {
   position: absolute;
   left: 0;
   top: 0;
   display: block;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
   will-change: transform;
 }
 
-/* enemies: hollow ink outlines */
-.a-sq { width: 17px; height: 17px; margin: -9px 0 0 -9px; border: 1.5px solid var(--ink); }
-.a-di { width: 15px; height: 15px; margin: -8px 0 0 -8px; border: 1.5px solid var(--ink); }
-.a-ci { width: 17px; height: 17px; margin: -9px 0 0 -9px; border: 1.5px solid var(--ink); border-radius: 50%; }
+/* flat-colour sprites need no art */
+.px-shot0 { width: 3px; height: 9px; margin: -5px 0 0 -2px; background-color: #fff; }
+.px-bit0 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #3fa45b; }
+.px-bit20 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #8fd19e; }
+.px-bit30 { width: 3px; height: 3px; margin: -2px 0 0 -2px; background-color: #fff; }
+.px-star0 { width: 1px; height: 1px; background-color: #fff; }
+.px-star1 { width: 2px; height: 2px; background-color: #fff; }
 
-/* fire */
-.a-shot { width: 2px; height: 10px; margin: -5px 0 0 -1px; background: var(--accent); border-radius: 1px; }
-.a-bolt { width: 2px; height: 8px; margin: -4px 0 0 -1px; background: var(--ink); }
-
-/* debris + dust */
-.a-bit { width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; background: var(--accent); border-radius: 50%; }
-.a-bit2 { width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; background: var(--ink); border-radius: 50%; }
-.a-dust { width: 1.5px; height: 1.5px; background: var(--ink); border-radius: 50%; }
-
-/* the ship */
-.a-ship {
-  width: 26px;
-  height: 21px;
-  margin: -11px 0 0 -13px;
-  background: var(--ink);
-  clip-path: polygon(50% 0%, 100% 100%, 50% 74%, 0% 100%);
+/*
+  ..g.....g..
+  ...g...g...
+  ..ggggggg..
+  .gg.www.gg.
+  ggggggggggg
+  g.ggggggg.g
+  g.g.....g.g
+  ...gg.gg...
+*/
+.px-e10 {
+  width: 33px;
+  height: 24px;
+  margin: -12.0px 0 0 -16.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M4 3h3v1h-3z'/%3E%3Cpath fill='%233fa45b' d='M2 0h1v1h-1zM8 0h1v1h-1zM3 1h1v1h-1zM7 1h1v1h-1zM2 2h7v1h-7zM1 3h2v1h-2zM8 3h2v1h-2zM0 4h11v1h-11zM0 5h1v1h-1zM2 5h7v1h-7zM10 5h1v1h-1zM0 6h1v1h-1zM2 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM3 7h2v1h-2zM6 7h2v1h-2z'/%3E%3C/svg%3E");
 }
-.a-ship-hurt { animation: a-blink 140ms steps(1) infinite; }
-@keyframes a-blink { 50% { opacity: 0.15; } }
+/*
+  ..g.....g..
+  g..g...g..g
+  g.ggggggg.g
+  ggg.www.ggg
+  ggggggggggg
+  .ggggggggg.
+  ..g.....g..
+  .g.......g.
+*/
+.px-e11 {
+  width: 33px;
+  height: 24px;
+  margin: -12.0px 0 0 -16.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M4 3h3v1h-3z'/%3E%3Cpath fill='%233fa45b' d='M2 0h1v1h-1zM8 0h1v1h-1zM0 1h1v1h-1zM3 1h1v1h-1zM7 1h1v1h-1zM10 1h1v1h-1zM0 2h1v1h-1zM2 2h7v1h-7zM10 2h1v1h-1zM0 3h3v1h-3zM8 3h3v1h-3zM0 4h11v1h-11zM1 5h9v1h-9zM2 6h1v1h-1zM8 6h1v1h-1zM1 7h1v1h-1zM9 7h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  ....l....
+  ...lll...
+  ..lllll..
+  .ll.l.ll.
+  lllwlwlll
+  ..lllll..
+  .l.l.l.l.
+  l.l...l.l
+*/
+.px-e20 {
+  width: 27px;
+  height: 24px;
+  margin: -12.0px 0 0 -13.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M3 4h1v1h-1zM5 4h1v1h-1z'/%3E%3Cpath fill='%238fd19e' d='M4 0h1v1h-1zM3 1h3v1h-3zM2 2h5v1h-5zM1 3h2v1h-2zM4 3h1v1h-1zM6 3h2v1h-2zM0 4h3v1h-3zM4 4h1v1h-1zM6 4h3v1h-3zM2 5h5v1h-5zM1 6h1v1h-1zM3 6h1v1h-1zM5 6h1v1h-1zM7 6h1v1h-1zM0 7h1v1h-1zM2 7h1v1h-1zM6 7h1v1h-1zM8 7h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  ....l....
+  ...lll...
+  ..lllll..
+  .ll.l.ll.
+  lllwlwlll
+  ..lllll..
+  .l.lll.l.
+  .l.....l.
+*/
+.px-e21 {
+  width: 27px;
+  height: 24px;
+  margin: -12.0px 0 0 -13.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M3 4h1v1h-1zM5 4h1v1h-1z'/%3E%3Cpath fill='%238fd19e' d='M4 0h1v1h-1zM3 1h3v1h-3zM2 2h5v1h-5zM1 3h2v1h-2zM4 3h1v1h-1zM6 3h2v1h-2zM0 4h3v1h-3zM4 4h1v1h-1zM6 4h3v1h-3zM2 5h5v1h-5zM1 6h1v1h-1zM3 6h3v1h-3zM7 6h1v1h-1zM1 7h1v1h-1zM7 7h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  .....gg.....
+  ....gggg....
+  ...gg..gg...
+  ..gggwwggg..
+  .gggwwwwggg.
+  gg.gggggg.gg
+  g...gggg...g
+  ....g..g....
+*/
+.px-e30 {
+  width: 36px;
+  height: 24px;
+  margin: -12.0px 0 0 -18.0px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M5 3h2v1h-2zM4 4h4v1h-4z'/%3E%3Cpath fill='%233fa45b' d='M5 0h2v1h-2zM4 1h4v1h-4zM3 2h2v1h-2zM7 2h2v1h-2zM2 3h3v1h-3zM7 3h3v1h-3zM1 4h3v1h-3zM8 4h3v1h-3zM0 5h2v1h-2zM3 5h6v1h-6zM10 5h2v1h-2zM0 6h1v1h-1zM4 6h4v1h-4zM11 6h1v1h-1zM4 7h1v1h-1zM7 7h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  .....gg.....
+  ....gggg....
+  g..gg..gg..g
+  g.gggwwggg.g
+  gggwwwwwwggg
+  .g.gggggg.g.
+  ....gggg....
+  ...g....g...
+*/
+.px-e31 {
+  width: 36px;
+  height: 24px;
+  margin: -12.0px 0 0 -18.0px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M5 3h2v1h-2zM3 4h6v1h-6z'/%3E%3Cpath fill='%233fa45b' d='M5 0h2v1h-2zM4 1h4v1h-4zM0 2h1v1h-1zM3 2h2v1h-2zM7 2h2v1h-2zM11 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM7 3h3v1h-3zM11 3h1v1h-1zM0 4h3v1h-3zM9 4h3v1h-3zM1 5h1v1h-1zM3 5h6v1h-6zM10 5h1v1h-1zM4 6h4v1h-4zM3 7h1v1h-1zM8 7h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  ......w......
+  .....www.....
+  .....www.....
+  ..wwwwwwwww..
+  .wwwwwwwwwww.
+  wwwwwwwwwwwww
+  ww.wwwwwww.ww
+  ww.........ww
+  ...g.....g...
+*/
+.px-ship0 {
+  width: 39px;
+  height: 27px;
+  margin: -13.5px 0 0 -19.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M6 0h1v1h-1zM5 1h3v1h-3zM5 2h3v1h-3zM2 3h9v1h-9zM1 4h11v1h-11zM0 5h13v1h-13zM0 6h2v1h-2zM3 6h7v1h-7zM11 6h2v1h-2zM0 7h2v1h-2zM11 7h2v1h-2z'/%3E%3Cpath fill='%233fa45b' d='M3 8h1v1h-1zM9 8h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  ......w......
+  .....www.....
+  .....www.....
+  ..wwwwwwwww..
+  .wwwwwwwwwww.
+  wwwwwwwwwwwww
+  ww.wwwwwww.ww
+  ww.........ww
+  ....l...l....
+*/
+.px-ship1 {
+  width: 39px;
+  height: 27px;
+  margin: -13.5px 0 0 -19.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M6 0h1v1h-1zM5 1h3v1h-3zM5 2h3v1h-3zM2 3h9v1h-9zM1 4h11v1h-11zM0 5h13v1h-13zM0 6h2v1h-2zM3 6h7v1h-7zM11 6h2v1h-2zM0 7h2v1h-2zM11 7h2v1h-2z'/%3E%3Cpath fill='%238fd19e' d='M4 8h1v1h-1zM8 8h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  .......wwwwwwww.......
+  .....llllllllllll.....
+  ...llllllllllllllll...
+  ..llllllllllllllllll..
+  .llll.ww.llll.ww.llll.
+  llllllllllllllllllllll
+  ..ll...ll...ll...ll...
+*/
+.px-boss0 {
+  width: 66px;
+  height: 21px;
+  margin: -10.5px 0 0 -33.0px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 7' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M7 0h8v1h-8zM6 4h2v1h-2zM14 4h2v1h-2z'/%3E%3Cpath fill='%238fd19e' d='M5 1h12v1h-12zM3 2h16v1h-16zM2 3h18v1h-18zM1 4h4v1h-4zM9 4h4v1h-4zM17 4h4v1h-4zM0 5h22v1h-22zM2 6h2v1h-2zM7 6h2v1h-2zM12 6h2v1h-2zM17 6h2v1h-2z'/%3E%3C/svg%3E");
+}
+/*
+  .......wwwwwwww.......
+  .....llllllllllll.....
+  ...llllllllllllllll...
+  ..llllllllllllllllll..
+  .llll.gg.llll.gg.llll.
+  llllllllllllllllllllll
+  ...ll...ll...ll...ll..
+*/
+.px-boss1 {
+  width: 66px;
+  height: 21px;
+  margin: -10.5px 0 0 -33.0px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 7' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffffff' d='M7 0h8v1h-8z'/%3E%3Cpath fill='%233fa45b' d='M6 4h2v1h-2zM14 4h2v1h-2z'/%3E%3Cpath fill='%238fd19e' d='M5 1h12v1h-12zM3 2h16v1h-16zM2 3h18v1h-18zM1 4h4v1h-4zM9 4h4v1h-4zM17 4h4v1h-4zM0 5h22v1h-22zM3 6h2v1h-2zM8 6h2v1h-2zM13 6h2v1h-2zM18 6h2v1h-2z'/%3E%3C/svg%3E");
+}
+/*
+  .g.
+  g..
+  .g.
+  ..g
+  .g.
+  g..
+  .g.
+  ..g
+*/
+.px-bolt0 {
+  width: 9px;
+  height: 24px;
+  margin: -12.0px 0 0 -4.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 8' shape-rendering='crispEdges'%3E%3Cpath fill='%233fa45b' d='M1 0h1v1h-1zM0 1h1v1h-1zM1 2h1v1h-1zM2 3h1v1h-1zM1 4h1v1h-1zM0 5h1v1h-1zM1 6h1v1h-1zM2 7h1v1h-1z'/%3E%3C/svg%3E");
+}
+/*
+  .g.
+  ..g
+  .g.
+  g..
+  .g.
+  ..g
+  .g.
+  g..
+*/
+.px-bolt1 {
+  width: 9px;
+  height: 24px;
+  margin: -12.0px 0 0 -4.5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 8' shape-rendering='crispEdges'%3E%3Cpath fill='%233fa45b' d='M1 0h1v1h-1zM2 1h1v1h-1zM1 2h1v1h-1zM0 3h1v1h-1zM1 4h1v1h-1zM2 5h1v1h-1zM1 6h1v1h-1zM0 7h1v1h-1z'/%3E%3C/svg%3E");
+}
 
-/* hit flash: a breath of white over the paper, never a colour wash */
-.a-flash {
+/* the title screen reuses the sprite art as a logo row, without the
+   centring margins the stage needs (defined after .px-*, so it wins) */
+.a-glyph {
+  display: block;
+  margin: 0;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  transform: scale(1.9);
+}
+
+/* ---------- score panel: the game's own UI, top-right ---------- */
+.arcade-score {
+  position: absolute;
+  right: 56px;
+  top: 88px;
+  z-index: 5;
+  display: grid;
+  gap: 9px;
+  font-size: 17px;
+  letter-spacing: 0.14em;
+}
+.arcade-score .s-row { display: flex; justify-content: flex-end; gap: 14px; }
+.arcade-score .s-k { color: var(--arc-dim); text-transform: uppercase; }
+.arcade-score .s-v { color: #fff; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.a-demo {
+  position: absolute;
+  left: 56px;
+  top: 92px;
+  z-index: 5;
+  display: none;
+  font-size: 15px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--arc-light);
+}
+.a-demo.is-on { display: block; animation: a-blink 1000ms steps(1) infinite; }
+@keyframes a-blink { 50% { opacity: 0; } }
+
+/* ---------- instrumentation: bottom-left, deliberately quiet ---------- */
+.arcade-meta {
+  position: absolute;
+  left: 56px;
+  bottom: 46px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.arcade-metrics {
+  display: flex;
+  gap: 9px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #62625f;
+}
+.arcade-metrics .m-v { color: var(--arc-grey); font-variant-numeric: tabular-nums; }
+.arcade-metrics .m-sep { color: #3a3a38; }
+
+.a-keys {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--arc-dim);
+}
+.arcade-meta .a-keys { visibility: hidden; }
+.arcade-meta .a-keys.is-on { visibility: visible; }
+
+/* ---------- title / game over panel ---------- */
+.a-panel {
   position: absolute;
   inset: 0;
-  display: block;
-  background: #fff;
-  pointer-events: none;
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
 }
+.a-panel.is-title, .a-panel.is-over { display: flex; }
+.a-panel.is-title .a-wordmark, .a-panel.is-title .a-final { display: none; }
+.a-panel.is-over .a-logo { display: none; }
 
-/* ---------- HUD: measured numbers, top-left ---------- */
-.arcade-rule {
-  position: absolute;
-  left: 56px;
-  top: 46px;
-  display: block;
-  width: 48px;
-  height: 1px;
-  background: var(--ink);
-  opacity: 0.7;
-}
-.arcade-hud {
-  position: absolute;
-  left: 56px;
-  top: 72px;
-  display: grid;
-  grid-template-columns: 152px auto;
-  gap: 7px 0;
-  align-items: baseline;
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1;
-}
-.arcade-hud .hud-k {
-  white-space: nowrap;
+.a-logo { display: flex; align-items: center; gap: 56px; height: 58px; }
+.a-wordmark {
+  font-size: 54px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
   text-transform: uppercase;
-  letter-spacing: 0.13em;
-  color: var(--muted);
+  color: #fff;
 }
-.arcade-hud .hud-v {
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-
-.arcade-hint {
-  position: absolute;
-  left: 56px;
-  bottom: 54px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.16em;
+.a-final {
+  font-size: 16px;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--arc-light);
+  margin-top: -18px;
 }
+.a-buttons { display: flex; gap: 26px; }
+.a-btn {
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  text-transform: uppercase;
+  color: #fff;
+  background: transparent;
+  border: 2px solid #fff;
+  border-radius: 0;
+  padding: 15px 32px;
+  cursor: pointer;
+  transition: background 120ms linear, color 120ms linear, border-color 120ms linear;
+}
+.a-btn:hover, .a-btn:focus-visible {
+  background: var(--arc-green);
+  border-color: var(--arc-green);
+  color: #0a0a0a;
+  outline: none;
+}
+.a-rm { display: none; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--arc-dim); }
+.arcade.is-rm .a-rm { display: block; }
+.arcade.is-rm .a-btn { opacity: 0.3; pointer-events: none; }
+.arcade.is-rm .a-demo.is-on { animation: none; }
 
-/* ---------- caption: the slide's one sentence, bottom-right ---------- */
+/* ---------- the slide's own caption, on black ---------- */
 .layout-arcade .arcade-caption {
   position: absolute;
-  right: 64px;
-  bottom: 48px;
-  z-index: 2;
-  max-width: 30em;
+  right: 56px;
+  bottom: 66px;
+  z-index: 5;
+  max-width: 640px;
   text-align: right;
 }
 .layout-arcade .arcade-title {
+  margin: 0;
   font-family: var(--serif);
-  font-size: 40px;
+  font-size: 38px;
   font-weight: 400;
   line-height: 1.08;
   letter-spacing: -0.015em;
-  margin: 0;
+  color: #fff;
 }
+.layout-arcade .arcade-title em { font-style: italic; color: var(--arc-light); }
 .layout-arcade .arcade-body {
   margin-top: 10px;
   font-size: 15px;
   line-height: 1.5;
-  color: var(--muted);
   letter-spacing: 0;
+  color: #85857f;
+  text-wrap: balance;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .a-ship-hurt { animation: none; }
+  .a-demo.is-on { animation: none; }
 }
