@@ -141,6 +141,33 @@ type LiveChildProps struct {
 	Doubled interface{} `json:"-"`
 }
 
+// BodyLiveChildInput is the user-facing input type.
+type BodyLiveChildInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Value int
+	Label interface{}
+	OnPick interface{}
+}
+
+// BodyLiveChildProps is the props type for the BodyLiveChild component.
+type BodyLiveChildProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Value int `json:"value"`
+	Label interface{} `json:"label"`
+	OnPick interface{} `json:"onPick"`
+	Seen int `json:"-"`
+	Doubled interface{} `json:"-"`
+}
+
 // DestructuredPropsLiveInput is the user-facing input type.
 type DestructuredPropsLiveInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -162,6 +189,7 @@ type DestructuredPropsLiveProps struct {
 	Picked int `json:"-"`
 	Named bool `json:"-"`
 	LiveChildSlot6 LiveChildProps `json:"-"`
+	BodyLiveChildSlot7 BodyLiveChildProps `json:"-"`
 }
 
 // DetailsFaqInput is the user-facing input type.
@@ -953,6 +981,33 @@ func NewLiveChildProps(in LiveChildInput) LiveChildProps {
 	}
 }
 
+// NewBodyLiveChildProps creates BodyLiveChildProps from BodyLiveChildInput.
+func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "BodyLiveChild_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+	bfCallerProps["value"] = in.Value
+	if in.Label != nil {
+		bfCallerProps["label"] = in.Label
+	}
+	bfCallerProps["onPick"] = in.OnPick
+
+	return BodyLiveChildProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Value: in.Value,
+		Label: in.Label,
+		OnPick: in.OnPick,
+		Seen: 0,
+		Doubled: in.Value * 2,
+	}
+}
+
 // NewDestructuredPropsLiveProps creates DestructuredPropsLiveProps from DestructuredPropsLiveInput.
 func NewDestructuredPropsLiveProps(in DestructuredPropsLiveInput) DestructuredPropsLiveProps {
 	scopeID := in.ScopeID
@@ -974,6 +1029,12 @@ func NewDestructuredPropsLiveProps(in DestructuredPropsLiveInput) DestructuredPr
 			ScopeID: scopeID + "_s6",
 			BfParent: scopeID,
 			BfMount: "s6",
+			Value: 1,
+		}),
+		BodyLiveChildSlot7: NewBodyLiveChildProps(BodyLiveChildInput{
+			ScopeID: scopeID + "_s7",
+			BfParent: scopeID,
+			BfMount: "s7",
 			Value: 1,
 		}),
 	}
