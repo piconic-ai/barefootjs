@@ -32,6 +32,9 @@ import {
   buildStaticArrayDelegationPlan,
 } from './control-flow/plan/build-event-delegation.ts'
 import { stringifyEventDelegation } from './control-flow/stringify/event-delegation.ts'
+import { findContainerOwnHandler, type ContainerOwnHandler } from './control-flow/plan/event-collision.ts'
+import { loopEventDelegationVariant, type LoopDelegationIndex } from './control-flow/plan/loop-delegation-index.ts'
+import { toDomEventName } from './utils.ts'
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
@@ -66,14 +69,21 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
  *   - `'component' / 'composite'` → events ride on the component's own
  *     event surface, no delegation pass needed
  */
-export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLocalNames: Set<string>): void {
+export function emitLoopUpdates(
+  lines: string[],
+  ctx: ClientJsContext,
+  unsafeLocalNames: Set<string>,
+  conditionalSlotIds: Set<string>,
+  loopDelegationIndex: LoopDelegationIndex,
+): void {
   // Lazy row graph (§9.4) name facts — built once per component, consulted
   // by every plain loop's eligibility gate.
   const lazyScope = buildLazyRowScopeInfo(ctx)
-  for (const elem of ctx.loopElements) {
+  const profileComponentName = ctx.profile ? ctx.componentName : undefined
+  ctx.loopElements.forEach((elem, loopIndex) => {
     const plan = buildLoopPlan(elem, {
       unsafeLocalNames,
-      profileComponentName: ctx.profile ? ctx.componentName : undefined,
+      profileComponentName,
       lazyScope,
     })
     // Stage 3 root cure — a JSX-bearing preamble can only be spliced into a
@@ -99,40 +109,67 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLoc
       `loop variant '${plan.kind}' has a preamble with declared names (${elem.preamble?.declaredNames.join(', ')}) but its plan's mapPreambleWrapped is empty — wire it up or the emitted call site references a name nothing declares`,
     )
     stringifyLoop(lines, plan)
-    emitLoopEventDelegation(lines, elem, plan.kind, ctx.profile ? ctx.componentName : undefined)
-  }
+    emitLoopEventDelegation(lines, elem, plan.kind, profileComponentName, {
+      loopIndex,
+      loopDelegationIndex,
+      interactiveElements: ctx.interactiveElements,
+      conditionalSlotIds,
+    })
+  })
+}
+
+interface CollisionInputs {
+  loopIndex: number
+  loopDelegationIndex: LoopDelegationIndex
+  interactiveElements: ClientJsContext['interactiveElements']
+  conditionalSlotIds: Set<string>
 }
 
 function emitLoopEventDelegation(
   lines: string[],
   elem: TopLevelLoop,
   kind: 'plain' | 'component' | 'composite' | 'static',
-  profileComponentName?: string,
+  profileComponentName: string | undefined,
+  collision: CollisionInputs,
 ): void {
-  if (kind === 'static') {
-    // Event delegation for plain elements in static arrays (#537). Static
-    // arrays have no data-key/bf-i markers, so walk up from target to the
-    // container's direct child and use indexOf for index lookup.
-    if (!elem.childComponent && elem.bindings.events.length > 0) {
-      stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem, profileComponentName))
-    }
-    return
+  // `loopEventDelegationVariant` (`plan/loop-delegation-index.ts`) is the
+  // single shared gate for "does this loop delegate, and via which
+  // builder" — also consulted by `LoopDelegationIndex` when precomputing
+  // collisions, so the two can't silently diverge (#2930 review). Static
+  // arrays have no data-key/bf-i markers, so 'static' walks up from target
+  // to the container's direct child and uses indexOf for index lookup;
+  // 'dynamic' (the `'plain'` kind, non-reconciled) does keyed delegation by
+  // data-key/bf-i marker instead. `'component'`/`'composite'` loops' events
+  // ride on the child component's own event surface, so they return `null`.
+  const variant = loopEventDelegationVariant(elem, kind)
+  if (!variant) return
+  const ownHandlers = collectOwnHandlers(elem, collision)
+  const plan = variant === 'static'
+    ? buildStaticArrayDelegationPlan(elem, profileComponentName, ownHandlers)
+    : buildDynamicLoopDelegationPlan(elem, profileComponentName, ownHandlers)
+  stringifyEventDelegation(lines, plan)
+}
+
+/**
+ * Collect, for THIS loop's container slot, which of its delegated DOM event
+ * names should also carry the container's own directly-authored handler
+ * (#2930) — only the loop `loopDelegationIndex` marks as "last" for a given
+ * (container slot, DOM event) pair may claim it; every other loop sharing
+ * the pair returns `undefined` for that entry and keeps emitting its
+ * listener unchanged.
+ */
+function collectOwnHandlers(
+  elem: TopLevelLoop,
+  { loopIndex, loopDelegationIndex, interactiveElements, conditionalSlotIds }: CollisionInputs,
+): Map<string, ContainerOwnHandler> | undefined {
+  let ownHandlers: Map<string, ContainerOwnHandler> | undefined
+  const domEventNames = new Set(elem.bindings.events.map(ev => toDomEventName(ev.eventName)))
+  for (const domEventName of domEventNames) {
+    if (!loopDelegationIndex.isLastDelegator(elem.slotId, domEventName, loopIndex)) continue
+    const own = findContainerOwnHandler(interactiveElements, conditionalSlotIds, elem.slotId, domEventName)
+    if (!own) continue
+    ownHandlers ??= new Map()
+    ownHandlers.set(domEventName, own)
   }
-  // Dynamic plain-element body: keyed delegation by data-key/bf-i marker.
-  //
-  // `!elem.useElementReconciliation` is preserved here even though the
-  // decision tree only routes to `'plain'` when `useElementReconciliation`
-  // is false OR `hasInnerStructure` is false. The hand-constructed boundary
-  // shape (`useElementReconciliation=true` AND empty nestedComponents /
-  // innerLoops) is unreachable from real IR — the collector sets
-  // `useElementReconciliation` only when it has at least one of those —
-  // but the explicit guard keeps the legacy behaviour byte-equal even if a
-  // future collector change makes that combination valid.
-  if (
-    kind === 'plain'
-    && !elem.useElementReconciliation
-    && elem.bindings.events.length > 0
-  ) {
-    stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem, profileComponentName))
-  }
+  return ownHandlers
 }

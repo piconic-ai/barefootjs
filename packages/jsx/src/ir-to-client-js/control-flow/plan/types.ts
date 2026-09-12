@@ -14,6 +14,7 @@
  *                          `CompositeLoopPlan`, `StaticLoopPlan`),
  *                          `NestedComponentInit`
  *   event-delegation.ts  — `EventDelegationPlan`, `ItemLookup` family
+ *   event-collision.ts   — `ContainerOwnHandler`
  *
  * This file lets callers continue to write
  * `import type { ... } from '../plan/types.ts'` without caring which file
@@ -54,6 +55,7 @@ export type {
   DynamicIndexItemLookup,
   StaticIndexItemLookup,
 } from './event-delegation.ts'
+export type { ContainerOwnHandler } from './event-collision.ts'
 
 // Re-export legacy types referenced from Plan-level code paths.
 export type {
