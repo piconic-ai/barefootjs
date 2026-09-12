@@ -139,3 +139,13 @@
  * wraps, and pushes the composition off the bottom of the canvas. */
 html[lang="ja"] .layout-showcase h1 { font-size: 38px; line-height: 1.2; }
 html[lang="ja"] .layout-showcase .lede { font-size: 15px; line-height: 1.5; }
+
+/* Compact canvas (body.bf-compact, see base.css): the composition is authored at
+   a 669px width and scaled 1.65x, so the kit's rem-based type doubles with it and one
+   card fills the row; the header follows the deck's compact sizes. */
+body.bf-compact .layout-showcase.peitho-slide { padding-top: 96px; gap: 28px; }
+body.bf-compact .layout-showcase h1 { font-size: 90px; line-height: 1.1; }
+body.bf-compact .layout-showcase .head { font-size: 44px; line-height: 1.5; }
+body.bf-compact .showcase { width: 669px; transform: translateX(-50%) scale(1.65); transform-origin: top center; }
+body.bf-compact .showcase-grid { grid-template-columns: 1fr; gap: 16px; }
+body.bf-compact .showcase-messages { grid-column: auto; }

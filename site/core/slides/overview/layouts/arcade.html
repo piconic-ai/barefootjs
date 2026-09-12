@@ -8,8 +8,12 @@
   only while a game is being PLAYED (see component/components/Arcade.tsx);
   Escape returns it to the title screen without swallowing the key, and
   PageUp / PageDown always belong to the viewer.
+
+  data-canvas="fixed": the play field is authored in 1280x720 coordinates, so on phones
+  (where narration.ts otherwise grows the canvas to the screen's proportion) this slide
+  keeps the 16:9 canvas.
 -->
-<section class="peitho-slide layout-arcade" data-ground="dark">
+<section class="peitho-slide layout-arcade" data-ground="dark" data-canvas="fixed">
   <div class="bf-mount arcade-mount" data-bf="Arcade"></div>
   <div class="arcade-caption">
     <h1 class="arcade-title"><slot name="title" accepts="inline" arity="1"></slot></h1>
