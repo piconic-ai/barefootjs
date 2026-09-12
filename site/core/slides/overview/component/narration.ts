@@ -91,7 +91,6 @@ style.textContent = `
     background: rgba(251,250,247,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid rgba(10,10,10,.08);
   }
-  body.bf-dark #bf-bar { background: rgba(10,10,10,.76); border-top-color: rgba(255,255,255,.12); }
   #bf-bar #bf-counter, #bf-bar #bf-nav, #bf-bar #bf-langs { position: static; transform: none; }
   #bf-bar #bf-counter { grid-column: 2; font-size: 13px; text-align: center; }
   #bf-bar #bf-langs { grid-column: 1; justify-self: start; }
@@ -178,9 +177,16 @@ const COUNTER_RIGHT = 22, COUNTER_BOTTOM = 18, NAV_BOTTOM = 40, NAV_RIGHT = 18
 // Width alone catches a phone in portrait; the pointer clause catches a phone in landscape
 // and a tablet, where the canvas-scaled buttons would still be too small to tap.
 const compactQuery = matchMedia('(max-width: 820px), (hover: none) and (pointer: coarse)')
+// Narrow screens only (a phone in portrait) also get the phone-shaped canvas and the
+// single-column, larger-type layouts (body.bf-compact in the CSS). A tablet or a phone in
+// landscape keeps the desktop layout: at their scale the 16:9 slide is still legible, and
+// the tall canvas would not fit their height anyway.
+const narrowQuery = matchMedia('(max-width: 820px)')
 const bar = document.createElement('div')
 bar.id = 'bf-bar'
 function dockChrome(compact: boolean) {
+  const narrow = narrowQuery.matches
+  if (document.body.classList.contains('bf-compact') !== narrow) document.body.classList.toggle('bf-compact', narrow)
   if (compact) {
     if (!bar.isConnected) document.body.append(bar)
     for (const el of [langs, counter, nav]) {
@@ -198,10 +204,24 @@ function dockChrome(compact: boolean) {
 // no-op restatement. Always re-done here, in both modes, because compactQuery can flip
 // without a resize (a mouse attached to or detached from a touchscreen) and the viewer's
 // fit only runs on resize — relying on it would leave the last compact fit on the canvas.
-function fitCanvas(canvas: HTMLElement, bottomInset: number) {
+//
+// On narrow screens the canvas also stops being 16:9: it keeps its 1280-unit width and grows
+// to the viewport's own proportion (a phone in portrait gets a canvas around 1280x2500), so
+// the single-column, larger-type layouts under body.bf-compact have room to flow. The height
+// rides on --peitho-canvas-height, which .peitho-slide already reads. A slide that declares
+// data-canvas="fixed" (the arcade: its play field is authored in 1280x720 coordinates) keeps
+// the 16:9 canvas.
+function fitCanvas(canvas: HTMLElement, narrow: boolean, bottomInset: number) {
   const avail = innerHeight - bottomInset
-  const s = Math.min(innerWidth / CANVAS_W, avail / CANVAS_H)
-  const w = CANVAS_W * s, h = CANVAS_H * s
+  const fixed = !!canvas.querySelector('section[data-canvas="fixed"]')
+  const ch = narrow && !fixed ? Math.max(CANVAS_H, Math.round(CANVAS_W * avail / innerWidth)) : CANVAS_H
+  const hpx = `${ch}px`
+  if (canvas.style.height !== hpx) {
+    canvas.style.height = hpx
+    document.documentElement.style.setProperty('--peitho-canvas-height', hpx)
+  }
+  const s = Math.min(innerWidth / CANVAS_W, avail / ch)
+  const w = CANVAS_W * s, h = ch * s
   canvas.style.transform = `translate(${(innerWidth - w) / 2}px, ${(avail - h) / 2}px) scale(${s})`
 }
 function placeChrome() {
@@ -209,7 +229,7 @@ function placeChrome() {
   if (!canvas) return
   const compact = compactQuery.matches
   dockChrome(compact)
-  fitCanvas(canvas, compact ? bar.offsetHeight : 0)
+  fitCanvas(canvas, narrowQuery.matches, compact ? bar.offsetHeight : 0)
   const r = canvas.getBoundingClientRect()
   if (compact) {
     progress.style.left = `${r.left}px`; progress.style.top = `${r.top}px`; progress.style.width = `${r.width}px`
@@ -231,10 +251,13 @@ function placeChrome() {
 }
 window.addEventListener('resize', placeChrome)
 compactQuery.addEventListener('change', placeChrome)
+narrowQuery.addEventListener('change', placeChrome)
 
 // A slide on a dark ground marks its <section> with data-ground="dark"; the chrome follows.
 function paintChrome() {
-  const dark = !!document.querySelector('#peitho-canvas section[data-ground="dark"]')
+  // Docked in the bottom bar the chrome sits outside the canvas, on the page's own ground,
+  // so a dark slide does not flip it there.
+  const dark = !compactQuery.matches && !!document.querySelector('#peitho-canvas section[data-ground="dark"]')
   if (document.body.classList.contains('bf-dark') !== dark) document.body.classList.toggle('bf-dark', dark)
   const t = total(); const i = slideIndex()
   const [prev, next] = nav.querySelectorAll('button')

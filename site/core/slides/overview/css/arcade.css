@@ -515,3 +515,9 @@
 @media (prefers-reduced-motion: reduce) {
   .a-demo.is-on { animation: none; }
 }
+
+/* Compact canvas (body.bf-compact, see base.css): this slide keeps the 16:9 canvas
+   (data-canvas="fixed"), so only the caption type grows; the field is a demo at
+   phone scale either way. */
+body.bf-compact .layout-arcade .arcade-title { font-size: 52px; line-height: 1.2; }
+body.bf-compact .layout-arcade .arcade-body { font-size: 26px; line-height: 1.5; }
