@@ -28,7 +28,7 @@
   width: var(--peitho-canvas-width, 1280px);
   height: var(--peitho-canvas-height, 720px);
   box-sizing: border-box;
-  padding: 64px 88px 72px;
+  padding: 64px 88px 88px; /* bottom clears the deck chrome (language pill + page nav) anchored at the canvas corner */
   overflow: hidden;
   /* paper: a warm ground, sea-light from the upper right, sand from the lower left */
   background:
@@ -158,7 +158,7 @@
 .counter-btn:active { transform: scale(0.96); }
 .counter-btn:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
 
-/* ---------- compiler ---------- */
+.layout-compiler { gap: 20px; }
 .layout-compiler { gap: 26px; }
 .compiler-mount { flex: 1; min-height: 0; display: flex; }
 .compiler { flex: 1; min-height: 0; display: grid; grid-template-columns: 200px 1fr; gap: 28px; }
@@ -170,11 +170,11 @@
 }
 .compiler-tab:hover { background: var(--surface); color: var(--ink); }
 .compiler-tab.on { background: var(--ink); color: #fff; }
-.compiler-out { min-height: 0; display: flex; flex-direction: column; background: var(--term); color: var(--term-ink); border-radius: 18px; box-shadow: 0 24px 60px rgba(40,35,20,.16), 0 2px 6px rgba(40,35,20,.08); padding: 24px 32px 28px; }
+.compiler-out { min-height: 0; display: flex; flex-direction: column; background: var(--term); color: var(--term-ink); border-radius: 18px; box-shadow: 0 24px 60px rgba(40,35,20,.16), 0 2px 6px rgba(40,35,20,.08); padding: 20px 32px 22px; }
 .compiler-meta { display: flex; justify-content: space-between; font-size: 14px; letter-spacing: 0.04em; color: #8d8d92; margin-bottom: 16px; }
 .compiler-engine { color: var(--term-green); font-weight: 500; }
 .compiler-file { font-family: var(--mono); }
-.compiler-code { margin: 0; flex: 1; min-height: 0; overflow: hidden; font-family: var(--mono); font-size: 17px; line-height: 1.55; white-space: pre; color: var(--term-ink); }
+.compiler-code { margin: 0; flex: 1; min-height: 0; overflow: hidden; font-family: var(--mono); font-size: 15px; line-height: 1.45; /* longest adapter output is 12 lines; must fit without clipping */ white-space: pre; color: var(--term-ink); }
 
 /* ---------- trace ---------- */
 .layout-trace { gap: 26px; }
@@ -228,7 +228,7 @@ html, body, #peitho-slides { background: #efece5 !important; }
 .belief-inner { display: flex; flex-direction: column; gap: 26px; max-width: 1040px; }
 .layout-belief h1 { font-size: 78px; line-height: 1.04; }
 .belief-body { font-size: 25px; color: var(--ink-2); line-height: 1.5; letter-spacing: -0.005em; max-width: 34em; }
-.belief-sources { position: absolute; left: 88px; right: 88px; bottom: 34px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--muted); letter-spacing: 0; }
+.belief-sources { position: absolute; left: 88px; right: 250px; bottom: 34px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--muted); letter-spacing: 0; }
 .belief-sources em { font-style: italic; color: var(--ink-2); }
 
 /* ---------- split: prose left, one panel right ---------- */
@@ -240,7 +240,7 @@ html, body, #peitho-slides { background: #efece5 !important; }
 .split-body strong { color: var(--ink); font-weight: 600; }
 .split-body p { color: var(--muted); }
 .split-code { display: flex; flex-direction: column; justify-content: center; }
-.split-code > pre { font-size: 17px; line-height: 1.6; }
+.split-code > pre { font-size: 15px; line-height: 1.55; } /* 15 lines must fit the column (431px) with the chrome clearance below */
 .layout-split h1 { font-size: 76px; }
 .split-body > p { margin-top: 18px; }
 
@@ -258,3 +258,18 @@ html, body, #peitho-slides { background: #efece5 !important; }
 .ships li { display: block; padding: 26px 26px 22px; border-radius: 18px; background: #fff; border: 1px solid rgba(10,10,10,.07); box-shadow: 0 10px 30px rgba(40,35,20,.06); font-size: 21px; color: var(--ink-2); letter-spacing: -0.01em; }
 .ships li strong { display: block; margin-bottom: 14px; font-family: var(--serif); font-size: 84px; line-height: 0.9; letter-spacing: -0.03em; color: var(--ink); font-weight: 400; font-variant-numeric: tabular-nums; }
 .ships li code { font-size: 0.85em; }
+
+/* ---------- Japanese: tighter sizes, no negative tracking, taller lines ---------- */
+html[lang="ja"] .peitho-slide h1 { letter-spacing: 0; font-size: 72px; line-height: 1.18; text-wrap: pretty; word-break: auto-phrase; }
+html[lang="ja"] .layout-belief h1 { font-size: 60px; line-height: 1.24; }
+html[lang="ja"] .layout-arcade .arcade-title { font-size: 34px; line-height: 1.35; letter-spacing: 0; }
+html[lang="ja"] .layout-arcade .arcade-body { letter-spacing: 0; }
+html[lang="ja"] .layout-split h1 { font-size: 58px; }
+html[lang="ja"] .layout-end h1 { font-size: 120px; letter-spacing: -0.03em; }
+html[lang="ja"] .peitho-slide h1 em { font-style: normal; }
+html[lang="ja"] .belief-body, html[lang="ja"] .lede, html[lang="ja"] .split-body, html[lang="ja"] .terminal-body { letter-spacing: 0; line-height: 1.7; }
+html[lang="ja"] .belief-body { font-size: 23px; }
+html[lang="ja"] .lede { font-size: 21px; }
+html[lang="ja"] .split-body, html[lang="ja"] .terminal-body { font-size: 22px; }
+html[lang="ja"] .ships li { font-size: 19px; letter-spacing: 0; }
+html[lang="ja"] .layout-cover .cover-body { letter-spacing: 0; }

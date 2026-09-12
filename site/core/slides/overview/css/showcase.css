@@ -50,7 +50,11 @@
   top: 0;
   left: 50%;
   width: 1090px;
-  transform: translateX(-50%);
+  /* 0.94 keeps the bottom card row clear of the deck chrome (language pill
+   * + page nav, bottom-right) — measured: at 1.0 the Messages card's bottom
+   * edge sat ~15px into the pill. */
+  transform: translateX(-50%) scale(0.94);
+  transform-origin: top center;
   font-size: 14px;
   color: var(--foreground);
 }
@@ -128,3 +132,10 @@
 .showcase-msg-bubble-me { background: #0a0a0a; color: #fff; }
 .showcase-chat-footer { display: flex; gap: 8px; width: 100%; }
 .showcase-chat-input { flex: 1; }
+
+/* Japanese deck: the generic JA headline size (base.css) outranks the
+ * per-layout size above by specificity, so restate the showcase header
+ * sizes under the lang selector — otherwise the title balloons to 72px,
+ * wraps, and pushes the composition off the bottom of the canvas. */
+html[lang="ja"] .layout-showcase h1 { font-size: 38px; line-height: 1.2; }
+html[lang="ja"] .layout-showcase .lede { font-size: 15px; line-height: 1.5; }

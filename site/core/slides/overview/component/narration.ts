@@ -1,6 +1,7 @@
 // Deck chrome added to peitho's distribution viewer: a thin progress bar, a slide counter,
-// previous/next buttons, a word-by-word rise for headlines, and the prefers-reduced-motion
-// gate for the cover's looping clip. No narration, no captions, no auto-advance.
+// previous/next buttons, a language toggle, a word-by-word rise for headlines, and the
+// prefers-reduced-motion gate for the cover's looping clip. No narration, no captions, no
+// auto-advance.
 //
 // Slides are identified by the data-slide-key peitho puts on each slide's root <section>.
 const progress = document.createElement('div')
@@ -20,6 +21,26 @@ const nav = document.createElement('div')
 nav.id = 'bf-nav'
 nav.innerHTML = '<button type="button" data-dir="-1" aria-label="Previous slide">&#8249;</button><button type="button" data-dir="1" aria-label="Next slide">&#8250;</button>'
 document.body.append(nav)
+// Language toggle. build-slides.ts builds deck.<lang>.md into <lang>/ and installs a head
+// shim that serves those files to the viewer when localStorage("bf-lang") names a language
+// (window.__BF_LANGS lists what was built, window.__BF_LANG what is active). Switching means
+// reloading: the viewer loads every slide at boot. The URL does not change.
+const LANGS: string[] = (window as any).__BF_LANGS ?? []
+const activeLang: string = (window as any).__BF_LANG ?? 'en'
+const langs = document.createElement('div')
+langs.id = 'bf-langs'
+if (LANGS.length > 0) {
+  const all = ['en', ...LANGS]
+  langs.innerHTML = all.map((l) => `<button type="button" data-lang="${l}"${l === activeLang ? ' aria-current="true"' : ''}>${l.toUpperCase()}</button>`).join('')
+  document.body.append(langs)
+  langs.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-lang]')
+    if (!b || b.dataset.lang === activeLang) return
+    e.stopPropagation()
+    try { if (b.dataset.lang === 'en') localStorage.removeItem('bf-lang'); else localStorage.setItem('bf-lang', b.dataset.lang!) } catch {}
+    location.reload()
+  })
+}
 nav.addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-dir]')
   if (!b) return
@@ -39,6 +60,15 @@ style.textContent = `
   #bf-progress i { display: block; height: 100%; width: 0; background: #3fa45b; transition: width 600ms cubic-bezier(.2,.6,.2,1); }
   #bf-counter { position: fixed; left: 0; top: 0; z-index: 20; transform-origin: top left; font: 400 12px/1 "DM Mono", ui-monospace, monospace; letter-spacing: .1em; color: #6e6e73; white-space: nowrap; }
   #bf-nav { position: fixed; left: 0; top: 0; z-index: 20; transform-origin: top left; display: flex; gap: 6px; }
+  #bf-langs { position: fixed; left: 0; top: 0; z-index: 20; transform-origin: top left; display: flex; border: 1px solid rgba(10,10,10,.18); border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.55); backdrop-filter: blur(6px); }
+  #bf-langs button { font: 500 11px/1 "DM Mono", ui-monospace, monospace; letter-spacing: .12em; padding: 10px 11px 9px; border: 0; background: transparent; color: #6e6e73; cursor: pointer; transition: background 160ms ease, color 160ms ease; }
+  #bf-langs button[aria-current="true"] { background: #0a0a0a; color: #fff; cursor: default; }
+  #bf-langs button:not([aria-current]):hover { color: #0a0a0a; }
+  #bf-langs button:focus-visible { outline: 2px solid #3fa45b; outline-offset: -2px; }
+  body.bf-dark #bf-langs { border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.08); }
+  body.bf-dark #bf-langs button { color: rgba(255,255,255,.6); }
+  body.bf-dark #bf-langs button[aria-current="true"] { background: #fff; color: #0a0a0a; }
+  body.bf-dark #bf-langs button:not([aria-current]):hover { color: #fff; }
   #bf-nav button {
     width: 34px; height: 34px; padding: 0 0 2px; border-radius: 50%; border: 1px solid rgba(10,10,10,.18);
     background: rgba(255,255,255,.55); color: #0a0a0a; font: 400 22px/1 "Instrument Sans", -apple-system, sans-serif;
@@ -142,6 +172,7 @@ function placeChrome() {
   // offsetWidth is the layout size, unaffected by the transform: canvas units already
   put(counter, CANVAS_W - COUNTER_RIGHT - counter.offsetWidth, CANVAS_H - COUNTER_BOTTOM - 12)
   put(nav, CANVAS_W - NAV_RIGHT - nav.offsetWidth, CANVAS_H - NAV_BOTTOM - 34)
+  if (langs.isConnected) put(langs, CANVAS_W - NAV_RIGHT - nav.offsetWidth - 10 - langs.offsetWidth, CANVAS_H - NAV_BOTTOM - 34 + (34 - langs.offsetHeight) / 2)
 }
 window.addEventListener('resize', placeChrome)
 
