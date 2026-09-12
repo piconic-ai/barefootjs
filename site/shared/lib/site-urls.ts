@@ -21,7 +21,7 @@ function isDevHost(hostname: string): boolean {
 /** Link to barefootjs.dev (site-core), given the current request's URL. */
 export function resolveCoreHref(requestUrl: URL, path = '/'): string {
   if (!isDevHost(requestUrl.hostname)) return `https://barefootjs.dev${path}`
-  return `http://localhost:4000${path}`
+  return requestUrl.port === '4000' ? `http://localhost:4000${path}` : `http://localhost:4001${path}`
 }
 
 /** Link to ui.barefootjs.dev (site-ui), given the current request's URL. */

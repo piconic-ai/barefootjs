@@ -14,7 +14,7 @@
  * - dist/uno.css + dist/static/globals.css (tokens + globals + landing)
  * - dist/static/logos/, dist/static/snippets/, icons
  * - dist/slides/ (public/slides/** copied verbatim — peitho decks built by
- *   the `slides:build --all` step `bun run build` (this script's own
+ *   the `slides:build --all` step that `bun run build` (this script's own
  *   package.json entry) runs first, see scripts/build-slides.ts; empty when
  *   peitho isn't installed, since that step skips with a warning instead of
  *   failing)
