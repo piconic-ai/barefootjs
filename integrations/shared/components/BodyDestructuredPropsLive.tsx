@@ -11,13 +11,19 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 
-type LiveChildProps = {
+type BodyLiveChildProps = {
   value: number
   label?: string
   onPick: (n: number) => void
 }
 
-function LiveChild(props: LiveChildProps) {
+// Named `BodyLiveChild`, not `LiveChild` — `DestructuredPropsLive.tsx`
+// already has an inner component named `LiveChild`, and the Go
+// integrations (chi/echo/gin/nethttp) generate one flat package-level
+// type per component name, with no per-file namespacing. Reusing
+// `LiveChild` here would silently collide the two components' generated
+// `LiveChildProps`/`NewLiveChildProps` in those integrations' components.go.
+function BodyLiveChild(props: BodyLiveChildProps) {
   // Body destructure, including a rename (`onPick: pick`) and a default
   // (`label = 'none'`) — both pure aliases `resolveBodyPropAliases`
   // recognizes.
@@ -65,7 +71,7 @@ export function BodyDestructuredPropsLive() {
       <button className="btn-name" onClick={() => setNamed(v => !v)}>
         name
       </button>
-      <LiveChild value={count()} label={named() ? 'named' : undefined} onPick={setPicked} />
+      <BodyLiveChild value={count()} label={named() ? 'named' : undefined} onPick={setPicked} />
     </div>
   )
 }

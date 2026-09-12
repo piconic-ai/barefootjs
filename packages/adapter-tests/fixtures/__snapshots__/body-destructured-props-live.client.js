@@ -1,6 +1,6 @@
 import { $, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $c, initChild, renderChild } from '@barefootjs/client/runtime'
 
-export function initLiveChild(__scope, _p = {}) {
+export function initBodyLiveChild(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
   const doubled = createMemo(() => _p.value * 2)
@@ -49,8 +49,8 @@ export function initLiveChild(__scope, _p = {}) {
   })
 }
 
-hydrate('LiveChild__34ed26bf', { init: initLiveChild, template: (_p) => `<div class="body-live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(((_p.value) * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6"> pick </button></div>`, name: 'LiveChild' })
-export function LiveChild(_p, __bfKey) { return createComponent('LiveChild__34ed26bf', _p, __bfKey) }
+hydrate('BodyLiveChild__34ed26bf', { init: initBodyLiveChild, template: (_p) => `<div class="body-live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(((_p.value) * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6"> pick </button></div>`, name: 'BodyLiveChild' })
+export function BodyLiveChild(_p, __bfKey) { return createComponent('BodyLiveChild__34ed26bf', _p, __bfKey) }
 export function initBodyDestructuredPropsLive(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
@@ -87,20 +87,20 @@ export function initBodyDestructuredPropsLive(__scope, _p = {}) {
   // Reactive child component props
   { const __l = []
   createEffect(() => {
-    const [__LiveChild_s6El] = $c(__scope, 's6')
-    if (__LiveChild_s6El) {
-      if ('value' in __LiveChild_s6El) { const __val = String(count()); if (__LiveChild_s6El.value !== __val) __LiveChild_s6El.value = __val }
+    const [__BodyLiveChild_s6El] = $c(__scope, 's6')
+    if (__BodyLiveChild_s6El) {
+      if ('value' in __BodyLiveChild_s6El) { const __val = String(count()); if (__BodyLiveChild_s6El.value !== __val) __BodyLiveChild_s6El.value = __val }
       { const __x = named() ? 'named' : undefined
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __LiveChild_s6El.setAttribute('label', String(__v)); else __LiveChild_s6El.removeAttribute('label') }
+        { const __v = __x; if (__v != null) __BodyLiveChild_s6El.setAttribute('label', String(__v)); else __BodyLiveChild_s6El.removeAttribute('label') }
       }
       __l[0] = __x }
     }
   }) }
 
   // Initialize child components with props
-  initChild('LiveChild__34ed26bf', _s6, { get value() { return count() }, get label() { return named() ? 'named' : undefined }, onPick: setPicked })
+  initChild('BodyLiveChild__34ed26bf', _s6, { get value() { return count() }, get label() { return named() ? 'named' : undefined }, onPick: setPicked })
 }
 
-hydrate('BodyDestructuredPropsLive', { init: initBodyDestructuredPropsLive, template: (_p) => `<div class="body-destructured-props-live"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><p class="picked" bf="s3">Picked: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></p><button class="btn-increment" bf="s4"> +1 </button><button class="btn-name" bf="s5"> name </button>${renderChild('LiveChild__34ed26bf', {value: (1), label: (false) ? 'named' : undefined}, undefined, 's6')}</div>` })
+hydrate('BodyDestructuredPropsLive', { init: initBodyDestructuredPropsLive, template: (_p) => `<div class="body-destructured-props-live"><p class="parent-count" bf="s1">Count: <!--bf:s0-->${escapeTextOrMarkup((1))}<!--/--></p><p class="picked" bf="s3">Picked: <!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--></p><button class="btn-increment" bf="s4"> +1 </button><button class="btn-name" bf="s5"> name </button>${renderChild('BodyLiveChild__34ed26bf', {value: (1), label: (false) ? 'named' : undefined}, undefined, 's6')}</div>` })
 export function BodyDestructuredPropsLive(_p, __bfKey) { return createComponent('BodyDestructuredPropsLive', _p, __bfKey) }
