@@ -10,7 +10,7 @@ FROM python:3.12-slim
 
 WORKDIR /workspace/integrations/fastapi
 
-COPY requirements.txt ./
+COPY integrations/fastapi/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 3009

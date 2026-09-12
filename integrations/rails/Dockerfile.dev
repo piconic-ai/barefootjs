@@ -16,7 +16,7 @@ WORKDIR /workspace/integrations/rails
 # of this directory with the host source at container start, but gem installs
 # live under Ruby's system gem path (outside /workspace), so they survive the
 # overlay.
-COPY Gemfile Gemfile.lock ./
+COPY integrations/rails/Gemfile integrations/rails/Gemfile.lock ./
 RUN bundle install
 
 EXPOSE 3011
