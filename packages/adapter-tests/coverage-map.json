@@ -2206,6 +2206,21 @@
         "text"
       ]
     },
+    "event-delegation-container-handler": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "event-handlers": {
       "kinds": [
         "call",
@@ -6647,15 +6662,15 @@
     }
   },
   "kindCounts": {
-    "array-literal": 113,
+    "array-literal": 114,
     "array-method": 71,
     "arrow": 74,
     "binary": 105,
     "call": 276,
     "conditional": 32,
-    "identifier": 389,
+    "identifier": 390,
     "index-access": 14,
-    "literal": 311,
+    "literal": 312,
     "logical": 49,
     "member": 230,
     "object-literal": 92,
@@ -6702,7 +6717,7 @@
     "literal:boolean": 70,
     "literal:null": 26,
     "literal:number": 142,
-    "literal:string": 212,
+    "literal:string": 213,
     "logical:&&": 7,
     "logical:??": 41,
     "logical:||": 16,
