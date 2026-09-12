@@ -32,6 +32,9 @@ import {
   buildStaticArrayDelegationPlan,
 } from './control-flow/plan/build-event-delegation.ts'
 import { stringifyEventDelegation } from './control-flow/stringify/event-delegation.ts'
+import { findContainerOwnHandler, type ContainerOwnHandler } from './control-flow/plan/event-collision.ts'
+import type { LoopDelegationIndex } from './control-flow/plan/loop-delegation-index.ts'
+import { toDomEventName } from './utils.ts'
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
@@ -66,14 +69,21 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
  *   - `'component' / 'composite'` → events ride on the component's own
  *     event surface, no delegation pass needed
  */
-export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLocalNames: Set<string>): void {
+export function emitLoopUpdates(
+  lines: string[],
+  ctx: ClientJsContext,
+  unsafeLocalNames: Set<string>,
+  conditionalSlotIds: Set<string>,
+  loopDelegationIndex: LoopDelegationIndex,
+): void {
   // Lazy row graph (§9.4) name facts — built once per component, consulted
   // by every plain loop's eligibility gate.
   const lazyScope = buildLazyRowScopeInfo(ctx)
-  for (const elem of ctx.loopElements) {
+  const profileComponentName = ctx.profile ? ctx.componentName : undefined
+  ctx.loopElements.forEach((elem, loopIndex) => {
     const plan = buildLoopPlan(elem, {
       unsafeLocalNames,
-      profileComponentName: ctx.profile ? ctx.componentName : undefined,
+      profileComponentName,
       lazyScope,
     })
     // Stage 3 root cure — a JSX-bearing preamble can only be spliced into a
@@ -99,22 +109,36 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLoc
       `loop variant '${plan.kind}' has a preamble with declared names (${elem.preamble?.declaredNames.join(', ')}) but its plan's mapPreambleWrapped is empty — wire it up or the emitted call site references a name nothing declares`,
     )
     stringifyLoop(lines, plan)
-    emitLoopEventDelegation(lines, elem, plan.kind, ctx.profile ? ctx.componentName : undefined)
-  }
+    emitLoopEventDelegation(lines, elem, plan.kind, profileComponentName, {
+      loopIndex,
+      loopDelegationIndex,
+      interactiveElements: ctx.interactiveElements,
+      conditionalSlotIds,
+    })
+  })
+}
+
+interface CollisionInputs {
+  loopIndex: number
+  loopDelegationIndex: LoopDelegationIndex
+  interactiveElements: ClientJsContext['interactiveElements']
+  conditionalSlotIds: Set<string>
 }
 
 function emitLoopEventDelegation(
   lines: string[],
   elem: TopLevelLoop,
   kind: 'plain' | 'component' | 'composite' | 'static',
-  profileComponentName?: string,
+  profileComponentName: string | undefined,
+  collision: CollisionInputs,
 ): void {
   if (kind === 'static') {
     // Event delegation for plain elements in static arrays (#537). Static
     // arrays have no data-key/bf-i markers, so walk up from target to the
     // container's direct child and use indexOf for index lookup.
     if (!elem.childComponent && elem.bindings.events.length > 0) {
-      stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem, profileComponentName))
+      const ownHandlers = collectOwnHandlers(elem, collision)
+      stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem, profileComponentName, ownHandlers))
     }
     return
   }
@@ -133,6 +157,31 @@ function emitLoopEventDelegation(
     && !elem.useElementReconciliation
     && elem.bindings.events.length > 0
   ) {
-    stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem, profileComponentName))
+    const ownHandlers = collectOwnHandlers(elem, collision)
+    stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem, profileComponentName, ownHandlers))
   }
+}
+
+/**
+ * Collect, for THIS loop's container slot, which of its delegated DOM event
+ * names should also carry the container's own directly-authored handler
+ * (#2930) — only the loop `loopDelegationIndex` marks as "last" for a given
+ * (container slot, DOM event) pair may claim it; every other loop sharing
+ * the pair returns `undefined` for that entry and keeps emitting its
+ * listener unchanged.
+ */
+function collectOwnHandlers(
+  elem: TopLevelLoop,
+  { loopIndex, loopDelegationIndex, interactiveElements, conditionalSlotIds }: CollisionInputs,
+): Map<string, ContainerOwnHandler> | undefined {
+  let ownHandlers: Map<string, ContainerOwnHandler> | undefined
+  const domEventNames = new Set(elem.bindings.events.map(ev => toDomEventName(ev.eventName)))
+  for (const domEventName of domEventNames) {
+    if (!loopDelegationIndex.isLastDelegator(elem.slotId, domEventName, loopIndex)) continue
+    const own = findContainerOwnHandler(interactiveElements, conditionalSlotIds, elem.slotId, domEventName)
+    if (!own) continue
+    ownHandlers ??= new Map()
+    ownHandlers.set(domEventName, own)
+  }
+  return ownHandlers
 }

@@ -189,6 +189,7 @@ import { fixture as clientOnly } from './client-only'
 import { fixture as clientOnlyLoop } from './client-only-loop'
 import { fixture as clientOnlyLoopWithSiblingCond } from './client-only-loop-with-sibling-cond'
 import { fixture as eventHandlers } from './event-handlers'
+import { fixture as eventDelegationContainerHandler } from './event-delegation-container-handler'
 import { fixture as defaultProps } from './default-props'
 import { fixture as untypedPropsReads } from './untyped-props-reads'
 import { fixture as bareTextOptionalScalar } from './bare-text-optional-scalar'
@@ -768,6 +769,7 @@ export const jsxFixtures: JSXFixture[] = [
   clientOnlyLoop,
   clientOnlyLoopWithSiblingCond,
   eventHandlers,
+  eventDelegationContainerHandler,
   defaultProps,
   untypedPropsReads,
   bareTextOptionalScalar,

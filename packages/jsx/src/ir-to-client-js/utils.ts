@@ -279,6 +279,20 @@ export function toDomEventName(eventName: string): string {
 }
 
 /**
+ * Non-bubbling events that require `addEventListener` with capture for
+ * delegation. Shared between the delegation stringifier and the own-handler
+ * collision check (#2930) so both agree on which events a container's own
+ * bubble-phase handler can never collide with in the first place — a
+ * container's own non-capturing `onFocus`, say, only fires when the
+ * container itself is the target, never for a descendant row.
+ */
+export const NON_BUBBLING_EVENTS = new Set([
+  'blur', 'focus', 'load', 'unload',
+  'mouseenter', 'mouseleave',
+  'pointerenter', 'pointerleave',
+])
+
+/**
  * Quote a prop name if it is not a valid JS identifier.
  * Returns the name as-is for valid identifiers (e.g., "checked"),
  * or JSON-quoted for names with hyphens etc. (e.g., '"aria-label"').

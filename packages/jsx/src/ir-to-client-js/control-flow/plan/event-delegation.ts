@@ -6,6 +6,7 @@
  */
 
 import type { LoopChildEvent, LoopOffset, TopLevelLoop } from '../../types.ts'
+import type { ContainerOwnHandler } from './event-collision.ts'
 
 /**
  * Plan for a loop's event-delegation block. Covers three legacy emitters:
@@ -33,6 +34,18 @@ export interface EventDelegationPlan {
    * profiling is off, so the emitted dispatcher is unchanged (SR8).
    */
   profileComponentName?: string
+  /**
+   * The container's own directly-authored handler(s) to invoke after this
+   * plan's delegated dispatch(es) run — and only if none of them called
+   * `stopPropagation()`/`stopImmediatePropagation()` (#2930). Keyed by DOM
+   * event name (the `eventsByName` grouping key the stringifier already
+   * builds). Populated only on the ONE delegation plan chosen as "last" for
+   * a given (container slot, DOM event) pair — see `LoopDelegationIndex`
+   * (`plan/loop-delegation-index.ts`) — so every other plan sharing that
+   * pair keeps emitting its listener byte-identical to before. `undefined`
+   * (the common case: no collision) keeps the emitted listener unchanged.
+   */
+  ownHandlers?: Map<string, ContainerOwnHandler>
 }
 
 /**

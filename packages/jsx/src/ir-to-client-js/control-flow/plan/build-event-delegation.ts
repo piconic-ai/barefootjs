@@ -17,16 +17,19 @@ import type {
   EventDelegationPlan,
   ItemLookup,
 } from './types.ts'
+import type { ContainerOwnHandler } from './event-collision.ts'
 
 export function buildDynamicLoopDelegationPlan(
   elem: TopLevelLoop,
   profileComponentName?: string,
+  ownHandlers?: Map<string, ContainerOwnHandler>,
 ): EventDelegationPlan {
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
     events: elem.bindings.events,
     profileComponentName,
+    ownHandlers,
     itemLookup: buildKeyedOrIndexLookup({
       // Chain `.filter()` / `.toSorted()` so the index-based lookup walks
       // the same array shape mapArray reconciled into the DOM (#1434).
@@ -93,12 +96,14 @@ export function buildBranchLoopDelegationPlan(
 export function buildStaticArrayDelegationPlan(
   elem: TopLevelLoop,
   profileComponentName?: string,
+  ownHandlers?: Map<string, ContainerOwnHandler>,
 ): EventDelegationPlan {
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
     events: elem.bindings.events,
     profileComponentName,
+    ownHandlers,
     itemLookup: {
       kind: 'static-index',
       // Static arrays render through the same `.filter()`/`.toSorted()`

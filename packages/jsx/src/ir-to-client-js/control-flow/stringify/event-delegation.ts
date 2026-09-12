@@ -30,9 +30,18 @@
  *
  * Each shape has a `hasBindings` variant that lands on a `__bfLoopItem`
  * sentinel before destructuring (#951 TDZ-safe).
+ *
+ * When `plan.ownHandlers` has an entry for the group's DOM event name
+ * (#2930 — the container itself also carries a directly-authored handler for
+ * this event), the shape above grows two additions: an
+ * `if (!__bfEvt.cancelBubble) { (ownHandler)(__bfEvt) }` line right after
+ * `<handlerCall>` (so a row's `stopPropagation()` suppresses it), and an
+ * unconditional `(ownHandler)(__bfEvt)` after the last event in the group
+ * (so a dispatch that matches no row — e.g. a click on the container's own
+ * background — still fires it, same as today's separate listener would).
  */
 
-import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils.ts'
+import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName, NON_BUBBLING_EVENTS } from '../../utils.ts'
 import { extractFreeIdentifiersFromText } from '../../csr-substitute.ts'
 import { identifierPattern } from '../../../identifier-pattern.ts'
 import type {
@@ -42,13 +51,6 @@ import type {
   StaticIndexItemLookup,
   LoopChildEvent,
 } from '../plan/types.ts'
-
-/** Non-bubbling events that require addEventListener with capture for delegation. */
-const NON_BUBBLING_EVENTS = new Set([
-  'blur', 'focus', 'load', 'unload',
-  'mouseenter', 'mouseleave',
-  'pointerenter', 'pointerleave',
-])
 
 /**
  * Profile mode (#1690, SR3): bracket a delegated handler call with turn
@@ -96,7 +98,7 @@ function preambleLineForHandler(
 }
 
 export function stringifyEventDelegation(lines: string[], plan: EventDelegationPlan): void {
-  const { containerVar, events, itemLookup, profileComponentName } = plan
+  const { containerVar, events, itemLookup, profileComponentName, ownHandlers } = plan
   const eventsByName = new Map<string, LoopChildEvent[]>()
   for (const ev of events) {
     if (!eventsByName.has(ev.eventName)) eventsByName.set(ev.eventName, [])
@@ -107,10 +109,19 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
     // Sort deepest-first so child elements are checked before parents (#774)
     evs.sort((a, b) => b.domDepth - a.domDepth)
     const useCapture = NON_BUBBLING_EVENTS.has(eventName)
+    const domEventName = toDomEventName(eventName)
+    // Container's own directly-authored handler for this event, folded into
+    // THIS listener instead of a separate `addEventListener` call (#2930):
+    // `undefined` when there's no collision, which keeps every line below
+    // byte-identical to before.
+    const ownHandler = ownHandlers?.get(domEventName)
+    const ownHandlerCall = ownHandler
+      ? withTurn(`(${ownHandler.handler.trim()})(__bfEvt)`, profileComponentName, ownHandler.slotId, ownHandler.eventName)
+      : null
     if (useCapture) {
       lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (__bfEvt) => {`)
     } else {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${toDomEventName(eventName)}', (__bfEvt) => {`)
+      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${domEventName}', (__bfEvt) => {`)
     }
     lines.push(`    const target = __bfEvt.target`)
     for (const ev of evs) {
@@ -136,8 +147,26 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
           emitStaticIndexLookup(lines, ev, handlerCall, itemLookup, containerVar)
           break
       }
+      // Row `stopPropagation()`/`stopImmediatePropagation()` blocks the
+      // container's own handler too (#2930). `cancelBubble` reflects either
+      // call per the DOM Standard, so a single flag read is enough — once
+      // merged into this one listener there is exactly one BarefootJS
+      // listener left on the container for this event, so the two APIs have
+      // nothing left to distinguish (native bubbling to real ancestors, and
+      // any listener attached directly via `ref`, are unaffected either
+      // way). A row that never matches (e.g. a stale-DOM race) leaves
+      // `cancelBubble` false, so the own handler still fires — unchanged
+      // from today's always-fires behavior for that case.
+      if (ownHandlerCall) {
+        lines.push(`      if (!__bfEvt.cancelBubble) { ${ownHandlerCall} }`)
+      }
       lines.push(`      return`)
       lines.push(`    }`)
+    }
+    if (ownHandlerCall) {
+      // No row matched at all (e.g. a click on the container's own
+      // background) — same as today's separate, always-firing listener.
+      lines.push(`    ${ownHandlerCall}`)
     }
     if (useCapture) {
       lines.push(`  }, true)`)
