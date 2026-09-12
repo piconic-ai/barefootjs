@@ -91,13 +91,25 @@ export function buildPropAliasMap(params: readonly ParamInfo[]): Map<string, str
  * Returns an empty map for a parameter-destructuring component
  * (`propsObjectName === null`) — that shape's aliasing is already fully
  * covered by `buildPropAliasMap`.
+ *
+ * Passes `requireLiveRewriteSafe: false` to `resolveBodyPropAliases` — this
+ * consumer only needs the local-name↔caller-key mapping to seed the SSR
+ * stash under the local's name (#2788), which is sound regardless of
+ * `const`/`let` or a later mutation: those two exclusions exist solely to
+ * protect the LIVE client-JS rewrite (`rewriteBodyAliasReads`) from turning
+ * a reassignment into a silent write-through to the caller's prop, a
+ * concern this SSR-side, declaration-time alias mapping doesn't share. A
+ * `let`-declared renamed body destructure (`let { children: kids } =
+ * props`) is exactly as valid an alias for stash-seeding purposes as a
+ * `const` one — inheriting the stricter filter here would silently drop
+ * its stash entry and reintroduce #2788 for that one shape.
  */
 export function resolveBodyDestructuredPropAliases(
   localConstants: readonly ConstantInfo[],
   propsObjectName: string | null,
 ): Map<string, string> {
   const aliases = new Map<string, string>()
-  for (const [local, alias] of resolveBodyPropAliases(localConstants, propsObjectName)) {
+  for (const [local, alias] of resolveBodyPropAliases(localConstants, propsObjectName, { requireLiveRewriteSafe: false })) {
     if (!alias.hasDefault) aliases.set(local, alias.key)
   }
   return aliases
@@ -138,23 +150,35 @@ export interface BodyPropAlias {
  * Excludes:
  *   - `propsObjectName === null` (parameter-destructuring components — that
  *     shape's aliasing is fully covered by `buildPropAliasMap` instead).
- *   - `let` bindings: a later reassignment (`value = 9`) would need to
- *     become `_p.value = 9`, silently writing through to the caller's prop
- *     instead of a local variable — never safe to infer.
- *   - `mutatedAfterDeclaration` (#2910's `markMutatedConstants`): once
- *     something mutates the binding in place after its declaration, `value`
- *     no longer tracks the live prop, and treating it as a passthrough
- *     alias would silently drop the mutation.
  *   - `isModule` (module-scope constants aren't per-instance prop reads).
+ *   - When `requireLiveRewriteSafe` is true (the default — the right
+ *     setting for a caller that turns the alias into a LIVE `_p.X` read,
+ *     e.g. `rewriteBodyAliasReads`), also excludes:
+ *     - `let` bindings: a later reassignment (`value = 9`) would need to
+ *       become `_p.value = 9`, silently writing through to the caller's
+ *       prop instead of a local variable — never safe to infer.
+ *     - `mutatedAfterDeclaration` (#2910's `markMutatedConstants`): once
+ *       something mutates the binding in place after its declaration,
+ *       `value` no longer tracks the live prop, and treating it as a
+ *       passthrough alias would silently drop the mutation.
+ *     A caller that only needs the declaration-time local↔caller-key
+ *     mapping (e.g. `resolveBodyDestructuredPropAliases`, feeding the SSR
+ *     stash seed) passes `requireLiveRewriteSafe: false` — a `let` local or
+ *     one mutated later in the function body is still a perfectly valid
+ *     alias AT its declaration, which is all an initial SSR-stash seed
+ *     needs.
  */
 export function resolveBodyPropAliases(
   localConstants: readonly ConstantInfo[],
   propsObjectName: string | null,
+  options: { requireLiveRewriteSafe?: boolean } = {},
 ): Map<string, BodyPropAlias> {
+  const { requireLiveRewriteSafe = true } = options
   const aliases = new Map<string, BodyPropAlias>()
   if (propsObjectName === null) return aliases
   for (const c of localConstants) {
-    if (c.isModule || c.declarationKind !== 'const' || c.mutatedAfterDeclaration || !c.value) continue
+    if (c.isModule || !c.value) continue
+    if (requireLiveRewriteSafe && (c.declarationKind !== 'const' || c.mutatedAfterDeclaration)) continue
     // Re-parse `value` (rather than walking `c.parsed`) so the default's
     // SOURCE TEXT is available verbatim — `ParsedExpr` structures the
     // default but doesn't retain its original formatting, and this reuses
