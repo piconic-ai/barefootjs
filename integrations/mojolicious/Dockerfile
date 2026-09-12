@@ -11,7 +11,16 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 # Install CPAN deps into a self-contained prefix so the runtime stage can copy
 # a single directory instead of guessing which /usr/local/... paths exist.
-RUN cpanm --notest --local-lib=/opt/perl-deps Mojolicious
+# Retried: the CPAN mirror occasionally serves a truncated/corrupt tarball,
+# which cpanm treats as a hard failure. Clear its download cache between
+# attempts so a retry re-fetches instead of re-unpacking the same bad file.
+RUN for i in 1 2 3; do \
+      cpanm --notest --local-lib=/opt/perl-deps Mojolicious && exit 0; \
+      echo "cpanm attempt $i failed, retrying..." >&2; \
+      rm -rf /opt/perl-deps ~/.cpanm; \
+      sleep 5; \
+    done; \
+    exit 1
 
 FROM perl:5.38-slim
 RUN useradd -m -r -s /bin/false app

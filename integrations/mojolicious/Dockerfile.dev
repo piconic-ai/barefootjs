@@ -11,7 +11,16 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends make gcc libc-dev \
  && rm -rf /var/lib/apt/lists/*
 
-RUN cpanm --notest Mojolicious
+# Retried: the CPAN mirror occasionally serves a truncated/corrupt tarball,
+# which cpanm treats as a hard failure. Clear its download cache between
+# attempts so a retry re-fetches instead of re-unpacking the same bad file.
+RUN for i in 1 2 3; do \
+      cpanm --notest Mojolicious && exit 0; \
+      echo "cpanm attempt $i failed, retrying..." >&2; \
+      rm -rf ~/.cpanm; \
+      sleep 5; \
+    done; \
+    exit 1
 
 WORKDIR /workspace/integrations/mojolicious
 
