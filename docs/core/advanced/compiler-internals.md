@@ -89,8 +89,18 @@ rewrites every value-position read of a name bound by the destructured PARAMETER
 effects, memos, handlers, text, reactive attributes, anywhere in the generated `init*` body —
 to a live `_p.<key>` read, the same read `props.xxx` compiles to. See
 `rewriteDestructuredPropReads` (`ir-to-client-js/rewrite-destructured-props.ts`) and
-`livePropReadExpr` (`props-binding.ts`). Destructuring in the function BODY
-(`const { count } = props`) is an ordinary local binding and is not rewritten.
+`livePropReadExpr` (`props-binding.ts`).
+
+Destructuring in the function BODY (`const { count } = props`, or the equivalent `const count
+= props.count`) is a pure single-prop alias — the analyzer's IR can't tell the two shapes
+apart, and treats them identically — and is ALSO rewritten live, via the same
+`rewriteDestructuredPropReads` door's `rewriteBodyAliasReads` branch
+(`resolveBodyPropAliases`, `props-binding.ts`): the local's own extraction is deleted from the
+emitted body (it would otherwise shadow the very references the rewrite is trying to make
+live) and every reference to it becomes `_p.count`, same as the parameter form. This does NOT
+apply once the local does a real computation of its own (`const doubled = count * 2` stays an
+ordinary once-evaluated local) or is reassigned (`let { count } = props` is never treated as
+a live alias).
 
 ---
 

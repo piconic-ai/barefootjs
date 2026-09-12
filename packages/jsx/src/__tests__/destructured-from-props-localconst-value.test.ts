@@ -82,7 +82,17 @@ describe('destructured-from-props-object → localConstants value rewrite', () =
     expect(content).not.toMatch(/const\s+doubled\s*=\s*_p\.count\(\)/)
   })
 
-  test('shadow guard: earlier local that shadows a prop is NOT rewritten', () => {
+  // #2934: `const label = props.label ?? 'fallback'` is a PURE single-prop
+  // alias — the analyzer's IR can't distinguish it from a destructure
+  // (`const { label = 'fallback' } = props`), and `resolveBodyPropAliases`
+  // deliberately treats both identically (see its docstring). So `label`'s
+  // own declaration is now removed and every reference to it — including
+  // from a DEPENDENT local's own initializer, `upper` here — becomes a
+  // live `_p.label` read. This used to be named a "shadow guard" test, back
+  // when `label` was expected to stay a captured-once local distinct from
+  // the prop; that framing no longer applies now that a same-named pure
+  // alias IS made live rather than left as its own local.
+  test('a plain member-access prop alias is rewritten live, including from a dependent local', () => {
     const source = `
       'use client'
 
@@ -102,10 +112,11 @@ describe('destructured-from-props-object → localConstants value rewrite', () =
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     const content = clientJs?.content ?? ''
 
-    // `label` here is the local const (shadowing the prop). The init body
-    // emits `const label = _p.label ?? 'fallback'` (late-stage rename),
-    // and `upper` should reference the LOCAL `label`, not `_p.label`.
-    expect(content).toMatch(/const\s+upper\s*=\s*label\.toUpperCase\(\)/)
-    expect(content).not.toMatch(/const\s+upper\s*=\s*_p\.label\.toUpperCase\(\)/)
+    // `label`'s own extraction is gone — it was a pure alias, not a real
+    // computation of its own.
+    expect(content).not.toMatch(/const\s+label\s*=/)
+    // `upper` (still a real once-evaluated local — `.toUpperCase()` is a
+    // computation) now sources its value directly from the live prop read.
+    expect(content).toMatch(/const\s+upper\s*=\s*\(_p\.label\s*\?\?\s*'fallback'\)\.toUpperCase\(\)/)
   })
 })

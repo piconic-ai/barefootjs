@@ -82,18 +82,21 @@ setCount(n => n + 1)  // Updater function
 
 ### Props Access
 
-Unlike SolidJS, BOTH `props.xxx` access and destructuring the props parameter stay reactive
-in BarefootJS — the compiler rewrites every value-position read of a destructured prop name
-to the same live getter read a `props.xxx` access would compile to (`props-binding.ts`'s
-`livePropReadExpr`, applied by `rewriteDestructuredPropReads` as a final pass over the
-joined `init*` body). Both forms below are equally reactive — the choice is style, not
-correctness:
+Unlike SolidJS, `props.xxx` access, destructuring the props parameter, AND a pure-alias
+destructure in the function body all stay reactive in BarefootJS — the compiler rewrites
+every value-position read of a destructured (or body-aliased) prop name to the same live
+getter read a `props.xxx` access would compile to (`props-binding.ts`'s `livePropReadExpr`,
+applied by `rewriteDestructuredPropReads` as a final pass over the joined `init*` body — its
+`rewriteBodyAliasReads` branch covers the body-destructure/`resolveBodyPropAliases` shape).
+All three forms below are equally reactive — the choice is style, not correctness — as long
+as the body-destructured local is a PURE alias (nothing computed from it, no reassignment):
 
 | Pattern | Behavior | Use Case |
 |---------|----------|----------|
 | `props.value` | Reactive (live getter read) | Either style |
 | `function C({ value }: Props)` (parameter destructuring) | Reactive (live getter read) | Either style |
-| `const { value } = props` (body destructuring) | Captured once | Initial values only |
+| `const { value } = props` (body destructuring, pure alias) | Reactive (live getter read) | Either style |
+| `const doubled = value * 2` (a computation, not a pure alias) | Captured once | Initial values only |
 
 ```tsx
 // ✅ Reactive: props.xxx access
@@ -154,8 +157,10 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 - `props.value` → Getter is called at each read site → Reactive
 - `function C({ value }: Props)` → the compiler rewrites `value` to the same getter read at
   each reference site (not a plain local binding) → equally reactive
-- `const { value } = props` in the BODY → a plain local binding, so the getter is called once
-  → captured (`rewriteDestructuredPropReads` only covers the parameter form)
+- `const { value } = props` in the BODY, when `value` is a pure alias → the compiler deletes
+  the local extraction and rewrites every reference the same way → equally reactive. Once the
+  local does its own computation (`const doubled = value * 2`) it's an ordinary local again,
+  evaluated once at declaration — same as it would be anywhere else.
 
 ### Comparison with SolidJS and React
 
@@ -163,7 +168,7 @@ The **consumer** (child) determines when evaluation happens, not the **provider*
 |--------|-----------|---------|-------|
 | Signal access | `count()` | `count()` | `count` (useState) |
 | Props access | Getter-based | Getter-based | Direct access |
-| Destructuring props | ✅ Safe in the parameter (compiler rewrites reads live); ⚠️ captured once in the body | ⚠️ Careful | ✅ Safe |
+| Destructuring props | ✅ Safe in the parameter and (for a pure alias) the body — compiler rewrites reads live | ⚠️ Careful | ✅ Safe |
 | Dependency tracking | Automatic | Automatic | Manual arrays |
 | Rendering | Marked template + Client hydration | All in JS | All in JS |
 
