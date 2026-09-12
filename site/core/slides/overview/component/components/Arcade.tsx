@@ -283,10 +283,11 @@ export function Arcade() {
   }
 
   const spawnWave = () => {
-    // two species: the light-green big-eyes hold the top two rows, the green
-    // saucer-riders the bottom three. Colour is the point value.
-    const kinds = ['a', 'a', 'b', 'b', 'b']
-    const points = [30, 30, 20, 20, 20]
+    // one family, three builds: light-green slim saucers on top, green standard
+    // ones in the middle, the wide white build closest to the player. Colour is
+    // the point value, the way a cabinet does it.
+    const kinds = ['a', 'a', 'b', 'b', 'c']
+    const points = [30, 30, 20, 20, 10]
     const left = (W - (COLS - 1) * ALIEN_COL) / 2
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -323,7 +324,7 @@ export function Arcade() {
     sparksDirty = true
   }
 
-  /** the colour a species' sparks take */
+  /** the colour a saucer's sparks take — its own */
   const tintOf = (kind: string): string => (kind === 'a' ? 'sl' : kind === 'b' ? 'sg' : 'sw')
 
   /**
@@ -636,7 +637,7 @@ export function Arcade() {
       const sy = s.y()
       for (const e of alienList) {
         if (e.dead || e.state === 3) continue
-        if (Math.abs(e.x() - sx) < 22 && Math.abs(e.y() - sy) < 16) {
+        if (Math.abs(e.x() - sx) < 24 && Math.abs(e.y() - sy) < 16) {
           s.dead = true
           shotsDirty = true
           addScore(e.pts)
@@ -895,7 +896,7 @@ export function Arcade() {
         <div className="a-logo" aria-hidden="true">
           <i className="a-glyph px-a0"></i>
           <i className="a-glyph px-b0"></i>
-          <i className="a-glyph px-a0"></i>
+          <i className="a-glyph px-c0"></i>
           <i className="a-glyph px-b0"></i>
           <i className="a-glyph px-a0"></i>
         </div>
