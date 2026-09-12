@@ -55,7 +55,7 @@ type BodyLiveChildInput struct {
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
 	Value int
-	Label interface{}
+	Label string
 	OnPick interface{}
 }
 
@@ -70,7 +70,7 @@ type BodyLiveChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
-	Label interface{} `json:"label"`
+	Label string `json:"label"`
 	OnPick interface{} `json:"onPick"`
 	Seen int `json:"-"`
 	Doubled interface{} `json:"-"`
@@ -928,9 +928,7 @@ func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
 
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["value"] = in.Value
-	if in.Label != nil {
-		bfCallerProps["label"] = in.Label
-	}
+	bfCallerProps["label"] = in.Label
 	bfCallerProps["onPick"] = in.OnPick
 
 	return BodyLiveChildProps{
@@ -939,7 +937,7 @@ func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Value: in.Value,
-		Label: in.Label,
+		Label: func() string { if in.Label == "" { return "none" }; return in.Label }(),
 		OnPick: in.OnPick,
 		Seen: 0,
 		Doubled: in.Value * 2,
