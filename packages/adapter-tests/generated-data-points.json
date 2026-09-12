@@ -1427,6 +1427,10 @@
       "props": {
         "fallbackLabel": "日本語"
       }
+    },
+    {
+      "name": "gen:fallbackLabel:absent",
+      "props": {}
     }
   ],
   "flatmap-expression-body": [
@@ -2761,6 +2765,10 @@
       "props": {
         "fallbackLabel": "日本語"
       }
+    },
+    {
+      "name": "gen:fallbackLabel:absent",
+      "props": {}
     }
   ],
   "string-endsWith": [

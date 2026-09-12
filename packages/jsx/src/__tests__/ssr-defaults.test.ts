@@ -103,6 +103,71 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.n).toEqual({ value: 0 })
   })
 
+  test('BODY-destructured prop default extracts the same static value as the parameter form (#2934 follow-up)', () => {
+    // `function Foo(props) { const { label = 'none' } = props }` is the
+    // props-object-mode twin of `function Foo({ label = 'none' })` — #2934
+    // made both forms read equally LIVE at the CSR/Hono layer, but
+    // `buildMetadata` (`compiler.ts`) never merged the body form's
+    // destructure default into `IRMetadata.propsParams`, so every
+    // template-stash adapter's manifest (built from `extractSsrDefaults`,
+    // this function) seeded `null` instead of `'default'` — a real adapter
+    // renders `data-variant=""`/no attribute at all instead of the default,
+    // while Hono (which just runs the real JS destructure) was unaffected.
+    // Regression pin for the fixture-level repro:
+    // `packages/adapter-tests/fixtures/destructured-props-live.ts`'s
+    // `BodyLiveChild`, first caught failing in every non-Hono adapter's CI
+    // (Go/ERB/Blade/Xslate/Jinja2/Twig/Mojolicious/Rust) while `test (rest)`
+    // and the Hono adapter's own suite stayed green.
+    const metadata = metadataFor(`
+      'use client'
+      function BodyBadge(props: { variant?: string }) {
+        const { variant = 'default' } = props
+        return <span data-variant={variant}>{variant}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.variant).toEqual({ propName: 'variant', value: 'default' })
+  })
+
+  test('BODY-destructured prop with NO default still seeds null, same as a plain bare-props read', () => {
+    // A body-destructured prop that carries no `= <default>` in its
+    // pattern must behave exactly like today's bare `props.X` seeding —
+    // this pins that the #2934-follow-up merge doesn't invent a default
+    // where the source has none.
+    const metadata = metadataFor(`
+      'use client'
+      function BodyBadge(props: { text: string }) {
+        const { text } = props
+        return <span>{text}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.text).toEqual({ propName: 'text', value: null })
+  })
+
+  test('BODY-destructured prop KEEPS its type-member type info alongside the merged default', () => {
+    // The merge must not downgrade a known type (used by every DSL
+    // adapter's own boolean/string-typed-prop classification, e.g.
+    // `collectBooleanTypedProps`) to the synthesized body-param's
+    // placeholder `unknown` type.
+    const metadata = metadataFor(`
+      'use client'
+      function BodyToggle(props: { active?: boolean }) {
+        const { active = true } = props
+        return <span data-active={active} />
+      }
+    `)
+
+    const active = metadata.propsParams.find(p => p.name === 'active')
+    expect(active?.type).toEqual({ kind: 'primitive', raw: 'boolean', primitive: 'boolean' })
+    expect(active?.defaultValue).toBe('true')
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.active).toEqual({ propName: 'active', value: true })
+  })
+
   test('self-derived signal collision (#2669, shape A): entry stays a PROP entry, not the evaluated signal value', () => {
     // `props.label` and the signal getter `label` share a name — the
     // bare-props-arg form is the only shape where this collides (a

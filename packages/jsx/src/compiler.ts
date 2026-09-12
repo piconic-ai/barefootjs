@@ -10,11 +10,13 @@ import type {
   CompileOptions,
   CompileResult,
   FileOutput,
+  ParamInfo,
 } from './types.ts'
 import ts from 'typescript'
 import type { TemplateAdapter } from './adapters/interface.ts'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
+import { bodyDestructuredPropParams } from './props-binding.ts'
 import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
@@ -620,6 +622,65 @@ function componentTypeParametersText(
   return `<${typeParameters.map(p => p.getText(sourceFile)).join(', ')}>`
 }
 
+/**
+ * Merge body-destructured props-object bindings (#2934) into the
+ * type-member-derived `propsParams` list so `IRMetadata.propsParams` — the
+ * ONE field every adapter (Hono's own SSR excepted, which just runs the
+ * real destructure) reads to learn a prop's default — carries the SAME
+ * default a `const { label = 'none' } = props` destructure applies.
+ *
+ * Without this, `ir.metadata.propsParams`'s entry for a body-destructured
+ * prop comes ONLY from `extractPropsFromTypeMembers` (`analyzer.ts`), which
+ * has no notion of a destructure default (a TS type carries no runtime
+ * value) and always leaves `defaultValue: undefined` — silently invisible
+ * to every consumer keyed off `ParamInfo.defaultValue`, chief among them
+ * `extractSsrDefaults` (`ssr-defaults.ts`), which every non-Hono adapter's
+ * SSR-defaults manifest is built from (#2934 follow-up).
+ *
+ * `bodyDestructuredPropParams` (`props-binding.ts`) already computes the
+ * exact eligible set (excludes `children`, `let`/mutated bindings, module
+ * scope) for the CSR live-read rewrite — reused here rather than a second
+ * eligibility check, per the "one decision, one implementation" rule.
+ * Only the destructure-specific fields (`sourceName`, `defaultValue`,
+ * `defaultContainsArrow`, `optional`) are taken from it; an EXISTING
+ * type-member entry's real `.type` (used by `collectBooleanTypedProps` /
+ * `collectStringValueNames` and friends across the DSL adapters) is
+ * preserved rather than downgraded to the synthesized entry's placeholder
+ * `unknown` type. A body-destructured name with NO type-member counterpart
+ * (an untyped `props` parameter) falls back to the synthesized entry as-is
+ * — there is no better type to keep.
+ */
+function mergePropsParamsWithBodyDestructured(
+  propsParams: readonly ParamInfo[],
+  localConstants: ReturnType<typeof analyzeComponent>['localConstants'],
+  propsObjectName: string | null,
+): ParamInfo[] {
+  const bodyParams = bodyDestructuredPropParams(localConstants, propsObjectName)
+  if (bodyParams.size === 0) return [...propsParams]
+
+  const merged: ParamInfo[] = []
+  const seen = new Set<string>()
+  for (const p of propsParams) {
+    const body = bodyParams.get(p.name)
+    if (body) {
+      merged.push({
+        ...p,
+        sourceName: body.sourceName ?? p.sourceName,
+        defaultValue: body.defaultValue,
+        defaultContainsArrow: body.defaultContainsArrow,
+        optional: true,
+      })
+      seen.add(p.name)
+    } else {
+      merged.push(p)
+    }
+  }
+  for (const [name, body] of bodyParams) {
+    if (!seen.has(name)) merged.push(body)
+  }
+  return merged
+}
+
 export function buildMetadata(
   ctx: ReturnType<typeof analyzeComponent>,
 ): IRMetadata {
@@ -631,7 +692,7 @@ export function buildMetadata(
     typeDefinitions: ctx.typeDefinitions,
     propsType: ctx.propsType,
     typeParameters: componentTypeParametersText(ctx.componentNode, ctx.sourceFile),
-    propsParams: ctx.propsParams,
+    propsParams: mergePropsParamsWithBodyDestructured(ctx.propsParams, ctx.localConstants, ctx.propsObjectName),
     propsObjectName: ctx.propsObjectName,
     restPropsName: ctx.restPropsName,
     restPropsExpandedKeys: ctx.restPropsExpandedKeys,

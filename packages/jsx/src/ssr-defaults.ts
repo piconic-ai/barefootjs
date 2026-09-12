@@ -176,18 +176,29 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   if (metadata.propsObjectName) propsLike.add(metadata.propsObjectName)
   for (const p of metadata.propsParams) propsLike.add(p.name)
 
-  // Prop entries. Both parameter forms need one entry per prop:
-  //   - Destructured form (`function Foo({ variant = 'default' })`):
+  // Prop entries. Every prop-declaring shape needs one entry per prop:
+  //   - Parameter-destructured form (`function Foo({ variant = 'default' })`):
   //     each `propsParam` is a template-stash variable; a literal
   //     destructure default becomes the static fallback value.
-  //   - Bare-props form (`function Foo(props: Props)`): template-stash
-  //     adapters flatten `props.X` to the same bare scalar (`$X` — see
-  //     the Mojo emitter's `member()`), NOT a `$props->{X}` hash read,
-  //     so an unseeded prop the caller forgets to pass is a strict-mode
-  //     compile error, not a soft `undef` (#2126). Seed every declared
-  //     prop with a `null` fallback (→ undef; the template-side `// …`
-  //     recompute supplies the real default, and a caller-passed prop
-  //     wins via `propName`).
+  //   - Body-destructured form in props-object mode (`function Foo(props) {
+  //     const { variant = 'default' } = props }`, #2934): `buildMetadata`
+  //     (`compiler.ts`'s `mergePropsParamsWithBodyDestructured`) merges this
+  //     shape's destructure default into the SAME `propsParams` entry, so
+  //     it needs no separate branch here — `p.defaultValue !== undefined`
+  //     alone is the right test regardless of `propsObjectName`. Before
+  //     that merge existed, a body-destructured prop's `propsParams` entry
+  //     came only from `extractPropsFromTypeMembers` (a TS type carries no
+  //     runtime default), so gating on `propsObjectName === null` was only
+  //     ever true for the entries that COULD carry a default — this branch
+  //     is unchanged for every prop that still has none.
+  //   - Bare-props form with no body destructure at all (`function Foo(props:
+  //     Props) { ... props.X ... }`): template-stash adapters flatten
+  //     `props.X` to the same bare scalar (`$X` — see the Mojo emitter's
+  //     `member()`), NOT a `$props->{X}` hash read, so an unseeded prop the
+  //     caller forgets to pass is a strict-mode compile error, not a soft
+  //     `undef` (#2126). Seed every declared prop with a `null` fallback
+  //     (→ undef; the template-side `// …` recompute supplies the real
+  //     default, and a caller-passed prop wins via `propName`).
   for (const p of metadata.propsParams) {
     if (p.isRest) continue
     // `propName` is the CALLER-facing key (`$props->{propName}` in the Perl
@@ -195,7 +206,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // `n`, not the local binding `count` the template variable is keyed by.
     // `sourceName ?? name` is an identity for every un-aliased prop.
     const callerPropName = p.sourceName ?? p.name
-    if (metadata.propsObjectName === null && p.defaultValue !== undefined) {
+    if (p.defaultValue !== undefined) {
       const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
       out[p.name] = { propName: callerPropName, value: resultToJsonable(value) }
     } else {
