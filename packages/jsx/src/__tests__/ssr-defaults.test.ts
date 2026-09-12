@@ -352,6 +352,46 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.text).toEqual({ propName: 'text', value: null })
   })
 
+  test('bare-props-form body-destructure rename (#2788) seeds the SSR stash under the LOCAL name', () => {
+    // `function Foo(props: Props) { const { children: kids } = props }` —
+    // propsParams here comes from the TYPE annotation and has no notion of
+    // the body-level rename, so the template-stash reads a LOCAL `kids`
+    // that pass-1 seeding would otherwise never populate. The safety-net
+    // loop in `extractSsrDefaults` (backed by `resolveBodyDestructuredPropAliases`)
+    // exists specifically to also seed the entry under `kids`.
+    const metadata = metadataFor(`
+      function Foo(props: { children?: string }) {
+        const { children: kids } = props
+        return <span>{kids}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.children).toEqual({ propName: 'children', value: null })
+    expect(defaults?.kids).toEqual(defaults?.children)
+  })
+
+  // Pullfrog review (PR #2941): `resolveBodyDestructuredPropAliases` is now
+  // a filtered view over `resolveBodyPropAliases`, which excludes `let`
+  // bindings and mutated locals — a restriction that's correct for the
+  // LIVE client-JS rewrite (`rewriteBodyAliasReads`) but has no bearing on
+  // this SSR-stash safety net, which only needs the declaration-time
+  // local↔caller-key mapping. Without `requireLiveRewriteSafe: false`
+  // threaded through, a `let`-declared rename would silently lose its
+  // stash entry here — a reintroduction of #2788 for that one shape.
+  test('bare-props-form body-destructure rename via `let` (#2788 regression guard) still seeds the SSR stash', () => {
+    const metadata = metadataFor(`
+      function Foo(props: { children?: string }) {
+        let { children: kids } = props
+        return <span>{kids}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.children).toEqual({ propName: 'children', value: null })
+    expect(defaults?.kids).toEqual(defaults?.children)
+  })
+
   test('memo derived from a signal evaluates through the chain', () => {
     const metadata = metadataFor(`
       'use client'

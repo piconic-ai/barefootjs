@@ -37,9 +37,16 @@ describe('Shadow guards: bare names that shadow props are NOT rewritten to _p.X'
     expect(initBody).not.toMatch(/_p\.count\(\)/)
   })
 
-  test('earlier local const with default shadowing prop', () => {
-    // `label` is a derived local. Even though props has a `label` field,
-    // the bare reference inside subsequent locals resolves to the local.
+  // #2934: `label` here is a PURE alias of the `label` prop (the analyzer's
+  // IR can't distinguish `const label = props.label ?? 'fallback'` from a
+  // destructure default), not a genuinely distinct local shadowing an
+  // unrelated prop of the same name — so it is NOT a shadow-guard case
+  // after all. `resolveBodyPropAliases` now recognizes it, deletes its own
+  // extraction, and rewrites every reference (including from `upper`'s own
+  // initializer) to a live `_p.label` read, same as the parameter-
+  // destructured form. `upper` itself stays an ordinary once-evaluated
+  // local — `.toUpperCase()` is a real computation, not a passthrough.
+  test('a plain member-access prop alias is rewritten live, including from a dependent local', () => {
     const { initBody, errors } = compile(`
       'use client'
 
@@ -53,8 +60,8 @@ describe('Shadow guards: bare names that shadow props are NOT rewritten to _p.X'
     `)
 
     expect(errors).toEqual([])
-    expect(initBody).toMatch(/upper\s*=\s*label\.toUpperCase\(\)/)
-    expect(initBody).not.toMatch(/_p\.label\.toUpperCase/)
+    expect(initBody).not.toMatch(/const\s+label\s*=/)
+    expect(initBody).toMatch(/upper\s*=\s*\(_p\.label\s*\?\?\s*'fallback'\)\.toUpperCase\(\)/)
   })
 
   test('nested arrow param shadowing prop name', () => {

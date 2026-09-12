@@ -36,6 +36,35 @@ import ts from 'typescript'
 import { collectValueReferencedNames } from '../value-references.ts'
 import { PROPS_PARAM } from './utils.ts'
 
+/**
+ * Does `init` read `<objectName>.<key>` or `<objectName>.<key> ?? <fallback>`?
+ * The one recognizer for "a prop read initializer", shared by
+ * `propExtractionName` below (which additionally requires the bound name to
+ * equal `key`, and always reads off `_p`), `rewriteBodyAliasReads`
+ * (`rewrite-destructured-props.ts`, which does not require the name match —
+ * a renamed alias's bound name differs from `key` by definition, but also
+ * always reads off `_p`), and `resolveBodyPropAliases` (`props-binding.ts`,
+ * which reads off the SOURCE-level props object name, e.g. `props` —
+ * `objectName` defaults to `_p` for the first two, post-rename, callers).
+ */
+export function parsePropReadInitializer(
+  init: ts.Expression,
+  objectName: string = PROPS_PARAM,
+): { key: string; fallback: ts.Expression | null } | null {
+  let core: ts.Expression = init
+  let fallback: ts.Expression | null = null
+  if (
+    ts.isBinaryExpression(core) &&
+    core.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+  ) {
+    fallback = core.right
+    core = core.left
+  }
+  if (!ts.isPropertyAccessExpression(core)) return null
+  if (!ts.isIdentifier(core.expression) || core.expression.text !== objectName) return null
+  return { key: core.name.text, fallback }
+}
+
 /** Is `stmt` a single-declarator `const X = _p.X…` prop extraction whose
  * initializer is `_p.X` or `_p.X ?? <default>`? Returns the bound name, or
  * null when the statement is anything else. */
@@ -46,16 +75,8 @@ function propExtractionName(stmt: ts.Statement): string | null {
   const decl = decls[0]!
   if (!ts.isIdentifier(decl.name) || !decl.initializer) return null
 
-  let core: ts.Expression = decl.initializer
-  if (
-    ts.isBinaryExpression(core) &&
-    core.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
-  ) {
-    core = core.left
-  }
-  if (!ts.isPropertyAccessExpression(core)) return null
-  if (!ts.isIdentifier(core.expression) || core.expression.text !== PROPS_PARAM) return null
-  if (core.name.text !== decl.name.text) return null
+  const parsed = parsePropReadInitializer(decl.initializer)
+  if (parsed === null || parsed.key !== decl.name.text) return null
   return decl.name.text
 }
 

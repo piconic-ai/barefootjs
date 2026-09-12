@@ -3023,7 +3023,6 @@ export function initAccordionTrigger(__scope, _p = {}) {
       }
     })
   }
-  const className = _p.className ?? ''
 
   const [_s2, _s1] = $(__scope, 's2', 's1')
   const [_s0] = $c(__scope, 's0')
@@ -3036,7 +3035,7 @@ export function initAccordionTrigger(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
       }
       __l[0] = __x }
-      { const __x = `flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${className}`
+      { const __x = `flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
       }

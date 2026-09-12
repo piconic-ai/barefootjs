@@ -923,6 +923,28 @@
         "text"
       ]
     },
+    "body-destructured-props-live": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "boolean-attr-literals": {
       "kinds": [
         "literal"
@@ -2202,21 +2224,6 @@
       "contexts": [
         "attribute",
         "condition",
-        "loop",
-        "text"
-      ]
-    },
-    "event-delegation-container-handler": {
-      "kinds": [
-        "array-literal",
-        "identifier",
-        "literal"
-      ],
-      "axes": [
-        "literal:string"
-      ],
-      "contexts": [
-        "attribute",
         "loop",
         "text"
       ]
@@ -6662,17 +6669,17 @@
     }
   },
   "kindCounts": {
-    "array-literal": 114,
+    "array-literal": 113,
     "array-method": 71,
     "arrow": 74,
-    "binary": 105,
-    "call": 276,
-    "conditional": 32,
+    "binary": 106,
+    "call": 277,
+    "conditional": 33,
     "identifier": 390,
     "index-access": 14,
     "literal": 312,
-    "logical": 49,
-    "member": 230,
+    "logical": 50,
+    "member": 231,
     "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
@@ -6706,7 +6713,7 @@
     "binary:!=": 2,
     "binary:!==": 12,
     "binary:%": 1,
-    "binary:*": 13,
+    "binary:*": 14,
     "binary:+": 24,
     "binary:-": 12,
     "binary:/": 1,
@@ -6714,12 +6721,12 @@
     "binary:===": 54,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 70,
+    "literal:boolean": 71,
     "literal:null": 26,
-    "literal:number": 142,
+    "literal:number": 143,
     "literal:string": 213,
     "logical:&&": 7,
-    "logical:??": 41,
+    "logical:??": 42,
     "logical:||": 16,
     "lowering:date": 4,
     "lowering:formatDate": 2,

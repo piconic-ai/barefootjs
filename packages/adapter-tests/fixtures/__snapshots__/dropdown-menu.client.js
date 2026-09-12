@@ -3413,7 +3413,6 @@ export function initDropdownMenuSubTrigger(__scope, _p = {}) {
       subCtx.onSubOpenChange(!subCtx.subOpen())
     })
   }
-  const isDisabled = _p.disabled ?? false
 
   const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
@@ -3426,18 +3425,18 @@ export function initDropdownMenuSubTrigger(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
       }
       __l[0] = __x }
-      { const __x = isDisabled
+      { const __x = (_p.disabled ?? false)
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         if (__x) _s1.setAttribute('aria-disabled', 'true')
         else _s1.removeAttribute('aria-disabled')
       }
       __l[1] = __x }
-      { const __x = isDisabled ? -1 : 0
+      { const __x = (_p.disabled ?? false) ? -1 : 0
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('tabindex', String(__v)); else _s1.removeAttribute('tabindex') }
       }
       __l[2] = __x }
-      { const __x = `${dropdownMenuSubTriggerClasses} ${isDisabled ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${_p.className ?? ''}`
+      { const __x = `${dropdownMenuSubTriggerClasses} ${(_p.disabled ?? false) ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${_p.className ?? ''}`
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
       }

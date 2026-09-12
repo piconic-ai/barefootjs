@@ -22,4 +22,16 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // the real name off that capture — the same in-template recompute the other
 // six template-stash backends already had. Keep the file even when the set
 // is empty — the next divergence lands here, not in a re-created file.
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // #2943: a BODY-destructured prop default (`const { label = 'none' } =
+  // props`) never reaches `ParamInfo.defaultValue` (`extractPropsFromTypeMembers`
+  // is type-member info only) nor the SSR stash seed (`extractSsrDefaults`
+  // skips defaults in props-object mode), so the adapter's nullable-optional
+  // prop classification treats `label` as a no-default optional and emits a
+  // presence guard that OMITS `data-label` when the caller passes nothing —
+  // Hono's real destructuring default renders `data-label="none"`. The
+  // parameter-destructured twin (`destructured-props-live`) is correct on
+  // this adapter.
+  'body-destructured-props-live':
+    'body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)',
+}

@@ -1816,6 +1816,40 @@
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "totalFixtures": 412,
     "fixtures": {
+      "body-destructured-props-live": {
+        "blade": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)"
+        }
+      },
       "component-prop-bare-getter": {
         "go-template": {
           "kind": "render",
@@ -3626,6 +3660,10 @@
       }
     },
     "docs": {
+      "body-destructured-props-live": {
+        "description": "A body-destructured-props child stays fully reactive across text/memo/effect/handler/attribute…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructured-props-live.ts"
+      },
       "component-prop-bare-getter": {
         "description": "A signal getter passed directly (unwrapped) to a component prop compiles, matching the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-prop-bare-getter.ts"
