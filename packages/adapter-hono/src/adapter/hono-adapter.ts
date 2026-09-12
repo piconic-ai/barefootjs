@@ -636,8 +636,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
         // deliberately is NOT skipped here: dropping it silently is the bug
         // Move C fixes — `serializeHydrationProps` below decides, via
         // `liveOnlyProps`, whether the client actually needed it.
-        // Use propsObjectName.propName for SolidJS-style, direct propName for destructured
-        const propAccess = propsObjectName ? `${propsObjectName}.${p.name}` : p.name
+        // Use propsObjectName.sourceKey for SolidJS-style, direct propName
+        // for destructured. `sourceName ?? p.name` matters for props-object
+        // mode specifically (#2943): a body-destructure-with-default rename
+        // (`const { label: text = 'none' } = props`) adds a `text` entry
+        // whose real property on `props` is `label`, not `text` — `props`
+        // has no `text` key. The parameter-destructured form needs no such
+        // fallback: that mode already binds a real local under the RENAMED
+        // name at the destructure itself, so `p.name` (the local) is
+        // correct there.
+        const propAccess = propsObjectName ? `${propsObjectName}.${p.sourceName ?? p.name}` : p.name
         // The `bf-p` blob key is always the caller-facing name (#2524 CSR
         // half) — every non-Hono `_p` producer/consumer keys the same way,
         // so a renaming destructure (`{ n: count }`) must serialize under

@@ -625,6 +625,47 @@
       }
     }
   ],
+  "body-destructured-prop-default-renamed": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "value": 1,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "value": 1,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "value": 1,
+        "label": "日本語"
+      }
+    }
+  ],
   "branch-local-filter-join": [
     {
       "name": "gen:on:true",

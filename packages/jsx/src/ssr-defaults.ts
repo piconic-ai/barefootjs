@@ -184,10 +184,15 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   //     adapters flatten `props.X` to the same bare scalar (`$X` — see
   //     the Mojo emitter's `member()`), NOT a `$props->{X}` hash read,
   //     so an unseeded prop the caller forgets to pass is a strict-mode
-  //     compile error, not a soft `undef` (#2126). Seed every declared
-  //     prop with a `null` fallback (→ undef; the template-side `// …`
-  //     recompute supplies the real default, and a caller-passed prop
-  //     wins via `propName`).
+  //     compile error, not a soft `undef` (#2126). A BODY-destructured
+  //     default (`const { label = 'none' } = props`, #2943) reaches this
+  //     same `p.defaultValue` too — the analyzer overlays it onto
+  //     `propsParams` at the binding's own declaration (`collectConstant`,
+  //     `analyzer.ts`) — so it needs no separate branch here: any prop
+  //     with a static default, from either destructuring form, seeds the
+  //     evaluated value; one with none seeds `null` (→ undef; the
+  //     template-side `// …` recompute supplies the real default, and a
+  //     caller-passed prop wins via `propName`).
   for (const p of metadata.propsParams) {
     if (p.isRest) continue
     // `propName` is the CALLER-facing key (`$props->{propName}` in the Perl
@@ -195,7 +200,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // `n`, not the local binding `count` the template variable is keyed by.
     // `sourceName ?? name` is an identity for every un-aliased prop.
     const callerPropName = p.sourceName ?? p.name
-    if (metadata.propsObjectName === null && p.defaultValue !== undefined) {
+    if (p.defaultValue !== undefined) {
       const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
       out[p.name] = { propName: callerPropName, value: resultToJsonable(value) }
     } else {
