@@ -8,13 +8,13 @@
 import { render } from '@barefootjs/client/runtime'
 
 // import するだけで registerComponent が走る(CSR adapter のビルド出力)
+import './components/Arcade.tsx'
 import './components/Counter.tsx'
-import './components/Tetris.tsx'
-import './components/Todos.tsx'
 import './components/Rotator.tsx'
 import './components/Compiler.tsx'
 import './components/Trace.tsx'
 import './components/Terminal.tsx'
+import './components/Showcase.tsx'
 
 // ビューアは document の click で左右ナビゲーション、keydown で Space/矢印
 // ナビゲーションをする。部品の中のクリックや入力欄のタイプがスライド送りに

@@ -22,6 +22,17 @@ cd site/core
 bun run slides:build <slug>
 ```
 
+A deck can carry more languages: `deck.<lang>.md` (for example `deck.ja.md`) next to
+`deck.md` is the same deck in another language, with the same slide keys and layouts. Each
+one is built into `public/slides/<slug>/<lang>/` (slides and manifest only), and a small shim
+in the page serves that language to the viewer when it is selected, so one URL carries every
+language; the deck chrome offers the toggle and remembers the choice in `localStorage`.
+
+Two placeholders may be used anywhere in `deck.md` (and `deck.<lang>.md`): `%%COMPAT_COMPONENTS%%` and
+`%%COMPAT_ADAPTERS%%` are replaced at build time with the component and adapter counts from
+`ui/compat.lock.json` (the same source as the landing page's matrix), so a deck never quotes a
+hand-typed number that drifts.
+
 The output lands in `public/slides/<slug>/`, which is gitignored: the deploy workflow
 (`.github/workflows/deploy.yml`) installs a pinned peitho release and runs
 `bun run slides:build --all` before `bun run build`, which copies `public/slides/**` into

@@ -1,0 +1,141 @@
+/*
+ * "components, designed after shadcn/ui" slide: a real composed product
+ * page built only from ui/components/ui/* (see css/1-ui-kit.css for the
+ * kit's own scoped tokens/resets/utilities). Everything below is either
+ * layout glue for the Showcase.tsx composition (`.showcase-*` classes,
+ * matching Showcase.tsx's own class names) or the handful of one-off brand
+ * accents (green badge/border/avatar/bubble) that don't belong in the
+ * reusable kit itself.
+ *
+ * Sizing overrides below target the kit's own `[data-slot="..."]` markers
+ * (`.showcase [data-slot="card-header"]`, etc.) rather than fighting the
+ * generated utility classes' cascade order: a descendant selector on an
+ * attribute is higher-specificity than the single-class utility it's
+ * overriding, so it wins regardless of source order in css/1-ui-kit.css.
+ * Button carries no `data-slot`, so its own instances get an explicit
+ * `showcase-btn` class from Showcase.tsx instead — scoping the override to
+ * real buttons only, since Switch/Checkbox also render a bare `<button>`
+ * and must keep their own (very different) native sizing.
+ */
+
+/* this layout's title runs long ("62 components, designed after
+ * shadcn/ui.") — shrink it (and the optional lede) so the header leaves
+ * most of the 720px canvas to the showcase itself. */
+.layout-showcase.peitho-slide { padding-top: 42px; padding-bottom: 34px; gap: 8px; }
+.layout-showcase h1 { font-size: 42px; line-height: 1.08; }
+.layout-showcase .lede { font-size: 15px; margin-top: 2px; max-width: none; }
+
+/* the mount fills the remaining slide height below the header; the
+ * showcase composition is authored at a natural desktop-page size (see
+ * `.showcase` below) and scaled down to fit the canvas, rather than
+ * redesigning every kit component's spacing for slide scale. Anchored to
+ * the top (not vertically centered) so it never grows back up into the
+ * header regardless of exact header height. */
+.showcase-mount {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.showcase {
+  /* authored at (near) its real on-canvas pixel size rather than a big
+   * natural layout squeezed down via `transform: scale()` — the deck's
+   * embedded "Instrument Sans" (css/0-fonts.css) renders its space glyph
+   * very narrow below ~13px (confirmed by measuring actual character
+   * advance widths: real, present, but only 2-3px — legible at the sizes
+   * used elsewhere in this deck, all >=15px, but reads as fused words at
+   * 10-11px). Every multi-word class below stays at >=13px for that
+   * reason; only single-word/no-space labels (stat counts, avatar
+   * initials) go smaller. */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1090px;
+  /* 0.94 keeps the bottom card row clear of the deck chrome (language pill
+   * + page nav, bottom-right) — measured: at 1.0 the Messages card's bottom
+   * edge sat ~15px into the pill. */
+  transform: translateX(-50%) scale(0.94);
+  transform-origin: top center;
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+.showcase-messages { grid-column: span 2; }
+
+/* ── compact card chrome (all cards) ──────────────────────────────────── */
+.showcase [data-slot="card"] { gap: 8px; padding-block: 12px; }
+.showcase [data-slot="card-header"] { padding-inline: 16px; gap: 2px; }
+.showcase [data-slot="card-content"] { padding-inline: 16px; }
+.showcase [data-slot="card-footer"] { padding-inline: 16px; }
+.showcase [data-slot="card-title"] { font-size: 15px; }
+.showcase [data-slot="card-description"] { font-size: 13px; }
+.showcase [data-slot="label"] { font-size: 12px; }
+.showcase [data-slot="input"] { height: 30px; font-size: 13px; padding: 4px 10px; }
+.showcase-btn { height: 30px; padding: 0 14px; font-size: 13px; }
+.showcase-full { width: 100%; }
+
+/* ── Sign In ───────────────────────────────────────────────────────── */
+.showcase-form { display: flex; flex-direction: column; gap: 8px; }
+.showcase-field { display: flex; flex-direction: column; gap: 4px; }
+.showcase-remember { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+
+/* ── Profile ───────────────────────────────────────────────────────── */
+.showcase-profile-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+.showcase-avatar { width: 48px; height: 48px; }
+.showcase-avatar-fallback {
+  background: linear-gradient(135deg, #4db56a, #2f8a49);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+}
+.showcase-profile-name { font-weight: 600; font-size: 14px; margin-top: 2px; }
+.showcase-profile-role { font-size: 13px; color: var(--muted-foreground); margin-bottom: 2px; }
+.showcase-sep { margin: 0; }
+.showcase-stats { display: flex; justify-content: space-between; width: 100%; padding: 2px 0; }
+.showcase-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.showcase-stat-value { font-weight: 600; font-size: 13px; }
+.showcase-stat-label { font-size: 10px; color: var(--muted-foreground); }
+
+/* ── Notifications ─────────────────────────────────────────────────── */
+.showcase-notif-list { display: flex; flex-direction: column; gap: 8px; }
+.showcase-notif-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.showcase-notif-label { font-weight: 500; font-size: 13px; }
+.showcase-notif-sub { font-size: 13px; color: var(--muted-foreground); }
+
+/* ── Pro Plan (the deck's one accent color inside the kit) ────────────── */
+.showcase-pro { border-color: #3fa45b !important; border-width: 1.5px; }
+.showcase-pro-head { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.showcase-pro-badge { background: #3fa45b; color: #fff; border-color: transparent; }
+.showcase-pro-body { display: flex; flex-direction: column; gap: 8px; }
+.showcase-price { display: flex; align-items: baseline; gap: 4px; }
+.showcase-price-amount { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.showcase-price-period { font-size: 12px; color: var(--muted-foreground); }
+.showcase-features { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.showcase-features li::before { content: "\2713  "; color: #3fa45b; font-weight: 700; }
+
+/* ── Messages ──────────────────────────────────────────────────────── */
+.showcase-chat { display: flex; flex-direction: column; gap: 8px; }
+.showcase-msg { display: flex; gap: 8px; align-items: flex-start; }
+.showcase-msg-me { flex-direction: row-reverse; }
+.showcase-msg-avatar { width: 24px; height: 24px; flex-shrink: 0; }
+.showcase-msg-avatar-fallback { background: #111; color: #fff; font-size: 10px; font-weight: 600; }
+.showcase-msg-avatar-fallback-me { background: linear-gradient(135deg, #4db56a, #2f8a49); }
+.showcase-msg-col { display: flex; flex-direction: column; gap: 2px; max-width: 74%; }
+.showcase-msg-me .showcase-msg-col { align-items: flex-end; }
+.showcase-msg-meta { font-size: 12px; color: var(--muted-foreground); }
+.showcase-msg-bubble { background: #f0f0f0; padding: 6px 10px; border-radius: 12px; font-size: 13px; line-height: 1.4; }
+.showcase-msg-bubble-me { background: #0a0a0a; color: #fff; }
+.showcase-chat-footer { display: flex; gap: 8px; width: 100%; }
+.showcase-chat-input { flex: 1; }
+
+/* Japanese deck: the generic JA headline size (base.css) outranks the
+ * per-layout size above by specificity, so restate the showcase header
+ * sizes under the lang selector — otherwise the title balloons to 72px,
+ * wraps, and pushes the composition off the bottom of the canvas. */
+html[lang="ja"] .layout-showcase h1 { font-size: 38px; line-height: 1.2; }
+html[lang="ja"] .layout-showcase .lede { font-size: 15px; line-height: 1.5; }

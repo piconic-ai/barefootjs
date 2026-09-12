@@ -92,11 +92,49 @@ function buildDeck(slug: string): void {
   }
   writeFileSync(join(out, 'index.html'), indexHtml)
 
-  // 5. peitho copies its built-in theme fonts even when the deck ships its own css
+  // 5. language variants: deck.<lang>.md next to deck.md is the same deck in another
+  //    language (same keys and layouts). Each is built into <out>/<lang>/ keeping only its
+  //    slides/ and manifest.json; a head shim (below) serves those to the viewer when that
+  //    language is selected, so one URL carries every language. The chrome's toggle
+  //    (component/narration.ts) writes the choice to localStorage("bf-lang") and reloads.
+  const langs = readdirSync(src).map((n) => /^deck\.([a-z]{2,3}(?:-[A-Za-z0-9]+)?)\.md$/.exec(n)?.[1]).filter((l): l is string => !!l)
+  for (const lang of langs) {
+    const langOut = join(out, lang)
+    rmSync(langOut, { recursive: true, force: true })
+    run([PEITHO, 'build', `deck.${lang}.md`, '--out', langOut], src)
+    for (const f of readdirSync(langOut)) if (f !== 'slides' && f !== 'manifest.json') rmSync(join(langOut, f), { recursive: true, force: true })
+  }
+  if (langs.length > 0) {
+    const shim = `<script id="bf-lang-shim">/* built by build-slides.ts: serve manifest.json and slides/* from <lang>/ when that language is selected */
+(function(){var langs=${JSON.stringify(langs)};window.__BF_LANGS=langs;try{var l=localStorage.getItem('bf-lang');if(!l||langs.indexOf(l)<0)return;window.__BF_LANG=l;document.documentElement.lang=l;var f=window.fetch;window.fetch=function(u,o){var s=typeof u==='string'?u:(u&&u.url)||'';if(s==='manifest.json'||s.indexOf('slides/')===0)u=l+'/'+s;return f.call(this,u,o)}}catch(e){}})();</script>`
+    indexHtml = indexHtml.replace('<head>', `<head>\n  ${shim}`)
+    writeFileSync(join(out, 'index.html'), indexHtml)
+  }
+
+  // 6. repo facts a deck may quote: %%COMPAT_COMPONENTS%% / %%COMPAT_ADAPTERS%% are replaced
+  //    with the counts from ui/compat.lock.json (the same source as the landing page's
+  //    matrix), so a deck never carries a hand-typed component count that drifts.
+  const facts = compatFacts()
+  const langFiles = langs.flatMap((lang) => [join(lang, 'manifest.json'), ...readdirSync(join(out, lang, 'slides')).map((n) => join(lang, 'slides', n))])
+  for (const f of ['index.html', 'manifest.json', ...readdirSync(join(out, 'slides')).map((n) => join('slides', n)), ...langFiles]) {
+    const path = join(out, f)
+    if (!existsSync(path)) continue
+    const before = readFileSync(path, 'utf8')
+    const after = before.replaceAll('%%COMPAT_COMPONENTS%%', String(facts.components)).replaceAll('%%COMPAT_ADAPTERS%%', String(facts.adapters))
+    if (after !== before) writeFileSync(path, after)
+  }
+
+  // 7. peitho copies its built-in theme fonts even when the deck ships its own css
   const css = readFileSync(join(out, 'peitho.css'), 'utf8')
   if (!css.includes('theme-fonts/')) rmSync(join(out, 'theme-fonts'), { recursive: true, force: true })
 
   console.log(`✓ public/slides/${slug}/`)
+}
+
+/** Component and adapter counts from the committed compat matrix (ui/compat.lock.json). */
+function compatFacts(): { components: number; adapters: number } {
+  const lock = JSON.parse(readFileSync(resolve(CORE_DIR, '../../ui/compat.lock.json'), 'utf8')) as { components: Record<string, unknown>; adapters: unknown[] | Record<string, unknown> }
+  return { components: Object.keys(lock.components).length, adapters: Array.isArray(lock.adapters) ? lock.adapters.length : Object.keys(lock.adapters).length }
 }
 
 function escapeHtml(s: string): string {

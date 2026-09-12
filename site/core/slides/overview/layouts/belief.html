@@ -1,0 +1,12 @@
+<!--
+  Belief: one statement, set large, with an optional lede and sources.
+  Used for the Why slides. The title is the whole point of the slide.
+-->
+<section class="peitho-slide layout-belief">
+  <div class="belief-inner">
+    <div class="head-rule" aria-hidden="true"></div>
+    <h1><slot name="title" accepts="inline" arity="1"></slot></h1>
+    <div class="belief-body slot-body-wrap"><slot name="body" accepts="blocks" arity="0..*"></slot></div>
+  </div>
+  <footer class="belief-sources slot-body-wrap"><slot name="footnotes" accepts="blocks" arity="0..1"></slot></footer>
+</section>

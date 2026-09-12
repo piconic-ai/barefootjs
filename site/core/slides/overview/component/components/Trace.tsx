@@ -1,12 +1,21 @@
 'use client'
-import { createSignal, createEffect } from '@barefootjs/client'
+import { createSignal, createEffect, onMount, onCleanup } from '@barefootjs/client'
 
 // "Only what changed, changes." — a counter next to the DOM the compiler emitted for it.
 // On every click the runtime writes exactly one text node; the inspector lights that node up.
+// The counter clicks itself every couple of seconds until someone clicks it, so the one
+// lit node is seen without anyone having to touch the slide.
 export function Trace() {
   const [count, setCount] = createSignal(0)
   const [writes, setWrites] = createSignal(0)
+  const [auto, setAuto] = createSignal(true)
   const bump = () => { setCount(count() + 1); setWrites(writes() + 1) }
+  const click = () => { setAuto(false); bump() }
+
+  onMount(() => {
+    const id = setInterval(() => { if (auto()) bump() }, 2400)
+    onCleanup(() => clearInterval(id))
+  })
 
   const mountNode = (el: HTMLElement) => {
     let first = true
@@ -24,7 +33,7 @@ export function Trace() {
     <div className="trace">
       <div className="trace-app">
         <p className="trace-value">{count()}</p>
-        <button className="counter-btn" onClick={bump}>+1</button>
+        <button className="counter-btn" onClick={click}>+1</button>
       </div>
       <div className="trace-dom">
         <div className="trace-dom-head">
