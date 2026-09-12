@@ -1,0 +1,11 @@
+# Every integration's Dockerfile (dev and production) builds with the repo
+# root as context, so workspace deps and shared packages/ resolve correctly.
+# node_modules is huge (native binaries for bun/rolldown/oxc-parser/rollup/
+# workerd/tsgo) and is never COPYed into any image: dev containers get it via
+# bind mount (docker-compose.yml), production containers install or vendor
+# their deps separately. Sending it as part of the build context each time
+# is unnecessary and, without buildx (BuildKit) installed, the classic
+# builder can fail outright with "io: read/write on closed pipe" while
+# streaming a multi-GB tar of it.
+node_modules
+.git
