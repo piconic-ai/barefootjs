@@ -90,8 +90,11 @@ a {
  */
 .bf-header-logo-img {
   display: block;
-  width: 115px;
+  /* The box follows logo.svg's viewBox (175.64 x 46) at a 26px height, so
+   * `contain` fills it edge to edge; a regenerated logo needs only the
+   * viewBox width updated here. */
   height: 26px;
+  width: calc(26px * 175.64 / 46);
   background: var(--foreground);
   -webkit-mask: url('./logo.svg') no-repeat center / contain;
   mask: url('./logo.svg') no-repeat center / contain;
