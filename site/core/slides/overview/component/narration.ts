@@ -80,6 +80,24 @@ style.textContent = `
   body.bf-dark #bf-nav button { border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.08); color: #fff; }
   body.bf-dark #bf-nav button:hover { background: #fff; color: #0a0a0a; border-color: #fff; }
   body.bf-dark #bf-counter { color: rgba(255,255,255,.55); }
+  /* Compact chrome (phones, any coarse-pointer screen): the counter, the language toggle and
+     the page buttons leave the canvas and dock into a bar fixed to the bottom of the viewport,
+     at thumb size and unscaled — on a 390px-wide phone the canvas-anchored chrome would be a
+     third of its size, unusable. See placeChrome(). */
+  #bf-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(251,250,247,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(10,10,10,.08);
+  }
+  body.bf-dark #bf-bar { background: rgba(10,10,10,.76); border-top-color: rgba(255,255,255,.12); }
+  #bf-bar #bf-counter, #bf-bar #bf-nav, #bf-bar #bf-langs { position: static; transform: none; }
+  #bf-bar #bf-counter { grid-column: 2; font-size: 13px; text-align: center; }
+  #bf-bar #bf-langs { grid-column: 1; justify-self: start; }
+  #bf-bar #bf-langs button { font-size: 13px; padding: 0 18px; height: 44px; }
+  #bf-bar #bf-nav { grid-column: 3; justify-self: end; gap: 10px; }
+  #bf-bar #bf-nav button { width: 48px; height: 48px; font-size: 28px; }
   body.bf-dark #bf-progress { background: rgba(255,255,255,.12); }`
 document.head.append(style)
 
@@ -156,10 +174,47 @@ function paintProgress() {
 // corner (base.css's bottom padding; the arcade's caption sits above it).
 const CANVAS_W = 1280, CANVAS_H = 720
 const COUNTER_RIGHT = 22, COUNTER_BOTTOM = 18, NAV_BOTTOM = 40, NAV_RIGHT = 18
+// Phones and other touch screens: dock the chrome into a bottom bar instead (#bf-bar above).
+// Width alone catches a phone in portrait; the pointer clause catches a phone in landscape
+// and a tablet, where the canvas-scaled buttons would still be too small to tap.
+const compactQuery = matchMedia('(max-width: 820px), (hover: none) and (pointer: coarse)')
+const bar = document.createElement('div')
+bar.id = 'bf-bar'
+function dockChrome(compact: boolean) {
+  if (compact) {
+    if (!bar.isConnected) document.body.append(bar)
+    for (const el of [langs, counter, nav]) {
+      if (el === langs && LANGS.length === 0) continue
+      if (el.parentElement !== bar) bar.append(el)
+      el.style.left = el.style.top = el.style.transform = ''
+    }
+  } else if (bar.isConnected) {
+    for (const el of [counter, nav, langs]) if (el.parentElement === bar) document.body.append(el)
+    bar.remove()
+  }
+}
+// Fit the canvas into the viewport minus `bottomInset` (the bar's height on compact screens,
+// 0 otherwise): the same translate+scale the viewer's own fit writes, so on desktop this is a
+// no-op restatement. Always re-done here, in both modes, because compactQuery can flip
+// without a resize (a mouse attached to or detached from a touchscreen) and the viewer's
+// fit only runs on resize — relying on it would leave the last compact fit on the canvas.
+function fitCanvas(canvas: HTMLElement, bottomInset: number) {
+  const avail = innerHeight - bottomInset
+  const s = Math.min(innerWidth / CANVAS_W, avail / CANVAS_H)
+  const w = CANVAS_W * s, h = CANVAS_H * s
+  canvas.style.transform = `translate(${(innerWidth - w) / 2}px, ${(avail - h) / 2}px) scale(${s})`
+}
 function placeChrome() {
   const canvas = document.getElementById('peitho-canvas')
   if (!canvas) return
+  const compact = compactQuery.matches
+  dockChrome(compact)
+  fitCanvas(canvas, compact ? bar.offsetHeight : 0)
   const r = canvas.getBoundingClientRect()
+  if (compact) {
+    progress.style.left = `${r.left}px`; progress.style.top = `${r.top}px`; progress.style.width = `${r.width}px`
+    return
+  }
   const s = r.width / CANVAS_W
   const put = (el: HTMLElement, x: number, y: number) => {
     el.style.left = `${r.left + x * s}px`
@@ -175,6 +230,7 @@ function placeChrome() {
   if (langs.isConnected) put(langs, CANVAS_W - NAV_RIGHT - nav.offsetWidth - 10 - langs.offsetWidth, CANVAS_H - NAV_BOTTOM - 34 + (34 - langs.offsetHeight) / 2)
 }
 window.addEventListener('resize', placeChrome)
+compactQuery.addEventListener('change', placeChrome)
 
 // A slide on a dark ground marks its <section> with data-ground="dark"; the chrome follows.
 function paintChrome() {
