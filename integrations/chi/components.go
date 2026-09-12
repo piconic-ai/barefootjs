@@ -49,6 +49,56 @@ type AIChatInteractiveProps struct {
 	IsStreaming bool `json:"-"`
 }
 
+// BodyLiveChildInput is the user-facing input type.
+type BodyLiveChildInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Value int
+	Label interface{}
+	OnPick interface{}
+}
+
+// BodyLiveChildProps is the props type for the BodyLiveChild component.
+type BodyLiveChildProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Value int `json:"value"`
+	Label interface{} `json:"label"`
+	OnPick interface{} `json:"onPick"`
+	Seen int `json:"-"`
+	Doubled interface{} `json:"-"`
+}
+
+// BodyDestructuredPropsLiveInput is the user-facing input type.
+type BodyDestructuredPropsLiveInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// BodyDestructuredPropsLiveProps is the props type for the BodyDestructuredPropsLive component.
+type BodyDestructuredPropsLiveProps struct {
+	ScopeID string `json:"-"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	BfCallerProps map[string]interface{} `json:"-"`
+	Count int `json:"-"`
+	Picked int `json:"-"`
+	Named bool `json:"-"`
+	BodyLiveChildSlot6 BodyLiveChildProps `json:"-"`
+}
+
 // CheckboxNativeInput is the user-facing input type.
 type CheckboxNativeInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -866,6 +916,59 @@ func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps
 		Input: "",
 		StreamingText: "",
 		IsStreaming: false,
+	}
+}
+
+// NewBodyLiveChildProps creates BodyLiveChildProps from BodyLiveChildInput.
+func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "BodyLiveChild_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+	bfCallerProps["value"] = in.Value
+	if in.Label != nil {
+		bfCallerProps["label"] = in.Label
+	}
+	bfCallerProps["onPick"] = in.OnPick
+
+	return BodyLiveChildProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Value: in.Value,
+		Label: in.Label,
+		OnPick: in.OnPick,
+		Seen: 0,
+		Doubled: in.Value * 2,
+	}
+}
+
+// NewBodyDestructuredPropsLiveProps creates BodyDestructuredPropsLiveProps from BodyDestructuredPropsLiveInput.
+func NewBodyDestructuredPropsLiveProps(in BodyDestructuredPropsLiveInput) BodyDestructuredPropsLiveProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "BodyDestructuredPropsLive_" + randomID(6)
+	}
+
+	bfCallerProps := map[string]interface{}{}
+
+	return BodyDestructuredPropsLiveProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		BfCallerProps: bfCallerProps,
+		Count: 1,
+		Picked: 0,
+		Named: false,
+		BodyLiveChildSlot6: NewBodyLiveChildProps(BodyLiveChildInput{
+			ScopeID: scopeID + "_s6",
+			BfParent: scopeID,
+			BfMount: "s6",
+			Value: 1,
+		}),
 	}
 }
 

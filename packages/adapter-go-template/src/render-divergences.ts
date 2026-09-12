@@ -52,4 +52,15 @@ export const renderDivergences: RenderDivergences = {
   // Provider, which routes through `provideContext`/`useContext` instead and
   // never hit this baker path.
   'component-prop-bare-getter': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
+
+  // #2943: a BODY-destructured prop default (`const { label = 'none' } =
+  // props`) never reaches `ParamInfo.defaultValue` (`extractPropsFromTypeMembers`
+  // is type-member info only) nor the SSR stash seed (`extractSsrDefaults`
+  // skips defaults in props-object mode), so the adapter's presence guard
+  // (`{{if ne .Label nil}}`) OMITS `data-label` when the caller passes
+  // nothing — Hono's real destructuring default renders
+  // `data-label="none"`. The parameter-destructured twin
+  // (`destructured-props-live`) is correct on this adapter.
+  'body-destructured-props-live':
+    'body-destructured prop default omits the attribute instead of rendering the default on SSR (https://github.com/piconic-ai/barefootjs/issues/2943)',
 }

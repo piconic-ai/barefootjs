@@ -5,10 +5,10 @@ description: How prop access patterns determine whether reactive updates propaga
 
 # Props Reactivity
 
-**`props.xxx` access and destructuring the props parameter are equally reactive.** The
-compiler wraps dynamic prop expressions in getters, and every value-position read of a prop
-— written either way — compiles to a live read of that getter. Destructuring inside the
-function body is the one form that still captures once.
+**`props.xxx` access, destructuring the props parameter, and destructuring the props object
+inside the function body are all equally reactive.** The compiler wraps dynamic prop
+expressions in getters, and every value-position read of a prop — written any of the three
+ways — compiles to a live read of that getter.
 
 
 ## Direct Access
@@ -47,28 +47,52 @@ would. A destructure default (`{ value = 0 }`) is evaluated live too: it re-appl
 read, not just once at mount.
 
 
-## Destructuring In The Body — Captures Once
+## Destructuring In The Body
 
-Destructuring inside the function body is a different thing, and it is **not** reactive:
+Destructuring inside the function body is also fully reactive, as long as the destructured
+name is a **pure alias** of a single prop — nothing computed from it:
 
 ```tsx
 function Display(props: { value: number }) {
-  const { value } = props // calls the getter ONCE, stores the number
-  return <span>{value}</span> // never updates
+  const { value } = props
+  createEffect(() => {
+    console.log(value) // Re-runs when parent updates value
+  })
+  return <span>{value}</span>
 }
 ```
 
-This is an ordinary local binding, so it behaves the way it does in SolidJS. Use the
-parameter form, or read `props.value` at the point of use.
+The compiler recognizes `const { value } = props` (and the equivalent `const value =
+props.value`) as a pure passthrough, drops the local extraction entirely, and rewrites every
+reference to `value` to a live `props.value` read instead — the same rewrite the parameter
+form gets. A destructure default (`const { value = 0 } = props`) and a renamed binding
+(`const { value: v } = props`) are both covered the same way.
+
+This does NOT apply once the local does its own computation, or is reassigned:
+
+```tsx
+function Display(props: { value: number }) {
+  const { value } = props
+  const doubled = value * 2 // `doubled` is an ordinary once-evaluated local
+  let { count } = props
+  count += 1               // `count` is reassigned, so it can't be a live alias either
+  return <span>{doubled}</span>
+}
+```
+
+`doubled` is a real computation, not a passthrough — it is an ordinary local, evaluated once
+at its declaration (same as it would be with any other access pattern). A `let` binding is
+never treated as a live alias, since rewriting a later assignment to it would mean silently
+writing through to the caller's prop.
 
 
 ## When To Prefer Which
 
-The two reactive forms — `props.xxx` and parameter destructuring — behave identically at
-runtime, so the choice between them is style, not correctness:
+The three reactive forms — `props.xxx`, parameter destructuring, and body destructuring —
+behave identically at runtime, so the choice between them is style, not correctness:
 
-- Destructuring reads naturally and is usually the better default for components with a
-  handful of named props.
+- Destructuring (parameter or body) reads naturally and is usually the better default for
+  components with a handful of named props.
 - `props.xxx` avoids repeating a long prop list at the call site, and is the natural fit for
   a component that mostly forwards its props (`...rest`) rather than naming each one.
 
@@ -79,7 +103,8 @@ runtime, so the choice between them is style, not correctness:
 |---------|-----------|
 | `props.value` | Yes |
 | `function C({ value }: Props)` — parameter destructuring | Yes |
-| `const { value } = props` — body destructuring | No, captured once |
+| `const { value } = props` — body destructuring (pure alias) | Yes |
+| `const doubled = value * 2` — a computation, not a pure alias | No, evaluated once at declaration (same as any other once-evaluated local) |
 | `createSignal(props.value)` | `props.value` is reactive, the signal it seeds is independent thereafter |
 
 
@@ -95,9 +120,10 @@ The compiler transforms dynamic prop expressions into getters:
 { get value() { return count() } }
 ```
 
-`props.value` calls the getter directly. A `value` destructured in the PARAMETER compiles to
-the exact same getter call at every reference site — the compiler rewrites each one, rather
-than binding a plain local that would only read the getter once. (A `const { value } = props`
-in the body is just that plain local, which is why it does not update.) This is the same
-reactive-getter model as SolidJS; unlike SolidJS, BarefootJS performs that rewrite for the
-parameter form, so the "don't destructure props" caveat only applies to the body form.
+`props.value` calls the getter directly. A `value` destructured in the PARAMETER, or aliased
+by a pure body destructure, compiles to the exact same getter call at every reference site —
+the compiler rewrites each one, rather than binding a plain local that would only read the
+getter once. This is the same reactive-getter model as SolidJS; unlike SolidJS, BarefootJS
+performs that rewrite for both the parameter form and the body-alias form, so there is no
+"don't destructure props" caveat left — only the ordinary rule that a real computation
+(`value * 2`) is evaluated once, same as it would be anywhere else in the function.

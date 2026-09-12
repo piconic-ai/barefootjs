@@ -1,6 +1,7 @@
 import ts from 'typescript'
 import type { ConstantInfo, ParamInfo, PropUsage } from './types.ts'
 import { propHasPropertyAccess } from './ir-to-client-js/compute-prop-usage.ts'
+import { parsePropReadInitializer } from './ir-to-client-js/prune-unused-prop-extractions.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 
 /**
@@ -90,19 +91,115 @@ export function buildPropAliasMap(params: readonly ParamInfo[]): Map<string, str
  * Returns an empty map for a parameter-destructuring component
  * (`propsObjectName === null`) — that shape's aliasing is already fully
  * covered by `buildPropAliasMap`.
+ *
+ * Passes `requireLiveRewriteSafe: false` to `resolveBodyPropAliases` — this
+ * consumer only needs the local-name↔caller-key mapping to seed the SSR
+ * stash under the local's name (#2788), which is sound regardless of
+ * `const`/`let` or a later mutation: those two exclusions exist solely to
+ * protect the LIVE client-JS rewrite (`rewriteBodyAliasReads`) from turning
+ * a reassignment into a silent write-through to the caller's prop, a
+ * concern this SSR-side, declaration-time alias mapping doesn't share. A
+ * `let`-declared renamed body destructure (`let { children: kids } =
+ * props`) is exactly as valid an alias for stash-seeding purposes as a
+ * `const` one — inheriting the stricter filter here would silently drop
+ * its stash entry and reintroduce #2788 for that one shape.
  */
 export function resolveBodyDestructuredPropAliases(
   localConstants: readonly ConstantInfo[],
   propsObjectName: string | null,
 ): Map<string, string> {
   const aliases = new Map<string, string>()
+  for (const [local, alias] of resolveBodyPropAliases(localConstants, propsObjectName, { requireLiveRewriteSafe: false })) {
+    if (!alias.hasDefault) aliases.set(local, alias.key)
+  }
+  return aliases
+}
+
+/**
+ * A local `const`/`let` in a bare-props-form component (`function
+ * Foo(props: Props)`) whose value is a PURE alias of a single caller-facing
+ * prop — either a body destructure (`const { value } = props`, `const {
+ * label = 'none' } = props`) or an equivalent bare member read (`const label
+ * = props.label ?? 'fallback'`); the analyzer's IR can't distinguish the two
+ * shapes (both parse to the same `ConstantInfo`), and neither can this
+ * resolver — see `resolveBodyAliasReads`'s (`rewrite-destructured-props.ts`)
+ * docstring for why that's the right call.
+ */
+export interface BodyPropAlias {
+  /** Caller-facing prop key (`props.<key>`). */
+  key: string
+  /** Whether the value has a `?? <default>` (destructure default, or an
+   *  explicit `props.x ?? d` alias) — `resolveBodyDestructuredPropAliases`
+   *  excludes these; `resolveBodyAliasReads` handles them itself. */
+  hasDefault: boolean
+  /** The `??` right-hand side's source text, present iff `hasDefault` —
+   *  mirrors `ParamInfo.defaultValue`. */
+  defaultValue?: string
+  /** When true, the default value contains an arrow function or function
+   *  expression — mirrors `ParamInfo.defaultContainsArrow`. */
+  defaultContainsArrow?: boolean
+}
+
+/**
+ * Local-name → alias-info map for every PURE prop-passthrough local in a
+ * bare-props-form component — the superset `resolveBodyDestructuredPropAliases`
+ * (defaultless only, for the SSR-stash use above) and `resolveBodyAliasReads`
+ * (`rewrite-destructured-props.ts`, live-read rewrite including defaults)
+ * both build on.
+ *
+ * Excludes:
+ *   - `propsObjectName === null` (parameter-destructuring components — that
+ *     shape's aliasing is fully covered by `buildPropAliasMap` instead).
+ *   - `isModule` (module-scope constants aren't per-instance prop reads).
+ *   - When `requireLiveRewriteSafe` is true (the default — the right
+ *     setting for a caller that turns the alias into a LIVE `_p.X` read,
+ *     e.g. `rewriteBodyAliasReads`), also excludes:
+ *     - `let` bindings: a later reassignment (`value = 9`) would need to
+ *       become `_p.value = 9`, silently writing through to the caller's
+ *       prop instead of a local variable — never safe to infer.
+ *     - `mutatedAfterDeclaration` (#2910's `markMutatedConstants`): once
+ *       something mutates the binding in place after its declaration,
+ *       `value` no longer tracks the live prop, and treating it as a
+ *       passthrough alias would silently drop the mutation.
+ *     A caller that only needs the declaration-time local↔caller-key
+ *     mapping (e.g. `resolveBodyDestructuredPropAliases`, feeding the SSR
+ *     stash seed) passes `requireLiveRewriteSafe: false` — a `let` local or
+ *     one mutated later in the function body is still a perfectly valid
+ *     alias AT its declaration, which is all an initial SSR-stash seed
+ *     needs.
+ */
+export function resolveBodyPropAliases(
+  localConstants: readonly ConstantInfo[],
+  propsObjectName: string | null,
+  options: { requireLiveRewriteSafe?: boolean } = {},
+): Map<string, BodyPropAlias> {
+  const { requireLiveRewriteSafe = true } = options
+  const aliases = new Map<string, BodyPropAlias>()
   if (propsObjectName === null) return aliases
   for (const c of localConstants) {
-    if (c.isModule) continue
-    const m = c.parsed
-    if (m?.kind === 'member' && !m.computed && m.object.kind === 'identifier' && m.object.name === propsObjectName) {
-      aliases.set(c.name, m.property)
-    }
+    if (c.isModule || !c.value) continue
+    if (requireLiveRewriteSafe && (c.declarationKind !== 'const' || c.mutatedAfterDeclaration)) continue
+    // Re-parse `value` (rather than walking `c.parsed`) so the default's
+    // SOURCE TEXT is available verbatim — `ParsedExpr` structures the
+    // default but doesn't retain its original formatting, and this reuses
+    // the one recognizer (`parsePropReadInitializer`) the emit-time passes
+    // (`prune-unused-prop-extractions.ts`, `rewrite-destructured-props.ts`)
+    // already share, rather than a third bespoke shape check. Wrapped in
+    // parens so a bare object-literal-like value still parses as an
+    // expression, matching `ConstantInfo.parsed`'s own convention.
+    const sourceFile = ts.createSourceFile('__alias__.ts', `(${c.value.trim()});`, ts.ScriptTarget.Latest, false, ts.ScriptKind.TS)
+    const stmt = sourceFile.statements[0]
+    if (!stmt || !ts.isExpressionStatement(stmt)) continue
+    const node = ts.isParenthesizedExpression(stmt.expression) ? stmt.expression.expression : stmt.expression
+    const read = parsePropReadInitializer(node, propsObjectName)
+    if (read === null) continue
+    const hasDefault = read.fallback !== null
+    aliases.set(c.name, {
+      key: read.key,
+      hasDefault,
+      defaultValue: read.fallback?.getText(sourceFile),
+      defaultContainsArrow: hasDefault ? c.containsArrow : undefined,
+    })
   }
   return aliases
 }
@@ -132,8 +229,16 @@ export function boundPropLocalNames(b: PropsParamBindings): ReadonlySet<string> 
 
 const EMPTY_SET: ReadonlySet<string> = new Set()
 
+/**
+ * The subset of `ParamInfo` a live prop read actually needs. A body-level
+ * pure-alias local (`resolveBodyPropAliases`) has no real `ParamInfo` — it
+ * never bound a parameter — so callers synthesize one of these instead of a
+ * full `ParamInfo` (which would need a fabricated `type`/`optional`).
+ */
+export type LivePropReadInfo = Pick<ParamInfo, 'name' | 'sourceName' | 'defaultValue' | 'defaultContainsArrow'>
+
 /** `_p.<callerKey>` — `_p` is always keyed by the caller-facing name (#2524 CSR half). */
-export function propReadBase(p: ParamInfo): string {
+export function propReadBase(p: LivePropReadInfo): string {
   return `${PROPS_PARAM}.${p.sourceName ?? p.name}`
 }
 
@@ -152,7 +257,7 @@ export function propReadBase(p: ParamInfo): string {
  *      seeds 1 server-side; a `_p.size ?? 0` read would hydrate to 0).
  */
 export function propReadFallback(
-  p: ParamInfo,
+  p: LivePropReadInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
 ): string | null {
@@ -179,7 +284,7 @@ export function propReadFallback(
  * `propReadBase`/`propReadFallback` itself.
  */
 export function livePropReadExpr(
-  p: ParamInfo,
+  p: LivePropReadInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
 ): string {
