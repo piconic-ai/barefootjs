@@ -193,23 +193,28 @@ function dockChrome(compact: boolean) {
     bar.remove()
   }
 }
+// Fit the canvas into the viewport minus `bottomInset` (the bar's height on compact screens,
+// 0 otherwise): the same translate+scale the viewer's own fit writes, so on desktop this is a
+// no-op restatement. Always re-done here, in both modes, because compactQuery can flip
+// without a resize (a mouse attached to or detached from a touchscreen) and the viewer's
+// fit only runs on resize — relying on it would leave the last compact fit on the canvas.
+function fitCanvas(canvas: HTMLElement, bottomInset: number) {
+  const avail = innerHeight - bottomInset
+  const s = Math.min(innerWidth / CANVAS_W, avail / CANVAS_H)
+  const w = CANVAS_W * s, h = CANVAS_H * s
+  canvas.style.transform = `translate(${(innerWidth - w) / 2}px, ${(avail - h) / 2}px) scale(${s})`
+}
 function placeChrome() {
   const canvas = document.getElementById('peitho-canvas')
   if (!canvas) return
-  dockChrome(compactQuery.matches)
-  if (compactQuery.matches) {
-    // Re-fit the canvas into the viewport minus the bar so the bar never covers slide content
-    // (a phone in landscape is height-bound). Same transform shape as the viewer's own fit,
-    // applied after it: the viewer's resize handler registered first, this one runs last.
-    const avail = innerHeight - bar.offsetHeight
-    const s = Math.min(innerWidth / CANVAS_W, avail / CANVAS_H)
-    const w = CANVAS_W * s, h = CANVAS_H * s
-    canvas.style.transform = `translate(${(innerWidth - w) / 2}px, ${(avail - h) / 2}px) scale(${s})`
-    const r = canvas.getBoundingClientRect()
+  const compact = compactQuery.matches
+  dockChrome(compact)
+  fitCanvas(canvas, compact ? bar.offsetHeight : 0)
+  const r = canvas.getBoundingClientRect()
+  if (compact) {
     progress.style.left = `${r.left}px`; progress.style.top = `${r.top}px`; progress.style.width = `${r.width}px`
     return
   }
-  const r = canvas.getBoundingClientRect()
   const s = r.width / CANVAS_W
   const put = (el: HTMLElement, x: number, y: number) => {
     el.style.left = `${r.left + x * s}px`
