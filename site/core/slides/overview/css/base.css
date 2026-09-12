@@ -79,7 +79,8 @@
 
 /* ---------- code, everywhere ---------- */
 .code { margin: 0; min-height: 0; }
-.slot-code {
+/* peitho names the <pre> after the slot: .slot-code for `code`, .slot-code-left for a named slot */
+.slot-code, .code > pre {
   display: block; box-sizing: border-box; margin: 0;
   padding: 30px 34px; background: var(--term); color: var(--term-ink); border-radius: 18px;
   box-shadow: 0 24px 60px rgba(40,35,20,.16), 0 2px 6px rgba(40,35,20,.08);
@@ -193,25 +194,6 @@
 .command-code .slot-code::before { content: "$ "; color: var(--term-green); }
 .command-note { font-size: 22px; color: var(--muted); }
 
-/* ---------- game ---------- */
-.layout-game { align-items: center; justify-content: center; gap: 18px; padding-top: 40px; padding-bottom: 36px; }
-.game-head { align-items: center; text-align: center; gap: 8px; }
-.game-head h1 { font-size: 60px; }
-.game-hint { font-size: 18px; color: var(--muted); margin-top: 4px; }
-.game-mount { display: flex; }
-.tetris-app { display: flex; gap: 22px; align-items: flex-start; }
-.tetris-board {
-  display: grid; grid-template-columns: repeat(10, 20px); grid-template-rows: repeat(20, 20px); gap: 2px;
-  background: var(--surface); padding: 8px; border-radius: 16px; border: 1px solid rgba(10,10,10,.06);
-}
-.tetris-board .tetris-cell { width: 20px; height: 20px; border-radius: 4px; }
-.tetris-side { display: flex; flex-direction: column; gap: 10px; width: 150px; }
-.tetris-panel { background: var(--surface); border-radius: 14px; padding: 12px 16px; border: 1px solid rgba(10,10,10,.06); }
-.tetris-label { font-size: 12px; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
-.tetris-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.tetris-next { display: grid; grid-template-columns: repeat(4, 16px); grid-template-rows: repeat(4, 16px); gap: 2px; margin-top: 8px; }
-.tetris-next .tetris-cell { width: 16px; height: 16px; border-radius: 3px; }
-.tetris-gameover { background: var(--ink); color: #fff; border-radius: 14px; padding: 12px 16px; font-weight: 600; text-align: center; font-size: 15px; line-height: 1.4; }
 
 /* ---------- todos ---------- */
 .todos { width: 100%; max-width: 460px; padding: 8px; font-size: 21px; }
@@ -254,3 +236,39 @@
 
 /* the viewer letterbox (outside the 16:9 canvas) is linen, not black */
 html, body, #peitho-slides { background: #efece5 !important; }
+
+/* ---------- belief: one statement, set large (the Why slides) ---------- */
+.layout-belief { justify-content: center; gap: 0; }
+.belief-inner { display: flex; flex-direction: column; gap: 26px; max-width: 1040px; }
+.layout-belief h1 { font-size: 78px; line-height: 1.04; }
+.belief-body { font-size: 25px; color: var(--ink-2); line-height: 1.5; letter-spacing: -0.005em; max-width: 34em; }
+.belief-sources { position: absolute; left: 88px; right: 88px; bottom: 34px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--muted); letter-spacing: 0; }
+.belief-sources em { font-style: italic; color: var(--ink-2); }
+
+/* ---------- split: prose left, one panel right ---------- */
+.split-columns { flex: 1; min-height: 0; display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; }
+.split-body { font-size: 24px; color: var(--ink-2); letter-spacing: -0.01em; line-height: 1.45; display: flex; flex-direction: column; gap: 22px; }
+.split-body ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; counter-reset: step; }
+.split-body li { padding-left: 44px; position: relative; counter-increment: step; }
+.split-body li::before { content: counter(step); position: absolute; left: 0; top: 0.1em; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--ink); font-family: var(--mono); font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.split-body strong { color: var(--ink); font-weight: 600; }
+.split-body p { color: var(--muted); }
+.split-code { display: flex; flex-direction: column; justify-content: center; }
+.split-code > pre { font-size: 17px; line-height: 1.6; }
+.layout-split h1 { font-size: 76px; }
+.split-body > p { margin-top: 18px; }
+
+/* ---------- wire: what you write / what the compiler emits ---------- */
+.layout-wire { gap: 24px; }
+.wire-columns { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start; }
+.wire-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.wire-label { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.wire-code > pre { font-size: 16.5px; line-height: 1.55; padding: 22px 26px; border-radius: 14px; }
+
+/* ---------- ships: the What slide, six tiles ---------- */
+.layout-ships { gap: 34px; }
+.ships { flex: 1; min-height: 0; }
+.ships ul { list-style: none; margin: 0; padding: 0; height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 18px; }
+.ships li { display: block; padding: 26px 26px 22px; border-radius: 18px; background: #fff; border: 1px solid rgba(10,10,10,.07); box-shadow: 0 10px 30px rgba(40,35,20,.06); font-size: 21px; color: var(--ink-2); letter-spacing: -0.01em; }
+.ships li strong { display: block; margin-bottom: 14px; font-family: var(--serif); font-size: 84px; line-height: 0.9; letter-spacing: -0.03em; color: var(--ink); font-weight: 400; font-variant-numeric: tabular-nums; }
+.ships li code { font-size: 0.85em; }

@@ -22,6 +22,11 @@ cd site/core
 bun run slides:build <slug>
 ```
 
+Two placeholders may be used anywhere in `deck.md`: `%%COMPAT_COMPONENTS%%` and
+`%%COMPAT_ADAPTERS%%` are replaced at build time with the component and adapter counts from
+`ui/compat.lock.json` (the same source as the landing page's matrix), so a deck never quotes a
+hand-typed number that drifts.
+
 The output lands in `public/slides/<slug>/`, which is gitignored: the deploy workflow
 (`.github/workflows/deploy.yml`) installs a pinned peitho release and runs
 `bun run slides:build --all` before `bun run build`, which copies `public/slides/**` into

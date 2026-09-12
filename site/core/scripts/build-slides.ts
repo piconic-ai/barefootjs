@@ -92,11 +92,29 @@ function buildDeck(slug: string): void {
   }
   writeFileSync(join(out, 'index.html'), indexHtml)
 
-  // 5. peitho copies its built-in theme fonts even when the deck ships its own css
+  // 5. repo facts a deck may quote: %%COMPAT_COMPONENTS%% / %%COMPAT_ADAPTERS%% are replaced
+  //    with the counts from ui/compat.lock.json (the same source as the landing page's
+  //    matrix), so a deck never carries a hand-typed component count that drifts.
+  const facts = compatFacts()
+  for (const f of ['index.html', 'manifest.json', ...readdirSync(join(out, 'slides')).map((n) => join('slides', n))]) {
+    const path = join(out, f)
+    if (!existsSync(path)) continue
+    const before = readFileSync(path, 'utf8')
+    const after = before.replaceAll('%%COMPAT_COMPONENTS%%', String(facts.components)).replaceAll('%%COMPAT_ADAPTERS%%', String(facts.adapters))
+    if (after !== before) writeFileSync(path, after)
+  }
+
+  // 6. peitho copies its built-in theme fonts even when the deck ships its own css
   const css = readFileSync(join(out, 'peitho.css'), 'utf8')
   if (!css.includes('theme-fonts/')) rmSync(join(out, 'theme-fonts'), { recursive: true, force: true })
 
   console.log(`✓ public/slides/${slug}/`)
+}
+
+/** Component and adapter counts from the committed compat matrix (ui/compat.lock.json). */
+function compatFacts(): { components: number; adapters: number } {
+  const lock = JSON.parse(readFileSync(resolve(CORE_DIR, '../../ui/compat.lock.json'), 'utf8')) as { components: Record<string, unknown>; adapters: unknown[] | Record<string, unknown> }
+  return { components: Object.keys(lock.components).length, adapters: Array.isArray(lock.adapters) ? lock.adapters.length : Object.keys(lock.adapters).length }
 }
 
 function escapeHtml(s: string): string {

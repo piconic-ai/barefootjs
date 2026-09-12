@@ -1,0 +1,22 @@
+<!--
+  Wire: what you write (left) and what the compiler emits (right, two panels:
+  the marked template and the client script). The captions are labels, not decoration.
+-->
+<section class="peitho-slide layout-wire">
+  <header class="head">
+    <div class="head-rule" aria-hidden="true"></div>
+    <h1><slot name="title" accepts="inline" arity="1"></slot></h1>
+    <div class="lede slot-body-wrap"><slot name="body" accepts="blocks" arity="0..1"></slot></div>
+  </header>
+  <div class="wire-columns">
+    <div class="wire-col">
+      <div class="wire-label">You write</div>
+      <figure class="code wire-code"><slot name="code-left" accepts="code" arity="1"></slot></figure>
+    </div>
+    <div class="wire-col">
+      <div class="wire-label">The compiler emits</div>
+      <figure class="code wire-code wire-code-top"><slot name="code-right" accepts="code" arity="1"></slot></figure>
+      <figure class="code wire-code"><slot name="code-right-2" accepts="code" arity="1"></slot></figure>
+    </div>
+  </div>
+</section>
