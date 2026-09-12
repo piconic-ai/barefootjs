@@ -548,6 +548,7 @@ import { fixture as moduleConstLoopSource } from './module-const-loop-source'
 import { fixture as moduleConstLoopSourceChildComponent } from './module-const-loop-source-child-component'
 import { fixture as moduleConstLoopSourceComputed } from './module-const-loop-source-computed'
 import { fixture as moduleConstLoopSourceComputedClient } from './module-const-loop-source-computed-client'
+import { fixture as moduleConstLoopSourceComputedPrecomputed } from './module-const-loop-source-computed-precomputed'
 import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
 // #2482 audit follow-ups, adapter-side (pinned known limitations):
 // Go condition-position destructured bindings, Go nested-loop `inLoop`
@@ -1043,6 +1044,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstLoopSourceChildComponent,
   moduleConstLoopSourceComputed,
   moduleConstLoopSourceComputedClient,
+  moduleConstLoopSourceComputedPrecomputed,
   loopParamShadowsRecordTemplateSpan,
   loopDestructuredParamCondition,
   nestedLoopTailContent,

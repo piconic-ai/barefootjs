@@ -17,7 +17,10 @@ import { createFixture } from '../src/types'
 export const fixture = createFixture({
   id: 'module-const-loop-source-computed',
   description: 'A module-scope const computed via a function call refuses loudly (BF101) on every SSR template adapter (#2946)',
-  escapes: [{ kind: 'client-directive', fixture: 'module-const-loop-source-computed-client' }],
+  escapes: [
+    { kind: 'prop-precompute', fixture: 'module-const-loop-source-computed-precomputed' },
+    { kind: 'client-directive', fixture: 'module-const-loop-source-computed-client' },
+  ],
   source: `
 'use client'
 
