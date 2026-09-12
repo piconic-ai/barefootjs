@@ -7,7 +7,7 @@
  */
 
 import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
-import { resolveUiHref } from '@barefootjs/site-shared/lib/site-urls'
+import { resolveCoreHref, resolveUiHref } from '@barefootjs/site-shared/lib/site-urls'
 import { navigation, type NavItem } from './lib/navigation'
 import { SidebarNav, type SidebarEntry, type SidebarGroup, type SidebarLink } from '../shared/components/sidebar-page-nav'
 import { PageNav, type PageNavLink } from '../shared/components/page-nav'
@@ -119,13 +119,12 @@ export const renderer = jsxRenderer(
   ({ children, title, description, meta, slug, toc, prev, next }) => {
     const c = useRequestContext()
     const requestUrl = new URL(c.req.url)
-    const hostname = requestUrl.hostname
     const uiHref = resolveUiHref(requestUrl)
 
     const pageTitle = title ? `${title} — BarefootJS` : 'BarefootJS Documentation'
     const currentSlug = slug || ''
 
-    const baseUrl = hostname === 'localhost' ? 'http://localhost:3000' : 'https://barefootjs.dev'
+    const baseUrl = resolveCoreHref(requestUrl).replace(/\/$/, '')
     const ogTitle = title ?? 'BarefootJS'
     const ogDescription = description ?? 'TSX in. Your stack out.'
     const ogImageUrl = `${baseUrl}/og?title=${encodeURIComponent(ogTitle)}`
