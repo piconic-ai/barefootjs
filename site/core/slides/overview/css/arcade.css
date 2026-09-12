@@ -488,7 +488,7 @@
 .layout-arcade .arcade-caption {
   position: absolute;
   right: 56px;
-  bottom: 62px;
+  bottom: 96px; /* clear of the deck chrome (counter + prev/next) in the bottom-right corner */
   z-index: 5;
   max-width: 720px;
   text-align: right;

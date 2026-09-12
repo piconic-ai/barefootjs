@@ -33,10 +33,12 @@ nav.addEventListener('click', (e) => {
 
 const style = document.createElement('style')
 style.textContent = `
-  #bf-progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 21; background: rgba(10,10,10,.06); }
+  /* All chrome is anchored to the 16:9 canvas (see placeChrome), never to the viewport, so it
+     stays inside the slide on a letterboxed screen and scales with it. */
+  #bf-progress { position: fixed; left: 0; top: 0; width: 0; height: 2px; z-index: 21; background: rgba(10,10,10,.06); }
   #bf-progress i { display: block; height: 100%; width: 0; background: #3fa45b; transition: width 600ms cubic-bezier(.2,.6,.2,1); }
-  #bf-counter { position: fixed; right: 22px; bottom: 18px; z-index: 20; font: 400 12px/1 "DM Mono", ui-monospace, monospace; letter-spacing: .1em; color: #6e6e73; }
-  #bf-nav { position: fixed; right: 18px; bottom: 40px; z-index: 20; display: flex; gap: 6px; }
+  #bf-counter { position: fixed; left: 0; top: 0; z-index: 20; transform-origin: top left; font: 400 12px/1 "DM Mono", ui-monospace, monospace; letter-spacing: .1em; color: #6e6e73; white-space: nowrap; }
+  #bf-nav { position: fixed; left: 0; top: 0; z-index: 20; transform-origin: top left; display: flex; gap: 6px; }
   #bf-nav button {
     width: 34px; height: 34px; padding: 0 0 2px; border-radius: 50%; border: 1px solid rgba(10,10,10,.18);
     background: rgba(255,255,255,.55); color: #0a0a0a; font: 400 22px/1 "Instrument Sans", -apple-system, sans-serif;
@@ -119,6 +121,30 @@ function paintProgress() {
   // textContent write is itself a mutation (infinite loop, measured).
   if (counter.textContent !== label) counter.textContent = label
 }
+// Chrome geometry, in canvas units (1280x720): the counter sits 22px from the right edge and
+// 18px from the bottom, the buttons right above it. Layouts keep their content clear of that
+// corner (base.css's bottom padding; the arcade's caption sits above it).
+const CANVAS_W = 1280, CANVAS_H = 720
+const COUNTER_RIGHT = 22, COUNTER_BOTTOM = 18, NAV_BOTTOM = 40, NAV_RIGHT = 18
+function placeChrome() {
+  const canvas = document.getElementById('peitho-canvas')
+  if (!canvas) return
+  const r = canvas.getBoundingClientRect()
+  const s = r.width / CANVAS_W
+  const put = (el: HTMLElement, x: number, y: number) => {
+    el.style.left = `${r.left + x * s}px`
+    el.style.top = `${r.top + y * s}px`
+    el.style.transform = `scale(${s})`
+  }
+  progress.style.left = `${r.left}px`
+  progress.style.top = `${r.top}px`
+  progress.style.width = `${r.width}px`
+  // offsetWidth is the layout size, unaffected by the transform: canvas units already
+  put(counter, CANVAS_W - COUNTER_RIGHT - counter.offsetWidth, CANVAS_H - COUNTER_BOTTOM - 12)
+  put(nav, CANVAS_W - NAV_RIGHT - nav.offsetWidth, CANVAS_H - NAV_BOTTOM - 34)
+}
+window.addEventListener('resize', placeChrome)
+
 // A slide on a dark ground marks its <section> with data-ground="dark"; the chrome follows.
 function paintChrome() {
   const dark = !!document.querySelector('#peitho-canvas section[data-ground="dark"]')
@@ -127,6 +153,7 @@ function paintChrome() {
   const [prev, next] = nav.querySelectorAll('button')
   if (prev.disabled !== (i <= 1)) prev.disabled = i <= 1
   if (next.disabled !== (t > 0 && i >= t)) next.disabled = t > 0 && i >= t
+  placeChrome()
 }
 function check() {
   if (currentKey()) { gateVideo(); splitHeadline(); paintProgress(); paintChrome() }
