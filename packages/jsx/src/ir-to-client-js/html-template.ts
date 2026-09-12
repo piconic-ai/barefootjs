@@ -1662,11 +1662,19 @@ function isSingleRootElement(html: string): boolean {
   // stamped onto only its first element instead of being comment-wrapped,
   // and `insert()`'s runtime then drops every sibling but the first on a
   // branch swap (`updateElementConditional`'s `fragment.firstChild`).
-  const tagPattern = /<\/?[^\s/>]+[^>]*>/g
+  // The comment alternative must come first so it wins at a `<!--`
+  // position — without it, a BarefootJS marker comment like
+  // `<!--bf:s1-->`/`<!--/-->` (a reactive text slot nested inside a
+  // genuine single root) matches the generic tag alternative too (its
+  // body has no `\s`, `/` or `>` before the closing `-->`) and gets
+  // miscounted as an opening tag, throwing off the depth count for
+  // perfectly ordinary single-root branches.
+  const tagPattern = /<!--[\s\S]*?-->|<\/?[^\s/>]+[^>]*>/g
   let depth = 0
   let tagMatch: RegExpExecArray | null
   while ((tagMatch = tagPattern.exec(trimmed))) {
     const raw = tagMatch[0]
+    if (raw.startsWith('<!--')) continue // HTML comment, not a tag: depth unchanged
     // Nested void/self-closing tag: depth unchanged. Unreachable at
     // depth 0 — the two guards above already resolved every shape where
     // a self-closing tag could be the outermost token.

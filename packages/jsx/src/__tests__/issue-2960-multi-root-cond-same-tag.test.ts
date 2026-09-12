@@ -102,4 +102,19 @@ describe('#2960: multi-root cond branch whose roots share a tag name', () => {
       })
     }
   })
+
+  // The depth-tracking walk must not treat BarefootJS's own marker
+  // comments (`<!--bf:sN-->`, its `<!--/-->` pair) as if they were real
+  // tags — an earlier version of this fix's tag-matching regex matched
+  // any `<...>` run indiscriminately, so a perfectly ordinary single-root
+  // branch with an internal reactive text slot got miscounted into an
+  // unbalanced depth and wrongly comment-wrapped instead of getting
+  // `bf-c`. Caught by `doc-examples.test.ts`'s snapshot drifting on the
+  // `count() > 0 ? <p>...</p> : <p>No items</p>` example.
+  test('a single root containing internal bf: slot marker comments still gets bf-c, not comment-wrap', () => {
+    const html = '<p bf="s2"><!--bf:s1-->${__bfSlot(count(), __slots)}<!--/--> items</p>'
+    const result = addCondAttrToTemplate(html, 's0')
+    expect(result).toContain('bf-c="s0"')
+    expect(result).not.toContain('bf-cond-start:')
+  })
 })
