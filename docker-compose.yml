@@ -1,14 +1,24 @@
 # Development docker-compose for BarefootJS.
 #
 # Single host port (4000) is exposed; everything else is reached through the
-# proxy. BarefootJS compilation (`bun run build`) still runs on the host so
-# the JSX iteration loop stays fast — containers bind-mount the host-built
-# `dist/` so they pick up recompiled output immediately.
+# proxy (scripts/dev-all.ts) — it logs every reachable URL, including
+# http://ui.localhost:4000/ for site-ui (Host-header routed, since it's a
+# separate origin in production). BarefootJS compilation (`bun run build`)
+# still runs on the host so the JSX iteration loop stays fast — containers
+# bind-mount the host-built `dist/` so they pick up recompiled output
+# immediately.
+#
+# site-core's `/slides/*` (e.g. /slides/overview) is populated by the same
+# host-side `bun run build` (from site/core): it runs `slides:build --all`
+# first, which needs the peitho CLI (https://github.com/mizzy/peitho) on
+# PATH (or `PEITHO=<path>`) — without it, that step warns and skips, leaving
+# dist/slides/ empty rather than failing the build. See
+# site/core/scripts/build-slides.ts.
 #
 # Each service is independent (no `depends_on`), so any subset can be brought
 # up for focused debugging:
 #
-#   docker compose up                        # everything (proxy + 4 services)
+#   docker compose up                        # everything (proxy + every service)
 #   docker compose up proxy mojolicious      # just one adapter, via proxy
 #   docker compose up mojolicious            # adapter only (no proxy)
 #
@@ -296,6 +306,17 @@ services:
       context: .
       dockerfile: site/core/Dockerfile.dev
     working_dir: /workspace/site/core
+    volumes:
+      - .:/workspace:cached
+
+  # ui.barefootjs.dev in production — a separate origin there, so the proxy
+  # routes it by Host header (http://ui.localhost:4000) instead of a path
+  # prefix, since site/ui's routes and asset links assume they own "/".
+  site-ui:
+    build:
+      context: .
+      dockerfile: site/ui/Dockerfile.dev
+    working_dir: /workspace/site/ui
     volumes:
       - .:/workspace:cached
 

@@ -1,30 +1,42 @@
 #!/usr/bin/env bun
 /**
- * Dev-all proxy: expose every adapter and the main site under one origin.
+ * Dev-all proxy: expose every adapter and both sites under one origin.
  *
- *   :4000/integrations/hono/*        → hono service
- *   :4000/integrations/h3/*          → h3 service
- *   :4000/integrations/elysia/*      → elysia service
- *   :4000/integrations/echo/*        → echo service
- *   :4000/integrations/gin/*         → gin service
- *   :4000/integrations/chi/*         → chi service
- *   :4000/integrations/nethttp/*     → nethttp service
- *   :4000/integrations/mojolicious/* → mojolicious service
- *   :4000/integrations/xslate/*      → xslate service
- *   :4000/integrations/flask/*       → flask service
- *   :4000/integrations/fastapi/*     → fastapi service
- *   :4000/integrations/sinatra/*     → sinatra service
- *   :4000/integrations/rails/*       → rails service
- *   :4000/integrations/axum/*        → axum service
- *   :4000/integrations/php/*         → php service
- *   :4000/integrations/django/*      → django service
- *   :4000/integrations/blade/*       → blade service
- *   :4000/integrations/laravel/*     → laravel service
- *   :4000/*                          → site-core service
+ * `docker-compose.yml` only publishes THIS proxy's port to the host — every
+ * other service is container-network-only, so a port an app logs internally
+ * (Flask on 3008, Gin on 8081, ...) is never reachable directly. This proxy
+ * is the one place that maps "port I saw in the logs" to "URL I can open":
+ *
+ *   http://localhost:4000/integrations/hono/        → hono service
+ *   http://localhost:4000/integrations/h3/          → h3 service
+ *   http://localhost:4000/integrations/elysia/      → elysia service
+ *   http://localhost:4000/integrations/echo/        → echo service
+ *   http://localhost:4000/integrations/gin/         → gin service
+ *   http://localhost:4000/integrations/chi/         → chi service
+ *   http://localhost:4000/integrations/nethttp/     → nethttp service
+ *   http://localhost:4000/integrations/mojolicious/ → mojolicious service
+ *   http://localhost:4000/integrations/xslate/      → xslate service
+ *   http://localhost:4000/integrations/flask/       → flask service
+ *   http://localhost:4000/integrations/fastapi/     → fastapi service
+ *   http://localhost:4000/integrations/sinatra/     → sinatra service
+ *   http://localhost:4000/integrations/rails/       → rails service
+ *   http://localhost:4000/integrations/axum/        → axum service
+ *   http://localhost:4000/integrations/php/         → php service
+ *   http://localhost:4000/integrations/django/      → django service
+ *   http://localhost:4000/integrations/blade/       → blade service
+ *   http://localhost:4000/integrations/laravel/     → laravel service
+ *   http://localhost:4000/*                         → site-core (barefootjs.dev)
+ *   http://ui.localhost:4000/*                      → site-ui (ui.barefootjs.dev)
+ *
+ * site-ui is routed by Host header rather than a path prefix: in production
+ * it is a separate origin (ui.barefootjs.dev), and its routes/asset links
+ * assume they own "/", so a path prefix would need rewriting. `*.localhost`
+ * resolves to 127.0.0.1 without any /etc/hosts edit in every current
+ * browser (and in curl via `--resolve`).
  *
  * Designed to run inside the dev docker-compose network where service names
  * (hono, h3, elysia, echo, gin, chi, nethttp, mojolicious, xslate, sinatra,
- * rails, axum, site-core) resolve via Docker DNS. Each upstream
+ * rails, axum, site-core, site-ui) resolve via Docker DNS. Each upstream
  * target is overridable via env vars so the same script also works on the
  * host (e.g. when iterating on the proxy itself), and so individual targets
  * can be redirected to host.docker.internal when an integration is being run
@@ -63,7 +75,8 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/laravel',     target: process.env.LARAVEL_TARGET     ?? 'http://laravel:3016',     label: 'Laravel (PHP)' },
 ] as const
 
-const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'
+const SITE_CORE_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'
+const SITE_UI_TARGET = process.env.SITE_UI_TARGET ?? 'http://site-ui:3002'
 
 function matchRoute(pathname: string): Route | null {
   for (const route of routes) {
@@ -78,9 +91,10 @@ Bun.serve({
   port: PORT,
   async fetch(req): Promise<Response> {
     const url = new URL(req.url)
-    const route = matchRoute(url.pathname)
-    const target = route?.target ?? DEFAULT_TARGET
-    const label = route ? route.prefix : 'site-core'
+    const isUiHost = url.hostname.startsWith('ui.')
+    const route = isUiHost ? null : matchRoute(url.pathname)
+    const target = route?.target ?? (isUiHost ? SITE_UI_TARGET : SITE_CORE_TARGET)
+    const label = route ? route.prefix : isUiHost ? 'site-ui' : 'site-core'
 
     const proxyUrl = target + url.pathname + url.search
     try {
@@ -113,8 +127,23 @@ Bun.serve({
   },
 })
 
-console.log(`dev-all proxy listening on http://localhost:${PORT}`)
-for (const r of routes) {
-  console.log(`  ${r.prefix.padEnd(26)} → ${r.target}`)
+// `docker compose up` interleaves every service's own startup log (each
+// printing whatever internal port ITS framework picked — 3008, 8081, ...),
+// none of which are reachable directly. This is the one line a developer
+// should actually look for: every URL below is the full, open-this address.
+console.log('')
+console.log(`════════════════════════════════════════════════════════════════`)
+console.log(`  dev-all proxy — the ONLY host-reachable port is ${PORT}`)
+console.log(`  (every URL logged elsewhere by an individual service is`)
+console.log(`   container-internal and cannot be opened directly)`)
+console.log(`════════════════════════════════════════════════════════════════`)
+const entries: Array<{ url: string; label: string }> = [
+  { url: `http://localhost:${PORT}/`, label: 'site-core (barefootjs.dev)' },
+  { url: `http://ui.localhost:${PORT}/`, label: 'site-ui (ui.barefootjs.dev)' },
+  ...routes.map((r) => ({ url: `http://localhost:${PORT}${r.prefix}/`, label: r.label })),
+]
+const urlWidth = Math.max(...entries.map((e) => e.url.length)) + 2
+for (const e of entries) {
+  console.log(`  ${e.url.padEnd(urlWidth)}→ ${e.label}`)
 }
-console.log(`  ${'(fallback)'.padEnd(26)} → ${DEFAULT_TARGET} (site-core)`)
+console.log(`════════════════════════════════════════════════════════════════`)

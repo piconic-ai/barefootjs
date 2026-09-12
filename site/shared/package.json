@@ -14,6 +14,7 @@
     "./lib/docs-tabs-init": "./lib/docs-tabs-init.ts",
     "./lib/og-image": "./lib/og-image.ts",
     "./lib/cache-control": "./lib/cache-control.ts",
+    "./lib/site-urls": "./lib/site-urls.ts",
     "./fonts/inter-bold": "./fonts/inter-bold.ts",
     "./tokens": "./tokens/index.ts"
   },

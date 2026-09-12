@@ -7,6 +7,7 @@
  */
 
 import { Hono } from 'hono'
+import { resolveUiHref } from '@barefootjs/site-shared/lib/site-urls'
 import { landingRenderer } from './renderer'
 import { initHighlighter } from './components/shared/highlighter'
 import { Hero, DemoSection } from './components/hero'
@@ -25,8 +26,7 @@ export async function createLandingApp() {
 
   // Landing page
   app.get('/', (c) => {
-    const hostname = new URL(c.req.url).hostname
-    const uiHref = hostname === 'localhost' ? 'http://localhost:3002/' : 'https://ui.barefootjs.dev'
+    const uiHref = resolveUiHref(new URL(c.req.url))
     return c.render(
       <>
         <Hero uiHref={uiHref} />

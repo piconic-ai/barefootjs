@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for site/ui (ui.barefootjs.dev — the component gallery /
+# API reference site). Source and host-built dist/ are bind-mounted via
+# docker-compose; bun watches server.tsx and reloads on every save.
+#
+# Build context is the repo root so workspace deps resolve through
+# /workspace/node_modules.
+
+FROM oven/bun:1.3-alpine
+
+WORKDIR /workspace/site/ui
+
+EXPOSE 3002
+
+CMD ["bun", "run", "--watch", "server.tsx"]

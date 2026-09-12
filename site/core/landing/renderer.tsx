@@ -11,6 +11,7 @@ import { CommandPalette } from '@/components/command-palette'
 import { commandGroups } from '../lib/command-items'
 import { BfScripts } from '../../../packages/adapter-hono/src/scripts'
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
+import { resolveUiHref } from '@barefootjs/site-shared/lib/site-urls'
 import { LpHeader, LpFooter } from './components/lp-chrome'
 
 /**
@@ -39,8 +40,7 @@ function WithPredictableIds({ children }: { children: any }) {
 export const landingRenderer = jsxRenderer(
   ({ children, title, description }) => {
     const c = useRequestContext()
-    const hostname = new URL(c.req.url).hostname
-    const uiHref = hostname === 'localhost' ? 'http://localhost:3002/' : 'https://ui.barefootjs.dev'
+    const uiHref = resolveUiHref(new URL(c.req.url))
 
     const pageTitle = title || 'BarefootJS — TSX in. Your stack out.'
     const pageDescription = description || 'Components without the Node server.'

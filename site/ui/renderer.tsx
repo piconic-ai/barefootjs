@@ -6,6 +6,7 @@
  */
 
 import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
+import { resolveCoreHref, resolveUiHref } from '@barefootjs/site-shared/lib/site-urls'
 
 declare module 'hono' {
   interface ContextRenderer {
@@ -68,15 +69,15 @@ export const renderer = jsxRenderer(
   ({ children, title, description }) => {
     const c = useRequestContext()
     const currentPath = c.req.path
-    const hostname = new URL(c.req.url).hostname
-    const logoHref = hostname === 'localhost' ? 'http://localhost:4000/' : 'https://barefootjs.dev'
-    const coreHref = hostname === 'localhost' ? 'http://localhost:4000/docs/introduction' : 'https://barefootjs.dev/docs/introduction'
-    const playgroundHref = hostname === 'localhost' ? 'http://localhost:4000/playground' : 'https://barefootjs.dev/playground'
-    const integrationsHref = hostname === 'localhost' ? 'http://localhost:4000/integrations' : 'https://barefootjs.dev/integrations'
+    const requestUrl = new URL(c.req.url)
+    const logoHref = resolveCoreHref(requestUrl)
+    const coreHref = resolveCoreHref(requestUrl, '/docs/introduction')
+    const playgroundHref = resolveCoreHref(requestUrl, '/playground')
+    const integrationsHref = resolveCoreHref(requestUrl, '/integrations')
 
     const pageTitle = title ? `${title} | BarefootJS UI` : 'BarefootJS UI'
 
-    const baseUrl = hostname === 'localhost' ? 'http://localhost:3002' : 'https://ui.barefootjs.dev'
+    const baseUrl = resolveUiHref(requestUrl).replace(/\/$/, '')
     const ogTitle = title ?? 'BarefootJS UI'
     const ogDescription = description ?? 'TSX in. Your stack out.'
     const ogImageUrl = `${baseUrl}/og?title=${encodeURIComponent(ogTitle)}`

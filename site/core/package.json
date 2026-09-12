@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -k -n vite,server -c blue,yellow \"bunx vite dev\" \"bun run --watch server.tsx\"",
-    "build": "bun run build.ts",
+    "build": "bun run slides:build --all && bun run build.ts",
     "test:e2e": "playwright test",
     "deploy": "bun run build && wrangler deploy",
     "slides:build": "bun run scripts/build-slides.ts"
