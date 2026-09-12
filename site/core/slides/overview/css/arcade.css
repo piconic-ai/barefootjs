@@ -1,0 +1,146 @@
+/*
+  layout-arcade — "Every bullet is a DOM node."
+
+  Full-bleed: the slide's own paper ground is the playfield, so nothing here
+  paints a background. Sprites are flat ink shapes with 1.5px strokes; the one
+  colour is the deck's green, used only for the player's shots and half of the
+  debris. Every rule is scoped under .layout-arcade / .arcade so this file can
+  sit next to base.css in any order — the two-class selectors outrank the
+  single-class ones base.css uses for the same properties.
+*/
+
+/* the slide is the canvas: no padding, no column flow, no entrance */
+.peitho-slide.layout-arcade {
+  display: block;
+  padding: 0;
+  gap: 0;
+}
+.peitho-slide.layout-arcade > * { animation: none; }
+
+.arcade-mount,
+.layout-arcade .arcade { position: absolute; inset: 0; }
+
+.arcade-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+}
+
+/* ---------- sprites: one element each, positioned by transform ---------- */
+.a-ent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  will-change: transform;
+}
+
+/* enemies: hollow ink outlines */
+.a-sq { width: 17px; height: 17px; margin: -9px 0 0 -9px; border: 1.5px solid var(--ink); }
+.a-di { width: 15px; height: 15px; margin: -8px 0 0 -8px; border: 1.5px solid var(--ink); }
+.a-ci { width: 17px; height: 17px; margin: -9px 0 0 -9px; border: 1.5px solid var(--ink); border-radius: 50%; }
+
+/* fire */
+.a-shot { width: 2px; height: 10px; margin: -5px 0 0 -1px; background: var(--accent); border-radius: 1px; }
+.a-bolt { width: 2px; height: 8px; margin: -4px 0 0 -1px; background: var(--ink); }
+
+/* debris + dust */
+.a-bit { width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; background: var(--accent); border-radius: 50%; }
+.a-bit2 { width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; background: var(--ink); border-radius: 50%; }
+.a-dust { width: 1.5px; height: 1.5px; background: var(--ink); border-radius: 50%; }
+
+/* the ship */
+.a-ship {
+  width: 26px;
+  height: 21px;
+  margin: -11px 0 0 -13px;
+  background: var(--ink);
+  clip-path: polygon(50% 0%, 100% 100%, 50% 74%, 0% 100%);
+}
+.a-ship-hurt { animation: a-blink 140ms steps(1) infinite; }
+@keyframes a-blink { 50% { opacity: 0.15; } }
+
+/* hit flash: a breath of white over the paper, never a colour wash */
+.a-flash {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: #fff;
+  pointer-events: none;
+}
+
+/* ---------- HUD: measured numbers, top-left ---------- */
+.arcade-rule {
+  position: absolute;
+  left: 56px;
+  top: 46px;
+  display: block;
+  width: 48px;
+  height: 1px;
+  background: var(--ink);
+  opacity: 0.7;
+}
+.arcade-hud {
+  position: absolute;
+  left: 56px;
+  top: 72px;
+  display: grid;
+  grid-template-columns: 152px auto;
+  gap: 7px 0;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1;
+}
+.arcade-hud .hud-k {
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--muted);
+}
+.arcade-hud .hud-v {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.arcade-hint {
+  position: absolute;
+  left: 56px;
+  bottom: 54px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- caption: the slide's one sentence, bottom-right ---------- */
+.layout-arcade .arcade-caption {
+  position: absolute;
+  right: 64px;
+  bottom: 48px;
+  z-index: 2;
+  max-width: 30em;
+  text-align: right;
+}
+.layout-arcade .arcade-title {
+  font-family: var(--serif);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.layout-arcade .arcade-body {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a-ship-hurt { animation: none; }
+}
