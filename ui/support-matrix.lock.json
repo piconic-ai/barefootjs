@@ -14,15 +14,15 @@
   ],
   "kinds": {
     "array-literal": {
-      "total": 113,
+      "total": 114,
       "cells": {
         "hono": {
-          "pass": 113,
-          "total": 113
+          "pass": 114,
+          "total": 114
         },
         "blade": {
-          "pass": 101,
-          "total": 113,
+          "pass": 102,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -79,8 +79,8 @@
           ]
         },
         "erb": {
-          "pass": 102,
-          "total": 113,
+          "pass": 103,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -131,8 +131,8 @@
           ]
         },
         "go-template": {
-          "pass": 100,
-          "total": 113,
+          "pass": 101,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -195,8 +195,8 @@
           ]
         },
         "jinja": {
-          "pass": 101,
-          "total": 113,
+          "pass": 102,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -253,8 +253,8 @@
           ]
         },
         "minijinja": {
-          "pass": 101,
-          "total": 113,
+          "pass": 102,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -311,8 +311,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 100,
-          "total": 113,
+          "pass": 101,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -375,8 +375,8 @@
           ]
         },
         "twig": {
-          "pass": 101,
-          "total": 113,
+          "pass": 102,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -433,8 +433,8 @@
           ]
         },
         "xslate": {
-          "pass": 99,
-          "total": 113,
+          "pass": 100,
+          "total": 114,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1063,9 +1063,13 @@
           "total": 106
         },
         "blade": {
-          "pass": 97,
+          "pass": 96,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1111,9 +1115,13 @@
           ]
         },
         "erb": {
-          "pass": 98,
+          "pass": 97,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1153,9 +1161,13 @@
           ]
         },
         "go-template": {
-          "pass": 97,
+          "pass": 96,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1201,9 +1213,13 @@
           ]
         },
         "jinja": {
-          "pass": 97,
+          "pass": 96,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1249,9 +1265,13 @@
           ]
         },
         "minijinja": {
-          "pass": 97,
+          "pass": 96,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1297,9 +1317,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 98,
+          "pass": 97,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1339,9 +1363,13 @@
           ]
         },
         "twig": {
-          "pass": 97,
+          "pass": 96,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1387,9 +1415,13 @@
           ]
         },
         "xslate": {
-          "pass": 97,
+          "pass": 96,
           "total": 106,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1467,9 +1499,13 @@
           ]
         },
         "blade": {
-          "pass": 261,
+          "pass": 260,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1547,9 +1583,13 @@
           ]
         },
         "erb": {
-          "pass": 262,
+          "pass": 261,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1621,9 +1661,13 @@
           ]
         },
         "go-template": {
-          "pass": 258,
+          "pass": 257,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "component-prop-bare-getter",
               "issues": []
@@ -1717,9 +1761,13 @@
           ]
         },
         "jinja": {
-          "pass": 261,
+          "pass": 260,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1797,9 +1845,13 @@
           ]
         },
         "minijinja": {
-          "pass": 261,
+          "pass": 260,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1877,9 +1929,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 262,
+          "pass": 261,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1951,9 +2007,13 @@
           ]
         },
         "twig": {
-          "pass": 261,
+          "pass": 260,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2031,9 +2091,13 @@
           ]
         },
         "xslate": {
-          "pass": 261,
+          "pass": 260,
           "total": 277,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2131,9 +2195,13 @@
           "total": 33
         },
         "blade": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2145,9 +2213,13 @@
           ]
         },
         "erb": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2159,9 +2231,13 @@
           ]
         },
         "go-template": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2173,9 +2249,13 @@
           ]
         },
         "jinja": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2187,9 +2267,13 @@
           ]
         },
         "minijinja": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2201,9 +2285,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2215,9 +2303,13 @@
           ]
         },
         "twig": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2229,9 +2321,13 @@
           ]
         },
         "xslate": {
-          "pass": 31,
+          "pass": 30,
           "total": 33,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "flatmap-typeof-projection",
               "issues": []
@@ -2283,9 +2379,13 @@
           ]
         },
         "blade": {
-          "pass": 371,
+          "pass": 370,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2379,9 +2479,13 @@
           ]
         },
         "erb": {
-          "pass": 372,
+          "pass": 371,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2469,9 +2573,13 @@
           ]
         },
         "go-template": {
-          "pass": 368,
+          "pass": 367,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "component-prop-bare-getter",
               "issues": []
@@ -2581,9 +2689,13 @@
           ]
         },
         "jinja": {
-          "pass": 371,
+          "pass": 370,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2677,9 +2789,13 @@
           ]
         },
         "minijinja": {
-          "pass": 371,
+          "pass": 370,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2773,9 +2889,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 370,
+          "pass": 369,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2875,9 +2995,13 @@
           ]
         },
         "twig": {
-          "pass": 371,
+          "pass": 370,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2971,9 +3095,13 @@
           ]
         },
         "xslate": {
-          "pass": 369,
+          "pass": 368,
           "total": 391,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3157,9 +3285,13 @@
           ]
         },
         "blade": {
-          "pass": 301,
+          "pass": 300,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3213,9 +3345,13 @@
           ]
         },
         "erb": {
-          "pass": 301,
+          "pass": 300,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3269,9 +3405,13 @@
           ]
         },
         "go-template": {
-          "pass": 298,
+          "pass": 297,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "component-prop-bare-getter",
               "issues": []
@@ -3341,9 +3481,13 @@
           ]
         },
         "jinja": {
-          "pass": 301,
+          "pass": 300,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3397,9 +3541,13 @@
           ]
         },
         "minijinja": {
-          "pass": 301,
+          "pass": 300,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3453,9 +3601,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 299,
+          "pass": 298,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3521,9 +3673,13 @@
           ]
         },
         "twig": {
-          "pass": 301,
+          "pass": 300,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3577,9 +3733,13 @@
           ]
         },
         "xslate": {
-          "pass": 299,
+          "pass": 298,
           "total": 313,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3658,16 +3818,20 @@
       }
     },
     "logical": {
-      "total": 51,
+      "total": 50,
       "cells": {
         "hono": {
-          "pass": 51,
-          "total": 51
+          "pass": 50,
+          "total": 50
         },
         "blade": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3681,9 +3845,13 @@
           ]
         },
         "erb": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3697,9 +3865,13 @@
           ]
         },
         "go-template": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3713,9 +3885,13 @@
           ]
         },
         "jinja": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3729,9 +3905,13 @@
           ]
         },
         "minijinja": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3745,9 +3925,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3761,9 +3945,13 @@
           ]
         },
         "twig": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3777,9 +3965,13 @@
           ]
         },
         "xslate": {
-          "pass": 49,
-          "total": 51,
+          "pass": 47,
+          "total": 50,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3806,11 +3998,11 @@
       }
     },
     "member": {
-      "total": 232,
+      "total": 231,
       "cells": {
         "hono": {
-          "pass": 229,
-          "total": 232,
+          "pass": 228,
+          "total": 231,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3829,9 +4021,13 @@
           ]
         },
         "blade": {
-          "pass": 213,
-          "total": 232,
+          "pass": 211,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3921,9 +4117,13 @@
           ]
         },
         "erb": {
-          "pass": 214,
-          "total": 232,
+          "pass": 212,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4007,9 +4207,13 @@
           ]
         },
         "go-template": {
-          "pass": 210,
-          "total": 232,
+          "pass": 208,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "component-prop-bare-getter",
               "issues": []
@@ -4115,9 +4319,13 @@
           ]
         },
         "jinja": {
-          "pass": 213,
-          "total": 232,
+          "pass": 211,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4207,9 +4415,13 @@
           ]
         },
         "minijinja": {
-          "pass": 213,
-          "total": 232,
+          "pass": 211,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4299,9 +4511,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 212,
-          "total": 232,
+          "pass": 210,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4397,9 +4613,13 @@
           ]
         },
         "twig": {
-          "pass": 213,
-          "total": 232,
+          "pass": 211,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4489,9 +4709,13 @@
           ]
         },
         "xslate": {
-          "pass": 211,
-          "total": 232,
+          "pass": 209,
+          "total": 231,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -7117,36 +7341,84 @@
           "total": 14
         },
         "blade": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "erb": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -7895,9 +8167,13 @@
           ]
         },
         "blade": {
-          "pass": 69,
+          "pass": 68,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -7909,9 +8185,13 @@
           ]
         },
         "erb": {
-          "pass": 69,
+          "pass": 68,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -7923,9 +8203,13 @@
           ]
         },
         "go-template": {
-          "pass": 68,
+          "pass": 67,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -7943,9 +8227,13 @@
           ]
         },
         "jinja": {
-          "pass": 69,
+          "pass": 68,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -7957,9 +8245,13 @@
           ]
         },
         "minijinja": {
-          "pass": 69,
+          "pass": 68,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -7971,9 +8263,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 67,
+          "pass": 66,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -7997,9 +8293,13 @@
           ]
         },
         "twig": {
-          "pass": 69,
+          "pass": 68,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -8011,9 +8311,13 @@
           ]
         },
         "xslate": {
-          "pass": 67,
+          "pass": 66,
           "total": 71,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "issues": []
@@ -8124,9 +8428,13 @@
           "total": 143
         },
         "blade": {
-          "pass": 138,
+          "pass": 137,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8150,9 +8458,13 @@
           ]
         },
         "erb": {
-          "pass": 138,
+          "pass": 137,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8176,9 +8488,13 @@
           ]
         },
         "go-template": {
-          "pass": 136,
+          "pass": 135,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "component-prop-bare-getter",
               "issues": []
@@ -8212,9 +8528,13 @@
           ]
         },
         "jinja": {
-          "pass": 138,
+          "pass": 137,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8238,9 +8558,13 @@
           ]
         },
         "minijinja": {
-          "pass": 138,
+          "pass": 137,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8264,9 +8588,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 136,
+          "pass": 135,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8302,9 +8630,13 @@
           ]
         },
         "twig": {
-          "pass": 138,
+          "pass": 137,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8328,9 +8660,13 @@
           ]
         },
         "xslate": {
-          "pass": 136,
+          "pass": 135,
           "total": 143,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -8386,9 +8722,13 @@
           "total": 214
         },
         "blade": {
-          "pass": 206,
+          "pass": 205,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8426,9 +8766,13 @@
           ]
         },
         "erb": {
-          "pass": 206,
+          "pass": 205,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8466,9 +8810,13 @@
           ]
         },
         "go-template": {
-          "pass": 205,
+          "pass": 204,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8512,9 +8860,13 @@
           ]
         },
         "jinja": {
-          "pass": 206,
+          "pass": 205,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8552,9 +8904,13 @@
           ]
         },
         "minijinja": {
-          "pass": 206,
+          "pass": 205,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8592,9 +8948,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 204,
+          "pass": 203,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8644,9 +9004,13 @@
           ]
         },
         "twig": {
-          "pass": 206,
+          "pass": 205,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8684,9 +9048,13 @@
           ]
         },
         "xslate": {
-          "pass": 204,
+          "pass": 203,
           "total": 214,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8801,16 +9169,20 @@
       }
     },
     "logical:??": {
-      "total": 43,
+      "total": 42,
       "cells": {
         "hono": {
-          "pass": 43,
-          "total": 43
+          "pass": 42,
+          "total": 42
         },
         "blade": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8824,9 +9196,13 @@
           ]
         },
         "erb": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8840,9 +9216,13 @@
           ]
         },
         "go-template": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8856,9 +9236,13 @@
           ]
         },
         "jinja": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8872,9 +9256,13 @@
           ]
         },
         "minijinja": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8888,9 +9276,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8904,9 +9296,13 @@
           ]
         },
         "twig": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8920,9 +9316,13 @@
           ]
         },
         "xslate": {
-          "pass": 41,
-          "total": 43,
+          "pass": 39,
+          "total": 42,
           "gaps": [
+            {
+              "fixture": "body-destructured-props-live",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -8942,9 +9342,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L152"
       },
       "example": {
-        "fixture": "body-destructured-prop-default-renamed",
-        "description": "A renamed body-destructured prop default renders the default on SSR (#2943)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructured-prop-default-renamed.ts"
+        "fixture": "nullish-coalescing-destructured",
+        "description": "Nullish coalescing over destructured optional props seeds SSR correctly",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalescing-destructured.ts",
+        "code": "size ?? 1"
       }
     },
     "logical:||": {

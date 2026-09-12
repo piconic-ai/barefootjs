@@ -1,0 +1,79 @@
+/**
+ * Precompute which `.map()` loops will emit a delegated event listener for
+ * which (container slot, DOM event) pairs — the fact both the direct-handler
+ * phase and the loop-delegation phase need to agree on when a container also
+ * carries its own handler for the same event (#2930).
+ *
+ * Built once (independent of the phases that actually emit code, and before
+ * either of them runs — `event-handlers` precedes `loop-updates` in
+ * `phases.ts`) from `ClientJsContext.loopElements` alone, via
+ * `classifyLoopKind` — the same predicates `buildLoopPlan` uses, without
+ * building the full `LoopPlan`.
+ */
+
+import type { TopLevelLoop, LoopChildEvent } from '../../types.ts'
+import { toDomEventName } from '../../utils.ts'
+import { classifyLoopKind, type LoopVariantKind } from './build-loop.ts'
+
+export interface LoopDelegationIndex {
+  /**
+   * True when SOME loop under `containerSlotId` delegates `domEventName`.
+   * The direct listener in `phases/event-handlers.ts` must be suppressed
+   * whenever this is true, regardless of how many loops share the pair —
+   * only one of them (see `isLastDelegator`) actually invokes the
+   * container's own handler; the others must not also emit it separately.
+   */
+  isDelegated(containerSlotId: string, domEventName: string): boolean
+  /**
+   * True when the loop at `loopIndex` (its position in `loopElements`,
+   * matching emission order) is the LAST loop delegating this pair. Only
+   * that loop's dispatcher can safely gate the container's own handler: an
+   * earlier delegated listener sharing the pair may still see a row call
+   * `stopPropagation()` after its own dispatch has already run and decided
+   * whether to fire the container's own handler.
+   */
+  isLastDelegator(containerSlotId: string, domEventName: string, loopIndex: number): boolean
+}
+
+export function buildLoopDelegationIndex(loopElements: readonly TopLevelLoop[]): LoopDelegationIndex {
+  const lastIndexForPair = new Map<string, number>()
+  loopElements.forEach((elem, index) => {
+    if (!loopEventDelegationVariant(elem, classifyLoopKind(elem))) return
+    for (const domEventName of domEventNamesOf(elem.bindings.events)) {
+      lastIndexForPair.set(pairKey(elem.slotId, domEventName), index)
+    }
+  })
+  return {
+    isDelegated: (containerSlotId, domEventName) =>
+      lastIndexForPair.has(pairKey(containerSlotId, domEventName)),
+    isLastDelegator: (containerSlotId, domEventName, loopIndex) =>
+      lastIndexForPair.get(pairKey(containerSlotId, domEventName)) === loopIndex,
+  }
+}
+
+/**
+ * Which delegation builder (`control-flow.ts`'s `emitLoopEventDelegation`)
+ * would use for `elem`, or `null` if it doesn't delegate at all —
+ * `'component'`/`'composite'` loops' events ride on the child component's
+ * own event surface instead. The single shared gate so this index and the
+ * actual emission can't silently diverge (#2930 review) — previously each
+ * re-implemented the same `kind === 'static' && !childComponent` /
+ * `kind === 'plain' && !useElementReconciliation` check inline.
+ */
+export function loopEventDelegationVariant(
+  elem: TopLevelLoop,
+  kind: LoopVariantKind,
+): 'static' | 'dynamic' | null {
+  if (elem.bindings.events.length === 0) return null
+  if (kind === 'static') return elem.childComponent ? null : 'static'
+  if (kind === 'plain') return elem.useElementReconciliation ? null : 'dynamic'
+  return null
+}
+
+function domEventNamesOf(events: readonly LoopChildEvent[]): string[] {
+  return [...new Set(events.map(ev => toDomEventName(ev.eventName)))]
+}
+
+function pairKey(containerSlotId: string, domEventName: string): string {
+  return `${containerSlotId}:${domEventName}`
+}

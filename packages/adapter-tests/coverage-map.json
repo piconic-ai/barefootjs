@@ -923,22 +923,6 @@
         "text"
       ]
     },
-    "body-destructured-prop-default-renamed": {
-      "kinds": [
-        "identifier",
-        "literal",
-        "logical",
-        "member"
-      ],
-      "axes": [
-        "literal:string",
-        "logical:??"
-      ],
-      "contexts": [
-        "attribute",
-        "text"
-      ]
-    },
     "body-destructured-props-live": {
       "kinds": [
         "binary",
@@ -2240,6 +2224,21 @@
       "contexts": [
         "attribute",
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "event-delegation-container-handler": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -6685,7 +6684,7 @@
     }
   },
   "kindCounts": {
-    "array-literal": 113,
+    "array-literal": 114,
     "array-method": 71,
     "arrow": 74,
     "binary": 106,
@@ -6694,8 +6693,8 @@
     "identifier": 391,
     "index-access": 14,
     "literal": 313,
-    "logical": 51,
-    "member": 232,
+    "logical": 50,
+    "member": 231,
     "object-literal": 92,
     "template-literal": 31,
     "unary": 29,
@@ -6742,7 +6741,7 @@
     "literal:number": 143,
     "literal:string": 214,
     "logical:&&": 7,
-    "logical:??": 43,
+    "logical:??": 42,
     "logical:||": 16,
     "lowering:date": 4,
     "lowering:formatDate": 2,

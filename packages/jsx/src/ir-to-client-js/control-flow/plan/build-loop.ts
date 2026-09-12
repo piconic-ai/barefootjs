@@ -62,29 +62,45 @@ export interface BuildLoopPlanOptions {
   lazyScope?: LazyRowScopeInfo
 }
 
+/** Which `LoopPlan` variant `buildLoopPlan` would build for a given loop. */
+export type LoopVariantKind = 'plain' | 'static' | 'composite' | 'component'
+
 /**
- * The single public builder. Selects the variant via the decision tree
- * described above and returns the discriminated `LoopPlan`.
+ * Classify which variant `buildLoopPlan` would build for `elem`, without
+ * building it. Mirrors the decision tree below exactly — pulled out so a
+ * caller that only needs the classification (e.g. the event-delegation
+ * eligibility precompute, #2930) doesn't have to duplicate these predicates
+ * or pay for building the full `LoopPlan`.
  */
-export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): LoopPlan {
+export function classifyLoopKind(elem: TopLevelLoop): LoopVariantKind {
   // Whole-item conditional bodies (#1665) render 0-or-1 element per item, so
   // they need anchored `mapArrayAnchored` emission regardless of whether the
   // array is static or dynamic. Routing both through the plain (anchored)
   // path keeps `const arr` and `signal()` behaviour identical — a static
   // array's per-item conditional still toggles reactively instead of freezing
   // in the SSR-time `forEach` (which has no conditional handling at all).
-  if (elem.bodyIsItemConditional) {
-    return buildPlainLoopPlan(elem, opts.profileComponentName, opts.lazyScope)
-  }
-  if (elem.isStaticArray) {
-    return buildStaticLoopPlan(elem, opts.unsafeLocalNames, opts.profileComponentName)
-  }
+  if (elem.bodyIsItemConditional) return 'plain'
+  if (elem.isStaticArray) return 'static'
   const hasInnerStructure = (elem.nestedComponents?.length ?? 0) > 0
     || (elem.innerLoops?.length ?? 0) > 0
-  if (elem.useElementReconciliation && hasInnerStructure) {
+  if (elem.useElementReconciliation && hasInnerStructure) return 'composite'
+  if (elem.childComponent) return 'component'
+  return 'plain'
+}
+
+/**
+ * The single public builder. Dispatches via `classifyLoopKind` and returns
+ * the discriminated `LoopPlan`.
+ */
+export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): LoopPlan {
+  const kind = classifyLoopKind(elem)
+  if (kind === 'static') {
+    return buildStaticLoopPlan(elem, opts.unsafeLocalNames, opts.profileComponentName)
+  }
+  if (kind === 'composite') {
     return buildTopLevelCompositePlan(elem, opts.profileComponentName)
   }
-  if (elem.childComponent) {
+  if (kind === 'component') {
     return buildComponentLoopPlan(elem, opts.profileComponentName)
   }
   return buildPlainLoopPlan(elem, opts.profileComponentName, opts.lazyScope)

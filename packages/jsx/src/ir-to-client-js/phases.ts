@@ -17,6 +17,7 @@ import type { ComponentIR, PropUsage, ReferencesGraph } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import type { LocalClassification } from './init-declarations.ts'
 import { collectConditionalSlotIds } from './phases/conditional-slot-ids.ts'
+import { buildLoopDelegationIndex, type LoopDelegationIndex } from './control-flow/plan/loop-delegation-index.ts'
 import { emitEffectsAndOnMounts } from './phases/effects-and-on-mounts.ts'
 import { emitEventHandlers } from './phases/event-handlers.ts'
 import { emitInitStatements } from './phases/init-statements.ts'
@@ -51,6 +52,16 @@ export interface PhaseCtx {
   /** Slots that live inside a conditional branch (handled via `insert()`).
    *  Cached so `event-handlers` and `ref-callbacks` don't recompute. */
   conditionalSlotIds: Set<string>
+  /**
+   * Which (container slot, DOM event) pairs a top-level `.map()` loop will
+   * delegate, and which loop is last among those sharing a pair (#2930).
+   * Computed once, ahead of both `event-handlers` (which must suppress a
+   * container's own listener for a delegated pair) and `loop-updates`
+   * (which folds that handler into the delegated listener instead) — those
+   * two phases run in that order, so this can't be computed by either one
+   * lazily on first use.
+   */
+  loopDelegationIndex: LoopDelegationIndex
   /** Local names that resolve to component-scope expressions and therefore
    *  become `[]` / `undefined` when referenced from the CSR template (the
    *  same set the registration emitter feeds `generateCsrTemplate`).
@@ -60,10 +71,13 @@ export interface PhaseCtx {
 }
 
 /** Build the read-only carrier that every phase consumes. */
-export function buildPhaseCtx(args: Omit<PhaseCtx, 'conditionalSlotIds'>): PhaseCtx {
+export function buildPhaseCtx(
+  args: Omit<PhaseCtx, 'conditionalSlotIds' | 'loopDelegationIndex'>,
+): PhaseCtx {
   return {
     ...args,
     conditionalSlotIds: collectConditionalSlotIds(args.ctx),
+    loopDelegationIndex: buildLoopDelegationIndex(args.ctx.loopElements),
   }
 }
 
@@ -222,7 +236,7 @@ export const PHASES: readonly EmitPhase[] = [
   {
     id: 'event-handlers',
     dependsOn: ['rest-attr-applications'],
-    run: (lines, p) => emitEventHandlers(lines, p.ctx, p.conditionalSlotIds),
+    run: (lines, p) => emitEventHandlers(lines, p.ctx, p.conditionalSlotIds, p.loopDelegationIndex),
   },
   {
     id: 'reactive-prop-bindings',
@@ -256,7 +270,7 @@ export const PHASES: readonly EmitPhase[] = [
     // contract is enforceable at registry-validation time.
     id: 'loop-updates',
     dependsOn: ['provider-and-child-inits'],
-    run: (lines, p) => emitLoopUpdates(lines, p.ctx, p.unsafeLocalNames),
+    run: (lines, p) => emitLoopUpdates(lines, p.ctx, p.unsafeLocalNames, p.conditionalSlotIds, p.loopDelegationIndex),
   },
   {
     id: 'static-array-child-inits',
