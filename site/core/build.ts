@@ -14,8 +14,10 @@
  * - dist/uno.css + dist/static/globals.css (tokens + globals + landing)
  * - dist/static/logos/, dist/static/snippets/, icons
  * - dist/slides/ (public/slides/** copied verbatim — peitho decks built by
- *   `bun run slides:build`, see scripts/build-slides.ts; absent locally
- *   until you build one)
+ *   the `slides:build --all` step `bun run build` (this script's own
+ *   package.json entry) runs first, see scripts/build-slides.ts; empty when
+ *   peitho isn't installed, since that step skips with a warning instead of
+ *   failing)
  * - dist/playground/ (worker + page script + Monaco type bundle)
  * - dist/_headers, dist/llms.txt, dist/robots.txt
  */
@@ -215,9 +217,10 @@ if (logoFiles.length > 0) {
   console.log(`Copied: dist/logos/, dist/static/logos/ (${logoFiles.length} files)`)
 }
 
-// ── 8a. Copy public/slides/** → dist/slides/** (peitho decks built by
-// `bun run slides:build`; deploy.yml runs it before this script, so the
-// directory may be absent in a plain local build) ─────────────────
+// ── 8a. Copy public/slides/** → dist/slides/** (peitho decks built by the
+// `slides:build --all` step that runs before this script as part of `bun
+// run build`; the directory may still be empty if peitho isn't installed,
+// since that step skips with a warning rather than failing) ───────────
 async function copyDirRecursive(srcDir: string, destDir: string): Promise<number> {
   let count = 0
   const entries = await readdir(srcDir, { withFileTypes: true }).catch(() => [])

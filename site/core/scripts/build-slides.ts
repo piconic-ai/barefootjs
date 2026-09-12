@@ -14,9 +14,13 @@
  *                                  non-component entries are bundled into assets/deck.js and
  *                                  injected into index.html
  *
- * The output (public/slides/<slug>/) is gitignored: deploy.yml installs a pinned peitho
- * release and runs `bun run slides:build --all` before the site build, and ci-slides.yml
- * does the same on pull requests. Set PEITHO to the binary path when it is not on PATH.
+ * The output (public/slides/<slug>/) is gitignored and rebuilt by `bun run build` (see
+ * build.ts), which invokes `--all` as its first step. deploy.yml and ci-slides.yml install a
+ * pinned peitho release before that, so it is always present there. On a plain local `bun run
+ * build` peitho commonly isn't installed, so `--all` degrades to a skip-with-warning instead
+ * of failing the whole build — an explicit slug (`slides:build overview`) still hard-fails,
+ * since that's a deliberate request to build one deck, not an incidental part of `build`. Set
+ * PEITHO to the binary path when it is not on PATH.
  */
 import { existsSync, readdirSync, statSync, readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'node:fs'
 import { resolve, join, dirname } from 'node:path'
@@ -104,7 +108,16 @@ function escapeHtml(s: string): string {
 }
 
 const args = process.argv.slice(2)
-const slugs = args.includes('--all') ? listDecks() : args.filter((a) => !a.startsWith('-'))
+const isAllMode = args.includes('--all')
+
+if (isAllMode && !Bun.which(PEITHO)) {
+  console.warn(`⚠ peitho not found (looked for "${PEITHO}" — set PEITHO=<path> if it's installed elsewhere).`)
+  console.warn(`  Skipping slide deck build; dist/slides/ will be empty. Install peitho to build them locally:`)
+  console.warn(`  https://github.com/mizzy/peitho/releases`)
+  process.exit(0)
+}
+
+const slugs = isAllMode ? listDecks() : args.filter((a) => !a.startsWith('-'))
 if (slugs.length === 0) {
   console.error('usage: bun run slides:build <slug> [<slug>...] | --all\navailable: ' + (listDecks().join(', ') || '(none)'))
   process.exit(1)

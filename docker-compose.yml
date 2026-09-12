@@ -8,11 +8,12 @@
 # bind-mount the host-built `dist/` so they pick up recompiled output
 # immediately.
 #
-# site-core's `/slides/*` (e.g. /slides/overview) needs an extra, separate
-# host-side build step beyond the regular `bun run build`: the peitho CLI
-# (https://github.com/piconic-ai/peitho) must be on PATH (or `PEITHO=<path>`),
-# then from site/core run `bun run slides:build --all && bun run build` to
-# populate dist/slides/. See site/core/scripts/build-slides.ts.
+# site-core's `/slides/*` (e.g. /slides/overview) is populated by the same
+# host-side `bun run build` (from site/core): it runs `slides:build --all`
+# first, which needs the peitho CLI (https://github.com/mizzy/peitho) on
+# PATH (or `PEITHO=<path>`) — without it, that step warns and skips, leaving
+# dist/slides/ empty rather than failing the build. See
+# site/core/scripts/build-slides.ts.
 #
 # Each service is independent (no `depends_on`), so any subset can be brought
 # up for focused debugging:
