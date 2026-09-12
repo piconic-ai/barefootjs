@@ -1,5 +1,0 @@
----
-"@barefootjs/erb": patch
----
-
-Fixes a crash when a nested `.map()`'s callback param shadows the outer loop's param name (`items.map(item => item.children.map(item => ...))`, #2922). `renderLoop` used to introduce the per-row item via a plain Ruby assignment (`item = array[_i]`) inside the loop's `each` block — Ruby assignment to a name already visible in an enclosing scope mutates that shared variable instead of shadowing it, so the inner loop's second-plus iteration read the previous inner item instead of the stable outer one and crashed with `undefined method '[]' for nil`. Now binds the item (and, where applicable, the destructure temp) as a genuine `each_with_index` block parameter, which Ruby always shadows correctly at every nesting depth, and declares any remaining plain-assigned per-row bindings (destructure sub-bindings, `.map()` preamble locals) as explicit block-local variables (`do |params; locals| ... end`) so they're never mistaken for an enclosing local either. Graduates the `static-nested-loop-shadowed-param` conformance fixture from a pinned render divergence to a normal passing regression test.
