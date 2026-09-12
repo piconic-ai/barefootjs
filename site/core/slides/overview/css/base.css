@@ -158,8 +158,8 @@
 .counter-btn:active { transform: scale(0.96); }
 .counter-btn:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
 
+/* ---------- compiler ---------- */
 .layout-compiler { gap: 20px; }
-.layout-compiler { gap: 26px; }
 .compiler-mount { flex: 1; min-height: 0; display: flex; }
 .compiler { flex: 1; min-height: 0; display: grid; grid-template-columns: 200px 1fr; gap: 28px; }
 .compiler-tabs { display: flex; flex-direction: column; gap: 4px; }

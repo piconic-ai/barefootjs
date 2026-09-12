@@ -87,8 +87,11 @@ composed kit components start using a class it doesn't already emit.
 Regenerate (c) from `site/ui` (which has `@unocss/cli` installed), scoping the
 scan to exactly the `.tsx` files that matter — the config
 (`component/uno.config.ts`) reuses `site/ui/uno.config.ts`'s own theme so
-class → `var(--x)` output matches, but disables preset-wind4's own preflight
-(reset) since (b) above already covers that, scoped:
+class → `var(--x)` output matches, disables preset-wind4's own preflight
+(reset) since (b) above already covers that, scoped, and prefixes every
+generated selector with `.showcase ` (its `postprocess` hook) so the bare
+utility names UnoCSS emits (`.flex`, `.grid`, `.border`, ...) never apply
+outside the showcase:
 
 ```sh
 cd site/ui && bunx unocss \
