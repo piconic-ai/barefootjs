@@ -5586,9 +5586,15 @@ export function List(props: Props) {
     // which a misclassified `isPropDerived: true` hides from JSON entirely.
     expect(collidingTypes).toContain('Items []ItemProps `json:"items"`')
     expect(collidingTypes).not.toContain('Items []ItemProps `json:"-"`')
-    const itemsFieldLine = (src: string) => src.split('\n').find(l => l.includes('[]ItemInput')) ?? ''
-    expect(itemsFieldLine(collidingTypes)).not.toBe('')
-    expect(itemsFieldLine(collidingTypes)).toBe(itemsFieldLine(controlTypes))
+    // #2946: `base` is a module-scope static array, so the loop is now baked
+    // (`analyzeBakeableStaticChildLoop`) — each item's props are computed
+    // directly in `NewListProps`, and the Input struct carries no
+    // `[]ItemInput` field for a caller to (redundantly) supply, in either
+    // source. Same shape as the `#2208` static-array-loop-source-baking
+    // describe block below.
+    const inputStruct = (src: string) => src.slice(src.indexOf('ListInput struct'), src.indexOf('ListProps struct'))
+    expect(inputStruct(collidingTypes)).not.toContain('ItemInput')
+    expect(inputStruct(controlTypes)).not.toContain('ItemInput')
   })
 })
 

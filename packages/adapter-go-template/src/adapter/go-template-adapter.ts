@@ -7606,12 +7606,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       })
     }
 
-    // A loop array that's a bare reference to a FUNCTION-SCOPE local const with
-    // a computed initializer (`const entries = Object.entries(props.x ??
-    // {}).filter(...)`) can't be bound as a Go template value: module-scope
-    // consts (`isModule`) are a different, already-working case (statically
-    // evaluated and seeded into the render context elsewhere), but a
-    // function-scope local only reaches the template at all via
+    // A loop array that's a bare reference to a local const (module- or
+    // function-scope, #2946) with a computed initializer (`const entries =
+    // Object.entries(props.x ?? {}).filter(...)`) can't be bound as a Go
+    // template value: such a local only reaches the template at all via
     // `computeDerivedConstFields`'s STRING-typed derived-const lowering
     // (`isStringExpr`) — an array-typed initializer like this one never
     // qualifies, so `identifier()` would still emit `.Entries` (the naive
@@ -7678,11 +7676,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `prop-handling.ts`'s `expandDynamicPropValue`.
     if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName) && !this.scope.isBound(arrayName)) {
       const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
-      if (arrayConst && !arrayConst.isModule && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
+      if (arrayConst && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
         this.state.errors.push({
           code: 'BF101',
           severity: 'error',
-          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the Go template adapter cannot bind as a template variable — only a string-derived local resolves to a generated struct field.`,
+          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Go template adapter cannot bind as a template variable — only a string-derived local resolves to a generated struct field.`,
           loc: loop.loc ?? this.makeLoc(),
           suggestion: {
             message:

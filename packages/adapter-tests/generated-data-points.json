@@ -1927,6 +1927,14 @@
       }
     }
   ],
+  "module-const-loop-source-computed-precomputed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "nullish-coalescing-destructured": [
     {
       "name": "gen:label:absent",

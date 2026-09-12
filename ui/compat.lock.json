@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 414,
+    "totalFixtures": 419,
     "fixtures": {
       "component-prop-bare-getter": {
         "go-template": {
@@ -2777,6 +2777,112 @@
           }
         }
       },
+      "module-const-loop-source-computed": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        }
+      },
       "namespace-import-primitive": {
         "blade": {
           "kind": "refusal",
@@ -3678,6 +3784,10 @@
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
       },
+      "module-const-loop-source-computed": {
+        "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
+      },
       "namespace-import-primitive": {
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
@@ -3761,6 +3871,10 @@
       "map-array-builder-body-client": {
         "description": "Array-builder .map() body deferred to the client via /* @client */ — DSL BF021 suppressed",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body-client.ts"
+      },
+      "module-const-loop-source-computed-precomputed": {
+        "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
       },
       "reduce-right-typeof-body-client": {
         "description": "Off-subset `.reduceRight()` body deferred to the client via /* @client */",

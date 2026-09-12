@@ -3927,6 +3927,74 @@
         "text"
       ]
     },
+    "module-const-loop-source": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-loop-source-child-component": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-loop-source-computed": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-loop-source-computed-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-loop-source-computed-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "multi-component-module": {
       "kinds": [
         "call",
@@ -6700,18 +6768,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 114,
+    "array-literal": 116,
     "array-method": 71,
     "arrow": 74,
     "binary": 106,
-    "call": 277,
+    "call": 279,
     "conditional": 33,
-    "identifier": 392,
+    "identifier": 397,
     "index-access": 14,
-    "literal": 314,
+    "literal": 316,
     "logical": 51,
-    "member": 232,
-    "object-literal": 92,
+    "member": 234,
+    "object-literal": 93,
     "template-literal": 31,
     "unary": 29,
     "unsupported": 50
@@ -6755,7 +6823,7 @@
     "literal:boolean": 71,
     "literal:null": 26,
     "literal:number": 143,
-    "literal:string": 215,
+    "literal:string": 217,
     "logical:&&": 7,
     "logical:??": 43,
     "logical:||": 16,

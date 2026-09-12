@@ -8,6 +8,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // available at CSR template module scope (CSR templates only have access
   // to props and signals); Hono render conformance covers the real-JS runtime.
   'array-map-function-reference',
+  // #2946: same #2073 class — `items` is seeded by a module-scope FUNCTION
+  // call (`buildItems()`), not a static literal, so it can't be inlined into
+  // the CSR template either; only the SSR-side compile refusal (BF101) and
+  // its escape twins are pinned. `module-const-loop-source` and
+  // `module-const-loop-source-child-component` (the fully-static-literal
+  // shapes #2946 actually fixes) are NOT skipped here — those inline fine.
+  'module-const-loop-source-computed',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',

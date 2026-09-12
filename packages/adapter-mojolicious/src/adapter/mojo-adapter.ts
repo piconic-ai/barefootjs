@@ -897,13 +897,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       })
     }
 
-    // A `.map()` loop whose array is a bare identifier bound to a
-    // FUNCTION-scope local const with a non-statically-evaluable initializer
-    // that reads props/signals (e.g. `const entries =
-    // Object.entries(props.x ?? {}).filter(...)`) can't render correctly.
-    // Module-scope consts (`isModule`, e.g. `const payments = [...]` at the
-    // top of the file) are a DIFFERENT, already-working case handled
-    // elsewhere. Function-scope locals get no per-render stash slot — this
+    // A `.map()` loop whose array is a bare identifier bound to a local
+    // const (module- or function-scope, #2946) with a non-statically-
+    // evaluable initializer that reads props/signals/a function call (e.g.
+    // `const entries = Object.entries(props.x ?? {}).filter(...)`) can't
+    // render correctly. Locals get no per-render stash slot — this
     // adapter's only "elsewhere" for a local const is inlining its value at
     // the use site (`resolveLiteralConst`'s numeric/single-quoted-string fast
     // path, or a static-record-literal lookup), never binding one as a `my`
@@ -914,17 +912,17 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // reachable in this adapter's test corpus only because the widened
     // destructure gate (#2087 Phase A/B) no longer refuses this fixture's
     // `([emoji, users]) => ...` param first.
-    // #2208: a loop source that is a fully-static array literal — either
-    // inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare identifier
-    // bound to a FUNCTION-scope local const whose initializer has no
-    // prop/signal/function-call dependency — inlines as a native Perl
-    // arrayref/hashref literal below, the same way a module-scope const's
-    // value is already seeded. A runtime-computed local (#2069, e.g.
-    // `Object.entries(props.tags).filter(...)`) still refuses below.
-    // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
-    // param shadowing this identifier (fable review) — reuses the same
-    // threaded, position-accurate `this.scope` `resolveModuleStringConst`
-    // already consults for this hazard class (#1749/#2482 Stage 2).
+    // #2208/#2946: a loop source that is a fully-static array literal —
+    // either inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare
+    // identifier bound to a local const (module- or function-scope) whose
+    // initializer has no prop/signal/function-call dependency — inlines as
+    // a native Perl arrayref/hashref literal below. A runtime-computed
+    // local (#2069, e.g. `Object.entries(props.tags).filter(...)`) still
+    // refuses below, whichever scope it's declared in. `isNameShadowed`
+    // guards a DIFFERENT, enclosing loop's own callback param shadowing
+    // this identifier (fable review) — reuses the same threaded,
+    // position-accurate `this.scope` `resolveModuleStringConst` already
+    // consults for this hazard class (#1749/#2482 Stage 2).
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
       isNameShadowed: this.scope.asShadowPredicate(),
     })
@@ -933,11 +931,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const arrayName = loop.array.trim()
     if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
       const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && !arrayConst.isModule && this.resolveLiteralConst(arrayName) === null) {
+      if (arrayConst && this.resolveLiteralConst(arrayName) === null) {
         this.errors.push({
           code: 'BF101',
           severity: 'error',
-          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Mojo adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
           loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
           suggestion: {
             message:

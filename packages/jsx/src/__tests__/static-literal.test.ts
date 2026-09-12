@@ -3,9 +3,10 @@ import { parseExpression } from '../expression-parser'
 import { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from '../static-literal'
 import type { ConstantInfo } from '../types'
 
-// #2208: a function-scope local const whose initializer is fully known at
-// compile time (no prop/signal/function-call dependency) should bind as a
-// loop source the same way a module-scope const already does.
+// #2208: a local const whose initializer is fully known at compile time (no
+// prop/signal/function-call dependency) should bind as a loop source the
+// same way an inline array literal does — module-scope and function-scope
+// alike (#2946).
 describe('evaluateStaticLiteral (#2208)', () => {
   test('scalars', () => {
     expect(evaluateStaticLiteral(parseExpression("'Alpha'"))).toEqual({ value: 'Alpha' })
@@ -97,9 +98,43 @@ describe('resolveStaticLoopSource (#2208)', () => {
     expect(resolveStaticLoopSource(parseExpression('items'), locals)).toEqual([{ label: 'Alpha' }])
   })
 
-  test('a MODULE-scope const is excluded (handled by the existing seeding path instead)', () => {
+  test('a MODULE-scope const with a static initializer resolves exactly like a function-scope one (#2946)', () => {
     const locals = [constant({ name: 'items', parsed: parseExpression("[{ label: 'Alpha' }]"), isModule: true })]
+    expect(resolveStaticLoopSource(parseExpression('items'), locals)).toEqual([{ label: 'Alpha' }])
+  })
+
+  test('a MODULE-scope const whose initializer is runtime-computed still refuses (#2946)', () => {
+    const locals = [constant({ name: 'items', parsed: parseExpression('buildItems()'), isModule: true })]
     expect(resolveStaticLoopSource(parseExpression('items'), locals)).toBeNull()
+  })
+
+  test('a MODULE-scope const shadowed by an enclosing loop param is excluded via isNameShadowed (#2946)', () => {
+    const locals = [constant({ name: 'items', parsed: parseExpression("[{ label: 'Alpha' }]"), isModule: true })]
+    const result = resolveStaticLoopSource(parseExpression('items'), locals, {
+      isNameShadowed: name => name === 'items',
+    })
+    expect(result).toBeNull()
+  })
+
+  test('a const mutated after its declaration (#2910) refuses regardless of scope', () => {
+    const moduleLocals = [
+      constant({
+        name: 'items',
+        parsed: parseExpression("[{ label: 'Alpha' }]"),
+        isModule: true,
+        mutatedAfterDeclaration: true,
+      }),
+    ]
+    expect(resolveStaticLoopSource(parseExpression('items'), moduleLocals)).toBeNull()
+
+    const functionLocals = [
+      constant({
+        name: 'items',
+        parsed: parseExpression("[{ label: 'Alpha' }]"),
+        mutatedAfterDeclaration: true,
+      }),
+    ]
+    expect(resolveStaticLoopSource(parseExpression('items'), functionLocals)).toBeNull()
   })
 
   test('a runtime-computed local const (#2069) still refuses', () => {
