@@ -47,6 +47,17 @@ export const conformancePins: ConformancePins = {
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
     },
   ],
+  // #2946: the module-scope const is computed via a function call, not a
+  // static literal — genuinely unresolvable at SSR render time, same
+  // policy as an unresolvable FUNCTION-scope const above. Escape twin:
+  // `module-const-loop-source-computed-client`.
+  'module-const-loop-source-computed': [
+    {
+      code: 'BF101',
+      severity: 'error',
+      issue: 'https://github.com/piconic-ai/barefootjs/issues/2946',
+    },
+  ],
   // #2038: Kolon has no inline `grep` form (unlike mojo, which lowers a
   // nested `.some` to a real inline Perl `grep`) — loud BF101 instead of the
   // old silent degradation to the receiver.

@@ -3,9 +3,9 @@
  * is a literal, a no-substitution (or fully-static) template literal, an
  * array-literal of pure elements, or an object-literal of pure values
  * evaluates here to its plain JS value. Consumed by each adapter's
- * `renderLoop` to admit a function-scope local const whose initializer is
- * entirely known at compile time as a loop source — inlining its value the
- * same way a module-scope const already is — while still refusing a
+ * `renderLoop` to admit a local const (module- or function-scope alike,
+ * #2946) whose initializer is entirely known at compile time as a loop
+ * source — inlining its value as a native literal — while still refusing a
  * runtime-computed expression (`Object.entries(props.tags).filter(...)`,
  * #2069) with BF101, since `call`/unresolvable-`member` shapes fall through
  * to `null` below.
@@ -117,11 +117,23 @@ export function isFullyStaticLiteral(expr: ParsedExpr): boolean {
 /**
  * Shared loop-source resolution for `renderLoop` across adapters: the loop
  * array is either an inline array-literal, or a bare identifier naming a
- * FUNCTION-scope (`!isModule`) local const whose initializer evaluates
- * statically. Module-scope consts are deliberately excluded — an existing,
- * separate seeding path already handles those. Returns the evaluated items,
- * or `null` if the source isn't resolvable this way (including when it
- * resolves to something other than an array).
+ * local const — module-scope or function-scope alike (#2946) — whose
+ * initializer evaluates statically. The only exclusions are (1) a name the
+ * enclosing loop scope already binds (`isNameShadowed`), (2) a const flagged
+ * `mutatedAfterDeclaration` (#2910 — its initializer is a stale snapshot,
+ * not the const's current value), and (3) a non-literal initializer.
+ *
+ * Module-scope consts used to be excluded outright on the theory that an
+ * existing, separate seeding path already handled them — but that path
+ * (`ssr-defaults.ts`'s `tryStaticEval`/`bindings`, and Go's
+ * `convertInitialValue`) only ever sees a module const through a
+ * `createSignal(...)` argument. A module const `.map()`'d directly, with no
+ * signal in between, was never seeded by anything and silently rendered
+ * empty (ERB/Jinja/Twig/Blade/Xslate/minijinja), failed to compile
+ * (Mojolicious), or failed at execution time (Go) — see #2946.
+ *
+ * Returns the evaluated items, or `null` if the source isn't resolvable this
+ * way (including when it resolves to something other than an array).
  */
 export function resolveStaticLoopSource(
   arrayParsed: ParsedExpr | undefined,
@@ -133,7 +145,7 @@ export function resolveStaticLoopSource(
   if (arrayParsed.kind === 'identifier') {
     if (opts?.isNameShadowed?.(arrayParsed.name)) return null
     const local = localConstants?.find(c => c.name === arrayParsed.name)
-    if (!local || local.isModule || !local.parsed) return null
+    if (!local?.parsed || local.mutatedAfterDeclaration) return null
     target = local.parsed
   }
   const resolved = evaluateStaticLiteral(target)

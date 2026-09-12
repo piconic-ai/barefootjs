@@ -948,9 +948,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       })
     }
 
-    // Loop array is a bare identifier naming a component-scope (non-module)
-    // `const` the adapter has no way to compute at SSR render time. Only a
-    // pure-literal const (`resolveLiteralConst`) or a module-scope
+    // Loop array is a bare identifier naming a local const (module- or
+    // component-scope, #2946) the adapter has no way to compute at SSR
+    // render time. Only a pure-literal const (`resolveLiteralConst`) or a
     // pure-string const (`resolveModuleStringConst`) is ever inlined —
     // anything else (`const entries = Object.entries(props.x).filter(...)`)
     // falls through to the generic `v[:entries]` vars-Hash read, which is
@@ -964,17 +964,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // reproduces identically with a non-destructured param, so it is NOT a
     // destructure-lowering limitation. Surface BF101 honestly instead of
     // emitting a loop bound that silently crashes / renders empty.
-    // #2208: a loop source that is a fully-static array literal — either
-    // inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare identifier
-    // bound to a FUNCTION-scope local const whose initializer has no
-    // prop/signal/function-call dependency — inlines as a native Ruby
-    // array/hash literal below, the same way a module-scope const's value
-    // is already seeded. Previously the INLINE shape wasn't gated here at
-    // all (this check only ever inspected an `identifier` array source) —
-    // it still ended up refusing via `convertExpressionToRuby`'s generic
-    // `unsupported` object-literal path (BF101, "Expression not
-    // supported"), which is what this loop-specific check now also does
-    // deliberately, up front, for both shapes.
+    // #2208/#2946: a loop source that is a fully-static array literal —
+    // either inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare
+    // identifier bound to a local const (module- or function-scope) whose
+    // initializer has no prop/signal/function-call dependency — inlines as
+    // a native Ruby array/hash literal below. Previously the INLINE shape
+    // wasn't gated here at all (this check only ever inspected an
+    // `identifier` array source) — it still ended up refusing via
+    // `convertExpressionToRuby`'s generic `unsupported` object-literal path
+    // (BF101, "Expression not supported"), which is what this loop-specific
+    // check now also does deliberately, up front, for both shapes.
     // Canonical, position-accurate predicate (#2482 Stage 2) — the
     // enclosing loop scope's own membership.
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
@@ -988,10 +987,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         !this.scope.isBound(arrayName) &&
         this.resolveModuleStringConst(arrayName) === null &&
         this.resolveLiteralConst(arrayName) === null &&
-        this.localConstants.some(c => c.name === arrayName && !c.isModule)
+        this.localConstants.some(c => c.name === arrayName)
       if (isUnresolvableLocalConst) {
         this._recordExprBF101(
-          `Loop array \`${arrayName}\` is a component-scope const computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
+          `Loop array \`${arrayName}\` is a const (module- or component-scope) computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
           `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
           [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
         )

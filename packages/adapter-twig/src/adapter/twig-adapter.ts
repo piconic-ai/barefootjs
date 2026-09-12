@@ -848,17 +848,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       })
     }
 
-    // A `.map()` loop whose array is a bare identifier bound to a
-    // FUNCTION-scope local const with a non-statically-evaluable initializer
-    // that reads props/signals (e.g. `const entries =
-    // Object.entries(props.x ?? {}).filter(...)`) can't render correctly.
-    // Module-scope consts (`isModule`, e.g. `const payments = [...]` at the
-    // top of the file) are a DIFFERENT, already-working case — the shared
-    // `ssr-defaults.ts` statically evaluates those and seeds them straight
-    // into the render context, so a bare `payments` reference resolves for
-    // free (data-table demo). Function-scope locals get no such seeding
-    // (`ssr-defaults.ts`: "component-scope locals can depend on
-    // signals/props and are evaluated lazily elsewhere") — and this
+    // A `.map()` loop whose array is a bare identifier bound to a local
+    // const (module- or function-scope, #2946) with a non-statically-
+    // evaluable initializer that reads props/signals/a function call (e.g.
+    // `const entries = Object.entries(props.x ?? {}).filter(...)`) can't
+    // render correctly. Locals get no per-render stash slot — this
     // adapter's only "elsewhere" is inlining a const's value at its use
     // site (`_resolveLiteralConst`'s numeric/single-quoted-string fast
     // path, or a static-record-literal lookup), never binding one as a
@@ -871,22 +865,21 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // (#2087 Phase A/B) no longer refuses this fixture's `([emoji, users])
     // => ...` param first. Same policy and shape as the Jinja / ERB
     // adapters' check.
-    // #2208: a loop source that is a fully-static array literal — either
-    // inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare identifier
-    // bound to a FUNCTION-scope local const whose initializer has no
-    // prop/signal/function-call dependency — inlines as a native Twig
-    // array/hash literal below, the same way a module-scope const's value
-    // is already seeded. A runtime-computed local (#2069, e.g.
-    // `Object.entries(props.tags).filter(...)`) still refuses below.
-    // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
-    // param shadowing this identifier (fable review) — never resolve the
-    // static const in that case. `rawArray` then falls through to the
-    // bare identifier expression below, same as before #2208 — which
-    // still trips the pre-existing BF101 gate for an unresolvable local
-    // const reference (a loud, conservative refusal, not a silent wrong
-    // value). Canonical, position-accurate predicate (#2482 Stage 2) — the
-    // enclosing loop scope's own membership, not a coarse whole-component
-    // union.
+    // #2208/#2946: a loop source that is a fully-static array literal —
+    // either inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare
+    // identifier bound to a local const (module- or function-scope) whose
+    // initializer has no prop/signal/function-call dependency — inlines as
+    // a native Twig array/hash literal below. A runtime-computed local
+    // (#2069, e.g. `Object.entries(props.tags).filter(...)`) still refuses
+    // below, whichever scope it's declared in. `isNameShadowed` guards a
+    // DIFFERENT, enclosing loop's own callback param shadowing this
+    // identifier (fable review) — never resolve the static const in that
+    // case. `rawArray` then falls through to the bare identifier expression
+    // below, same as before #2208 — which still trips the pre-existing
+    // BF101 gate for an unresolvable local const reference (a loud,
+    // conservative refusal, not a silent wrong value). Canonical,
+    // position-accurate predicate (#2482 Stage 2) — the enclosing loop
+    // scope's own membership, not a coarse whole-component union.
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
       isNameShadowed: this.scope.asShadowPredicate(),
     })
@@ -895,11 +888,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     const arrayName = loop.array.trim()
     if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
       const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
-      if (arrayConst && !arrayConst.isModule && this._resolveLiteralConst(arrayName) === null) {
+      if (arrayConst && this._resolveLiteralConst(arrayName) === null) {
         this.errors.push({
           code: 'BF101',
           severity: 'error',
-          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the Twig adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+          message: `Loop array \`${arrayName}\` is a const (module- or function-scope) computed value (\`${arrayConst.value}\`) that the Twig adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
           loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
           suggestion: {
             message:
