@@ -173,4 +173,61 @@ describe('#2930 — row stopPropagation() vs. container own handler', () => {
     // handler still fires since nothing called stopPropagation().
     expect(p.textContent).toBe('row(a);container;')
   })
+
+  test('sibling .map() loops sharing one container/event: an earlier loop row stopPropagation() still suppresses the container handler (pullfrog review)', async () => {
+    // Two sibling top-level `.map()` loops under one container, both
+    // delegating the SAME event. Group A registers its delegated listener
+    // FIRST (declared first); group B registers SECOND, so `LoopDelegationIndex`
+    // picks group B as the "last delegator" that carries the container's own
+    // handler. Right-clicking a GROUP A row must still suppress the
+    // container's handler even though group A's own listener isn't the one
+    // deciding whether to fire it — group B's listener runs afterward, finds
+    // no match among ITS OWN rows, and must check `cancelBubble` (already set
+    // by group A's row) before firing, not fire unconditionally.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const groupA = ['a1', 'a2']
+      const groupB = ['b1', 'b2']
+      export function Repro() {
+        const [log, setLog] = createSignal('')
+        return (
+          <div>
+            <p>{log()}</p>
+            <div
+              className="container"
+              onContextMenu={(e) => { e.preventDefault(); setLog(l => l + 'container;') }}
+            >
+              {groupA.map(item => (
+                <div key={item} data-item={item} className="group-a" onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setLog(l => l + 'a(' + item + ');') }}>
+                  {item}
+                </div>
+              ))}
+              {groupB.map(item => (
+                <div key={item} data-item={item} className="group-b" onContextMenu={(e) => { e.preventDefault(); setLog(l => l + 'b(' + item + ');') }}>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }
+    `
+    const el = await mount(source, 'SiblingLoopsRepro.tsx', 'Repro')
+    const p = el.querySelector('p')!
+    const container = el.querySelector('.container')!
+    const rowA1 = container.querySelector('.group-a[data-item="a1"]')!
+
+    rightClick(rowA1)
+    // Group A's row handler ran and called stopPropagation(). Group B's
+    // listener (the last delegator) found no matching row of its own and
+    // must NOT fire the container's handler despite that.
+    expect(p.textContent).toBe('a(a1);')
+
+    // Sanity: a group B row (no stopPropagation) still lets the container
+    // handler fire, same as the single-loop case.
+    const rowB1 = container.querySelector('.group-b[data-item="b1"]')!
+    rightClick(rowB1)
+    expect(p.textContent).toBe('a(a1);b(b1);container;')
+  })
 })

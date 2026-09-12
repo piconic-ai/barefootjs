@@ -33,12 +33,15 @@
  *
  * When `plan.ownHandlers` has an entry for the group's DOM event name
  * (#2930 — the container itself also carries a directly-authored handler for
- * this event), the shape above grows two additions: an
- * `if (!__bfEvt.cancelBubble) { (ownHandler)(__bfEvt) }` line right after
- * `<handlerCall>` (so a row's `stopPropagation()` suppresses it), and an
- * unconditional `(ownHandler)(__bfEvt)` after the last event in the group
- * (so a dispatch that matches no row — e.g. a click on the container's own
- * background — still fires it, same as today's separate listener would).
+ * this event), the shape above grows two additions, BOTH gated on
+ * `!__bfEvt.cancelBubble`: right after `<handlerCall>` (so a row's own
+ * `stopPropagation()` suppresses it), and again after the last event in the
+ * group (so a sibling `.map()` loop sharing this container/event — whose
+ * listener already ran, matched one of ITS rows, and called
+ * `stopPropagation()` — also suppresses it here, even though none of THIS
+ * loop's rows matched). A dispatch nothing has stopped (e.g. a click on the
+ * container's own background) still fires it, same as today's separate
+ * listener would.
  */
 
 import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName, NON_BUBBLING_EVENTS } from '../../utils.ts'
@@ -164,9 +167,17 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
       lines.push(`    }`)
     }
     if (ownHandlerCall) {
-      // No row matched at all (e.g. a click on the container's own
-      // background) — same as today's separate, always-firing listener.
-      lines.push(`    ${ownHandlerCall}`)
+      // No row in THIS loop matched. Still gated on `cancelBubble` (#2930
+      // review): when a sibling `.map()` loop shares this container/event,
+      // its listener runs first (registration order) and may have already
+      // matched one of ITS rows and called `stopPropagation()` — same-node
+      // listeners aren't stopped by that, so this loop's listener still
+      // runs, finds no match among its own rows, and reaches here. Without
+      // the guard that reproduces the exact bug this PR fixes, just for the
+      // multi-sibling-loop configuration. A genuine "click on the
+      // container's own background" leaves `cancelBubble` false, so the
+      // own handler still fires — same as today's separate listener.
+      lines.push(`    if (!__bfEvt.cancelBubble) { ${ownHandlerCall} }`)
     }
     if (useCapture) {
       lines.push(`  }, true)`)
