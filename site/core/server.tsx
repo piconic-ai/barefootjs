@@ -5,7 +5,7 @@
 
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/bun'
-import { existsSync } from 'node:fs'
+import { appendTrailingSlash } from 'hono/trailing-slash'
 import { resolve, dirname } from 'node:path'
 import { createApp } from './app'
 import { loadContentFromDisk } from './lib/content-loader'
@@ -38,16 +38,15 @@ server.use('/static/*', serveStatic({
 // (peitho.css, assets/deck.js), which only resolve correctly when the
 // browser's URL ends in a slash. Production's Cloudflare Workers Assets
 // auto-redirects a trailing-slash-less directory request before serving its
-// index.html; hono/bun's serveStatic below does not, so without this a bare
-// /slides/<slug> 200s with the wrong base URL and every relative asset
-// 404s. Redirect first to match production's behavior.
-server.use('/slides/*', async (c, next) => {
-  const { pathname } = new URL(c.req.url)
-  if (!pathname.endsWith('/') && existsSync(resolve('./dist', pathname.slice(1), 'index.html'))) {
-    return c.redirect(pathname + '/', 308)
-  }
-  await next()
-})
+// index.html; hono/bun's serveStatic below does not (it 200s /slides/<slug>
+// with the deck's own index.html, never 404ing), so appendTrailingSlash's
+// default (redirect-on-404-only) never fires — `alwaysRedirect` plus a
+// `skip` for asset paths (which must NOT gain a trailing slash) is needed
+// to match production's behavior here.
+server.use('/slides/*', appendTrailingSlash({
+  alwaysRedirect: true,
+  skip: (path) => /\.\w+$/.test(path),
+}))
 
 // Serve built slide decks (e.g. public/slides/overview/ from `bun run slides:build`,
 // copied to dist/slides/ by build.ts) — mirrors how Cloudflare Workers Assets
