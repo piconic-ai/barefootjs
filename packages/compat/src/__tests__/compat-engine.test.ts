@@ -49,9 +49,11 @@ describe('compileForCompat', () => {
     // successor to #2038), #2321 (static-array-from-props computed loop
     // source), #2700 (a `derived` object-literal signal/memo the
     // constructor-time baker can't reproduce, `signal-object-spread-init`),
-    // and #2909 (a signal/memo call read inside a nested static loop's row,
-    // `static-nested-loop-ref`) surface here even though this test only
-    // exercises the nested-filter-callback shape. Six pins are no longer
+    // #2909 (a signal/memo call read inside a nested static loop's row,
+    // `static-nested-loop-ref`), and #2946 (a module-scope const computed
+    // via a function call used as a loop source,
+    // `module-const-loop-source-computed`) surface here even though this
+    // test only exercises the nested-filter-callback shape. Six pins are no longer
     // among them, each because the shape got a real lowering rather than a
     // narrower refusal: #2319 (dangerous-inner-html-dynamic → a faithful
     // raw-output lowering), #2208 (static-array-children → the loop-source
@@ -74,6 +76,7 @@ describe('compileForCompat', () => {
           'https://github.com/piconic-ai/barefootjs/issues/2321',
           'https://github.com/piconic-ai/barefootjs/issues/2700',
           'https://github.com/piconic-ai/barefootjs/issues/2909',
+          'https://github.com/piconic-ai/barefootjs/issues/2946',
         ],
       },
     ])
