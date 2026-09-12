@@ -504,6 +504,30 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
       ? startComment.parentNode
       : null
     const fragment = spliceSlots(parseHTML(html, insertParent), slots)
+    // `result.html` embeds its OWN `<!--bf-cond-start:id-->`/
+    // `<!--bf-cond-end:id-->` wrapper (`addCondAttrToTemplate`) — a static
+    // hint baked into every fragment-cond template, redundant here since
+    // the REAL, persistent DOM markers (`startComment`/`endComment`) already
+    // bracket the insertion point. Strip only THAT specific pair — the
+    // parsed fragment's own first/last child, matched by exact value —
+    // before moving everything else in.
+    //
+    // A blanket "any top-level comment whose value starts with bf-cond-"
+    // filter (the previous check here) went further than that and silently
+    // dropped OTHER conditionals' markers too: a fragment-root child
+    // component mounted directly inside this branch (no wrapper element of
+    // its own, e.g. `t && initChild(name, t, props)`) puts ITS OWN
+    // `bf-cond-start:<childId>`/`bf-cond-end:<childId>` markers as
+    // top-level siblings right alongside its other output — indistinguishable
+    // from this conditional's own wrapper by a prefix check. Erasing them
+    // left the child's own conditional with no DOM markers to find ever
+    // again, permanently and silently freezing its branch swap (#2959).
+    if (fragment.firstChild?.nodeType === 8 && fragment.firstChild.nodeValue === startMarker) {
+      fragment.removeChild(fragment.firstChild)
+    }
+    if (fragment.lastChild?.nodeType === 8 && fragment.lastChild.nodeValue === endMarker) {
+      fragment.removeChild(fragment.lastChild)
+    }
     // Move parsed nodes by identity rather than cloning. A slot Node
     // nested inside an element wrapper (e.g. `<div>${__bfSlot(...)}</div>`)
     // would otherwise be cloned along with its parent, dropping event
@@ -512,9 +536,7 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
     let child = fragment.firstChild
     while (child) {
       const next: ChildNode | null = child.nextSibling
-      if (!(child.nodeType === 8 && child.nodeValue?.startsWith('bf-cond-'))) {
-        startComment!.parentNode?.insertBefore(child, endComment)
-      }
+      startComment!.parentNode?.insertBefore(child, endComment)
       child = next
     }
   } else if (condEl) {
