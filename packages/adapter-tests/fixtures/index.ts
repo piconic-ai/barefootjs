@@ -24,6 +24,7 @@ import { fixture as reactiveProps } from './reactive-props'
 import { fixture as propsReactivityComparison } from './props-reactivity-comparison'
 import { fixture as destructuredPropsLive } from './destructured-props-live'
 import { fixture as bodyDestructuredPropsLive } from './body-destructured-props-live'
+import { fixture as bodyDestructuredPropDefaultRenamed } from './body-destructured-prop-default-renamed'
 import { fixture as form } from './form'
 import { fixture as portal } from './portal'
 import { fixture as todoApp } from './todo-app'
@@ -657,6 +658,7 @@ export const jsxFixtures: JSXFixture[] = [
   propsReactivityComparison,
   destructuredPropsLive,
   bodyDestructuredPropsLive,
+  bodyDestructuredPropDefaultRenamed,
   form,
   portal,
   todoApp,

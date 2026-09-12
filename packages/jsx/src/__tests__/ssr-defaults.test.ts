@@ -352,6 +352,49 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.text).toEqual({ propName: 'text', value: null })
   })
 
+  test('bare-props-form BODY-destructured default (#2943) seeds the evaluated default, not null', () => {
+    // Before #2943, `extractPropsFromTypeMembers` built `propsParams` from
+    // the TYPE annotation alone, with no notion of a body destructure's
+    // own default — this entry seeded `value: null` regardless, and every
+    // non-Hono template adapter's presence-guard classification omitted
+    // the attribute entirely instead of falling back to `'none'`. The
+    // analyzer now overlays the default directly onto `propsParams`
+    // (`collectConstant`), so this is the SAME code path as the
+    // parameter-destructured "destructured prop defaults" test above —
+    // just reached through a body destructure instead.
+    const metadata = metadataFor(`
+      function Foo(props: { label?: string }) {
+        const { label = 'none' } = props
+        return <div data-label={label} />
+      }
+    `)
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: 'none' })
+  })
+
+  test('bare-props-form BODY-destructured RENAMED default (#2943): two entries, each correctly classified', () => {
+    // `const { label: text = 'none' } = props` — `label` remains a real,
+    // separately-classified binding (no default of its own: a bare
+    // `props.label` read elsewhere in the same component still needs its
+    // own presence guard / stash entry), and `text` gets its OWN entry
+    // with `propName: 'label'` (the caller-facing key) and the evaluated
+    // default. `deriveStashFromDefaults` then seeds `text` from the
+    // caller's `label` when supplied, else `'none'` — never from `text`
+    // itself (`props` has no `text` key at all).
+    const metadata = metadataFor(`
+      function Foo(props: { label?: string }) {
+        const { label: text = 'none' } = props
+        return <div data-label={text} />
+      }
+    `)
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.text).toEqual({ propName: 'label', value: 'none' })
+
+    expect(deriveStashFromDefaults(defaults!, { label: 'named' })).toMatchObject({ text: 'named' })
+    expect(deriveStashFromDefaults(defaults!, {})).toMatchObject({ text: 'none' })
+  })
+
   test('bare-props-form body-destructure rename (#2788) seeds the SSR stash under the LOCAL name', () => {
     // `function Foo(props: Props) { const { children: kids } = props }` —
     // propsParams here comes from the TYPE annotation and has no notion of

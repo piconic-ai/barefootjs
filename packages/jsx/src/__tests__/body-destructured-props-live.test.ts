@@ -82,13 +82,19 @@ describe('body-destructured props compile to live reads', () => {
   test('the CSR template lambda also reads a defaulted body alias live, matching the parameter form (#2934)', () => {
     // This is the sibling bug the init-body fix alone doesn't cover: the
     // CSR `template:` lambda (used for a fresh client-side mount with no
-    // SSR markup) is built at Phase 1 from a SEPARATE `ParamInfo` cache
-    // (`jsx-to-ir.ts`'s `_destructuredPropInfoByName`) that, for a
-    // props-object-mode component, held only type-member info with no
-    // default of its own — so `data-label={label}` compiled to a bare
-    // `_p.label` there, omitting the attribute entirely on a CSR-fresh
-    // mount where `_p.label` is `undefined`, instead of applying the
-    // `'none'` default like the parameter-destructured form already did.
+    // SSR markup) is built at Phase 1 from `ctx.analyzer.propsParams`
+    // (via `jsx-to-ir.ts`'s `_destructuredPropInfoByName` cache), which
+    // for a props-object-mode component used to hold only type-member
+    // info with no default of its own — so `data-label={label}` compiled
+    // to a bare `_p.label` there, omitting the attribute entirely on a
+    // CSR-fresh mount where `_p.label` is `undefined`, instead of
+    // applying the `'none'` default like the parameter-destructured form
+    // already did. Fixed at the source (#2943): the analyzer now overlays
+    // a body-destructure default directly onto `propsParams` itself
+    // (`collectConstant`, `analyzer.ts`) — the SAME shared `ParamInfo`
+    // every other consumer (SSR prop classification, `extractSsrDefaults`)
+    // reads, so this CSR cache needs no separate default-resolution logic
+    // of its own anymore.
     const source = `
       'use client'
       function Child(props: { label?: string }) {
@@ -102,6 +108,24 @@ describe('body-destructured props compile to live reads', () => {
     expect(content).toContain("escapeTextOrMarkup((_p.label ?? 'none'))")
     // Never the bare, default-dropping form.
     expect(content).not.toMatch(/\(_p\.label\) != null/)
+  })
+
+  test('a RENAMED body-destructured prop WITH A DEFAULT (`label: text = "none"`) applies the default in the CSR template lambda too (#2943)', () => {
+    // The renamed twin of the unrenamed test above. Before #2943 this
+    // combination had no fixture and no dedicated check — the CSR
+    // template lambda's default application only ever reached an
+    // UNRENAMED alias.
+    const source = `
+      'use client'
+      function Child(props: { label?: string }) {
+        const { label: text = 'none' } = props
+        return <div data-label={text}>{text}</div>
+      }
+    `
+    const { content } = compileClientJs(source, 'Child.tsx')
+    expect(content).not.toMatch(/const text = /)
+    expect(content).toContain("escapeAttr((_p.label ?? 'none'))")
+    expect(content).toContain("escapeTextOrMarkup((_p.label ?? 'none'))")
   })
 
   test('a renamed body-destructured prop (`onPick: pick`) reads the caller-facing key live everywhere', () => {

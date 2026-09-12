@@ -3130,6 +3130,30 @@ function getSystemConstructKind(node: ts.Node): 'createContext' | 'weakMap' | un
   return undefined
 }
 
+/**
+ * The default-value-shaped fields a binding element's own `initializer`
+ * contributes to a `ParamInfo` — `defaultValue`'s source text, `parsed`'s
+ * structured mirror (from the initializer's OWN AST node, no re-parse),
+ * and `defaultContainsArrow`. Shared by the parameter-destructured path
+ * (`extractProps`'s Pattern 1, below) and the BODY-destructure-from-props
+ * path (`collectConstant`'s object-binding-pattern branch, #2943) so "what
+ * does this default look like structurally" has one implementation, not
+ * two independently-drifting ones.
+ */
+function bindingElementDefaultFields(
+  initializer: ts.Expression | undefined,
+  ctx: AnalyzerContext,
+): Pick<ParamInfo, 'defaultValue' | 'parsed' | 'defaultContainsArrow'> {
+  const defaultValue = initializer ? ctx.getJS(initializer) : undefined
+  const defaultContainsArrow = initializer ? nodeContainsArrow(initializer) : false
+  const parsedDefault = initializer ? tsNodeToParsedExpr(initializer) : undefined
+  return {
+    defaultValue,
+    ...(parsedDefault && parsedDefault.kind !== 'unsupported' && { parsed: parsedDefault }),
+    defaultContainsArrow: defaultContainsArrow || undefined,
+  }
+}
+
 function collectConstant(
   node: ts.VariableDeclaration,
   ctx: AnalyzerContext,
@@ -3191,6 +3215,55 @@ function collectConstant(
         // _isModule === false; binding lives in init scope.
         origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
       })
+
+      // #2943: a BODY destructure's default (`const { label = 'none' } =
+      // props`) has no other way to reach `ParamInfo.defaultValue` —
+      // `extractPropsFromTypeMembers` builds `propsParams` purely from the
+      // TYPE annotation, which has no notion of a body-level default. Every
+      // downstream consumer that reads `ParamInfo.defaultValue`/`.optional`
+      // (each adapter's "does this attribute need a presence guard"
+      // classification, `extractSsrDefaults`'s SSR-stash seed, the
+      // CSR-fresh-mount `template:` lambda) needs the default visible here,
+      // on the SAME shared `ParamInfo` the parameter-destructured form
+      // already populates via `bindingElementDefaultFields` above — not on
+      // a second, parallel structure only the CSR lambda used to consult.
+      //
+      // A `let` binding or one `markMutatedConstants` later flags as
+      // mutated is still a perfectly valid default AT its declaration —
+      // this is a static, compile-time fact about the source, not a
+      // liveness question, so (unlike `resolveBodyPropAliases`'s
+      // `requireLiveRewriteSafe` gate) nothing here excludes them.
+      if (el.initializer) {
+        const defaultFields = bindingElementDefaultFields(el.initializer, ctx)
+        const existing = ctx.propsParams.find(p => !p.isRest && p.sourceName === undefined && p.name === sourceKey)
+        if (localName === sourceKey) {
+          // Unrenamed: overlay onto the type-member entry `sourceKey`
+          // already has (or synthesize one for an untyped `props` param,
+          // matching the parameter-destructured form's own `unknown`
+          // fallback for an unannotated `{ x = 1 }`). Never clobber a
+          // default some earlier binding element already established.
+          if (existing) {
+            if (existing.defaultValue === undefined) Object.assign(existing, { optional: true, ...defaultFields })
+          } else {
+            ctx.propsParams.push({ name: localName, type: { kind: 'unknown', raw: 'unknown' }, optional: true, ...defaultFields })
+          }
+        } else if (!ctx.propsParams.some(p => p.name === localName)) {
+          // Renamed (`const { label: text = 'none' } = props`): ADD a
+          // second entry rather than replacing `sourceKey`'s — a bare
+          // `props.label` read elsewhere in the same component is still a
+          // real, separately-classified binding (no default, needs its own
+          // presence guard / stash entry), and `text` needs `sourceName` so
+          // every `sourceName ?? name` consumer resolves the caller-facing
+          // key correctly.
+          ctx.propsParams.push({
+            name: localName,
+            type: existing?.type ?? { kind: 'unknown', raw: 'unknown' },
+            optional: true,
+            sourceName: sourceKey,
+            ...defaultFields,
+          })
+        }
+      }
     }
     return
   }
@@ -3449,7 +3522,6 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
     for (const element of param.name.elements) {
       if (ts.isBindingElement(element) && ts.isIdentifier(element.name)) {
         const localName = element.name.text
-        const defaultValue = element.initializer ? ctx.getJS(element.initializer) : undefined
 
         // Handle rest props: { ...props }
         if (element.dotDotDotToken) {
@@ -3466,22 +3538,13 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
         const member = memberTypes?.get(sourcePropName)
         const resolvedType: TypeInfo = member?.type ?? { kind: 'unknown', raw: 'unknown' }
 
-        const defaultContainsArrow = element.initializer ? nodeContainsArrow(element.initializer) : false
-        // Structured mirror of `defaultValue`, from the binding element's OWN
-        // `initializer` node — `tsNodeToParsedExpr` converts the already-parsed
-        // AST directly, no re-parse of the `defaultValue` text (same convention
-        // as `SignalInfo.parsed`). An unsupported shape leaves `parsed` unset;
-        // consumers fall back to `defaultValue` text.
-        const parsedDefault = element.initializer ? tsNodeToParsedExpr(element.initializer) : undefined
         ctx.propsParams.push({
           name: localName,
           type: resolvedType,
           // The type's `?` and a destructure default (`{ x = 1 }`) both mean
           // the caller may omit the prop.
           optional: !!member?.optional || !!element.initializer,
-          defaultValue,
-          ...(parsedDefault && parsedDefault.kind !== 'unsupported' && { parsed: parsedDefault }),
-          defaultContainsArrow: defaultContainsArrow || undefined,
+          ...bindingElementDefaultFields(element.initializer, ctx),
           // Only aliased bindings carry the source key — see ParamInfo.sourceName.
           ...(sourcePropName !== localName && { sourceName: sourcePropName }),
         })

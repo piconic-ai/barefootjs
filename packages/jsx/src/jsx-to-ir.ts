@@ -51,7 +51,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr, resolveBodyPropAliases } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
@@ -137,12 +137,11 @@ interface TransformContext {
    * `data-label={label}` with `label = 'none'`: correct once the caller
    * sends a value, but the attribute was omitted entirely on the first
    * render, where `_p.label` is `undefined`. Covers PARAMETER destructuring
-   * directly (`propsParams` there already carries `defaultValue`) and, via
-   * an overlay in `getDestructuredPropNames`, an UNRENAMED BODY destructure
-   * default too (`function Foo(props) { const { label = 'none' } = props }`)
-   * — `propsParams` in that mode is type-member info with no default of its
-   * own, so the overlay borrows one from `resolveBodyPropAliases` when the
-   * alias's key matches the type-member name (#2934).
+   * and an UNRENAMED BODY destructure default alike (`function Foo(props) {
+   * const { label = 'none' } = props }`) — both populate `defaultValue`
+   * directly on `propsParams` (the parameter form in `extractProps`, the
+   * body form via `collectConstant`'s overlay, #2943), so this map is a
+   * plain re-keying of `eligible`, no second default-resolution needed.
    */
   _destructuredPropInfoByName?: ReadonlyMap<string, ParamInfo> | null
   /**
@@ -703,23 +702,13 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
     const names = eligible.map(p => p.name)
     ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
     ctx._destructuredPropAliases = buildPropAliasMap(eligible) ?? null
-    // #2934: `eligible`'s `ParamInfo`s are type-member info in props-object
-    // mode (no `defaultValue` of its own) — overlay an UNRENAMED body
-    // destructure's default from `resolveBodyPropAliases` onto it. Guarded
-    // on `alias.key === p.name` so a RENAMED body default (`{ label: text =
-    // 'none' }`, whose bare-identifier bookkeeping above is keyed by the
-    // type member's name `label`, not the local `text`) is deliberately
-    // left alone rather than overlaying a default under the wrong name.
-    const bodyAliases = ctx.analyzer.propsObjectName
-      ? resolveBodyPropAliases(ctx.analyzer.localConstants, ctx.analyzer.propsObjectName)
-      : null
+    // #2943: `eligible`'s `ParamInfo`s already carry a body-destructured
+    // default when the alias is unrenamed — the analyzer overlays it onto
+    // `propsParams` directly at the binding's own declaration
+    // (`collectConstant`, `analyzer.ts`), so no separate overlay is needed
+    // here (there used to be one; see git history at #2934/#2943 for why).
     const infoByName = new Map<string, ParamInfo>()
-    for (const p of eligible) {
-      const alias = bodyAliases?.get(p.name)
-      infoByName.set(p.name, alias?.hasDefault && alias.key === p.name
-        ? { ...p, defaultValue: alias.defaultValue, defaultContainsArrow: alias.defaultContainsArrow }
-        : p)
-    }
+    for (const p of eligible) infoByName.set(p.name, p)
     ctx._destructuredPropInfoByName = infoByName.size > 0 ? infoByName : null
   }
   return ctx._destructuredPropNames ?? null

@@ -132,11 +132,14 @@ export interface BodyPropAlias {
    *  explicit `props.x ?? d` alias) — `resolveBodyDestructuredPropAliases`
    *  excludes these; `resolveBodyAliasReads` handles them itself. */
   hasDefault: boolean
-  /** The `??` right-hand side's source text, present iff `hasDefault` —
-   *  mirrors `ParamInfo.defaultValue`. */
-  defaultValue?: string
   /** When true, the default value contains an arrow function or function
-   *  expression — mirrors `ParamInfo.defaultContainsArrow`. */
+   *  expression — mirrors `ParamInfo.defaultContainsArrow`. `hasDefault`'s
+   *  own source text is NOT carried here (unlike `defaultContainsArrow`):
+   *  `rewriteBodyAliasReads` re-derives it from the emitted init body's own
+   *  declaration rather than from this alias (see its docstring), and the
+   *  only OTHER consumer that once read a `defaultValue` field here — the
+   *  `jsx-to-ir.ts` CSR-template overlay — is gone since #2943 folded the
+   *  default straight onto `ParamInfo.defaultValue` at the analyzer level. */
   defaultContainsArrow?: boolean
 }
 
@@ -197,7 +200,6 @@ export function resolveBodyPropAliases(
     aliases.set(c.name, {
       key: read.key,
       hasDefault,
-      defaultValue: read.fallback?.getText(sourceFile),
       defaultContainsArrow: hasDefault ? c.containsArrow : undefined,
     })
   }
