@@ -3,7 +3,6 @@ package dev.barefootjs.pebble;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.ToNumberPolicy;
 import dev.barefootjs.pebble.ext.SetBlockExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
@@ -13,9 +12,7 @@ import io.pebbletemplates.pebble.template.PebbleTemplate;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -111,7 +108,7 @@ public final class Main {
         ? (Map<String, Object>) materialized
         : new LinkedHashMap<>();
 
-    Map<String, ChildMeta> manifest = loadManifest(templatesDir);
+    Map<String, ChildMeta> manifest = ManifestLoader.load(Path.of(templatesDir, "_bf_manifest.json"));
 
     Map<String, Object> context = new LinkedHashMap<>(vars);
     // (#1922) Request-scoped `searchParams()` reader: the conformance test
@@ -131,47 +128,4 @@ public final class Main {
     return writer.toString();
   }
 
-  /**
-   * Read the optional `_bf_manifest.json` sidecar the conformance test
-   * harness (`packages/adapter-pebble/src/test-render.ts`'s
-   * `renderPebbleComponent`) writes alongside every child `.peb` file it
-   * generates — see {@link ChildMeta}'s doc comment for the wire shape
-   * (`{ "<snake_case_template_name>": { "componentName", "ssrDefaults",
-   * "restPropsName", "paramNames" }, ... }`) and why this is a general
-   * `Main`-level facility rather than a test-only hack. Absent file (every
-   * hand-written-`.peb`-template smoke test in this package) -> an empty
-   * manifest, exactly like a component tree with no cross-template child
-   * invocations at all.
-   */
-  @SuppressWarnings("unchecked")
-  private static Map<String, ChildMeta> loadManifest(String templatesDir) throws Exception {
-    Path manifestPath = Path.of(templatesDir, "_bf_manifest.json");
-    if (!Files.exists(manifestPath)) {
-      return Map.of();
-    }
-    JsonObject doc = GSON.fromJson(Files.readString(manifestPath), JsonObject.class);
-    Map<String, ChildMeta> out = new LinkedHashMap<>();
-    if (doc == null) {
-      return out;
-    }
-    for (Map.Entry<String, JsonElement> e : doc.entrySet()) {
-      JsonObject entry = e.getValue().getAsJsonObject();
-      String componentName = entry.has("componentName") ? entry.get("componentName").getAsString() : e.getKey();
-      Object ssrDefaultsRaw = entry.has("ssrDefaults") ? JsonDecode.materialize(entry.get("ssrDefaults")) : null;
-      Map<String, Object> ssrDefaults = ssrDefaultsRaw instanceof Map
-          ? (Map<String, Object>) ssrDefaultsRaw
-          : new LinkedHashMap<>();
-      String restPropsName = entry.has("restPropsName") && !entry.get("restPropsName").isJsonNull()
-          ? entry.get("restPropsName").getAsString()
-          : null;
-      List<String> paramNames = new ArrayList<>();
-      if (entry.has("paramNames")) {
-        for (JsonElement p : entry.getAsJsonArray("paramNames")) {
-          paramNames.add(p.getAsString());
-        }
-      }
-      out.put(e.getKey(), new ChildMeta(componentName, ssrDefaults, restPropsName, paramNames));
-    }
-    return out;
-  }
 }

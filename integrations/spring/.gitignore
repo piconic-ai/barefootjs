@@ -1,0 +1,5 @@
+build/
+dist/
+.gradle/
+node_modules/
+src/main/resources/templates/

@@ -41,6 +41,7 @@ on:
           - integrations-django
           - integrations-blade
           - integrations-laravel
+          - integrations-spring
 
 permissions:
   contents: read
@@ -881,5 +882,53 @@ jobs:
       # ubuntu-latest ships with a running Docker daemon by default.
       - name: Deploy to Cloudflare Workers
         run: cd integrations/laravel && bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-integrations-spring:
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-spring')
+      || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/pebble' build
+
+      - name: Build integration
+        run: cd integrations/spring && bun run build
+
+      # wrangler deploy builds the Cloudflare Container image from the
+      # integration's Dockerfile, which needs Docker on the runner.
+      # ubuntu-latest ships with a running Docker daemon by default. The
+      # Dockerfile itself runs `gradle bootJar` inside the image build (see
+      # that file's header comment), so no separate Java/Gradle setup step
+      # is needed on the runner here — only the Bun/Vite build above
+      # (templates + client assets + blog data) needs to happen BEFORE the
+      # image build, since the Dockerfile's `assets` stage COPYs from a
+      # pre-built `dist/` and `src/main/resources/templates` rather than
+      # rebuilding them itself.
+      - name: Deploy to Cloudflare Workers
+        run: cd integrations/spring && bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
