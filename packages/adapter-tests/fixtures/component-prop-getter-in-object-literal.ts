@@ -26,8 +26,10 @@ import { createFixture } from '../src/types'
  * ("Expression not supported: { count }"), reproducible with a plain
  * string prop and no signal involved at all. Out of scope for #2924; the
  * shorthand REWRITE itself (the part #2924 actually touches) is pinned at
- * the compiler-unit level in `csr-template-scope-soundness.test.ts`'s case
- * D instead, which doesn't require cross-adapter SSR conformance.
+ * the compiler-unit level in `csr-substitute-bare-getter.test.ts` instead
+ * ("a bare reference in shorthand-property position substitutes to a
+ * thunk, keyed correctly"), which doesn't require cross-adapter SSR
+ * conformance.
  */
 export const fixture = createFixture({
   id: 'component-prop-getter-in-object-literal',
