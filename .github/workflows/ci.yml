@@ -69,16 +69,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # jsx-1/jsx-2 split packages/jsx's 178 test files into two
+          # jsx-1/jsx-2 split packages/jsx's test files into two
           # size-balanced shards (see scripts/ci/shard-test-files.ts) since
-          # jsx dominates unit test wall time (~300-440s vs ~25-180s for the
-          # other packages). `rest` covers everything else in one runner.
+          # jsx dominates unit test wall time relative to client/test/router.
           - group: jsx-1
             run: bun test $(bun scripts/ci/shard-test-files.ts packages/jsx 1 2)
           - group: jsx-2
             run: bun test $(bun scripts/ci/shard-test-files.ts packages/jsx 2 2)
+          # adapter-tests-1/2/3 split packages/adapter-tests the same way.
+          # It used to run inside `rest`, where it alone accounted for
+          # ~9 of `rest`'s ~10 minutes (measured via the Actions API across
+          # several runs) — every other package in `rest` finishes in
+          # under a minute combined — making `rest` the workflow's critical
+          # path and the wall-clock floor for every PR. Plain file size is
+          # a weaker proxy here than for jsx: a handful of small files
+          # (e.g. csr-conformance.test.ts, 2.2KB) loop over the
+          # ~360-fixture corpus once or more per file, so their wall time
+          # is far larger than byte size implies — see the manual
+          # WEIGHT_OVERRIDES entries in shard-test-files.ts that correct
+          # for those specific files.
+          - group: adapter-tests-1
+            run: bun test $(bun scripts/ci/shard-test-files.ts packages/adapter-tests 1 3)
+          - group: adapter-tests-2
+            run: bun test $(bun scripts/ci/shard-test-files.ts packages/adapter-tests 2 3)
+          - group: adapter-tests-3
+            run: bun test $(bun scripts/ci/shard-test-files.ts packages/adapter-tests 3 3)
           - group: rest
-            run: bun test packages/client packages/test packages/adapter-tests packages/router
+            run: bun test packages/client packages/test packages/router
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
