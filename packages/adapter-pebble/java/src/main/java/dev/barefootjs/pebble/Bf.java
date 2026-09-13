@@ -689,9 +689,6 @@ public final class Bf {
         return out.subList(0, limit);
       }
     }
-    if (limit >= 0 && out.size() > limit) {
-      return out.subList(0, limit);
-    }
     return out;
   }
 

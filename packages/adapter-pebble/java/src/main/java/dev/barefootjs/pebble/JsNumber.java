@@ -1,6 +1,7 @@
 package dev.barefootjs.pebble;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 
 /**
@@ -64,6 +65,25 @@ public final class JsNumber {
       if (s.equals("-Infinity")) {
         return Double.NEGATIVE_INFINITY;
       }
+      // JS StringNumericLiteral's Hex/Octal/BinaryIntegerLiteral forms —
+      // handled BEFORE the 'd'/'f' suffix rejection below, since these are
+      // the one class of strings containing 'x'/'X' (never 'd'/'D'/'f'/'F',
+      // so no interaction with that check) that JS parses successfully.
+      // NOT the "legacy octal" form (a bare "0" + octal digits, no prefix)
+      // — Number() string coercion never recognizes that; "0755" is decimal
+      // 755, exactly what Double.parseDouble already produces below.
+      if (s.length() > 2 && s.charAt(0) == '0') {
+        char prefix = s.charAt(1);
+        if (prefix == 'x' || prefix == 'X') {
+          return parseRadixLiteral(s.substring(2), 16);
+        }
+        if (prefix == 'o' || prefix == 'O') {
+          return parseRadixLiteral(s.substring(2), 8);
+        }
+        if (prefix == 'b' || prefix == 'B') {
+          return parseRadixLiteral(s.substring(2), 2);
+        }
+      }
       if (s.chars().anyMatch(c -> c == 'd' || c == 'D' || c == 'f' || c == 'F' || c == 'x' || c == 'X')) {
         return Double.NaN;
       }
@@ -77,6 +97,29 @@ public final class JsNumber {
     // would call valueOf/toString — not meaningful for a Java List/Map, so
     // NaN (a total, never-throwing fallback) rather than guessing a shape.
     return Double.NaN;
+  }
+
+  /**
+   * Parses {@code digits} (the part after a JS {@code 0x}/{@code 0o}/
+   * {@code 0b} prefix, already stripped) as an unsigned integer literal in
+   * {@code radix}, JS {@code Number()} semantics: empty digits, or any
+   * character outside the radix's digit set (no fractional part, no sign,
+   * no exponent — unlike the plain-decimal path below), is a total parse
+   * failure -> NaN, never an exception. Uses {@link BigInteger} rather than
+   * {@code Long.parseLong} so an arbitrarily long valid digit string
+   * matches JS's arbitrary-precision-integer-then-round-to-double behavior
+   * instead of throwing on overflow.
+   */
+  private static double parseRadixLiteral(String digits, int radix) {
+    if (digits.isEmpty()) {
+      return Double.NaN;
+    }
+    for (int i = 0; i < digits.length(); i++) {
+      if (Character.digit(digits.charAt(i), radix) < 0) {
+        return Double.NaN;
+      }
+    }
+    return new BigInteger(digits, radix).doubleValue();
   }
 
   /**
