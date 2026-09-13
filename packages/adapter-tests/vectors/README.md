@@ -155,6 +155,7 @@ fails.
 | Python | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` |
 | Ruby | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` |
 | PHP | `packages/adapter-php/tests/test_helper_vectors.php` | `packages/adapter-php/tests/vector-divergences.json` |
+| Java | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java` | `packages/adapter-pebble/java/src/test/resources/vector-divergences.json` |
 
 The JS reference is the generator itself (`cases.ts` / `generate.ts`,
 `eval-cases.ts` / `eval-reference.ts` / `eval-generate.ts`) — there is

@@ -717,6 +717,7 @@ interface level; `JsxAdapter` is purely code reuse.
 - **GoTemplateAdapter** (`@barefootjs/go-template`) - Generates Go html/template files
 - **MojoAdapter** (`@barefootjs/mojolicious`) - Generates Mojolicious EP template files (.html.ep)
 - **ErbAdapter** (`@barefootjs/erb`) - Generates ERB (Ruby) template files
+- **PebbleAdapter** (`@barefootjs/pebble`) - Generates Pebble (Java) template files (.peb)
 
 ### Implementing a New Adapter
 

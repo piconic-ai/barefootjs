@@ -81,8 +81,9 @@ Each backend ships one harness file (currently:
 `packages/adapter-jinja/python/tests/test_helper_vectors.py`,
 `packages/adapter-erb/test/helper_vectors_test.rb`,
 `packages/adapter-php/tests/test_helper_vectors.php` (the engine-agnostic PHP
-runtime shared by the Twig/Blade/... backends); the JS reference
-is the generator itself). A harness declares its backend's status in
+runtime shared by the Twig/Blade/... backends),
+`packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java`;
+the JS reference is the generator itself). A harness declares its backend's status in
 three tables — this is the **only** place per-backend status is
 recorded:
 
