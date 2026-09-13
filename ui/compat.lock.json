@@ -9,6 +9,7 @@
     "jinja",
     "minijinja",
     "mojolicious",
+    "pebble",
     "twig",
     "xslate"
   ],
@@ -33,6 +34,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -64,6 +68,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -91,6 +98,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -122,6 +132,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -149,6 +162,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -180,6 +196,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -207,6 +226,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -238,6 +260,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -265,6 +290,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -296,6 +324,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -323,6 +354,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -354,6 +388,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -381,6 +418,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -412,6 +452,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -439,6 +482,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -470,6 +516,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -497,6 +546,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -528,6 +580,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -555,6 +610,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -586,6 +644,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -613,6 +674,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -644,6 +708,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -671,6 +738,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -702,6 +772,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -729,6 +802,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -760,6 +836,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -787,6 +866,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -818,6 +900,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -845,6 +930,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -876,6 +964,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -903,6 +994,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -934,6 +1028,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -961,6 +1058,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -992,6 +1092,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1019,6 +1122,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1050,6 +1156,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1077,6 +1186,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1108,6 +1220,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1135,6 +1250,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1166,6 +1284,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1193,6 +1314,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1224,6 +1348,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1251,6 +1378,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1282,6 +1412,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1309,6 +1442,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1340,6 +1476,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1367,6 +1506,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1398,6 +1540,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1425,6 +1570,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1456,6 +1604,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1483,6 +1634,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1514,6 +1668,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1541,6 +1698,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1572,6 +1732,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1599,6 +1762,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1630,6 +1796,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1657,6 +1826,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1688,6 +1860,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1715,6 +1890,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1746,6 +1924,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1775,6 +1956,9 @@
       "mojolicious": {
         "ok": true
       },
+      "pebble": {
+        "ok": true
+      },
       "twig": {
         "ok": true
       },
@@ -1802,6 +1986,9 @@
         "ok": true
       },
       "mojolicious": {
+        "ok": true
+      },
+      "pebble": {
         "ok": true
       },
       "twig": {
@@ -1872,6 +2059,15 @@
           ]
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          ]
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
@@ -1951,6 +2147,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "every-typeof-predicate-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -2042,6 +2248,16 @@
             "twin": "fill-unsupported-client"
           }
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "fill-unsupported-client"
+          }
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -2104,6 +2320,19 @@
           }
         },
         "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-callback-predicate-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -2222,6 +2451,19 @@
             "twin": "filter-nested-find-predicate-client"
           }
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-nested-find-predicate-client"
+          }
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -2301,6 +2543,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "filter-typeof-predicate-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
@@ -2392,6 +2644,16 @@
             "twin": "find-typeof-predicate-client"
           }
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "find-typeof-predicate-client"
+          }
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -2474,6 +2736,16 @@
             "twin": "flatmap-typeof-projection-client"
           }
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "flatmap-typeof-projection-client"
+          }
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -2538,6 +2810,12 @@
             "BF021"
           ]
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -2589,6 +2867,12 @@
           ]
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
@@ -2659,6 +2943,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
@@ -2741,6 +3035,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "map-array-builder-body-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
@@ -2942,6 +3246,19 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2321"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-loop-source-computed-precomputed"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2946"
           ],
           "escape": {
             "state": "escapable",
@@ -3214,6 +3531,12 @@
             "BF013"
           ]
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF013"
+          ]
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -3279,6 +3602,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
@@ -3370,6 +3703,16 @@
             "twin": "reduce-right-typeof-body-client"
           }
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-right-typeof-body-client"
+          }
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -3443,6 +3786,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "reduce-typeof-body-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -3537,6 +3890,15 @@
             "https://github.com/piconic-ai/barefootjs/issues/2648"
           ]
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF049"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          ]
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -3623,6 +3985,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "some-typeof-predicate-client"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -3732,6 +4104,19 @@
             "twin": "static-array-from-props-precomputed"
           }
         },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "static-array-from-props-precomputed"
+          }
+        },
         "twig": {
           "kind": "refusal",
           "codes": [
@@ -3826,6 +4211,19 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "static-array-from-props-with-component-precomputed"
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -3988,6 +4386,16 @@
           }
         },
         "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
+          }
+        },
+        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"

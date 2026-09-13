@@ -59,6 +59,7 @@ const PUBLISHABLE = [
   'packages/adapter-twig',
   'packages/adapter-blade',
   'packages/adapter-rust',
+  'packages/adapter-pebble',
   'packages/cli',
   'packages/create-barefootjs',
 ]

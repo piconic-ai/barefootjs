@@ -9,6 +9,7 @@
     "jinja",
     "minijinja",
     "mojolicious",
+    "pebble",
     "twig",
     "xslate"
   ],
@@ -374,6 +375,64 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 104,
+          "total": 116,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 105,
           "total": 117,
@@ -659,6 +718,24 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2994"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
+          "pass": 68,
+          "total": 71,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -1019,6 +1096,52 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2994"
               ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
+          "pass": 65,
+          "total": 74,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
             },
             {
               "fixture": "preamble-cells",
@@ -1399,6 +1522,54 @@
             {
               "fixture": "every-typeof-predicate",
               "issues": []
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "pass": 97,
+          "total": 106,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -2186,6 +2357,92 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 262,
+          "total": 279,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2356"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2946"
+              ]
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 266,
           "total": 286,
@@ -2485,6 +2742,20 @@
           ]
         },
         "mojolicious": {
+          "pass": 31,
+          "total": 33,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
           "pass": 31,
           "total": 33,
           "gaps": [
@@ -3298,6 +3569,108 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 376,
+          "total": 397,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2356"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "jsx-element-prop-array",
+              "issues": []
+            },
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "issues": []
+            },
+            {
+              "fixture": "map-array-builder-body",
+              "issues": []
+            },
+            {
+              "fixture": "map-array-builder-escaping",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2946"
+              ]
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 380,
           "total": 404,
@@ -3591,6 +3964,10 @@
           "total": 14
         },
         "mojolicious": {
+          "pass": 14,
+          "total": 14
+        },
+        "pebble": {
           "pass": 14,
           "total": 14
         },
@@ -4096,6 +4473,62 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 304,
+          "total": 316,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 307,
           "total": 322,
@@ -4359,6 +4792,22 @@
         "mojolicious": {
           "pass": 50,
           "total": 52,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -5004,6 +5453,98 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 215,
+          "total": 234,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2356"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "jsx-element-prop-array",
+              "issues": []
+            },
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "issues": []
+            },
+            {
+              "fixture": "map-array-builder-body",
+              "issues": []
+            },
+            {
+              "fixture": "map-array-builder-escaping",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 218,
           "total": 237,
@@ -5364,6 +5905,26 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 90,
+          "total": 93,
+          "gaps": [
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 91,
           "total": 94,
@@ -5460,6 +6021,10 @@
           "pass": 0,
           "total": 0
         },
+        "pebble": {
+          "pass": 0,
+          "total": 0
+        },
         "twig": {
           "pass": 0,
           "total": 0
@@ -5533,6 +6098,16 @@
           ]
         },
         "mojolicious": {
+          "pass": 30,
+          "total": 31,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
           "pass": 30,
           "total": 31,
           "gaps": [
@@ -5660,6 +6235,22 @@
           "pass": 28,
           "total": 29,
           "gaps": [
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
+          "pass": 27,
+          "total": 29,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -6024,6 +6615,56 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 40,
+          "total": 50,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 41,
           "total": 51,
@@ -6169,6 +6810,10 @@
           "pass": 2,
           "total": 2
         },
+        "pebble": {
+          "pass": 2,
+          "total": 2
+        },
         "twig": {
           "pass": 2,
           "total": 2
@@ -6218,6 +6863,10 @@
           "total": 2
         },
         "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "pebble": {
           "pass": 2,
           "total": 2
         },
@@ -6273,6 +6922,10 @@
           "pass": 2,
           "total": 2
         },
+        "pebble": {
+          "pass": 2,
+          "total": 2
+        },
         "twig": {
           "pass": 2,
           "total": 2
@@ -6322,6 +6975,10 @@
           "total": 4
         },
         "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "pebble": {
           "pass": 4,
           "total": 4
         },
@@ -6377,6 +7034,10 @@
           "pass": 12,
           "total": 12
         },
+        "pebble": {
+          "pass": 12,
+          "total": 12
+        },
         "twig": {
           "pass": 12,
           "total": 12
@@ -6426,6 +7087,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -6541,6 +7206,20 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 41,
+          "total": 43,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 41,
           "total": 43,
@@ -6613,6 +7292,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -6662,6 +7345,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -6717,6 +7404,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -6766,6 +7457,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -6821,6 +7516,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -6873,6 +7572,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -6922,6 +7625,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -7013,6 +7720,16 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 4,
+          "total": 5,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 4,
           "total": 5,
@@ -7077,6 +7794,10 @@
           "pass": 2,
           "total": 2
         },
+        "pebble": {
+          "pass": 2,
+          "total": 2
+        },
         "twig": {
           "pass": 2,
           "total": 2
@@ -7126,6 +7847,10 @@
           "total": 3
         },
         "mojolicious": {
+          "pass": 3,
+          "total": 3
+        },
+        "pebble": {
           "pass": 3,
           "total": 3
         },
@@ -7181,6 +7906,10 @@
           "pass": 2,
           "total": 2
         },
+        "pebble": {
+          "pass": 2,
+          "total": 2
+        },
         "twig": {
           "pass": 2,
           "total": 2
@@ -7233,6 +7962,10 @@
           "pass": 4,
           "total": 4
         },
+        "pebble": {
+          "pass": 4,
+          "total": 4
+        },
         "twig": {
           "pass": 4,
           "total": 4
@@ -7282,6 +8015,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -7409,6 +8146,16 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 2,
+          "total": 3,
+          "gaps": [
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 2,
           "total": 4,
@@ -7485,6 +8232,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -7534,6 +8285,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -7589,6 +8344,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -7641,6 +8400,10 @@
           "pass": 2,
           "total": 2
         },
+        "pebble": {
+          "pass": 2,
+          "total": 2
+        },
         "twig": {
           "pass": 2,
           "total": 2
@@ -7689,6 +8452,10 @@
           "total": 12
         },
         "mojolicious": {
+          "pass": 12,
+          "total": 12
+        },
+        "pebble": {
           "pass": 12,
           "total": 12
         },
@@ -7744,6 +8511,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -7793,6 +8564,10 @@
           "total": 14
         },
         "mojolicious": {
+          "pass": 14,
+          "total": 14
+        },
+        "pebble": {
           "pass": 14,
           "total": 14
         },
@@ -7896,6 +8671,18 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 23,
+          "total": 24,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "twig": {
           "pass": 24,
           "total": 25,
@@ -7964,6 +8751,10 @@
           "pass": 12,
           "total": 12
         },
+        "pebble": {
+          "pass": 12,
+          "total": 12
+        },
         "twig": {
           "pass": 12,
           "total": 12
@@ -8016,6 +8807,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -8065,6 +8860,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -8336,6 +9135,48 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 46,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 46,
           "total": 54,
@@ -8464,6 +9305,10 @@
           "pass": 11,
           "total": 11
         },
+        "pebble": {
+          "pass": 11,
+          "total": 11
+        },
         "twig": {
           "pass": 11,
           "total": 11
@@ -8513,6 +9358,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -8652,6 +9501,20 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 69,
+          "total": 71,
+          "gaps": [
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 69,
           "total": 71,
@@ -8743,6 +9606,10 @@
               ]
             }
           ]
+        },
+        "pebble": {
+          "pass": 26,
+          "total": 26
         },
         "twig": {
           "pass": 26,
@@ -9054,6 +9921,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2911"
               ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
+        "pebble": {
+          "pass": 138,
+          "total": 143,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
             },
             {
               "fixture": "tag-cloud",
@@ -9439,6 +10332,46 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 209,
+          "total": 217,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "twig": {
           "pass": 210,
           "total": 218,
@@ -9575,6 +10508,10 @@
           "pass": 7,
           "total": 7
         },
+        "pebble": {
+          "pass": 7,
+          "total": 7
+        },
         "twig": {
           "pass": 7,
           "total": 7
@@ -9699,6 +10636,22 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 41,
+          "total": 43,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 42,
           "total": 44,
@@ -9774,6 +10727,10 @@
           "pass": 16,
           "total": 16
         },
+        "pebble": {
+          "pass": 16,
+          "total": 16
+        },
         "twig": {
           "pass": 16,
           "total": 16
@@ -9823,6 +10780,10 @@
           "total": 4
         },
         "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "pebble": {
           "pass": 4,
           "total": 4
         },
@@ -9877,6 +10838,10 @@
           "pass": 2,
           "total": 2
         },
+        "pebble": {
+          "pass": 2,
+          "total": 2
+        },
         "twig": {
           "pass": 2,
           "total": 2
@@ -9925,6 +10890,10 @@
           "total": 5
         },
         "mojolicious": {
+          "pass": 5,
+          "total": 5
+        },
+        "pebble": {
           "pass": 5,
           "total": 5
         },
@@ -9979,6 +10948,10 @@
           "pass": 4,
           "total": 4
         },
+        "pebble": {
+          "pass": 4,
+          "total": 4
+        },
         "twig": {
           "pass": 4,
           "total": 4
@@ -10027,6 +11000,10 @@
           "total": 8
         },
         "mojolicious": {
+          "pass": 8,
+          "total": 8
+        },
+        "pebble": {
           "pass": 8,
           "total": 8
         },
@@ -10082,6 +11059,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -10131,6 +11112,10 @@
           "total": 7
         },
         "mojolicious": {
+          "pass": 7,
+          "total": 7
+        },
+        "pebble": {
           "pass": 7,
           "total": 7
         },
@@ -10185,6 +11170,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -10233,6 +11222,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -10287,6 +11280,10 @@
           "pass": 7,
           "total": 7
         },
+        "pebble": {
+          "pass": 7,
+          "total": 7
+        },
         "twig": {
           "pass": 7,
           "total": 7
@@ -10335,6 +11332,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -10389,6 +11390,10 @@
           "pass": 7,
           "total": 7
         },
+        "pebble": {
+          "pass": 7,
+          "total": 7
+        },
         "twig": {
           "pass": 7,
           "total": 7
@@ -10440,6 +11445,10 @@
           "pass": 1,
           "total": 1
         },
+        "pebble": {
+          "pass": 1,
+          "total": 1
+        },
         "twig": {
           "pass": 1,
           "total": 1
@@ -10488,6 +11497,10 @@
           "total": 1
         },
         "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "pebble": {
           "pass": 1,
           "total": 1
         },
@@ -10602,6 +11615,22 @@
             }
           ]
         },
+        "pebble": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            }
+          ]
+        },
         "twig": {
           "pass": 19,
           "total": 21,
@@ -10675,6 +11704,10 @@
           "total": 11
         },
         "mojolicious": {
+          "pass": 11,
+          "total": 11
+        },
+        "pebble": {
           "pass": 11,
           "total": 11
         },
