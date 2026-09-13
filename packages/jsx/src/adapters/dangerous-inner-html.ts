@@ -170,6 +170,11 @@ const TEMPLATE_METACHAR_PATTERNS: Readonly<Record<string, RegExp>> = {
   jinja: /\{\{|\{%|\{#/,
   minijinja: /\{\{|\{%|\{#/,
   mojolicious: /<%|^\s*%/m,
+  // Pebble's confirmed grammar (pebble-adapter.ts's file header syntax
+  // table): `{{ }}` print, `{% %}` tag, and a `{# #}` comment form — the
+  // identical three-delimiter family Jinja/Twig/minijinja share (Pebble is
+  // explicitly Twig-inspired), so the same guard pattern applies verbatim.
+  pebble: /\{\{|\{%|\{#/,
   twig: /\{\{|\{%|\{#/,
   xslate: /<:|^\s*:/m,
 }

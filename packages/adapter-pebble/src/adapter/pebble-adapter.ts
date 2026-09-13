@@ -1095,16 +1095,29 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // runtime's `bf.entries`/`bf.keys`/`bf.values` rather than any native
     // Pebble `for` map-iteration form — see the file header, divergence 8:
     // Pebble has no two-variable `key, value in map` form at all (confirmed
-    // during Phase 3 research), and its single-variable form binds to a
-    // Map.Entry, not a bare key or value.
+    // during Phase 3 research — a real `io.pebbletemplates.pebble.error.
+    // ParserException` on exactly that shape, `ForTokenParser.parse()`
+    // calls `parseNewVariableName()` exactly once), and its single-variable
+    // form binds to a Map.Entry, not a bare key or value. The `entries`
+    // case therefore binds ONE loop variable to each `[key, value]` PAIR
+    // `bf.entries` produces, then destructures it into the key/value
+    // locals via two `{% set %}` statements (the same numeric-index
+    // accessor `pebbleAccessorFromSegments`'s `{kind:'index'}` case emits
+    // for a `.map()` destructure binding) — never the two-variable `for`
+    // header a mechanical Jinja/Twig port might suggest.
+    const entryPairVar = `bf_entry_${loop.markerId}`
     const forHeader = loop.objectIteration === 'entries'
-      ? `{% for ${pebbleIdent(loop.index ?? param)}, ${pebbleIdent(param)} in bf.entries(${array}) %}`
+      ? `{% for ${entryPairVar} in bf.entries(${array}) %}`
       : loop.objectIteration === 'keys'
         ? `{% for ${pebbleIdent(param)} in bf.keys(${array}) %}`
         : loop.objectIteration === 'values'
           ? `{% for ${pebbleIdent(param)} in bf.values(${array}) %}`
           : `{% for ${pebbleIdent(loopVar)} in ${array} %}`
     lines.push(forHeader)
+    if (loop.objectIteration === 'entries') {
+      lines.push(`{% set ${pebbleIdent(loop.index ?? param)} = ${entryPairVar}[0] %}`)
+      lines.push(`{% set ${pebbleIdent(param)} = ${entryPairVar}[1] %}`)
+    }
     for (const il of indexLocalLines) lines.push(il)
 
     // Handle filter().map() pattern by wrapping children in if-condition
@@ -1246,9 +1259,13 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       if (seg.kind === 'entries') {
         if (seg.parts.length === 0) continue
         const text = `{${seg.parts.join(', ')}}`
-        acc = acc === null ? text : `bf.merge(${acc}, ${text})`
+        // `bf.merge([base, top])` — a single Pebble LIST-literal argument,
+        // not two trailing variadic args: Pebble's method resolver can't
+        // match a Java varargs method call (see `Bf.merge`'s own doc
+        // comment for the confirmed `MemberCacheUtils` limitation).
+        acc = acc === null ? text : `bf.merge([${acc}, ${text}])`
       } else {
-        acc = acc === null ? seg.expr : `bf.merge(${acc}, ${seg.expr})`
+        acc = acc === null ? seg.expr : `bf.merge([${acc}, ${seg.expr}])`
       }
     }
     return acc ?? '{}'
@@ -1637,7 +1654,11 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       JSON.stringify(e.cssKey),
       e.kind === 'literal' ? JSON.stringify(e.value) : this.convertExpressionToPebble(e.expr),
     ])
-    return `{{ bf.style_object(${args.join(', ')}) }}`
+    // `bf.style_object([...])` — a single Pebble LIST-literal argument, not
+    // trailing variadic args: Pebble's method resolver can't match a Java
+    // varargs method call (see `Bf.style_object`'s own doc comment for the
+    // confirmed `MemberCacheUtils` limitation).
+    return `{{ bf.style_object([${args.join(', ')}]) }}`
   }
 
   private renderAttributes(element: IRElement): string {
@@ -1738,17 +1759,28 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
         )
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Pebble
-        // map literal with an immediate bracket lookup, coalesced with
-        // `bf.coalesce` (see this file's header, divergence 3 — Pebble has
-        // no native `??`) and the syntax table's point on `Record[key]`
-        // lookup: unlike Jinja's dict `.get(key, default)`, neither Twig
-        // hashes nor Pebble maps expose a `.get` method, so `bf.coalesce`
-        // supplies the same "empty when no case matches" default.
+        // map literal, looked up via `bf.get(receiver, key)` (NOT a direct
+        // bracket subscript on the literal, `{...}[key]` — confirmed via a
+        // live `io.pebbletemplates.pebble.error.ParserException` on that
+        // exact shape: Pebble's `ExpressionParser` only accepts `[...]`
+        // postfix subscript after a POSTFIX expression chain rooted at an
+        // identifier/attribute access, not after a bare map-literal
+        // expression — a genuinely Pebble-specific parser limitation,
+        // absent from Jinja/Twig's grammar, which is why this adapter's
+        // port of the shared `lookup` part previously copied their direct
+        // `{...}[key]` shape verbatim without re-verifying it against
+        // Pebble's own grammar). `bf.get` is this runtime's own dynamic
+        // member/index-access helper (already used for the non-identifier
+        // loop-binding-accessor case — see `pebbleAccessorFromSegments`),
+        // routed through `bf.coalesce` (this file's header, divergence 3 —
+        // Pebble has no native `??`) for the same "empty when no case
+        // matches" default Jinja's dict `.get(key, default)` gives for
+        // free.
         const keyExpr = this.convertExpressionToPebble(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${pebbleHashKey(k)}: '${escapePebbleSingleQuoted(v)}'`)
           .join(', ')
-        parts.push(`bf.string(bf.coalesce({${entries}}[${keyExpr}], ''))`)
+        parts.push(`bf.string(bf.coalesce(bf.get({${entries}}, ${keyExpr}), ''))`)
       }
     }
     // Join with Pebble string concatenation (`~`). Every term is already a

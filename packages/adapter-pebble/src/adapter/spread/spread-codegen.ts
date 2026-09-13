@@ -137,16 +137,22 @@ function isLiteralIndex(index: ParsedExpr): boolean {
 
 /**
  * Lower a spread-object VALUE of the form `IDENT[KEY]` (CheckIcon's
- * `sizeMap[size]`) to an inline indexed Pebble dict
- *   `{'sm': 16, 'md': 20, ...}[size]`.
+ * `sizeMap[size]`) to an inline Pebble dict looked up via `bf.get(...)`:
+ *   `bf.get({'sm': 16, 'md': 20, ...}, size)`.
  * Reuses the shared structural parse (`parseRecordIndexAccess`) — rebuilding
  * the `IDENT[KEY]` node from the carried tree via `ts.factory` rather than
  * re-parsing source text; this wrapper only does the single-quote escaping +
- * bracket-index emit. Assumes Pebble indexes a map LITERAL with the SAME
- * bracket syntax `{…}[key]` a JS object index would use (confirmed for Twig
- * empirically; Pebble's map-literal + subscript combination is a Phase 3/4
- * verification point once the Java runtime exists, tracked alongside this
- * file's other watchpoints).
+ * lookup emit. NOT a direct bracket subscript on the literal (`{…}[key]`,
+ * the shape Twig accepts) — confirmed via a live
+ * `io.pebbletemplates.pebble.error.ParserException`: Pebble's
+ * `ExpressionParser` only accepts `[...]` postfix subscript after a POSTFIX
+ * expression chain rooted at an identifier/attribute access, never after a
+ * bare map-literal expression, a genuinely Pebble-specific parser
+ * limitation this file's previous Phase 3/4 watchpoint note (assuming
+ * Twig's answer would carry over) turned out to be wrong about. `bf.get` is
+ * this runtime's own dynamic member/index-access helper (already used for
+ * the non-identifier loop-binding-accessor case — see
+ * `pebbleAccessorFromSegments` in `lib/pebble-naming.ts`).
  */
 export function recordIndexAccessToPebble(ctx: PebbleSpreadContext, val: ParsedExpr): string | null {
   // The only shape `parseRecordIndexAccess` accepts is `IDENT[KEY]` with
@@ -170,5 +176,5 @@ export function recordIndexAccessToPebble(ctx: PebbleSpreadContext, val: ParsedE
       e.value.kind === 'number' ? e.value.text : `'${escapePebbleSingleQuoted(e.value.text)}'`
     return `${pebbleHashKey(e.key)}: ${mapVal}`
   })
-  return `{${entries.join(', ')}}[${pebbleIdent(parsed.indexPropName)}]`
+  return `bf.get({${entries.join(', ')}}, ${pebbleIdent(parsed.indexPropName)})`
 }

@@ -156,6 +156,6 @@ export function Label({ label }: { label?: string }) {
     const emitter = new PebbleTopLevelEmitter({} as PebbleEmitContext)
     const spreadT: ObjectLiteralProperty = { kind: 'spread', expr: { kind: 'identifier', name: 't' } as ParsedExpr }
     const emit = (e: ParsedExpr) => (e as { name: string }).name
-    expect(emitter.objectLiteral([spreadT], '{...t}', emit)).toBe('bf.merge(t)')
+    expect(emitter.objectLiteral([spreadT], '{...t}', emit)).toBe('bf.merge([t])')
   })
 })

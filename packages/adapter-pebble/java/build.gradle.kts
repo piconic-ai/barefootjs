@@ -83,6 +83,18 @@ tasks.test {
     useJUnitPlatform()
 }
 
+// UTF-8 explicitly, not the platform default: this runtime's source
+// embeds real non-ASCII literals (e.g. `Bf.escapeCommentKey`'s U+2010
+// substitution) and its stdout contract is UTF-8 end-to-end (`Main`
+// writes raw UTF-8 bytes explicitly rather than trust `System.out`'s
+// platform-default charset — see that class's own comment). A `javac`
+// invocation that defaults to a non-UTF-8 source charset (a container
+// with `LANG` unset, say) would silently mis-decode those source-level
+// literals into the wrong codepoints before they ever reach a class file.
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+}
+
 tasks.named<ShadowJar>("shadowJar") {
     // Fixed, predictable name so `test-render.ts` doesn't need to glob for
     // a version-qualified jar. Mirrors `adapter-rust`'s fixed

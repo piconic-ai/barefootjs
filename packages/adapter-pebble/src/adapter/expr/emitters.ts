@@ -412,7 +412,15 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
         // a query.
         if (node.kind === 'guard-list' && node.helper === 'query') {
           const qArgs = queryHrefArgs(node, emit)
-          return `bf.query(${qArgs.join(', ')})`
+          // `bf.query(base, [triples...])` — a single Pebble LIST-literal
+          // argument for the flattened triples, NOT further variadic
+          // arguments: Pebble's method resolver can't match a Java varargs
+          // method call (see `Bf.query`'s own doc comment for the confirmed
+          // `MemberCacheUtils` limitation). `qArgs[0]` is the base;
+          // `qArgs.slice(1)` is the flattened `(included, key, value)`
+          // triple sequence every OTHER adapter passes as trailing variadic
+          // args.
+          return `bf.query(${qArgs[0]}, [${qArgs.slice(1).join(', ')}])`
         }
         // Generic `helper-call` — the neutral vocabulary's escape hatch for
         // a userland `LoweringPlugin` that lowers to a single runtime-helper
@@ -759,6 +767,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // segment count — `Array.prototype.reduce` without an initial value
     // would silently skip `bf.merge` entirely for a lone spread segment.
     const segments = groupObjectLiteralSegments(properties, literalOf, emit)
-    return `bf.merge(${segments.join(', ')})`
+    // `bf.merge([...])` — a single Pebble LIST-literal argument, not
+    // trailing variadic args: Pebble's method resolver can't match a Java
+    // varargs method call (see `Bf.merge`'s own doc comment for the
+    // confirmed `MemberCacheUtils` limitation).
+    return `bf.merge([${segments.join(', ')}])`
   }
 }

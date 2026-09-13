@@ -3,6 +3,11 @@
   "backend": "java",
   "runner": "packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java",
   "spec": "spec/template-helpers.md",
-  "divergences": {},
+  "divergences": {
+    "string/null renders as the string \"null\"": {
+      "expect": "",
+      "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML (matches the Perl/Python/Rust/PHP/Go/Ruby ports)"
+    }
+  },
   "unsupported": {}
 }
