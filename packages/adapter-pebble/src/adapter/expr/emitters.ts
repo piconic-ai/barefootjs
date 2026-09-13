@@ -732,14 +732,18 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
       return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
     }
     // Spread (`{ ...t, editing: false }`): folded via the adapter's own
-    // `bf.merge(base, top)` runtime helper — NEITHER Jinja's `dict(base,
-    // **top)` builtin call NOR Twig's `|merge` filter, since Pebble's
-    // built-in filter set is not confirmed to include a `merge` filter with
-    // the exact shallow, later-wins-on-conflict semantics JS spread needs
-    // (unlike `raw`, which IS confirmed — see `pebble-adapter.ts`'s file
-    // header). `bf.merge` keeps this fully under the Java runtime's own
-    // control (Phase 3) instead of depending on an unverified builtin.
+    // variadic `bf.merge(...)` runtime helper — matching Twig's own
+    // `expr/emitters.ts` exactly (Twig also calls `bf.merge`, not a
+    // built-in `|merge` filter), and NEITHER Jinja's `dict(base, **top)`
+    // builtin call, since Pebble's built-in filter set is not confirmed to
+    // include a `merge` filter with the exact shallow, later-wins-on-conflict
+    // semantics JS spread needs (unlike `raw`, which IS confirmed — see
+    // `pebble-adapter.ts`'s file header). `bf.merge` keeps this fully under
+    // the Java runtime's own control (Phase 3) instead of depending on an
+    // unverified builtin. Always a single variadic call regardless of
+    // segment count — `Array.prototype.reduce` without an initial value
+    // would silently skip `bf.merge` entirely for a lone spread segment.
     const segments = groupObjectLiteralSegments(properties, literalOf, emit)
-    return segments.reduce((acc, seg) => `bf.merge(${acc}, ${seg})`)
+    return `bf.merge(${segments.join(', ')})`
   }
 }

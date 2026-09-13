@@ -80,7 +80,7 @@ const RESERVED_WORDS = new Set([
   // / `{% filter %}` / `{% import %}` / `{% include %}` / `{% extends %}`
   // tag docs, plus the standard `is`-test operator vocabulary).
   'if', 'else', 'elseif', 'endif', 'for', 'endfor', 'in', 'is', 'not', 'and',
-  'or', 'true', 'false', 'null', 'none', 'set', 'macro', 'endmacro', 'block',
+  'or', 'true', 'false', 'null', 'none', 'set', 'endset', 'macro', 'endmacro', 'block',
   'endblock', 'extends', 'include', 'import', 'from', 'as', 'filter',
   'endfilter', 'autoescape', 'endautoescape', 'verbatim', 'endverbatim',
   'flush', 'cache', 'endcache', 'parallel', 'endparallel', 'empty',
