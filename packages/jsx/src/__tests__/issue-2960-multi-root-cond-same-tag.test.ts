@@ -117,4 +117,25 @@ describe('#2960: multi-root cond branch whose roots share a tag name', () => {
     expect(result).toContain('bf-c="s0"')
     expect(result).not.toContain('bf-cond-start:')
   })
+
+  // A self-closing/void root followed by a real sibling element
+  // (`<input .../><label>...</label>`, todo-app's "mark all as complete"
+  // branch) is genuinely two roots. The whole-string self-closing check
+  // only catches a self-closing tag with NOTHING else in the string, so
+  // this shape still reaches the depth-tracking walk — an earlier version
+  // of that walk unconditionally `continue`d past every self-closing tag
+  // on the theory that one could never be the outermost token by the time
+  // the walk runs, which is wrong: the initial tag-name gate only checks
+  // the tag name and the character right after it, not whether the tag
+  // later turns out to self-close. That version silently merged the
+  // `<input/>` and `<label>` into a false single root, stamping `bf-c`
+  // onto only the `<input/>` and dropping `<label>` on a live swap.
+  // Caught by `generate-expected-html.ts` drifting the `todo-app` fixture.
+  test('a self-closing root followed by a sibling element is multi-root, not single', () => {
+    const html = '<input id="toggle-all" class="toggle-all" type="checkbox" bf="s2" /><label for="toggle-all">Mark all as complete</label>'
+    const result = addCondAttrToTemplate(html, 's1')
+    expect(result).toContain('bf-cond-start:s1')
+    expect(result).toContain('bf-cond-end:s1')
+    expect(result).not.toContain('bf-c=')
+  })
 })

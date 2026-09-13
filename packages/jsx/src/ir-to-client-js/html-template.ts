@@ -1675,10 +1675,21 @@ function isSingleRootElement(html: string): boolean {
   while ((tagMatch = tagPattern.exec(trimmed))) {
     const raw = tagMatch[0]
     if (raw.startsWith('<!--')) continue // HTML comment, not a tag: depth unchanged
-    // Nested void/self-closing tag: depth unchanged. Unreachable at
-    // depth 0 — the two guards above already resolved every shape where
-    // a self-closing tag could be the outermost token.
-    if (raw.endsWith('/>')) continue
+    if (raw.endsWith('/>')) {
+      // Self-closing/void tag (e.g. `<input .../>`). The whole-string
+      // check above only catches a self-closing tag with NOTHING else in
+      // the string — a self-closing root FOLLOWED by more content (e.g.
+      // `<input .../><label>...</label>`, a genuine two-root branch) still
+      // reaches here with the guard above already satisfied (it only
+      // looks at the tag name and the very next character, not whether
+      // the tag turns out to self-close). At depth 0 this tag completes a
+      // whole top-level unit by itself, so treat it exactly like any
+      // other tag's closing point: single root only if nothing follows.
+      // Nested inside another element (depth > 0) it's just an ordinary
+      // child and doesn't affect depth.
+      if (depth === 0) return tagPattern.lastIndex === trimmed.length
+      continue
+    }
     depth += raw.startsWith('</') ? -1 : 1
     if (depth === 0) {
       // Back to depth 0: the root element's own closing tag. Single root
