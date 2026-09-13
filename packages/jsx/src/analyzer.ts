@@ -11,7 +11,7 @@ import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, Decline
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
-import { buildPropAliasMap } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -3181,10 +3181,18 @@ function collectConstant(
       if (!ts.isBindingElement(el) || !ts.isIdentifier(el.name) || el.dotDotDotToken) continue
       const localName = el.name.text
       const sourceKey = el.propertyName && ts.isIdentifier(el.propertyName) ? el.propertyName.text : localName
-      const defaultValueExpr = el.initializer ? ctx.getJS(el.initializer) : undefined
+      // Shared with the #2943 `ParamInfo` overlay below so "what does this
+      // default look like" (source text, `defaultContainsArrow`) has one
+      // computation, not two independently-drifting ones.
+      const defaultFields = el.initializer ? bindingElementDefaultFields(el.initializer, ctx) : undefined
       const baseValue = `${propsName}.${sourceKey}`
-      const value = defaultValueExpr ? `${baseValue} ?? ${defaultValueExpr}` : baseValue
-      const containsArrow = el.initializer ? nodeContainsArrow(el.initializer) : false
+      // Parenthesize an arrow/function-expression default (#2940) — `??`
+      // binds tighter than an arrow head, so a bare `props.fmt ?? (v) =>
+      // ...` is a SyntaxError in the emitted JS. Same rule
+      // `propReadFallback` already applies to every other live prop read.
+      const value = defaultFields?.defaultValue !== undefined
+        ? `${baseValue} ?? ${coalesceDefaultText(defaultFields.defaultValue, defaultFields.defaultContainsArrow)}`
+        : baseValue
       const freeIdentifiers = el.initializer ? extractFreeIdentifiersFromNode(el.initializer) : new Set([propsName])
       // Structured parse of `value`, same as the plain-identifier branch
       // below (#2724 review finding): without this, a RENAMED destructure
@@ -3210,7 +3218,7 @@ function collectConstant(
         type: null,
         loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
         freeIdentifiers,
-        containsArrow: containsArrow || undefined,
+        containsArrow: defaultFields?.defaultContainsArrow,
         // Body-level destructure-from-props is collected only when
         // _isModule === false; binding lives in init scope.
         origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
@@ -3233,8 +3241,7 @@ function collectConstant(
       // this is a static, compile-time fact about the source, not a
       // liveness question, so (unlike `resolveBodyPropAliases`'s
       // `requireLiveRewriteSafe` gate) nothing here excludes them.
-      if (el.initializer) {
-        const defaultFields = bindingElementDefaultFields(el.initializer, ctx)
+      if (el.initializer && defaultFields) {
         const existing = ctx.propsParams.find(p => !p.isRest && p.sourceName === undefined && p.name === sourceKey)
         if (localName === sourceKey) {
           // Unrenamed: overlay onto the type-member entry `sourceKey`
