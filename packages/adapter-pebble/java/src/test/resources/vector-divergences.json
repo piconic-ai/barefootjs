@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "backend": "java",
+  "runner": "packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java",
+  "spec": "spec/template-helpers.md",
+  "divergences": {},
+  "unsupported": {}
+}

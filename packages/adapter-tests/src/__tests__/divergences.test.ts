@@ -34,7 +34,7 @@ const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
 
 const DECLARATION_BASENAME = 'vector-divergences.json'
 
-const EXPECTED_BACKENDS = ['go', 'perl', 'python', 'ruby', 'rust']
+const EXPECTED_BACKENDS = ['go', 'perl', 'python', 'ruby', 'rust', 'java']
 
 const NUM_SENTINELS = new Set(['NaN', 'Infinity', '-Infinity'])
 
@@ -51,7 +51,7 @@ function isNumSentinel(value: unknown): boolean {
 
 /**
  * Recursively finds every file named `vector-divergences.json` under
- * `dir`, skipping `node_modules`, `dist`, `vendor`, and hidden
+ * `dir`, skipping `node_modules`, `dist`, `build`, `vendor`, and hidden
  * directories (dotfiles). Returns absolute paths.
  *
  * `vendor` matters: the PHP adapters' documented setup
@@ -61,6 +61,14 @@ function isNumSentinel(value: unknown): boolean {
  * adapter-php's declaration file "inside" adapter-twig/adapter-blade
  * and the uniqueness + same-package assertions below false-fail on any
  * checkout where the PHP render deps are actually installed.
+ *
+ * `build` matters for the same reason as `dist`: a Gradle-based JVM
+ * runtime's `processTestResources` task copies `src/test/resources/*`
+ * (including a `vector-divergences.json`) into `build/resources/test/`
+ * on every `gradle test` run — without the skip, a checkout where the
+ * Java runtime has actually been built re-discovers that SAME
+ * declaration file a second time and the uniqueness assertion below
+ * false-fails, exactly like the PHP `vendor` symlink case above.
  */
 function findDivergenceFiles(dir: string): string[] {
   const found: string[] = []
@@ -68,6 +76,7 @@ function findDivergenceFiles(dir: string): string[] {
     if (
       entry === 'node_modules' ||
       entry === 'dist' ||
+      entry === 'build' ||
       entry === 'vendor' ||
       entry.startsWith('.')
     ) continue
