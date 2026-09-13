@@ -1651,18 +1651,8 @@ function isSingleRootElement(html: string): boolean {
   // Self-closing tags like <br/>, <input/> with nothing else.
   if (/^<\w+[^>]*\/>$/.test(trimmed)) return true
 
-  // Walk top-level tags tracking nesting depth, rather than checking only
-  // "does the string end with a closing tag of the root's tag name" —
-  // that lexical shortcut matches
-  // `<div id="before">before</div><div id="after">after</div>` (two
-  // sibling `<div>`s) as a false single root, because the STRING happens
-  // to end in `</div>`, the same tag name the root opened with, even
-  // though that closing tag belongs to the second, unrelated div (#2960).
-  // A multi-root branch wrongly classified here gets `bf-c="<id>"`
-  // stamped onto only its first element instead of being comment-wrapped,
-  // and `insert()`'s runtime then drops every sibling but the first on a
-  // branch swap (`updateElementConditional`'s `fragment.firstChild`).
-  // The comment alternative must come first so it wins at a `<!--`
+  // Walk top-level tags tracking nesting depth — see the docstring above
+  // for why (#2960). The comment alternative must come first so it wins at a `<!--`
   // position — without it, a BarefootJS marker comment like
   // `<!--bf:s1-->`/`<!--/-->` (a reactive text slot nested inside a
   // genuine single root) matches the generic tag alternative too (its
