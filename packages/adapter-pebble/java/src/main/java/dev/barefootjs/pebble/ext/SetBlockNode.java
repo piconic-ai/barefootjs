@@ -1,6 +1,7 @@
 package dev.barefootjs.pebble.ext;
 
 import io.pebbletemplates.pebble.extension.NodeVisitor;
+import io.pebbletemplates.pebble.extension.escaper.SafeString;
 import io.pebbletemplates.pebble.node.AbstractRenderableNode;
 import io.pebbletemplates.pebble.node.BodyNode;
 import io.pebbletemplates.pebble.node.Node;
@@ -28,6 +29,20 @@ import java.io.Writer;
  * {@code bf.async_boundary(id, NAME)}) see it as an ordinary Pebble
  * variable. {@link SetBlockTokenParser} is the only thing that constructs
  * this node.
+ *
+ * <p>Binds NAME to a {@link SafeString}, not a plain {@link String} —
+ * mirrors Jinja2's OWN `{% set NAME %}...{% endset %}` block form, which
+ * auto-marks its captured content `Markup`-safe under autoescape (and
+ * minijinja's/Twig's equivalent safe-value handling). This matters the
+ * moment the captured value crosses into a DIFFERENTLY-scoped template's
+ * plain variable reference — e.g. `bf.render_child`'s `children` prop,
+ * referenced by the child template as a bare `{{ bf.string(children) }}`
+ * with no `| raw` (the shape `<div>{children}</div>` compiles to): without
+ * this, Pebble's `EscapeFilter` (which recognizes `SafeString` and skips
+ * escaping ONLY when the print statement's value IS one) would silently
+ * double-HTML-escape every forwarded child/named-slot/async-fallback
+ * capture. `Bf.string(Object)` passes a `SafeString` input through
+ * unchanged for exactly this reason — see its own doc comment.
  */
 public final class SetBlockNode extends AbstractRenderableNode {
 
@@ -44,7 +59,7 @@ public final class SetBlockNode extends AbstractRenderableNode {
   public void render(PebbleTemplateImpl self, Writer writer, EvaluationContextImpl context) throws IOException {
     StringWriter captured = new StringWriter();
     body.render(self, captured, context);
-    context.getScopeChain().set(name, captured.toString());
+    context.getScopeChain().set(name, new SafeString(captured.toString()));
   }
 
   @Override

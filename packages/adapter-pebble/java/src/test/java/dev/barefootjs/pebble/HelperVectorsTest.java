@@ -191,7 +191,7 @@ class HelperVectorsTest {
       case "arr": return new ArrayList<>(a);
       case "filter_truthy": return BF.filter_truthy(a.get(0));
       case "search_params_get": return BF.search_params_get(a.get(0), a.get(1));
-      case "query": return BF.query(a.get(0), a.subList(1, a.size()).toArray());
+      case "query": return BF.query(a.get(0), new ArrayList<>(a.subList(1, a.size())));
       case "every": return BF.every(a.get(0), a.get(1));
       case "some": return BF.some(a.get(0), a.get(1));
       case "filter": return BF.filter(a.get(0), a.get(1), a.get(2));
@@ -217,7 +217,7 @@ class HelperVectorsTest {
       case "reduce":
         return BF.reduce(a.get(0), a.get(1), a.get(2), a.get(3), a.get(4), a.get(5), a.get(6));
       case "flat_map": return BF.flat_map(a.get(0), a.get(1), a.get(2));
-      case "flat_map_tuple": return BF.flat_map_tuple(a.get(0), a.subList(1, a.size()).toArray());
+      case "flat_map_tuple": return BF.flat_map_tuple(a.get(0), new ArrayList<>(a.subList(1, a.size())));
       default:
         throw new IllegalStateException("no Java binding for helper '" + fn + "' -- add it to invoke() in " + HelperVectorsTest.class);
     }

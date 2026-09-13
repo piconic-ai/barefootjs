@@ -8,8 +8,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.ToNumberPolicy;
 import dev.barefootjs.pebble.eval.Evaluator;
+import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.extension.escaper.SafeString;
+import io.pebbletemplates.pebble.template.PebbleTemplate;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -20,10 +24,12 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,14 +73,71 @@ public final class Bf {
       .setObjectToNumberStrategy(ToNumberPolicy.DOUBLE)
       .create();
 
-  /** This render's root scope id (`bf.scope_attr()`), e.g. "ComponentName_test". */
+  /** This render's own scope id (`bf.scope_attr()`), e.g. "ComponentName_test". */
   private final String rootScopeId;
 
-  /** Auto-incrementing suffix for any marker this runtime must itself number. */
-  private final AtomicInteger markerCounter = new AtomicInteger(0);
+  /** Shared across every `Bf` instance in one render tree (root + every `render_child` descendant) — needed to resolve `bf.render_child(...)` against sibling `.peb` files. `null` for a `Bf` built without one (every hand-written-`.peb`-template smoke test and golden-vector test in this package) — `render_child` throws a clear error rather than a `NullPointerException` in that case. */
+  private final PebbleEngine engine;
+
+  /** `snake_case template name -> ChildMeta`, read once by {@link Main} from the optional `_bf_manifest.json` sidecar. Never `null` — empty when absent. */
+  private final Map<String, ChildMeta> manifest;
+
+  /** True for every `Bf` `render_child` mints; false for the render's own root instance. Drives `bf-r` (hydration_attrs) and nothing else. */
+  private final boolean isChild;
+
+  /** `_bf_parent` — the HOST component's scope id, when this scope is slot-attached (`bf-h`). `null` for a loop-item / non-slot child, and for the root. */
+  private final String bfHost;
+
+  /** `_bf_mount` — the slot id inside the host where this scope is mounted (`bf-m`). `null` unless `bfHost` is also set. */
+  private final String bfMount;
+
+  /** JSX `key` prop popped by `render_child`, threaded onto `data_key_attr()`. `null` unless this is a keyed loop-row child. */
+  private final Object dataKey;
+
+  /** Props payload for `props_attr()`/`scope_comment()`'s `bf-p`/props-JSON segment. Always `null` in this conformance harness today (mirrors the Jinja/Rust ports, where the equivalent field is likewise never populated by `render_child` — see this class's own render-state-helpers header) — kept as a real field, not hardcoded empty, so a future production manifest-consumption path (the same one `_bf_manifest.json` is designed to seed) can populate it without another render-state plumbing pass. */
+  private final Object markerProps;
+
+  /**
+   * `provide_context`/`revoke_context`/`use_context`'s backing store —
+   * SHARED (the same {@link Map} REFERENCE, never copied) across every
+   * `Bf` instance in one render tree, root through every `render_child`
+   * descendant at any depth. A context provided by a parent must be
+   * visible to a child rendered via a SEPARATE `Bf` instance a level (or
+   * several) down — e.g. `<ThemeContext.Provider>` wrapping a
+   * cross-template `<ThemeLabel/>` call. Mirrors the Python runtime's
+   * module-level `_CONTEXT_STACKS` global and the Rust runtime's
+   * `Arc<RenderSession>`-shared `context_stacks` — both deliberately
+   * NOT per-instance state, for exactly this reason.
+   */
+  private final Map<String, java.util.Deque<Object>> contextStacks;
 
   public Bf(String rootScopeId) {
+    this(rootScopeId, null, Map.of());
+  }
+
+  public Bf(String rootScopeId, PebbleEngine engine, Map<String, ChildMeta> manifest) {
+    this(rootScopeId, engine, manifest, false, null, null, null, null, new LinkedHashMap<>());
+  }
+
+  private Bf(
+      String rootScopeId,
+      PebbleEngine engine,
+      Map<String, ChildMeta> manifest,
+      boolean isChild,
+      String bfHost,
+      String bfMount,
+      Object dataKey,
+      Object markerProps,
+      Map<String, java.util.Deque<Object>> contextStacks) {
     this.rootScopeId = rootScopeId == null ? "" : rootScopeId;
+    this.engine = engine;
+    this.manifest = manifest == null ? Map.of() : manifest;
+    this.isChild = isChild;
+    this.bfHost = bfHost;
+    this.bfMount = bfMount;
+    this.dataKey = dataKey;
+    this.markerProps = markerProps;
+    this.contextStacks = contextStacks;
   }
 
   // =========================================================================
@@ -82,8 +145,45 @@ public final class Bf {
   // condition-test position the TS adapter emits).
   // =========================================================================
 
-  /** JS `String(v)` — see the file header, divergence 2. */
-  public String string(Object v) {
+  /**
+   * JS `String(v)` — see the file header, divergence 2.
+   *
+   * <p>Returns {@code Object}, not {@code String}: a {@link SafeString}
+   * input (the JSX-children/named-slot capture forwarded through
+   * `bf.render_child`'s `children` prop — see {@link #render_child}) is
+   * passed through UNCHANGED rather than flattened to a plain
+   * `java.lang.String`. Every OTHER text-interpolation position in a
+   * compiled `.peb` template routes through `bf.string(...)` — including a
+   * bare `{{ bf.string(children) }}` reference with NO `| raw` filter, the
+   * exact shape emitted for `<div>{children}</div>` — so if this method
+   * downgraded a `SafeString` to a plain `String`, Pebble's own
+   * `EscapeFilter` (which recognizes `SafeString` and skips escaping ONLY
+   * when the print statement's value IS one) would silently
+   * double-HTML-escape every forwarded child. Mirrors the Python
+   * runtime's `js_string`'s `isinstance(value, str): return value`
+   * passthrough for a `Markup` instance (Markup subclasses `str`) and
+   * minijinja's `resolve_child_vars`/`render_child` docstring, which
+   * documents the identical hazard for its own safe-`Value` domain.
+   */
+  public Object string(Object v) {
+    if (v instanceof SafeString) {
+      return v;
+    }
+    // Deliberate divergence from strict JS `String(null) === "null"`,
+    // pinned in `vector-divergences.json` ("string/null renders as the
+    // string \"null\"") — matches EVERY other language port
+    // (Python/Rust/Perl/PHP/Go/Ruby): an absent/optional prop (a JS
+    // `undefined` this runtime's single `null` collapses onto, same as
+    // every other port's `None`/`nil`) must not surface a literal "null"
+    // in text-interpolation position — real JSX (Hono's reference) renders
+    // `{null}`/`{undefined}` as nothing. `JsValue.jsString` itself stays
+    // strictly JS-faithful (`"null"`) for every OTHER caller in this class
+    // (`concat`, `replace`, …) — none of those positions' golden vectors
+    // ever probe a `null` element, so this divergence is scoped to exactly
+    // the one call site that needed it.
+    if (v == null) {
+      return "";
+    }
     return JsValue.jsString(v);
   }
 
@@ -143,11 +243,31 @@ public final class Bf {
     return null;
   }
 
-  /** Shallow `Object.assign`-style merge (spread props, `{...a, ...b}`). Later maps win. */
-  @SafeVarargs
+  /**
+   * Shallow `Object.assign`-style merge (spread props, `{...a, ...b}`).
+   * Later maps win.
+   *
+   * <p>Takes a single Pebble LIST-literal argument (`bf.merge([a, b, c])`),
+   * NOT a Java varargs parameter — confirmed via Pebble's own
+   * `MemberCacheUtils.getCandidates` (`pebble/attributes/
+   * MemberCacheUtils.java`): its method resolver requires an EXACT
+   * `types.length == requiredTypes.length` match against
+   * `Method.getParameterTypes().length`, which for a varargs method counts
+   * the trailing array as ONE parameter — so a Pebble call site passing N
+   * discrete arguments (any N other than the exact declared arity) can
+   * NEVER match a varargs method at all; it silently resolves to nothing
+   * and renders empty/`null` under `strictVariables(false)`, with no error.
+   * This is a genuine, confirmed Pebble-specific limitation (not present in
+   * Jinja/Twig/minijinja, which all accept genuine variadic calls) — every
+   * `Bf` method an unbounded-arity call site needs (this one,
+   * `flat_map_tuple`, `query`, `style_object`) takes a single list argument
+   * instead; see `pebble-naming.ts`/`emitters.ts`'s call sites, which wrap
+   * their argument lists in `[...]` for exactly this reason.
+   */
   @SuppressWarnings("unchecked")
-  public final Map<String, Object> merge(Object... maps) {
+  public Map<String, Object> merge(Object mapsListArg) {
     Map<String, Object> out = new LinkedHashMap<>();
+    List<?> maps = mapsListArg instanceof List ? (List<?>) mapsListArg : List.of();
     for (Object m : maps) {
       if (m instanceof Map) {
         out.putAll((Map<String, Object>) m);
@@ -1121,16 +1241,23 @@ public final class Bf {
     return out;
   }
 
-  /** Tuple form: `i => [i.a, i.b]` — every leaf appended verbatim (only the literal wrapper flattens). */
-  public List<Object> flat_map_tuple(Object recv, Object... kindNamePairs) {
+  /**
+   * Tuple form: `i => [i.a, i.b]` — every leaf appended verbatim (only the
+   * literal wrapper flattens). `kindNamePairsArg` is a single Pebble LIST
+   * literal (`[kind0, name0, kind1, name1, ...]`), not a Java varargs
+   * parameter — see `merge`'s doc comment for why (Pebble's method
+   * resolver can't match a varargs method call).
+   */
+  public List<Object> flat_map_tuple(Object recv, Object kindNamePairsArg) {
     List<Object> out = new ArrayList<>();
     if (!(recv instanceof List)) {
       return out;
     }
+    List<?> kindNamePairs = kindNamePairsArg instanceof List ? (List<?>) kindNamePairsArg : List.of();
     for (Object item : (List<?>) recv) {
-      for (int i = 0; i + 1 < kindNamePairs.length; i += 2) {
-        boolean isSelf = "self".equals(kindNamePairs[i]);
-        Object v = isSelf ? item : fieldOf(item, JsValue.jsString(kindNamePairs[i + 1]));
+      for (int i = 0; i + 1 < kindNamePairs.size(); i += 2) {
+        boolean isSelf = "self".equals(kindNamePairs.get(i));
+        Object v = isSelf ? item : fieldOf(item, JsValue.jsString(kindNamePairs.get(i + 1)));
         out.add(v);
       }
     }
@@ -1167,22 +1294,27 @@ public final class Bf {
   }
 
   /**
-   * `queryHref` builtin lowering target (#2042): `base` + variadic
-   * `(included, key, value)` triples, `value` a scalar or a list (one pair
-   * per member). form-encoded like `URLSearchParams` (space -> `+`, `~`
-   * kept literally UNescaped is WRONG — see vectors: `~` encodes to `%7E`,
-   * `*` stays literal). Repeated key: last WRITE wins, first POSITION kept
-   * (a JS `URLSearchParams.set` semantics fold).
+   * `queryHref` builtin lowering target (#2042): `base` + an ORDERED LIST
+   * of `(included, key, value)` triples flattened into one Pebble
+   * LIST-literal argument (`bf.query(base, [included0, key0, value0, ...])`)
+   * — NOT a Java varargs parameter; see `merge`'s doc comment for why
+   * (Pebble's method resolver can't match a varargs method call). `value`
+   * is a scalar or a list (one pair per member), form-encoded like
+   * `URLSearchParams` (space -> `+`, `~` kept literally UNescaped is WRONG
+   * — see vectors: `~` encodes to `%7E`, `*` stays literal). Repeated key:
+   * last WRITE wins, first POSITION kept (a JS `URLSearchParams.set`
+   * semantics fold).
    */
-  public String query(Object base, Object... triples) {
+  public String query(Object base, Object triplesArg) {
+    List<?> triples = triplesArg instanceof List ? (List<?>) triplesArg : List.of();
     // key -> (position, values[])
     Map<String, Integer> position = new LinkedHashMap<>();
     List<List<String>> valuesByPosition = new ArrayList<>();
     int nextPos = 0;
-    for (int i = 0; i + 3 <= triples.length; i += 3) { // a trailing partial triple is simply never reached
-      boolean included = JsValue.truthy(triples[i]);
-      String key = JsValue.jsString(triples[i + 1]);
-      Object valueObj = triples[i + 2];
+    for (int i = 0; i + 3 <= triples.size(); i += 3) { // a trailing partial triple is simply never reached
+      boolean included = JsValue.truthy(triples.get(i));
+      String key = JsValue.jsString(triples.get(i + 1));
+      Object valueObj = triples.get(i + 2);
       List<String> values = new ArrayList<>();
       if (valueObj instanceof List) {
         for (Object el : (List<?>) valueObj) {
@@ -1246,35 +1378,106 @@ public final class Bf {
   // Style / spread attribute rendering (#1322/#2261)
   // =========================================================================
 
-  private static final Pattern UNSAFE_CSS_VALUE = Pattern.compile("[;{}]|/\\*|<|>|url\\s*\\(", Pattern.CASE_INSENSITIVE);
+  /**
+   * Mirrors Hono's own CSS-injection guard (`hono/jsx/utils.ts`'s
+   * `hasUnsafeStyleValue` — the ORACLE a dynamic `style={{...}}` value
+   * must match, #2261; shared reference port at
+   * `packages/jsx/src/expression-parser.ts`'s `hasUnsafeStyleValue`) — a
+   * hand-rolled structural scan for characters that could break out of a
+   * CSS declaration, NOT real CSSOM property validation. Ported
+   * character-for-character (UTF-16 code-unit comparisons, matching the
+   * JS reference's `charCodeAt` scan — every tested character is ASCII,
+   * so this agrees with a codepoint or byte scan too), NOT the ad-hoc
+   * regex this method previously used (`[;{}]|/\*|<|>|url\(`) — that
+   * regex was a rough approximation, not a faithful port: notably it
+   * FLAGGED AN EMPTY STRING AS SAFE-BUT-DROPPED via a separate
+   * `value.isEmpty()` check `style_object` used to short-circuit on,
+   * which diverges from the reference (an empty value is safe and MUST
+   * be KEPT, producing `key:;` — confirmed via the data-point conformance
+   * oracle, `style-object-dynamic`'s `gen:color:empty` point). Mirrors
+   * the Python port's `_has_unsafe_style_value` line-for-line.
+   */
+  private static boolean hasUnsafeStyleValue(String value) {
+    char quote = 0;
+    java.util.Deque<Character> blockStack = new java.util.ArrayDeque<>();
+    int len = value.length();
+    for (int i = 0; i < len; i++) {
+      char c = value.charAt(i);
+      if (c == '\\') {
+        if (i == len - 1) {
+          return true;
+        }
+        i++;
+      } else if (quote != 0) {
+        if (c == '\n' || c == '\f' || c == '\r') {
+          return true;
+        }
+        if (c == quote) {
+          quote = 0;
+        }
+      } else if (c == '/' && i + 1 < len && value.charAt(i + 1) == '*') {
+        int end = value.indexOf("*/", i + 2);
+        if (end == -1) {
+          return true;
+        }
+        i = end + 1;
+      } else if (c == '"' || c == '\'') {
+        quote = c;
+      } else if (c == '(') {
+        blockStack.push(')');
+      } else if (c == '[') {
+        blockStack.push(']');
+      } else if (c == '{' || c == '}') {
+        return true;
+      } else if (c == ')' || c == ']') {
+        if (blockStack.isEmpty() || blockStack.peek() != c) {
+          return true;
+        }
+        blockStack.pop();
+      } else if (c == ';' && blockStack.isEmpty()) {
+        return true;
+      }
+    }
+    return quote != 0 || !blockStack.isEmpty();
+  }
 
   /**
    * `style={{...}}` object literal lowering (Hono's `hasUnsafeStyleValue`
-   * oracle, ported): variadic `(cssKey, value)` pairs. Drops any pair whose
-   * value could break out of the CSS declaration; HTML-escapes what
-   * remains; returns a {@link SafeString} so the caller's un-filtered
-   * `{{ bf.style_object(...) }}` isn't double-escaped by Pebble's own
-   * autoescaper (see the source-code note in the package README on
-   * `SafeString`/`EscapeFilter`).
+   * oracle, ported, matching the Python runtime's `style_object` exactly —
+   * see its own doc comment): a single Pebble LIST-literal argument
+   * flattening `(cssKey, value)` pairs (`bf.style_object([cssKey0,
+   * value0, ...])`) — NOT a Java varargs parameter; see `merge`'s doc
+   * comment for why (Pebble's method resolver can't match a varargs
+   * method call). Drops any pair whose value could break out of the CSS
+   * declaration; HTML-escapes what remains; joins with a bare `;`
+   * (`packages/adapter-pebble/src/adapter/pebble-adapter.ts`'s
+   * `tryLowerStyleObject` caller wraps the RESULT in `style="..."` itself
+   * — this method returns only the declaration list, never the
+   * `style="..."` wrapper). Returns a {@link SafeString} so the caller's
+   * un-filtered `{{ bf.style_object(...) }}` isn't double-HTML-escaped by
+   * Pebble's own autoescaper (see the source-code note in the package
+   * README on `SafeString`/`EscapeFilter`) — the join already applied
+   * `htmlEscape` once, matching Hono's own `escapeToBuffer` call on its
+   * accumulated style string (a "safe" CSS value can still carry a
+   * literal `"`/`'`/`&`, e.g. a balanced-quote string value, that would
+   * otherwise break out of the double-quoted `style="..."` attribute).
    */
-  public SafeString style_object(Object... keyValuePairs) {
-    StringBuilder decls = new StringBuilder();
-    for (int i = 0; i + 1 < keyValuePairs.length; i += 2) {
-      String cssKey = JsValue.jsString(keyValuePairs[i]);
-      Object valueObj = keyValuePairs[i + 1];
+  public SafeString style_object(Object keyValuePairsArg) {
+    List<?> keyValuePairs = keyValuePairsArg instanceof List ? (List<?>) keyValuePairsArg : List.of();
+    List<String> parts = new ArrayList<>();
+    for (int i = 0; i + 1 < keyValuePairs.size(); i += 2) {
+      String cssKey = JsValue.jsString(keyValuePairs.get(i));
+      Object valueObj = keyValuePairs.get(i + 1);
       if (valueObj == null) {
         continue;
       }
       String value = JsValue.jsString(valueObj);
-      if (value.isEmpty() || UNSAFE_CSS_VALUE.matcher(value).find()) {
+      if (hasUnsafeStyleValue(value)) {
         continue;
       }
-      if (decls.length() > 0) {
-        decls.append(' ');
-      }
-      decls.append(htmlEscape(cssKey)).append(':').append(htmlEscape(value)).append(';');
+      parts.add(htmlEscape(cssKey) + ":" + htmlEscape(value));
     }
-    return new SafeString(decls.length() == 0 ? "" : "style=\"" + decls + "\"");
+    return new SafeString(String.join(";", parts));
   }
 
   /** `{...attrs}` spread onto an intrinsic element — one `key="value"` per entry, boolean-shorthand aware. */
@@ -1334,42 +1537,90 @@ public final class Bf {
   // fixture corpus; this is a reasonable, self-consistent implementation.)
   // =========================================================================
 
-  /** `bf-s="..."` value: this render's root scope id. */
+  /** `bf-s="..."` value: this scope's own id. */
   public String scope_attr() {
     return rootScopeId;
   }
 
-  /** Reserved for future hydration-mode markers (`bf-h`/`bf-m`/`bf-r`) — none needed yet. */
+  /**
+   * `bf-h="<host>" bf-m="<slot>" bf-r=""` conditionally — see
+   * `spec/compiler.md` "Slot identity" and `packages/shared/src/markers.ts`.
+   * Mirrors the Jinja/Rust ports' `hydration_attrs` byte-for-byte.
+   */
   public String hydration_attrs() {
-    return "";
+    List<String> parts = new ArrayList<>();
+    if (bfHost != null) {
+      parts.add("bf-h=\"" + htmlEscape(bfHost) + "\"");
+    }
+    if (bfMount != null) {
+      parts.add("bf-m=\"" + htmlEscape(bfMount) + "\"");
+    }
+    if (!isChild) {
+      parts.add("bf-r=\"\"");
+    }
+    return String.join(" ", parts);
   }
 
-  /** Reserved for a `bf-p` marker when a props payload accompanies the scope. */
+  /** `bf-p='...'` hydration-props payload, when one accompanies this scope. */
+  @SuppressWarnings("unchecked")
   public String props_attr() {
-    return "";
+    if (!(markerProps instanceof Map) || ((Map<String, Object>) markerProps).isEmpty()) {
+      return "";
+    }
+    // Attribute-escaped, not just HTML-escaped: a raw `'` inside a string
+    // value (e.g. a blog paragraph) would terminate the single-quoted
+    // attribute and truncate the hydration payload — the browser
+    // entity-decodes the attribute value, so the client's JSON.parse still
+    // sees the original text.
+    return " bf-p='" + htmlEscape(json(markerProps)) + "'";
   }
 
   /** A loop row's own data-key attribute, when this component is itself invoked as a keyed row. */
   public String data_key_attr() {
-    return "";
+    if (dataKey == null) {
+      return "";
+    }
+    String k = JsValue.jsString(dataKey).replace("&", "&amp;").replace("\"", "&quot;");
+    return " data-key=\"" + k + "\"";
   }
 
-  /** HTML comment marker (client-hydration anchor for a clientOnly slot). */
+  /** HTML comment marker (`<!--bf-...-->`) — every marker id `pebble-adapter.ts` passes here already carries its own semantic prefix (`loop:`, `cond-start:`, …); this method supplies only the shared `bf-` wire prefix (`packages/shared/src/markers.ts`). */
   public String comment(Object text) {
-    return "<!--" + JsValue.jsString(text) + "-->";
+    return "<!--bf-" + JsValue.jsString(text) + "-->";
   }
 
   /** Neutralizes `-` in a dynamic loop-row key so it can't spell `-->` and close the comment early. */
+  /**
+   * Neutralizes `-` in a dynamic loop-row key so it can't spell `-->` and
+   * close the comment early (#2795 follow-up). Replaces with U+2010
+   * (HYPHEN, visually near-identical to ASCII `-`) — matches the Python/
+   * Rust ports' `escape_comment_key` exactly, NOT an underscore: the key's
+   * exact text doesn't need to round-trip (the client's `mapArrayAnchored`
+   * matches items positionally and by its own JS-computed key, never by
+   * re-parsing the anchor comment's text), so the substitution only needs
+   * to be visually close and never decoded back.
+   */
   public String escape_comment_key(Object key) {
-    return JsValue.jsString(key).replace("-", "_");
+    return JsValue.jsString(key).replace("-", "‐");
   }
 
+  /** See `spec/compiler.md` "Slot identity" for the comment-scope wire format. Mirrors the Jinja/Rust ports' `scope_comment` byte-for-byte. */
+  @SuppressWarnings("unchecked")
   public String scope_comment() {
-    return "<!--bf-scope:" + markerCounter.incrementAndGet() + "-->";
+    String hostSegment = "";
+    if (bfHost != null) {
+      hostSegment = "|h=" + bfHost + "|m=" + (bfMount == null ? "" : bfMount);
+    }
+    String propsJson = "";
+    if (markerProps instanceof Map && !((Map<String, Object>) markerProps).isEmpty()) {
+      propsJson = "|" + json(markerProps);
+    }
+    return "<!--bf-scope:" + rootScopeId + hostSegment + propsJson + "-->";
   }
 
+  /** Paired end marker for `scope_comment` — no host/props segments, the client only needs the scope id to close the boundary (#2289). */
   public String scope_comment_end() {
-    return "<!--/bf-scope-->";
+    return "<!--bf-/scope:" + rootScopeId + "-->";
   }
 
   /** `<div bf-async="id">fallback</div>` wrapper — a real render always resolves synchronously, so this only wraps the fallback markup for the marker's sake. */
@@ -1377,12 +1628,13 @@ public final class Bf {
     return "<div bf-async=\"" + htmlEscape(JsValue.jsString(id)) + "\">" + JsValue.jsString(fallbackHtml) + "</div>";
   }
 
+  /** Text-slot hydration anchor. Mirrors the Jinja/Rust ports' `text_start` byte-for-byte (`<!--bf:<slot>-->`, NOT this class's own `comment()` wire shape — the client's text-patch walker matches this exact prefix, see `packages/client/src/runtime`). */
   public String text_start(Object slotId) {
-    return "<!--t:" + JsValue.jsString(slotId) + "-->";
+    return "<!--bf:" + JsValue.jsString(slotId) + "-->";
   }
 
   public String text_end() {
-    return "<!--/t-->";
+    return "<!--/-->";
   }
 
   public String register_script(Object url) {
@@ -1393,9 +1645,8 @@ public final class Bf {
     return "<link rel=\"modulepreload\" href=\"" + htmlEscape(JsValue.jsString(url)) + "\">";
   }
 
-  // Context provide/use — a simple stack per context name, scoped to this
-  // render (this `Bf` instance is fresh per render — see Main).
-  private final Map<String, java.util.Deque<Object>> contextStacks = new LinkedHashMap<>();
+  // Context provide/use — a simple stack per context name, SHARED across
+  // this whole render tree (see the `contextStacks` field doc comment).
 
   public String provide_context(Object name, Object value) {
     contextStacks.computeIfAbsent(JsValue.jsString(name), k -> new java.util.ArrayDeque<>()).push(value);
@@ -1410,23 +1661,150 @@ public final class Bf {
     return "";
   }
 
+  /** Zero-arg form — no default (a `useContext(Ctx)` call whose context has a resolvable static default already folds that default in at the TS emission layer, so this overload is a defensive fallback, not the common path). */
   public Object use_context(Object name) {
+    return use_context(name, null);
+  }
+
+  /** `bf.use_context(name, defaultValue)` — `memo/seed.ts`'s `generateContextConsumerSeed` always emits the 2-arg form (`contextDefaultPebble`'s static default, or the createContext(...) call's own default). */
+  public Object use_context(Object name, Object defaultValue) {
     java.util.Deque<Object> stack = contextStacks.get(JsValue.jsString(name));
-    return (stack == null || stack.isEmpty()) ? null : stack.peek();
+    return (stack == null || stack.isEmpty()) ? defaultValue : stack.peek();
   }
 
   /**
-   * Cross-template child invocation (`<Child {...props}/>`). NOT supported
-   * in this Phase 3a runtime — a child template requires the Phase 3b
-   * custom `{% set %}...{% endset %}` tag to capture children/slots
-   * faithfully, and this CLI (`Main`) registers only ONE template per
-   * render. Throws loudly rather than silently rendering nothing.
+   * Cross-template child invocation (`<Child {...props}/>`), Phase 4
+   * (#2101). `pebble-adapter.ts`'s `renderComponent` emits this as
+   * `bf.render_child('<snake_case_name>', {'k': v, ...})` — a SINGLE
+   * Pebble map-literal argument (Pebble has no keyword-splat call syntax) —
+   * or the no-props form `bf.render_child('<name>')`. Mirrors the
+   * production Python runtime's `render_child`/`make_renderer`
+   * (`packages/adapter-jinja/python/barefootjs/runtime.py`) and the
+   * structurally-closest Rust port's `BfInstance::render_child`
+   * (`packages/adapter-rust/runtime/src/runtime.rs`):
+   *
+   * <ol>
+   *   <li>Every incoming prop key is mangled via {@link PebbleIdent} —
+   *       the child template's own body references each prop through the
+   *       IDENTICAL mangling (`pebbleIdent(name)` at the TS emission
+   *       layer), so the context-map key built here must match exactly.
+   *   <li>A declared `...rest` bag (per {@link ChildMeta#restPropsName})
+   *       collects every prop the child's OWN param list doesn't declare.
+   *   <li>`_bf_slot` (slot-attached child: `child_scope = host_scope +
+   *       "_" + slot`, `bf-h`/`bf-m` set) vs. no slot (loop-item / bare
+   *       invocation: a fresh `<ComponentName>_<rand6>` scope id, no
+   *       `bf-h`/`bf-m`) — see `spec/compiler.md` "Slot identity".
+   *   <li>`key` becomes the child's `data_key_attr()`.
+   *   <li>{@link DeriveStashFromDefaults} resolves the child's own
+   *       SSR-default fallbacks against the caller's ACTUAL props (caller
+   *       wins for a non-null value) — the `extractSsrDefaults`/
+   *       `deriveStashFromDefaults` contract (`packages/jsx/src/
+   *       ssr-defaults.ts`) every other adapter's `render_child` already
+   *       honors.
+   * </ol>
+   *
+   * The child gets its own fresh {@link Bf} instance (its own scope id /
+   * host / mount / data-key) evaluating the NAMED child template via this
+   * instance's shared {@link PebbleEngine} — {@code FileLoader} resolves
+   * any sibling `.peb` file by name directly, so no explicit per-child
+   * "registration" step is needed the way the Python/Rust ports require.
    */
-  public String render_child(Object name, Object props) {
-    throw new UnsupportedOperationException(
-        "bf.render_child('" + JsValue.jsString(name) + "', ...): cross-template child rendering "
-            + "is out of scope for the Phase 3a runtime (needs the Phase 3b {% set %}...{% endset %} "
-            + "tag extension and multi-template registration in Main).");
+  public String render_child(Object name) {
+    return render_child(name, Map.of());
+  }
+
+  @SuppressWarnings("unchecked")
+  public String render_child(Object name, Object propsObj) {
+    String tplName = JsValue.jsString(name);
+    if (engine == null) {
+      throw new IllegalStateException(
+          "bf.render_child('" + tplName + "', ...): this Bf instance has no PebbleEngine wired in "
+              + "(construct it via `new Bf(rootScopeId, engine, manifest)` — see Main.render).");
+    }
+    Map<String, Object> raw = propsObj instanceof Map ? (Map<String, Object>) propsObj : Map.of();
+
+    // Mangle every incoming key up front (matches the child template's own
+    // pebbleIdent-mangled bare-identifier references) before any special
+    // key (`_bf_slot`/`key`/rest-bag name) is popped by its own name below —
+    // none of those three is itself a Pebble/Java reserved word, so mangling
+    // order has no observable effect on them, but doing it first keeps this
+    // method's key space consistent throughout (mirrors the Rust port).
+    Map<String, Object> props = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> e : raw.entrySet()) {
+      props.put(PebbleIdent.mangle(e.getKey()), e.getValue());
+    }
+
+    ChildMeta meta = manifest.get(tplName);
+
+    // Rest-bag routing: every prop the child does NOT declare is folded
+    // into its own `...rest` bag (mirrors adapter-rust's `render_child`).
+    if (meta != null && meta.restPropsName != null) {
+      String restKey = PebbleIdent.mangle(meta.restPropsName);
+      Set<String> keep = new HashSet<>();
+      for (String p : meta.paramNames) {
+        keep.add(PebbleIdent.mangle(p));
+      }
+      keep.add(restKey);
+      keep.add("children");
+      keep.add(PebbleIdent.mangle("key"));
+      keep.add("_bf_slot");
+
+      Map<String, Object> restBag = new LinkedHashMap<>();
+      Object existingRest = props.remove(restKey);
+      if (existingRest instanceof Map) {
+        restBag.putAll((Map<String, Object>) existingRest);
+      }
+      for (String k : new ArrayList<>(props.keySet())) {
+        if (!keep.contains(k)) {
+          restBag.put(k, props.remove(k));
+        }
+      }
+      props.put(restKey, restBag);
+    }
+
+    Object slotIdObj = props.remove("_bf_slot");
+    String slotId = slotIdObj == null ? null : JsValue.jsString(slotIdObj);
+    Object dataKeyValue = props.remove(PebbleIdent.mangle("key"));
+
+    String hostScope = this.rootScopeId;
+    String childScopeId;
+    String childBfHost = null;
+    String childBfMount = null;
+    if (slotId != null && !slotId.isEmpty()) {
+      childScopeId = hostScope + "_" + slotId;
+      childBfHost = hostScope;
+      childBfMount = slotId;
+    } else {
+      // Loop-item / bare invocation: a fresh `<ComponentName>_<rand6>` id —
+      // mirrors Hono's own `${name}_${Math.random().toString(36).slice(2, 8)}`
+      // root-scope-id fallback for a component rendered with no
+      // `__instanceId`. `meta.componentName` is the ORIGINAL PascalCase
+      // name (not the snake_case template file basename) — see ChildMeta.
+      String prefix = meta != null ? meta.componentName : tplName;
+      childScopeId = prefix + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+    }
+
+    Bf child = new Bf(childScopeId, engine, manifest, true, childBfHost, childBfMount, dataKeyValue, null, contextStacks);
+
+    Map<String, Object> vars = new LinkedHashMap<>(props);
+    if (meta != null) {
+      vars.putAll(DeriveStashFromDefaults.derive(meta.ssrDefaults, props));
+    }
+
+    PebbleTemplate template = engine.getTemplate(tplName);
+    Map<String, Object> context = new LinkedHashMap<>(vars);
+    context.put("bf", child);
+    StringWriter writer = new StringWriter();
+    try {
+      template.evaluate(writer, context);
+    } catch (IOException e) {
+      throw new RuntimeException("bf.render_child('" + tplName + "', ...) failed", e);
+    }
+    String rendered = writer.toString();
+    // chomp: remove at most one trailing newline — every sibling-language
+    // render_child does this (the generated template always ends with a
+    // trailing `\n` the caller doesn't want re-introduced mid-page).
+    return rendered.endsWith("\n") ? rendered.substring(0, rendered.length() - 1) : rendered;
   }
 
   // =========================================================================
