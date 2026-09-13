@@ -7,12 +7,17 @@ every other adapter produces, and ships a Java rendering runtime
 [Pebble](https://pebbletemplates.io/) — no framework is required (Spring
 Boot, Ktor, plain Servlet apps all work the same way).
 
-**Status: Phase 1 skeleton (#2101).** `PebbleAdapter` type-checks against
-the `TemplateAdapter` interface but its render methods are not implemented
-yet — see the tracking issue
+**Status: Phase 2 adapter core landed (#2101).** `PebbleAdapter`'s render
+methods now emit real `.peb` template text (see "Template output shape"
+below and `src/adapter/pebble-adapter.ts`'s file header for the full
+confirmed-Pebble-syntax table and every documented divergence). **Phase 3
+(Java runtime) and Phase 4 (conformance loop against the ~190 shared
+fixtures) are next** — no Java runtime exists yet, so nothing below has
+been executed against a real Pebble engine; every syntax choice is either
+independently confirmed against Pebble's own docs/issue tracker or
+explicitly flagged as an assumption. See the tracking issue
 [piconic-ai/barefootjs#2101](https://github.com/piconic-ai/barefootjs/issues/2101)
-for the full stacked-PR plan (adapter core → Java runtime → conformance
-loop → repo integration → docs).
+for the full stacked-PR plan.
 
 ## Design decisions (Phase 0)
 
@@ -57,11 +62,47 @@ PRs in the stack don't re-litigate them:
 
 ## Template output shape
 
-- `name: 'pebble'`, `extension: '.peb'`, `templatesPerComponent: true`.
-- Hydration markers and the `bf.*` runtime surface will match every other
-  adapter's contract (`spec/template-helpers.md`) once the adapter core
-  lands.
+- `name: 'pebble'`, `extension: '.peb'`, `templatesPerComponent: true` —
+  one `.peb` file per component, named by snake-casing the PascalCase
+  component name (`UserCard` → `user_card.peb`).
+- Hydration markers (`bf-s`, `bf-h`/`bf-m`/`bf-r`, `bf-p`, slot/conditional
+  comment markers, loop boundary comments) use the SAME runtime method
+  names as every other adapter's `bf.*` calls (`bf.scope_attr()`,
+  `bf.hydration_attrs()`, `bf.text_start`/`text_end`, `bf.comment(...)`,
+  …) — see `spec/template-helpers.md` for the shared helper contract.
+- Every text/attribute interpolation of a possibly-non-string value is
+  routed through `bf.string(...)` (or `bf.bool_str(...)` for
+  boolean-shaped values); every non-comparison condition position is
+  routed through `bf.truthy(...)`. Both are pure Java-runtime helpers, to
+  be implemented in Phase 3.
+- Control flow uses Pebble's confirmed `{% if %}` / `{% elseif %}` / `{%
+  else %}` / `{% endif %}` and `{% for %}` / `{% endfor %}` tags, and its
+  confirmed symbolic ternary (`cond ? a : b`) and native `??` operator —
+  see `src/adapter/pebble-adapter.ts`'s file header for the full syntax
+  table and every point where this port took Twig's answer over Jinja's
+  (most of them — Pebble is Twig-inspired) or landed on something
+  genuinely Pebble-specific (0-based `loop.index`, no `.items()`-style
+  method calls).
+- **One finding worth calling out here too:** stock Pebble has NO
+  block-capture `{% set NAME %}…{% endset %}` form the way Jinja/Twig do
+  (confirmed via a 2018 upstream feature request that was never
+  implemented) — this adapter still emits that syntax for JSX-children/
+  named-slot/async-fallback forwarding, as a deliberate, documented
+  requirement that Phase 3's Java runtime register a custom Pebble
+  `TokenParser` extension implementing it (Pebble's `Extension` API is
+  confirmed to support custom tags). See the adapter file header,
+  divergence 6, for the full rationale — this is the headline Phase 3
+  dependency, not a quiet TODO.
+- Member/index access, JS `===`/`!==`, and JS `+` on string operands all
+  route through dedicated `bf.*` runtime helpers (`bf.get`, `bf.eq`/
+  `bf.neq`, and Pebble's own `~` concat operator respectively) rather than
+  trusting an unverified native Pebble operator — see the file header,
+  divergences 4, 6, and 7.
 
 ## Java runtime
 
-Not yet implemented — see "Status" above.
+Not yet implemented — Phase 3. See "Status" above for what the Phase 2
+adapter core already assumes the runtime will need to provide (the
+`bf.*` helper surface, the custom `{% set %}...{% endset %}` tag
+extension, and the `strict_variables`/null-handling policy pinned by the
+adapter's own file header).
