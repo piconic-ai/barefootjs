@@ -711,8 +711,10 @@ describe('deriveStashFromDefaults', () => {
     `)
     const defaults = extractSsrDefaults(metadata)!
 
-    expect(deriveStashFromDefaults(defaults, { label: 'Hello' })).toEqual({ label: 'Hello' })
-    expect(deriveStashFromDefaults(defaults, {})).toEqual({ label: null })
+    // `setLabel` also gets a stash entry (#2924's SSR-half fix) — every
+    // signal setter is seeded unconditionally, same as every getter.
+    expect(deriveStashFromDefaults(defaults, { label: 'Hello' })).toEqual({ label: 'Hello', setLabel: null })
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ label: null, setLabel: null })
   })
 
   test('propName-less entry (signal / memo local): always uses the static value', () => {

@@ -298,6 +298,23 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // through the chain exactly as before; only the manifest's own seed
     // choice changes, not the static-eval semantics.
     bindings[sig.getter] = value
+
+    // #2924 (SSR half): a bare reference to the SETTER (`<Display
+    // update={setCount} />`) can reach a template-stash adapter's own
+    // rendered template text the same way a bare getter reference does
+    // (`bf->render_child('display', update => $setCount, ...)`) — Mojo's
+    // `Mojo::Template->new(vars => 1)` only declares `my $x` for stash
+    // keys it's actually given, so an unseeded setter aborts the render
+    // with Perl's strict-mode "Global symbol requires explicit package
+    // name". Mirrors Hono's own unconditional SSR shim for every signal's
+    // setter (`const setCount: (...) => void = () => {}`, emitted next to
+    // the getter's `const count = () => 5` regardless of where either is
+    // referenced) — seeded here the same unconditional way, since the
+    // value is never read or invoked during SSR (only forwarded through
+    // `render_child`), just needs to EXIST in the stash.
+    if (sig.setter && !(sig.setter in out)) {
+      out[sig.setter] = { value: null }
+    }
   }
 
   for (const memo of metadata.memos) {
