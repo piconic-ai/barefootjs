@@ -52,6 +52,14 @@ export const renderDivergences: RenderDivergences = {
   // Provider, which routes through `provideContext`/`useContext` instead and
   // never hit this baker path.
   'component-prop-bare-getter': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
+  // Same #2925 baker gap, the fixture added while designing the CSR
+  // template thunk fix (#2924): an object-literal-wrapped getter prop
+  // (`value={{ v: count }}`) drops the nested field the same way the
+  // direct, unwrapped form does — the constructor baker's gap is in
+  // threading ANY signal-getter-valued prop into a nested child's `Input`
+  // struct, not specific to the value's own shape.
+  'component-prop-getter-in-object-literal': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
+  'component-prop-getter-via-const-object': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

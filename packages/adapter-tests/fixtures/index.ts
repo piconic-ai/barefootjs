@@ -652,6 +652,9 @@ import { fixture as condArmTagCollision } from './cond-arm-tag-collision'
 // BF044 used to refuse this while the structurally identical object-literal
 // wrapped form (`context-provider-nullish-object-fallback.ts`) passed silently.
 import { fixture as componentPropBareGetter } from './component-prop-bare-getter'
+// #2924 companion: the object-literal-wrapped form of the same
+// bare-getter-as-component-prop shape.
+import { fixture as componentPropGetterInObjectLiteral } from './component-prop-getter-in-object-literal'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1099,4 +1102,5 @@ export const jsxFixtures: JSXFixture[] = [
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,
+  componentPropGetterInObjectLiteral,
 ]

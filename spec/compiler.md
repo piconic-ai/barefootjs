@@ -1493,6 +1493,8 @@ Every free identifier in IR is classified by where its binding lives:
 
 `prop` at `template` is **reachable** via `_p.X` but **not bare-emittable** — the rewrite is required.
 
+The `signal-*` / `memo-getter` "✗ (fallback)" cells above describe `relocate()`'s own gate-time verdict on an unresolved reference (below) — it has no way to evaluate what a getter's value actually is, so it falls back to the literal `undefined`, which is safe for a `template`-scope value position (the slot's own `createEffect` repaints it once init runs). The CSR emit door that actually decides the emitted text, `csrSubstitute` (`packages/jsx/src/ir-to-client-js/csr-substitute.ts`), reads different information — a `SignalInfo`/`MemoInfo`'s known initial value / computation — so it doesn't need to fall back at all: a CALLED reference (`count()`) substitutes the accessor's value directly, and, since #2924, a BARE reference (`count`, passed uncalled — e.g. as a component prop, `<Display value={count} />`) substitutes a thunk over that same value (`(() => (initialValue))`), matching the reference (Hono) adapter's own SSR shim for a bare accessor (`const count = () => 5`). `relocate`'s fallback verdict still matters for gate-only callers deciding whether a *different* value (an enclosing constant's initializer) is safe to inline — it is not what ships in emitted output wherever `csrSubstitute` runs first.
+
 ### `relocate()`
 
 ```ts

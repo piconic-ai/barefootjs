@@ -15,6 +15,11 @@
  *  C. a getter-elided signal (`const [, setActive] = createSignal(0)`)
  *     was dropped from init entirely while its setter stayed referenced
  *     by the emitted handler.
+ *
+ *  D. a component prop whose value is (or contains) a BARE — uncalled —
+ *     reference to a local signal/memo getter (`<Display value={count} />`,
+ *     #2924) kept the bare source-level name in the `renderChild(...)`
+ *     props literal instead of substituting a thunk over its value.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -92,6 +97,100 @@ export function Fire() {
     // The setter is referenced by the click handler, so its declaring
     // statement must exist in the emitted init.
     expect(clientJs).toMatch(/setFlag\s*\]\s*=\s*createSignal\(0\)/)
+  })
+
+  test('D: a bare signal getter passed as a component prop substitutes a thunk in the template', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+
+function Display(props: { value: () => number }) {
+  return <span class="value">{props.value()}</span>
+}
+
+export function Counter() {
+  const [count, setCount] = createSignal(5)
+  return (
+    <div class="root">
+      <Display value={count} />
+    </div>
+  )
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Counter')
+    expect(template).toContain('value: (() => (5))')
+    expect(template).not.toMatch(/value:\s*count\b/)
+  })
+
+  test('D: a bare memo getter passed as a component prop substitutes a thunk over its computation', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal, createMemo } from '@barefootjs/client'
+
+function Display(props: { value: () => number }) {
+  return <span class="value">{props.value()}</span>
+}
+
+export function Counter() {
+  const [count] = createSignal(5)
+  const doubled = createMemo(() => count() * 2)
+  return (
+    <div class="root">
+      <Display value={doubled} />
+    </div>
+  )
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Counter')
+    expect(template).toContain('value: (() => ((5) * 2))')
+    expect(template).not.toMatch(/value:\s*doubled\b/)
+  })
+
+  test('D: a bare getter wrapped in an object literal prop also substitutes a thunk (Context-Provider idiom)', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+
+function Display(props: { value: { v: () => number } }) {
+  return <span class="value">{props.value.v()}</span>
+}
+
+export function Counter() {
+  const [count, setCount] = createSignal(5)
+  return (
+    <div class="root">
+      <Display value={{ v: count }} />
+    </div>
+  )
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Counter')
+    expect(template).toContain('{ v: (() => (5)) }')
+    expect(template).not.toMatch(/\{\s*v:\s*count\s*\}/)
+  })
+
+  test('D: a getter-only const alias (e.g. `const c2 = count`) inlines the same thunk, not a deferred placeholder', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+
+function Display(props: { value: () => number }) {
+  return <span class="value">{props.value()}</span>
+}
+
+export function Counter() {
+  const [count, setCount] = createSignal(5)
+  const c2 = count
+  return (
+    <div class="root">
+      <Display value={c2} />
+    </div>
+  )
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Counter')
+    expect(template).toContain('value: (() => (5))')
+    expect(template).not.toContain('data-bf-ph')
   })
 })
 
