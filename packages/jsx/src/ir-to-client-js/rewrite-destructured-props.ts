@@ -167,7 +167,19 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
       located.set(decl.name.text, {
         key: alias.key,
         defaultValue: parsedInit.fallback?.getText(sourceFile),
-        defaultContainsArrow: alias.defaultContainsArrow,
+        // `alias.defaultContainsArrow` mirrors `c.containsArrow`, computed
+        // against the ORIGINAL initializer before #2940's fix wrapped an
+        // arrow/function-expression default in its own protective parens
+        // (`coalesceDefaultText`, `analyzer.ts`). `parsedInit.fallback`
+        // here re-parses that ALREADY-wrapped `ConstantInfo.value` text, so
+        // when the fallback is itself a `ParenthesizedExpression` the wrap
+        // has already happened — `livePropReadExpr` below must not apply
+        // `coalesceDefaultText` a second time, or a live handler-scoped
+        // read doubles up (`(_p.fmt ?? (((v) => ...)))(1)` instead of the
+        // minimal `(_p.fmt ?? ((v) => ...))(1)`).
+        defaultContainsArrow: alias.defaultContainsArrow && !(
+          parsedInit.fallback && ts.isParenthesizedExpression(parsedInit.fallback)
+        ),
       })
       spans.push([inner.getFullStart(), inner.getEnd()])
     }
