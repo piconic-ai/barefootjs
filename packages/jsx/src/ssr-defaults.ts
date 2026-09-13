@@ -347,8 +347,23 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   // pointing at one value. Env-signal getters are excluded from the
   // getter-name set (they're never given an `out` entry above — an
   // adapter's own env-signal binding seeds them instead).
+  //
+  // #2924 review follow-up: a local-const alias of a signal SETTER
+  // (`const alias = setCount`) needs the identical treatment — the setter
+  // loop above now seeds `out[sig.setter]` unconditionally, but
+  // `collectAliasableGetterNames` only ever returns GETTER/memo names
+  // (it's also the Go adapter's own `rootFieldRef` eligibility set, which
+  // has no notion of a setter alias, so widening it there would be the
+  // wrong fix). Union in the setter names locally instead, mirroring how
+  // the CSR side's own `substitutions.has(n)` predicate already covers
+  // both without any special-casing (`csr-substitute.ts`'s
+  // `buildSignalMemoEnv`, since this PR's setter entries land in the same
+  // `substitutions` map as getters).
   {
     const getterNames = collectAliasableGetterNames(metadata.signals, metadata.memos)
+    for (const sig of metadata.signals) {
+      if (sig.setter && !sig.isModule && !sig.envReader) getterNames.add(sig.setter)
+    }
     for (const [alias, origin] of resolveGetterAliases(metadata.localConstants ?? [], (n) => getterNames.has(n))) {
       if (alias in out) continue
       out[alias] = out[origin]
