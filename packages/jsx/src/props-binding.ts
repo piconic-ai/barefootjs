@@ -245,6 +245,20 @@ export function propReadBase(p: LivePropReadInfo): string {
 }
 
 /**
+ * The text a destructure default contributes as the right operand of a `??`
+ * prop read. An arrow (or function-expression) default needs its own
+ * parens — `??` binds tighter than an arrow head, so `_p.onInput ?? () =>
+ * {}` is a SyntaxError. The one implementation of that decision, shared by
+ * `propReadFallback` below (every live `_p.X` read) and `collectConstant`'s
+ * body-destructure expansion (`analyzer.ts`, which builds
+ * `ConstantInfo.value`) — see #2940, where the analyzer built that value
+ * without this check and emitted invalid JS.
+ */
+export function coalesceDefaultText(defaultValue: string, defaultContainsArrow: boolean | undefined): string {
+  return defaultContainsArrow ? `(${defaultValue})` : defaultValue
+}
+
+/**
  * The `??` right-hand side for a prop read, or null when the bare read is
  * correct. Precedence:
  *   1. an explicit destructure default (`{ x = 1 }`) — an arrow default gets
@@ -263,7 +277,7 @@ export function propReadFallback(
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
 ): string | null {
-  if (p.defaultValue) return p.defaultContainsArrow ? `(${p.defaultValue})` : p.defaultValue
+  if (p.defaultValue) return coalesceDefaultText(p.defaultValue, p.defaultContainsArrow)
   if (usage?.usedAsLoopArray) return '[]'
   if (propHasPropertyAccess(usage) && !usedAsCondition) return '{}'
   return null
