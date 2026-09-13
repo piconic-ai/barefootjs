@@ -1,7 +1,7 @@
 import { createFixture } from '../src/types'
 
 /**
- * Escape twin for `module-const-loop-source-computed` (#2946): the same
+ * Escape twin for `module-const-loop-source-computed` (#2321): the same
  * module-scope computed-const shape, but the loop is marked
  * `/* @client *\/` so it defers to the browser instead of refusing SSR —
  * mirrors `client-only-loop`'s bare-loop marker-pair shape. SSR renders the
@@ -10,7 +10,7 @@ import { createFixture } from '../src/types'
  */
 export const fixture = createFixture({
   id: 'module-const-loop-source-computed-client',
-  description: 'A /* @client */ loop over a module-scope computed const defers to the browser instead of refusing SSR (#2946)',
+  description: 'A /* @client */ loop over a module-scope computed const defers to the browser instead of refusing SSR (#2321)',
   source: `
 'use client'
 
