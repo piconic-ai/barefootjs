@@ -1,5 +1,21 @@
 # @barefootjs/jsx
 
+## 0.35.7
+
+### Patch Changes
+
+- 0ec5d6c: Fixes #2940: a body-destructured prop's arrow-function default (`const { fmt = (v) => 'v' + v } = props`) now compiles to valid JS instead of a genuine `SyntaxError`.
+  
+  `collectConstant`'s body-destructure branch (`analyzer.ts`) built the local's `value` as a bare `props.fmt ?? (v) => 'v' + v` — `??`'s right operand may not be a bare arrow function without parens. This string was spliced verbatim into the client-JS init body and the Hono SSR component alike, so both were broken, and two downstream passes (`rewriteDestructuredPropReads`, `pruneUnusedPropExtractions`) silently skipped themselves because the generated code no longer parsed.
+  
+  The fix routes the analyzer's `value`-building through the same `??`-operand-parenthesizing decision `propReadFallback` already applied to every other live prop read (`props-binding.ts`'s new `coalesceDefaultText`), so an arrow/function-expression default is wrapped in parens everywhere it's spliced after `??`, matching what the parameter-destructured sibling form already did.
+- c0ce754: Fixes #2960: a ternary conditional whose one arm is a single element and whose other arm is a multi-root JSX fragment now compiles correctly even when the fragment's roots share the SAME tag name (e.g. `cond ? <div>...</div> : (<><div id="before">...</div><div id="after">...</div></>)`).
+  
+  `addCondAttrToTemplate`'s `isSingleRootElement` helper decided "single root" by checking whether the branch's HTML string ended with a closing tag of the root's own tag name — a check that a second, unrelated sibling of the same tag name satisfies just as well as a genuine single root's own closing tag. Misclassified this way, the multi-root branch got `bf-c="<id>"` stamped onto only its first element instead of being comment-wrapped, which routed the client runtime's branch swap (`insert()`) through `updateElementConditional`'s `fragment.firstChild`-only path and silently dropped every sibling after the first on a live toggle.
+  
+  `isSingleRootElement` now walks top-level tags tracking nesting depth instead of that lexical shortcut, while keeping the same entry/exit guards as before so a shape the `bf-c` splice can't stamp (a self-closing root, a hyphenated custom-element tag) still falls through to comment-wrap exactly as it did previously.
+- @barefootjs/shared@0.35.7
+
 ## 0.35.6
 
 ### Patch Changes
