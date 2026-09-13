@@ -24,6 +24,7 @@ on:
       - 'packages/adapter-hono/**'
       - 'packages/adapter-jinja/**'
       - 'packages/adapter-mojolicious/**'
+      - 'packages/adapter-pebble/**'
       - 'packages/adapter-rust/**'
       - 'packages/adapter-twig/**'
       - 'packages/adapter-xslate/**'
@@ -44,6 +45,7 @@ on:
       - 'packages/adapter-hono/**'
       - 'packages/adapter-jinja/**'
       - 'packages/adapter-mojolicious/**'
+      - 'packages/adapter-pebble/**'
       - 'packages/adapter-rust/**'
       - 'packages/adapter-twig/**'
       - 'packages/adapter-xslate/**'
@@ -76,7 +78,7 @@ jobs:
           bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           # packages/compat (the compat engine + `bun run compat:lock`)
-          # imports every workspace adapter. These 8 have `main`/`exports`
+          # imports every workspace adapter. These 9 have `main`/`exports`
           # pointing at `./dist/index.js` (unlike @barefootjs/hono and
           # @barefootjs/jsx, which resolve via `./src/index.ts`), so they
           # MUST be built before anything imports them (see #2099).
@@ -85,6 +87,7 @@ jobs:
           bun run --filter '@barefootjs/go-template' build
           bun run --filter '@barefootjs/jinja' build
           bun run --filter '@barefootjs/mojolicious' build
+          bun run --filter '@barefootjs/pebble' build
           bun run --filter '@barefootjs/rust' build
           bun run --filter '@barefootjs/twig' build
           bun run --filter '@barefootjs/xslate' build
