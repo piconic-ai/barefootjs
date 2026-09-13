@@ -11,15 +11,21 @@
  * `ensureBfRenderBuilt` build-once-reuse-across-fixtures pattern) and shells
  * out `java -jar <jar> <templateDir> <entryName> <varsFile>` per render.
  *
+ * Phase 3b (#2101): the Java runtime now also registers a custom `set` tag
+ * handler (`java/src/main/java/dev/barefootjs/pebble/ext/`) supporting
+ * `{% set NAME %}...{% endset %}` block-capture, so JSX-children/
+ * named-slot/async-fallback forwarding renders correctly through this same
+ * `java -jar` path — see `pebble-set-block.test.ts`.
+ *
  * This lands ONLY the hand-written-`.peb`-template smoke-test plumbing
  * (`packages/adapter-pebble/src/__tests__/`) — proving the Java runtime, the
  * `bf.*` helper surface, and the evaluator all work end-to-end through a
  * real `java -jar` invocation. It does NOT compile JSX source through
  * `PebbleAdapter` (unlike the sibling `renderMinijinjaComponent`/
  * `renderJinjaComponent` harnesses) and does NOT support cross-template
- * child rendering (`bf.render_child` throws in the Java runtime — needs the
- * Phase 3b `{% set %}...{% endset %}` custom tag first). Wiring the full
- * `RenderOptions`-shaped, JSX-compiling harness into
+ * child rendering yet (`bf.render_child` still throws in the Java runtime —
+ * needs multi-template dispatch in `Main`/`Bf`, a separate follow-up).
+ * Wiring the full `RenderOptions`-shaped, JSX-compiling harness into
  * `runAdapterConformanceTests` against the ~190 shared fixtures is Phase 4,
  * a separate follow-up task.
  */

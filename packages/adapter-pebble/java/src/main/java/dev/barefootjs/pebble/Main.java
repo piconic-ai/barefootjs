@@ -3,6 +3,7 @@ package dev.barefootjs.pebble;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.ToNumberPolicy;
+import dev.barefootjs.pebble.ext.SetBlockExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.loader.FileLoader;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
@@ -78,6 +79,11 @@ public final class Main {
     PebbleEngine engine = new PebbleEngine.Builder()
         .loader(loader)
         .strictVariables(false)
+        // Phase 3b (#2101): replaces stock Pebble's `set` tag handler with
+        // one that also understands `{% set NAME %}...{% endset %}`
+        // block-capture (see SetBlockExtension's own doc comment for why
+        // this REPLACES rather than adds to the stock tag).
+        .extension(new SetBlockExtension())
         .build();
 
     PebbleTemplate template = engine.getTemplate(entryName);
