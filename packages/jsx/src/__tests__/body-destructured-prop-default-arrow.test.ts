@@ -47,6 +47,24 @@ function Child(props: { fmt?: (v: number) => string }) {
 export { Child }
 `
 
+// A HANDLER-scoped read (as opposed to a top-level reactive text position)
+// goes through `rewriteBodyAliasReads` (`rewrite-destructured-props.ts`),
+// which re-parses the analyzer's already-wrapped `ConstantInfo.value` and
+// used to feed the still-`true` `defaultContainsArrow` flag back into
+// `coalesceDefaultText`, double-wrapping the default a second time
+// (`(_p.fmt ?? (((v) => 'v' + v)))(1)` instead of the minimal
+// `(_p.fmt ?? ((v) => 'v' + v))(1)`) — pullfrog review on #2966.
+const HANDLER_SCOPED_ARROW_DEFAULT_SOURCE = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+function ArrowDefaultFmt(props: { fmt?: (v: number) => string }) {
+  const { fmt = (v) => 'v' + v } = props
+  const [label, setLabel] = createSignal('none')
+  return <button onClick={() => setLabel(fmt(1))}>{label()}</button>
+}
+export { ArrowDefaultFmt }
+`
+
 function compile(source: string) {
   return compileJSX(source, 'Child.tsx', { adapter: new HonoAdapter() })
 }
@@ -109,5 +127,16 @@ describe('body-destructured prop with an arrow-function default (#2940)', () => 
     const result = compile(RENAMED_ARROW_DEFAULT_SOURCE)
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(parseDiagnosticCount(clientJs!.content)).toBe(0)
+  })
+
+  test('a handler-scoped read wraps the arrow default exactly once, not twice', () => {
+    const result = compile(HANDLER_SCOPED_ARROW_DEFAULT_SOURCE)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const js = clientJs!.content
+
+    expect(parseDiagnosticCount(js)).toBe(0)
+    expect(js).toContain("(_p.fmt ?? ((v) => 'v' + v))(1)")
+    expect(js).not.toContain("(_p.fmt ?? (((v) => 'v' + v)))(1)")
   })
 })
