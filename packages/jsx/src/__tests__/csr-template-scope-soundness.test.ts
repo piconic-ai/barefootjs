@@ -20,6 +20,9 @@
  *     reference to a local signal/memo getter (`<Display value={count} />`,
  *     #2924) kept the bare source-level name in the `renderChild(...)`
  *     props literal instead of substituting a thunk over its value.
+ *  E. the setter-symmetric case (`<Display update={setCount} />`, #2924):
+ *     a bare reference to a signal SETTER hit the identical gap — no
+ *     substitution entry existed for the setter's name at all.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -191,6 +194,29 @@ export function Counter() {
     const template = templateLambdaOf(clientJs, 'Counter')
     expect(template).toContain('value: (() => (5))')
     expect(template).not.toContain('data-bf-ph')
+  })
+
+  test('E: a bare signal setter passed as a component prop substitutes the SSR noop shim', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+
+function Display(props: { update: () => void }) {
+  return <button onClick={() => props.update()}>go</button>
+}
+
+export function Counter() {
+  const [count, setCount] = createSignal(5)
+  return (
+    <div class="root">
+      <Display update={setCount} />
+    </div>
+  )
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Counter')
+    expect(template).toContain('update: (() => {})')
+    expect(template).not.toMatch(/update:\s*setCount\b/)
   })
 })
 

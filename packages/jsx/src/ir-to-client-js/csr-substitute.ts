@@ -589,6 +589,20 @@ export function buildSignalMemoEnv(
       replacement: normalizeSignalInitial(s, propsObjectName),
       freeIdentifiers: s.initialFreeIdentifiers ?? new Set(),
     })
+    // A bare reference to the SETTER (`<Display update={setCount} />`,
+    // any non-`on*`-prefixed prop name — #2924's setter-symmetric case)
+    // hits the identical template-scope gap as a bare getter reference:
+    // `setCount` only exists as a real closure inside `initCounter`. The
+    // reference (Hono) adapter's own SSR shim answers this the same way
+    // it answers a bare getter — a module-scope noop (`const setCount =
+    // () => {}`) — so an `identifier`-kind entry (not `call`: a setter is
+    // never itself CALLED as a zero-arg form the way a getter is) mirrors
+    // that shim directly, with no thunk-wrapping needed. `s.setter` is
+    // null for the setter-elided declaration form (`const [count] =
+    // createSignal(...)`), which has no name to register.
+    if (s.setter) {
+      substitutions.set(s.setter, { kind: 'identifier', replacement: '() => {}', freeIdentifiers: new Set() })
+    }
   }
   for (const m of memos) {
     substitutions.set(m.name, {

@@ -95,3 +95,23 @@ describe('csrSubstitute: bare reference to a call-kind entry (#2924)', () => {
     expect(rewritten).toBe("('hi')")
   })
 })
+
+describe('csrSubstitute: bare reference to a signal setter (#2924, setter-symmetric case)', () => {
+  function setterEnv(name: string): CsrEnv {
+    return {
+      substitutions: new Map([[name, { kind: 'identifier', replacement: '() => {}', freeIdentifiers: new Set() }]]),
+      propsObjectName: null,
+    }
+  }
+
+  test('a bare setter reference substitutes to the noop shim (identifier-kind, no thunk-wrapping)', () => {
+    const { rewritten, freeIdentifiers } = csrSubstitute('setCount', setterEnv('setCount'))
+    expect(rewritten).toBe('(() => {})')
+    expect(freeIdentifiers.size).toBe(0)
+  })
+
+  test('a setter reference nested in an object literal value position also substitutes', () => {
+    const { rewritten } = csrSubstitute('{ onChange: setCount }', setterEnv('setCount'))
+    expect(rewritten).toBe('{ onChange: (() => {}) }')
+  })
+})
