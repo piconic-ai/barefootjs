@@ -1,5 +1,11 @@
 # @barefootjs/jinja
 
+## 0.35.7
+
+### Patch Changes
+
+- @barefootjs/shared@0.35.7
+
 ## 0.35.6
 
 ### Patch Changes
