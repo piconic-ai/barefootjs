@@ -118,9 +118,10 @@ class RenderChildTest {
     Map<String, ChildMeta> manifest = Map.of("child", new ChildMeta("Child", Map.of(), null, List.of()));
 
     String html = renderEntry(dir, "parent", Map.of(), "test", manifest);
-    // No `_bf_slot` -> no `bf-h`/`bf-m`, and `bf-r=""` (this is treated as a
-    // root-of-its-own-tree instance from the child's own perspective for
-    // hydration_attrs purposes) plus a `Child_<rand6>` scope id.
+    // No `_bf_slot` -> no `bf-h`/`bf-m`, and hydration_attrs() stays empty
+    // (bf-r only marks a client-side hydration island root, orthogonal to
+    // slot presence — see packages/shared/src/markers.ts) plus a
+    // `Child_<rand6>` scope id.
     assertTrue(html.matches("<span bf-s=\"Child_[0-9a-f]{6}\" ></span>"));
   }
 

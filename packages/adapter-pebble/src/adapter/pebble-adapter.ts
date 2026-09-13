@@ -1635,8 +1635,8 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
 
   /**
    * Lower a `style={{ … }}` object literal to a `bf.style_object(...)` call,
-   * e.g. `{ backgroundColor: color }` → `{{ bf.style_object("background-color",
-   * color) }}`. `style_object` is the single oracle-matching sanitizer (ported
+   * e.g. `{ backgroundColor: color }` → `{{ bf.style_object(["background-color",
+   * color]) }}`. `style_object` is the single oracle-matching sanitizer (ported
    * from Hono's `hasUnsafeStyleValue`): it drops any key:value pair whose
    * value could break out of a CSS declaration and HTML-escapes the rest,
    * returning a value the Java runtime marks safe so Pebble's autoescape
