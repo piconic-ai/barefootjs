@@ -12,12 +12,16 @@ RUN apt-get update \
 # Install CPAN deps into a self-contained prefix the runtime stage copies whole.
 # Text::Xslate is XS (needs the compiler above); Starman is the PSGI server
 # (prefork, so the SSE routes — AI chat, dev reload — don't block other workers).
-# Retried: the CPAN mirror occasionally serves a truncated/corrupt tarball
-# (e.g. a gzip that fails to unpack), which cpanm treats as a hard failure.
-# Clear its download cache between attempts so a retry re-fetches instead of
-# re-unpacking the same bad file.
+# Plack pulls in JSON::MaybeXS -> Cpanel::JSON::XS. CPAN's package index
+# currently advertises Cpanel::JSON::XS 4.52 as latest, but that release was
+# retracted from the mirror network (its tarball 404s) and the index hasn't
+# caught up, so resolving "latest" 404s every time — not mirror flakiness,
+# it fails identically on every attempt. Pin the last known-good release
+# explicitly so cpanm never tries to resolve/fetch the phantom 4.52.
+# The retry loop stays as defense-in-depth against genuine transient
+# network hiccups, clearing cpanm's download cache between attempts.
 RUN for i in 1 2 3; do \
-      cpanm --notest --local-lib=/opt/perl-deps Text::Xslate Plack Starman && exit 0; \
+      cpanm --notest --local-lib=/opt/perl-deps Text::Xslate Cpanel::JSON::XS@4.51 Plack Starman && exit 0; \
       echo "cpanm attempt $i failed, retrying..." >&2; \
       rm -rf /opt/perl-deps ~/.cpanm; \
       sleep 5; \

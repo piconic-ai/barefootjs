@@ -11,11 +11,16 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends make gcc libc-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Retried: the CPAN mirror occasionally serves a truncated/corrupt tarball,
-# which cpanm treats as a hard failure. Clear its download cache between
-# attempts so a retry re-fetches instead of re-unpacking the same bad file.
+# Plack pulls in JSON::MaybeXS -> Cpanel::JSON::XS. CPAN's package index
+# currently advertises Cpanel::JSON::XS 4.52 as latest, but that release was
+# retracted from the mirror network (its tarball 404s) and the index hasn't
+# caught up, so resolving "latest" 404s every time — not mirror flakiness,
+# it fails identically on every attempt. Pin the last known-good release
+# explicitly so cpanm never tries to resolve/fetch the phantom 4.52.
+# The retry loop stays as defense-in-depth against genuine transient
+# network hiccups, clearing cpanm's download cache between attempts.
 RUN for i in 1 2 3; do \
-      cpanm --notest Text::Xslate Plack Starman && exit 0; \
+      cpanm --notest Text::Xslate Cpanel::JSON::XS@4.51 Plack Starman && exit 0; \
       echo "cpanm attempt $i failed, retrying..." >&2; \
       rm -rf ~/.cpanm; \
       sleep 5; \
