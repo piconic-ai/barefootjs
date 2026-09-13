@@ -1621,17 +1621,73 @@ export function addCondAttrToTemplate(html: string, condId: string): string {
   return `<!--bf-cond-start:${condId}-->${html}<!--bf-cond-end:${condId}-->`
 }
 
-/** Check if HTML string has a single root element (not multiple siblings). */
+/**
+ * Check if HTML string has a single root element (not multiple siblings).
+ *
+ * Walks top-level tags tracking nesting depth rather than checking only
+ * "does the string end with a closing tag of the root's tag name" — that
+ * lexical shortcut matches `<div id="before">before</div><div id="after">after</div>`
+ * (two sibling `<div>`s) as a false single root, because the STRING happens
+ * to end in `</div>`, the same tag name the root opened with, even though
+ * that closing tag belongs to the second, unrelated div (#2960). A
+ * multi-root branch wrongly classified here gets `bf-c="<id>"` stamped
+ * onto only its first element instead of being comment-wrapped, and
+ * `insert()`'s runtime then drops every sibling but the first on a branch
+ * swap (`updateElementConditional`'s `fragment.firstChild`).
+ */
 function isSingleRootElement(html: string): boolean {
-  // Match the opening tag name, then find its closing tag
-  const match = html.match(/^<(\w+)[\s>]/)
+  const trimmed = html.trim()
+  // Same gate as before this fix: only a tag name matching `\w+`,
+  // followed immediately by whitespace or `>`, is recognized here — that
+  // is exactly the shape `addCondAttrToTemplate`'s splice regex
+  // (`html.replace(/^(<\w+)(\s|>)/, ...)`) can stamp `bf-c` onto. A root
+  // this gate doesn't recognize (a self-closing tag's own `/`, a
+  // hyphenated custom-element tag) falls through to `false`
+  // (comment-wrap) unchanged from before — widening this gate without
+  // also teaching the splice regex the same shapes would silently drop
+  // BOTH the `bf-c` stamp and the comment-wrap fallback for those roots.
+  const match = trimmed.match(/^<(\w+)[\s>]/)
   if (!match) return false
-  const tag = match[1]
-  // Self-closing tags like <br/>, <input/>
-  if (/^<\w+[^>]*\/>$/.test(html.trim())) return true
-  // Check that the last closing tag matches and nothing follows it
-  const closingPattern = new RegExp(`</${tag}>\\s*$`)
-  return closingPattern.test(html.trim())
+  // Self-closing tags like <br/>, <input/> with nothing else.
+  if (/^<\w+[^>]*\/>$/.test(trimmed)) return true
+
+  // Walk top-level tags tracking nesting depth — see the docstring above
+  // for why (#2960). The comment alternative must come first so it wins at a `<!--`
+  // position — without it, a BarefootJS marker comment like
+  // `<!--bf:s1-->`/`<!--/-->` (a reactive text slot nested inside a
+  // genuine single root) matches the generic tag alternative too (its
+  // body has no `\s`, `/` or `>` before the closing `-->`) and gets
+  // miscounted as an opening tag, throwing off the depth count for
+  // perfectly ordinary single-root branches.
+  const tagPattern = /<!--[\s\S]*?-->|<\/?[^\s/>]+[^>]*>/g
+  let depth = 0
+  let tagMatch: RegExpExecArray | null
+  while ((tagMatch = tagPattern.exec(trimmed))) {
+    const raw = tagMatch[0]
+    if (raw.startsWith('<!--')) continue // HTML comment, not a tag: depth unchanged
+    if (raw.endsWith('/>')) {
+      // Self-closing/void tag (e.g. `<input .../>`). The whole-string
+      // check above only catches a self-closing tag with NOTHING else in
+      // the string — a self-closing root FOLLOWED by more content (e.g.
+      // `<input .../><label>...</label>`, a genuine two-root branch) still
+      // reaches here with the guard above already satisfied (it only
+      // looks at the tag name and the very next character, not whether
+      // the tag turns out to self-close). At depth 0 this tag completes a
+      // whole top-level unit by itself, so treat it exactly like any
+      // other tag's closing point: single root only if nothing follows.
+      // Nested inside another element (depth > 0) it's just an ordinary
+      // child and doesn't affect depth.
+      if (depth === 0) return tagPattern.lastIndex === trimmed.length
+      continue
+    }
+    depth += raw.startsWith('</') ? -1 : 1
+    if (depth === 0) {
+      // Back to depth 0: the root element's own closing tag. Single root
+      // only if nothing else follows it.
+      return tagPattern.lastIndex === trimmed.length
+    }
+  }
+  return false
 }
 
 /**
