@@ -90,7 +90,14 @@
  *      operator's behavior on a non-numeric operand is unverified (no Java
  *      runtime to check against), so this side-steps the question entirely
  *      by using the confirmed-distinct concat operator whenever the adapter
- *      already knows an operand is string-shaped.
+ *      already knows an operand is string-shaped. Both operands are wrapped
+ *      in `bf.string(...)` (confirmed during Phase 3 research: `~` calls
+ *      each operand's raw Java `.toString()`, so an un-wrapped `null`
+ *      operand silently contributes nothing instead of JS's literal
+ *      `"null"`, and a whole-valued `Double` prints `"1.0"` instead of JS
+ *      `String(1)`'s `"1"`) — same `bf.string` wrapping every other
+ *      interpolation position already gets (divergence 2 in
+ *      `pebble-adapter.ts`'s file header).
  */
 
 import { groupBinaryOperand,
@@ -270,9 +277,14 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     if (op === '===') return `bf.eq(${l}, ${r})`
     if (op === '!==') return `bf.neq(${l}, ${r})`
     // See the file header, divergence 7: a string-typed `+` operand routes
-    // through `~`, not Pebble's (unverified) numeric `+`.
+    // through `~`, not Pebble's (unverified) numeric `+`. Both operands are
+    // wrapped in `bf.string(...)` — confirmed during Phase 3 research that
+    // `~` (`ConcatenateExpression`) calls each operand's raw Java
+    // `.toString()` directly: an un-wrapped `null` operand silently
+    // contributes nothing (not JS's literal `"null"` text) and a
+    // whole-valued `Double` prints `"1.0"`, not JS `String(1)`'s `"1"`.
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
-      return `${l} ~ ${r}`
+      return `bf.string(${l}) ~ bf.string(${r})`
     }
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
@@ -509,11 +521,12 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // operator for `===`/`!==`.
     if (op === '===') return `bf.eq(${l}, ${r})`
     if (op === '!==') return `bf.neq(${l}, ${r})`
-    // See the file header, divergence 7. The adapter's string-value
-    // registry catches getter/prop/local-const operands with no literal
-    // present (`firstName() + lastName()`).
+    // See the file header, divergence 7 (and the other `binary()`
+    // implementation above for the full `bf.string`-wrapping rationale).
+    // The adapter's string-value registry catches getter/prop/local-const
+    // operands with no literal present (`firstName() + lastName()`).
     if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
-      return `${l} ~ ${r}`
+      return `bf.string(${l}) ~ bf.string(${r})`
     }
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
