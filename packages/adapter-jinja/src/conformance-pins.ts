@@ -47,15 +47,17 @@ export const conformancePins: ConformancePins = {
       issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
     },
   ],
-  // #2946: the module-scope const is computed via a function call, not a
-  // static literal — genuinely unresolvable at SSR render time, same
-  // policy as an unresolvable FUNCTION-scope const above. Escape twin:
-  // `module-const-loop-source-computed-client`.
+  // Module-scope companion of `static-array-from-props` above: the const
+  // is computed via a function call, not a static literal — genuinely
+  // unresolvable at SSR render time, same #2321 design gap applied
+  // uniformly regardless of which scope the const lives in (#2946 fixed
+  // the STATIC-literal module-scope case; this is the still-open
+  // computed-const case). Escape twin: `module-const-loop-source-computed-client`.
   'module-const-loop-source-computed': [
     {
       code: 'BF101',
       severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2946',
+      issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
     },
   ],
   // #2038: no inline comprehension-with-nested-callback form via the

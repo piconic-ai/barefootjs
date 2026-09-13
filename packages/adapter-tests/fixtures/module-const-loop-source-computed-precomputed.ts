@@ -1,7 +1,7 @@
 import { createFixture } from '../src/types'
 
 /**
- * `prop-precompute` twin of `module-const-loop-source-computed` (#2946) —
+ * `prop-precompute` twin of `module-const-loop-source-computed` (#2321) —
  * the second escape kind the BF101 diagnostic offers alongside
  * `client-directive`.
  *
@@ -16,7 +16,7 @@ import { createFixture } from '../src/types'
  */
 export const fixture = createFixture({
   id: 'module-const-loop-source-computed-precomputed',
-  description: 'prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full SSR (#2946)',
+  description: 'prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full SSR (#2321)',
   source: `
 'use client'
 

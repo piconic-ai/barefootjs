@@ -46,13 +46,16 @@ describe('compileForCompat', () => {
     // `issues` is the UNION of every issue URL any BF101 pin carries on
     // this adapter (buildCompatCell attributes by code, not by fixture —
     // see its docstring) — #2320 (this shape, nested filter callback,
-    // successor to #2038), #2321 (static-array-from-props computed loop
-    // source), #2700 (a `derived` object-literal signal/memo the
-    // constructor-time baker can't reproduce, `signal-object-spread-init`),
-    // #2909 (a signal/memo call read inside a nested static loop's row,
-    // `static-nested-loop-ref`), and #2946 (a module-scope const computed
-    // via a function call used as a loop source,
-    // `module-const-loop-source-computed`) surface here even though this
+    // successor to #2038), #2321 (the "computed const as loop source can't
+    // be evaluated at SSR" design gap — covers both `static-array-from-props`
+    // and, since #2950, its module-scope twin
+    // `module-const-loop-source-computed`; #2946 fixed the STATIC-literal
+    // module-scope case but is now closed, so the computed-const pin was
+    // repointed here rather than left dangling on a closed issue), #2700
+    // (a `derived` object-literal signal/memo the constructor-time baker
+    // can't reproduce, `signal-object-spread-init`), and #2909 (a
+    // signal/memo call read inside a nested static loop's row,
+    // `static-nested-loop-ref`) surface here even though this
     // test only exercises the nested-filter-callback shape. Six pins are no longer
     // among them, each because the shape got a real lowering rather than a
     // narrower refusal: #2319 (dangerous-inner-html-dynamic → a faithful
@@ -76,7 +79,6 @@ describe('compileForCompat', () => {
           'https://github.com/piconic-ai/barefootjs/issues/2321',
           'https://github.com/piconic-ai/barefootjs/issues/2700',
           'https://github.com/piconic-ai/barefootjs/issues/2909',
-          'https://github.com/piconic-ai/barefootjs/issues/2946',
         ],
       },
     ])
