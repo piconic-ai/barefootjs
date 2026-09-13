@@ -41,7 +41,7 @@
  *   Jinja `{'k': v}` dict literal / Twig `{'k': v}` hash literal → Pebble `{'k': v}` map literal (ALWAYS quoted key — see `lib/pebble-naming.ts`; confirmed via a GitHub issue showing `{'test': 'test1', ...}` passed as a Pebble map literal)
  *   Jinja `~` concat / Twig `~` concat → Pebble `~` concat **(ASSUMPTION — not independently confirmed; Pebble's own arithmetic `+` behavior on non-numeric operands is likewise unconfirmed, so this adapter defensively assumes `~` exists and routes every string-typed `+` operand through it, exactly like Twig does for PHP's numeric-only `+`. Phase 3/4 watchpoint.)**
  *   Jinja `(a if t else b)` ternary / Twig `(t ? a : b)` → Pebble `(t ? a : b)` **(follows Twig)** — confirmed: Pebble's own docs example a ternary as `{{ foo == null ? bar : baz }}`, the symbolic C-style form, never Jinja's word-based one.
- *   Jinja `(l if (l is defined and l is not none) else r)` (`??`) / Twig `(l ?? r)` → Pebble `(l ?? r)` **(follows Twig, with a caveat — see divergence 3 below, a genuine Pebble-specific nuance)** — confirmed: Pebble has a native `??` operator, documented as "undefined-coalescing" (distinguishes an unset template variable from an explicit `null`, unlike Twig's `??` which is documented to cover both in one operator). This adapter assumes the two collapse under a non-strict-variables render config — see divergence 3.
+ *   Jinja `(l if (l is defined and l is not none) else r)` (`??`) / Twig `(l ?? r)` → Pebble `bf.coalesce(l, r)` **(Pebble-specific — REFUTED during Phase 3 research, was previously listed as "follows Twig")** — Pebble has NO `??` operator at all: `{{ a ?? b }}` is a template PARSE ERROR on real Pebble, not a subtly-wrong runtime value, confirmed via Pebble's own source and a live `ParserException`. Routed through the Java runtime's `bf.coalesce(l, r)` helper instead — see divergence 3.
  *   Jinja `==`/`!=` (native, for `===`/`!==`) / Twig `bf.eq`/`bf.neq` → Pebble `bf.eq`/`bf.neq` **(follows Twig)** — Pebble's own `==` / `is same as` cross-type-numeric behavior is UNCONFIRMED (no Java runtime to check `1 == 1.0`-shaped cases against), so this adapter takes Twig's defensive stance rather than Jinja's "the native operator already matches JS" one. See divergence 4.
  *   Jinja macro children capture / Twig `{% set NAME %}…{% endset %}` set-block → Pebble `{% set NAME %}…{% endset %}` **(Pebble-specific — a REQUIRED custom extension, not stock syntax)** — see divergence 6, the most consequential Pebble-specific finding of this port: stock Pebble's `set` tag is expression-only (`{% set x = expr %}`), with NO block-capture form; a 2018 upstream issue requesting exactly this feature shows it was not part of Pebble's design. This adapter emits the Jinja/Twig-shaped syntax anyway, as a DELIBERATE, documented requirement that the Phase 3 Java runtime register a custom `TokenParser` extension implementing it (Pebble's Java `Extension` API is confirmed to support custom tags) — not a claim that stock Pebble already has this tag.
  *
@@ -68,21 +68,20 @@
  *      boolean-routed) is routed through `bf.string(...)` before it reaches
  *      Pebble's own escaping/concat machinery, exactly like the Jinja/Twig
  *      ports.
- *   3. **`??` is Pebble-native, WITH A CAVEAT.** Pebble's `??` is documented
- *      as "undefined-coalescing" — it returns its right-hand side only when
- *      the left is UNDEFINED (a template variable Pebble never received),
- *      not merely `null`. This is narrower than Twig's confirmed
- *      both-in-one-operator `??` and closer in SPIRIT to Jinja's distinct
- *      Undefined-vs-None sentinel (`ChainableUndefined`) than to Twig's
- *      uniform PHP-null collapse. Since JS `??` must catch BOTH null and
- *      undefined, this adapter assumes a NON-STRICT-VARIABLES Pebble render
- *      config (`strict_variables: false`, mirroring Jinja's/Twig's own
- *      assumed config) under which a genuinely-missing top-level context
- *      variable normalizes to `null` before any operator sees it — making
- *      Pebble's own `??` behave like Twig's in practice. **Phase 3/4
- *      watchpoint** (flagged in the package README too): verify this
- *      empirically once the Java runtime exists; if it does NOT hold, `??`
- *      lowering (`expr/emitters.ts`'s `logical`) is the one call site to fix.
+ *   3. **`??` is NOT Pebble-native — REFUTED during Phase 3 research.**
+ *      Confirmed via Pebble's own source, its Twig-compatibility table, and
+ *      a live `ParserException` on `{{ a ?? b }}`: Pebble has no `??`
+ *      operator at all, so the previous "follows Twig" assumption in this
+ *      file's syntax table was wrong — this is a template PARSE failure,
+ *      not a subtly-wrong runtime value, and would have broken every
+ *      component using JS `??`. Fixed by routing through the Java runtime's
+ *      `bf.coalesce(l, r)` helper (`expr/emitters.ts`'s `logical`, both
+ *      implementations) instead of emitting a native operator — the same
+ *      defensive pattern as divergence 4's `bf.eq`/`bf.neq` and divergence
+ *      6's `bf.get`. `bf.coalesce` still needs to decide the
+ *      null-vs-undefined collapse question (JS `??` catches both) fully
+ *      inside the Java runtime, where it belongs — no template-side
+ *      strict-variables assumption required anymore.
  *   4. **`===`/`!==` route through `bf.eq`/`bf.neq`, never a native Pebble
  *      equality operator** (follows Twig, not Jinja — see the syntax table
  *      above). `bf.eq`/`bf.neq` is the ONE shared JS-strict-equality
@@ -1739,16 +1738,16 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Pebble
         // map literal with an immediate bracket lookup, coalesced with
-        // Pebble's native `??` (see this file's header, divergence 3, and
-        // the syntax table's point on `Record[key]` lookup: unlike Jinja's
-        // dict `.get(key, default)`, neither Twig hashes nor (assumed)
-        // Pebble maps expose a `.get` method, so `??` supplies the same
-        // "empty when no case matches" default).
+        // `bf.coalesce` (see this file's header, divergence 3 — Pebble has
+        // no native `??`) and the syntax table's point on `Record[key]`
+        // lookup: unlike Jinja's dict `.get(key, default)`, neither Twig
+        // hashes nor Pebble maps expose a `.get` method, so `bf.coalesce`
+        // supplies the same "empty when no case matches" default.
         const keyExpr = this.convertExpressionToPebble(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${pebbleHashKey(k)}: '${escapePebbleSingleQuoted(v)}'`)
           .join(', ')
-        parts.push(`bf.string(({${entries}}[${keyExpr}]) ?? '')`)
+        parts.push(`bf.string(bf.coalesce({${entries}}[${keyExpr}], ''))`)
       }
     }
     // Join with Pebble string concatenation (`~`). Every term is already a
