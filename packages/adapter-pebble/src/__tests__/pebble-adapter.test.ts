@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { PebbleAdapter, pebbleAdapter } from '../adapter/index.ts'
-import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, type ComponentIR, type ObjectLiteralProperty, type ParsedExpr } from '@barefootjs/jsx'
+import { PebbleTopLevelEmitter } from '../adapter/expr/emitters.ts'
+import type { PebbleEmitContext } from '../adapter/emit-context.ts'
 
 /**
  * Phase 2 smoke tests (#2101 adapter core). The render methods now emit real
@@ -132,5 +134,20 @@ export function Label({ label }: { label?: string }) {
 }
 `)
     expect(template).toContain('??')
+  })
+
+  test('objectLiteral: a single spread segment still emits bf.merge(...)', () => {
+    // Regression pin for a pullfrog-caught bug (#2971): `Array.prototype
+    // .reduce` with no initial value returns its sole element unchanged
+    // (never invoking the callback) when there is exactly one segment, so a
+    // bare `{ ...t }` with no sibling props previously emitted plain `t`
+    // and skipped `bf.merge` entirely. Unit-tested directly against the
+    // emitter (rather than through `compileJSX`) since `objectLiteral` only
+    // reaches this spread branch in specific value positions the full
+    // pipeline may otherwise resolve away.
+    const emitter = new PebbleTopLevelEmitter({} as PebbleEmitContext)
+    const spreadT: ObjectLiteralProperty = { kind: 'spread', expr: { kind: 'identifier', name: 't' } as ParsedExpr }
+    const emit = (e: ParsedExpr) => (e as { name: string }).name
+    expect(emitter.objectLiteral([spreadT], '{...t}', emit)).toBe('bf.merge(t)')
   })
 })
