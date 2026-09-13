@@ -95,6 +95,7 @@ import {
   goFieldNameForKey,
   slotIdToFieldSuffix,
   loopKeyToGoFieldPath,
+  structFieldNamePairs,
 } from "./lib/go-naming.ts"
 import {
   escapeGoString,
@@ -123,7 +124,7 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { routesToRestBag } from "./lib/types.ts"
+import { routesToRestBag, objectBakeTargetFor } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
@@ -136,9 +137,11 @@ import {
   convertInitialValue,
   jsLiteralToGo,
   objectLiteralToGoMap,
+  objectLiteralToGoComposite,
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
+import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
@@ -955,7 +958,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         )
         .map(p => p.sourceName ?? p.name),
     )
-    this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames })
+    // A REQUIRED anonymous-object param (`value: { v: () => number }`) is NOT
+    // in the `optional` set above — `resolvePropGoType` only flips an
+    // OPTIONAL object-typed param to a map, so a required one lowers through
+    // `typeInfoToGo`'s `'object'` case to whatever `emitSynthPropStructs`
+    // (run at THIS child's own `generateTypes` time — after shape
+    // registration, per this file's docstring above) synthesizes for it: a
+    // named struct, or the `map[string]interface{}` fallback on a name
+    // collision. `planSynthPropStructs` is the SAME naming decision
+    // `emitSynthPropStructs` makes, run here so a parent registering this
+    // child's shape (before either side has compiled) can bake an inline
+    // object literal against the right Go shape instead of silently
+    // omitting the field (#2925).
+    const synthPlan = planSynthPropStructs(
+      { typeDefinitions: ir.metadata.typeDefinitions ?? [], propsParams: ir.metadata.propsParams ?? [] },
+      name,
+    )
+    const synthByType = new Map(synthPlan.map(e => [e.typeInfo, e]))
+    const structTypedObjectParams = new Map<string, { goType: string; fields: ReadonlyMap<string, string> }>()
+    for (const p of ir.metadata.propsParams ?? []) {
+      if (p.optional || p.type.kind !== 'object') continue
+      const key = p.sourceName ?? p.name
+      const entry = synthByType.get(p.type)
+      if (entry) {
+        const fields = new Map(structFieldNamePairs(entry.properties).map(f => [f.tsName, f.goName]))
+        structTypedObjectParams.set(key, { goType: entry.name, fields })
+      } else {
+        // Synthesis declined this exact type (name collision) — `typeInfoToGo`
+        // falls back to the map convention, so the child's field IS a map.
+        mapTypedParamNames.add(key)
+      }
+    }
+    this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames, structTypedObjectParams })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
     // IDENTIFIERS in the memo/signal body — those are the LOCAL bindings
@@ -1416,19 +1450,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * pre-pass share one field-derivation path.
    */
   private structFieldsFor(td: { properties?: PropertyInfo[] }): Array<{ tsName: string; goName: string; goType: string }> {
-    const fields: Array<{ tsName: string; goName: string; goType: string }> = []
-    const seenGoNames = new Set<string>()
-    for (const prop of td.properties ?? []) {
-      const goName = goFieldNameForKey(prop.name)
-      if (seenGoNames.has(goName)) continue
-      seenGoNames.add(goName)
-      fields.push({
-        tsName: prop.name,
-        goName,
-        goType: typeInfoToGo(this.emitCtx, prop.type),
-      })
-    }
-    return fields
+    const typeByName = new Map((td.properties ?? []).map(p => [p.name, p.type]))
+    return structFieldNamePairs(td.properties ?? []).map(({ tsName, goName }) => ({
+      tsName,
+      goName,
+      goType: typeInfoToGo(this.emitCtx, typeByName.get(tsName)!),
+    }))
   }
 
   /**
@@ -2252,23 +2279,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (signal.envReader) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
-      // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
-      // one value.
-      const fallbackMatch = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
-      const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
-      if (hoisted) {
-        lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
-      } else {
-        // Bake against the synthesised struct type if one was inferred for this
-        // untyped object-array signal, else the signal's own type.
-        const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-        const resolvedParsed = this.resolvedSignalParsed(signal)
-        const initialValue = convertInitialValue(this.emitCtx, signal.initialValue, bakeType, ir.metadata.propsParams, signal.parsed)
-        lines.push(`\t\t${fieldName}: ${initialValue},`)
-        if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
-          const step = this.state.ssrSeedPlan.steps.find(s => s.kind === 'derived' && s.origin === 'signal' && s.name === signal.getter)
-          if (step?.kind === 'derived') this.refuseUnbakeableDerivedObjectLiteral(signal.getter, signal.loc, step.frees)
-        }
+      // Bake against the synthesised struct type if one was inferred for this
+      // untyped object-array signal, else the signal's own type.
+      const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
+      const initialValue = this.signalSeedGo(signal, ir.metadata.propsParams, propFallbackVars, bakeType)
+      lines.push(`\t\t${fieldName}: ${initialValue},`)
+      const resolvedParsed = this.resolvedSignalParsed(signal)
+      if (resolvedParsed?.kind === 'object-literal' && jsLiteralToGo(this.emitCtx, bakeType, resolvedParsed) === null) {
+        const step = this.state.ssrSeedPlan.steps.find(s => s.kind === 'derived' && s.origin === 'signal' && s.name === signal.getter)
+        if (step?.kind === 'derived') this.refuseUnbakeableDerivedObjectLiteral(signal.getter, signal.loc, step.frees)
       }
     }
 
@@ -2352,7 +2371,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${field}: ${defaulted},`)
     }
 
-    this.emitStaticChildInstances(lines, ir)
+    this.emitStaticChildInstances(lines, ir, propFallbackVars)
 
     this.emitSpreadBagInits(lines, ir, spreadSlots)
 
@@ -2501,7 +2520,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('')
   }
 
-  private emitStaticChildInstances(lines: string[], ir: ComponentIR): void {
+  private emitStaticChildInstances(
+    lines: string[],
+    ir: ComponentIR,
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): void {
     const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
       // #2822: the constructor/type names and every cross-file shape lookup
@@ -2579,19 +2602,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // `template` kind has no raw expr string (discarded for the parts).
             const exprText = prop.value.kind === 'template' ? '' : prop.value.expr
             if (!exprText) break
-            // Inline object literal to a child's optional object prop
-            // (`opts={{ align: 'start' }}`) bakes to a Go map literal (the field
-            // is `map[string]interface{}`). Only an `expression` attr carries
-            // `.parsed`.
+            // Inline object literal to a child's object-shaped prop
+            // (`opts={{ align: 'start' }}`, or #2925's `value={{ v: count }}`)
+            // bakes to a Go map or struct literal per the child's registered
+            // shape (`objectBakeTargetFor` — an OPTIONAL object prop's field
+            // is `map[string]interface{}`; a REQUIRED one is a synthesized
+            // struct, #2674). Only an `expression` attr carries `.parsed`.
+            // `resolveIdentifier` resolves a property value that's a bare
+            // local signal/memo getter (`{ v: count }`) against this SAME
+            // component's constructor-time seeding — #2925, the object-
+            // literal-wrapped twin of the bare-getter fix below.
             const parsedValue =
               prop.value.kind === 'expression' ? prop.value.parsed : undefined
-            if (
-              parsedValue &&
-              childShape?.mapTypedParamNames.has(prop.name)
-            ) {
-              const goMap = objectLiteralToGoMap(this.emitCtx, parsedValue)
-              if (goMap !== null) {
-                emitChildField(prop.name, goMap)
+            const objectTarget = objectBakeTargetFor(childShape, prop.name)
+            if (parsedValue && objectTarget) {
+              const goObj = objectLiteralToGoComposite(
+                this.emitCtx,
+                parsedValue,
+                objectTarget,
+                name => this.resolveLocalGetterAsGo(name, ir.metadata.signals, ir.metadata.memos, ir.metadata.propsParams, propFallbackVars),
+              )
+              if (goObj !== null) {
+                emitChildField(prop.name, goObj)
                 break
               }
             }
@@ -2628,7 +2660,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
               exprText,
               ir.metadata.signals,
               ir.metadata.memos,
-              ir.metadata.propsParams
+              ir.metadata.propsParams,
+              propFallbackVars,
             )
             if (resolvedValue !== null) {
               emitChildField(prop.name, resolvedValue)
@@ -3036,67 +3069,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // compiled again, or read by another consumer sharing the same IR).
     this.state.currentTypeDefinitions = [...this.state.currentTypeDefinitions]
 
-    const visitObject = (typeInfo: TypeInfo, desiredName: string): void => {
-      // Identity guard: the exact same anonymous TypeInfo object reached via
-      // both walk roots (defensive — not expected given how the analyzer
-      // builds distinct TypeInfo instances per source occurrence).
-      if (this.state.synthObjectStructNames.has(typeInfo)) return
-      // Name-collision guard: graceful fallback to the map convention for
-      // just this type (see docstring above).
-      if (this.state.localTypeNames.has(desiredName)) return
-      this.state.localTypeNames.add(desiredName)
-      this.state.synthObjectStructNames.set(typeInfo, desiredName)
-      // Register nested children FIRST (depth-first) so this struct's OWN
-      // field-type resolution below (`structFieldsFor` → `typeInfoToGo`)
-      // sees synthesized names for any of ITS OWN nested object /
-      // array-of-object properties instead of racing ahead of them.
-      for (const prop of typeInfo.properties ?? []) {
-        visit(prop.type, desiredName, prop.name)
-      }
-      const fields = this.structFieldsFor(typeInfo)
+    // Naming/collision decision lives in `planSynthPropStructs` (#2925) —
+    // shared with `registerChildComponentShape`'s cross-component-shape
+    // registry, which needs the SAME decision before this component has
+    // even compiled once (see that function's own #2925 comment).
+    // `this.state.localTypeNames` at this point already holds exactly
+    // `planSynthPropStructs`'s own collision seed (`localTypeDefinitionNames`,
+    // populated by `buildLocalTypeTables` just before this method runs and
+    // untouched since) — entries below never collide against it or each
+    // other, so registering them is unconditional.
+    for (const entry of planSynthPropStructs(ir.metadata, componentName)) {
+      this.state.localTypeNames.add(entry.name)
+      this.state.synthObjectStructNames.set(entry.typeInfo, entry.name)
+      const fields = this.structFieldsFor(entry.typeInfo)
       this.registerSynthStruct(
         lines,
-        desiredName,
+        entry.name,
         fields,
-        typeInfo.properties ?? [],
-        `// ${desiredName} is a synthesised type for an anonymous object type (#2674).`,
+        entry.properties,
+        `// ${entry.name} is a synthesised type for an anonymous object type (#2674).`,
       )
-    }
-
-    const visitArrayElem = (elemType: TypeInfo | undefined, parentName: string, propName: string): void => {
-      if (!elemType) return
-      if (elemType.kind === 'array') {
-        // Array-of-array (`matrix: {id:number}[][]`): keep the same
-        // parent/prop naming context at every depth — rare shape, not one
-        // the two documented #2674 cases exercise, so this just needs to
-        // stay deterministic and non-colliding, not maximally descriptive.
-        visitArrayElem(elemType.elementType, parentName, propName)
-      } else if (elemType.kind === 'object') {
-        visitObject(elemType, `${parentName}${goFieldNameForKey(propName)}Item`)
-      }
-    }
-
-    const visit = (typeInfo: TypeInfo, parentName: string, propName: string): void => {
-      if (typeInfo.kind === 'array') {
-        visitArrayElem(typeInfo.elementType, parentName, propName)
-      } else if (typeInfo.kind === 'object') {
-        visitObject(typeInfo, `${parentName}${goFieldNameForKey(propName)}`)
-      }
-    }
-
-    // Walk root 1: named types' own properties (closes `Row.user`).
-    for (const td of ir.metadata.typeDefinitions) {
-      if (td.name === 'Props' || td.name === `${componentName}Props`) continue
-      if (td.name.endsWith('Props')) continue
-      for (const prop of td.properties ?? []) {
-        visit(prop.type, td.name, prop.name)
-      }
-    }
-
-    // Walk root 2: inline prop types with no backing TypeDefinition (closes
-    // `items: { id: number; tags: string[] }[]`).
-    for (const param of ir.metadata.propsParams) {
-      visit(param.type, componentName, param.name)
     }
   }
 
@@ -3923,7 +3915,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     expr: string,
     signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
     memos: { name: string; computation: string; deps: string[] }[],
-    propsParams: { name: string; sourceName?: string }[]
+    propsParams: { name: string; sourceName?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
     // `getter() === 'lit'` / `!==` as a child-instance prop value
     // (`open={openItem() === 'item-1'}`): resolves to a Go bool when the
@@ -3953,23 +3946,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Signal/memo getter calls (`count()`, `doubled()`).
     const getterMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\(\)$/)
     if (getterMatch) {
-      const getterName = getterMatch[1]
-
-      const signal = signals.find(s => s.getter === getterName)
-      if (signal) {
-        return convertInitialValue(this.emitCtx, signal.initialValue, signal.type, propsParams, signal.parsed)
-      }
-
-      // A memo: when no pattern applies, return null so the caller OMITS the
-      // field and Go's typed zero value applies. Seed the resolution stack
-      // with this memo's own name — a fresh top-level computation, so
-      // self-reference must be caught on the first recursion.
-      const memo = memos.find(m => m.name === getterName)
-      if (memo) {
-        return computeMemoInitialValueOrNull(
-          this.emitCtx, memo, signals, propsParams, undefined, new Set([memo.name]),
-        )
-      }
+      const resolved = this.resolveLocalGetterAsGo(getterMatch[1], signals, memos, propsParams, propFallbackVars)
+      if (resolved !== null) return resolved
+      // Neither a signal nor a memo (some other zero-arg call) — fall
+      // through to the passthrough checks below, same as before.
     }
 
     // A bare passthrough of the CALLER's own prop — `text={props.label}`
@@ -3995,6 +3975,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // never matches either shape below and silently falls through to `null`.
     const identifierPattern = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
     const bareIdentifier = identifierPattern.test(expr) ? expr : null
+    // #2925: a BARE (uncalled) local getter handed to a child prop
+    // (`value={count}`) — the child calls it at its OWN render time, which at
+    // SSR IS the constructor-time seed: the same value the CALLED form
+    // (`count()`, handled above) already bakes. Checked before the
+    // passthrough section below: a signal/memo getter name can never
+    // coincide with a propsParam name in valid source (both are bindings in
+    // the same scope), so ordering between the two is unobservable — this
+    // just mirrors the called form's getter-before-passthrough order. A bare
+    // SETTER (`update={setCount}`) matches neither a signal getter nor a memo
+    // name, falls through unresolved, and stays omitted exactly as before
+    // this fix.
+    if (bareIdentifier !== null) {
+      const resolved = this.resolveLocalGetterAsGo(bareIdentifier, signals, memos, propsParams, propFallbackVars)
+      if (resolved !== null) return resolved
+    }
     // Plain prefix/suffix check rather than an `expr`-interpolated `RegExp`:
     // `propsObjectName` is an arbitrary identifier and could itself contain
     // regex metacharacters (e.g. `$props`), which would silently build a
@@ -4235,6 +4230,72 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private resolvedSignalParsed(signal: { getter: string; parsed?: ParsedExpr }): ParsedExpr | undefined {
     return resolveSignalParsedThroughSeedPlan(this.state, signal)
+  }
+
+  /**
+   * The ONE "seed this signal at constructor time" decision — a hoisted
+   * `props.X ?? N` fallback var when one applies, else `convertInitialValue`
+   * against `bakeType` (default: the signal's own type). Shared by the
+   * top-level signal-field loop (this component's OWN field) and
+   * `resolveLocalGetterAsGo` (#2925 — a local getter forwarded as a NESTED
+   * child's prop): both answer "what Go value does this signal's getter
+   * evaluate to at SSR constructor time," and must agree, or a signal passed
+   * bare to a child prop could bake a different value than the signal's own
+   * field bakes for itself. `bakeType` is a separate parameter (not always
+   * `signal.type`) because the two call sites have different DESTINATIONS:
+   * the signal's own field may be typed against a synthesized array-of-
+   * objects struct (`this.state.synthStructTypes`), which isn't assignable
+   * into an unrelated child's `Input` field — the child-prop caller keeps
+   * `signal.type`.
+   */
+  private signalSeedGo(
+    signal: { getter: string; initialValue: string; type: TypeInfo; parsed?: ParsedExpr },
+    propsParams: { name: string; sourceName?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+    bakeType: TypeInfo = signal.type,
+  ): string {
+    // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
+    // one value.
+    const fallbackMatch = this.extractPropFallback(signal.initialValue, this.resolvedSignalParsed(signal))
+    const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
+    if (hoisted) return hoisted.varName
+    return convertInitialValue(this.emitCtx, signal.initialValue, bakeType, propsParams, signal.parsed)
+  }
+
+  /**
+   * Resolve a BARE getter name (a local signal or memo, e.g. `count` in
+   * `<Display value={count} />`) against this component's own constructor-
+   * time seeding — the SAME value the CALLED form (`count()`) already bakes
+   * in `resolveDynamicPropValue`'s `getterMatch` branch, and the signal's own
+   * top-level field (`signalSeedGo` above). `null` when `name` doesn't name a
+   * local signal or memo at all (the caller then tries other resolutions —
+   * a passthrough prop, or gives up and omits the field).
+   *
+   * A memo forwards through `computeMemoInitialValueOrNull` with the REAL
+   * `propFallbackVars` (not `undefined`, unlike this function's one caller
+   * used to pass) so a memo over a `props.X ?? N`-seeded signal sees the
+   * hoisted var too — a strict improvement, not a behavior change for any
+   * memo that doesn't reference such a signal.
+   */
+  private resolveLocalGetterAsGo(
+    name: string,
+    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    propsParams: { name: string; sourceName?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    const signal = signals.find(s => s.getter === name)
+    if (signal) return this.signalSeedGo(signal, propsParams, propFallbackVars)
+
+    const memo = memos.find(m => m.name === name)
+    if (memo) {
+      return (
+        this.state.hoistedMemoLocals.get(memo.name) ??
+        computeMemoInitialValueOrNull(this.emitCtx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]))
+      )
+    }
+
+    return null
   }
 
   /**
