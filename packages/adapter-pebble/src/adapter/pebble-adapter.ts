@@ -36,7 +36,7 @@
  *   `bf.method(args)`                       → Pebble `bf.method(args)`           (same dot-method convention; Pebble resolves `foo.bar(...)` as a method call directly, same as Twig/Jinja)
  *   Jinja `{% if C %}A{% elif D %}B{% else %}E{% endif %}` → Pebble `{% if C %}A{% elseif D %}B{% else %}E{% endif %}` **(follows Twig)** — confirmed via Pebble's own `if` tag docs, which use `elseif` (Twig's spelling), never Jinja's `elif`.
  *   Jinja `{% for item in arr %}…{% endfor %}` → Pebble (same; confirmed)
- *   Jinja `{% for k, v in map.items() %}` / Twig `{% for k, v in map %}` → Pebble `{% for k, v in map %}` **(follows Twig)** — Pebble's confirmed `for` tag supports `key, value in <map>` directly, no `.items()`/`.entries()` method call (that's Jinja/Python-specific). See divergence 8 below for why this adapter still routes it through `bf.entries`/`bf.keys`/`bf.values` rather than relying on this directly.
+ *   Jinja `{% for k, v in map.items() %}` / Twig `{% for k, v in map %}` → Pebble has NO two-variable `for` form at all **(Pebble-specific — REFUTED during Phase 3 research, was previously listed as "follows Twig")** — `ForTokenParser.parse()` calls `parseNewVariableName()` exactly ONCE for the loop variable; `{% for k, v in map %}` fails to parse (`expect "in"` after the first name). Pebble's own documented single-variable map-iteration form binds the loop variable to a `Map.Entry` (`{{ entry.key }}`/`{{ entry.value }}`) — a third shape, neither Jinja's nor Twig's. Zero code impact: see divergence 8 below, which already avoids depending on any native map-iteration shape.
  *   Jinja `loop.index0` (0-based) / Twig `loop.index0` (0-based), `loop.index` (1-based) → Pebble `loop.index` is ITSELF 0-based **(Pebble-specific — matches NEITHER sibling's naming)**. Confirmed via search: Pebble's for-loop `loop` variable documents `loop.index` as "a zero-based index that increments with every iteration" — there is no `loop.index0` in Pebble at all. Every `loop.index0` reference in the Jinja/Twig ports becomes plain `loop.index` here. `loop.first`/`loop.last`/`loop.length`/`loop.revindex` are confirmed present too.
  *   Jinja `{'k': v}` dict literal / Twig `{'k': v}` hash literal → Pebble `{'k': v}` map literal (ALWAYS quoted key — see `lib/pebble-naming.ts`; confirmed via a GitHub issue showing `{'test': 'test1', ...}` passed as a Pebble map literal)
  *   Jinja `~` concat / Twig `~` concat → Pebble `~` concat **(ASSUMPTION — not independently confirmed; Pebble's own arithmetic `+` behavior on non-numeric operands is likewise unconfirmed, so this adapter defensively assumes `~` exists and routes every string-typed `+` operand through it, exactly like Twig does for PHP's numeric-only `+`. Phase 3/4 watchpoint.)**
@@ -138,15 +138,15 @@
  *      keys are a separate, unconditional concern — see `pebbleHashKey`'s
  *      docstring for why they are always quoted.
  *   8. **Object-entries/keys/values iteration routes through `bf.entries`/
- *      `bf.keys`/`bf.values`, not Pebble's own `for key, value in map`
- *      syntax directly** (follows Twig's defensive choice, not a bare
- *      assumption that Jinja's `.items()`-free native iteration transfers).
- *      Pebble's `for` tag is confirmed to support `key, value in <map>`
- *      map-iteration natively — but whether a SINGLE-variable `for x in
- *      map` binds `x` to the map's KEYS or its VALUES (Twig's own answer:
- *      values) is not independently confirmed for Pebble, and this
- *      adapter's `keys`-only / `values`-only `.map()` shapes need a
- *      SPECIFIC, unambiguous one of those two. Routing all three shapes
+ *      `bf.keys`/`bf.values`, not any native Pebble `for` map-iteration
+ *      form** (follows Twig's defensive choice, not a bare assumption that
+ *      Jinja's `.items()`-free native iteration transfers). Pebble's `for`
+ *      tag has NO two-variable `key, value in <map>` form at all — REFUTED
+ *      during Phase 3 research, see the syntax table above — and its
+ *      single-variable map form binds to a `Map.Entry`, neither Jinja's nor
+ *      Twig's KEYS-or-VALUES answer. This adapter's `keys`-only /
+ *      `values`-only `.map()` shapes need a SPECIFIC, unambiguous one of
+ *      those two either way. Routing all three shapes
  *      (`entries`/`keys`/`values`) through dedicated `bf.*` runtime helpers
  *      — which the Java runtime controls completely (Phase 3) — sidesteps
  *      the ambiguity entirely, at the cost of one extra runtime call per
@@ -1091,11 +1091,11 @@ export class PebbleAdapter extends BaseAdapter implements IRNodeEmitter<PebbleRe
     // each get their own reconciliation range.
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | raw }}`)
     // `objectIteration` (#2168 object-entries-map): routed through the
-    // runtime's `bf.entries`/`bf.keys`/`bf.values` rather than Pebble's own
-    // `for key, value in map` map-iteration syntax directly — see the file
-    // header, divergence 8, for why (Pebble's single-variable map-iteration
-    // binding — keys vs. values — is not independently confirmed, unlike
-    // its confirmed `key, value in map` two-variable form).
+    // runtime's `bf.entries`/`bf.keys`/`bf.values` rather than any native
+    // Pebble `for` map-iteration form — see the file header, divergence 8:
+    // Pebble has no two-variable `key, value in map` form at all (confirmed
+    // during Phase 3 research), and its single-variable form binds to a
+    // Map.Entry, not a bare key or value.
     const forHeader = loop.objectIteration === 'entries'
       ? `{% for ${pebbleIdent(loop.index ?? param)}, ${pebbleIdent(param)} in bf.entries(${array}) %}`
       : loop.objectIteration === 'keys'
