@@ -1888,6 +1888,43 @@ export function Host() {
     })
   })
 
+  describe('#2925 nested-child getter/object-literal props', () => {
+    // Companion to the #2674 collision test above (`a synthesized-name
+    // collision gracefully falls back...`), but for `registerChildComponentShape`'s
+    // OWN copy of the struct-vs-map decision (`structTypedObjectParams` /
+    // `mapTypedParamNames`, go-template-adapter.ts): a REQUIRED anonymous-
+    // object child prop whose synthesized name (`planSynthPropStructs`)
+    // collides with an existing local type on the CHILD falls back to the
+    // map convention there too, so a parent baking an inline object literal
+    // into that prop targets `map[string]interface{}`, not the colliding
+    // (and wrong) named struct.
+    test('a required object-typed child prop whose synthesized struct name collides bakes a map literal, not the colliding struct', () => {
+      const adapter = new GoTemplateAdapter()
+      // `Display`'s `value` param would deterministically synthesize
+      // `DisplayValue` (#2674's `<Component><Field>` convention) — but the
+      // child ALSO declares a real, unrelated `DisplayValue` type, so
+      // `planSynthPropStructs` declines synthesis for `value`'s anonymous
+      // type and it keeps the `map[string]interface{}` fallback.
+      const childSource = `
+type DisplayValue = { handle: string }
+export function Display(props: { value: { v: number } }) {
+  return <span>{props.value.v}</span>
+}
+`
+      const childIr = compileToIR(childSource, adapter)
+      adapter.registerChildComponentShape(childIr)
+      const parentSource = `
+import { Display } from './display'
+export function Host() {
+  return <div><Display value={{ v: 5 }} /></div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(parentSource, adapter))!
+      expect(types).toContain('Value: map[string]interface{}{"v": 5}')
+      expect(types).not.toMatch(/Value: DisplayValue\{/)
+    })
+  })
+
   describe('nullish optional-attribute omission (textarea rows)', () => {
     // An optional, no-default prop whose Go field type resolves to
     // `interface{}` (nillable) is emitted with a `ne .X nil` guard so an
