@@ -1,0 +1,98 @@
+{
+  "name": "@barefootjs/pebble",
+  "version": "0.35.6",
+  "description": "Pebble adapter for BarefootJS — compiles IR to .peb templates and ships the Java BarefootJS rendering runtime; runs under any JVM web framework (Spring Boot, Ktor, etc.)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./adapter": {
+      "types": "./src/adapter/index.ts",
+      "import": "./src/adapter/index.ts"
+    },
+    "./test-render": {
+      "bun": "./src/test-render.ts"
+    },
+    "./vite": {
+      "types": "./src/vite.ts",
+      "import": "./dist/vite.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./adapter": {
+        "types": "./dist/adapter/index.d.ts",
+        "import": "./dist/adapter/index.js"
+      },
+      "./test-render": {
+        "bun": "./src/test-render.ts"
+      },
+      "./vite": {
+        "types": "./dist/vite.d.ts",
+        "import": "./dist/vite.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "java",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts --root ./src --outdir ./dist --format esm --external @barefootjs/jsx --external @barefootjs/shared --external @barefootjs/vite --external vite && bun build ./src/vite.ts --outfile ./dist/vite.js --format esm --target node --external @barefootjs/vite --external vite --external typescript",
+    "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
+    "test": "bun test",
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
+  },
+  "keywords": [
+    "pebble",
+    "java",
+    "jvm",
+    "spring",
+    "barefoot",
+    "ssr"
+  ],
+  "author": "kobaken <kentafly88@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piconic-ai/barefootjs",
+    "directory": "packages/adapter-pebble"
+  },
+  "dependencies": {
+    "@barefootjs/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "@barefootjs/jsx": ">=0.2.0",
+    "@barefootjs/vite": ">=0.2.0",
+    "vite": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@barefootjs/vite": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@barefootjs/adapter-tests": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
+    "@barefootjs/client": "workspace:*",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  }
+}
