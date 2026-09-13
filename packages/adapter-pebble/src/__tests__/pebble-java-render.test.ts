@@ -14,10 +14,11 @@ import { isJavaToolchainAvailable, renderPebbleTemplate } from '../test-render.t
  * sibling adapters' "skip when toolchain missing" convention
  * (`isCargoAvailable`/`RustNotAvailableError` in `adapter-rust`).
  *
- * NOT exercised here (explicitly out of scope for this PR, see
- * `test-render.ts`'s file header): JSX-children/named-slot/async-fallback
- * forwarding (needs the Phase 3b `{% set %}...{% endset %}` custom tag) and
- * cross-template child rendering (`bf.render_child`).
+ * NOT exercised here: JSX-children/named-slot/async-fallback forwarding
+ * (the Phase 3b `{% set %}...{% endset %}` custom tag — see
+ * `pebble-set-block.test.ts`) and cross-template child rendering
+ * (`bf.render_child`, still unimplemented — see `Bf.render_child`'s own
+ * doc comment).
  */
 describe('Pebble Java runtime (Phase 3a smoke tests)', () => {
   test.skipIf(!isJavaToolchainAvailable())('interpolation + bf.* helper calls', async () => {

@@ -112,16 +112,17 @@
  *      once at DEFINITION time, not supplied per-call the way a `{% call
  *      %}`/set-block captures arbitrary caller-side markup), this adapter
  *      emits the Jinja/Twig-shaped `{% set NAME %}...{% endset %}` syntax
- *      AS A DELIBERATE REQUIREMENT: the Phase 3 Java runtime must register a
+ *      AS A DELIBERATE REQUIREMENT: the Phase 3 Java runtime registers a
  *      custom `TokenParser` (+ matching AST node) implementing exactly this
  *      tag via Pebble's own `Extension` API (confirmed to support custom
  *      tags/filters/functions/tests — this is a first-class, documented
  *      Pebble extension point, not a hack). This keeps every sibling
  *      adapter's call shape identical at the TS layer (satisfying this PR's
- *      "structurally correct, matching the same call shape" charter) while
- *      being explicit that the corresponding `.peb` text does NOT run on
- *      stock Pebble until that extension ships. Tracked as the headline
- *      Phase 3 dependency — not a TODO to defer quietly.
+ *      "structurally correct, matching the same call shape" charter).
+ *      **Landed in Phase 3b**: `packages/adapter-pebble/java/src/main/java/
+ *      dev/barefootjs/pebble/ext/` (`SetBlockExtension`/
+ *      `SetBlockTokenParser`/`SetBlockNode`) — see that package's README
+ *      for the design and the decompiled-bytecode research backing it.
  *   7. **Reserved-word identifier mangling** (`lib/pebble-naming.ts`). Every
  *      bare Pebble variable reference / `{% set %}` target is passed through
  *      `pebbleIdent()`; the Java runtime must apply the IDENTICAL mangling

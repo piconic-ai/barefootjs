@@ -7,17 +7,17 @@ that renders those templates through
 [Pebble](https://pebbletemplates.io/) — no framework is required (Spring
 Boot, Ktor, plain Servlet apps all work the same way).
 
-**Status: Phase 3a landed (#2101)** — the Java runtime (`java/`) now
-exists: the `bf.*` helper surface, the `ParsedExpr` evaluator, and a CLI
-entry point (`Main`), all golden-vector tested against the shared
-`packages/adapter-tests/vectors/` corpus (396/396 helper-vector cases,
-102/102 evaluator cases, zero pinned divergences — see "Java runtime"
-below for the full research writeup, empirical confirmations, and the
-TS-side fixes this pass surfaced). **Phase 3b** (the custom `{% set
-%}...{% endset %}` `TokenParser` extension for JSX-children/named-slot/
-async-fallback forwarding) **and Phase 4** (the conformance loop against
-the ~190 shared fixtures, wiring this runtime into
-`runAdapterConformanceTests`) **are next.** `PebbleAdapter`'s render
+**Status: Phase 3a + 3b landed (#2101)** — the Java runtime (`java/`) now
+exists: the `bf.*` helper surface, the `ParsedExpr` evaluator, a CLI entry
+point (`Main`), and a custom `set` tag extension (`ext/`) supporting
+`{% set NAME %}...{% endset %}` block-capture, all tested against the
+shared `packages/adapter-tests/vectors/` corpus (396/396 helper-vector
+cases, 102/102 evaluator cases, zero pinned divergences) plus direct
+engine-level and end-to-end tag-parsing tests — see "Java runtime" below
+for the full research writeup, empirical confirmations, and the TS-side
+fixes this pass surfaced. **Phase 4** (the conformance loop against the
+~190 shared fixtures, wiring this runtime into
+`runAdapterConformanceTests`) **is next.** `PebbleAdapter`'s render
 methods emit real `.peb` template text (see "Template output shape" below
 and `src/adapter/pebble-adapter.ts`'s file header for the full
 confirmed-Pebble-syntax table and every documented divergence) — Phase 3a's
@@ -115,10 +115,10 @@ PRs in the stack don't re-litigate them:
 ## Java runtime
 
 **Phase 3a landed (#2101): Gradle project, `bf.*` helpers, `ParsedExpr`
-evaluator.** Phase 3b (the custom `{% set %}...{% endset %}` `TokenParser`
-extension needed for JSX-children/named-slot/async-fallback forwarding) is
-a separate follow-up — a `.peb` template using that tag shape does not
-render correctly with this runtime alone yet.
+evaluator.** **Phase 3b landed:** a custom `set` tag extension
+(`ext/SetBlockExtension.java`) supporting `{% set NAME %}...{% endset %}`
+block-capture — see "The `{% set %}...{% endset %}` extension (Phase 3b)"
+below for the design and the API research it's built on.
 
 ### Project layout
 
@@ -134,11 +134,69 @@ packages/adapter-pebble/java/
     Main.java               # CLI entry point (`java -jar <jar> <templatesDir> <entry> <varsFile>`)
     eval/Evaluator.java     # ParsedExpr evaluator (packages/adapter-tests/vectors/eval-reference.ts port)
     eval/EvalUnsupported.java
+    ext/SetBlockExtension.java     # registers SetBlockTokenParser as the engine's `set` tag handler
+    ext/SetBlockTokenParser.java   # parses BOTH `{% set NAME = EXPR %}` and `{% set NAME %}...{% endset %}`
+    ext/SetBlockNode.java          # renders a captured block body to a String and binds it in scope
   src/test/java/dev/barefootjs/pebble/
     HelperVectorsTest.java  # vectors.json-driven (396 dynamic tests incl. the divergence-ledger check)
     EvalVectorsTest.java     # eval-vectors.json-driven (102 dynamic tests, no divergence allowance)
+    ext/SetBlockExtensionTest.java  # direct engine-level parse/render tests for the `set` tag extension
   src/test/resources/vector-divergences.json   # currently EMPTY — see "Vector conformance results" below
 ```
+
+### The `{% set %}...{% endset %}` extension (Phase 3b)
+
+Stock Pebble's `set` tag (`SetTokenParser`) only parses
+`set NAME = EXPRESSION` — there is no block-capture form (confirmed absent
+during Phase 3a's research, "Divergence 6" below). `ext/` replaces the
+engine's `set` tag handler entirely with `SetBlockTokenParser`, which
+parses both forms:
+
+- After the `NAME` token, an immediately-following `=` starts the stock
+  assignment form — delegated to the same `Expression<?>` parse and the
+  same `io.pebbletemplates.pebble.node.SetNode` stock Pebble itself
+  constructs, so this path is behavior-identical to the original.
+- An immediately-following `%}` (tag closes with no `=`) starts the new
+  block-capture form: the body up to a matching `{% endset %}` is read via
+  `Parser#subparse`, exactly mirroring how the built-in `BlockTokenParser`
+  reads a `{% block %}...{% endblock %}` body. The resulting `SetBlockNode`
+  renders that body to an in-memory buffer at evaluation time and binds
+  `NAME` to the resulting string via `EvaluationContextImpl.getScopeChain()
+  .set(...)` — the same mechanism `SetNode` itself uses — so a captured
+  variable is indistinguishable from an ordinary one to every downstream
+  reference (`{{ NAME }}`, `bf.async_boundary(id, NAME)`,
+  `bf.render_child(..., {'default': NAME})`).
+
+**Why replacing (not adding to) the `set` tag is correct, not a conflict:**
+`ExtensionRegistry` stores token parsers in a single `Map<String,
+TokenParser>` keyed by tag name, populated by a plain `Map.put` per
+extension in registration order; `CoreExtension` (the stock `set` tag's
+owner) is always registered before any user-supplied extension. A later
+`put` for the same key ("set") unconditionally overwrites the earlier one
+— confirmed by decompiling `ExtensionRegistry`/`ExtensionRegistryFactory`
+(no `pebble-sources.jar` is published for 4.1.2; `io.pebbletemplates:
+pebble:4.1.2`'s own class files were decompiled instead, quoted at the
+bytecode level in `SetBlockTokenParser`'s doc comment). This is also why
+`SetBlockTokenParser` must reimplement the assignment form rather than
+delegate to `SetTokenParser`: once installed, nothing else handles `set`.
+
+**Nested `{% set %}...{% endset %}` blocks need no special handling.**
+`Parser#subparse`'s stopping condition is checked only between tags — every
+`{% ... %}` tag encountered while subparsing (including a nested `set`) is
+dispatched back through the ordinary tag-parser lookup and fully consumes
+its own matching `endset` before the outer subparse's stopping condition is
+ever re-evaluated. Verified both by inspecting the mechanism `BlockTokenParser`
+already relies on for nested `{% block %}` and empirically in
+`SetBlockExtensionTest.nestedSetBlocksResolveIndependently`.
+
+**Not in this PR:** `bf.render_child` (cross-template child-component
+rendering) still throws — it additionally needs the Java runtime to hold a
+reference to the `PebbleEngine` so a child template can be looked up and
+evaluated by name with its own scoped props, which is multi-template
+dispatch work best done alongside Phase 4 (the conformance loop), where
+child-component fixtures first need it. `bf.async_boundary` and
+JSX-children/named-slot forwarding need only the capture mechanism itself
+(no cross-template lookup) and are fully covered here.
 
 No Gradle wrapper is committed. The task environment provisions a matching
 `gradle` (8.14.3) directly on `PATH`, and `packages/adapter-pebble/src/
