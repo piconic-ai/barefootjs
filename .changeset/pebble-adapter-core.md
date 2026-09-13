@@ -1,0 +1,7 @@
+---
+"@barefootjs/pebble": minor
+---
+
+Adds `packages/adapter-pebble`'s Phase 2 adapter core (#2101): `PebbleAdapter`'s render methods now emit real `.peb` (Pebble template engine) output, ported mechanically from the Jinja adapter with syntax choices drawn from the Twig adapter wherever Pebble's confirmed grammar matches Twig's rather than Jinja's (which is most of the time — Pebble is a Twig-inspired engine). Covers element/attribute rendering, conditionals (`{% if %}`/`{% elseif %}`/`{% else %}`), loops (including destructured `.map()` params, sort/filter, and object-entries iteration), child-component invocation, JSX children/named-slot/async-fallback forwarding, hydration markers, and the full `ParsedExpr` → Pebble expression lowering (including the evaluator-only higher-order-callback path, since Pebble has no lambda expressions).
+
+This PR is TypeScript-only: no Java runtime exists yet to execute the emitted templates (that's Phase 3), and the shared conformance suite is not wired up yet (Phase 4). Every Pebble syntax choice is either independently confirmed against Pebble's own documentation/issue tracker or explicitly flagged as an assumption/watchpoint in `pebble-adapter.ts`'s file header — most notably that stock Pebble has no `{% set %}...{% endset %}` block-capture tag (confirmed via a long-standing open feature request), so this adapter's children-forwarding syntax requires a custom Pebble `TokenParser` extension to be implemented in Phase 3.
