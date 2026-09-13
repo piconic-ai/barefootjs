@@ -59,7 +59,6 @@ export const renderDivergences: RenderDivergences = {
   // threading ANY signal-getter-valued prop into a nested child's `Input`
   // struct, not specific to the value's own shape.
   'component-prop-getter-in-object-literal': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
-  'component-prop-getter-via-const-object': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
