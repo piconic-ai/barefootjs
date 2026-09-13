@@ -127,13 +127,17 @@ export function Greeting({ first, last }: { first: string; last: string }) {
     expect(template).toContain('~')
   })
 
-  test('renders nullish-coalescing as the native `??` operator', () => {
+  test('renders nullish-coalescing via bf.coalesce, not a native `??` operator', () => {
+    // Pebble has no `??` operator at all (a template PARSE ERROR, confirmed
+    // during Phase 3 Java-runtime research) — this was previously assumed
+    // native and has since been fixed to route through bf.coalesce.
     const { template } = compileAndGenerate(`
 export function Label({ label }: { label?: string }) {
   return <span>{label ?? 'default'}</span>
 }
 `)
-    expect(template).toContain('??')
+    expect(template).toContain('bf.coalesce(')
+    expect(template).not.toContain('??')
   })
 
   test('objectLiteral: a single spread segment still emits bf.merge(...)', () => {

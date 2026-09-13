@@ -39,17 +39,15 @@
  *      `bf.truthy`. The left operand's rendered text is emitted TWICE (once
  *      as the test, once as the value) — safe because every operand reaching
  *      this pipeline is a pure, side-effect-free read.
- *   3. **`??` is Pebble-native** (confirmed operator, see `pebble-adapter.ts`'s
- *      file header) — used directly for JS `??`, same as Twig's choice.
- *      UNLIKE Twig's confirmed "covers undefined AND null in one operator"
- *      guarantee, Pebble's `??` is documented as an "undefined-coalescing"
- *      operator specifically (distinguishing an unset template variable from
- *      an explicit `null`) — this adapter assumes the two collapse together
- *      under a non-strict-variables render config (the same assumption
- *      `pebble-adapter.ts`'s file header flags as a Phase 3/4 watchpoint),
- *      so `??` alone is used here rather than a hand-rolled two-operator
- *      guard whose extra complexity would be unverifiable anyway before the
- *      Java runtime exists.
+ *   3. **`??` is NOT Pebble-native — REFUTED during Phase 3 research** (was
+ *      previously assumed confirmed; see `pebble-adapter.ts`'s file header).
+ *      Pebble has no `??` operator at all: `{{ a ?? b }}` is a template
+ *      PARSE ERROR, not a subtly-wrong runtime value. Routed through the
+ *      Java runtime's `bf.coalesce(l, r)` helper instead of a native
+ *      operator — matching the same defensive pattern as `bf.eq`/`bf.neq`
+ *      (divergence 4) and `bf.get` (divergence 6): put an unverified-or-now-
+ *      disproven native-operator assumption fully under the Java runtime's
+ *      own control rather than emitting syntax Pebble can't parse.
  *   4. **`===`/`!==` route through `bf.eq`/`bf.neq`, never a native Pebble
  *      equality operator.** Same defensive choice Twig makes for PHP's loose
  *      `==` — Pebble's own `==`/`is same as` cross-type-numeric behavior
@@ -292,8 +290,11 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     // `(test ? a : b)` form, not Jinja's word-based `(a if test else b)`.
     if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
     if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
-    // See the file header, divergence 3: Pebble's `??` is native.
-    return `(${l} ?? ${r})`
+    // See the file header, divergence 3 (REFUTED during Phase 3 research —
+    // Pebble has NO `??` operator at all; it's a parse error, not a subtly
+    // wrong runtime value). Routed through the `bf.coalesce(l, r)` runtime
+    // helper instead of a native operator.
+    return `bf.coalesce(${l}, ${r})`
   }
 
   callbackMethod(
@@ -527,8 +528,9 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // See the file header, divergences 1 & 2.
     if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
     if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
-    // See the file header, divergence 3.
-    return `(${l} ?? ${r})`
+    // See the file header, divergence 3 (REFUTED — see the other
+    // `logical()` implementation above for the full explanation).
+    return `bf.coalesce(${l}, ${r})`
   }
 
   callbackMethod(
