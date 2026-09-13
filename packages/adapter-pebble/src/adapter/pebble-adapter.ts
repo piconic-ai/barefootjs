@@ -86,7 +86,7 @@ export class PebbleAdapter extends BaseAdapter {
     throw new Error(NOT_YET_IMPLEMENTED)
   }
 
-  renderAsync(_node: IRAsync): string {
+  override renderAsync(_node: IRAsync): string {
     throw new Error(NOT_YET_IMPLEMENTED)
   }
 
