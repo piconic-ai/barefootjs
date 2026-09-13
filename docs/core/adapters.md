@@ -40,7 +40,7 @@ The `GoTemplateAdapter` is web-framework-agnostic: its `html/template` output ru
 
 The Perl adapters share one engine-agnostic runtime (`BarefootJS`): `@barefootjs/mojolicious` targets Mojolicious EP, and `@barefootjs/xslate` targets Text::Xslate (Kolon) and runs under any PSGI/Plack app. See the [Perl Adapter](./adapters/perl-adapter.md) page.
 
-The Ruby, Python, and Rust adapters are each single-backend, engine-agnostic ports of that same runtime model to another language: `@barefootjs/erb` (Ruby/ERB), `@barefootjs/jinja` (Python/Jinja2), and `@barefootjs/rust` (Rust/minijinja) — none of them require a specific web framework. The PHP adapters follow the same pattern but, like Perl, share one engine-agnostic runtime (`@barefootjs/php`) across two backends: `@barefootjs/twig` targets Twig and `@barefootjs/blade` targets Laravel Blade (via `illuminate/view` standalone). `@barefootjs/twig`, `@barefootjs/blade`, and `@barefootjs/rust` are themselves near-mechanical ports of `@barefootjs/jinja`'s Jinja2 syntax, so all emit near-identical templates. See the [PHP Adapter](./adapters/php-adapter.md) page.
+The Ruby, Python, Rust, and Java adapters are each single-backend, engine-agnostic ports of that same runtime model to another language: `@barefootjs/erb` (Ruby/ERB), `@barefootjs/jinja` (Python/Jinja2), `@barefootjs/rust` (Rust/minijinja), and `@barefootjs/pebble` (Java/Pebble) — none of them require a specific web framework. The PHP adapters follow the same pattern but, like Perl, share one engine-agnostic runtime (`@barefootjs/php`) across two backends: `@barefootjs/twig` targets Twig and `@barefootjs/blade` targets Laravel Blade (via `illuminate/view` standalone). `@barefootjs/twig`, `@barefootjs/blade`, and `@barefootjs/rust` are themselves near-mechanical ports of `@barefootjs/jinja`'s Jinja2 syntax, so all emit near-identical templates; `@barefootjs/pebble` is a close port of the same syntax with a handful of documented divergences where Pebble's Twig-family grammar diverges from Jinja2's (see the [Java Adapter](./adapters/java-adapter.md) page). See the [PHP Adapter](./adapters/php-adapter.md) page.
 
 ## Pages
 
@@ -54,5 +54,6 @@ The Ruby, Python, and Rust adapters are each single-backend, engine-agnostic por
 | [Python Adapter](./adapters/python-adapter.md) | Jinja2 backend, running under any Python web framework |
 | [PHP Adapter](./adapters/php-adapter.md) | Twig (any PHP web app) and Laravel Blade (`illuminate/view` standalone) backends |
 | [Rust Adapter](./adapters/rust-adapter.md) | minijinja backend, running under any Rust web framework |
+| [Java Adapter](./adapters/java-adapter.md) | Pebble backend, running under any JVM web framework |
 | [CSR](./adapters/csr.md) | Client-side rendering without a server-rendered template |
 | [Writing a Custom Adapter](./adapters/custom-adapter.md) | Step-by-step guide to implementing your own adapter |
