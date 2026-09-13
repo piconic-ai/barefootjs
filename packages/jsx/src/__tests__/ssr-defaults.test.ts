@@ -641,6 +641,26 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.label).toEqual({ propName: 'label', value: null })
     expect(defaults?.labelAlias).toBe(defaults?.label)
   })
+
+  // #2924 review follow-up (pullfrog nitpick on the PR fixing the setter
+  // case): the setter-symmetric shape of the #2813 getter-alias test above
+  // — a bare local-const alias of a signal SETTER must be seeded under its
+  // own name too, not just the setter's own name.
+  test('a bare local-const alias of a signal setter is seeded under the alias name too', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [count, setCount] = createSignal(5)
+        const setCountAlias = setCount
+        return <button onClick={() => setCountAlias(6)}>{count()}</button>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.setCount).toEqual({ value: null })
+    expect(defaults?.setCountAlias).toEqual({ value: null })
+  })
 })
 
 // TS twin of the Ruby/Python/PHP/Perl/Rust `derive*FromDefaults` runtime
@@ -711,8 +731,10 @@ describe('deriveStashFromDefaults', () => {
     `)
     const defaults = extractSsrDefaults(metadata)!
 
-    expect(deriveStashFromDefaults(defaults, { label: 'Hello' })).toEqual({ label: 'Hello' })
-    expect(deriveStashFromDefaults(defaults, {})).toEqual({ label: null })
+    // `setLabel` also gets a stash entry (#2924's SSR-half fix) — every
+    // signal setter is seeded unconditionally, same as every getter.
+    expect(deriveStashFromDefaults(defaults, { label: 'Hello' })).toEqual({ label: 'Hello', setLabel: null })
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ label: null, setLabel: null })
   })
 
   test('propName-less entry (signal / memo local): always uses the static value', () => {

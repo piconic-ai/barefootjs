@@ -6,6 +6,7 @@
  *
  *   - signal getter calls (`count()`)            → `(initialValue)`
  *   - memo getter calls   (`bars()`)             → `(computationBody)`
+ *   - bare signal/memo getter refs (`count`)     → `(() => (initialValue))`
  *   - bare inlinable-const refs (`label`)        → `(csrInlinable.rewrittenValue)`
  *   - bare source-level props refs (`props.x`)   → `_p.x`
  *
@@ -59,7 +60,25 @@ export type CsrInlinabilityMap = Map<string, CsrInlinableEntry | null>
 /**
  * A single substitution: when the source expression mentions `name`
  * (either bare or as a zero-arg call, depending on `kind`), the AST
- * walker splices `replacement` in place.
+ * walker splices a replacement in place.
+ *
+ * `kind` says what `replacement` IS, not just where it matches:
+ *
+ *   - `'call'`: `replacement` is the VALUE the zero-arg accessor `name()`
+ *     produces (a signal's initial value, a memo's computation body). The
+ *     call site `name()` substitutes to `(replacement)` directly. A BARE
+ *     reference to `name` (uncalled — e.g. a getter passed as a component
+ *     prop, `<Display value={count} />`, #2924) substitutes to
+ *     `(() => (replacement))` instead: a thunk over the same value, which
+ *     is the CSR-template mirror of the reference adapter's SSR shim
+ *     (`const count = () => 5`, `packages/adapter-hono`) — the only
+ *     reading that lets a bare accessor evaluate identically on SSR and on
+ *     CSR-fresh-mount. Registered only by `buildSignalMemoEnv` below.
+ *   - `'identifier'`: `replacement` is already the value a BARE reference
+ *     to `name` should read as (e.g. an inlinable const's resolved value);
+ *     there is no corresponding call form. Substitutes to `(replacement)`
+ *     at both a bare reference and the (non-existent, for this kind) call
+ *     position.
  */
 export interface CsrSubstitution {
   kind: 'call' | 'identifier'
@@ -71,10 +90,11 @@ export interface CsrSubstitution {
 
 export interface CsrEnv {
   /**
-   * Map of name → substitution. Call-kind entries match `name()`
-   * (zero-arg call with bare-ident callee) and replace the entire
-   * call expression; identifier-kind entries match bare uses of
-   * `name` outside member-access tails.
+   * Map of name → substitution. Call-kind entries match both `name()`
+   * (zero-arg call with bare-ident callee — replaced with the accessor's
+   * value) and bare uses of `name` (replaced with a thunk over that same
+   * value, #2924); identifier-kind entries match bare uses of `name`
+   * outside member-access tails.
    */
   substitutions: Map<string, CsrSubstitution>
   /** Source-level props object name (`props`); null for destructured-args. */
@@ -181,6 +201,13 @@ function csrSubstituteOnce(
     splices.push({ start: start - OFFSET, end: end - OFFSET, text: `(${sub.replacement})` })
   }
 
+  // Text spliced in for a BARE (uncalled) reference to `sub`'s name — see
+  // `CsrSubstitution`'s docstring for why `call`-kind entries need a
+  // thunk here instead of the raw value substituted at the call site
+  // (#2924).
+  const bareReplacementText = (sub: CsrSubstitution): string =>
+    sub.kind === 'call' ? `(() => (${sub.replacement}))` : `(${sub.replacement})`
+
   const collectBindingNames = (name: ts.BindingName, out: Set<string>): void => {
     if (ts.isIdentifier(name)) out.add(name.text)
     else if (ts.isObjectBindingPattern(name)) {
@@ -243,18 +270,21 @@ function csrSubstituteOnce(
     }
 
     // Shorthand property: `{ X }` — `X` IS both a key and a value
-    // reference. Treat the value side as a free ref.
+    // reference. Treat the value side as a free ref. `X` is necessarily a
+    // BARE reference here (there's no call-syntax shorthand), so a
+    // `call`-kind entry needs the thunk form too (#2924) — same as the
+    // bare-identifier branch below.
     if (ts.isShorthandPropertyAssignment(node)) {
       if (ts.isIdentifier(node.name) && !isBound(node.name.text)) {
         const sub = env.substitutions.get(node.name.text)
-        if (sub && sub.kind === 'identifier') {
+        if (sub) {
           // The shorthand expands to a key-value pair when we substitute,
           // so emit `name: (replacement)` to keep the object literal
           // grammatical. Position spans the whole shorthand.
           splices.push({
             start: node.getStart(sourceFile) - OFFSET,
             end: node.getEnd() - OFFSET,
-            text: `${node.name.text}: (${sub.replacement})`,
+            text: `${node.name.text}: ${bareReplacementText(sub)}`,
           })
         }
       }
@@ -295,12 +325,18 @@ function csrSubstituteOnce(
       return
     }
 
-    // Bare identifier reference.
+    // Bare identifier reference. A `call`-kind entry (a signal/memo
+    // getter) substitutes to a thunk over its value here, not the value
+    // itself — the bare form is the accessor, not a read of it (#2924).
     if (ts.isIdentifier(node)) {
       if (isBound(node.text)) return
       const sub = env.substitutions.get(node.text)
-      if (sub && sub.kind === 'identifier') {
-        recordSubstitution(node.getStart(sourceFile), node.getEnd(), sub)
+      if (sub) {
+        splices.push({
+          start: node.getStart(sourceFile) - OFFSET,
+          end: node.getEnd() - OFFSET,
+          text: bareReplacementText(sub),
+        })
       }
       return
     }
@@ -553,6 +589,20 @@ export function buildSignalMemoEnv(
       replacement: normalizeSignalInitial(s, propsObjectName),
       freeIdentifiers: s.initialFreeIdentifiers ?? new Set(),
     })
+    // A bare reference to the SETTER (`<Display update={setCount} />`,
+    // any non-`on*`-prefixed prop name — #2924's setter-symmetric case)
+    // hits the identical template-scope gap as a bare getter reference:
+    // `setCount` only exists as a real closure inside `initCounter`. The
+    // reference (Hono) adapter's own SSR shim answers this the same way
+    // it answers a bare getter — a module-scope noop (`const setCount =
+    // () => {}`) — so an `identifier`-kind entry (not `call`: a setter is
+    // never itself CALLED as a zero-arg form the way a getter is) mirrors
+    // that shim directly, with no thunk-wrapping needed. `s.setter` is
+    // null for the setter-elided declaration form (`const [count] =
+    // createSignal(...)`), which has no name to register.
+    if (s.setter) {
+      substitutions.set(s.setter, { kind: 'identifier', replacement: '() => {}', freeIdentifiers: new Set() })
+    }
   }
   for (const m of memos) {
     substitutions.set(m.name, {
