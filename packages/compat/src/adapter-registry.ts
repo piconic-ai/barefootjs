@@ -39,6 +39,7 @@ const COMPAT_ADAPTERS: CompatAdapterSpec[] = [
   { pkg: '@barefootjs/hono', className: 'HonoAdapter' },
   { pkg: '@barefootjs/jinja', className: 'JinjaAdapter' },
   { pkg: '@barefootjs/mojolicious', className: 'MojoAdapter' },
+  { pkg: '@barefootjs/pebble', className: 'PebbleAdapter' },
   { pkg: '@barefootjs/rust', className: 'MinijinjaAdapter' },
   { pkg: '@barefootjs/twig', className: 'TwigAdapter' },
   { pkg: '@barefootjs/xslate', className: 'XslateAdapter' },

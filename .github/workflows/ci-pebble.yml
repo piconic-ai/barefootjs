@@ -1,0 +1,100 @@
+name: CI — Pebble (Java) Adapter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-pebble/**'
+      - 'packages/adapter-tests/**'
+      - '.github/workflows/ci-pebble.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-pebble/**'
+      - 'packages/adapter-tests/**'
+      - '.github/workflows/ci-pebble.yml'
+  # Nightly full-matrix data-point conformance (#2278): PR/push runs the
+  # fast `pr` tier (sampled generated points); the scheduled run exercises
+  # every generated point (BF_DATA_POINT_TIER below). `workflow_dispatch`
+  # allows a manual full run. `runDataPointConformance` is invoked
+  # unconditionally from `runAdapterConformanceTests` (see
+  # `pebble-conformance.test.ts`), the same shared harness every other
+  # adapter workflow schedules this way — Pebble is no different even
+  # though nothing under packages/adapter-pebble itself references the env
+  # var directly.
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-pebble-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # PR/push run the fast sampled data-point tier; the nightly `schedule`
+    # (and a manual `workflow_dispatch`) run the full generated-point matrix
+    # (#2278).
+    env:
+      BF_DATA_POINT_TIER: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'pr' }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle dependencies and build artifacts
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            packages/adapter-pebble/java/build
+          key: gradle-${{ runner.os }}-${{ hashFiles('packages/adapter-pebble/java/**/*.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # No committed Gradle wrapper for this package (see
+      # packages/adapter-pebble/README.md's "Gradle project layout" note) —
+      # `gradle` is provisioned directly on PATH, matching how
+      # `test-render.ts`'s `ensureFatJarBuilt` invokes it.
+      - name: Run Java runtime unit tests
+        # Includes the golden-vector conformance harness (see
+        # spec/template-helpers.md) plus RenderChildTest and
+        # SetBlockExtensionTest.
+        run: cd packages/adapter-pebble/java && gradle test
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/pebble' build
+
+      # The conformance suite compiles the shared IR fixtures, then renders
+      # the emitted .peb templates through the Pebble Java runtime's fat
+      # jar — built on demand by the harness's own memoized
+      # `ensureFatJarBuilt` (a `gradle shadowJar` invocation), so no
+      # separate shadowJar step is needed here.
+      - name: Run unit tests
+        run: bun test packages/adapter-pebble

@@ -21,6 +21,7 @@
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/jinja": "workspace:*",
     "@barefootjs/mojolicious": "workspace:*",
+    "@barefootjs/pebble": "workspace:*",
     "@barefootjs/rust": "workspace:*",
     "@barefootjs/twig": "workspace:*",
     "@barefootjs/xslate": "workspace:*",
