@@ -15,7 +15,11 @@ confirmed-Pebble-syntax table and every documented divergence). **Phase 3
 fixtures) are next** — no Java runtime exists yet, so nothing below has
 been executed against a real Pebble engine; every syntax choice is either
 independently confirmed against Pebble's own docs/issue tracker or
-explicitly flagged as an assumption. See the tracking issue
+explicitly flagged as an assumption, **except `??`, which an early Phase 3
+research spike already disproved** — Pebble has no `??` operator at all
+(a template PARSE error, not a subtly-wrong value); every `??` routes
+through a `bf.coalesce(l, r)` runtime helper instead (divergence 3 below
+is updated accordingly). See the tracking issue
 [piconic-ai/barefootjs#2101](https://github.com/piconic-ai/barefootjs/issues/2101)
 for the full stacked-PR plan.
 
@@ -77,12 +81,13 @@ PRs in the stack don't re-litigate them:
   be implemented in Phase 3.
 - Control flow uses Pebble's confirmed `{% if %}` / `{% elseif %}` / `{%
   else %}` / `{% endif %}` and `{% for %}` / `{% endfor %}` tags, and its
-  confirmed symbolic ternary (`cond ? a : b`) and native `??` operator —
-  see `src/adapter/pebble-adapter.ts`'s file header for the full syntax
-  table and every point where this port took Twig's answer over Jinja's
-  (most of them — Pebble is Twig-inspired) or landed on something
-  genuinely Pebble-specific (0-based `loop.index`, no `.items()`-style
-  method calls).
+  confirmed symbolic ternary (`cond ? a : b`) — see
+  `src/adapter/pebble-adapter.ts`'s file header for the full syntax table
+  and every point where this port took Twig's answer over Jinja's (most
+  of them — Pebble is Twig-inspired) or landed on something genuinely
+  Pebble-specific (0-based `loop.index`, no `.items()`-style method
+  calls). JS `??` is NOT native Pebble syntax (confirmed absent — see
+  below) and routes through `bf.coalesce(l, r)` instead.
 - **One finding worth calling out here too:** stock Pebble has NO
   block-capture `{% set NAME %}…{% endset %}` form the way Jinja/Twig do
   (confirmed via a 2018 upstream feature request that was never
@@ -93,11 +98,14 @@ PRs in the stack don't re-litigate them:
   confirmed to support custom tags). See the adapter file header,
   divergence 6, for the full rationale — this is the headline Phase 3
   dependency, not a quiet TODO.
-- Member/index access, JS `===`/`!==`, and JS `+` on string operands all
-  route through dedicated `bf.*` runtime helpers (`bf.get`, `bf.eq`/
-  `bf.neq`, and Pebble's own `~` concat operator respectively) rather than
-  trusting an unverified native Pebble operator — see the file header,
-  divergences 4, 6, and 7.
+- Member/index access, JS `===`/`!==`, JS `??`, and JS `+` on string
+  operands all route through dedicated `bf.*` runtime helpers (`bf.get`,
+  `bf.eq`/`bf.neq`, `bf.coalesce`, and Pebble's own `~` concat operator —
+  both `~` operands `bf.string(...)`-wrapped — respectively) rather than
+  trusting a native Pebble operator: `??` is CONFIRMED ABSENT from
+  Pebble's grammar entirely (not just unverified), and `===`/`!==`'s
+  native cross-type-numeric behavior remains unverified — see the file
+  header, divergences 3, 4, 6, and 7.
 
 ## Java runtime
 
