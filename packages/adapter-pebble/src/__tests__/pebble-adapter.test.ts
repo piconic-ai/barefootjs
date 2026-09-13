@@ -16,6 +16,11 @@ describe('PebbleAdapter (skeleton)', () => {
 
   test('generate() is not yet implemented', () => {
     const adapter = new PebbleAdapter()
+    expect(() => adapter.generate({} as never)).toThrow()
+  })
+
+  test('renderNode() is not yet implemented', () => {
+    const adapter = new PebbleAdapter()
     expect(() => adapter.renderNode({} as never)).toThrow()
   })
 })
