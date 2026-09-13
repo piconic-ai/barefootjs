@@ -79,6 +79,29 @@ export function goFieldNameForKey(key: string): string {
 }
 
 /**
+ * Source-key → Go-field-name pairs for a struct's properties, deduped
+ * first-wins on the Go name (two source keys that sanitize to the same Go
+ * identifier can't both get a field). The name-only half of
+ * `structFieldsFor` (`go-template-adapter.ts`) — factored out so a caller
+ * that only needs the name mapping (not `structFieldsFor`'s Go
+ * type-per-field, which needs a `GoEmitContext`) can share the exact same
+ * dedup rule instead of re-deriving it (`registerChildComponentShape`, #2925).
+ */
+export function structFieldNamePairs(
+  properties: readonly { name: string }[],
+): Array<{ tsName: string; goName: string }> {
+  const pairs: Array<{ tsName: string; goName: string }> = []
+  const seenGoNames = new Set<string>()
+  for (const prop of properties) {
+    const goName = goFieldNameForKey(prop.name)
+    if (seenGoNames.has(goName)) continue
+    seenGoNames.add(goName)
+    pairs.push({ tsName: prop.name, goName })
+  }
+  return pairs
+}
+
+/**
  * Convert a slot ID (e.g., 's6') to a Go struct field suffix (e.g., 'Slot6').
  * Keeps field names human-readable regardless of the internal slot ID format.
  */

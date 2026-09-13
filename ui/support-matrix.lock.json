@@ -1633,17 +1633,9 @@
           ]
         },
         "go-template": {
-          "pass": 261,
+          "pass": 263,
           "total": 282,
           "gaps": [
-            {
-              "fixture": "component-prop-bare-getter",
-              "issues": []
-            },
-            {
-              "fixture": "component-prop-getter-in-object-literal",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2533,17 +2525,9 @@
           ]
         },
         "go-template": {
-          "pass": 375,
+          "pass": 377,
           "total": 400,
           "gaps": [
-            {
-              "fixture": "component-prop-bare-getter",
-              "issues": []
-            },
-            {
-              "fixture": "component-prop-getter-in-object-literal",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3373,17 +3357,9 @@
           ]
         },
         "go-template": {
-          "pass": 303,
+          "pass": 305,
           "total": 319,
           "gaps": [
-            {
-              "fixture": "component-prop-bare-getter",
-              "issues": []
-            },
-            {
-              "fixture": "component-prop-getter-in-object-literal",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -4115,17 +4091,9 @@
           ]
         },
         "go-template": {
-          "pass": 213,
+          "pass": 215,
           "total": 236,
           "gaps": [
-            {
-              "fixture": "component-prop-bare-getter",
-              "issues": []
-            },
-            {
-              "fixture": "component-prop-getter-in-object-literal",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4765,13 +4733,9 @@
           ]
         },
         "go-template": {
-          "pass": 88,
+          "pass": 89,
           "total": 94,
           "gaps": [
-            {
-              "fixture": "component-prop-getter-in-object-literal",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -8292,17 +8256,9 @@
           ]
         },
         "go-template": {
-          "pass": 137,
+          "pass": 139,
           "total": 145,
           "gaps": [
-            {
-              "fixture": "component-prop-bare-getter",
-              "issues": []
-            },
-            {
-              "fixture": "component-prop-getter-in-object-literal",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []

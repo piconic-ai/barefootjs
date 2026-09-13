@@ -33,33 +33,23 @@
  * instead of a silent wrong render. Teaching the baker to emit
  * prop-referencing Go expressions — the actual capability gap — stays
  * tracked at https://github.com/piconic-ai/barefootjs/issues/2700.)
+ *
+ * (#2925's `component-prop-bare-getter` / `component-prop-getter-in-object-
+ * literal` divergences graduated by an actual lowering fix, unlike #2703/
+ * #2700 above: a local signal/memo getter's constructor-time seed IS
+ * statically bakeable (the sibling top-level field bakes the same value
+ * fine) — the nested-child-props baker just never tried a bare/wrapped
+ * identifier operand. `resolveDynamicPropValue`'s bare-getter arm and
+ * `ChildComponentShape.structTypedObjectParams` (`registerChildComponentShape`,
+ * `objectBakeTargetFor`) now resolve both shapes against the same
+ * `signalSeedGo`/`resolveLocalGetterAsGo` seeding the top-level field uses,
+ * so `DisplayInput{ Value: 5 }` / `DisplayInput{ Value: DisplayValue{V: 5} }`
+ * bake correctly instead of omitting the field.)
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {
-  // #2925: a plain (non-Context) child-component prop whose value is a
-  // local signal/memo getter — `<Display value={count} />`, and identically
-  // `<Display value={{ v: count }} />` — compiles clean, but
-  // `NewCounterProps`'s constructor-time build of the nested `DisplaySlot0`
-  // field silently omits `Value` from the `DisplayInput{...}` literal, so Go
-  // renders the field as its zero value instead of the signal's value.
-  // `count`'s own SSR-default baking works fine (`Count: 5` lands); the gap
-  // is specifically in threading a signal-getter-valued prop into a NESTED
-  // child's own constructor-time `Input` struct. Predates #2760 (reproduces
-  // identically with the already-legal object-literal-wrapped form) — #2760
-  // only added the first fixture to exercise this idiom outside a Context
-  // Provider, which routes through `provideContext`/`useContext` instead and
-  // never hit this baker path.
-  'component-prop-bare-getter': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
-  // Same #2925 baker gap, the fixture added while designing the CSR
-  // template thunk fix (#2924): an object-literal-wrapped getter prop
-  // (`value={{ v: count }}`) drops the nested field the same way the
-  // direct, unwrapped form does — the constructor baker's gap is in
-  // threading ANY signal-getter-valued prop into a nested child's `Input`
-  // struct, not specific to the value's own shape.
-  'component-prop-getter-in-object-literal': 'signal getter handed to a plain child-component prop renders empty — constructor baker drops the field (#2925)',
-}
+export const renderDivergences: RenderDivergences = {}
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
 // `ParamInfo.defaultValue` directly (the analyzer overlays it onto

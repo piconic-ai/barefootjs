@@ -107,11 +107,24 @@ export interface ChildComponentShape {
   restBagField: string | null
   /**
    * Child param names whose Go field is `map[string]interface{}` — an optional
-   * object/named-interface prop (`opts?: EmblaOptionsType`). A parent passing
-   * an inline object literal to such a param bakes it to a Go map literal so
-   * the keys round-trip faithfully.
+   * object/named-interface prop (`opts?: EmblaOptionsType`), OR a REQUIRED
+   * anonymous-object prop whose synthesized struct name (#2674) collided with
+   * an existing local type and fell back to the map convention (#2925). A
+   * parent passing an inline object literal to such a param bakes it to a Go
+   * map literal so the keys round-trip faithfully.
    */
   mapTypedParamNames: Set<string>
+  /**
+   * Child param names whose Go field is a synthesized struct (#2674) — a
+   * REQUIRED anonymous-object prop (`value: { v: () => number }`; an OPTIONAL
+   * one lowers to `map[string]interface{}` instead, see `mapTypedParamNames`
+   * above). A parent baking an inline object literal into such a param must
+   * target the named struct (`DisplayValue{V: 5}`), not a map — the two are
+   * NOT Go-interchangeable (#2925). `goType` is the struct's synthesized Go
+   * name; `fields` maps each source property key to its Go field name
+   * (`planSynthPropStructs`/`structFieldNamePairs`'s shared naming decision).
+   */
+  structTypedObjectParams: ReadonlyMap<string, { goType: string; fields: ReadonlyMap<string, string> }>
 }
 
 /**
@@ -129,6 +142,30 @@ export interface ChildComponentShape {
  */
 export function routesToRestBag(shape: ChildComponentShape | undefined, jsxName: string): boolean {
   return !!shape?.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
+ * A parent baking an inline object literal (`value={{ v: count }}`) into a
+ * child prop must know whether the child's Go field for that prop is a
+ * `map[string]interface{}` or a synthesized struct — the two literal forms
+ * are not interchangeable Go (#2925). `undefined` means neither registry
+ * entry applies (the prop isn't object-typed on the child at all, or its
+ * type is a named interface/`interface` reference rather than an anonymous
+ * object — out of scope for this decision, see `structTypedObjectParams`'s
+ * docstring).
+ */
+export type ObjectBakeTarget =
+  | { kind: 'map' }
+  | { kind: 'struct'; goType: string; fields: ReadonlyMap<string, string> }
+
+export function objectBakeTargetFor(
+  shape: ChildComponentShape | undefined,
+  jsxName: string,
+): ObjectBakeTarget | undefined {
+  const struct = shape?.structTypedObjectParams.get(jsxName)
+  if (struct) return { kind: 'struct', goType: struct.goType, fields: struct.fields }
+  if (shape?.mapTypedParamNames.has(jsxName)) return { kind: 'map' }
+  return undefined
 }
 
 /**

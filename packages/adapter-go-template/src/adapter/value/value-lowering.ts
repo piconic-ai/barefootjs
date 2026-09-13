@@ -238,26 +238,85 @@ export function jsLiteralToGo(
 }
 
 /**
+ * `objectLiteralToGoComposite`'s destination: either the historical
+ * `map[string]interface{}` convention, or a synthesized/named Go struct
+ * (`ChildComponentShape.structTypedObjectParams`, #2925) — the two are NOT
+ * Go-interchangeable, so which one applies must be decided by the caller
+ * against the actual destination field's registered shape, never guessed
+ * from the literal's own contents.
+ */
+export type ObjectLiteralBakeTarget =
+  | { kind: 'map' }
+  | { kind: 'struct'; goType: string; fields: ReadonlyMap<string, string> }
+
+/**
+ * Bake a flat object literal (`{ align: 'start' }`) into a Go
+ * `map[string]interface{}` (keyed by SOURCE property names, so it round-trips
+ * through `bf_json` like `JSON.stringify`) or a named struct literal (keyed by
+ * `target.fields`' Go field names) — see `ObjectLiteralBakeTarget`. Returns
+ * null for a non-object / shorthand / nested / empty object, an unresolvable
+ * property value, or (struct target only) a source key the struct doesn't
+ * declare.
+ *
+ * `resolveIdentifier`, when given, is consulted for a property value that's a
+ * bare identifier (`{ v: count }`) and `parsedLiteralToGo` alone can't bake
+ * (it deliberately defers on identifier/call/member operands) — e.g. a local
+ * signal/memo getter's own constructor-time seed (#2925). It returns ALREADY-
+ * LOWERED Go source for the SAME destination this composite literal is being
+ * built for (exactly what `parsedLiteralToGo` itself would have returned for
+ * a literal), not a `ParsedExpr` to re-lower — a signal's seed is frequently
+ * `in.Label` / a hoisted fallback-var name / an inlined module const, none of
+ * which is itself a literal tree. Returning `null` means "can't resolve this
+ * name," which defers the WHOLE object literal, same as any other
+ * unresolvable property.
+ */
+export function objectLiteralToGoComposite(
+  ctx: GoEmitContext,
+  expr: ParsedExpr,
+  target: ObjectLiteralBakeTarget,
+  resolveIdentifier?: (name: string) => string | null,
+): string | null {
+  if (expr.kind !== 'object-literal') return null
+  const entries: string[] = []
+  for (const prop of expr.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no static key to bake as a Go
+    // field/map-entry — bail, same as any other unsupported shape.
+    if (prop.kind === 'spread') return null
+    if (prop.shorthand) return null
+    let val = parsedLiteralToGo(ctx, prop.value)
+    if (val === null && prop.value.kind === 'identifier' && resolveIdentifier) {
+      val = resolveIdentifier(prop.value.name)
+    }
+    if (val === null) return null
+    if (target.kind === 'map') {
+      entries.push(`${JSON.stringify(prop.key)}: ${val}`)
+    } else {
+      const goField = target.fields.get(prop.key)
+      if (!goField) return null
+      entries.push(`${goField}: ${val}`)
+    }
+  }
+  if (entries.length === 0) return null
+  return target.kind === 'map'
+    ? `map[string]interface{}{${entries.join(', ')}}`
+    : `${target.goType}{${entries.join(', ')}}`
+}
+
+/**
  * Bake a flat object literal (`{ align: 'start' }`) into a Go
  * `map[string]interface{}` keyed by SOURCE property names, so it round-trips
  * through `bf_json` like `JSON.stringify` (only the supplied keys, no zero-filled
  * struct fields). Used for an inline object passed to a child's optional object
  * prop. Returns null for a non-object / shorthand / nested / empty object.
+ * Thin wrapper over `objectLiteralToGoComposite` with a `'map'` target, kept
+ * for this function's two other (map-only, no identifier resolution) callers.
  */
-export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
-  if (expr.kind !== 'object-literal') return null
-  const entries: string[] = []
-  for (const prop of expr.properties) {
-    // A spread (`{ ...t }`, #2696 Step 2) has no static key to bake as a Go
-    // map entry — bail, same as any other unsupported shape.
-    if (prop.kind === 'spread') return null
-    if (prop.shorthand) return null
-    const val = parsedLiteralToGo(ctx, prop.value)
-    if (val === null) return null
-    entries.push(`${JSON.stringify(prop.key)}: ${val}`)
-  }
-  if (entries.length === 0) return null
-  return `map[string]interface{}{${entries.join(', ')}}`
+export function objectLiteralToGoMap(
+  ctx: GoEmitContext,
+  expr: ParsedExpr,
+  resolveIdentifier?: (name: string) => string | null,
+): string | null {
+  return objectLiteralToGoComposite(ctx, expr, { kind: 'map' }, resolveIdentifier)
 }
 
 /**
