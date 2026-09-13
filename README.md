@@ -12,6 +12,15 @@
   No virtual DOM. No SPA required.
 </p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/create-barefootjs"><img alt="npm" src="https://img.shields.io/npm/v/create-barefootjs" /></a>
+  <a href="https://jsr.io/@barefootjs/client"><img alt="JSR" src="https://jsr.io/badges/@barefootjs/client" /></a>
+  <a href="https://github.com/piconic-ai/barefootjs/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/piconic-ai/barefootjs/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://bundlephobia.com/package/@barefootjs/client"><img alt="npm bundle size" src="https://img.shields.io/bundlephobia/minzip/@barefootjs/client" /></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/piconic-ai/barefootjs" /></a>
+  <a href="https://x.com/barefootjs_dev"><img alt="Follow on X" src="https://img.shields.io/badge/follow-%40barefootjs__dev-black?logo=x" /></a>
+</p>
+
 > [!WARNING]
 > **Alpha Software** — BarefootJS is in early alpha. APIs may change without notice. Not recommended for production use.
 
