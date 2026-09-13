@@ -367,14 +367,15 @@ divergence 8 (object-entries iteration routing) and divergence 9
   (not an empirical claim to verify) — implemented exactly as specified;
   see `Bf.java`'s `*_eval` methods and `eval/Evaluator.java`.
 - **Divergence 6 (`{% set %}...{% endset %}` block-capture requires a
-  custom extension) — CONFIRMED, out of scope for this PR (Phase 3b).**
+  custom extension) — CONFIRMED, RESOLVED in Phase 3b (see "The
+  `{% set %}...{% endset %}` extension (Phase 3b)" above).**
   `SetTokenParser` (`tokenParser/SetTokenParser.java`) parses ONLY
   `set NAME = EXPRESSION` (a single `Expression<?>`, no body/block form);
   there is no `endset` token recognized anywhere in the grammar. Pebble's
   `Extension.getTokenParsers()` API is confirmed (via
   `documentation/guide/extending-pebble.md`'s own worked `SetTokenParser`
-  example) to support exactly this kind of custom tag — Phase 3b's planned
-  approach is sound.
+  example) to support exactly this kind of custom tag — `ext/` implements
+  it.
 - **Divergence 7 (reserved-word identifier mangling) — not independently
   re-verified in this pass** (no new empirical test performed beyond what
   Phase 2 already established from Pebble's grammar/keyword list); nothing
