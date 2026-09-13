@@ -8233,15 +8233,15 @@
       }
     },
     "literal:number": {
-      "total": 144,
+      "total": 145,
       "cells": {
         "hono": {
-          "pass": 144,
-          "total": 144
+          "pass": 145,
+          "total": 145
         },
         "blade": {
-          "pass": 139,
-          "total": 144,
+          "pass": 140,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -8266,8 +8266,8 @@
           ]
         },
         "erb": {
-          "pass": 139,
-          "total": 144,
+          "pass": 140,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -8292,8 +8292,8 @@
           ]
         },
         "go-template": {
-          "pass": 136,
-          "total": 144,
+          "pass": 137,
+          "total": 145,
           "gaps": [
             {
               "fixture": "component-prop-bare-getter",
@@ -8332,8 +8332,8 @@
           ]
         },
         "jinja": {
-          "pass": 139,
-          "total": 144,
+          "pass": 140,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -8358,8 +8358,8 @@
           ]
         },
         "minijinja": {
-          "pass": 139,
-          "total": 144,
+          "pass": 140,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -8384,8 +8384,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 137,
-          "total": 144,
+          "pass": 138,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -8422,8 +8422,8 @@
           ]
         },
         "twig": {
-          "pass": 139,
-          "total": 144,
+          "pass": 140,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -8448,8 +8448,8 @@
           ]
         },
         "xslate": {
-          "pass": 137,
-          "total": 144,
+          "pass": 138,
+          "total": 145,
           "gaps": [
             {
               "fixture": "fill-unsupported",
