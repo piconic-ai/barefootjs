@@ -126,6 +126,18 @@ public final class Bf {
    * rel="modulepreload">` tags for the whole render tree is this shared
    * side-effect state, read back via {@link #scripts()} on the ROOT `Bf`
    * instance after `template.evaluate(...)` returns.
+   *
+   * <p>Unlike a plain `render_child` recursion (single call stack, no
+   * concurrency), {@link #newRoot(String, Bf, Object)} makes this bundle
+   * reachable from genuinely independent top-level island renders — a host
+   * MAY render sibling islands on separate threads. {@code scripts} (this
+   * field) doubles as the shared monitor every mutator/reader synchronizes
+   * on ({@link #register_script}, {@link #register_preload}, {@link
+   * #scripts()}) to keep the four-field bundle's check-then-add invariant
+   * atomic; `contextStacks` has the same latent multi-root-sharing shape
+   * but is unsynchronized pre-existing code, not touched by the `newRoot`
+   * work — a candidate for the same treatment in a follow-up, not bundled
+   * in here.
    */
   private final List<String> scripts;
 
@@ -1744,16 +1756,26 @@ public final class Bf {
 
   public String register_script(Object url) {
     String path = JsValue.jsString(url);
-    if (scriptSeen.add(path)) {
-      scripts.add(path);
+    // Synchronized on `scripts` (see that field's doc comment — the shared
+    // monitor for the whole scripts/scriptSeen/preloads/preloadSeen bundle):
+    // `newRoot` makes these reachable from genuinely independent top-level
+    // island renders, not just a single-threaded `render_child` recursion,
+    // so the check-then-add here must be atomic against a concurrent
+    // `register_script`/`register_preload` call from a sibling island.
+    synchronized (scripts) {
+      if (scriptSeen.add(path)) {
+        scripts.add(path);
+      }
     }
     return "<script type=\"module\" src=\"" + htmlEscape(path) + "\"></script>";
   }
 
   public String register_preload(Object url) {
     String path = JsValue.jsString(url);
-    if (preloadSeen.add(path)) {
-      preloads.add(path);
+    synchronized (scripts) {
+      if (preloadSeen.add(path)) {
+        preloads.add(path);
+      }
     }
     return "<link rel=\"modulepreload\" href=\"" + htmlEscape(path) + "\">";
   }
@@ -1772,17 +1794,19 @@ public final class Bf {
    */
   public String scripts() {
     StringBuilder sb = new StringBuilder();
-    for (String p : preloads) {
-      if (sb.length() > 0) {
-        sb.append('\n');
+    synchronized (scripts) {
+      for (String p : preloads) {
+        if (sb.length() > 0) {
+          sb.append('\n');
+        }
+        sb.append("<link rel=\"modulepreload\" href=\"").append(htmlEscape(p)).append("\">");
       }
-      sb.append("<link rel=\"modulepreload\" href=\"").append(htmlEscape(p)).append("\">");
-    }
-    for (String p : scripts) {
-      if (sb.length() > 0) {
-        sb.append('\n');
+      for (String p : scripts) {
+        if (sb.length() > 0) {
+          sb.append('\n');
+        }
+        sb.append("<script type=\"module\" src=\"").append(htmlEscape(p)).append("\"></script>");
       }
-      sb.append("<script type=\"module\" src=\"").append(htmlEscape(p)).append("\"></script>");
     }
     return sb.toString();
   }
