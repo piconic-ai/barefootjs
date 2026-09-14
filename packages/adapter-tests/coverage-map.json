@@ -3974,6 +3974,22 @@
         "text"
       ]
     },
+    "module-const-arrow-helper": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-loop-source": {
       "kinds": [
         "array-literal",
@@ -6829,14 +6845,14 @@
   },
   "kindCounts": {
     "array-literal": 117,
-    "array-method": 71,
-    "arrow": 75,
+    "array-method": 72,
+    "arrow": 76,
     "binary": 107,
-    "call": 283,
+    "call": 284,
     "conditional": 33,
-    "identifier": 401,
+    "identifier": 402,
     "index-access": 14,
-    "literal": 319,
+    "literal": 320,
     "logical": 52,
     "member": 237,
     "object-literal": 94,
@@ -6865,7 +6881,7 @@
     "array-method:toFixed": 2,
     "array-method:toLowerCase": 4,
     "array-method:toReversed": 1,
-    "array-method:toUpperCase": 3,
+    "array-method:toUpperCase": 4,
     "array-method:trim": 1,
     "array-method:trimEnd": 1,
     "array-method:trimStart": 1,
@@ -6882,7 +6898,7 @@
     "binary:>=": 1,
     "literal:boolean": 71,
     "literal:null": 26,
-    "literal:number": 145,
+    "literal:number": 146,
     "literal:string": 218,
     "logical:&&": 7,
     "logical:??": 44,

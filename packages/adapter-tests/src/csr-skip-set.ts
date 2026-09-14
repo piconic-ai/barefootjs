@@ -4,10 +4,16 @@
  * the same set without the two silently drifting apart.
  */
 export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
-  // #2073: `.map(format)` closes over a module-scope const, which is not
-  // available at CSR template module scope (CSR templates only have access
-  // to props and signals); Hono render conformance covers the real-JS runtime.
-  'array-map-function-reference',
+  // #2073 graduated by #2988: `format` (a module-scope arrow-valued const
+  // with no free identifiers beyond its own param) is now classified
+  // `module-scope-safe` by `compute-inlinability.ts` instead of the old
+  // unconditional `arrow-literal` — so it's no longer in `unsafeLocalNames`,
+  // and the containing `{tags.map(format).join(' ')}` template expression's
+  // whole-expression safety check (which saw the bare word `format` in the
+  // source text, independent of `resolveCallbackMethodFunctionReferences`'s
+  // structural splice of the callback body) no longer falls back to empty.
+  // `array-map-function-reference` now passes CSR conformance byte-for-byte
+  // against the Hono reference; verified via `renderCsrComponent` directly.
   // #2073/#2321 class: `items` is seeded by a module-scope FUNCTION call
   // (`buildItems()`), not a static literal, so it can't be inlined into
   // the CSR template either; only the SSR-side compile refusal (BF101) and

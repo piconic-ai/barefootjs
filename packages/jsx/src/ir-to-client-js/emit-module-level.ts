@@ -47,7 +47,16 @@ export function emitModuleLevelDeclarations(
   const lines: string[] = []
   for (const constant of moduleLevelConstants) {
     if (!constant.value) continue
-    lines.push(`var ${constant.name} = ${constant.name} ?? ${constant.value}`)
+    // An arrow-valued initializer needs parenthesising on the right of
+    // `??` — `x ?? (s) => …` is a SyntaxError because `??`'s operand
+    // grammar (BitwiseORExpression) is higher-precedence than an arrow
+    // function (AssignmentExpression); only an already-parenthesised
+    // value (an object literal, `(a, b) => …`) survives unwrapped, and
+    // wrapping those again is a harmless no-op (#2988). Gated on
+    // `containsArrow` specifically so existing fixtures with
+    // parenthesised object-literal module consts don't churn.
+    const value = constant.containsArrow ? `(${constant.value})` : constant.value
+    lines.push(`var ${constant.name} = ${constant.name} ?? ${value}`)
   }
   for (const fn of moduleLevelFunctions) {
     const paramStr = fn.params.map(p => {

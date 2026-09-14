@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 423,
+    "totalFixtures": 424,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2769,6 +2769,40 @@
             "state": "escapable",
             "twin": "map-array-builder-body-client"
           }
+        }
+      },
+      "module-const-arrow-helper": {
+        "blade": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
         }
       },
       "module-const-loop-source-computed": {
@@ -3773,6 +3807,10 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
+      },
+      "module-const-arrow-helper": {
+        "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
       },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",

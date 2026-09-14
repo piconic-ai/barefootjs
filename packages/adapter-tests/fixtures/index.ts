@@ -664,6 +664,7 @@ import { fixture as componentPropBareSetter } from './component-prop-bare-setter
 // helper's own body and hoist its `await`-containing statement into a
 // non-async scope, breaking the esbuild parse.
 import { fixture as moduleHelperAsync } from './module-helper-async'
+import { fixture as moduleConstArrowHelper } from './module-const-arrow-helper'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1115,4 +1116,5 @@ export const jsxFixtures: JSXFixture[] = [
   componentPropGetterInObjectLiteral,
   componentPropBareSetter,
   moduleHelperAsync,
+  moduleConstArrowHelper,
 ]

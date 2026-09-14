@@ -59,7 +59,14 @@ export function Search() {
     // Pre-fix this line was duplicated: once (broken) at the top of init
     // and once inside `score`'s own body. It must appear exactly once.
     expect(countOccurrences(clientJs, 'const t = title.toLowerCase()')).toBe(1)
-    expect(clientJs).toContain('const score = (title, term) => {')
+    // `score` closes over nothing but its own params, so #2988's
+    // compute-scope fixpoint now promotes it to true module scope
+    // (`var score = score ?? (...)`, parenthesised — an arrow is not a
+    // valid bare `??` operand) instead of leaving it a per-instance
+    // `const` inside `initSearch`. This is the shape #2988 exists to
+    // produce; pre-#2988 this assertion read
+    // `expect(clientJs).toContain('const score = (title, term) => {')`.
+    expect(clientJs).toContain('var score = score ?? ((title, term) => {')
     // The Hono reference adapter's marked template is TSX source rendered
     // through the JSX runtime, so it legitimately contains the helper
     // once, correctly scoped — pre-fix it was duplicated here too.
@@ -83,7 +90,10 @@ export default Widget
 `)
     expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
     expect(countOccurrences(clientJs, "await fetch('/data.json')")).toBe(1)
-    expect(clientJs).toContain('const loadData = async () => {')
+    // Same #2988 promotion as the sync case above: `loadData` closes
+    // over nothing but its own (empty) params, so it is now hoisted to
+    // real module scope instead of staying a per-instance `const`.
+    expect(clientJs).toContain('var loadData = loadData ?? (async () => {')
     // Same reasoning as the sync case: the reference adapter's marked
     // template is TSX source, so `loadData` legitimately appears once,
     // correctly scoped — pre-fix its inner `await` was duplicated here.
