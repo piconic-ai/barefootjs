@@ -381,7 +381,14 @@ if (needsFollowUp.length > 0) {
   )
 }
 
-const reviewRequestDrafts = Object.fromEntries(polishResults.map((r) => [r.prNumber, r.reviewRequestDraft]))
+// Filtered to readyForReview only — a PR whose polish agent reported
+// markedReadyForReview: false (still draft) must never surface a draft the
+// caller could mistake for postable, however unlikely given the caller's
+// own Pullfrog/CI gate (pullfrog[bot] review, PR #2993).
+const readyForReviewNumbers = new Set(readyForReview.map((pr) => pr.prNumber))
+const reviewRequestDrafts = Object.fromEntries(
+  polishResults.filter((r) => readyForReviewNumbers.has(r.prNumber)).map((r) => [r.prNumber, r.reviewRequestDraft]),
+)
 
 log(
   `Done. ${readyForReview.length}/${allPRs.length} PR(s) marked ready for review: ${readyForReview.map((p) => p.prUrl).join(', ') || 'none'}. ` +
