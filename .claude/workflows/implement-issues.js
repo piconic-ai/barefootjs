@@ -1,6 +1,6 @@
 // Plan → implement → polish one or more GitHub issues into stacked PR(s) for this repo.
 //
-// Usage: Workflow({ name: 'issue-to-pr', args: { issues: [123, 456], repo: 'piconic-ai/barefootjs' } })
+// Usage: Workflow({ name: 'implement-issues', args: { issues: [123, 456], repo: 'piconic-ai/barefootjs' } })
 //   args.issues — required, array of issue numbers (numbers, "#123", or full issue URLs all work)
 //   args.repo   — optional, "owner/repo", defaults to piconic-ai/barefootjs
 //
@@ -24,7 +24,7 @@
 // rubric in .github/pullfrog/review.md, and the harness's own PR-babysitting rules).
 
 export const meta = {
-  name: 'issue-to-pr',
+  name: 'implement-issues',
   description: 'Plan, implement, review/simplify, and open stacked PR(s) for one or more GitHub issues',
   phases: [
     { title: 'Fetch', detail: 'read each issue and skim the codebase for likely touch points' },
