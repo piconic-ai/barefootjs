@@ -94,7 +94,7 @@ public final class Bf {
   /** JSX `key` prop popped by `render_child`, threaded onto `data_key_attr()`. `null` unless this is a keyed loop-row child. */
   private final Object dataKey;
 
-  /** Props payload for `props_attr()`/`scope_comment()`'s `bf-p`/props-JSON segment. Always `null` in this conformance harness today (mirrors the Jinja/Rust ports, where the equivalent field is likewise never populated by `render_child` — see this class's own render-state-helpers header) — kept as a real field, not hardcoded empty, so a future production manifest-consumption path (the same one `_bf_manifest.json` is designed to seed) can populate it without another render-state plumbing pass. */
+  /** Props payload for `props_attr()`/`scope_comment()`'s `bf-p`/props-JSON segment. Never populated by `render_child` (mirrors the Jinja/Rust ports, where the equivalent field is likewise always absent for a CHILD — see this class's own render-state-helpers header); every helper vector / hand-written-`.peb` smoke test in this package also leaves it `null`. A REAL production root render DOES need it set — see the `(String, PebbleEngine, Map, Object)` constructor and {@link #newRoot(String, Bf, Object)}, both added for exactly that (`integrations/spring`'s `Render.renderRoot`). */
   private final Object markerProps;
 
   /**
@@ -111,12 +111,109 @@ public final class Bf {
    */
   private final Map<String, java.util.Deque<Object>> contextStacks;
 
+  /**
+   * `register_script`/`register_preload`'s backing store — SHARED (the same
+   * {@link List}/{@link Set} REFERENCES, never copied) across every `Bf`
+   * instance in one render tree, root through every `render_child`
+   * descendant at any depth, exactly like {@link #contextStacks} above.
+   * Mirrors the Rust runtime's `Arc<RenderSession>`-shared
+   * `scripts`/`script_seen` (`packages/adapter-rust/runtime/src/
+   * runtime.rs`): the compiled `.peb` template's own inline
+   * `{% set _bf_regN = bf.register_script(...) %}` calls (see
+   * `pebble-adapter.ts`'s `generateScriptRegistrations`) discard the
+   * returned tag string, so the ONLY way a host application (e.g. the
+   * Spring integration) recovers the accumulated `<script>`/`<link
+   * rel="modulepreload">` tags for the whole render tree is this shared
+   * side-effect state, read back via {@link #scripts()} on the ROOT `Bf`
+   * instance after `template.evaluate(...)` returns.
+   */
+  private final List<String> scripts;
+
+  private final Set<String> scriptSeen;
+
+  private final List<String> preloads;
+
+  private final Set<String> preloadSeen;
+
   public Bf(String rootScopeId) {
     this(rootScopeId, null, Map.of());
   }
 
   public Bf(String rootScopeId, PebbleEngine engine, Map<String, ChildMeta> manifest) {
-    this(rootScopeId, engine, manifest, false, null, null, null, null, new LinkedHashMap<>());
+    this(rootScopeId, engine, manifest, null);
+  }
+
+  /**
+   * Like {@link #Bf(String, PebbleEngine, Map)}, but ALSO seeding this
+   * root's {@code bf-p} hydration-payload marker (see
+   * {@link #props_attr()}/{@link #scope_comment}) with {@code rootProps} —
+   * needed for a REAL production host (this Java runtime's own conformance
+   * harness never populates it — see {@link #markerProps}'s doc comment —
+   * but a real page render must, or the client runtime re-hydrates a
+   * `@client` root's reactive state from NOTHING rather than the actual
+   * props it was rendered with, silently discarding an SSR'd list/object
+   * prop on hydration). Mirrors `render.rs`'s `render_root` setting
+   * `root.props = Some(props.clone())` whenever `props` is non-empty, for
+   * every `BfInstance::root(...)` call (`render_component` AND
+   * `render_island`) — same rule applied here: pass `null` (or an empty
+   * map) when there is genuinely nothing to seed.
+   */
+  public Bf(String rootScopeId, PebbleEngine engine, Map<String, ChildMeta> manifest, Object rootProps) {
+    this(
+        rootScopeId,
+        engine,
+        manifest,
+        false,
+        null,
+        null,
+        null,
+        rootProps,
+        new LinkedHashMap<>(),
+        new ArrayList<>(),
+        new java.util.LinkedHashSet<>(),
+        new ArrayList<>(),
+        new java.util.LinkedHashSet<>());
+  }
+
+  /**
+   * A SECOND page-level root sharing {@code sibling}'s accumulator state
+   * (scripts/preloads/context-provide-stacks) — for composing one page out
+   * of several independently-rendered top-level islands (a region-shell
+   * layout: a shared header island, a sidebar island, and a main-content
+   * island, e.g. `integrations/spring`'s blog routes). Mirrors the Rust
+   * runtime's `BfInstance::root(Arc::clone(session), scope_id)`, which is
+   * called once per island but always against the SAME cloned
+   * `Arc&lt;RenderSession&gt;` — every island's `register_script` call must
+   * land in the ONE accumulator the page reads back after composing every
+   * island's HTML, or an island rendered after the first would never
+   * contribute its own script tag. Like {@link #root}-shaped construction
+   * generally (see {@link #render_child}'s non-slotted branch), this is NOT
+   * a child (`isChild=false`, no host/mount/data-key) — it is a second
+   * independent top-level render that merely happens to share render-tree
+   * state with the first. `rootProps` seeds THIS island's OWN `bf-p` marker
+   * (see the {@code (String, PebbleEngine, Map, Object)} constructor above)
+   * — independent of whatever `sibling`'s own marker holds.
+   */
+  public static Bf newRoot(String rootScopeId, Bf sibling, Object rootProps) {
+    return new Bf(
+        rootScopeId,
+        sibling.engine,
+        sibling.manifest,
+        false,
+        null,
+        null,
+        null,
+        rootProps,
+        sibling.contextStacks,
+        sibling.scripts,
+        sibling.scriptSeen,
+        sibling.preloads,
+        sibling.preloadSeen);
+  }
+
+  /** {@link #newRoot(String, Bf, Object)} with no `bf-p` marker to seed. */
+  public static Bf newRoot(String rootScopeId, Bf sibling) {
+    return newRoot(rootScopeId, sibling, null);
   }
 
   private Bf(
@@ -128,7 +225,11 @@ public final class Bf {
       String bfMount,
       Object dataKey,
       Object markerProps,
-      Map<String, java.util.Deque<Object>> contextStacks) {
+      Map<String, java.util.Deque<Object>> contextStacks,
+      List<String> scripts,
+      Set<String> scriptSeen,
+      List<String> preloads,
+      Set<String> preloadSeen) {
     this.rootScopeId = rootScopeId == null ? "" : rootScopeId;
     this.engine = engine;
     this.manifest = manifest == null ? Map.of() : manifest;
@@ -138,6 +239,10 @@ public final class Bf {
     this.dataKey = dataKey;
     this.markerProps = markerProps;
     this.contextStacks = contextStacks;
+    this.scripts = scripts;
+    this.scriptSeen = scriptSeen;
+    this.preloads = preloads;
+    this.preloadSeen = preloadSeen;
   }
 
   // =========================================================================
@@ -1638,11 +1743,48 @@ public final class Bf {
   }
 
   public String register_script(Object url) {
-    return "<script type=\"module\" src=\"" + htmlEscape(JsValue.jsString(url)) + "\"></script>";
+    String path = JsValue.jsString(url);
+    if (scriptSeen.add(path)) {
+      scripts.add(path);
+    }
+    return "<script type=\"module\" src=\"" + htmlEscape(path) + "\"></script>";
   }
 
   public String register_preload(Object url) {
-    return "<link rel=\"modulepreload\" href=\"" + htmlEscape(JsValue.jsString(url)) + "\">";
+    String path = JsValue.jsString(url);
+    if (preloadSeen.add(path)) {
+      preloads.add(path);
+    }
+    return "<link rel=\"modulepreload\" href=\"" + htmlEscape(path) + "\">";
+  }
+
+  /**
+   * Read back the FULL accumulated `<link rel="modulepreload">` +
+   * `<script type="module">` tag list for this render tree — callable on
+   * ANY `Bf` instance in the tree (root or a `render_child` descendant),
+   * since {@link #scripts}/{@link #preloads} are shared references, but
+   * intended to be called on the ROOT instance after
+   * `template.evaluate(...)` returns (mirrors Rust's `BfInstance::scripts()`
+   * and every `render.rs`-shaped integration's `scripts_html()` helper —
+   * see `integrations/spring`'s `Render` class). Preload hints are emitted
+   * FIRST, ahead of every script tag — a hint that arrives after the script
+   * it describes is useless; registration order is otherwise preserved.
+   */
+  public String scripts() {
+    StringBuilder sb = new StringBuilder();
+    for (String p : preloads) {
+      if (sb.length() > 0) {
+        sb.append('\n');
+      }
+      sb.append("<link rel=\"modulepreload\" href=\"").append(htmlEscape(p)).append("\">");
+    }
+    for (String p : scripts) {
+      if (sb.length() > 0) {
+        sb.append('\n');
+      }
+      sb.append("<script type=\"module\" src=\"").append(htmlEscape(p)).append("\"></script>");
+    }
+    return sb.toString();
   }
 
   // Context provide/use — a simple stack per context name, SHARED across
@@ -1784,7 +1926,9 @@ public final class Bf {
       childScopeId = prefix + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
     }
 
-    Bf child = new Bf(childScopeId, engine, manifest, true, childBfHost, childBfMount, dataKeyValue, null, contextStacks);
+    Bf child = new Bf(
+        childScopeId, engine, manifest, true, childBfHost, childBfMount, dataKeyValue, null,
+        contextStacks, scripts, scriptSeen, preloads, preloadSeen);
 
     Map<String, Object> vars = new LinkedHashMap<>(props);
     if (meta != null) {

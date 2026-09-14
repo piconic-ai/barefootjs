@@ -19,22 +19,31 @@ import java.util.Map;
  * `${name}_${Math.random()...}` root-scope-id fallback for a component
  * rendered with no `__instanceId`).
  *
- * <p>This same manifest-reading facility is designed to double as the seed
- * of a later production Spring-Boot-integration manifest-consumption path
- * (see the `add-adapter` Phase 4 task description) — implemented as a
- * general `Main`-level facility, not a test-only hack, even though only the
- * test harness produces `_bf_manifest.json` today.
+ * <p>This same manifest-reading facility doubles as the seed of the
+ * production Spring Boot integration's manifest-consumption path
+ * (`integrations/spring`'s `Render` class calls {@link ManifestLoader#load}
+ * directly) — a general `Main`-level facility, not a test-only hack, even
+ * though the conformance test harness (`_bf_manifest.json`) and a real
+ * `bf build` (`manifest.json`, the SAME `{ssrDefaults, ...}` shape every
+ * other adapter's manifest already carries — see `render.rs`'s
+ * `ssr_defaults_for`) both produce a file this loader can read. `public`
+ * (class and fields, and the {@link ManifestLoader#load} factory) so a host
+ * application outside this package can build and hold a
+ * {@code Map<String, ChildMeta>} to pass into {@link Bf}'s 3-arg
+ * constructor — mirrors the Rust runtime's `pub fn
+ * register_components_from_manifest` being the one production entry point
+ * `render.rs`'s `new_session` calls.
  */
-final class ChildMeta {
-  final String componentName;
+public final class ChildMeta {
+  public final String componentName;
   /** `extractSsrDefaults(childIR.metadata)` output, sent verbatim (per-entry `{value, propName?, isRestProps?}` shape intact). */
-  final Map<String, Object> ssrDefaults;
+  public final Map<String, Object> ssrDefaults;
   /** Local (already-mangled-by-emission-target) rest-props bag name, or `null`. */
-  final String restPropsName;
+  public final String restPropsName;
   /** Caller-facing (`sourceName ?? name`) declared param names — the rest-bag "keep" set. */
-  final List<String> paramNames;
+  public final List<String> paramNames;
 
-  ChildMeta(String componentName, Map<String, Object> ssrDefaults, String restPropsName, List<String> paramNames) {
+  public ChildMeta(String componentName, Map<String, Object> ssrDefaults, String restPropsName, List<String> paramNames) {
     this.componentName = componentName;
     this.ssrDefaults = ssrDefaults;
     this.restPropsName = restPropsName;

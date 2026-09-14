@@ -31,13 +31,23 @@ import java.util.Map;
  *       {@code value} fallback. {@code propName}-less entries always use the
  *       static value.
  * </ul>
+ *
+ * <p>`public` (class and {@link #derive}) for the same reason as
+ * {@link ChildMeta}: a host application's ROOT-level render (not a
+ * `bf.render_child` call, which already routes through this internally) —
+ * e.g. `integrations/spring`'s `Render.renderComponent`, mirroring
+ * `render.rs`'s `render_component` calling the Rust runtime's `pub fn
+ * derive_stash_from_defaults` directly — needs this exact derivation for a
+ * top-level component's OWN `ssrDefaults` (its manifest entry's
+ * {@code ChildMeta.ssrDefaults}) against the caller-supplied props, before
+ * layering route-specific stash overrides on top.
  */
-final class DeriveStashFromDefaults {
+public final class DeriveStashFromDefaults {
 
   private DeriveStashFromDefaults() {}
 
   @SuppressWarnings("unchecked")
-  static Map<String, Object> derive(Map<String, Object> defaults, Map<String, Object> props) {
+  public static Map<String, Object> derive(Map<String, Object> defaults, Map<String, Object> props) {
     Map<String, Object> extra = new LinkedHashMap<>();
     if (defaults == null) {
       return extra;
