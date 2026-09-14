@@ -4042,6 +4042,19 @@
         "text"
       ]
     },
+    "module-helper-async": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "multi-component-module": {
       "kinds": [
         "call",
@@ -6815,21 +6828,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 116,
+    "array-literal": 117,
     "array-method": 71,
     "arrow": 75,
     "binary": 107,
-    "call": 282,
+    "call": 283,
     "conditional": 33,
-    "identifier": 400,
+    "identifier": 401,
     "index-access": 14,
     "literal": 319,
     "logical": 52,
-    "member": 236,
+    "member": 237,
     "object-literal": 94,
     "template-literal": 31,
     "unary": 29,
-    "unsupported": 50
+    "unsupported": 51
   },
   "axisCounts": {
     "array-method:at": 2,
