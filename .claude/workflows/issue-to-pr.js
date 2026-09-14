@@ -236,7 +236,10 @@ Apply any fixes directly on the branch, re-run the relevant tests, commit them w
 
 Once you're satisfied the PR is genuinely ready for a human, using the GitHub MCP tools:
 1. Mark PR #${pr.prNumber} "ready for review" (undraft it).
-2. Post a comment on the PR that starts with "@kfly8" letting them know it's ready for human review (one or two sentences: what it does, and that code-review/simplify already ran clean or list what was fixed). This is a real GitHub @-mention notification, separate from kfly8 being the PR's author.
+2. Post a comment on the PR that starts with "@kfly8". This is a real GitHub @-mention notification, separate from kfly8 being the PR's author, so make it a self-contained review request, not just a ping — include all of:
+   - **What**: one or two sentences on what changed and why.
+   - **How to verify**: concrete, runnable steps a reviewer would follow to check the change themselves (exact commands — tests, typecheck, a manual repro — not "review the diff"). If code-review/simplify already ran clean, say so; if they fixed something, name what.
+   - **Expected result**: what those steps should show when the change is correct (test output, behavior, absence of a prior symptom) — specific enough that a reviewer knows whether what they see matches, not just "it works".
 
 Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, whether you marked it ready for review, and whether you posted the @kfly8 comment.
 `.trim()
