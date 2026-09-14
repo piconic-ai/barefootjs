@@ -20,6 +20,6 @@ export function Widget() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test">0</div>
+    <div bf-s="test" bf="s1"><!--bf:s0-->0<!--/--></div>
   `,
 })
