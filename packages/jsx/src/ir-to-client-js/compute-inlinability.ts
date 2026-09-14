@@ -23,9 +23,10 @@
  * Stage E.4 of issue #1021.
  */
 
-import type { ConstantInfo, IRNode, ReferencesGraph } from '../types.ts'
+import type { ConstantInfo, DeclarationScope, IRNode, ReferencesGraph } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import { graphFunctionReferences } from './build-references.ts'
+import { computeDeclarationScopes } from './compute-scope.ts'
 import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts'
 import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate.ts'
 import type { RelocateEnv, RelocateDecision } from '../relocate.ts'
@@ -103,6 +104,14 @@ export type ConstantInlinability =
    *  The function identity is per-instance; inlining a function
    *  literal into a template would close over the wrong scope. */
   | { kind: 'arrow-literal' }
+  /** Module-scope arrow-valued constant that does NOT touch component
+   *  internals (`compute-scope.ts`'s forward-reachability fixpoint
+   *  placed it at `'module'` scope, #2988) — the mirror image of
+   *  `FunctionInlinability`'s `'module-scope-safe'`. The template can
+   *  reference it by bare name because the emitted client JS declares
+   *  it at module scope too; unlike `'arrow-literal'`, this is NOT
+   *  unsafe for template inlining. */
+  | { kind: 'module-scope-safe' }
   /** Initializer reads a signal/memo. Template inlining would freeze
    *  the reactive value at SSR time. */
   | { kind: 'reactive-read' }
@@ -257,6 +266,19 @@ export function computeInlinability(
   // rejections during classification.
   const env = buildEnvFromCtx(ctx)
 
+  // #2988: single producer for "is this module-level constant safe to
+  // reference by bare name from the template lambda" — reuses
+  // `compute-scope.ts`'s forward-reachability fixpoint, the SAME
+  // decision `classifyLocalDeclarations` (init-declarations.ts) uses to
+  // place a constant's own `var` declaration at module vs init scope in
+  // the compiled bundle, instead of `classifyConstantInitial` re-deriving
+  // an independent (and, pre-#2988, unconditional) `arrow-literal`
+  // verdict for every arrow-valued constant. Calling it again here is
+  // pure and byte-identical to the earlier call `generate-init.ts` makes
+  // via `classifyLocalDeclarations` — both read the same immutable
+  // `(ctx, graph)` pair with nothing mutating either in between.
+  const { constantScope } = computeDeclarationScopes(ctx, graph)
+
   const decisionsByName = new Map<string, RelocateDecision[]>()
   for (const c of ctx.localConstants) {
     const { status, decisions } = classifyConstantInitial(
@@ -267,6 +289,7 @@ export function computeInlinability(
       memoNames,
       env,
       getterAliases,
+      constantScope,
     )
     constants.set(c.name, status)
     decisionsByName.set(c.name, decisions)
@@ -281,7 +304,7 @@ export function computeInlinability(
   // transformation. The map lives on `ClientJsContext` — not on the
   // cross-adapter `ConstantInfo` IR — so SSR adapters don't see CSR
   // substitution semantics they have no use for.
-  populateCsrInlinable(ctx, env, getterAliases)
+  populateCsrInlinable(ctx, env, getterAliases, constantScope)
 
   return { constants, functions, decisionsByName, templateRiskyNames }
 }
@@ -300,14 +323,26 @@ export function computeInlinability(
  *
  * A const ends with `ctx.csrInlinable.get(name) === null` when:
  *   - it has no `value` (placeholder-let)
- *   - the value contains an arrow / function expression (identity per render)
+ *   - the value contains an arrow / function expression (identity per
+ *     render) — UNLESS `constantScope` places it at module scope
+ *     (#2988: the arrow closes over nothing but its own params, same
+ *     shape a module-scope `function` declaration already gets right),
+ *     in which case it gets an identity entry (`rewrittenValue: name`)
+ *     instead of `null` — the compiled bundle declares the const at
+ *     module scope too, so referencing it by its own bare name from the
+ *     CSR template is exactly as safe as a `module-scope-safe` function
  *   - it's a system construct (`createContext`, `new WeakMap`)
  *   - it's a JSX literal (handled by jsx-inline routing)
  *   - it's a bare alias-hop chain naming a signal/memo getter (`getterAliases`)
  *   - the substituted form fails `isInlinableInTemplate` (would re-execute
  *     a non-pure call at template-eval time — #1138)
  */
-function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv, getterAliases: ReadonlyMap<string, string>): void {
+function populateCsrInlinable(
+  ctx: ClientJsContext,
+  relocateEnv: RelocateEnv,
+  getterAliases: ReadonlyMap<string, string>,
+  constantScope: ReadonlyMap<string, DeclarationScope>,
+): void {
   if (ctx.localConstants.length === 0) return
 
   // Base env: signal getters + memo calls in raw (props.X) form, PLUS
@@ -345,6 +380,24 @@ function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv, ge
   // call-kind entry (`buildEnvWithConsts`'s Map spread puts `constSubs`
   // last) — the literal `(undefined)()` this issue is about (#2778).
   for (const c of ctx.localConstants) {
+    // `mutatedAfterDeclaration` takes precedence, matching
+    // `classifyConstantInitial`'s order exactly (checked before
+    // `containsArrow` there too) — a same-scope mutation after
+    // declaration means `c.name`'s bare reference no longer reflects
+    // the value this identity substitution would imply, even if
+    // `compute-scope.ts` still placed the declaration at module scope.
+    if (c.containsArrow && !c.mutatedAfterDeclaration && constantScope.get(c.name) === 'module') {
+      // #2988: module-scope-safe arrow helper — CSR substitution is
+      // identity. The compiled bundle declares `c.name` at module
+      // scope (same `computeDeclarationScopes` answer that placed it
+      // there), so the template lambda — itself module scope — can
+      // reference it by its own bare name with no rewrite needed, the
+      // same principle a `module-scope-safe` function already gets via
+      // `functionReferencesDeclaredName` above.
+      ctx.csrInlinable.set(c.name, { rewrittenValue: c.name, freeIdentifiers: new Set() })
+      finalised.add(c.name)
+      continue
+    }
     if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind || c.mutatedAfterDeclaration || getterAliases.has(c.name)) {
       ctx.csrInlinable.set(c.name, null)
       finalised.add(c.name)
@@ -629,11 +682,23 @@ function classifyConstantInitial(
   memoNames: Set<string>,
   env: RelocateEnv,
   getterAliases: ReadonlyMap<string, string>,
+  constantScope: ReadonlyMap<string, DeclarationScope>,
 ): { status: ConstantInlinability; decisions: RelocateDecision[] } {
   if (c.isJsx) return { status: { kind: 'jsx-inline' }, decisions: [] }
   if (!c.value) return { status: { kind: 'placeholder-let' }, decisions: [] }
   if (c.mutatedAfterDeclaration) return { status: { kind: 'mutated-after-declaration' }, decisions: [] }
-  if (c.containsArrow) return { status: { kind: 'arrow-literal' }, decisions: [] }
+  if (c.containsArrow) {
+    // #2988: `compute-scope.ts`'s fixpoint already answered "is this
+    // safe to reference by bare name at module scope" for arrow-valued
+    // module constants — read it instead of unconditionally treating
+    // every arrow value as per-instance/unsafe. A non-module arrow (or
+    // one that transitively touches component internals) still lands
+    // in `'init'`/`'skip'` there, so this stays `arrow-literal` for
+    // every case the pre-#2988 cascade already got right.
+    return constantScope.get(c.name) === 'module'
+      ? { status: { kind: 'module-scope-safe' }, decisions: [] }
+      : { status: { kind: 'arrow-literal' }, decisions: [] }
+  }
   if (c.systemConstructKind) return { status: { kind: 'system-construct' }, decisions: [] }
   // A multi-hop alias chain to a getter (`const a = items; const b = a`)
   // has `b`'s OWN free id as `a` — an `init-local`, not a getter — so the
@@ -729,8 +794,12 @@ export function toLegacyInlinability(
   for (const [name, status] of analysis.constants) {
     if (status.kind === 'inlinable') {
       inlinableConstants.set(name, status.value)
-    } else if (status.kind === 'jsx-inline' || status.kind === 'system-construct') {
+    } else if (status.kind === 'jsx-inline' || status.kind === 'system-construct' || status.kind === 'module-scope-safe') {
       // Not inlinable AND not unsafe — they have their own routing.
+      // `module-scope-safe` (#2988) is referenced by bare name via
+      // `ctx.csrInlinable`'s identity entry (`populateCsrInlinable`),
+      // the same "own routing" shape `jsx-inline`/`system-construct`
+      // already use here.
     } else {
       unsafeLocalNames.add(name)
     }

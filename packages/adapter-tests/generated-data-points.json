@@ -1927,6 +1927,26 @@
       }
     }
   ],
+  "module-const-arrow-helper": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "module-const-loop-source-computed-precomputed": [
     {
       "name": "gen:items:empty",
