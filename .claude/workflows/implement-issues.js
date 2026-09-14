@@ -30,7 +30,7 @@ export const meta = {
     { title: 'Fetch', detail: 'read each issue and skim the codebase for likely touch points' },
     { title: 'Plan', detail: 'assess conflict risk and group issues into parallel/serial (stacked) batches', model: 'claude-opus-5' },
     { title: 'Implement', detail: 'implement, test, commit, and open draft PR(s) per group, stacking within a group' },
-    { title: 'Polish', detail: 'run code-review + simplify against each PR\'s diff, push fixes, and mark it ready for review' },
+    { title: 'Polish', detail: 'per group, run code-review + simplify down the PR stack in order, push fixes, and mark each ready for review' },
   ],
 }
 
@@ -41,7 +41,12 @@ const IMPLEMENT_MODEL = 'claude-sonnet-5'
 
 function parseIssueNumber(x) {
   if (typeof x === 'number') return x
-  const m = String(x).match(/(\d+)\s*$/)
+  const s = String(x)
+  // Prefer the /issues/<n> path segment so a comment-anchored issue URL
+  // (".../issues/123#issuecomment-456") resolves to 123, not the trailing 456.
+  const issuePath = s.match(/\/issues\/(\d+)(?:[/?#]|$)/)
+  if (issuePath) return Number(issuePath[1])
+  const m = s.match(/(\d+)\s*$/)
   return m ? Number(m[1]) : NaN
 }
 
@@ -145,6 +150,28 @@ Return the groups (each with its issue numbers and a one-line reason) plus a sho
   log(`Plan: ${plan.groups.length} group(s) — ${plan.conflictAnalysis}`)
 }
 
+// The planner is asked to place every issue in exactly one group (PLAN_SCHEMA's own
+// invariant), but nothing enforces that a model actually honored it — verify it here the
+// same way Fetch verifies its own completeness, rather than trusting the plan blindly.
+{
+  const counts = new Map()
+  for (const group of plan.groups) {
+    for (const n of group.issues) counts.set(n, (counts.get(n) || 0) + 1)
+  }
+  const allNumbers = validIssues.map((i) => i.number)
+  const duplicated = [...new Set(allNumbers.filter((n) => (counts.get(n) || 0) > 1))]
+  if (duplicated.length > 0) {
+    throw new Error(
+      `Plan placed issue(s) ${duplicated.join(', ')} in more than one group — refusing to risk duplicate/conflicting PRs.`,
+    )
+  }
+  const missing = allNumbers.filter((n) => !counts.has(n))
+  if (missing.length > 0) {
+    log(`Warning: plan omitted issue(s) ${missing.join(', ')} — appending them as a trailing serial group.`)
+    plan.groups.push({ issues: missing, reason: "Added by validation: the planner's grouping omitted these issues." })
+  }
+}
+
 phase('Implement')
 
 const GROUP_RESULT_SCHEMA = {
@@ -212,7 +239,7 @@ log(`Implement phase opened ${allPRs.length} PR(s): ${allPRs.map((p) => `#${p.pr
 
 phase('Polish')
 
-const POLISH_SCHEMA = {
+const POLISH_ITEM_SCHEMA = {
   type: 'object',
   properties: {
     prNumber: { type: 'number' },
@@ -224,48 +251,96 @@ const POLISH_SCHEMA = {
   required: ['prNumber', 'summary', 'pushedFixes', 'markedReadyForReview', 'mentionedKfly8'],
 }
 
-function buildPolishPrompt(pr) {
+const POLISH_GROUP_SCHEMA = {
+  type: 'object',
+  properties: { results: { type: 'array', items: POLISH_ITEM_SCHEMA } },
+  required: ['results'],
+}
+
+// PRs within a group stack (each based on the previous one's branch). Polishing them with
+// one independent agent per PR, all in parallel, would let a lower PR's fixup commit miss
+// the higher PRs that already forked from its pre-fix tip and are being polished at the
+// same time — the stack would come out needing a manual rebase. So one agent processes an
+// entire group's stack itself, in order, in a single worktree, rebasing each PR onto the
+// previous one's (possibly just-fixed) tip before reviewing it.
+function buildGroupPolishPrompt(groupPRs) {
+  const stackList = groupPRs.map((pr, i) => `${i + 1}. PR #${pr.prNumber} — branch "${pr.branch}" (base "${pr.baseBranch}")`).join('\n')
   return `
-Check out branch "${pr.branch}" of ${repo} (PR #${pr.prNumber}, base "${pr.baseBranch}").
+The following PR(s) in ${repo} form one stack, in this order (each based on the previous):
 
-Run the equivalent of the /code-review skill (medium-high effort) against this branch's diff versus its base branch: look for correctness bugs and reuse/simplification/efficiency issues. If the Skill tool is available to you, invoke it with skill "code-review" against this diff; otherwise perform the same review inline, using this repo's CLAUDE.md conventions and .github/pullfrog/review.md's rubric as your criteria.
+${stackList}
 
-Then run the equivalent of the /simplify skill on the same diff: apply reuse, simplification, efficiency, and "altitude" cleanups to the changed code ONLY. This step is quality-only — do not go hunting for new bugs, that was the previous step.
+Process them ONE AT A TIME, IN THIS ORDER, in the same working tree so any fixup commits propagate down the stack:
 
-Apply any fixes directly on the branch, re-run the relevant tests, commit them with correct Co-authored-by trailers, and push.
-
-Once you're satisfied the PR is genuinely ready for a human, using the GitHub MCP tools:
-1. Mark PR #${pr.prNumber} "ready for review" (undraft it).
-2. Post a comment on the PR that starts with "@kfly8". This is a real GitHub @-mention notification, separate from kfly8 being the PR's author, so make it a self-contained review request, not just a ping — include all of:
+For each PR, in order:
+1. Check out its branch. If it stacks on a PR you already polished earlier in this same task and that PR's branch received fixup commits, rebase (or merge) this branch onto that updated base branch FIRST, resolving any conflicts, before reviewing — do not move on to review until this PR's branch includes the previous PR's fixes.
+2. Run the equivalent of the /code-review skill (medium-high effort) against this branch's diff versus its base branch: look for correctness bugs and reuse/simplification/efficiency issues. If the Skill tool is available to you, invoke it with skill "code-review"; otherwise perform the same review inline, using this repo's CLAUDE.md conventions and .github/pullfrog/review.md's rubric as your criteria.
+3. Run the equivalent of the /simplify skill on the same diff: apply reuse, simplification, efficiency, and "altitude" cleanups to the changed code ONLY. This step is quality-only — do not go hunting for new bugs, that was the previous step.
+4. Apply any fixes directly on the branch, re-run the relevant tests, commit them with correct Co-authored-by trailers, and push — the NEXT PR in the stack depends on this being pushed before you move on.
+5. Once you're satisfied this PR is genuinely ready for a human, using the GitHub MCP tools: mark it "ready for review" (undraft it), then post a comment on it that starts with "@kfly8". This is a real GitHub @-mention notification, separate from kfly8 being the PR's author, so make it a self-contained review request, not just a ping — include all of:
    - **What**: one or two sentences on what changed and why.
    - **How to verify**: concrete, runnable steps a reviewer would follow to check the change themselves (exact commands — tests, typecheck, a manual repro — not "review the diff"). If code-review/simplify already ran clean, say so; if they fixed something, name what.
    - **Expected result**: what those steps should show when the change is correct (test output, behavior, absence of a prior symptom) — specific enough that a reviewer knows whether what they see matches, not just "it works".
 
-Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, whether you marked it ready for review, and whether you posted the @kfly8 comment.
+Return one entry per PR above, in the same order, each with: prNumber, a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, whether you marked it ready for review, and whether you posted the @kfly8 comment.
 `.trim()
 }
 
-const polishResults = await parallel(
-  allPRs.map((pr) => () =>
-    agent(buildPolishPrompt(pr), {
-      schema: POLISH_SCHEMA,
+const polishGroupResults = await parallel(
+  groupImplementResults.map((groupResult, gi) => () => {
+    const groupPRs = groupResult && groupResult.prs ? groupResult.prs : []
+    if (groupPRs.length === 0) return null
+    return agent(buildGroupPolishPrompt(groupPRs), {
+      schema: POLISH_GROUP_SCHEMA,
       phase: 'Polish',
-      label: `polish PR #${pr.prNumber}`,
+      label: `polish group ${gi + 1} (${groupPRs.length}-PR stack)`,
       model: IMPLEMENT_MODEL,
       isolation: 'worktree',
-    }),
-  ),
+    })
+  }),
 )
 
+const polishResults = polishGroupResults.filter(Boolean).flatMap((r) => r.results || [])
+
+// The Polish prompt asks each PR to report markedReadyForReview/mentionedKfly8 precisely
+// because either can fail — trust those flags instead of assuming every PR succeeded, so a
+// PR that's actually still in draft or never got the @kfly8 comment gets called out instead
+// of silently reported as done.
+const polishedByNumber = new Map(polishResults.map((r) => [r.prNumber, r]))
+const fullyDone = []
+const needsFollowUp = []
+for (const pr of allPRs) {
+  const r = polishedByNumber.get(pr.prNumber)
+  if (r && r.markedReadyForReview && r.mentionedKfly8) {
+    fullyDone.push(pr)
+  } else {
+    needsFollowUp.push({ pr, result: r })
+  }
+}
+
+if (needsFollowUp.length > 0) {
+  log(
+    `Warning: ${needsFollowUp.length} PR(s) still need manual follow-up: ` +
+      needsFollowUp
+        .map(({ pr, result }) =>
+          result
+            ? `#${pr.prNumber} (${pr.prUrl}) — markedReadyForReview=${result.markedReadyForReview}, mentionedKfly8=${result.mentionedKfly8}`
+            : `#${pr.prNumber} (${pr.prUrl}) — its group's polish agent produced no result for it`,
+        )
+        .join('; '),
+  )
+}
+
 log(
-  `Done. Opened ${allPRs.length} PR(s), ready for review and @kfly8-mentioned: ${allPRs.map((p) => p.prUrl).join(', ')}. ` +
+  `Done. ${fullyDone.length}/${allPRs.length} PR(s) fully ready for review and @kfly8-mentioned: ${fullyDone.map((p) => p.prUrl).join(', ') || 'none'}. ` +
     `Caller: subscribe_pr_activity on each and drive CI/Pullfrog feedback to green per this repo's standing PR rules, ` +
-    `and proactively notify the user now that these are ready for review — this script cannot do that part itself.`,
+    `and proactively notify the user now — this script cannot do that part itself.`,
 )
 
 return {
   repo,
   plan,
   prs: allPRs,
-  polish: polishResults.filter(Boolean),
+  polish: polishResults,
+  needsFollowUp: needsFollowUp.map(({ pr }) => pr),
 }
