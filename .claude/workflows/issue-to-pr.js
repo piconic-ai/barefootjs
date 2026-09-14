@@ -1,0 +1,276 @@
+// Plan → implement → polish → land one or more GitHub issues as PR(s) for this repo.
+//
+// Usage: Workflow({ name: 'issue-to-pr', args: { issues: [123, 456], repo: 'piconic-ai/barefootjs' } })
+//   args.issues — required, array of issue numbers (numbers, "#123", or full issue URLs all work)
+//   args.repo   — optional, "owner/repo", defaults to piconic-ai/barefootjs
+//
+// What this workflow does NOT do: it does not wait for Pullfrog's review or CI to turn
+// green after opening the PR(s) — that is an ongoing, event-driven job (Pullfrog fires on
+// its own trigger, CI takes minutes). Once this workflow returns, the caller must
+// subscribe_pr_activity on each returned PR and drive it to green using this repo's
+// standing "PR you opened" rules (CLAUDE.md's Git Commit section, the pullfrog review
+// rubric in .github/pullfrog/review.md, and the harness's own PR-babysitting rules).
+
+export const meta = {
+  name: 'issue-to-pr',
+  description: 'Plan, implement, review/simplify, and open stacked PR(s) for one or more GitHub issues',
+  phases: [
+    { title: 'Fetch', detail: 'read each issue and skim the codebase for likely touch points' },
+    { title: 'Plan', detail: 'assess conflict risk and group issues into parallel/serial (stacked) batches', model: 'claude-opus-5' },
+    { title: 'Implement', detail: 'implement, test, commit, and open draft PR(s) per group, stacking within a group' },
+    { title: 'Polish', detail: 'run code-review + simplify against each PR\'s diff and push fixes' },
+    { title: 'Land', detail: 'request kfly8 as reviewer and mark each PR ready for review' },
+  ],
+}
+
+// Design/planning uses a stronger model per the requester's instruction; implementation
+// and polish use Sonnet. Swap DESIGN_MODEL to 'claude-fable-5-1' if Fable is preferred.
+const DESIGN_MODEL = 'claude-opus-5'
+const IMPLEMENT_MODEL = 'claude-sonnet-5'
+
+function parseIssueNumber(x) {
+  if (typeof x === 'number') return x
+  const m = String(x).match(/(\d+)\s*$/)
+  return m ? Number(m[1]) : NaN
+}
+
+const repo = (args && args.repo) || 'piconic-ai/barefootjs'
+const rawIssues = (args && args.issues) || []
+const issues = rawIssues.map(parseIssueNumber).filter((n) => !Number.isNaN(n))
+
+if (issues.length === 0) {
+  throw new Error('args.issues must be a non-empty array of issue numbers (or "#123" / issue URLs)')
+}
+
+const ISSUE_SCHEMA = {
+  type: 'object',
+  properties: {
+    number: { type: 'number' },
+    title: { type: 'string' },
+    body: { type: 'string' },
+    labels: { type: 'array', items: { type: 'string' } },
+    likelyFiles: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Files/subsystems this issue will likely touch, based on the issue text and a codebase skim. Do not implement anything yet.',
+    },
+  },
+  required: ['number', 'title', 'body'],
+}
+
+phase('Fetch')
+const fetched = await parallel(
+  issues.map((num) => () =>
+    agent(
+      `In the GitHub repo ${repo}, fetch issue #${num} (title, full body, labels) using the GitHub MCP tools. ` +
+        `Then skim the codebase to guess which files or subsystems this issue will likely touch — do NOT implement anything yet, this is reconnaissance only. ` +
+        `Return the issue's number, title, body, labels, and your likelyFiles guess as structured data.`,
+      { schema: ISSUE_SCHEMA, phase: 'Fetch', label: `fetch #${num}` },
+    ),
+  ),
+)
+
+const validIssues = fetched.filter(Boolean)
+if (validIssues.length === 0) {
+  throw new Error(`Could not fetch any of the requested issues from ${repo}: ${issues.join(', ')}`)
+}
+if (validIssues.length < issues.length) {
+  const found = new Set(validIssues.map((i) => i.number))
+  const missing = issues.filter((n) => !found.has(n))
+  log(`Warning: could not fetch issue(s) ${missing.join(', ')} — continuing with the rest.`)
+}
+
+function issueByNumber(n) {
+  return validIssues.find((i) => i.number === n)
+}
+
+phase('Plan')
+
+let plan
+if (validIssues.length === 1) {
+  plan = {
+    groups: [{ issues: [validIssues[0].number], reason: 'Only one issue was given.' }],
+    conflictAnalysis: 'Single issue — no cross-issue conflict analysis needed.',
+  }
+  log(`Single issue #${validIssues[0].number} — skipping conflict analysis, one group.`)
+} else {
+  const PLAN_SCHEMA = {
+    type: 'object',
+    properties: {
+      groups: {
+        type: 'array',
+        description:
+          "Ordered list of groups. Groups run in PARALLEL with each other (each starting from the repo's default branch, in its own worktree). Issues within a group run STRICTLY SERIALLY, each PR stacked on the previous one's branch.",
+        items: {
+          type: 'object',
+          properties: {
+            issues: { type: 'array', items: { type: 'number' } },
+            reason: { type: 'string' },
+          },
+          required: ['issues', 'reason'],
+        },
+      },
+      conflictAnalysis: { type: 'string' },
+    },
+    required: ['groups', 'conflictAnalysis'],
+  }
+
+  const planPrompt = `
+You are planning how to implement the following GitHub issues from ${repo} as pull requests.
+
+Issues (number, title, body, labels, likely files):
+${JSON.stringify(validIssues, null, 2)}
+
+Decide:
+1. For every pair of issues, whether implementing them risks touching the same files or subsystems (a real conflict risk) — based on likelyFiles, title, and body, and your own knowledge of the codebase's structure.
+2. Group the issues into an ORDERED LIST OF GROUPS. Issues in the SAME group are implemented strictly serially, each PR stacked on top of the previous one's branch (later PR's base = earlier PR's branch). Issues in DIFFERENT groups are implemented in parallel, each starting from the repository's default branch in a separate git worktree.
+3. Only place issues in different (parallel) groups when you are CONFIDENT they touch disjoint files/areas. If you are unsure, or the risk is ambiguous, keep them in the SAME group (serial) — when in doubt, serial.
+4. Every issue must appear in exactly one group.
+
+Return the groups (each with its issue numbers and a one-line reason) plus a short conflictAnalysis paragraph explaining your reasoning across all issues.
+`.trim()
+
+  plan = await agent(planPrompt, { schema: PLAN_SCHEMA, phase: 'Plan', model: DESIGN_MODEL, label: 'conflict + grouping plan' })
+  log(`Plan: ${plan.groups.length} group(s) — ${plan.conflictAnalysis}`)
+}
+
+phase('Implement')
+
+const GROUP_RESULT_SCHEMA = {
+  type: 'object',
+  properties: {
+    prs: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          issueNumbers: { type: 'array', items: { type: 'number' } },
+          branch: { type: 'string' },
+          baseBranch: { type: 'string' },
+          prNumber: { type: 'number' },
+          prUrl: { type: 'string' },
+          title: { type: 'string' },
+        },
+        required: ['branch', 'baseBranch', 'prNumber', 'prUrl'],
+      },
+    },
+    notes: { type: 'string' },
+  },
+  required: ['prs'],
+}
+
+function buildImplementPrompt(groupIssues) {
+  const issuesText = groupIssues
+    .map((i) => `### Issue #${i.number}: ${i.title}\n\n${i.body}`)
+    .join('\n\n---\n\n')
+  return `
+You are implementing the following GitHub issue(s) from ${repo}, in this exact order, as one stack of PRs. This repo's CLAUDE.md is already loaded for you — follow it, especially the "Git Commit" trailer rules and the testing table, and (for compiler/adapter changes) the "Never ..." code conventions and the subset-conformance fixture-coupling rule.
+
+${issuesText}
+
+For each issue above, in order:
+1. Create a branch off the current HEAD: the FIRST issue's branch is created off the repository's default branch; each SUBSEQUENT issue's branch is created off the PREVIOUS issue's branch, so the PRs stack.
+2. Implement it. If an issue naturally splits into more than one semantic unit of work, split it into multiple sequential commits and multiple stacked PRs instead of one large PR — use judgement, most issues are a single PR. Do not bundle unrelated cleanup into the same commit.
+3. Run the relevant tests/typecheck for what you touched and confirm they pass before committing. Follow the CLAUDE.md testing decision guide to pick the right test layer.
+4. Commit with correct Co-authored-by trailers per CLAUDE.md's "Git Commit" section.
+5. Push the branch with \`git push -u origin <branch>\` and open the PR as a DRAFT via the GitHub MCP tools, with base = the branch from the previous step (or the default branch for the first PR in the stack). Check the repo for a PR template first (there is none at the time of writing, but re-check). Put "Closes #<issue>" in the body for whichever issue(s) that PR resolves.
+
+Return the full list of PRs you opened, in the order you opened them: for each, the issue number(s) it addresses, its branch, its base branch, PR number, PR URL, and title.
+`.trim()
+}
+
+const groupImplementResults = await parallel(
+  plan.groups.map((group, gi) => () => {
+    const groupIssues = group.issues.map(issueByNumber).filter(Boolean)
+    return agent(buildImplementPrompt(groupIssues), {
+      schema: GROUP_RESULT_SCHEMA,
+      phase: 'Implement',
+      label: `group ${gi + 1} (issues ${group.issues.join(', ')})`,
+      model: IMPLEMENT_MODEL,
+      isolation: plan.groups.length > 1 ? 'worktree' : undefined,
+    })
+  }),
+)
+
+const allPRs = groupImplementResults.filter(Boolean).flatMap((r) => r.prs || [])
+if (allPRs.length === 0) {
+  log('No PRs were opened by the implement phase — stopping before polish/land.')
+  return { repo, plan, prs: [] }
+}
+log(`Implement phase opened ${allPRs.length} PR(s): ${allPRs.map((p) => `#${p.prNumber}`).join(', ')}`)
+
+phase('Polish')
+
+const POLISH_SCHEMA = {
+  type: 'object',
+  properties: {
+    prNumber: { type: 'number' },
+    summary: { type: 'string' },
+    pushedFixes: { type: 'boolean' },
+  },
+  required: ['prNumber', 'summary', 'pushedFixes'],
+}
+
+function buildPolishPrompt(pr) {
+  return `
+Check out branch "${pr.branch}" of ${repo} (PR #${pr.prNumber}, base "${pr.baseBranch}").
+
+Run the equivalent of the /code-review skill (medium-high effort) against this branch's diff versus its base branch: look for correctness bugs and reuse/simplification/efficiency issues. If the Skill tool is available to you, invoke it with skill "code-review" against this diff; otherwise perform the same review inline, using this repo's CLAUDE.md conventions and .github/pullfrog/review.md's rubric as your criteria.
+
+Then run the equivalent of the /simplify skill on the same diff: apply reuse, simplification, efficiency, and "altitude" cleanups to the changed code ONLY. This step is quality-only — do not go hunting for new bugs, that was the previous step.
+
+Apply any fixes directly on the branch, re-run the relevant tests, commit them with correct Co-authored-by trailers, and push.
+
+Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), and whether you pushed any fix commits.
+`.trim()
+}
+
+const polishResults = await parallel(
+  allPRs.map((pr) => () =>
+    agent(buildPolishPrompt(pr), {
+      schema: POLISH_SCHEMA,
+      phase: 'Polish',
+      label: `polish PR #${pr.prNumber}`,
+      model: IMPLEMENT_MODEL,
+      isolation: 'worktree',
+    }),
+  ),
+)
+
+phase('Land')
+
+const LAND_SCHEMA = {
+  type: 'object',
+  properties: {
+    prNumber: { type: 'number' },
+    reviewerAssigned: { type: 'boolean' },
+    markedReadyForReview: { type: 'boolean' },
+    notes: { type: 'string' },
+  },
+  required: ['prNumber', 'reviewerAssigned', 'markedReadyForReview'],
+}
+
+const landResults = await parallel(
+  allPRs.map((pr) => () =>
+    agent(
+      `Using the GitHub MCP tools against ${repo} PR #${pr.prNumber}:\n` +
+        `1. Request "kfly8" as a reviewer on the PR.\n` +
+        `2. Mark the PR "ready for review" (undraft it) now that implementation and polish are both done.\n` +
+        `Report prNumber (${pr.prNumber}), whether each step succeeded, and any notes (e.g. if kfly8 could not be requested because they authored the PR, or a step failed).`,
+      { schema: LAND_SCHEMA, phase: 'Land', label: `land PR #${pr.prNumber}`, model: IMPLEMENT_MODEL },
+    ),
+  ),
+)
+
+log(
+  `Done. Opened/landed ${allPRs.length} PR(s): ${allPRs.map((p) => p.prUrl).join(', ')}. ` +
+    `Next: subscribe_pr_activity on each and drive CI/Pullfrog feedback to green per this repo's standing PR rules.`,
+)
+
+return {
+  repo,
+  plan,
+  prs: allPRs,
+  polish: polishResults.filter(Boolean),
+  land: landResults.filter(Boolean),
+}
