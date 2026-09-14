@@ -243,20 +243,22 @@ const LAND_SCHEMA = {
   type: 'object',
   properties: {
     prNumber: { type: 'number' },
-    reviewerAssigned: { type: 'boolean' },
+    reviewerRequested: { type: 'boolean' },
+    assignedInstead: { type: 'boolean' },
     markedReadyForReview: { type: 'boolean' },
     notes: { type: 'string' },
   },
-  required: ['prNumber', 'reviewerAssigned', 'markedReadyForReview'],
+  required: ['prNumber', 'reviewerRequested', 'assignedInstead', 'markedReadyForReview'],
 }
 
 const landResults = await parallel(
   allPRs.map((pr) => () =>
     agent(
       `Using the GitHub MCP tools against ${repo} PR #${pr.prNumber}:\n` +
-        `1. Request "kfly8" as a reviewer on the PR.\n` +
-        `2. Mark the PR "ready for review" (undraft it) now that implementation and polish are both done.\n` +
-        `Report prNumber (${pr.prNumber}), whether each step succeeded, and any notes (e.g. if kfly8 could not be requested because they authored the PR, or a step failed).`,
+        `1. Check who authored the PR (its "user"/author login). NOTE: this environment's GitHub credentials may authenticate as "kfly8" regardless of who git-committed the code, so the PR's recorded author can be "kfly8" even though a Claude session wrote it — check the actual field, don't assume.\n` +
+        `2. If the author is NOT "kfly8", request "kfly8" as a reviewer on the PR. If the author IS "kfly8", do NOT request them as a reviewer (GitHub rejects requesting a review from the PR's own author) — instead add "kfly8" as an assignee on the PR so it still surfaces for them, and note why you did that.\n` +
+        `3. Mark the PR "ready for review" (undraft it) now that implementation and polish are both done.\n` +
+        `Report prNumber (${pr.prNumber}), reviewerRequested (true only if step 2's reviewer request actually succeeded), assignedInstead (true if you fell back to assigning instead), markedReadyForReview, and notes explaining what happened.`,
       { schema: LAND_SCHEMA, phase: 'Land', label: `land PR #${pr.prNumber}`, model: IMPLEMENT_MODEL },
     ),
   ),
