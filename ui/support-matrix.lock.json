@@ -376,8 +376,8 @@
           ]
         },
         "pebble": {
-          "pass": 104,
-          "total": 116,
+          "pass": 105,
+          "total": 117,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -727,7 +727,7 @@
         },
         "pebble": {
           "pass": 68,
-          "total": 71,
+          "total": 72,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -735,6 +735,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-arrow-helper",
               "issues": []
             },
             {
@@ -1112,8 +1116,8 @@
           ]
         },
         "pebble": {
-          "pass": 65,
-          "total": 74,
+          "pass": 66,
+          "total": 76,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1141,6 +1145,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-arrow-helper",
               "issues": []
             },
             {
@@ -1558,8 +1566,8 @@
           ]
         },
         "pebble": {
-          "pass": 97,
-          "total": 106,
+          "pass": 98,
+          "total": 107,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2358,8 +2366,8 @@
           ]
         },
         "pebble": {
-          "pass": 262,
-          "total": 279,
+          "pass": 266,
+          "total": 284,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2397,6 +2405,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-arrow-helper",
               "issues": []
             },
             {
@@ -3570,8 +3582,8 @@
           ]
         },
         "pebble": {
-          "pass": 376,
-          "total": 397,
+          "pass": 380,
+          "total": 402,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3625,6 +3637,10 @@
             },
             {
               "fixture": "map-array-builder-escaping",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-arrow-helper",
               "issues": []
             },
             {
@@ -4474,8 +4490,8 @@
           ]
         },
         "pebble": {
-          "pass": 304,
-          "total": 316,
+          "pass": 307,
+          "total": 320,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -4499,6 +4515,10 @@
             },
             {
               "fixture": "jsx-element-prop-ternary",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-arrow-helper",
               "issues": []
             },
             {
@@ -4806,8 +4826,8 @@
           ]
         },
         "pebble": {
-          "pass": 49,
-          "total": 51,
+          "pass": 50,
+          "total": 52,
           "gaps": [
             {
               "fixture": "static-array-from-props",
@@ -5454,8 +5474,8 @@
           ]
         },
         "pebble": {
-          "pass": 215,
-          "total": 234,
+          "pass": 218,
+          "total": 237,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -5906,8 +5926,8 @@
           ]
         },
         "pebble": {
-          "pass": 90,
-          "total": 93,
+          "pass": 91,
+          "total": 94,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -6616,8 +6636,8 @@
           ]
         },
         "pebble": {
-          "pass": 40,
-          "total": 50,
+          "pass": 41,
+          "total": 51,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8148,8 +8168,12 @@
         },
         "pebble": {
           "pass": 2,
-          "total": 3,
+          "total": 4,
           "gaps": [
+            {
+              "fixture": "module-const-arrow-helper",
+              "issues": []
+            },
             {
               "fixture": "tag-cloud",
               "issues": []
@@ -8672,8 +8696,8 @@
           ]
         },
         "pebble": {
-          "pass": 23,
-          "total": 24,
+          "pass": 24,
+          "total": 25,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -9929,11 +9953,15 @@
           ]
         },
         "pebble": {
-          "pass": 138,
-          "total": 143,
+          "pass": 140,
+          "total": 146,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "module-const-arrow-helper",
               "issues": []
             },
             {
@@ -10333,8 +10361,8 @@
           ]
         },
         "pebble": {
-          "pass": 209,
-          "total": 217,
+          "pass": 210,
+          "total": 218,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -10637,8 +10665,8 @@
           ]
         },
         "pebble": {
-          "pass": 41,
-          "total": 43,
+          "pass": 42,
+          "total": 44,
           "gaps": [
             {
               "fixture": "static-array-from-props",
