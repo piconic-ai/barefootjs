@@ -37,23 +37,36 @@ public class TodoController {
     this.ctx = ctx;
   }
 
-  private static long doneCount(List<Todo> todos) {
-    return todos.stream().filter(t -> t.done).count();
-  }
+  private record TodosSnapshot(List<Object> todosJs, long doneCount) {}
 
   private ResponseEntity<String> todosPage(HttpServletRequest request, String component, String title) {
     // ONE `withSession` call: calling it twice on a cookie-less request
     // would mint TWO different session ids (the second call sees the same
     // cookie-less original request, since no response has been sent yet),
     // leaking an orphaned session record under the first id.
-    Resolved<List<Todo>> data = ctx.sessions.withSession(request, s -> new ArrayList<>(s.todos));
-    List<Todo> todos = data.value();
-    long done = doneCount(todos);
+    //
+    // `s.todos` holds the store's live, mutable `Todo` instances — copying
+    // just the `List` container (the pre-fix shape here) still leaves every
+    // `Todo` inside shared with whatever `updateTodo`/`createTodo` mutates
+    // next, under a SEPARATE `withSession` lock acquisition. Reading
+    // `t.toMap()`/`t.done` after this lambda returns races a concurrent
+    // update with no happens-before edge (e.g. two tabs open to `/todos`).
+    // Building the JSON-shaped snapshot AND the done count HERE, inside the
+    // lock, mirrors `listTodos`'s pattern below and closes that race.
+    Resolved<TodosSnapshot> data = ctx.sessions.withSession(request, s -> {
+      List<Object> todosJs = new ArrayList<>();
+      long done = 0;
+      for (Todo t : s.todos) {
+        todosJs.add(t.toMap());
+        if (t.done) {
+          done++;
+        }
+      }
+      return new TodosSnapshot(todosJs, done);
+    });
+    List<Object> todosJs = data.value().todosJs();
+    long done = data.value().doneCount();
 
-    List<Object> todosJs = new ArrayList<>();
-    for (Todo t : todos) {
-      todosJs.add(t.toMap());
-    }
     Map<String, Object> props = Render.obj("initialTodos", new ArrayList<>(todosJs));
     Map<String, Object> stash = Render.obj(
         "todos", new ArrayList<>(todosJs),
