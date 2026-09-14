@@ -386,6 +386,16 @@ function collectNamedExports(sourceFile: ts.SourceFile): Set<string> {
 // Single Pass Visitor
 // =============================================================================
 
+function isFunctionScopeBoundary(node: ts.Node, ctx: AnalyzerContext): boolean {
+  if (node === ctx.componentNode) return false
+  return ts.isArrowFunction(node)
+    || ts.isFunctionExpression(node)
+    || ts.isMethodDeclaration(node)
+    || ts.isGetAccessorDeclaration(node)
+    || ts.isSetAccessorDeclaration(node)
+    || ts.isConstructorDeclaration(node)
+}
+
 function visit(
   node: ts.Node,
   ctx: AnalyzerContext,
@@ -607,7 +617,10 @@ function visit(
     }
   }
 
-  ts.forEachChild(node, (child) => visit(child, ctx, targetComponentName, namedExports))
+  ts.forEachChild(node, (child) => {
+    if (isFunctionScopeBoundary(child, ctx)) return
+    visit(child, ctx, targetComponentName, namedExports)
+  })
 }
 
 // =============================================================================
