@@ -20,16 +20,24 @@ const watcher = (await viteBuild({
   build: { watch: {} },
 })) as RollupWatcher
 
-watcher.on('event', async (event) => {
+// Chain each generateSite() call onto the previous one instead of letting
+// overlapping 'END' events race: generateSite() starts with `rm(publicDir)`
+// followed by `cp`, so two concurrent runs could leave public/ briefly
+// inconsistent (a request landing between the rm and the cp finishing).
+// Queuing re-runs rather than overlapping them keeps public/ always fully
+// rm+cp'd by the time any given generateSite() call resolves.
+let pending: Promise<void> = Promise.resolve()
+
+watcher.on('event', (event) => {
   if (event.code === 'BUNDLE_END') event.result.close()
   if (event.code === 'ERROR') {
     console.error('[ssg build:watch] vite build error:', event.error)
     return
   }
   if (event.code !== 'END') return
-  try {
-    await generateSite({ projectDir: ROOT, outDir: ABS_OUT_DIR, basePath: BASE_PATH })
-  } catch (err) {
-    console.error('[ssg build:watch] generateSite failed:', err)
-  }
+  pending = pending
+    .then(() => generateSite({ projectDir: ROOT, outDir: ABS_OUT_DIR, basePath: BASE_PATH }))
+    .catch((err) => {
+      console.error('[ssg build:watch] generateSite failed:', err)
+    })
 })
