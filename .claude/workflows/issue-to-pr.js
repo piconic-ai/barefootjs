@@ -6,8 +6,15 @@
 //
 // No reviewer-assignment step: this session's GitHub credentials author every PR it opens
 // (as "kfly8" in this repo), and GitHub refuses to let a PR's own author be requested as
-// its reviewer — there is no reviewer to assign that isn't already the author. Human
-// review happens by the PR simply existing, ready for review.
+// its reviewer — there is no reviewer to assign that isn't already the author. Instead,
+// once a PR is polished and ready for review, the Polish phase posts a PR comment
+// @-mentioning kfly8 (a real GitHub notification, distinct from being "the author").
+//
+// Notifying the human is a two-part handoff: the @kfly8 PR comment is GitHub-side and
+// happens inside this script. The CALLER (whichever session invokes this workflow) is
+// responsible for the Claude-Code-side half — once this workflow returns, proactively
+// notify the user (e.g. via the PushNotification tool) that the returned `prs` are ready
+// for review, since a background workflow run may finish while nobody is watching.
 //
 // What this workflow does NOT do: it does not wait for Pullfrog's review or CI to turn
 // green after opening the PR(s) — that is an ongoing, event-driven job (Pullfrog fires on
@@ -212,8 +219,9 @@ const POLISH_SCHEMA = {
     summary: { type: 'string' },
     pushedFixes: { type: 'boolean' },
     markedReadyForReview: { type: 'boolean' },
+    mentionedKfly8: { type: 'boolean' },
   },
-  required: ['prNumber', 'summary', 'pushedFixes', 'markedReadyForReview'],
+  required: ['prNumber', 'summary', 'pushedFixes', 'markedReadyForReview', 'mentionedKfly8'],
 }
 
 function buildPolishPrompt(pr) {
@@ -226,9 +234,11 @@ Then run the equivalent of the /simplify skill on the same diff: apply reuse, si
 
 Apply any fixes directly on the branch, re-run the relevant tests, commit them with correct Co-authored-by trailers, and push.
 
-Finally, using the GitHub MCP tools, mark PR #${pr.prNumber} "ready for review" (undraft it) now that implementation and polish are both done.
+Once you're satisfied the PR is genuinely ready for a human, using the GitHub MCP tools:
+1. Mark PR #${pr.prNumber} "ready for review" (undraft it).
+2. Post a comment on the PR that starts with "@kfly8" letting them know it's ready for human review (one or two sentences: what it does, and that code-review/simplify already ran clean or list what was fixed). This is a real GitHub @-mention notification, separate from kfly8 being the PR's author.
 
-Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, and whether you marked it ready for review.
+Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, whether you marked it ready for review, and whether you posted the @kfly8 comment.
 `.trim()
 }
 
@@ -245,8 +255,9 @@ const polishResults = await parallel(
 )
 
 log(
-  `Done. Opened ${allPRs.length} PR(s), ready for review: ${allPRs.map((p) => p.prUrl).join(', ')}. ` +
-    `Next: subscribe_pr_activity on each and drive CI/Pullfrog feedback to green per this repo's standing PR rules.`,
+  `Done. Opened ${allPRs.length} PR(s), ready for review and @kfly8-mentioned: ${allPRs.map((p) => p.prUrl).join(', ')}. ` +
+    `Caller: subscribe_pr_activity on each and drive CI/Pullfrog feedback to green per this repo's standing PR rules, ` +
+    `and proactively notify the user now that these are ready for review — this script cannot do that part itself.`,
 )
 
 return {
