@@ -659,6 +659,11 @@ import { fixture as componentPropGetterInObjectLiteral } from './component-prop-
 // #2924 setter-symmetric case: a bare signal SETTER passed to a
 // non-event-shaped component prop hits the identical template-scope gap.
 import { fixture as componentPropBareSetter } from './component-prop-bare-setter'
+// #2986: a module-top-level async `const` helper referenced from a
+// component — the analyzer's module-level walk used to descend into the
+// helper's own body and hoist its `await`-containing statement into a
+// non-async scope, breaking the esbuild parse.
+import { fixture as moduleHelperAsync } from './module-helper-async'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1109,4 +1114,5 @@ export const jsxFixtures: JSXFixture[] = [
   componentPropBareGetter,
   componentPropGetterInObjectLiteral,
   componentPropBareSetter,
+  moduleHelperAsync,
 ]

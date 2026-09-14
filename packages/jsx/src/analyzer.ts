@@ -386,6 +386,28 @@ function collectNamedExports(sourceFile: ts.SourceFile): Set<string> {
 // Single Pass Visitor
 // =============================================================================
 
+/**
+ * Does this node open a new function scope?
+ *
+ * The single answer to the one question every declaration collector in
+ * this file asks: bindings declared inside a function belong to that
+ * function, never to the scope being collected. `visitComponentBody` has
+ * always stopped here; `visit` did not, so the inner `const`/`function`
+ * declarations of a module-level `const f = (…) => { … }` were collected
+ * as module-level declarations of the FILE — hoisted into the init body
+ * and into the marked template, where their references to the helper's
+ * own parameters are unbound (#2986).
+ */
+function isFunctionScope(node: ts.Node): boolean {
+  return ts.isArrowFunction(node)
+    || ts.isFunctionExpression(node)
+    || ts.isFunctionDeclaration(node)
+    || ts.isMethodDeclaration(node)
+    || ts.isGetAccessorDeclaration(node)
+    || ts.isSetAccessorDeclaration(node)
+    || ts.isConstructorDeclaration(node)
+}
+
 function visit(
   node: ts.Node,
   ctx: AnalyzerContext,
@@ -607,7 +629,23 @@ function visit(
     }
   }
 
-  ts.forEachChild(node, (child) => visit(child, ctx, targetComponentName, namedExports))
+  ts.forEachChild(node, (child) => {
+    // Stop at a nested function scope (#2986). Two carve-outs at module level:
+    //
+    //  • `function` declarations must still be VISITED, because the
+    //    module-level branch above is what collects them — and it `return`s
+    //    immediately afterwards, so the descent-stop is already encoded
+    //    there. This walk is also the ONLY one that reaches a `function`
+    //    declaration inside a component body (`visitComponentBody` skips
+    //    them); `compute-scope`'s fixpoint then demotes it to init scope.
+    //    Skipping them here silently produces zero-output components.
+    //
+    //  • The target component's own arrow (`const App = () => { … }`):
+    //    `analyzeComponentBody` handles its body, but `visit` must still
+    //    descend to reach the `function` declarations inside it.
+    if (isFunctionScope(child) && !ts.isFunctionDeclaration(child) && child !== ctx.componentNode) return
+    visit(child, ctx, targetComponentName, namedExports)
+  })
 }
 
 // =============================================================================
@@ -846,17 +884,11 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
     ctx.jsxReturn = unwrapJsxTransparent(node.expression)
   }
 
-  // Skip recursion into function bodies (arrow functions, function expressions, function declarations)
-  // to avoid collecting inner local variables
+  // Skip recursion into a nested function scope — its bindings are
+  // function-scoped, not component init-scope declarations. Same predicate
+  // the module-level walk (`visit`) uses.
   ts.forEachChild(node, (child) => {
-    // Don't recurse into function bodies - their variables are function-scoped
-    if (
-      ts.isArrowFunction(child) ||
-      ts.isFunctionExpression(child) ||
-      ts.isFunctionDeclaration(child)
-    ) {
-      return
-    }
+    if (isFunctionScope(child)) return
     visitComponentBody(child, ctx)
   })
 }
