@@ -4635,6 +4635,92 @@ export function Parent() {
     expect(parentTypes).toMatch(/Data:\s*Dashboard\{/)
     expect(parentTypes).not.toMatch(/Data:\s*nil/)
   })
+
+  // known-limitation (https://github.com/piconic-ai/barefootjs/issues/2992):
+  // this PINS the CURRENT, INCOMPLETE behavior — it is not a spec. The
+  // #2984 fix above only resolves a cross-file type when the DEFINING file
+  // has already gone through `buildLocalTypeTables` before the CONSUMING
+  // file does, which depends on compile order rather than import order.
+  // The real `@barefootjs/vite` build (`discoverComponentFiles`,
+  // `packages/vite/src/discover.ts`) discovers and compiles files in plain
+  // alphabetical order (`localeCompare`), not dependency-graph order, and
+  // `emitTemplatesFor`/`runDevEagerPass` (`packages/vite/src/plugin.ts`)
+  // drive the SAME `GoTemplateAdapter` instance across that whole ordered
+  // list — exactly what `adapter.generateTypes()` calls in file-discovery
+  // order reproduce here. `'App' < 'Zebra'` alphabetically, so a real build
+  // compiles `App.tsx` (the consumer) before `Zebra.tsx` (the definer) has
+  // registered anything, and the consumer still falls back to the original
+  // `interface{}`/`nil` bug this file's #2984 test otherwise fixed.
+  //
+  // Once the general (order-independent) fix for #2992 lands, this test
+  // should flip to asserting the CORRECT resolved-struct output (mirroring
+  // the #2984 test above) and this comment should be deleted.
+  test('#2992 (known limitation): an unfavorably-ordered cross-file type import still falls back to interface{}/nil', () => {
+    // Same shape as the #2984 test above, but the type is declared in
+    // `Zebra.tsx` and consumed by `App.tsx` — a name pair that sorts in the
+    // UNFAVORABLE order under plain alphabetical file discovery
+    // (`'App' < 'Zebra'`), unlike `Child.tsx`/`Parent.tsx` above.
+    const definerSource = `
+"use client"
+export type Dashboard = {
+  title: string
+  items: { id: string; label: string }[]
+}
+export function Zebra({ data }: { data: Dashboard }) {
+  return (
+    <section>
+      <h1>{data.title}</h1>
+    </section>
+  )
+}
+`.trimStart()
+    const consumerSource = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+import { Zebra, type Dashboard } from "./Zebra"
+export function App() {
+  const [data] = createSignal<Dashboard>({ title: "hello", items: [] })
+  return <Zebra data={data()} />
+}
+`.trimStart()
+
+    const definerCtx = analyzeComponent(definerSource, 'Zebra.tsx', 'Zebra')
+    const definerIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(definerCtx),
+      root: jsxToIR(definerCtx)!,
+      errors: [],
+    }
+    const consumerCtx = analyzeComponent(consumerSource, 'App.tsx', 'App')
+    const consumerIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(consumerCtx),
+      root: jsxToIR(consumerCtx)!,
+      errors: [],
+    }
+
+    // A single adapter instance across the "build", exactly like the real
+    // `@barefootjs/vite` pipeline reuses one adapter for every discovered
+    // file — but compiled in `discoverComponentFiles`'s real alphabetical
+    // order: `App.tsx` BEFORE `Zebra.tsx`. This is the crux of the gap:
+    // `App`'s own type table can't resolve `Dashboard` locally, and the
+    // cross-file registry has nothing for it yet either, since `Zebra.tsx`
+    // (the definer) hasn't been compiled yet.
+    const adapter = new GoTemplateAdapter()
+    const appTypes = adapter.generateTypes(consumerIR)!
+    const zebraTypes = adapter.generateTypes(definerIR)!
+
+    // The definer's own struct is unaffected — it's declared locally.
+    expect(zebraTypes).toContain('type Dashboard struct {')
+
+    // The consumer, compiled first, still hits the pre-#2984 fallback: no
+    // real `Dashboard` field, and a `nil` initial value instead of a baked
+    // composite literal. THIS IS THE BUG #2992 TRACKS — do not "fix" this
+    // assertion without also fixing the underlying ordering dependency.
+    expect(appTypes).toContain('Data interface{}')
+    expect(appTypes).not.toContain('Data Dashboard')
+    expect(appTypes).toMatch(/Data:\s*nil/)
+  })
 })
 
 describe('GoTemplateAdapter - #2130 loop with element-wrapped child component', () => {

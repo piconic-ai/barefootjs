@@ -3062,6 +3062,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // only: a bare specifier can't name a BarefootJS component module, and
     // matching an ecosystem package's export by name alone would risk a
     // false-positive collision with an unrelated ambient ChildComponentShape.
+    //
+    // known-limitation (+bug): this only resolves when the DEFINING file has
+    // already run through `buildLocalTypeTables` before the CONSUMING file
+    // does — i.e. it depends on compile order, not import order. The real
+    // `@barefootjs/vite` pipeline (`discoverComponentFiles`,
+    // `packages/vite/src/discover.ts`) discovers and compiles files in plain
+    // alphabetical order, not dependency-graph order, so a consumer whose
+    // filename sorts before its type's definer (e.g. `App.tsx` importing a
+    // type from `Zebra.tsx`) still falls back to `interface{}`/`nil` today.
+    // See https://github.com/piconic-ai/barefootjs/issues/2992.
     for (const imp of ir.metadata.imports) {
       if (!imp.source.startsWith('.')) continue
       for (const spec of imp.specifiers) {
