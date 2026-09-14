@@ -1,5 +1,9 @@
 # @barefootjs/php
 
+## 0.35.8
+
+No changes in this release.
+
 ## 0.35.7
 
 No changes in this release.

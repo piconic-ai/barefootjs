@@ -1,5 +1,25 @@
 # @barefootjs/jsx
 
+## 0.35.8
+
+### Patch Changes
+
+- 8aaa3e1: Fixes #2924: a component prop whose value was (or contained) a bare — uncalled — reference to a local signal or memo getter (`<Display value={count} />`) compiled cleanly but threw a `ReferenceError` at runtime whenever the parent mounted fresh on the client (a new loop row, a portal, a conditionally-mounted subtree — any `createComponent(...)` call not going through SSR + hydration). Hydration of SSR-rendered markup was unaffected.
+  
+  Root cause: `csrSubstitute` (`packages/jsx/src/ir-to-client-js/csr-substitute.ts`) registers signal getters and memos only as call-kind substitution entries, matching the called form `count()`. A bare reference to the same name never matched that check, so it passed through untouched and leaked the source-level identifier straight into the module-scope `template` lambda, which has no closure over `initCounter`'s local `count`.
+  
+  Now a bare reference to a call-kind entry substitutes to a thunk over the same value the call form produces (`(() => (5))`) — the CSR-template mirror of the reference (Hono) adapter's own SSR shim for this shape (`const count = () => 5`). This also fixes a related silent-wrong-output case found while designing the repro: a local `const` object literal containing a getter (`const obj = { v: count }`) previously froze `{ v: undefined }` into its CSR-inlined value instead of resolving `count`.
+- d2a2f74: Follow-up to #2924: a component prop whose value was a bare — uncalled — reference to a local signal SETTER (`<Display update={setCount} />`, any non-`on*`-prefixed prop name) hit the identical CSR-fresh-mount `ReferenceError` as the getter case, because `csrSubstitute` had no substitution entry for a signal's setter name at all.
+  
+  A bare setter reference now substitutes to the reference (Hono) adapter's own SSR noop shim (`() => {}`) — an `identifier`-kind entry, not `call`-kind: a setter is never itself invoked as a zero-arg accessor the way a getter is, so no thunk-wrapping is needed.
+- 92a920c: Fixes #2986: a `'use client'` component calling a plain helper declared at module top level as `const name = (params) => { ... }` (arrow form) could crash two ways — a sync helper's inner declarations leaked into the component's init function with their parameter references unbound (`ReferenceError` at mount), and an async helper's inner `await` leaked into a non-async scope (esbuild parse failure at build time). The `function name(params) { ... }` declaration form was unaffected.
+  
+  Root cause: `analyzer.ts`'s module-level `visit()` walk descended into the body of a module-level arrow-valued `const`, collecting that body's own inner `const`/`function` declarations as if they were declarations of the file itself. `visitComponentBody` already had the guard that prevents exactly this; `visit` never did. Both walks now share one `isFunctionScope` predicate deciding when a nested declaration collector must stop.
+- 2a8e0a5: Fixes #2985: a cross-file reactive factory that imports and calls `batch` from `@barefootjs/client` compiled clean, but the generated client module's `@barefootjs/client/runtime` import never included `batch` — a bare `batch(...)` call in the emitted bundle threw `ReferenceError: batch is not defined` at hydration.
+  
+  Root cause: `batch` was missing from `RUNTIME_IMPORT_CANDIDATES` (`ir-to-client-js/imports.ts`), the list `detectUsedImports` scans to decide which runtime helpers the generated client bundle needs to import — every other reactive primitive (`createSignal`, `onMount`, etc.) was already provisioned this way, `batch` alone was never added.
+- @barefootjs/shared@0.35.8
+
 ## 0.35.7
 
 ### Patch Changes

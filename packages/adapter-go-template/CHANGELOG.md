@@ -1,5 +1,24 @@
 # @barefootjs/go-template
 
+## 0.35.8
+
+### Patch Changes
+
+- 5186bd7: Fixes #2984: a client component importing both a child component and the child's own object-shaped prop type — then using that imported type as `createSignal<T>`'s type argument and passing the called getter to the child — compiled clean, but the generated parent lost the signal's Go type: `Data interface{}` seeded to `nil`, and the nested child was constructed with `Data: nil`, crashing on any field access (`nil pointer evaluating interface {}.Items`).
+  
+  Root cause: `typeInfoToGo`'s named-type ('interface') case only resolves a type name against `state.localStructFields`/`localTypeAliases`, which `buildLocalTypeTables` populates from `ir.metadata.typeDefinitions` — the CONSUMER file's own type declarations. A type the consumer only imports (never declares), like a child component's own exported prop-shape type, was never in that list and fell to the `interface{}`/`nil` external-reference fallback regardless of how many other components' shapes had already registered against the adapter (`registerChildComponentShape`).
+  
+  `GoTemplateAdapter` now keeps a small cross-file type registry (`crossFileTypeAliases` / `crossFileStructFields` / `crossFileTypeDefinitions`), populated as a side effect of `buildLocalTypeTables` for every component compiled so far in the build. When a consumer's own type table can't resolve a name locally, `buildLocalTypeTables` now also checks whether a RELATIVE import brought in a type another already-compiled component (most often a child component module, compiled first per the existing `registerChildComponentShape` ordering) registered under that name, and if so resolves the field to the real backed Go type instead of the external-reference fallback.
+  
+  This is scoped, not general: the registry only resolves a type once its DEFINING file has already compiled, which the real `@barefootjs/vite` pipeline does not guarantee — `discoverComponentFiles` walks the components dir and sorts filenames alphabetically, not by import graph, so a consumer whose filename sorts before its type's definer (e.g. `App.tsx` importing `Dashboard` from `Zebra.tsx`) still hits the original `interface{}`/`nil` fallback. Added a docstring pointer at the cross-file resolution loop and a pinned regression fixture (`packages/vite/src/__tests__/plugin.test.ts`'s `#2992: cross-file type resolution depends on file discovery order` describe block, driving the real `writeBundle` eager-compile pass rather than approximating file-discovery order by hand) asserting the current, incomplete output. Tracked as a `known-limitation` + `bug` in #2992.
+- 06c3c4b: Fixes #2925: a local signal/memo getter passed to a plain child component's prop (`<Display value={count} />`, and identically `<Display value={{ v: count }} />`) compiled clean but rendered the field as Go's zero value — `NewCounterProps`'s constructor-time build of the nested `DisplayInput{...}` literal silently omitted `Value` instead of baking `5`.
+  
+  Root cause: the static constructor baker (`resolveDynamicPropValue`) only recognized the *called* getter form (`count()`); a bare, uncalled getter name matched no branch and the field was dropped. The object-literal-wrapped shape had a second, independent gap: `ChildComponentShape` only tracked *optional* object-typed child params for the map-literal bake path, but a *required* anonymous-object prop (`value: { v: () => number }`) lowers to a synthesized Go struct (#2674), not a map.
+  
+  Both shapes now resolve through the same constructor-time seeding a signal/memo's own top-level field already uses, and a required object-typed child param's struct-vs-map target is resolved from a shared naming decision (`planSynthPropStructs`) instead of guessed.
+- bc23ee3: Repoints the `module-const-loop-source-computed` conformance pin's `issue` URL from #2946 (fixed, closed) to #2321 (the still-open "computed const as loop source can't be evaluated at SSR" design gap this fixture actually tracks). No behavior change — the BF101 refusal for a module-scope const computed via a function call is unchanged; only the tracking-issue attribution is corrected, per the `compat-issue-freshness` automation flagging the dangling link to a closed issue (#2967).
+- @barefootjs/shared@0.35.8
+
 ## 0.35.7
 
 ### Patch Changes
