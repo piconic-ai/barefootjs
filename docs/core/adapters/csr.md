@@ -82,3 +82,5 @@ The component must be registered first by importing its `.client.js` file — th
 ```
 
 See [`integrations/csr/`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/csr) for a runnable end-to-end example.
+
+For combining CSR with build-time static HTML generation (e.g. Hono's `toSSG`) instead of hand-written HTML files, see [`integrations/ssg/`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/ssg).

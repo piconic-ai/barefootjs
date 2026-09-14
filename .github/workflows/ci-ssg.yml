@@ -1,0 +1,79 @@
+name: CI — SSG Integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/jsx/**'
+      - 'packages/vite/**'
+      - 'integrations/ssg/**'
+      - 'integrations/shared/**'
+      - '.github/workflows/ci-ssg.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/jsx/**'
+      - 'packages/vite/**'
+      - 'integrations/ssg/**'
+      - 'integrations/shared/**'
+      - '.github/workflows/ci-ssg.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-ssg-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-ssg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # Wrangler (invoked by Playwright's webServer below) shells out to Node and
+      # requires v22+. The runner's default Node 20 makes `bunx wrangler dev` exit
+      # immediately. Pin Node here (same reason as ci-hono.yml).
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      # ssg only uses CSRAdapter and doesn't depend on @barefootjs/hono, so the
+      # same 3 packages as ci-csr.yml are enough.
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Run integrations/ssg E2E tests
+        run: cd integrations/ssg && bun run test:e2e
+
+      - name: Upload Playwright report (integrations/ssg)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-integrations-ssg
+          path: integrations/ssg/playwright-report/
+          retention-days: 30

@@ -1,0 +1,30 @@
+name = "barefootjs-ssg-example"
+main = "worker.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# Default html_handling ("auto-trailing-slash") is kept as-is. /integrations/ssg/counter
+# returns counter.html directly, /integrations/ssg/ returns index.html (folder-index),
+# and /integrations/ssg (no trailing slash) redirects 307 to /integrations/ssg/ — all
+# of it handled by Assets alone, without the Worker.
+
+# Only /api/* is routed to the Worker first (unlike hono's run_worker_first: true —
+# here page delivery is fully static and never starts the Worker at all).
+run_worker_first = ["/api/*"]
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/ssg"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/ssg/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/ssg"
+
+[dev]
+port = 3017

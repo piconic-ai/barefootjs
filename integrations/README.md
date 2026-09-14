@@ -24,6 +24,7 @@ same JSX components on a different stack:
 | `blade` | PHP / built-in server (Blade) | 3015 | container |
 | `laravel` | PHP / Laravel (`artisan serve`, Blade) | 3016 | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
+| `ssg` | TypeScript / Cloudflare Workers (SSG + API) | 3017 | host (manual) |
 
 Plus `site/core` (the docs / landing / catalog site) on internal port 4001
 — it also runs in a container during dev so a single `docker compose up`
