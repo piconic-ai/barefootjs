@@ -878,6 +878,16 @@ export function Ticker() {
     expect(clientJs!.content).toMatch(/import\s*\{[^}]*onMount[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
   })
 
+  // This is a COMPILE-TIME assertion only (the generated import list), not
+  // a runtime behavior test — `batch` around a single `setCount` call has
+  // no observable effect at runtime (batching only matters for coalescing
+  // MULTIPLE signal writes into one effect flush; see `batch`'s doc comment
+  // in `packages/client/src/reactive.ts`). It's used here purely as the
+  // smallest fixture that calls `batch` from a cross-file factory, to pin
+  // #2985: `batch` was missing from `RUNTIME_IMPORT_CANDIDATES`
+  // (`ir-to-client-js/imports.ts`), so it compiled clean but was silently
+  // dropped from the emitted `@barefootjs/client/runtime` import, throwing
+  // `ReferenceError: batch is not defined` at hydration.
   test('M17b: batch is provisioned from usage for a cross-file factory (#2985)', () => {
     writeFixture('matrix17b/useCounter.tsx', `'use client'
 import { batch, createSignal } from '@barefootjs/client'
