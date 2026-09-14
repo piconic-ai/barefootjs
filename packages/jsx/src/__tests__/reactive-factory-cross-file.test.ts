@@ -878,6 +878,33 @@ export function Ticker() {
     expect(clientJs!.content).toMatch(/import\s*\{[^}]*onMount[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
   })
 
+  test('M17b: batch is provisioned from usage for a cross-file factory (#2985)', () => {
+    writeFixture('matrix17b/useCounter.tsx', `'use client'
+import { batch, createSignal } from '@barefootjs/client'
+
+export function useCounter() {
+  const [count, setCount] = createSignal(0)
+  const increment = () => batch(() => setCount(count() + 1))
+  return { count, increment }
+}
+`)
+    const consumerSource = `'use client'
+import { useCounter } from './useCounter'
+
+export function Counter() {
+  const { count, increment } = useCounter()
+  return <button onClick={increment}>{count()}</button>
+}
+`
+    const consumerPath = writeFixture('matrix17b/Counter.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    expect(clientJs!.content).toMatch(/import\s*\{[^}]*\bbatch\b[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
+  })
+
   test('M18: a type-only helper import does not trigger BF112 and is re-provisioned as `import type` (#2350)', () => {
     writeFixture('matrix18/todo-types.ts', `export interface Todo {
   id: number

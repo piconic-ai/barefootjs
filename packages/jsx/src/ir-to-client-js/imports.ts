@@ -11,6 +11,11 @@ import { identifierCallPattern } from '../identifier-pattern.ts'
 // All exports from @barefootjs/client/runtime that may be used in generated code
 export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
+  // Coalesces multiple signal writes into one flush (#2985) — omitted here
+  // previously even though it's a real `@barefootjs/client` export, so a
+  // cross-file reactive factory that called it compiled clean but left
+  // `batch` unimported in the generated client bundle.
+  'batch',
   'hydrate', 'insert', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'mapArrayLazy', 'patchLeaf', 'createDisposableEffect',
   // Resolves the real DOM container for a loop nested inside a loop-row
   // conditional's branch when the conditional's wrapper element carries no
