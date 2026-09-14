@@ -878,6 +878,43 @@ export function Ticker() {
     expect(clientJs!.content).toMatch(/import\s*\{[^}]*onMount[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
   })
 
+  // This is a COMPILE-TIME assertion only (the generated import list), not
+  // a runtime behavior test — `batch` around a single `setCount` call has
+  // no observable effect at runtime (batching only matters for coalescing
+  // MULTIPLE signal writes into one effect flush; see `batch`'s doc comment
+  // in `packages/client/src/reactive.ts`). It's used here purely as the
+  // smallest fixture that calls `batch` from a cross-file factory, to pin
+  // #2985: `batch` was missing from `RUNTIME_IMPORT_CANDIDATES`
+  // (`ir-to-client-js/imports.ts`), so it compiled clean but was silently
+  // dropped from the emitted `@barefootjs/client/runtime` import, throwing
+  // `ReferenceError: batch is not defined` at hydration.
+  test('M17b: batch is provisioned from usage for a cross-file factory (#2985)', () => {
+    writeFixture('matrix17b/useCounter.tsx', `'use client'
+import { batch, createSignal } from '@barefootjs/client'
+
+export function useCounter() {
+  const [count, setCount] = createSignal(0)
+  const increment = () => batch(() => setCount(count() + 1))
+  return { count, increment }
+}
+`)
+    const consumerSource = `'use client'
+import { useCounter } from './useCounter'
+
+export function Counter() {
+  const { count, increment } = useCounter()
+  return <button onClick={increment}>{count()}</button>
+}
+`
+    const consumerPath = writeFixture('matrix17b/Counter.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    expect(clientJs!.content).toMatch(/import\s*\{[^}]*\bbatch\b[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
+  })
+
   test('M18: a type-only helper import does not trigger BF112 and is re-provisioned as `import type` (#2350)', () => {
     writeFixture('matrix18/todo-types.ts', `export interface Todo {
   id: number
