@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["bun-types"]
+  },
+  // client/pages/*.ts imports shared/components/*.tsx (existing assets we don't
+  // touch), so even excluding .tsx from include still surfaces those files' known
+  // type errors (e.g. TodoApp.tsx) via import resolution. Like csr/tsconfig.json,
+  // this project's tsc type check isn't part of CI and has no effect on the build
+  // (which goes through esbuild), so .tsx stays included for scripts/*.tsx's own
+  // type checking.
+  "include": ["*.ts", "*.tsx", "scripts/**/*.ts", "scripts/**/*.tsx", "client/**/*.ts", "e2e/**/*.ts"],
+  "exclude": ["node_modules", "dist", "public"]
+}
