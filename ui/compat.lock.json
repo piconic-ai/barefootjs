@@ -2782,7 +2782,7 @@
         },
         "go-template": {
           "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "reason": "a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
         },
         "jinja": {
           "kind": "render",
@@ -2794,7 +2794,7 @@
         },
         "mojolicious": {
           "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "reason": "a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
         },
         "twig": {
           "kind": "render",
