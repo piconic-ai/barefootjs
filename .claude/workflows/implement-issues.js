@@ -6,22 +6,49 @@
 //
 // No reviewer-assignment step: this session's GitHub credentials author every PR it opens
 // (as "kfly8" in this repo), and GitHub refuses to let a PR's own author be requested as
-// its reviewer — there is no reviewer to assign that isn't already the author. Instead,
-// once a PR is polished and ready for review, the Polish phase posts a PR comment
-// @-mentioning kfly8 (a real GitHub notification, distinct from being "the author").
+// its reviewer — there is no reviewer to assign that isn't already the author. Instead, the
+// human gets a real GitHub @-mention notification once the PR is GENUINELY done — see below.
 //
-// Notifying the human is a two-part handoff: the @kfly8 PR comment is GitHub-side and
-// happens inside this script. The CALLER (whichever session invokes this workflow) is
-// responsible for the Claude-Code-side half — once this workflow returns, proactively
-// notify the user (e.g. via the PushNotification tool) that the returned `prs` are ready
-// for review, since a background workflow run may finish while nobody is watching.
+// IMPORTANT — notifying @kfly8 is entirely the CALLER's job, not this script's. This
+// script's Polish phase marks each PR ready for review (undraft) and returns a ready-to-post
+// `reviewRequestDraft` per PR, but does NOT post the @-mention itself. Why: undrafting a PR
+// is what TRIGGERS Pullfrog's own review (an async, event-driven job this script cannot
+// wait on without polling indefinitely — see below), so posting the mention in the same
+// script turn as the undraft pings the human BEFORE Pullfrog's first review has even run,
+// let alone before its findings are addressed. (Measured on a real run: undraft → Pullfrog
+// "leaping into action" 2-4s later → mention posted 8-20s later → Pullfrog's actual
+// first-pass review, with a real finding, landed 7 MINUTES after the mention. Resolving
+// that finding, plus two more rounds of human-caught issues, took another ~3 hours before
+// the PR was actually merged — all after the human had already been told "ready".)
+//
+// The CALLER must only post the @-mention once ALL of the following hold, and then only
+// ONCE, per PR:
+//   1. Pullfrog has reviewed the PR's CURRENT head (not a stale one) with no unresolved
+//      blocking findings.
+//   2. CI is green on that same head, with no merge conflict.
+//   3. The caller has itself re-read the FINAL cumulative diff — Polish's own "clean,
+//      nothing to fix" verdict is advisory only and must NOT be treated as evidence; on the
+//      real run above, Polish reported both PRs clean and Pullfrog still found a real issue,
+//      and the human still found two more issues neither Polish nor Pullfrog caught
+//      (changeset hygiene; a regression test that approximated the real pipeline instead of
+//      exercising it — see the Implement-phase note below). Re-review against: does every
+//      new test exercise the REAL production entry point, or a hand-built approximation of
+//      it? Are changesets/known-limitation pointers/fixture-drift checks (CLAUDE.md) in order?
+//   4. No push has landed since the last Pullfrog approval (a fixup after approval
+//      invalidates it — re-check, don't assume it still holds).
+// Use the PR's OWN `reviewRequestDraft` as the comment body, but amend it if the diff
+// changed since Polish produced it — a draft describing tests that no longer exist misleads
+// the reviewer. For a stack, remember a fixup pushed to a LOWER PR (and the rebase it forces
+// on everything above it) invalidates any approval already given to the PRs above it —
+// re-verify the whole stack's current heads, not just the PR you just fixed.
 //
 // What this workflow does NOT do: it does not wait for Pullfrog's review or CI to turn
 // green after opening the PR(s) — that is an ongoing, event-driven job (Pullfrog fires on
 // its own trigger, CI takes minutes). Once this workflow returns, the caller must
 // subscribe_pr_activity on each returned PR and drive it to green using this repo's
 // standing "PR you opened" rules (CLAUDE.md's Git Commit section, the pullfrog review
-// rubric in .github/pullfrog/review.md, and the harness's own PR-babysitting rules).
+// rubric in .github/pullfrog/review.md, and the harness's own PR-babysitting rules) —
+// AND only post the @-mention once the bar above is met, per PR.
 
 export const meta = {
   name: 'implement-issues',
@@ -30,7 +57,7 @@ export const meta = {
     { title: 'Fetch', detail: 'read each issue and skim the codebase for likely touch points' },
     { title: 'Plan', detail: 'assess conflict risk and group issues into parallel/serial (stacked) batches', model: 'claude-opus-5' },
     { title: 'Implement', detail: 'implement, test, commit, and open draft PR(s) per group, stacking within a group' },
-    { title: 'Polish', detail: 'per group, run code-review + simplify down the PR stack in order, push fixes, and mark each ready for review' },
+    { title: 'Polish', detail: 'per group, run code-review + simplify down the PR stack in order, push fixes, mark each ready for review, and draft (not post) a review-request comment for the caller' },
   ],
 }
 
@@ -188,8 +215,19 @@ const GROUP_RESULT_SCHEMA = {
           prNumber: { type: 'number' },
           prUrl: { type: 'string' },
           title: { type: 'string' },
+          pipelineAssumptions: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+              'Every assumption this fix\'s correctness makes about state controlled by the REAL production entry point it runs in (iteration/call/compile order, timing, caching, cross-file or cross-request state) — empty array if genuinely none. Each entry must say how it was verified (a citation into the real pipeline code) or that it is instead tracked as a known-limitation (issue URL).',
+          },
+          pipelineVerifiedAgainst: {
+            type: 'string',
+            description:
+              'The real production entry point this fix was traced through (file:line or command), or "N/A — no order/timing/state-dependent assumptions" if pipelineAssumptions is empty. Must NOT just name the unit test you wrote if that test only exercises the fix directly rather than the real pipeline.',
+          },
         },
-        required: ['branch', 'baseBranch', 'prNumber', 'prUrl'],
+        required: ['branch', 'baseBranch', 'prNumber', 'prUrl', 'pipelineAssumptions', 'pipelineVerifiedAgainst'],
       },
     },
     notes: { type: 'string' },
@@ -209,11 +247,12 @@ ${issuesText}
 For each issue above, in order:
 1. Create a branch off the current HEAD: the FIRST issue's branch is created off the repository's default branch; each SUBSEQUENT issue's branch is created off the PREVIOUS issue's branch, so the PRs stack.
 2. Implement it. If an issue naturally splits into more than one semantic unit of work, split it into multiple sequential commits and multiple stacked PRs instead of one large PR — use judgement, most issues are a single PR. Do not bundle unrelated cleanup into the same commit.
-3. Run the relevant tests/typecheck for what you touched and confirm they pass before committing. Follow the CLAUDE.md testing decision guide to pick the right test layer.
-4. Commit with correct Co-authored-by trailers per CLAUDE.md's "Git Commit" section.
-5. Push the branch with \`git push -u origin <branch>\` and open the PR as a DRAFT via the GitHub MCP tools, with base = the branch from the previous step (or the default branch for the first PR in the stack). Check the repo for a PR template first (there is none at the time of writing, but re-check). Put "Closes #<issue>" in the body for whichever issue(s) that PR resolves.
+3. Before writing tests, name the REAL entry point that will execute this change in production (e.g. \`bf build\` / the \`@barefootjs/vite\` plugin's real component-discovery and compile pipeline, not just the adapter/compiler API you're unit-testing directly). List every assumption the fix's correctness makes about state that entry point controls — iteration/call/compile order, timing, caching, cross-file or cross-request state. For each assumption, either (a) verify it against that REAL entry point's actual code (cite file:line for the guarantee — a hand-built unit test that happens to call things in a convenient order is NOT verification, since it can pass by accident even when the real pipeline's order differs), (b) change the fix so it no longer depends on that assumption, or (c) if fixing it in general is out of scope, file a \`known-limitation\` issue and scope this PR's body honestly to what it actually fixes, per CLAUDE.md's known-limitation policy — do not claim "Closes #N" for a case the fix doesn't actually cover.
+4. Run the relevant tests/typecheck for what you touched and confirm they pass before committing. Follow the CLAUDE.md testing decision guide to pick the right test layer. Prefer a test that exercises the real entry point from step 3 over one that calls the unit in isolation, whenever the fix's correctness depends on any assumption you listed in step 3.
+5. Commit with correct Co-authored-by trailers per CLAUDE.md's "Git Commit" section.
+6. Push the branch with \`git push -u origin <branch>\` and open the PR as a DRAFT via the GitHub MCP tools, with base = the branch from the previous step (or the default branch for the first PR in the stack). Check the repo for a PR template first (there is none at the time of writing, but re-check). Put "Closes #<issue>" in the body for whichever issue(s) that PR resolves — only for the case(s) it genuinely covers, per step 3(c).
 
-Return the full list of PRs you opened, in the order you opened them: for each, the issue number(s) it addresses, its branch, its base branch, PR number, PR URL, and title.
+Return the full list of PRs you opened, in the order you opened them: for each, the issue number(s) it addresses, its branch, its base branch, PR number, PR URL, title, the pipelineAssumptions list from step 3, and pipelineVerifiedAgainst.
 `.trim()
 }
 
@@ -243,12 +282,20 @@ const POLISH_ITEM_SCHEMA = {
   type: 'object',
   properties: {
     prNumber: { type: 'number' },
-    summary: { type: 'string' },
+    polishSelfAssessment: {
+      type: 'string',
+      description:
+        'ADVISORY ONLY — what this pass found and fixed, or "clean — nothing to fix" if nothing. Do NOT treat "clean" as proof the PR is done: Pullfrog and the human maintainer have both independently found real issues on PRs this pass called clean. This is one input among several the caller weighs before notifying anyone, never sufficient by itself.',
+    },
     pushedFixes: { type: 'boolean' },
     markedReadyForReview: { type: 'boolean' },
-    mentionedKfly8: { type: 'boolean' },
+    reviewRequestDraft: {
+      type: 'string',
+      description:
+        'A ready-to-post PR comment body (starting with "@kfly8", including What / How to verify / Expected result) that the CALLER may post later — once it has confirmed Pullfrog approved the PR\'s current head with no unresolved findings, CI is green, there is no merge conflict, and the caller has itself re-reviewed the final diff. Do NOT post this comment yourself; return it as text only. If the diff changes after this pass (a Pullfrog fixup, a caller-driven follow-up), the caller is responsible for amending this draft before posting it, not this pass.',
+    },
   },
-  required: ['prNumber', 'summary', 'pushedFixes', 'markedReadyForReview', 'mentionedKfly8'],
+  required: ['prNumber', 'polishSelfAssessment', 'pushedFixes', 'markedReadyForReview', 'reviewRequestDraft'],
 }
 
 const POLISH_GROUP_SCHEMA = {
@@ -277,12 +324,13 @@ For each PR, in order:
 2. Run the equivalent of the /code-review skill (medium-high effort) against this branch's diff versus its base branch: look for correctness bugs and reuse/simplification/efficiency issues. If the Skill tool is available to you, invoke it with skill "code-review"; otherwise perform the same review inline, using this repo's CLAUDE.md conventions and .github/pullfrog/review.md's rubric as your criteria.
 3. Run the equivalent of the /simplify skill on the same diff: apply reuse, simplification, efficiency, and "altitude" cleanups to the changed code ONLY. This step is quality-only — do not go hunting for new bugs, that was the previous step.
 4. Apply any fixes directly on the branch, re-run the relevant tests, commit them with correct Co-authored-by trailers, and push — the NEXT PR in the stack depends on this being pushed before you move on.
-5. Once you're satisfied this PR is genuinely ready for a human, using the GitHub MCP tools: mark it "ready for review" (undraft it), then post a comment on it that starts with "@kfly8". This is a real GitHub @-mention notification, separate from kfly8 being the PR's author, so make it a self-contained review request, not just a ping — include all of:
+5. Once you're satisfied this PR is genuinely ready for a human, use the GitHub MCP tools to mark it "ready for review" (undraft it). Undrafting triggers Pullfrog's own automated review asynchronously — do NOT wait for it, and do NOT post any comment or @-mention on the PR yourself. That is the CALLER's job, done later, only after Pullfrog has actually reviewed this PR's head with no unresolved findings and CI is green — not right now, and not by you.
+6. Instead, COMPOSE (but do not post) a review-request comment as text, starting with "@kfly8", that the caller can post later. Make it a self-contained review request, not just a ping — include all of:
    - **What**: one or two sentences on what changed and why.
    - **How to verify**: concrete, runnable steps a reviewer would follow to check the change themselves (exact commands — tests, typecheck, a manual repro — not "review the diff"). If code-review/simplify already ran clean, say so; if they fixed something, name what.
    - **Expected result**: what those steps should show when the change is correct (test output, behavior, absence of a prior symptom) — specific enough that a reviewer knows whether what they see matches, not just "it works".
 
-Return one entry per PR above, in the same order, each with: prNumber, a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, whether you marked it ready for review, and whether you posted the @kfly8 comment.
+Return one entry per PR above, in the same order, each with: prNumber, polishSelfAssessment (what you found/fixed, or "clean — nothing to fix" — but see the schema note: this is advisory only, not proof of done-ness), whether you pushed any fix commits, whether you marked it ready for review, and the reviewRequestDraft text from step 6 (composed, NOT posted).
 `.trim()
 }
 
@@ -302,17 +350,19 @@ const polishGroupResults = await parallel(
 
 const polishResults = polishGroupResults.filter(Boolean).flatMap((r) => r.results || [])
 
-// The Polish prompt asks each PR to report markedReadyForReview/mentionedKfly8 precisely
-// because either can fail — trust those flags instead of assuming every PR succeeded, so a
-// PR that's actually still in draft or never got the @kfly8 comment gets called out instead
-// of silently reported as done.
+// The Polish prompt asks each PR to report markedReadyForReview precisely because it can
+// fail — trust the flag instead of assuming every PR succeeded, so a PR that's actually
+// still in draft gets called out instead of silently reported as done. Note this is
+// "undrafted", NOT "done" — @-mentioning the human is deliberately NOT part of this
+// script (see the header comment); reviewRequestDraft below is a draft for the CALLER to
+// post later, once it has independently confirmed the PR is actually ready.
 const polishedByNumber = new Map(polishResults.map((r) => [r.prNumber, r]))
-const fullyDone = []
+const readyForReview = []
 const needsFollowUp = []
 for (const pr of allPRs) {
   const r = polishedByNumber.get(pr.prNumber)
-  if (r && r.markedReadyForReview && r.mentionedKfly8) {
-    fullyDone.push(pr)
+  if (r && r.markedReadyForReview) {
+    readyForReview.push(pr)
   } else {
     needsFollowUp.push({ pr, result: r })
   }
@@ -320,21 +370,33 @@ for (const pr of allPRs) {
 
 if (needsFollowUp.length > 0) {
   log(
-    `Warning: ${needsFollowUp.length} PR(s) still need manual follow-up: ` +
+    `Warning: ${needsFollowUp.length} PR(s) still need manual follow-up (not marked ready for review): ` +
       needsFollowUp
         .map(({ pr, result }) =>
           result
-            ? `#${pr.prNumber} (${pr.prUrl}) — markedReadyForReview=${result.markedReadyForReview}, mentionedKfly8=${result.mentionedKfly8}`
+            ? `#${pr.prNumber} (${pr.prUrl}) — markedReadyForReview=${result.markedReadyForReview}`
             : `#${pr.prNumber} (${pr.prUrl}) — its group's polish agent produced no result for it`,
         )
         .join('; '),
   )
 }
 
+// Filtered to readyForReview only — a PR whose polish agent reported
+// markedReadyForReview: false (still draft) must never surface a draft the
+// caller could mistake for postable, however unlikely given the caller's
+// own Pullfrog/CI gate (pullfrog[bot] review, PR #2993).
+const readyForReviewNumbers = new Set(readyForReview.map((pr) => pr.prNumber))
+const reviewRequestDrafts = Object.fromEntries(
+  polishResults.filter((r) => readyForReviewNumbers.has(r.prNumber)).map((r) => [r.prNumber, r.reviewRequestDraft]),
+)
+
 log(
-  `Done. ${fullyDone.length}/${allPRs.length} PR(s) fully ready for review and @kfly8-mentioned: ${fullyDone.map((p) => p.prUrl).join(', ') || 'none'}. ` +
-    `Caller: subscribe_pr_activity on each and drive CI/Pullfrog feedback to green per this repo's standing PR rules, ` +
-    `and proactively notify the user now — this script cannot do that part itself.`,
+  `Done. ${readyForReview.length}/${allPRs.length} PR(s) marked ready for review: ${readyForReview.map((p) => p.prUrl).join(', ') || 'none'}. ` +
+    `NOT @-mentioned — that is the caller's job. Caller: subscribe_pr_activity on each, drive CI/Pullfrog feedback to green ` +
+    `per this repo's standing PR rules, and ONLY THEN — after Pullfrog approves the current head with no unresolved findings, ` +
+    `CI is green, no conflicts, and you've re-reviewed the final diff yourself (Polish's own "clean" verdict is advisory, not proof) — ` +
+    `post the matching reviewRequestDraft (amended if the diff changed since) as a PR comment, exactly once per PR. ` +
+    `Also proactively notify the user now that this workflow finished — this script cannot do that part itself.`,
 )
 
 return {
@@ -342,5 +404,12 @@ return {
   plan,
   prs: allPRs,
   polish: polishResults,
+  readyForReview,
   needsFollowUp: needsFollowUp.map(({ pr }) => pr),
+  handoff: {
+    notifyHuman: 'caller',
+    note:
+      'Post reviewRequestDrafts[prNumber] as a PR comment only after: Pullfrog approved the PR\'s CURRENT head with no unresolved findings, CI is green, no merge conflict, and you have re-reviewed the final diff yourself. Exactly once per PR. For a stack, a fixup on a lower PR invalidates approvals already given to the PRs above it — re-verify the whole stack\'s current heads before posting any mention.',
+    reviewRequestDrafts,
+  },
 }
