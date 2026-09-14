@@ -413,6 +413,54 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
   /**
+   * Type name (as its DEFINING file wrote it) → its Go-backed shape,
+   * accumulated across every component `buildLocalTypeTables` has already
+   * processed in this build (#2984). A consumer's own `ir.metadata.
+   * typeDefinitions` never includes a type it only IMPORTS — most often a
+   * child component's own prop-shape type, imported alongside the component
+   * itself (`import { Child, type Dashboard } from './Child'`) — so without
+   * this, `typeInfoToGo`'s `'interface'` case treats `Dashboard` as an
+   * unbacked external reference the moment a PARENT names it as a generic
+   * type argument (`createSignal<Dashboard>`), falling back to
+   * `interface{}` and silently losing the field's Go type (and seeding
+   * `nil`, since `convertInitialValue` follows the same fallback).
+   *
+   * Snapshots the field map the DEFINING component already computed, rather
+   * than re-deriving one from the borrowed `TypeDefinition` in the
+   * consumer's own emit context: a nested anonymous property type
+   * (`Dashboard.items: { id, label }[]`) only resolves through
+   * `state.synthObjectStructNames`, which is reset per component —
+   * recomputing `structFieldsFor` for `Dashboard` while compiling the
+   * PARENT would consult the parent's own (unrelated, and at this point not
+   * yet populated) synthesis map and silently widen that nested field to
+   * `map[string]interface{}` instead of reusing what the child already
+   * worked out for itself.
+   *
+   * Keyed by the type's name in its OWN defining file, not any importer's
+   * local alias — `buildLocalTypeTables` looks entries up by the imported
+   * specifier's ORIGINAL name (`ImportSpecifier.name`), then registers the
+   * result under the consumer's local binding.
+   */
+  private crossFileTypeAliases: Map<string, string> = new Map()
+
+  /** See `crossFileTypeAliases`. Object/interface counterpart (tsName → Go field name). */
+  private crossFileStructFields: Map<string, Map<string, string>> = new Map()
+
+  /**
+   * See `crossFileTypeAliases`. The DEFINING component's own `TypeDefinition`
+   * (carrying `properties`, so each field's declared `TypeInfo` — not just
+   * its Go name — survives), for a consumer that bakes an object-LITERAL
+   * initial value against a borrowed type (`createSignal<Dashboard>({...})`)
+   * rather than merely declaring a field of that type. `structPropertyType`
+   * (`parsed-literal-to-go.ts`) resolves a struct literal's per-property
+   * type by struct name against `state.currentTypeDefinitions` — a plain
+   * name lookup, agnostic to which file registered the entry — so splicing
+   * this into the consumer's own list (`buildLocalTypeTables`) is enough;
+   * no second lookup path to keep in sync with the same-file case.
+   */
+  private crossFileTypeDefinitions: Map<string, TypeDefinition> = new Map()
+
+  /**
    * Local alias -> declared/exported name for imported components (#2822,
    * the SSR-side counterpart of #2777's client-JS registry-key fix). A
    * child referenced under an import alias (`import { Foo as Bar }`,
@@ -2993,12 +3041,63 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.state.localTypeNames.add(td.name)
       if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
         this.state.localTypeAliases.set(td.name, 'string')
+        this.crossFileTypeAliases.set(td.name, 'string')
       } else {
         // Source-key → Go-field-name map for the baker, from the same field
         // derivation the struct emitter uses.
         const fields = this.structFieldsFor(td)
         if (fields.length > 0) {
-          this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
+          const fieldMap = new Map(fields.map(f => [f.tsName, f.goName]))
+          this.state.localStructFields.set(td.name, fieldMap)
+          // Cross-file registry (#2984) — see the field's own docstring.
+          this.crossFileStructFields.set(td.name, fieldMap)
+          this.crossFileTypeDefinitions.set(td.name, td)
+        }
+      }
+    }
+    // #2984: a type merely IMPORTED (never declared) in this file — most
+    // often a child component's own prop-shape type, imported alongside the
+    // component itself — resolves against whatever a component compiled
+    // earlier in this build already registered above. Relative imports
+    // only: a bare specifier can't name a BarefootJS component module, and
+    // matching an ecosystem package's export by name alone would risk a
+    // false-positive collision with an unrelated ambient ChildComponentShape.
+    for (const imp of ir.metadata.imports) {
+      if (!imp.source.startsWith('.')) continue
+      for (const spec of imp.specifiers) {
+        if (spec.isDefault || spec.isNamespace) continue
+        const localName = spec.alias ?? spec.name
+        // A same-named local declaration always wins — never overwritten by
+        // an unrelated import that merely shares the name.
+        if (this.state.localTypeNames.has(localName)) continue
+        const aliasBacking = this.crossFileTypeAliases.get(spec.name)
+        if (aliasBacking !== undefined) {
+          this.state.localTypeNames.add(localName)
+          this.state.localTypeAliases.set(localName, aliasBacking)
+          continue
+        }
+        const fieldMap = this.crossFileStructFields.get(spec.name)
+        if (fieldMap) {
+          this.state.localTypeNames.add(localName)
+          this.state.localStructFields.set(localName, fieldMap)
+          // Make the borrowed struct's OWN property types visible to
+          // `structPropertyType` too, so a composite-literal initial value
+          // (`createSignal<Dashboard>({ title: 'hello', ... })`) bakes its
+          // scalar fields against the real declared types instead of the
+          // zero-value struct fallback (`Dashboard{}`) `jsLiteralToGo`
+          // returns for an object type it can't find any properties for.
+          // `primeCompileState` assigns `currentTypeDefinitions` the SAME
+          // array reference as `ir.metadata.typeDefinitions` (no clone,
+          // #2674's own docstring on `emitSynthPropStructs`) — rebuild the
+          // array rather than pushing in place, or this would mutate the
+          // CONSUMER's own IR metadata, corrupting it for any later re-read.
+          const td = this.crossFileTypeDefinitions.get(spec.name)
+          if (td && !this.state.currentTypeDefinitions.some(t => t.name === localName)) {
+            this.state.currentTypeDefinitions = [
+              ...this.state.currentTypeDefinitions,
+              localName === td.name ? td : { ...td, name: localName },
+            ]
+          }
         }
       }
     }
