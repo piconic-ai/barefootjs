@@ -17,6 +17,11 @@ export const Layout: FC<LayoutProps> = ({ title, basePath, extraStyles = [], chi
       <head>
         <meta charset="utf-8" />
         <title>{title}</title>
+        {/* components.css consumes custom properties defined in tokens.css and
+            layout.css, so both must load first (same order as integrations/hono's
+            renderer.tsx) or the shared styles silently fall back to unset values. */}
+        <link rel="stylesheet" href={`${basePath}/shared/styles/tokens.css`} />
+        <link rel="stylesheet" href={`${basePath}/shared/styles/layout.css`} />
         <link rel="stylesheet" href={`${basePath}/shared/styles/components.css`} />
         {extraStyles.map((href) => (
           <link rel="stylesheet" href={href} />

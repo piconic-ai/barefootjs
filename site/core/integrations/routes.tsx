@@ -37,6 +37,7 @@ const ADAPTERS: Adapter[] = [
   { slug: 'php',         name: 'Twig',        language: 'PHP' },
   { slug: 'blade',       name: 'Blade',       language: 'PHP' },
   { slug: 'laravel',     name: 'Laravel',     language: 'PHP' },
+  { slug: 'ssg',         name: 'SSG + CSR',   language: 'TypeScript' },
 ]
 
 function IntegrationsIndex() {
@@ -65,7 +66,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — BarefootJS',
       description:
-        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), Flask and FastAPI (Python), Sinatra and Rails (Ruby), Mojolicious and Text::Xslate (Perl), Axum (Rust), and Twig, Blade and Laravel (PHP).',
+        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), Flask and FastAPI (Python), Sinatra and Rails (Ruby), Mojolicious and Text::Xslate (Perl), Axum (Rust), Twig, Blade and Laravel (PHP), plus a static-site-generation + CSR hybrid on Cloudflare Workers.',
     }),
   )
 
