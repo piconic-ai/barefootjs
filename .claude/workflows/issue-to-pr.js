@@ -1,8 +1,13 @@
-// Plan → implement → polish → land one or more GitHub issues as PR(s) for this repo.
+// Plan → implement → polish one or more GitHub issues into stacked PR(s) for this repo.
 //
 // Usage: Workflow({ name: 'issue-to-pr', args: { issues: [123, 456], repo: 'piconic-ai/barefootjs' } })
 //   args.issues — required, array of issue numbers (numbers, "#123", or full issue URLs all work)
 //   args.repo   — optional, "owner/repo", defaults to piconic-ai/barefootjs
+//
+// No reviewer-assignment step: this session's GitHub credentials author every PR it opens
+// (as "kfly8" in this repo), and GitHub refuses to let a PR's own author be requested as
+// its reviewer — there is no reviewer to assign that isn't already the author. Human
+// review happens by the PR simply existing, ready for review.
 //
 // What this workflow does NOT do: it does not wait for Pullfrog's review or CI to turn
 // green after opening the PR(s) — that is an ongoing, event-driven job (Pullfrog fires on
@@ -18,8 +23,7 @@ export const meta = {
     { title: 'Fetch', detail: 'read each issue and skim the codebase for likely touch points' },
     { title: 'Plan', detail: 'assess conflict risk and group issues into parallel/serial (stacked) batches', model: 'claude-opus-5' },
     { title: 'Implement', detail: 'implement, test, commit, and open draft PR(s) per group, stacking within a group' },
-    { title: 'Polish', detail: 'run code-review + simplify against each PR\'s diff and push fixes' },
-    { title: 'Land', detail: 'request kfly8 as reviewer and mark each PR ready for review' },
+    { title: 'Polish', detail: 'run code-review + simplify against each PR\'s diff, push fixes, and mark it ready for review' },
   ],
 }
 
@@ -207,8 +211,9 @@ const POLISH_SCHEMA = {
     prNumber: { type: 'number' },
     summary: { type: 'string' },
     pushedFixes: { type: 'boolean' },
+    markedReadyForReview: { type: 'boolean' },
   },
-  required: ['prNumber', 'summary', 'pushedFixes'],
+  required: ['prNumber', 'summary', 'pushedFixes', 'markedReadyForReview'],
 }
 
 function buildPolishPrompt(pr) {
@@ -221,7 +226,9 @@ Then run the equivalent of the /simplify skill on the same diff: apply reuse, si
 
 Apply any fixes directly on the branch, re-run the relevant tests, commit them with correct Co-authored-by trailers, and push.
 
-Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), and whether you pushed any fix commits.
+Finally, using the GitHub MCP tools, mark PR #${pr.prNumber} "ready for review" (undraft it) now that implementation and polish are both done.
+
+Return prNumber (${pr.prNumber}), a short summary of what you found and fixed (or "clean — nothing to fix" if there was nothing), whether you pushed any fix commits, and whether you marked it ready for review.
 `.trim()
 }
 
@@ -237,35 +244,8 @@ const polishResults = await parallel(
   ),
 )
 
-phase('Land')
-
-const LAND_SCHEMA = {
-  type: 'object',
-  properties: {
-    prNumber: { type: 'number' },
-    reviewerRequested: { type: 'boolean' },
-    assignedInstead: { type: 'boolean' },
-    markedReadyForReview: { type: 'boolean' },
-    notes: { type: 'string' },
-  },
-  required: ['prNumber', 'reviewerRequested', 'assignedInstead', 'markedReadyForReview'],
-}
-
-const landResults = await parallel(
-  allPRs.map((pr) => () =>
-    agent(
-      `Using the GitHub MCP tools against ${repo} PR #${pr.prNumber}:\n` +
-        `1. Check who authored the PR (its "user"/author login). NOTE: this environment's GitHub credentials may authenticate as "kfly8" regardless of who git-committed the code, so the PR's recorded author can be "kfly8" even though a Claude session wrote it — check the actual field, don't assume.\n` +
-        `2. If the author is NOT "kfly8", request "kfly8" as a reviewer on the PR. If the author IS "kfly8", do NOT request them as a reviewer (GitHub rejects requesting a review from the PR's own author) — instead add "kfly8" as an assignee on the PR so it still surfaces for them, and note why you did that.\n` +
-        `3. Mark the PR "ready for review" (undraft it) now that implementation and polish are both done.\n` +
-        `Report prNumber (${pr.prNumber}), reviewerRequested (true only if step 2's reviewer request actually succeeded), assignedInstead (true if you fell back to assigning instead), markedReadyForReview, and notes explaining what happened.`,
-      { schema: LAND_SCHEMA, phase: 'Land', label: `land PR #${pr.prNumber}`, model: IMPLEMENT_MODEL },
-    ),
-  ),
-)
-
 log(
-  `Done. Opened/landed ${allPRs.length} PR(s): ${allPRs.map((p) => p.prUrl).join(', ')}. ` +
+  `Done. Opened ${allPRs.length} PR(s), ready for review: ${allPRs.map((p) => p.prUrl).join(', ')}. ` +
     `Next: subscribe_pr_activity on each and drive CI/Pullfrog feedback to green per this repo's standing PR rules.`,
 )
 
@@ -274,5 +254,4 @@ return {
   plan,
   prs: allPRs,
   polish: polishResults.filter(Boolean),
-  land: landResults.filter(Boolean),
 }
