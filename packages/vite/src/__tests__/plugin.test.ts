@@ -362,6 +362,98 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
   })
 })
 
+describe('#2992: cross-file type resolution depends on file discovery order', () => {
+  let dir: string
+
+  afterEach(async () => {
+    if (dir) await rm(dir, { recursive: true, force: true })
+  })
+
+  // known-limitation (https://github.com/piconic-ai/barefootjs/issues/2992):
+  // this PINS the CURRENT, INCOMPLETE behavior through the REAL
+  // `@barefootjs/vite` pipeline — `discoverComponentFiles`
+  // (`packages/vite/src/discover.ts`) walks the components dir and sorts
+  // filenames alphabetically, so `writeBundle`'s eager compile pass drives
+  // `GoTemplateAdapter` across `App.tsx` (the consumer) BEFORE `Zebra.tsx`
+  // (the definer of the `Dashboard` type App imports) has registered
+  // anything with the adapter's cross-file type registry (#2984). App's
+  // signal field therefore still falls back to `interface{}`/`nil`. This is
+  // not a spec — once #2992's order-independent fix lands, this test should
+  // flip to asserting the CORRECT resolved-struct output (mirroring
+  // `go-template-adapter.test.ts`'s `#2984` test) and this comment should be
+  // trimmed accordingly.
+  test('App.tsx (consumer, sorts first) importing a type from Zebra.tsx (definer, sorts second) still falls back to interface{}/nil in the real writeBundle pass', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-2992-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    await writeFile(
+      join(dir, 'src/components/Zebra.tsx'),
+      [
+        '\'use client\'',
+        'export type Dashboard = {',
+        '  title: string',
+        '  items: { id: string; label: string }[]',
+        '}',
+        'export function Zebra({ data }: { data: Dashboard }) {',
+        '  return (',
+        '    <section>',
+        '      <h1>{data.title}</h1>',
+        '    </section>',
+        '  )',
+        '}',
+        '',
+      ].join('\n'),
+    )
+    await writeFile(
+      join(dir, 'src/components/App.tsx'),
+      [
+        '\'use client\'',
+        'import { createSignal } from \'@barefootjs/client\'',
+        'import { Zebra, type Dashboard } from \'./Zebra\'',
+        'export function App() {',
+        '  const [data] = createSignal<Dashboard>({ title: \'hello\', items: [] })',
+        '  return <Zebra data={data()} />',
+        '}',
+        '',
+      ].join('\n'),
+    )
+
+    const templatesDir = join(dir, 'internal/views')
+    const adapter = new GoTemplateAdapter({ packageName: 'main' })
+    const plugin = makePlugin('src/components', 'internal/views', adapter)
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    plugin.configResolved({
+      root: dir,
+      base: '/',
+      build: { outDir: 'dist', manifest: true },
+    })
+    await mkdir(join(dir, 'dist/.vite'), { recursive: true })
+    await writeFile(
+      join(dir, 'dist/.vite/manifest.json'),
+      JSON.stringify({
+        'src/components/App.tsx': { file: 'assets/App-abc123.js', isEntry: true },
+        'src/components/Zebra.tsx': { file: 'assets/Zebra-def456.js', isEntry: true },
+      }),
+    )
+
+    await plugin.writeBundle()
+
+    // The adapter's generated Go struct/constructor output lands in the
+    // per-component `.types` fragment next to the template (see
+    // `packages/vite/src/emit.ts`), not inlined into the `.go` template
+    // itself.
+    const appTypes = await readFile(join(templatesDir, 'App.types'), 'utf8')
+
+    // THIS IS THE BUG #2992 TRACKS — do not "fix" this assertion without
+    // also fixing the underlying ordering dependency. `App.tsx` compiles
+    // before `Zebra.tsx` in real alphabetical discovery order, so it still
+    // hits the pre-#2984 fallback: no real `Dashboard` field or baked
+    // composite literal.
+    expect(appTypes).toContain('Data interface{}')
+    expect(appTypes).not.toContain('Data Dashboard')
+    expect(appTypes).not.toMatch(/Data:\s*Dashboard\{/)
+  })
+})
+
 describe('afterEmit', () => {
   let dir: string
 

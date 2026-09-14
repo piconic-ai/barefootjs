@@ -4570,6 +4570,79 @@ export function Root(props: Props) {
     expect(consumerTemplate).toContain('{{or (bf_get (bf_get .Ctx "config") "label") "none"}}')
     expect(consumerTemplate).not.toContain('.Ctx.Config')
   })
+
+  test('#2984: an imported object type on a cross-file reactive child prop resolves to a real Go struct, not interface{}', () => {
+    // Two REAL files: `Dashboard` is declared only in Child.tsx and reaches
+    // Parent.tsx purely through `import { Child, type Dashboard } from
+    // './Child'` — Parent's own `ir.metadata.typeDefinitions` never
+    // contains it, only its `ir.metadata.imports`. Mirrors the #2087/#2925
+    // cross-component harness pattern: register the child's shape, generate
+    // its types (populating the cross-file type registry), THEN generate
+    // the parent's types.
+    const childSource = `
+"use client"
+export type Dashboard = {
+  title: string
+  items: { id: string; label: string }[]
+}
+export function Child({ data }: { data: Dashboard }) {
+  return (
+    <section>
+      <h1>{data.title}</h1>
+    </section>
+  )
+}
+`.trimStart()
+    const parentSource = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+import { Child, type Dashboard } from "./Child"
+export function Parent() {
+  const [data] = createSignal<Dashboard>({ title: "hello", items: [] })
+  return <Child data={data()} />
+}
+`.trimStart()
+
+    const childCtx = analyzeComponent(childSource, 'Child.tsx', 'Child')
+    const childIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(childCtx),
+      root: jsxToIR(childCtx)!,
+      errors: [],
+    }
+    const parentCtx = analyzeComponent(parentSource, 'Parent.tsx', 'Parent')
+    const parentIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(parentCtx),
+      root: jsxToIR(parentCtx)!,
+      errors: [],
+    }
+
+    const adapter = new GoTemplateAdapter()
+    adapter.registerChildComponentShape(childIR)
+    const childTypes = adapter.generateTypes(childIR)!
+    const parentTypes = adapter.generateTypes(parentIR)!
+
+    // The child's own struct is real and unaffected.
+    expect(childTypes).toContain('type Dashboard struct {')
+
+    // The parent's signal field resolves to the imported struct type, not
+    // the `interface{}` fallback for an unbacked external reference — and
+    // its initial value bakes as a real `Dashboard{...}` composite literal
+    // instead of the invalid-for-a-non-pointer-field `nil`.
+    expect(parentTypes).toContain('Data Dashboard')
+    expect(parentTypes).not.toContain('Data interface{}')
+    expect(parentTypes).toMatch(/Data:\s*Dashboard\{/)
+    expect(parentTypes).not.toMatch(/Data:\s*nil/)
+  })
+
+  // The #2992 known-limitation regression pin (an unfavorably-ordered
+  // cross-file type import falling back to interface{}/nil) now lives as a
+  // real `@barefootjs/vite` pipeline fixture — see
+  // `packages/vite/src/__tests__/plugin.test.ts`'s `#2992: cross-file type
+  // resolution depends on file discovery order` describe block, which
+  // drives the real `discoverComponentFiles` alphabetical ordering through
+  // `plugin.writeBundle()` instead of approximating it by hand.
 })
 
 describe('GoTemplateAdapter - #2130 loop with element-wrapped child component', () => {
