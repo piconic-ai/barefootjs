@@ -1,0 +1,43 @@
+name = "barefootjs-spring-example"
+main = "container.ts"
+compatibility_date = "2026-08-29"
+compatibility_flags = ["nodejs_compat"]
+
+[cache]
+enabled = true
+
+[[containers]]
+class_name = "SpringContainer"
+image = "./Dockerfile"
+# Build from the repo root so the Gradle composite-build path pointing at
+# ../../packages/adapter-pebble/java can resolve inside the image.
+image_build_context = "../.."
+max_instances = 1
+# Memory and disk are billed on the instance type's provisioned size, so pin it
+# rather than inherit a platform default that could move the bill silently.
+# `lite` (256 MiB / 1/16 vCPU / 2 GB) is the smallest and fits this demo --
+# a Spring Boot fat jar's steady-state heap footprint is a few tens of MB for
+# a demo this size, well inside the ceiling; if a future addition grows the
+# heap noticeably, bump this before reaching for `basic`/`standard`.
+instance_type = "lite"
+
+[[durable_objects.bindings]]
+name = "SPRING_CONTAINER"
+class_name = "SpringContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SpringContainer"]
+
+# Two patterns: `/integrations/spring/*` matches /integrations/spring/... but
+# not the bare /integrations/spring, so add the no-slash variant explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/spring"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/spring/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/spring"

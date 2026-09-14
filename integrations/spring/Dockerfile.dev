@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Spring Boot integration. Source and the
+# host-built dist/ are bind-mounted in (see docker-compose.yml);
+# `gradle --continuous bootRun` restarts the app when a watched source file
+# changes. `bun run build:watch` rebuilds dist/ + src/main/resources/templates
+# independently on the host; since APP_ENV=development makes BfContext build
+# a FRESH PebbleEngine per request (re-reading .peb files off disk -- see
+# that class's docstring), a template-only edit is picked up on the very next
+# request with no restart at all. Gradle's continuous build only needs to
+# fire for an actual .java source change.
+#
+# Build context is the repo root so the Gradle composite-build path
+# (../../packages/adapter-pebble/java) resolves the same as on the host.
+
+FROM gradle:8.14-jdk21
+
+WORKDIR /workspace/integrations/spring
+
+EXPOSE 3017
+
+ENV APP_ENV=development
+
+CMD ["gradle", "--continuous", "bootRun"]
