@@ -27,9 +27,11 @@ type PageIsland = {
   extraStyles?: string[]
   // Page still gets built + statically generated (shared/e2e specs hit it by
   // direct URL) but is left off the index nav — same convention as
-  // integrations/hono/server.tsx, whose own index nav links only Counter,
-  // Toggle, Todo and AI Chat while keeping /reactive-props, /props-reactivity,
-  // /form, /portal, /conditional-return(-link) as unlisted routes.
+  // integrations/hono/server.tsx, which keeps /reactive-props,
+  // /props-reactivity, /form, /portal, /conditional-return(-link) as unlisted
+  // routes and links only Counter, Toggle, both Todo variants and AI Chat
+  // and Blog from its own index nav (ssg has no Todo-variant-split or Blog
+  // equivalent, so its visible set is just Counter, Toggle, Todo, AI Chat).
   hidden?: boolean
 }
 
