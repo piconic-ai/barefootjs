@@ -51,14 +51,15 @@
 // ("🤖 Generated with [Claude Code](...)") as an equivalent duplicate. Include that PR-
 // description footer yourself in a body passed to `create_pull_request` and you get BOTH,
 // stacked (measured: PR #3011's body, and #3013's own body on its first create_pull_request
-// call). So: when CREATING a PR or POSTING a comment/reply/review, do not type any
-// attribution footer yourself — leave it to the tool. `update_pull_request`, by contrast,
-// does NOT auto-append anything (measured: an update with a footer-less body came back with
-// zero footers) — so when the CALLER edits an existing PR's body after the fact (including
-// posting `reviewRequestDrafts[prNumber]`, composed footer-less by Polish step 6 for exactly
-// this reason, as a fresh comment via `add_issue_comment` — which DOES auto-append) it can
-// just post as-is; but a direct `update_pull_request` body edit needs exactly one footer
-// added by hand, since nothing else will.
+// call). So: when CREATING a PR or POSTING a comment/reply/review — including the CALLER
+// posting `reviewRequestDrafts[prNumber]` as a fresh comment via `add_issue_comment`, which
+// Polish step 6 composes footer-less for exactly this reason — do not type any attribution
+// footer yourself; leave it to the tool, and post the draft as-is.
+//
+// `update_pull_request` is the one exception: unlike the tools above, it does NOT auto-append
+// anything (measured: an update with a footer-less body came back with zero footers). So if
+// the CALLER directly edits an existing PR's body via `update_pull_request` (not the same
+// thing as posting a new comment), add exactly one footer by hand — nothing else will.
 //
 // What this workflow does NOT do: it does not wait for Pullfrog's review or CI to turn
 // green after opening the PR(s) — that is an ongoing, event-driven job (Pullfrog fires on
