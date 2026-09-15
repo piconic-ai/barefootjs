@@ -28,6 +28,7 @@ on:
       # resolve to headings it actually emits.
       - 'README.md'
       - 'docs/core/advanced/vite-plugin.md'
+      - 'docs/core/adapters/csr.md'
       - '.github/workflows/update-api-reference.yml'
 
 permissions:

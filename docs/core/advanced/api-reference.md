@@ -13,7 +13,7 @@ Everything here comes from `@since` / `@stability` / `@example` JSDoc tags on th
 
 ## Runtime
 
-Everything `@barefootjs/client` exports — the reactive primitives, context, props helpers, portals and the compiler built-ins (**beta**), plus the dev-only profiler hooks (**alpha**).
+Everything `@barefootjs/client` exports. **Beta** is the set a component author actually writes — the reactive primitives, context, the portal pair, the two compiler built-ins and the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, but with no authored call site or documented pattern yet, so its contract is not frozen. The compiler ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are emitted into a bundle from `@barefootjs/client/runtime`, never written by hand.
 
 | API | Kind | Since | Status |
 |---|---|---|---|
@@ -22,6 +22,7 @@ Everything `@barefootjs/client` exports — the reactive primitives, context, pr
 | [`batch()`](#batch) | function | 0.1.0 | **Beta** |
 | [`beginTurn()`](#beginturn) | function | 0.11.0 | Alpha |
 | [`CleanupFn`](#cleanupfn) | type | 0.1.0 | **Beta** |
+| [`cleanupPortalPlaceholder()`](#cleanupportalplaceholder) | function | 0.1.0 | Alpha |
 | [`Context`](#context) | type | 0.1.0 | **Beta** |
 | [`createContext()`](#createcontext) | function | 0.1.0 | **Beta** |
 | [`createDisposableEffect()`](#createdisposableeffect) | function | 0.1.0 | Alpha |
@@ -29,14 +30,15 @@ Everything `@barefootjs/client` exports — the reactive primitives, context, pr
 | [`createMemo()`](#creatememo) | function | 0.1.0 | **Beta** |
 | [`createPortal()`](#createportal) | function | 0.1.0 | **Beta** |
 | [`createRecordingSink()`](#createrecordingsink) | function | 0.11.0 | Alpha |
-| [`createRoot()`](#createroot) | function | 0.1.0 | **Beta** |
+| [`createRoot()`](#createroot) | function | 0.1.0 | Alpha |
 | [`createSearchParams()`](#createsearchparams) | function | 0.17.0 | **Beta** |
-| [`createSelector()`](#createselector) | function | 0.18.7 | **Beta** |
+| [`createSelector()`](#createselector) | function | 0.18.7 | Alpha |
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
 | [`endTurn()`](#endturn) | function | 0.11.0 | Alpha |
+| [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | Alpha |
 | [`formatDate()`](#formatdate) | function | 0.1.0 | **Beta** |
-| [`forwardProps()`](#forwardprops) | function | 0.1.0 | **Beta** |
+| [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
 | [`Memo`](#memo) | type | 0.1.0 | **Beta** |
 | [`onCleanup()`](#oncleanup) | function | 0.1.0 | **Beta** |
 | [`onMount()`](#onmount) | function | 0.1.0 | **Beta** |
@@ -46,7 +48,6 @@ Everything `@barefootjs/client` exports — the reactive primitives, context, pr
 | [`ProfilerEvent`](#profilerevent) | interface | 0.11.0 | Alpha |
 | [`ProfilerEventSink`](#profilereventsink) | interface | 0.11.0 | Alpha |
 | [`ProfilerEventType`](#profilereventtype) | type | 0.11.0 | Alpha |
-| [`provideContext()`](#providecontext) | function | 0.1.0 | **Beta** |
 | [`queryHref()`](#queryhref) | function | 0.17.0 | **Beta** |
 | [`QueryParams`](#queryparams) | type | 0.17.0 | **Beta** |
 | [`QueryParamValue`](#queryparamvalue) | type | 0.17.0 | **Beta** |
@@ -58,11 +59,10 @@ Everything `@barefootjs/client` exports — the reactive primitives, context, pr
 | [`SearchParamsInit`](#searchparamsinit) | type | 0.17.0 | **Beta** |
 | [`setProfilerSink()`](#setprofilersink) | function | 0.11.0 | Alpha |
 | [`Signal`](#signal) | type | 0.1.0 | **Beta** |
-| [`splitProps()`](#splitprops) | function | 0.1.0 | **Beta** |
+| [`splitProps()`](#splitprops) | function | 0.1.0 | Alpha |
 | [`SubscriberKind`](#subscriberkind) | type | 0.11.0 | Alpha |
 | [`trackPosition()`](#trackposition) | function | 0.35.0 | Alpha |
 | [`untrack()`](#untrack) | function | 0.1.0 | **Beta** |
-| [`unwrap()`](#unwrap) | function | 0.1.0 | **Beta** |
 | [`useContext()`](#usecontext) | function | 0.1.0 | **Beta** |
 
 ### `Async()`
@@ -121,6 +121,12 @@ Mark the start of a user-interaction turn (#1690, SR3). Compiler-emitted in prof
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 A cleanup callback, as registered with `onCleanup` or returned from an effect.
+
+### `cleanupPortalPlaceholder()`
+
+`function` · Alpha since 0.1.0 · `@barefootjs/client`
+
+Remove the SSR placeholder left behind for the portal with this id. Browser-only.
 
 ### `Context`
 
@@ -211,7 +217,7 @@ Build a recording sink (SR2). Hand `.sink` to `setProfilerSink`, drive a scenari
 
 ### `createRoot()`
 
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
+`function` · Alpha since 0.1.0 · `@barefootjs/client`
 
 Create an isolated reactive scope with explicit disposal. All effects/memos created inside run within this root and are disposed together when the returned dispose function is called.
 
@@ -243,7 +249,7 @@ setSearchParams({ sort: 'price' })
 
 ### `createSelector()`
 
-`function` · **Beta** since 0.18.7 · `@barefootjs/client`
+`function` · Alpha since 0.18.7 · `@barefootjs/client`
 
 O(changed) selection primitive (SolidJS-compatible `createSelector`).
 
@@ -279,6 +285,12 @@ An effect body; may return a `CleanupFn`.
 
 Mark the end of the current interaction turn (#1690, SR3).
 
+### `findSiblingSlot()`
+
+`function` · Alpha since 0.1.0 · `@barefootjs/client`
+
+The nearest element matching `slotSelector` among `el`'s siblings, or `null`. Browser-only.
+
 ### `formatDate()`
 
 `function` · **Beta** since 0.1.0 · `@barefootjs/client`
@@ -296,17 +308,23 @@ formatDate(createdAt, 'YYYY-MM-DD')              // '2026-09-15' (defaults to UT
 <time>{formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')}</time>
 ```
 
-### `forwardProps()`
+### `isSSRPortal()`
 
 `function` · **Beta** since 0.1.0 · `@barefootjs/client`
 
-Create a props object that merges explicit overrides with forwarded source props. Preserves getter-based reactivity from both overrides and source.
+Whether `element` is a portal target the server already rendered in place. Browser-only.
 
 ```tsx
-// Compiler-generated for `<Button {...rest} class={merged}>`: `class` comes
-// from the override, everything else is forwarded from `props` by getter, so
-// the child still sees reactive updates.
-forwardProps(props, { class: merged }, ['class', 'children'])
+"use client"
+function DialogOverlay() {
+  const handleMount = (el: HTMLElement) => {
+    // Only portal a client-mounted overlay; SSR already placed the other one.
+    if (el.parentNode !== document.body && !isSSRPortal(el)) {
+      createPortal(el, document.body, { ownerScope: el.closest('[bf-s]') ?? undefined })
+    }
+  }
+  return <div ref={handleMount} class="fixed inset-0 bg-black/50" />
+}
 ```
 
 ### `Memo`
@@ -380,19 +398,6 @@ Reactive measurement hooks. Every method is a measurement-only notification — 
 `type` · Alpha since 0.11.0 · `@barefootjs/client`
 
 The instrumentation points, as a discriminated `type` tag.
-
-### `provideContext()`
-
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
-
-Provide a context value to the current component subtree. Browser-only.
-
-```tsx
-"use client"
-// Normally written as JSX, which the compiler lowers to this call:
-//   <TabsContext.Provider value={{ active }}>{props.children}</TabsContext.Provider>
-provideContext(TabsContext, { active })
-```
 
 ### `queryHref()`
 
@@ -490,7 +495,7 @@ The `[getter, setter]` tuple `createSignal` returns.
 
 ### `splitProps()`
 
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
+`function` · Alpha since 0.1.0 · `@barefootjs/client`
 
 Split a props object into two: one with the specified keys, one with the rest. Both returned objects use Proxy to defer reads, preserving reactive tracking.
 
@@ -539,19 +544,6 @@ createEffect(() => {
   const value = untrack(() => someSignal()) // won't re-run when someSignal changes
   console.log(value)
 })
-```
-
-### `unwrap()`
-
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
-
-Unwrap a prop value that may be a getter function.
-
-```ts
-// A prop arrives either as a plain value or as a getter (the compiler wraps
-// reactive ones), so read it through unwrap() when either is possible.
-unwrap('Save')        // 'Save'
-unwrap(() => 'Save')  // 'Save'
 ```
 
 ### `useContext()`
@@ -612,7 +604,7 @@ export function Counter() {
 
 ## Vite plugin
 
-Everything `@barefootjs/vite` exports. `barefoot()` and its option types are **beta**; the helpers re-exported for adapter builders are **alpha**. See [Vite Plugin](./vite-plugin.md) for the build and dev output, the on-disk layout and the dev-server markers.
+Everything `@barefootjs/vite` exports. **Beta** is what configuring a build takes: `barefoot()`, its four options and the `afterEmit` context every adapter builder composes through. **Alpha** is the rest — the URL and discovery helpers re-exported so a builder resolves assets the way the plugin itself does. See [Vite Plugin](./vite-plugin.md) for the build and dev output, the on-disk layout and the dev-server markers.
 
 | API | Kind | Since | Status |
 |---|---|---|---|
@@ -768,6 +760,48 @@ The ordered `scriptAssets` list for one component's entry, per the design: just 
 `function` · Alpha since 0.31.0 · `@barefootjs/vite`
 
 Posix-normalized path of `absPath` relative to `root` (manifest keys and Rollup `input` specifiers both want forward slashes regardless of OS).
+
+## Browser mount
+
+Two APIs an app calls itself that live on `@barefootjs/client/runtime`, not on the root entry: `render()` mounts a component with no server-rendered markup (CSR), and `setupStreaming()` installs the swap and re-hydration seams a streaming page or the client router needs. They stay on the browser-only entry because `@barefootjs/client` is SSR-safe — importing it must not pull the DOM runtime into a server bundle. Everything else that entry exports is compiler ABI, emitted into a bundle rather than written, and is not listed here.
+
+| API | Kind | Since | Status |
+|---|---|---|---|
+| [`render()`](#render) | function | 0.1.0 | **Beta** |
+| [`setupStreaming()`](#setupstreaming) | function | 0.1.0 | **Beta** |
+
+### `render()`
+
+`function` · **Beta** since 0.1.0 · `@barefootjs/client/runtime`
+
+Render a component into a container element (CSR mode).
+
+```tsx
+// By name (registry-based)
+await import('/static/components/Counter.client.js')
+render(document.getElementById('app')!, 'Counter', { initialCount: 0 })
+```
+
+```tsx
+// By ComponentDef (registry-free)
+render(container, { name: 'MyNode', init, template }, { id: 'n1' })
+```
+
+### `setupStreaming()`
+
+`function` · **Beta** since 0.1.0 · `@barefootjs/client/runtime`
+
+Install the global streaming resolver.
+
+```ts
+// client/router-entry.ts — one hand-written entry, registered as a Rollup
+// input, loaded once per page before any streamed chunk arrives.
+import { setupStreaming } from '@barefootjs/client/runtime'
+import { startRouter } from '@barefootjs/router'
+
+setupStreaming()
+startRouter()
+```
 
 ## Adapter builders
 

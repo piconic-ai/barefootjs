@@ -9,9 +9,8 @@
  * Split a props object into two: one with the specified keys, one with the rest.
  * Both returned objects use Proxy to defer reads, preserving reactive tracking.
  *
- * @param props - The source props object
- * @param keys - Keys to extract into the first (local) object
- * @returns A tuple [local, rest] where local has the specified keys and rest has everything else
+ * Alpha rather than beta: no authored call site in `ui/` or the integrations,
+ * and no docs page yet.
  *
  * @example
  * ```tsx
@@ -25,7 +24,7 @@
  * ```
  *
  * @since 0.1.0
- * @stability beta
+ * @stability alpha
  */
 export function splitProps<
   T extends Record<string, unknown>,

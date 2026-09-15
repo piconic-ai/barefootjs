@@ -20,6 +20,11 @@
 // Types and interfaces are exempt from `@example`: their shape is the doc,
 // and the interfaces named in a surface's `expand` get a per-field table.
 //
+// The beta set is also kept CLOSED under the types its own signatures name: a
+// beta API whose signature names an alpha one fails the run. Otherwise "beta"
+// promises a stability the caller cannot rely on, since they must name the
+// alpha type to hold the value.
+//
 // Resolution is a TypeScript Program over the entry files (never a regex
 // over source text — CLAUDE.md): re-exports are followed through the
 // checker to the declaring symbol, and the tags are read off the JSDoc
@@ -102,8 +107,12 @@ const SURFACES: Surface[] = [
   {
     title: 'Runtime',
     intro:
-      'Everything `@barefootjs/client` exports — the reactive primitives, context, props helpers, ' +
-      'portals and the compiler built-ins (**beta**), plus the dev-only profiler hooks (**alpha**).',
+      'Everything `@barefootjs/client` exports. **Beta** is the set a component author actually ' +
+      'writes — the reactive primitives, context, the portal pair, the two compiler built-ins and ' +
+      'the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, but with no ' +
+      'authored call site or documented pattern yet, so its contract is not frozen. The compiler ' +
+      "ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are emitted into a " +
+      'bundle from `@barefootjs/client/runtime`, never written by hand.',
     entries: [{ file: 'packages/client/src/index.ts', label: '@barefootjs/client' }],
     detail: true,
     expand: ['AsyncProps', 'RegionProps', 'PortalOptions'],
@@ -123,12 +132,26 @@ const SURFACES: Surface[] = [
   {
     title: 'Vite plugin',
     intro:
-      'Everything `@barefootjs/vite` exports. `barefoot()` and its option types are **beta**; the ' +
-      'helpers re-exported for adapter builders are **alpha**. See [Vite Plugin](./vite-plugin.md) ' +
-      'for the build and dev output, the on-disk layout and the dev-server markers.',
+      'Everything `@barefootjs/vite` exports. **Beta** is what configuring a build takes: ' +
+      '`barefoot()`, its four options and the `afterEmit` context every adapter builder composes ' +
+      'through. **Alpha** is the rest — the URL and discovery helpers re-exported so a builder ' +
+      'resolves assets the way the plugin itself does. See [Vite Plugin](./vite-plugin.md) for the ' +
+      'build and dev output, the on-disk layout and the dev-server markers.',
     entries: [{ file: 'packages/vite/src/index.ts', label: '@barefootjs/vite' }],
     detail: true,
     expand: ['BarefootViteOptions', 'ComponentDirEntry', 'AfterEmitContext'],
+  },
+  {
+    title: 'Browser mount',
+    intro:
+      'Two APIs an app calls itself that live on `@barefootjs/client/runtime`, not on the root ' +
+      'entry: `render()` mounts a component with no server-rendered markup (CSR), and ' +
+      '`setupStreaming()` installs the swap and re-hydration seams a streaming page or the client ' +
+      'router needs. They stay on the browser-only entry because `@barefootjs/client` is SSR-safe — ' +
+      'importing it must not pull the DOM runtime into a server bundle. Everything else that entry ' +
+      'exports is compiler ABI, emitted into a bundle rather than written, and is not listed here.',
+    entries: [{ file: 'packages/client/src/runtime/index.ts', label: '@barefootjs/client/runtime', only: ['render', 'setupStreaming'] }],
+    detail: true,
   },
   {
     title: 'Adapter builders',
@@ -187,6 +210,8 @@ interface Field {
 interface Api {
   /** Exported identifier. */
   name: string
+  /** Type names this API's SIGNATURE refers to (not its body). */
+  signatureTypes: string[]
   /** Heading / table text, e.g. `` `createSignal()` ``. */
   display: string
   kind: string
@@ -196,7 +221,7 @@ interface Api {
   summary: string
   /** First paragraph, for the section body. */
   description: string
-  example?: string
+  examples: string[]
   fields: Field[]
   label?: string
 }
@@ -204,7 +229,8 @@ interface Api {
 interface Tags {
   since?: string
   stability?: string
-  example?: string
+  /** Every `@example` block, in source order — `render` has two. */
+  examples: string[]
   internal: boolean
 }
 
@@ -239,12 +265,12 @@ function firstParagraph(text: string): string {
 }
 
 function readTags(doc: ts.JSDoc): Tags {
-  const out: Tags = { internal: false }
+  const out: Tags = { examples: [], internal: false }
   for (const tag of doc.tags ?? []) {
     const text = (ts.getTextOfJSDocComment(tag.comment) ?? '').trim()
     if (tag.tagName.text === 'since') out.since = text
     else if (tag.tagName.text === 'stability') out.stability = text
-    else if (tag.tagName.text === 'example') out.example = text
+    else if (tag.tagName.text === 'example') out.examples.push(text)
     else if (tag.tagName.text === 'internal') out.internal = true
   }
   return out
@@ -263,7 +289,48 @@ function taggedDoc(decl: ts.Node): { tags: Tags; text: string } {
       return { tags, text: ts.getTextOfJSDocComment(doc.comment) ?? '' }
     }
   }
-  return { tags: { internal: false }, text: '' }
+  return { tags: { examples: [], internal: false }, text: '' }
+}
+
+/**
+ * Type names the SIGNATURE of `decl` refers to — a function's parameter and
+ * return types, a const's annotation, the whole of a type alias or interface.
+ *
+ * Two deliberate exclusions, both about what a CALLER has to name:
+ *
+ * - A function's body. A beta function may call anything internally.
+ * - A parameter named `__bf…`. That prefix is this codebase's convention for
+ *   an argument only the compiler passes (`createSignal(init, __bfId)`,
+ *   `createEffect(fn, __bfId, __bfKind)`); an author writes neither, so their
+ *   types are not part of the promise. Without this, `createEffect`'s
+ *   profiler-only `__bfKind: SubscriberKind` would drag the whole profiler
+ *   type set into beta.
+ */
+function signatureTypeNames(decl: ts.Declaration): string[] {
+  const names = new Set<string>()
+  const walk = (node: ts.Node | undefined): void => {
+    if (!node) return
+    if (ts.isTypeReferenceNode(node)) {
+      const root = ts.isQualifiedName(node.typeName) ? node.typeName.left : node.typeName
+      names.add(root.getText())
+    }
+    node.forEachChild(walk)
+  }
+  if (ts.isFunctionDeclaration(decl)) {
+    for (const p of decl.parameters) {
+      if (p.name.getText().startsWith('__bf')) continue
+      walk(p.type)
+    }
+    walk(decl.type)
+    for (const t of decl.typeParameters ?? []) walk(t)
+  } else if (ts.isVariableDeclaration(decl)) {
+    walk(decl.type)
+  } else if (ts.isClassDeclaration(decl)) {
+    // A class's members are not part of the reference, so nothing to require.
+  } else {
+    walk(decl)
+  }
+  return [...names]
 }
 
 function kindOf(decl: ts.Declaration): string {
@@ -349,9 +416,34 @@ function collectFields(
   return fields
 }
 
+/**
+ * A beta API's signature may not name an alpha one. Otherwise "beta" claims a
+ * stability the caller cannot actually rely on: they have to name the alpha
+ * type to hold the value, and that type can change without notice. Keeping the
+ * beta set closed under the types its own signatures use is what makes it a
+ * deliberate set rather than a list of whatever looked ready.
+ */
+function checkBetaClosure(apis: Api[], internal: Set<string>, surfaceTitle: string, problems: Problem[]): void {
+  const tierOf = new Map(apis.map(a => [a.name, a.stability]))
+  for (const api of apis) {
+    if (api.stability !== 'beta') continue
+    for (const ref of api.signatureTypes) {
+      const refTier = tierOf.get(ref) ?? (internal.has(ref) ? 'internal' : undefined)
+      if (refTier === 'alpha' || refTier === 'internal') {
+        problems.push({
+          file: OUTPUT,
+          name: `${surfaceTitle} → ${api.name}`,
+          reason: `beta, but its signature names \`${ref}\`, which is ${refTier} — promote ${ref} or demote ${api.name}`,
+        })
+      }
+    }
+  }
+}
+
 function collectSurface(program: ts.Program, surface: Surface, problems: Problem[]): Api[] {
   const checker = program.getTypeChecker()
   const apis: Api[] = []
+  const internal = new Set<string>()
 
   for (const entry of surface.entries) {
     const sf = program.getSourceFile(join(ROOT, entry.file))
@@ -373,7 +465,10 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
       }
       const declFile = relative(ROOT, decl.getSourceFile().fileName)
       const { tags, text } = taggedDoc(decl)
-      if (tags.internal) continue
+      if (tags.internal) {
+        internal.add(exp.name)
+        continue
+      }
       if (tags.stability !== 'beta' && tags.stability !== 'alpha') {
         problems.push({ file: declFile, name: exp.name, reason: `missing or invalid @stability (got ${JSON.stringify(tags.stability ?? null)}; expected beta|alpha, or @internal)` })
         continue
@@ -383,7 +478,7 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
         continue
       }
       const kind = kindOf(decl)
-      if (surface.detail && tags.stability === 'beta' && EXAMPLE_REQUIRED_KINDS.has(kind) && !tags.example) {
+      if (surface.detail && tags.stability === 'beta' && EXAMPLE_REQUIRED_KINDS.has(kind) && tags.examples.length === 0) {
         problems.push({ file: declFile, name: exp.name, reason: `beta ${kind} on a detail surface needs an @example` })
         continue
       }
@@ -404,7 +499,8 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
         stability: tags.stability,
         summary: firstSentence(text),
         description,
-        example: tags.example,
+        examples: tags.examples,
+        signatureTypes: signatureTypeNames(decl),
         fields: surface.expand?.includes(exp.name) && ts.isInterfaceDeclaration(decl)
           ? collectFields(decl, { since: tags.since, stability: tags.stability }, declFile, exp.name, problems)
           : [],
@@ -412,6 +508,7 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
       })
     }
   }
+  checkBetaClosure(apis, internal, surface.title, problems)
   return apis
 }
 
@@ -452,7 +549,7 @@ function renderDetailSections(apis: Api[]): string[] {
       }
       out.push('')
     }
-    if (api.example) out.push(...renderExample(api.example), '')
+    for (const ex of api.examples) out.push(...renderExample(ex), '')
   }
   return out
 }
@@ -492,7 +589,7 @@ function renderCompact(apis: Api[]): string[] {
  * against the headings actually emitted, so renaming an API cannot leave the
  * README pointing at a heading that no longer exists.
  */
-const INBOUND_LINK_SOURCES = ['README.md', 'docs/core/advanced/vite-plugin.md']
+const INBOUND_LINK_SOURCES = ['README.md', 'docs/core/advanced/vite-plugin.md', 'docs/core/adapters/csr.md']
 
 function checkInboundLinks(slugs: Set<string>, problems: Problem[]): void {
   const target = OUTPUT.replace(/^docs\/core\//, '')

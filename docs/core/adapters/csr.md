@@ -52,6 +52,10 @@ import { render } from '@barefootjs/client/runtime'
 render(container, componentName, props?)
 ```
 
+`render` is **beta** and lives on the browser-only `@barefootjs/client/runtime`
+entry rather than on `@barefootjs/client`, which stays safe to import from a
+server bundle — see [API Reference → Browser mount](../advanced/api-reference.md#browser-mount).
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `container` | `HTMLElement` | Target element. Its content is replaced. |

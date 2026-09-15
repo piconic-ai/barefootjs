@@ -49,6 +49,10 @@ export function useContext<T>(_context: Context<T>): T {
 /**
  * Provide a context value to the current component subtree. Browser-only.
  *
+ * Not an authoring API: a component writes `<Ctx.Provider value={…}>`, which
+ * the compiler lowers to this call — 91 `.Provider` uses across `ui/`, `site/`
+ * and `integrations/`, and zero direct imports of this function.
+ *
  * @example
  * ```tsx
  * "use client"
@@ -57,8 +61,7 @@ export function useContext<T>(_context: Context<T>): T {
  * provideContext(TabsContext, { active })
  * ```
  *
- * @since 0.1.0
- * @stability beta
+ * @internal
  */
 export function provideContext<T>(_context: Context<T>, _value: T): void {
   return browserOnly('provideContext')
@@ -91,16 +94,43 @@ export function createPortal(
 }
 
 /**
+ * Whether `element` is a portal target the server already rendered in place.
+ * Browser-only.
+ *
+ * The guard that makes `createPortal` safe in an SSR app: a server-rendered
+ * target is already where it belongs, so portalling it again would move it a
+ * second time.
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * function DialogOverlay() {
+ *   const handleMount = (el: HTMLElement) => {
+ *     // Only portal a client-mounted overlay; SSR already placed the other one.
+ *     if (el.parentNode !== document.body && !isSSRPortal(el)) {
+ *       createPortal(el, document.body, { ownerScope: el.closest('[bf-s]') ?? undefined })
+ *     }
+ *   }
+ *   return <div ref={handleMount} class="fixed inset-0 bg-black/50" />
+ * }
+ * ```
+ *
  * @since 0.1.0
- * @internal
+ * @stability beta
  */
 export function isSSRPortal(_element: HTMLElement): boolean {
   return browserOnly('isSSRPortal')
 }
 
 /**
+ * The nearest element matching `slotSelector` among `el`'s siblings, or `null`.
+ * Browser-only.
+ *
+ * Alpha rather than beta: portal plumbing with no docs page; the contract is
+ * expected to change as the portal authoring pattern settles.
+ *
  * @since 0.1.0
- * @internal
+ * @stability alpha
  */
 export function findSiblingSlot(
   _el: HTMLElement,
@@ -110,8 +140,14 @@ export function findSiblingSlot(
 }
 
 /**
+ * Remove the SSR placeholder left behind for the portal with this id.
+ * Browser-only.
+ *
+ * Alpha rather than beta: portal plumbing with no docs page; the contract is
+ * expected to change as the portal authoring pattern settles.
+ *
  * @since 0.1.0
- * @internal
+ * @stability alpha
  */
 export function cleanupPortalPlaceholder(_portalId: string): void {
   return browserOnly('cleanupPortalPlaceholder')

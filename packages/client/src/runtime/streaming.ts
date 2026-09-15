@@ -65,6 +65,24 @@ export function __bf_swap(id: string): void {
  *   - `window.__bf_dispose_within` — dispose the islands in a subtree
  *
  * Call this once, early in the page (before any streaming chunks arrive).
+ *
+ * Lives on the browser-only `@barefootjs/client/runtime` entry, not on
+ * `@barefootjs/client`: the root entry is SSR-safe and must not pull the DOM
+ * runtime into a server bundle.
+ *
+ * @example
+ * ```ts
+ * // client/router-entry.ts — one hand-written entry, registered as a Rollup
+ * // input, loaded once per page before any streamed chunk arrives.
+ * import { setupStreaming } from '@barefootjs/client/runtime'
+ * import { startRouter } from '@barefootjs/router'
+ *
+ * setupStreaming()
+ * startRouter()
+ * ```
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function setupStreaming(): void {
   if (typeof window === 'undefined') return

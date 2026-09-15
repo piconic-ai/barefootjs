@@ -10,9 +10,8 @@
  * Create a props object that merges explicit overrides with forwarded source props.
  * Preserves getter-based reactivity from both overrides and source.
  *
- * @param source - The parent props object (reads are deferred via getters)
- * @param overrides - Object literal with getters/values that override source props
- * @param excludeKeys - Keys from source to exclude (already destructured)
+ * Not an authoring API: emitted by the compiler for a `{...rest}` spread on a
+ * child component.
  *
  * @example
  * ```tsx
@@ -22,8 +21,7 @@
  * forwardProps(props, { class: merged }, ['class', 'children'])
  * ```
  *
- * @since 0.1.0
- * @stability beta
+ * @internal
  */
 export function forwardProps<T extends Record<string, unknown>>(
   source: T,

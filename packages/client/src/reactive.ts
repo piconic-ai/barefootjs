@@ -565,8 +565,8 @@ function disposeEffect(effect: EffectContext): void {
  *
  * Used internally by mapArray for per-item reactive scopes.
  *
- * @param fn - Function to run in the new scope. Receives a dispose function.
- * @returns The return value of fn
+ * Alpha rather than beta: no authored call site outside the runtime itself
+ * (`mapArray` builds the per-row scopes), and no documented pattern.
  *
  * @example
  * ```ts
@@ -579,7 +579,7 @@ function disposeEffect(effect: EffectContext): void {
  * ```
  *
  * @since 0.1.0
- * @stability beta
+ * @stability alpha
  */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
   const root: EffectContext = {
@@ -845,6 +845,9 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
  * type-based reactivity analysis recognises `isSelected(row.id)` as a
  * reactive expression exactly like a signal/memo read.
  *
+ * Alpha rather than beta: shipped for SolidJS compatibility, with no authored
+ * call site and no documented pattern yet.
+ *
  * @example
  * const [selected, setSelected] = createSignal<number>(0)
  * const isSelected = createSelector(selected)
@@ -852,7 +855,7 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
  * //   <tr class={isSelected(row.id) ? 'danger' : ''}>
  *
  * @since 0.18.7
- * @stability beta
+ * @stability alpha
  */
 export function createSelector<T, U = T>(
   source: () => T,

@@ -157,6 +157,24 @@ export function createSignal<T>(initialValue: T): Signal<T> { ... }
   Directives, Vite plugin); types and interfaces are exempt, since their
   shape is the documentation.
 
+### What earns `beta`
+
+`beta` is a promise, so the bar is evidence rather than readiness:
+
+- An API a **component author writes** — with authored call sites in `ui/`,
+  `site/` or `integrations/`, or a docs page teaching it. Everything else
+  stays `alpha`: shipped and usable, but with a contract we have not frozen.
+- Never the compiler's own ABI. `provideContext`, `forwardProps` and `unwrap`
+  are emitted into a bundle from `@barefootjs/client/runtime`; an author
+  writes `<Ctx.Provider>`, a `{...rest}` spread, or nothing at all. Those
+  carry `@internal`, so the reference does not list them.
+- The beta set is **closed under the types its own signatures name**. A beta
+  API whose signature names an `alpha` or `@internal` type fails the
+  generator: the caller has to name that type to hold the value, so claiming
+  stability for the function but not the type promises nothing. A parameter
+  named `__bf…` is exempt — that prefix is the convention for an argument only
+  the compiler passes, so its type is not part of the promise.
+
 `scripts/generate-api-reference.ts` renders them into
 `docs/core/advanced/api-reference.md` — one `###` section per API, so each one
 is linkable and lands in the page's table of contents — and refuses to run
