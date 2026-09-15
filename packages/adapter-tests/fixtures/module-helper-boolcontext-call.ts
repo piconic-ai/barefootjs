@@ -10,9 +10,10 @@ import { createFixture } from '../src/types'
  * bare-name call to an unresolvable identifier with BF101 (#2994) —
  * except when the call's return value is only ever consumed for
  * truthiness (`_boolContext`), an exemption carved out so `ui/components/
- * ui/slot`'s `isValidElement(children)` guard keeps compiling on the six
+ * ui/slot`'s `isValidElement(children)` guard kept compiling on six
  * adapters (ERB, Jinja, minijinja/Rust, Twig, Blade, Text::Xslate) with no
- * dedicated shape-check primitive. That exemption was scoped by
+ * dedicated shape-check primitive at the time — #3012 has since given
+ * Text::Xslate one (this same PR), leaving five. That exemption was scoped by
  * STRUCTURAL POSITION (any call inside a condition/ternary-test/unary-`!`
  * operand), not by CALLEE IDENTITY — so a call to any OTHER helper from a
  * boolean-test position silently kept the pre-#3011 broken fallback
