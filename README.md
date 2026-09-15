@@ -22,15 +22,13 @@
 </p>
 
 > [!NOTE]
-> **Beta for component authors.** The surface you touch when writing components is in beta: the
-> `@barefootjs/client` reactive primitives (`createSignal`, `createEffect`, `createMemo`,
-> `createContext`, `onMount`, `onCleanup`, `batch`, `untrack`, ...) and the compiler directives
-> (`"use client"`, `/* @client */`). Breaking changes to that surface are no longer made casually;
-> when one is unavoidable it ships in a minor release with a migration note in the changelog.
+> **Stability:** beta for component authors, alpha for everything else. Pre-1.0, so a minor release is still the breaking-change slot; pin exact versions on the alpha surfaces.
 >
-> **Everything else is still alpha** and may change without notice: the build and integration
-> surface (`@barefootjs/vite`, each adapter's language-side runtime helpers) and the adapter-author
-> API exported from `@barefootjs/jsx`. Pin exact versions if you depend on them.
+> | Surface | Status | Covers |
+> |---|---|---|
+> | Component authoring | **Beta** | `@barefootjs/client` reactive primitives (`createSignal`, `createEffect`, `createMemo`, `createContext`, ...) and the `"use client"` / `/* @client */` directives. A breaking change ships in a minor release with a migration note in the changelog. |
+> | Build & integration | Alpha | `@barefootjs/vite`, each adapter's language-side runtime helpers |
+> | Adapter authoring | Alpha | Everything exported from `@barefootjs/jsx` |
 
 ---
 
