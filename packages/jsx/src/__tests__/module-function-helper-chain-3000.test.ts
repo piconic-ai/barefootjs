@@ -168,9 +168,15 @@ describe('CSR template: module-scope function calling another module-scope funct
 
   test('a three-hop module function chain resolves the same fixpoint transitively', () => {
     // `outer` -> `mid` -> `inner`, none touching component internals.
-    // Exercises that the fixpoint's `changed` loop actually iterates to a
-    // stable point for a chain longer than one hop, not just the direct
-    // two-function case above.
+    // Exercises resolve-by-name for a chain longer than one hop, not just
+    // the direct two-function case above. Since none of the three
+    // transitively reference an init-required name, all three land on
+    // `'module'` via the fixpoint's trailing "survivors are module"
+    // assignment on the very first pass (`changed` never flips `true`) —
+    // this is coverage for the 3-hop resolve-by-name behavior, not for
+    // multi-round fixpoint iteration specifically (that would need at
+    // least one hop to genuinely demote before a later pass re-checks a
+    // caller of it).
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
