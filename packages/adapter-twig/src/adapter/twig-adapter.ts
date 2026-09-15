@@ -1814,7 +1814,6 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     expr: string,
     preParsed?: ParsedExpr,
     pos: 'rendered' | 'value' = 'rendered',
-    boolContext = false,
   ): string {
     // Parse-first lowering — parity with the Jinja adapter's
     // `convertExpressionToJinja`. Parse the JS expression once, gate it on the
@@ -1863,7 +1862,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       return "''"
     }
 
-    return this.renderParsedExprToTwig(parsed, boolContext)
+    return this.renderParsedExprToTwig(parsed)
   }
 
   /**
@@ -1871,14 +1870,9 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
    * boolean expression, routing through `bf.truthy(...)` unless the
    * expression is structurally already boolean-shaped. See the file header,
    * divergence 1.
-   *
-   * Every caller of THIS method is, by construction, rendering a whole
-   * expression whose own value is never itself the rendered output — only
-   * its JS-truthiness is observed — so it always passes `boolContext: true`
-   * (#2994) down to `convertExpressionToTwig` / `renderParsedExprToTwig`.
    */
   private convertConditionToTwig(expr: string, preParsed?: ParsedExpr): string {
-    const twig = this.convertExpressionToTwig(expr, preParsed, 'rendered', true)
+    const twig = this.convertExpressionToTwig(expr, preParsed)
     return this.wrapConditionExpr(expr, twig, preParsed)
   }
 
@@ -1900,12 +1894,9 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   /**
    * Render a full ParsedExpr tree to Twig for top-level (non-filter)
    * expressions where identifiers are signals / template vars.
-   *
-   * `boolContext` (#2994) seeds the emitter's `_boolContext` flag — see
-   * `TwigTopLevelEmitter`'s field doc.
    */
-  private renderParsedExprToTwig(expr: ParsedExpr, boolContext = false): string {
-    return emitParsedExpr(expr, new TwigTopLevelEmitter(this.emitCtx, boolContext))
+  private renderParsedExprToTwig(expr: ParsedExpr): string {
+    return emitParsedExpr(expr, new TwigTopLevelEmitter(this.emitCtx))
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value. Carried

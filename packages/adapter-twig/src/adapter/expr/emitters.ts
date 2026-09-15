@@ -357,38 +357,8 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
   // `TwigFilterEmitter`'s constructor comment above for why.
   private readonly ctx: TwigEmitContext
 
-  // #2994: true while emitting a subtree whose VALUE is only ever
-  // consumed for JS truthiness — never reachable as rendered content.
-  // Seeded by the constructor for a WHOLE-TREE test (an `IRConditional`'s
-  // `condition` / `IRIfStatement`'s `condition`); narrowed for a NESTED
-  // test — a ternary's `test`, or `!x`'s operand — by `conditional()` /
-  // `unary()` below (save/restore around just that subtree). `logical()`
-  // deliberately leaves it untouched and just inherits whatever the
-  // caller set, since `a && b` / `a || b` can themselves still surface as
-  // the rendered value (`{cond && children}`), not only as a nested
-  // truthiness test. `call()` reads this to decide whether a bare-name
-  // call to an unresolvable module-scope helper is safe to leave as the
-  // pre-#2994 fallback (its result is provably discarded down to a
-  // truthiness check either way) or must refuse loudly (its value can
-  // reach the page).
-  private _boolContext: boolean
-
-  constructor(ctx: TwigEmitContext, boolContext = false) {
+  constructor(ctx: TwigEmitContext) {
     this.ctx = ctx
-    this._boolContext = boolContext
-  }
-
-  // Runs `fn` with `_boolContext` forced `true` for its duration, restoring
-  // the previous value afterward — the save/restore pairing both
-  // `unary('!')`'s operand and `conditional()`'s `test` need (#2994).
-  private _underBoolContext<T>(fn: () => T): T {
-    const prev = this._boolContext
-    this._boolContext = true
-    try {
-      return fn()
-    } finally {
-      this._boolContext = prev
-    }
   }
 
   /**
@@ -512,10 +482,18 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // args. Falling through to `emit(callee)` used to silently resolve the
     // bare name against Twig's undefined-variable semantics (renders
     // empty) and drop every argument. Refuse loudly instead of guessing.
-    // EXCEPT under `_boolContext` — see the field doc for the full
-    // `ui/components/ui/slot` `isValidElement` reasoning (the same as the
-    // ERB adapter's identical comment).
-    if (callee.kind === 'identifier' && !this._boolContext) {
+    // No `_boolContext`-style structural exemption here (#3012): scoping
+    // the exemption by "is this call's value only consumed for
+    // truthiness?" rather than by callee identity let ANY OTHER helper
+    // called from a condition/ternary test keep the pre-#2994 broken
+    // fallback silently. `isValidElement` — the one caller that
+    // legitimately needs to keep working under the degraded fallback
+    // (`ui/components/ui/slot`'s `asChild` guard) — is now resolved above
+    // as an identity-scoped `templatePrimitive` (`bf.is_element`, backed
+    // by the shared BarefootJS PHP runtime's shape-check method), so it
+    // never reaches this branch at all. Every other bare-name call
+    // refuses here unconditionally, in a boolean-test position or not.
+    if (callee.kind === 'identifier') {
       this.ctx._recordExprBF101(
         `Call to '${callee.name}(...)' has no Twig template lowering — '${callee.name}' is not a signal getter, a registered template primitive, or a recognised lowering call, so there is no PHP binding for it in template scope.`,
         `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — Twig has no way to invoke it.`,
@@ -526,13 +504,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    if (op === '!') {
-      // `argument`'s own value never surfaces as rendered content — only
-      // whether it's JS-truthy matters — so it's evaluated under
-      // `_boolContext` (#2994).
-      const arg = this._underBoolContext(() => emit(argument))
-      return `not ${truthyTest(argument, arg)}`
-    }
+    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
     if (op === '-') return `-${emit(argument)}`
     return emit(argument)
   }
@@ -718,10 +690,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string {
     // See the file header, divergence 1: Twig's symbolic ternary.
-    // `test`'s own value never surfaces as rendered content (only
-    // `consequent`/`alternate` can), so it's evaluated under
-    // `_boolContext` (#2994) — restored before `consequent`/`alternate`.
-    const testStr = this._underBoolContext(() => truthyTest(test, emit(test)))
+    const testStr = truthyTest(test, emit(test))
     return `(${testStr} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 

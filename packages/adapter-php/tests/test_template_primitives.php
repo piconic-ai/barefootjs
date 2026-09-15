@@ -407,4 +407,31 @@ bf_test('flat_map_eval / map_eval delegate through the JSON seam', function () u
     bf_assert_eq($bf->map_eval($users, json_encode($nameField), 'u'), ['Ada', 'Grace']);
 });
 
+// bf->is_element -- the framework "is this a renderable element (not
+// plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266, #3012).
+// Ported from the shared Perl runtime's `is_element`
+// (packages/adapter-perl/lib/BarefootJS.pm), which the Mojolicious /
+// Xslate adapters' own `isValidElement` primitives already call. Shared
+// by both the Twig and Blade adapters (this runtime backs both).
+bf_test('is_element', function () use ($bf) {
+    bf_assert_eq($bf->is_element(['tag' => 'div', 'props' => []]), true);
+    // Case-insensitive key match, mirroring the Perl/Go/Ruby/Python/Rust ports.
+    bf_assert_eq($bf->is_element(['Tag' => 'div', 'Props' => []]), true);
+    // A `stdClass` object (the live representation for a
+    // `json_decode()`-sourced value) is an equally valid element shape.
+    $obj = new stdClass();
+    $obj->tag = 'div';
+    $obj->props = [];
+    bf_assert_eq($bf->is_element($obj), true);
+    bf_assert_eq($bf->is_element(['tag' => 'div']), false);
+    bf_assert_eq($bf->is_element(['props' => []]), false);
+    // A passed-through JSX child is pre-rendered markup (a plain string)
+    // on this SSR model -- a non-empty string must NOT read as an
+    // element, or `Slot`'s `asChild` guard would wrongly take the
+    // element-merge branch.
+    bf_assert_eq($bf->is_element('<span>hello</span>'), false);
+    bf_assert_eq($bf->is_element(null), false);
+    bf_assert_eq($bf->is_element([1, 2, 3]), false);
+});
+
 return bf_finish();

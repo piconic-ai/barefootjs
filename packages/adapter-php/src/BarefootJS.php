@@ -1191,6 +1191,40 @@ final class BarefootJS
     }
 
     /**
+     * `isValidElement(x)` -- the framework "is this a renderable element
+     * (not plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266,
+     * #3012). Mirrors JS's `'tag' in x && 'props' in x`: true only for a
+     * JS *object* value (see `isJsObject` above) carrying both keys
+     * (case-insensitively, matching the case-tolerant key lookups
+     * elsewhere in this runtime, and the Perl / Go / Ruby / Python / Rust
+     * ports' own `is_element`/`IsValidElement`). A passed-through JSX
+     * child is represented as pre-rendered markup (a plain string) on this
+     * SSR model, so a non-empty STRING child is NOT a valid element --
+     * routing `isValidElement` through bare truthiness here would wrongly
+     * take the element-merge branch. Shared by both Twig and Blade (this
+     * runtime backs both backends).
+     */
+    public function is_element($v): bool
+    {
+        if (!$this->isJsObject($v)) {
+            return false;
+        }
+        $keys = $v instanceof \stdClass ? array_keys(get_object_vars($v)) : array_keys($v);
+        $hasTag = false;
+        $hasProps = false;
+        foreach ($keys as $key) {
+            $lower = strtolower((string) $key);
+            if ($lower === 'tag') {
+                $hasTag = true;
+            }
+            if ($lower === 'props') {
+                $hasProps = true;
+            }
+        }
+        return $hasTag && $hasProps;
+    }
+
+    /**
      * `Object.entries(x)` (#2168 object-entries-map) -- returns a PHP assoc
      * array (`key => value`) so the generated Twig/Blade `for`/`@foreach`
      * unpacks key + value directly via the language's own 2-variable
