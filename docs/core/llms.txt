@@ -57,4 +57,5 @@
 - [Error Codes Reference](https://barefootjs.dev/docs/advanced/error-codes.md): BF-prefixed compiler error codes with explanations and fixes.
 - [IR Schema Reference](https://barefootjs.dev/docs/advanced/ir-schema.md): JSON tree structure of the Intermediate Representation consumed by adapters and client-JS generation.
 - [Performance Optimization](https://barefootjs.dev/docs/advanced/performance.md): Strategies to minimize bundle size, reduce hydration cost, and optimize runtime reactivity
+- [Vite Plugin](https://barefootjs.dev/docs/advanced/vite-plugin.md): The `@barefootjs/vite` plugin — its options, what it writes to disk in build and dev, and where the adapter-specific builders fit.
 - [xyflow browser bundle](https://barefootjs.dev/docs/advanced/xyflow-browser-bundle.md): How to serve @barefootjs/xyflow as a pre-built browser chunk via an importmap

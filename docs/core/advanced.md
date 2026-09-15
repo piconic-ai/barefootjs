@@ -9,3 +9,4 @@ description: Compiler internals, IR schema, error codes, and performance optimiz
 - [Compiler Internals](./advanced/compiler-internals.md) — Pipeline phases, reactivity analysis, and code generation
 - [Error Codes Reference](./advanced/error-codes.md) — All compiler errors and warnings with solutions
 - [Performance Optimization](./advanced/performance.md) — Best practices for minimal client JS and fast hydration
+- [Vite Plugin](./advanced/vite-plugin.md) — `@barefootjs/vite` options, build and dev output, and the adapter builders

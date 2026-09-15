@@ -22,13 +22,14 @@
 </p>
 
 > [!NOTE]
-> **Stability:** beta for component authors, alpha for everything else. Pre-1.0, so a minor release is still the breaking-change slot; pin exact versions on the alpha surfaces.
+> **Stability:** pre-1.0, so a minor release is still the breaking-change slot. On a **beta** surface a breaking change ships with a migration note in the changelog; an **alpha** surface may change without notice, so pin exact versions if you depend on it.
 >
 > | Surface | Status | Covers |
 > |---|---|---|
-> | Component authoring | **Beta** | `@barefootjs/client` reactive primitives (`createSignal`, `createEffect`, `createMemo`, `createContext`, ...) and the `"use client"` / `/* @client */` directives. A breaking change ships in a minor release with a migration note in the changelog. |
-> | Build & integration | Alpha | `@barefootjs/vite`, each adapter's language-side runtime helpers |
-> | Adapter authoring | Alpha | Everything exported from `@barefootjs/jsx` |
+> | Runtime | **Beta** | `@barefootjs/client` reactive primitives (`createSignal`, `createEffect`, `createMemo`, `createContext`, ...) and the `"use client"` / `/* @client */` directives |
+> | Build: Vite plugin | **Beta** | `@barefootjs/vite`'s `barefoot()` — `adapter` / `components` / `templates` / `afterEmit` — and the files it writes. See [Vite Plugin](./docs/core/advanced/vite-plugin.md) |
+> | Build: adapter builders | Alpha | Each adapter's `/vite` subpath (`@barefootjs/hono/vite`, `@barefootjs/go-template/vite`, ...) and the helpers `@barefootjs/vite` re-exports for them |
+> | Adapters | Alpha | Everything exported from `@barefootjs/jsx`, each adapter package, and its language-side runtime |
 
 ---
 
