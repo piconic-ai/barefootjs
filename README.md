@@ -21,8 +21,16 @@
   <a href="https://x.com/barefootjs_dev"><img alt="Follow on X" src="https://img.shields.io/badge/follow-%40barefootjs__dev-black?logo=x" /></a>
 </p>
 
-> [!WARNING]
-> **Alpha Software** — BarefootJS is in early alpha. APIs may change without notice. Not recommended for production use.
+> [!NOTE]
+> **Beta for component authors.** The surface you touch when writing components is in beta: the
+> `@barefootjs/client` reactive primitives (`createSignal`, `createEffect`, `createMemo`,
+> `createContext`, `onMount`, `onCleanup`, `batch`, `untrack`, ...) and the compiler directives
+> (`"use client"`, `/* @client */`). Breaking changes to that surface are no longer made casually;
+> when one is unavoidable it ships in a minor release with a migration note in the changelog.
+>
+> **Everything else is still alpha** and may change without notice: the build and integration
+> surface (`@barefootjs/vite`, each adapter's language-side runtime helpers) and the adapter-author
+> API exported from `@barefootjs/jsx`. Pin exact versions if you depend on them.
 
 ---
 
