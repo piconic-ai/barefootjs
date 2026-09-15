@@ -725,6 +725,8 @@ Scan every configured `components` directory for `.tsx` files and classify each 
 
 `interface` · Alpha since 0.31.0 · `@barefootjs/vite`
 
+One `.tsx` file `discoverComponents` found under a `components` directory, with everything the compile passes need to act on it: its path and the source snapshot discovery classified, whether it is (or transitively needs) a client entry, the components it exports and instantiates, and the CSS cascade layer its `components` entry asked for.
+
 ### `joinBaseAndFile()`
 
 `function` · Alpha since 0.31.0 · `@barefootjs/vite`

@@ -13,9 +13,10 @@
 //                         from "forgot to tag"
 //
 // Every export of every SURFACE below must carry `@stability` + `@since` or
-// `@internal`, and on a `detail` surface every BETA function / const / class
-// must also carry `@example` — so neither a new export nor a new beta
-// promotion can land without a stability decision and a usage snippet.
+// `@internal`, plus a description sentence, and on a `detail` surface every
+// BETA function / const / class must also carry `@example` — so neither a new
+// export nor a new beta promotion can land without a stability decision, a
+// sentence saying what it is, and a usage snippet.
 // Types and interfaces are exempt from `@example`: their shape is the doc,
 // and the interfaces named in a surface's `expand` get a per-field table.
 //
@@ -386,6 +387,14 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
         problems.push({ file: declFile, name: exp.name, reason: `beta ${kind} on a detail surface needs an @example` })
         continue
       }
+      // A tags-only block renders as a nameless row / an empty section, which
+      // is worse than no entry at all — the reader cannot tell the API apart
+      // from its neighbours.
+      const description = firstParagraph(text)
+      if (!description) {
+        problems.push({ file: declFile, name: exp.name, reason: 'the tagged JSDoc block has no description sentence' })
+        continue
+      }
 
       apis.push({
         name: exp.name,
@@ -394,7 +403,7 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
         since: tags.since,
         stability: tags.stability,
         summary: firstSentence(text),
-        description: firstParagraph(text),
+        description,
         example: tags.example,
         fields: surface.expand?.includes(exp.name) && ts.isInterfaceDeclaration(decl)
           ? collectFields(decl, { since: tags.since, stability: tags.stability }, declFile, exp.name, problems)
