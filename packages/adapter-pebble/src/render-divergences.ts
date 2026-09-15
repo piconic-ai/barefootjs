@@ -9,6 +9,13 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
+// #2994/#3000/#3012 fixed the silent-render divergence on all 8 sibling
+// non-JS adapters by teaching their `call()` fallback to refuse the shape
+// loudly with BF101 (#3011, #3014+). Pebble was developed on a separate
+// stacked branch and didn't exist on `main` when those PRs landed, so it
+// never received the port and is still on the old silent-divergence
+// behavior for all three fixtures below — tracked by #3022 (Pebble's own
+// graduation to BF101 parity with its siblings).
 export const renderDivergences: RenderDivergences = {
   // #2994: a module-scope helper (arrow-valued const OR `function`
   // declaration) that's safe to reference by bare name from the CSR
@@ -21,4 +28,15 @@ export const renderDivergences: RenderDivergences = {
   // adapter's own documented divergence for this same fixture.
   'module-const-arrow-helper':
     'a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
+  // #3000: the function-declaration analog (a module-scope function calling
+  // another module-scope function) — same root cause, same empty-slot
+  // divergence.
+  'module-function-helper-chain':
+    'a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/3000)',
+  // #3012: a module-scope helper called from a boolean-test position (a
+  // ternary's `test`) resolves to Pebble's undefined-variable/falsy
+  // semantics instead of the real value, silently picking the wrong
+  // ternary branch instead of refusing to compile.
+  'module-helper-boolcontext-call':
+    'a module-scope helper called from a boolean-test position resolves falsy instead of the real value, silently picking the wrong branch with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/3012)',
 }
