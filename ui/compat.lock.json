@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 425,
+    "totalFixtures": 426,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -3073,6 +3073,64 @@
           }
         }
       },
+      "module-helper-boolcontext-call": {
+        "blade": {
+          "kind": "render",
+          "reason": "A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy undefined-variable lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy vars-Hash lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012"
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF102"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2266"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy undefined-variable lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy undefined-variable lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012"
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy undefined-variable lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012"
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "namespace-import-primitive": {
         "blade": {
           "kind": "refusal",
@@ -3981,6 +4039,10 @@
       "module-function-helper-chain": {
         "description": "Module-level function helper calling another module-level function helper is referenced by name…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-function-helper-chain.ts"
+      },
+      "module-helper-boolcontext-call": {
+        "description": "A module-scope helper called from a ternary boolean-test position (#3012)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-helper-boolcontext-call.ts"
       },
       "namespace-import-primitive": {
         "description": "A reactive primitive called through a namespace import refuses with BF013",

@@ -4084,6 +4084,19 @@
         "text"
       ]
     },
+    "module-helper-boolcontext-call": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "multi-component-module": {
       "kinds": [
         "call",
@@ -6861,11 +6874,11 @@
     "array-method": 72,
     "arrow": 76,
     "binary": 107,
-    "call": 285,
+    "call": 286,
     "conditional": 33,
-    "identifier": 403,
+    "identifier": 404,
     "index-access": 14,
-    "literal": 321,
+    "literal": 322,
     "logical": 52,
     "member": 237,
     "object-literal": 94,
@@ -6911,7 +6924,7 @@
     "binary:>=": 1,
     "literal:boolean": 71,
     "literal:null": 26,
-    "literal:number": 147,
+    "literal:number": 148,
     "literal:string": 218,
     "logical:&&": 7,
     "logical:??": 44,
