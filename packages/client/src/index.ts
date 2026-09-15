@@ -46,14 +46,14 @@ export { __slot, type SlotMarker } from './slot.ts'
 
 // `forwardProps` and `unwrap` are compiler ABI: emitted into a compiled
 // bundle for a `{...rest}` spread on a child component, or for a prop that
-// may arrive as a getter, never written by an author (#3008). They stay on
-// THIS entry rather than moving to `@barefootjs/client/runtime`, because
-// unlike the portal/context shims below they are pure (no DOM), so the SSR
-// path needs them too: `@barefootjs/hono`'s SSR shim
-// (`packages/adapter-hono/src/client-shim.ts`) re-exports both straight
-// from here for the compiler's SSR-rewritten imports. Not in the API
-// reference, since no author writes them directly — see
-// docs/core/advanced/api-reference.md.
+// may arrive as a getter, never written by an author.
+//
+// Why not move them to `@barefootjs/client/runtime` with the portal/context
+// shims below? Because they're pure (no DOM), so the SSR path needs them
+// too: `@barefootjs/hono`'s SSR shim (`packages/adapter-hono/src/client-
+// shim.ts`) re-exports both straight from here for the compiler's SSR-
+// rewritten imports — moving them off this SSR-safe entry would break that.
+// Not in the API reference, since no author writes them directly.
 export { forwardProps } from './forward-props.ts'
 export { unwrap } from './unwrap.ts'
 
@@ -63,14 +63,15 @@ export { formatDate } from './format-date.ts'
 export { createContext, type Context } from './context.ts'
 
 // `provideContext` is compiler ABI too, but — unlike `forwardProps`/
-// `unwrap` above — DOM-only, so it does NOT need a root re-export for SSR:
-// an author writes `<Ctx.Provider value={...}>`, the compiler lowers that
-// to a `provideContext()` call in CLIENT JS only (SSR gets its own
-// `provideContextSSR`, e.g. `@barefootjs/hono`'s bridge to Hono's context
-// stack), and nobody imports the function itself (91 `.Provider` uses
-// across `ui/`, `site/` and `integrations/`; zero direct imports,
-// confirmed at #3008). Available from `@barefootjs/client/runtime` for the
-// CSR emission path.
+// `unwrap` above — DOM-only.
+//
+// Why not give it the same root re-export? Because SSR never needs it: an
+// author writes `<Ctx.Provider value={...}>`, which the compiler lowers to
+// a `provideContext()` call in CLIENT JS only; SSR gets its own
+// `provideContextSSR` instead (e.g. `@barefootjs/hono`'s bridge to Hono's
+// context stack). Nobody imports the function itself — 91 `.Provider` uses
+// across `ui/`, `site/` and `integrations/`, zero direct imports. Available
+// from `@barefootjs/client/runtime` for the CSR emission path.
 export {
   useContext,
   createPortal,

@@ -125,7 +125,7 @@ const SURFACES: Surface[] = [
       'The compiler ABI is not listed at all — `forwardProps` and `unwrap` are pure, so this SSR-' +
       'safe entry re-exports them for the compiler\'s SSR-rewritten imports too; `provideContext` ' +
       'is DOM-only and moves to `@barefootjs/client/runtime` for the CSR path. None is ever written ' +
-      'by hand — see #3008.',
+      'by hand.',
     entries: [{ file: 'packages/client/src/index.ts', label: '@barefootjs/client' }],
     detail: true,
     expand: ['AsyncProps', 'RegionProps', 'PortalOptions'],
