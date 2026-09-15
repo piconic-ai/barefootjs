@@ -3103,8 +3103,16 @@
           }
         },
         "jinja": {
-          "kind": "render",
-          "reason": "A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy undefined-variable lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/3012"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "minijinja": {
           "kind": "render",
