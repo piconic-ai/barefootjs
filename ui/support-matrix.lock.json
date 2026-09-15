@@ -2367,7 +2367,7 @@
         },
         "pebble": {
           "pass": 266,
-          "total": 284,
+          "total": 286,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2416,6 +2416,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2946"
               ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "issues": []
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "issues": []
             },
             {
               "fixture": "namespace-import-primitive",
@@ -3583,7 +3591,7 @@
         },
         "pebble": {
           "pass": 380,
-          "total": 402,
+          "total": 404,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3648,6 +3656,14 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2946"
               ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "issues": []
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "issues": []
             },
             {
               "fixture": "namespace-import-primitive",
@@ -4491,7 +4507,7 @@
         },
         "pebble": {
           "pass": 307,
-          "total": 320,
+          "total": 322,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -4519,6 +4535,14 @@
             },
             {
               "fixture": "module-const-arrow-helper",
+              "issues": []
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "issues": []
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
               "issues": []
             },
             {
@@ -9954,7 +9978,7 @@
         },
         "pebble": {
           "pass": 140,
-          "total": 146,
+          "total": 148,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -9962,6 +9986,14 @@
             },
             {
               "fixture": "module-const-arrow-helper",
+              "issues": []
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "issues": []
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
               "issues": []
             },
             {
