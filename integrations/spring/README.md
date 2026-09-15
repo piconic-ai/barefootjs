@@ -13,13 +13,22 @@ Rust/axum.
 ## Quick start
 
 ```bash
-bun install            # from the repo root (workspace deps)
+bun install                              # from the repo root (workspace deps)
+bun run --filter '@barefootjs/pebble' build   # @barefootjs/pebble ships from dist/ (see below) — build it once before anything imports it
 cd integrations/spring
 
 bun run build          # JSX → .peb templates + hashed client assets (Vite), copy shared styles
 bun run dev            # BASE_PATH=/integrations/spring APP_ENV=development PORT=3017 gradle bootRun
 # → http://localhost:3017/integrations/spring
 ```
+
+`vite.config.ts` imports `@barefootjs/pebble/vite`, and that subpath's `exports` entry resolves to
+`packages/adapter-pebble/dist/vite.js` — a built artifact, not the TypeScript source — so
+`@barefootjs/pebble` must be built at least once after `bun install` before this app's own
+`bun run build`/`build:watch` can resolve it (`Error [ERR_MODULE_NOT_FOUND]: Cannot find package
+'@barefootjs/pebble'` otherwise). The repo-root `bun run build` already does this for you, in the
+same order as `ci-compat.yml`; the explicit `--filter` above is the one-off equivalent when you
+only want this example's own dependency built.
 
 No Gradle wrapper is committed, matching `packages/adapter-pebble/java`'s own documented
 convention — `gradle` is expected directly on `PATH`.
