@@ -665,6 +665,13 @@ import { fixture as componentPropBareSetter } from './component-prop-bare-setter
 // non-async scope, breaking the esbuild parse.
 import { fixture as moduleHelperAsync } from './module-helper-async'
 import { fixture as moduleConstArrowHelper } from './module-const-arrow-helper'
+// #3000: the function-declaration analog of moduleConstArrowHelper above —
+// a module-level `function` helper calling ANOTHER module-level `function`
+// helper (not itself unsafe) must resolve through the same forward-
+// reachability fixpoint, not the independent, over-conservative
+// `functionReferencesDeclaredName` check that flagged any reference to a
+// declared name (even a safe one) as unsafe.
+import { fixture as moduleFunctionHelperChain } from './module-function-helper-chain'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1117,4 +1124,5 @@ export const jsxFixtures: JSXFixture[] = [
   componentPropBareSetter,
   moduleHelperAsync,
   moduleConstArrowHelper,
+  moduleFunctionHelperChain,
 ]
