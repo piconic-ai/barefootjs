@@ -169,11 +169,18 @@ export function createSignal<T>(initialValue: T): Signal<T> { ... }
   writes `<Ctx.Provider>`, a `{...rest}` spread, or nothing at all. Those
   carry `@internal`, so the reference does not list them.
 - The beta set is **closed under the types its own signatures name**. A beta
-  API whose signature names an `alpha` or `@internal` type fails the
+  API whose signature names an `alpha`, `@internal` or untiered type fails the
   generator: the caller has to name that type to hold the value, so claiming
   stability for the function but not the type promises nothing. A parameter
   named `__bf…` is exempt — that prefix is the convention for an argument only
   the compiler passes, so its type is not part of the promise.
+- When the honest answer is that a beta API's promise covers only part of its
+  signature, say so in the surface's `betaClosureExceptions` rather than
+  promoting the type. The entry names the API, the type and the reason; the
+  reason is rendered into the reference so a reader sees the same carve-out
+  the check does, and the generator fails once the signature stops naming that
+  type, so the exception cannot outlive its reason. `render()`'s
+  `ComponentDef` overload is the one entry today.
 
 `scripts/generate-api-reference.ts` renders them into
 `docs/core/advanced/api-reference.md` — one `###` section per API, so each one

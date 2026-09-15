@@ -54,7 +54,10 @@ render(container, componentName, props?)
 
 `render` is **beta** and lives on the browser-only `@barefootjs/client/runtime`
 entry rather than on `@barefootjs/client`, which stays safe to import from a
-server bundle — see [API Reference → Browser mount](../advanced/api-reference.md#browser-mount).
+server bundle. The beta promise covers the form above — passing a registered
+component name. `render()` also accepts a `ComponentDef` instead, bypassing the
+registry; that overload is advanced use at the alpha bar. See
+[API Reference → Browser mount](../advanced/api-reference.md#browser-mount).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -126,11 +126,27 @@ export function isSSRPortal(_element: HTMLElement): boolean {
  * The nearest element matching `slotSelector` among `el`'s siblings, or `null`.
  * Browser-only.
  *
- * Alpha rather than beta: portal plumbing with no docs page; the contract is
- * expected to change as the portal authoring pattern settles.
+ * How a portaled overlay finds the trigger it must position itself against:
+ * once `createPortal` has moved the overlay to `<body>`, the trigger is no
+ * longer its ancestor, so an ordinary `closest()` cannot reach it. Called from
+ * six `ui/` components (popover, dropdown-menu, context-menu, select,
+ * combobox, hover-card).
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * const handleMount = (el: HTMLElement) => {
+ *   const triggerEl = findSiblingSlot(el, '[data-slot="popover-trigger"]')
+ *   if (!triggerEl) return
+ *   trackPosition(() => {
+ *     const r = triggerEl.getBoundingClientRect()
+ *     el.style.top = `${r.bottom + window.scrollY}px`
+ *   })
+ * }
+ * ```
  *
  * @since 0.1.0
- * @stability alpha
+ * @stability beta
  */
 export function findSiblingSlot(
   _el: HTMLElement,
@@ -143,11 +159,20 @@ export function findSiblingSlot(
  * Remove the SSR placeholder left behind for the portal with this id.
  * Browser-only.
  *
- * Alpha rather than beta: portal plumbing with no docs page; the contract is
- * expected to change as the portal authoring pattern settles.
+ * The other half of the SSR portal story `isSSRPortal` opens: the server
+ * leaves a placeholder where the portaled element used to be, and hydration
+ * has to clear it. Taught in
+ * [Portals → SSR Portal Detection](../../docs/core/components/portals.md).
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * // After hydration, drop the placeholder the server rendered in place.
+ * cleanupPortalPlaceholder(portalId)
+ * ```
  *
  * @since 0.1.0
- * @stability alpha
+ * @stability beta
  */
 export function cleanupPortalPlaceholder(_portalId: string): void {
   return browserOnly('cleanupPortalPlaceholder')

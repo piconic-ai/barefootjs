@@ -13,7 +13,7 @@ Everything here comes from `@since` / `@stability` / `@example` JSDoc tags on th
 
 ## Runtime
 
-Everything `@barefootjs/client` exports. **Beta** is the set a component author actually writes — the reactive primitives, context, the portal pair, the two compiler built-ins and the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, but with no authored call site or documented pattern yet, so its contract is not frozen. The compiler ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are emitted into a bundle from `@barefootjs/client/runtime`, never written by hand.
+Everything `@barefootjs/client` exports. **Beta** is the set a component author actually writes — the reactive primitives, context, the four portal helpers, the two compiler built-ins and the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, but with no authored call site and no documented pattern, so its contract is not frozen. The compiler ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are emitted into a bundle from `@barefootjs/client/runtime`, never written by hand.
 
 | API | Kind | Since | Status |
 |---|---|---|---|
@@ -22,7 +22,7 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`batch()`](#batch) | function | 0.1.0 | **Beta** |
 | [`beginTurn()`](#beginturn) | function | 0.11.0 | Alpha |
 | [`CleanupFn`](#cleanupfn) | type | 0.1.0 | **Beta** |
-| [`cleanupPortalPlaceholder()`](#cleanupportalplaceholder) | function | 0.1.0 | Alpha |
+| [`cleanupPortalPlaceholder()`](#cleanupportalplaceholder) | function | 0.1.0 | **Beta** |
 | [`Context`](#context) | type | 0.1.0 | **Beta** |
 | [`createContext()`](#createcontext) | function | 0.1.0 | **Beta** |
 | [`createDisposableEffect()`](#createdisposableeffect) | function | 0.1.0 | Alpha |
@@ -36,7 +36,7 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
 | [`endTurn()`](#endturn) | function | 0.11.0 | Alpha |
-| [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | Alpha |
+| [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
 | [`formatDate()`](#formatdate) | function | 0.1.0 | **Beta** |
 | [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
 | [`Memo`](#memo) | type | 0.1.0 | **Beta** |
@@ -124,9 +124,15 @@ A cleanup callback, as registered with `onCleanup` or returned from an effect.
 
 ### `cleanupPortalPlaceholder()`
 
-`function` · Alpha since 0.1.0 · `@barefootjs/client`
+`function` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 Remove the SSR placeholder left behind for the portal with this id. Browser-only.
+
+```tsx
+"use client"
+// After hydration, drop the placeholder the server rendered in place.
+cleanupPortalPlaceholder(portalId)
+```
 
 ### `Context`
 
@@ -287,9 +293,21 @@ Mark the end of the current interaction turn (#1690, SR3).
 
 ### `findSiblingSlot()`
 
-`function` · Alpha since 0.1.0 · `@barefootjs/client`
+`function` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 The nearest element matching `slotSelector` among `el`'s siblings, or `null`. Browser-only.
+
+```tsx
+"use client"
+const handleMount = (el: HTMLElement) => {
+  const triggerEl = findSiblingSlot(el, '[data-slot="popover-trigger"]')
+  if (!triggerEl) return
+  trackPosition(() => {
+    const r = triggerEl.getBoundingClientRect()
+    el.style.top = `${r.bottom + window.scrollY}px`
+  })
+}
+```
 
 ### `formatDate()`
 
@@ -769,6 +787,8 @@ Two APIs an app calls itself that live on `@barefootjs/client/runtime`, not on t
 |---|---|---|---|
 | [`render()`](#render) | function | 0.1.0 | **Beta** |
 | [`setupStreaming()`](#setupstreaming) | function | 0.1.0 | **Beta** |
+
+> **`render`'s beta promise excludes `ComponentDef`.** The beta promise is the form the CSR page documents — passing a registered component NAME. `render()`'s second overload takes a `ComponentDef` instead, whose remaining fields (`comment`, `fragmentRoot`) are compiler bookkeeping this project is not ready to freeze, so that overload is advanced use at the alpha bar.
 
 ### `render()`
 

@@ -21,9 +21,16 @@
 // and the interfaces named in a surface's `expand` get a per-field table.
 //
 // The beta set is also kept CLOSED under the types its own signatures name: a
-// beta API whose signature names an alpha one fails the run. Otherwise "beta"
-// promises a stability the caller cannot rely on, since they must name the
-// alpha type to hold the value.
+// beta API whose signature names an alpha, `@internal` or untiered one fails
+// the run. Otherwise "beta" promises a stability the caller cannot rely on,
+// since they must name that type to hold the value. "Untiered" covers the case
+// an `only` filter excluded — without it the rule has a blind spot, because an
+// excluded export lands in neither the tiered set nor the internal one.
+//
+// A carve-out that is genuinely about the API rather than the type goes in the
+// surface's `betaClosureExceptions`, which says which promise is narrowed and
+// why, renders that sentence into the section, and fails the run once the
+// signature stops naming the type — so it cannot outlive its reason.
 //
 // Resolution is a TypeScript Program over the entry files (never a regex
 // over source text — CLAUDE.md): re-exports are followed through the
@@ -101,6 +108,10 @@ interface Surface {
    *  whole surface with the entry's import specifier as a column — for a
    *  surface where every entry contributes a single API. */
   compact?: 'per-entry' | 'one-table'
+  /** Declared exceptions to the beta-closure rule. Each one narrows a beta
+   *  API's promise instead of widening a type's, and is rendered under the
+   *  section so a reader sees the same carve-out the check does. */
+  betaClosureExceptions?: { api: string; type: string; reason: string }[]
 }
 
 const SURFACES: Surface[] = [
@@ -108,11 +119,11 @@ const SURFACES: Surface[] = [
     title: 'Runtime',
     intro:
       'Everything `@barefootjs/client` exports. **Beta** is the set a component author actually ' +
-      'writes — the reactive primitives, context, the portal pair, the two compiler built-ins and ' +
-      'the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, but with no ' +
-      'authored call site or documented pattern yet, so its contract is not frozen. The compiler ' +
-      "ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are emitted into a " +
-      'bundle from `@barefootjs/client/runtime`, never written by hand.',
+      'writes — the reactive primitives, context, the four portal helpers, the two compiler ' +
+      'built-ins and the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, ' +
+      'but with no authored call site and no documented pattern, so its contract is not frozen. ' +
+      'The compiler ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are ' +
+      'emitted into a bundle from `@barefootjs/client/runtime`, never written by hand.',
     entries: [{ file: 'packages/client/src/index.ts', label: '@barefootjs/client' }],
     detail: true,
     expand: ['AsyncProps', 'RegionProps', 'PortalOptions'],
@@ -152,6 +163,17 @@ const SURFACES: Surface[] = [
       'exports is compiler ABI, emitted into a bundle rather than written, and is not listed here.',
     entries: [{ file: 'packages/client/src/runtime/index.ts', label: '@barefootjs/client/runtime', only: ['render', 'setupStreaming'] }],
     detail: true,
+    betaClosureExceptions: [
+      {
+        api: 'render',
+        type: 'ComponentDef',
+        reason:
+          'The beta promise is the form the CSR page documents — passing a registered component ' +
+          "NAME. `render()`'s second overload takes a `ComponentDef` instead, whose remaining " +
+          'fields (`comment`, `fragmentRoot`) are compiler bookkeeping this project is not ready ' +
+          'to freeze, so that overload is advanced use at the alpha bar.',
+      },
+    ],
   },
   {
     title: 'Adapter builders',
@@ -423,19 +445,41 @@ function collectFields(
  * beta set closed under the types its own signatures use is what makes it a
  * deliberate set rather than a list of whatever looked ready.
  */
-function checkBetaClosure(apis: Api[], internal: Set<string>, surfaceTitle: string, problems: Problem[]): void {
+function checkBetaClosure(
+  apis: Api[],
+  internal: Set<string>,
+  skipped: Set<string>,
+  surface: Surface,
+  problems: Problem[],
+): void {
   const tierOf = new Map(apis.map(a => [a.name, a.stability]))
+  const excused = new Set((surface.betaClosureExceptions ?? []).map(e => `${e.api}\u0000${e.type}`))
   for (const api of apis) {
     if (api.stability !== 'beta') continue
     for (const ref of api.signatureTypes) {
-      const refTier = tierOf.get(ref) ?? (internal.has(ref) ? 'internal' : undefined)
-      if (refTier === 'alpha' || refTier === 'internal') {
+      if (excused.has(`${api.name}\u0000${ref}`)) continue
+      // `skipped` is what an entry's `only` filter left out. Without it the
+      // rule has a blind spot: an excluded export is in neither `apis` nor
+      // `internal`, so a beta signature could name an untiered type and the
+      // check would pass. `render`'s `ComponentDef` is the real case.
+      const refTier = tierOf.get(ref)
+        ?? (internal.has(ref) ? 'internal' : skipped.has(ref) ? 'untiered' : undefined)
+      if (refTier === 'alpha' || refTier === 'internal' || refTier === 'untiered') {
         problems.push({
           file: OUTPUT,
-          name: `${surfaceTitle} → ${api.name}`,
-          reason: `beta, but its signature names \`${ref}\`, which is ${refTier} — promote ${ref} or demote ${api.name}`,
+          name: `${surface.title} → ${api.name}`,
+          reason: `beta, but its signature names \`${ref}\`, which is ${refTier} — tier ${ref} into this surface, or declare a betaClosureExceptions entry saying what the promise excludes`,
         })
       }
+    }
+  }
+  for (const e of surface.betaClosureExceptions ?? []) {
+    if (!apis.some(a => a.name === e.api && a.signatureTypes.includes(e.type))) {
+      problems.push({
+        file: OUTPUT,
+        name: `${surface.title} → ${e.api}`,
+        reason: `stale betaClosureExceptions entry: its signature no longer names \`${e.type}\` — delete the entry`,
+      })
     }
   }
 }
@@ -444,6 +488,7 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
   const checker = program.getTypeChecker()
   const apis: Api[] = []
   const internal = new Set<string>()
+  const skipped = new Set<string>()
 
   for (const entry of surface.entries) {
     const sf = program.getSourceFile(join(ROOT, entry.file))
@@ -456,7 +501,10 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
       .sort((a, b) => a.name.localeCompare(b.name))
 
     for (const exp of exports) {
-      if (entry.only && !entry.only.includes(exp.name)) continue
+      if (entry.only && !entry.only.includes(exp.name)) {
+        skipped.add(exp.name)
+        continue
+      }
       const target = exp.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exp) : exp
       const decl = target.valueDeclaration ?? target.declarations?.[0]
       if (!decl) {
@@ -508,7 +556,7 @@ function collectSurface(program: ts.Program, surface: Surface, problems: Problem
       })
     }
   }
-  checkBetaClosure(apis, internal, surface.title, problems)
+  checkBetaClosure(apis, internal, skipped, surface, problems)
   return apis
 }
 
@@ -638,6 +686,9 @@ function render(program: ts.Program, problems: Problem[]): { markdown: string; s
     if (surface.detail) {
       for (const api of apis) claim(api.display, `${surface.title} → ${api.name}`)
       out.push(...renderIndex(apis))
+      for (const e of surface.betaClosureExceptions ?? []) {
+        out.push('', `> **\`${e.api}\`'s beta promise excludes \`${e.type}\`.** ${e.reason}`)
+      }
       out.push(...renderDetailSections(apis))
     } else if (surface.compact === 'one-table') {
       out.push(...renderOneTable(apis))
