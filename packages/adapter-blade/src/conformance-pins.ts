@@ -109,4 +109,15 @@ export const conformancePins: ConformancePins = {
   'module-function-helper-chain': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
   ],
+  // #3012: same BF101 refusal as the two entries above, for a module-scope
+  // helper called from a boolean-TEST position (a ternary `test`) rather
+  // than a plain text position — the `_boolContext` structural exemption
+  // that used to let this shape through (scoped by position, not by
+  // callee identity) is now removed entirely; `isValidElement` (the one
+  // caller that needed to keep compiling under it) is resolved ahead of
+  // `call()`'s generic fallback as an identity-scoped `templatePrimitive`
+  // instead (`$bf->is_element`, `lib/constants.ts`).
+  'module-helper-boolcontext-call': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3012', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3012' } },
+  ],
 }

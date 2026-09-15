@@ -1938,7 +1938,6 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     expr: string,
     preParsed?: ParsedExpr,
     pos: 'rendered' | 'value' = 'rendered',
-    boolContext = false,
   ): string {
     // Parse-first lowering — parity with the Jinja/Twig adapters'
     // `convertExpressionTo*`. Parse the JS expression once, gate it on the
@@ -1987,7 +1986,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       return "''"
     }
 
-    return this.renderParsedExprToBlade(parsed, boolContext)
+    return this.renderParsedExprToBlade(parsed)
   }
 
   /**
@@ -1995,14 +1994,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
    * boolean expression, routing through `$bf->truthy(...)` unless the
    * expression is structurally already boolean-shaped. See the file header,
    * "JS truthiness".
-   *
-   * Every caller of THIS method is, by construction, rendering a whole
-   * expression whose own value is never itself the rendered output — only
-   * its JS-truthiness is observed — so it always passes `boolContext: true`
-   * (#2994) down to `convertExpressionToBlade` / `renderParsedExprToBlade`.
    */
   private convertConditionToBlade(expr: string, preParsed?: ParsedExpr): string {
-    const blade = this.convertExpressionToBlade(expr, preParsed, 'rendered', true)
+    const blade = this.convertExpressionToBlade(expr, preParsed)
     return this.wrapConditionExpr(expr, blade, preParsed)
   }
 
@@ -2024,12 +2018,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   /**
    * Render a full ParsedExpr tree to Blade for top-level (non-filter)
    * expressions where identifiers are signals / template vars.
-   *
-   * `boolContext` (#2994) seeds the emitter's `_boolContext` flag — see
-   * `BladeTopLevelEmitter`'s field doc.
    */
-  private renderParsedExprToBlade(expr: ParsedExpr, boolContext = false): string {
-    return emitParsedExpr(expr, new BladeTopLevelEmitter(this.emitCtx, boolContext))
+  private renderParsedExprToBlade(expr: ParsedExpr): string {
+    return emitParsedExpr(expr, new BladeTopLevelEmitter(this.emitCtx))
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value. Carried

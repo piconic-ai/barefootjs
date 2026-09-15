@@ -1624,7 +1624,9 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/3012"
+              ]
             },
             {
               "fixture": "namespace-import-primitive",
@@ -2642,7 +2644,9 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/3012"
+              ]
             },
             {
               "fixture": "namespace-import-primitive",
@@ -3666,7 +3670,9 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/3012"
+              ]
             },
             {
               "fixture": "preamble-cells",
@@ -8795,7 +8801,9 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
-              "issues": []
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/3012"
+              ]
             },
             {
               "fixture": "preamble-cells",

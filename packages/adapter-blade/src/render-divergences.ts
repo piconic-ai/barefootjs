@@ -26,23 +26,18 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // template position (arrow-valued const OR `function` declaration) now
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
-export const renderDivergences: RenderDivergences = {
-  // #3012: #3011's BF101 refusal (#2994) is exempted for a call whose
-  // return value is only ever consumed for truthiness (`_boolContext`,
-  // carved out so `ui/components/ui/slot`'s `isValidElement(children)`
-  // guard keeps compiling — this adapter has no dedicated shape-check
-  // primitive for it). That exemption is scoped by STRUCTURAL POSITION
-  // (any call inside a condition/ternary-test/unary-`!` operand), not by
-  // CALLEE IDENTITY, so a call to any OTHER module-scope helper from a
-  // boolean-test position still falls through to the pre-#2994 fallback
-  // (an unrecognised name resolves as an undefined PHP variable, and
-  // `$bf->truthy(null)` is falsy) instead of refusing loudly — a silent
-  // divergence from Hono whenever the real result is truthy. Narrowing
-  // the exemption to `isValidElement` by identity (mirroring the Go /
-  // Mojolicious adapters' dedicated primitive, and what #3012 did for
-  // Text::Xslate — it already `use`s a runtime with the same shape-check
-  // method) needs net-new Blade runtime helper code, tracked at
-  // https://github.com/piconic-ai/barefootjs/issues/3012.
-  'module-helper-boolcontext-call':
-    'A non-`isValidElement` module-scope helper called from a boolean-test position (ternary `test`) falls through the `_boolContext` exemption meant only for `isValidElement`, silently resolving to a falsy undefined-variable lookup instead of refusing with BF101 — https://github.com/piconic-ai/barefootjs/issues/3012',
-}
+// #3012 graduated `module-helper-boolcontext-call`: the `_boolContext`
+// structural exemption (scoped by STRUCTURAL POSITION — any call inside a
+// condition/ternary-test/unary-`!` operand — not by CALLEE IDENTITY) is
+// removed entirely now that `isValidElement` (the one caller that
+// legitimately needed it) is resolved as an identity-scoped
+// `templatePrimitive` (`$bf->is_element`, backed by the `is_element`
+// method the Twig adapter's #3012 PR added to the shared BarefootJS PHP
+// runtime this adapter also backs onto — zero new runtime code needed
+// here) ahead of `call()`'s generic fallback. Every other bare-name call
+// — including this fixture's non-`isValidElement` helper called from a
+// ternary `test` — now refuses loudly with BF101 regardless of position,
+// so this no longer renders divergent output; it fails to compile the
+// same way `module-const-arrow-helper` / `module-function-helper-chain`
+// already do — see `conformance-pins.ts`.
+export const renderDivergences: RenderDivergences = {}
