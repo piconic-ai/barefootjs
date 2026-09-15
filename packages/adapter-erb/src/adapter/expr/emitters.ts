@@ -386,6 +386,19 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     this._boolContext = boolContext
   }
 
+  // Runs `fn` with `_boolContext` forced `true` for its duration, restoring
+  // the previous value afterward — the save/restore pairing both
+  // `unary('!')`'s operand and `conditional()`'s `test` need (#2994).
+  private _underBoolContext<T>(fn: () => T): T {
+    const prev = this._boolContext
+    this._boolContext = true
+    try {
+      return fn()
+    } finally {
+      this._boolContext = prev
+    }
+  }
+
   /**
    * Registered-lowering seam (#2843): `emitParsedExpr`'s shared `call` case
    * tries every matcher here BEFORE `call()` itself, so a registered call
@@ -554,10 +567,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
       // whether it's JS-truthy matters — so it's evaluated under
       // `_boolContext` (#2994). Numeric `-`/unary `+` below do NOT set
       // this: their operand's actual numeric value feeds the result.
-      const prevBoolContext = this._boolContext
-      this._boolContext = true
-      const arg = emit(argument)
-      this._boolContext = prevBoolContext
+      const arg = this._underBoolContext(() => emit(argument))
       return `!bf.truthy?(${arg})`
     }
     const arg = emit(argument)
@@ -744,10 +754,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // `alternate` can), so it's evaluated under `_boolContext` (#2994) —
     // restored before `consequent`/`alternate`, whose values very much can
     // be the rendered result.
-    const prevBoolContext = this._boolContext
-    this._boolContext = true
-    const testStr = emit(test)
-    this._boolContext = prevBoolContext
+    const testStr = this._underBoolContext(() => emit(test))
     return `(bf.truthy?(${testStr}) ? ${emit(consequent)} : ${emit(alternate)})`
   }
 

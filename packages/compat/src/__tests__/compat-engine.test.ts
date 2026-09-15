@@ -69,7 +69,11 @@ describe('compileForCompat', () => {
     // graduated outright, `static-nested-loop-ref` still refuses but for the
     // narrower #2909 reason), and #2805 (a named jsx-children prop routed
     // into a child's rest bag → `bf_with_bag`/`WithBagEntry` delivers it
-    // instead of refusing). See `go-template`'s `conformance-pins.ts`.
+    // instead of refusing), and #2994 (a bare-name call to a module-scope
+    // helper, `module-const-arrow-helper`/`module-function-helper-chain`,
+    // once go-template's own `call()` fallback started refusing that shape
+    // instead of crashing template execution). See `go-template`'s
+    // `conformance-pins.ts`.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
@@ -79,6 +83,7 @@ describe('compileForCompat', () => {
           'https://github.com/piconic-ai/barefootjs/issues/2321',
           'https://github.com/piconic-ai/barefootjs/issues/2700',
           'https://github.com/piconic-ai/barefootjs/issues/2909',
+          'https://github.com/piconic-ai/barefootjs/issues/2994',
         ],
       },
     ])

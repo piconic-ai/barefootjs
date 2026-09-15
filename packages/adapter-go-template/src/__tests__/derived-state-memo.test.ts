@@ -173,10 +173,17 @@ export function P() {
   return <a className={wrap('y')}>x</a>
 }
 `
-    const { template } = generate(src)
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter, outputIR: true })
+    const irFile = result.files.find(f => f.type === 'ir')
+    if (!irFile) throw new Error('no IR')
+    adapter.generate(JSON.parse(irFile.content) as ComponentIR)
     // wrap delegates to label (a local helper) and isn't a URL builder → not
-    // inlined; falls back to the method-call form.
-    expect(template).toContain('.Wrap')
+    // inlined. #2994: falling back to an (un-backed) `.Wrap` method-call
+    // reference used to crash `html/template` at RENDER time with no
+    // compile diagnostic — the generic `call()` fallback now refuses this
+    // bare-name call loudly instead.
+    expect(adapter.errors.some(e => e.code === 'BF101')).toBe(true)
   })
 
   // A compound argument must keep its precedence when spliced into the body —
@@ -218,9 +225,16 @@ export function P(props: { xs: string[] }) {
   return <a className={has('y')}>x</a>
 }
 `
-    const { template } = generate(src)
-    // Not inlined → stays as the (un-backed) method-call form.
-    expect(template).toContain('.Has')
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter, outputIR: true })
+    const irFile = result.files.find(f => f.type === 'ir')
+    if (!irFile) throw new Error('no IR')
+    adapter.generate(JSON.parse(irFile.content) as ComponentIR)
+    // Not inlined. #2994: falling back to an (un-backed) `.Has` method-call
+    // reference used to crash `html/template` at RENDER time with no
+    // compile diagnostic — the generic `call()` fallback now refuses this
+    // bare-name call loudly instead.
+    expect(adapter.errors.some(e => e.code === 'BF101')).toBe(true)
   })
 })
 

@@ -66,8 +66,11 @@ export function PostList(props: PostListProps) {
   // so query-only links stay absolute (`/?sort=...`) rather than relative.
   const base = (props.base ?? '').replace(/\/+$/, '')
   const root = base || '/'
-  const sortClass = (k: SortKey) => (params().sort === k ? 'sort on' : 'sort')
-  const tagClass = (t: string) => (params().tag === t ? 'tag on' : 'tag')
+  // Inlined as ternaries at each call site (rather than a local
+  // `sortClass`/`tagClass` helper closure) so the class expression is a
+  // plain ParsedExpr the "Marked Template" adapters can lower directly —
+  // a bare-name call to a helper closure has no template-position binding
+  // on the non-JS adapters and now refuses to compile (#2994).
 
   return (
     <div className="content">
@@ -78,15 +81,15 @@ export function PostList(props: PostListProps) {
       </p>
       <div className="controls">
         <span className="ctl-label">sort:</span>
-        <a className={sortClass('date')} href={queryHref(root, { tag: params().tag })}>date</a>
-        <a className={sortClass('title')} href={queryHref(root, { sort: 'title', tag: params().tag })}>title</a>
-        <a className={sortClass('tag')} href={queryHref(root, { sort: 'tag', tag: params().tag })}>tag</a>
+        <a className={params().sort === 'date' ? 'sort on' : 'sort'} href={queryHref(root, { tag: params().tag })}>date</a>
+        <a className={params().sort === 'title' ? 'sort on' : 'sort'} href={queryHref(root, { sort: 'title', tag: params().tag })}>title</a>
+        <a className={params().sort === 'tag' ? 'sort on' : 'sort'} href={queryHref(root, { sort: 'tag', tag: params().tag })}>tag</a>
       </div>
       <div className="tags">
         <span className="ctl-label">tag:</span>
-        <a className={tagClass('')} href={queryHref(root, { sort: params().sort !== 'date' ? params().sort : undefined })}>all</a>
+        <a className={params().tag === '' ? 'tag on' : 'tag'} href={queryHref(root, { sort: params().sort !== 'date' ? params().sort : undefined })}>all</a>
         {props.tags.map((t) => (
-          <a key={t} className={tagClass(t)} href={queryHref(root, { sort: params().sort !== 'date' ? params().sort : undefined, tag: t })}>#{t}</a>
+          <a key={t} className={params().tag === t ? 'tag on' : 'tag'} href={queryHref(root, { sort: params().sort !== 'date' ? params().sort : undefined, tag: t })}>#{t}</a>
         ))}
       </div>
       <div className="status">
