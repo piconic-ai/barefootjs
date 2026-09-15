@@ -187,9 +187,13 @@ export function P(props: { on: boolean; config: object }) {
     expect(template).not.toContain('bf_attr')
   })
 
-  // Same shape, plugin NOT registered — pins that an unmatched call keeps the
-  // existing generic Go-method-call convention (no new BF10x refusal).
-  test('an undef-alternate helper-call consequent with no plugin registered keeps the generic convention', () => {
+  // Same shape, plugin NOT registered. #2994: an unmatched bare-name call
+  // used to keep the generic Go-method-call convention (`.CustomSerialize`)
+  // — an un-backed field/method reference that crashes `html/template` at
+  // RENDER time with no compile diagnostic, the same failure mode #2994
+  // targets. `call()`'s generic identifier-callee fallback now refuses it
+  // loudly instead.
+  test('an undef-alternate helper-call consequent with no plugin registered refuses with BF101 (#2994)', () => {
     const src = `
 'use client'
 import { customSerialize } from './lib'
@@ -197,8 +201,12 @@ export function P(props: { on: boolean; config: object }) {
   return <div data-config={props.on ? customSerialize(props.config) : undefined}>x</div>
 }
 `
-    const { template } = generate(src)
-    expect(template).toContain('{{if .On}}data-config="{{.CustomSerialize .Config}}"{{end}}')
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter, outputIR: true })
+    const irFile = result.files.find(f => f.type === 'ir')
+    if (!irFile) throw new Error('no IR')
+    adapter.generate(JSON.parse(irFile.content) as ComponentIR)
+    expect(adapter.errors.some(e => e.code === 'BF101')).toBe(true)
   })
 
   test('a CONDITIONAL helper-call arg renders as pipeline-position bf_ternary, not an {{if}} action', () => {

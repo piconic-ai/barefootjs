@@ -49,35 +49,12 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {
-  // #2994: a module-scope helper (arrow-valued const OR `function`
-  // declaration) that's safe to reference by bare name from the CSR
-  // template lambda is ALSO treated safe by the same
-  // `compute-inlinability.ts` verdict feeding the static "Marked
-  // Template" this adapter renders from — but there is no `fmt` binding
-  // in Go template scope. Unlike ERB/Jinja/Twig/Blade/minijinja (which
-  // silently render the slot empty), Go's `html/template` engine treats
-  // the bare reference as a field lookup on the props struct and FAILS
-  // AT RENDER TIME instead: `go run` exits non-zero with `template
-  // error: ... executing "Widget" at <.Fmt>: can't evaluate field Fmt
-  // in type main.WidgetProps` — verified directly against real Go
-  // 1.25.6 (fetched via `GOTOOLCHAIN=go1.25.6`; the sandboxed session's
-  // preinstalled Go was 1.24, below this adapter's own 1.25 floor) in
-  // the #2994 investigation. Still a `render-divergences` entry, not a
-  // `conformancePins` one — the TS/JSX compiler itself emits no
-  // error-severity diagnostic; only the generated Go program's own
-  // execution fails, which is exactly the "compiles clean but renders
-  // divergent" shape this file tracks.
-  'module-const-arrow-helper':
-    'a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
-  // #3000: the `function`-declaration analog of `module-const-arrow-helper`
-  // above — same #2994 root cause and same Go `html/template` render-time
-  // crash (`can't evaluate field Fmt in type main.WidgetProps`). The doc
-  // comment above already anticipated this shape ("arrow-valued const OR
-  // `function` declaration"); this entry is that other shape's fixture.
-  'module-function-helper-chain':
-    'a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
-}
+// #2994 graduated both entries formerly here (`module-const-arrow-helper`,
+// `module-function-helper-chain`): a module-scope helper call in a
+// template position (arrow-valued const OR `function` declaration) now
+// refuses loudly with BF101 at compile time instead of silently crashing
+// `html/template` at render time — see `conformance-pins.ts`.
+export const renderDivergences: RenderDivergences = {}
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
 // `ParamInfo.defaultValue` directly (the analyzer overlays it onto

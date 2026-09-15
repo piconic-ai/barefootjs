@@ -681,7 +681,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return `<: $bf.comment("cond-start:${cond.slotId}") | mark_raw :><: $bf.comment("cond-end:${cond.slotId}") | mark_raw :>`
     }
 
-    const condition = this.convertExpressionToKolon(cond.condition)
+    // #2994: the condition's own value is never rendered as content — only
+    // whether it's JS-truthy decides which branch's markup to emit — so
+    // the whole tree renders under `boolContext`.
+    const condition = this.convertExpressionToKolon(cond.condition, undefined, 'rendered', true)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -1268,7 +1271,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // ===========================================================================
 
   private renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertExpressionToKolon(ifStmt.condition)
+    // #2994: same reasoning as `renderConditional` — the condition's own
+    // value is never rendered as content, only its JS-truthiness decides
+    // the branch, so the whole tree renders under `boolContext`.
+    const condition = this.convertExpressionToKolon(ifStmt.condition, undefined, 'rendered', true)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1413,7 +1419,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           // `exprToString` debug text, which renders any nested
           // `object-literal` (e.g. a registered call's params, `queryHref`'s
           // `{ tag }`) as a non-reparseable `[UNSUPPORTED: …]` placeholder.
-          const cond = this.convertExpressionToKolon('', m.testParsed)
+          const cond = this.convertExpressionToKolon('', m.testParsed, 'rendered', true)
           const val = this.convertExpressionToKolon('', m.consequentParsed)
           return `\n: if (${cond}) {\n${name}="<: ${val} :>"\n: }\n`
         }
@@ -1614,7 +1620,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (part.type === 'string') {
         parts.push(this.substituteJsInterpolationsToKolon(part.value))
       } else if (part.type === 'ternary') {
-        const cond = this.convertExpressionToKolon(part.condition)
+        const cond = this.convertExpressionToKolon(part.condition, undefined, 'rendered', true)
         parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Kolon
@@ -1727,7 +1733,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return { convertExpressionToKolon: (e, preParsed, pos) => this.convertExpressionToKolon(e, preParsed, pos) }
   }
 
-  private convertExpressionToKolon(expr: string, preParsed?: ParsedExpr, pos: 'rendered' | 'value' = 'rendered'): string {
+  private convertExpressionToKolon(
+    expr: string,
+    preParsed?: ParsedExpr,
+    pos: 'rendered' | 'value' = 'rendered',
+    boolContext = false,
+  ): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST
@@ -1781,15 +1792,18 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return "''"
     }
 
-    return this.renderParsedExprToKolon(parsed)
+    return this.renderParsedExprToKolon(parsed, boolContext)
   }
 
   /**
    * Render a full ParsedExpr tree to Kolon for top-level (non-filter)
    * expressions where identifiers are signals / template vars.
+   *
+   * `boolContext` (#2994) seeds the emitter's `_boolContext` flag — see
+   * `XslateTopLevelEmitter`'s field doc.
    */
-  private renderParsedExprToKolon(expr: ParsedExpr): string {
-    return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx))
+  private renderParsedExprToKolon(expr: ParsedExpr, boolContext = false): string {
+    return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx, boolContext))
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an

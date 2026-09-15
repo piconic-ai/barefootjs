@@ -481,6 +481,21 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // value-builtin lowering with signal-call lowering — keeping them
     // separated forces every adapter to declare the full array-method
     // surface in one place (the `arrayMethod` emitter below).
+    // #2994: any other identifier callee reaching here is a call to an
+    // arbitrary JS function by bare name — a module-scope `function`/arrow
+    // `const` helper being the repro shape. Zero-arg calls already
+    // returned above as signal getters, so this is always a call WITH
+    // args. Falling through to `emit(callee)` used to silently resolve the
+    // bare name as a Perl var lookup (`$fmt`, undef under `strict` — a
+    // runtime crash, not a silent empty render) and drop every argument.
+    // Refuse loudly instead of guessing.
+    if (callee.kind === 'identifier') {
+      this.ctx._recordExprBF101(
+        `Call to '${callee.name}(...)' has no Mojolicious template lowering — '${callee.name}' is not a signal getter, a registered template primitive, or a recognised lowering call, so there is no Perl binding for it in template scope.`,
+        `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — Mojo::Template has no way to invoke it.`,
+      )
+      return "''"
+    }
     return emit(callee)
   }
 

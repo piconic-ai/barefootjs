@@ -150,8 +150,12 @@ export function P(props: { base: string }) {
   // inliner declines a body whose object literal references the helper's params,
   // because an object literal lowers opaquely from its `raw` source — so the
   // param can't be substituted. queryHref's idiom is the direct call, so this is
-  // a minor gap; helper-delegation ergonomics are a follow-up (#2042).
-  test('a helper whose params-object references a param is not yet inlined (falls back)', () => {
+  // a minor gap; helper-delegation ergonomics are a follow-up (#2042). #2994:
+  // not being inlined used to fall back to an (un-backed) `.HrefFor` method-call
+  // reference that crashes `html/template` at RENDER time with no compile
+  // diagnostic — `call()`'s generic identifier-callee fallback now refuses
+  // this bare-name call loudly instead.
+  test('a helper whose params-object references a param is not yet inlined and refuses with BF101 (#2994)', () => {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
@@ -160,9 +164,12 @@ export function P(props: { base: string }) {
   return <a href={hrefFor('title')}>x</a>
 }
 `
-    const { template } = generate(src)
-    expect(template).not.toContain('bf_query')
-    expect(template).toContain('.HrefFor "title"')
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter, outputIR: true })
+    const irFile = result.files.find(f => f.type === 'ir')
+    if (!irFile) throw new Error('no IR')
+    adapter.generate(JSON.parse(irFile.content) as ComponentIR)
+    expect(adapter.errors.some(e => e.code === 'BF101')).toBe(true)
   })
 
   test('a dynamic (non-literal) params object falls back to the generic lowering', () => {

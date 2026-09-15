@@ -21,31 +21,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // seeds the evaluated default and the adapter's presence guard no longer
 // treats the prop as defaultless — `data-label` now renders `'none'` here
 // exactly like Hono, both for a plain default and a renamed one.
-export const renderDivergences: RenderDivergences = {
-  // #2994: a module-scope helper (arrow-valued const OR `function`
-  // declaration) that's safe to reference by bare name from the CSR
-  // template lambda is ALSO treated safe by the same
-  // `compute-inlinability.ts` verdict feeding the static "Marked
-  // Template" this adapter renders from — but there is no `fmt` binding
-  // in Perl/Mojolicious template scope. Unlike ERB (ported FROM this
-  // adapter) which silently stringifies the missing binding to empty,
-  // Mojo::Template runs under Perl `strict` and the bare `$fmt` FAILS
-  // TEMPLATE RENDERING outright: `perl render failed (exit 2): Global
-  // symbol "$fmt" requires explicit package name (did you forget to
-  // declare "my $fmt"?) at template line 3.` Verified directly against
-  // real Mojolicious (after installing the `Mojolicious` CPAN module)
-  // in the #2994 investigation. Still a `render-divergences` entry, not
-  // `conformancePins` — the TS/JSX compiler itself emits no
-  // error-severity diagnostic; only the generated Perl template's own
-  // execution fails.
-  'module-const-arrow-helper':
-    'a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
-  // #3000: the `function`-declaration analog of `module-const-arrow-helper`
-  // above — same #2994 root cause and same Perl `strict`-mode render-time
-  // crash (`Global symbol "$fmt" requires explicit package name`). The
-  // doc comment above already anticipated this shape ("arrow-valued const
-  // OR `function` declaration"); this entry is that other shape's
-  // fixture.
-  'module-function-helper-chain':
-    'a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
-}
+// #2994 graduated both entries formerly here (`module-const-arrow-helper`,
+// `module-function-helper-chain`): a module-scope helper call in a
+// template position (arrow-valued const OR `function` declaration) now
+// refuses loudly with BF101 at compile time instead of silently crashing
+// Perl `strict`-mode template execution — see `conformance-pins.ts`.
+export const renderDivergences: RenderDivergences = {}
