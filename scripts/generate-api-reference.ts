@@ -122,8 +122,10 @@ const SURFACES: Surface[] = [
       'writes — the reactive primitives, context, the four portal helpers, the two compiler ' +
       'built-ins and the two adapter-lowered helpers. **Alpha** is the rest: shipped and usable, ' +
       'but with no authored call site and no documented pattern, so its contract is not frozen. ' +
-      'The compiler ABI is not listed at all — `provideContext`, `forwardProps` and `unwrap` are ' +
-      'emitted into a bundle from `@barefootjs/client/runtime`, never written by hand.',
+      'The compiler ABI is not listed at all — `forwardProps` and `unwrap` are pure, so this SSR-' +
+      'safe entry re-exports them for the compiler\'s SSR-rewritten imports too; `provideContext` ' +
+      'is DOM-only and moves to `@barefootjs/client/runtime` for the CSR path. None is ever written ' +
+      'by hand.',
     entries: [{ file: 'packages/client/src/index.ts', label: '@barefootjs/client' }],
     detail: true,
     expand: ['AsyncProps', 'RegionProps', 'PortalOptions'],
