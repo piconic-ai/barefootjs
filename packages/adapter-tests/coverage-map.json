@@ -4058,6 +4058,19 @@
         "text"
       ]
     },
+    "module-function-helper-chain": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-helper-async": {
       "kinds": [
         "array-literal",
@@ -6848,11 +6861,11 @@
     "array-method": 72,
     "arrow": 76,
     "binary": 107,
-    "call": 284,
+    "call": 285,
     "conditional": 33,
-    "identifier": 402,
+    "identifier": 403,
     "index-access": 14,
-    "literal": 320,
+    "literal": 321,
     "logical": 52,
     "member": 237,
     "object-literal": 94,
@@ -6898,7 +6911,7 @@
     "binary:>=": 1,
     "literal:boolean": 71,
     "literal:null": 26,
-    "literal:number": 146,
+    "literal:number": 147,
     "literal:string": 218,
     "logical:&&": 7,
     "logical:??": 44,
