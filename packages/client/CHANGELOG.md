@@ -1,5 +1,27 @@
 # @barefootjs/client
 
+## 0.36.0
+
+### Minor Changes
+
+- 2e40a45: **Breaking:** remove `provideContext` from `@barefootjs/client`'s root export. It was tagged `@internal` in the prior release (#3008) but still physically re-exported from the package root; this finishes that narrowing.
+  
+  `provideContext` is DOM-only — a component author writes `<Ctx.Provider value={…}>`, which the compiler lowers to a `provideContext()` call in client JS only, and the SSR path gets its own bridge (e.g. `@barefootjs/hono`'s `provideContextSSR`) instead of calling this function at all. Nobody imports it directly (91 `.Provider` uses across `ui/`, `site/` and `integrations/`, zero direct imports). It remains available from `@barefootjs/client/runtime`, where the compiler's CSR-rewritten imports already resolve it.
+  
+  `forwardProps` and `unwrap` stay on the root, unlike `provideContext`: both are pure (no DOM), so `@barefootjs/client`'s SSR-safe root re-exports them for the compiler's SSR-rewritten imports too (`@barefootjs/hono`'s `client-shim.ts` imports both straight from the root). Only `provideContext` moves off.
+
+### Patch Changes
+
+- 231688e: Tag every public export of the documented surfaces with `@since` / `@stability` / `@example` JSDoc tags (or `@internal`), the source of the new generated API reference (`docs/core/advanced/api-reference.md`, `scripts/generate-api-reference.ts`) — one linkable section per API with its example.
+  
+  The `beta` tier is scoped to what a component author actually writes, measured against authored call sites in `ui/` / `site/` / `integrations/`: `@barefootjs/client`'s `provideContext`, `forwardProps` and `unwrap` are compiler ABI (emitted from `@barefootjs/client/runtime`, zero authored imports) and are now `@internal`; `createRoot`, `createSelector` and `splitProps` are `alpha`; the three portal helpers `isSSRPortal`, `findSiblingSlot` and `cleanupPortalPlaceholder` are `beta`, since `createPortal` is unusable in an SSR app without the first and the other two have authored call sites in six `ui/` components and a docs page respectively. No export was added or removed.
+  
+  The reference also covers the two APIs an app calls itself on the browser-only `@barefootjs/client/runtime` entry — `render` (CSR) and `setupStreaming` — which are now tagged `beta`. They stay on that entry rather than moving to `@barefootjs/client`, whose root must remain safe to import from a server bundle.
+  
+  `@barefootjs/jsx` additionally exports the compiler's two directive spellings as constants (`USE_CLIENT_DIRECTIVE`, `CLIENT_EXPRESSION_DIRECTIVE`) from a new `directives.ts` that every detection site now reads instead of repeating the literal. Comments and docs only — no behavior change.
+- Updated dependencies [231688e]
+  - @barefootjs/shared@0.36.0
+
 ## 0.35.8
 
 ### Patch Changes

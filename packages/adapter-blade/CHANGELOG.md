@@ -1,5 +1,23 @@
 # @barefootjs/blade
 
+## 0.36.0
+
+### Patch Changes
+
+- 231688e: Tag every public export of the documented surfaces with `@since` / `@stability` / `@example` JSDoc tags (or `@internal`), the source of the new generated API reference (`docs/core/advanced/api-reference.md`, `scripts/generate-api-reference.ts`) — one linkable section per API with its example.
+  
+  The `beta` tier is scoped to what a component author actually writes, measured against authored call sites in `ui/` / `site/` / `integrations/`: `@barefootjs/client`'s `provideContext`, `forwardProps` and `unwrap` are compiler ABI (emitted from `@barefootjs/client/runtime`, zero authored imports) and are now `@internal`; `createRoot`, `createSelector` and `splitProps` are `alpha`; the three portal helpers `isSSRPortal`, `findSiblingSlot` and `cleanupPortalPlaceholder` are `beta`, since `createPortal` is unusable in an SSR app without the first and the other two have authored call sites in six `ui/` components and a docs page respectively. No export was added or removed.
+  
+  The reference also covers the two APIs an app calls itself on the browser-only `@barefootjs/client/runtime` entry — `render` (CSR) and `setupStreaming` — which are now tagged `beta`. They stay on that entry rather than moving to `@barefootjs/client`, whose root must remain safe to import from a server bundle.
+  
+  `@barefootjs/jsx` additionally exports the compiler's two directive spellings as constants (`USE_CLIENT_DIRECTIVE`, `CLIENT_EXPRESSION_DIRECTIVE`) from a new `directives.ts` that every detection site now reads instead of repeating the literal. Comments and docs only — no behavior change.
+- 81572ce: Resolve `isValidElement(x)` as an identity-scoped `templatePrimitive` (`$bf->is_element`, backed by the `BarefootJS::is_element` method the Twig adapter's #3012 PR added to the shared PHP runtime, `@barefootjs/php`, which this adapter also backs onto — zero new runtime code needed here) instead of exempting it structurally via a `_boolContext` flag on any call inside a boolean-test position. Previously, ANY bare-name call to an unresolvable module-scope helper — not just `isValidElement` — silently kept the pre-#2994 broken fallback (an unrecognised name resolving against Blade's undefined-variable semantics) when called from inside a condition or ternary test, instead of refusing loudly with `BF101` like the same call in a text position already does. Every other bare-name call now refuses with `BF101` regardless of position.
+  
+  This is the last of the five adapters #3012 named (ERB, Jinja, minijinja, Twig, Blade); closes #3012.
+- f55e64d: Refuse a bare-name call to a module-scope helper (a `const` arrow or `function` declaration, or any other unregistered JS-only callee) in template position with a loud `BF101` diagnostic, instead of silently emitting broken template output. Previously this shape compiled clean and either rendered the slot empty and dropped every argument (ERB, Jinja, minijinja, Twig, Blade, Text::Xslate) or crashed template execution at render time (Go `html/template`, Mojolicious under Perl `strict`) — a real JS runtime (Hono SSR, CSR) is required to execute an arbitrary JS function reference, and none of these eight non-JS "Marked Template" adapters have one.
+- Updated dependencies [231688e]
+  - @barefootjs/shared@0.36.0
+
 ## 0.35.8
 
 ### Patch Changes
