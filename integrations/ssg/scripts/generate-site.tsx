@@ -18,6 +18,7 @@ import { Hono } from 'hono'
 import { toSSG } from 'hono/ssg'
 import { loadManifest, resolveScriptAssets, toPosixRelative } from '@barefootjs/vite'
 import { Layout } from './layout.tsx'
+import { BASE_PATH } from '../constants.ts'
 
 type PageIsland = {
   path: string
@@ -46,6 +47,12 @@ const PAGE_ISLANDS: PageIsland[] = [
     path: 'conditional-return-link',
     title: 'Conditional Return Example (Link) - SSG',
     heading: 'Conditional Return Example (Link)',
+  },
+  {
+    path: 'ai-chat',
+    title: 'AI Chat Example - SSG',
+    heading: 'AI Chat (SSE Streaming)',
+    extraStyles: [`${BASE_PATH}/shared/styles/ai-chat.css`],
   },
 ]
 
@@ -104,7 +111,7 @@ export async function generateSite(opts: { projectDir: string; outDir: string; b
   for (const p of PAGE_ISLANDS) {
     app.get(`${BASE}/${p.path}`, (c) =>
       c.html(
-        <Layout title={p.title} basePath={BASE}>
+        <Layout title={p.title} basePath={BASE} extraStyles={p.extraStyles ?? []}>
           <h1>{p.heading}</h1>
           <div id="app" />
           <p>

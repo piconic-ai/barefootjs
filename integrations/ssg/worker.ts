@@ -118,6 +118,44 @@ app.post('/api/todos/reset', (c) => {
   return c.json({ success: true })
 })
 
+// Demo only — responses are canned, not a real LLM call. Ported verbatim from
+// integrations/hono/server.tsx to show that the same SSE pattern (a plain Web
+// Streams ReadableStream + Response, no hono/streaming) runs unmodified in a
+// Cloudflare Worker whether the rest of the integration is SSR or CSR/SSG.
+const FAKE_RESPONSES = [
+  '[Dummy response] This text is streaming one character at a time via Server-Sent Events. Replace /api/ai-chat in worker.ts with a real LLM API to make this chat functional.',
+  '[Dummy response] BarefootJS streams tokens using the SSE protocol. Each character arrives as a separate "data:" event. Wire up OpenAI or Anthropic here for real AI responses.',
+  '[Dummy response] This response is randomly selected from a fixed list in worker.ts — it does not understand your message. Swap the endpoint for a real streaming LLM to fix that.',
+  '[Dummy response] Lorem ipsum dolor sit amet. This is placeholder content demonstrating token-by-token SSE delivery. See /api/ai-chat in worker.ts to connect a real model.',
+  '[Dummy response] I am not a real AI. This demo exists only to show how BarefootJS handles SSE streaming on the client side. Replace me with a real LLM endpoint!',
+]
+
+app.get('/api/ai-chat', () => {
+  const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
+  const chars = [...text]
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enc = new TextEncoder()
+      for (const ch of chars) {
+        controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
+        await new Promise((r) => setTimeout(r, 30))
+      }
+      controller.enqueue(enc.encode('data: [DONE]\n\n'))
+      controller.close()
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
+  })
+})
+
 // run_worker_first: ["/api/*"] means anything outside /api/* never reaches this
 // Worker (Workers Assets responds directly). This is just a fallback for the
 // unlikely case of an unmatched /api/* subpath.
