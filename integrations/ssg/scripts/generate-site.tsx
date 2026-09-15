@@ -25,28 +25,42 @@ type PageIsland = {
   title: string
   heading: string
   extraStyles?: string[]
+  // Page still gets built + statically generated (shared/e2e specs hit it by
+  // direct URL) but is left off the index nav — same convention as
+  // integrations/hono/server.tsx, whose own index nav links only Counter,
+  // Toggle, Todo and AI Chat while keeping /reactive-props, /props-reactivity,
+  // /form, /portal, /conditional-return(-link) as unlisted routes.
+  hidden?: boolean
 }
 
 const PAGE_ISLANDS: PageIsland[] = [
   { path: 'counter', title: 'Counter Example - SSG', heading: 'Counter Example' },
   { path: 'toggle', title: 'Toggle Example - SSG', heading: 'Toggle Example' },
-  { path: 'form', title: 'Form Example - SSG', heading: 'Form Example' },
-  { path: 'portal', title: 'Portal Example - SSG', heading: 'Portal Example' },
-  { path: 'reactive-props', title: 'Reactive Props Test - SSG', heading: 'Reactive Props Test' },
+  { path: 'form', title: 'Form Example - SSG', heading: 'Form Example', hidden: true },
+  { path: 'portal', title: 'Portal Example - SSG', heading: 'Portal Example', hidden: true },
+  {
+    path: 'reactive-props',
+    title: 'Reactive Props Test - SSG',
+    heading: 'Reactive Props Test',
+    hidden: true,
+  },
   {
     path: 'props-reactivity',
     title: 'Props Reactivity Comparison - SSG',
     heading: 'Props Reactivity Comparison',
+    hidden: true,
   },
   {
     path: 'conditional-return',
     title: 'Conditional Return Example - SSG',
     heading: 'Conditional Return Example',
+    hidden: true,
   },
   {
     path: 'conditional-return-link',
     title: 'Conditional Return Example (Link) - SSG',
     heading: 'Conditional Return Example (Link)',
+    hidden: true,
   },
   {
     path: 'ai-chat',
@@ -88,20 +102,33 @@ export async function generateSite(opts: { projectDir: string; outDir: string; b
   //    so it's registered separately outside the loop.
   const app = new Hono()
 
+  const visibleIslands = PAGE_ISLANDS.filter((p) => !p.hidden)
+
   app.get(`${BASE}/`, (c) =>
     c.html(
       <Layout title="BarefootJS + SSG" basePath={BASE}>
         <h1>BarefootJS + SSG (Static Site Generation) + Cloudflare Workers</h1>
         <nav>
           <ul>
-            {PAGE_ISLANDS.map((p) => (
-              <li>
-                <a href={`${BASE}/${p.path}`}>{p.heading}</a>
-              </li>
-            ))}
+            {/* Todo is spliced in between Toggle and AI Chat to match the nav
+                order integrations/hono/server.tsx uses for the same demos. */}
+            {visibleIslands
+              .filter((p) => p.path !== 'ai-chat')
+              .map((p) => (
+                <li>
+                  <a href={`${BASE}/${p.path}`}>{p.heading}</a>
+                </li>
+              ))}
             <li>
               <a href={`${BASE}/todos`}>Todo App (SSG + serverless API)</a>
             </li>
+            {visibleIslands
+              .filter((p) => p.path === 'ai-chat')
+              .map((p) => (
+                <li>
+                  <a href={`${BASE}/${p.path}`}>{p.heading}</a>
+                </li>
+              ))}
           </ul>
         </nav>
       </Layout>,
