@@ -25,6 +25,7 @@
  *   http://localhost:4000/integrations/django/      → django service
  *   http://localhost:4000/integrations/blade/       → blade service
  *   http://localhost:4000/integrations/laravel/     → laravel service
+ *   http://localhost:4000/integrations/spring/      → spring service
  *   http://localhost:4000/*                         → site-core (barefootjs.dev)
  *   http://ui.localhost:4000/*                      → site-ui (ui.barefootjs.dev)
  *
@@ -73,6 +74,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/django',      target: process.env.DJANGO_TARGET      ?? 'http://django:3014',      label: 'Django (Python)' },
   { prefix: '/integrations/blade',       target: process.env.BLADE_TARGET       ?? 'http://blade:3015',       label: 'Blade (PHP)' },
   { prefix: '/integrations/laravel',     target: process.env.LARAVEL_TARGET     ?? 'http://laravel:3016',     label: 'Laravel (PHP)' },
+  { prefix: '/integrations/spring',      target: process.env.SPRING_TARGET      ?? 'http://spring:3017',      label: 'Spring Boot (Java)' },
 ] as const
 
 const SITE_CORE_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'
