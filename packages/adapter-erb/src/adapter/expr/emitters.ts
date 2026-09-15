@@ -363,40 +363,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   // `ErbFilterEmitter`'s constructor comment above for why.
   private readonly ctx: ErbEmitContext
 
-  // #2994: true while emitting a subtree whose VALUE is only ever
-  // consumed for JS truthiness — never reachable as rendered content.
-  // Seeded by the constructor for a WHOLE-TREE test (an `IRConditional`'s
-  // `condition` — see `ErbAdapter.renderConditional`, which passes
-  // `boolContext: true` down through `convertExpressionToRuby` /
-  // `renderParsedExprToRuby` to a fresh emitter instance here); narrowed
-  // for a NESTED test — a ternary's `test`, or `!x`'s operand — by
-  // `conditional()` / `unary()` below (save/restore around just that
-  // subtree). `logical()` deliberately leaves it untouched and just
-  // inherits whatever the caller set, since `a && b` / `a || b` can
-  // themselves still surface as the rendered value (`{cond && children}`),
-  // not only as a nested truthiness test. `call()` reads this to decide
-  // whether a bare-name call to an unresolvable module-scope helper is
-  // safe to leave as the pre-#2994 fallback (its result is provably
-  // discarded down to a `bf.truthy?` check either way) or must refuse
-  // loudly (its value can reach the page).
-  private _boolContext: boolean
-
-  constructor(ctx: ErbEmitContext, boolContext = false) {
+  constructor(ctx: ErbEmitContext) {
     this.ctx = ctx
-    this._boolContext = boolContext
-  }
-
-  // Runs `fn` with `_boolContext` forced `true` for its duration, restoring
-  // the previous value afterward — the save/restore pairing both
-  // `unary('!')`'s operand and `conditional()`'s `test` need (#2994).
-  private _underBoolContext<T>(fn: () => T): T {
-    const prev = this._boolContext
-    this._boolContext = true
-    try {
-      return fn()
-    } finally {
-      this._boolContext = prev
-    }
   }
 
   /**
@@ -538,20 +506,19 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // empty) and drop every argument — no Ruby binding for an arbitrary JS
     // closure reference exists, whether it resolves at runtime or not.
     //
-    // EXCEPT under `_boolContext` (a ternary's `test`, or `!x`'s operand,
-    // possibly several `&&`/`||` levels down — see the field doc): there,
-    // the call's return value is providably never rendered, only whether
-    // it's JS-truthy — and the pre-existing `emit(callee)` fallback
-    // resolves an unrecognised name to `nil`, which `bf.truthy?` already
-    // treats as falsy, same as a real `false`/`undefined` result would
-    // read here. That's the `ui/components/ui/slot`'s own `isValidElement`
-    // shape (an internal `asChild`-detection type guard): refusing THAT
-    // outright would hard-fail every component composing `Slot` (`Button`,
-    // `Tooltip`, `Command`, …) for a narrow, gracefully-degrading gap
-    // (still open, but not a new BF101 here — see #2994's discussion).
-    // Refuse loudly only where the call's value can actually reach the
-    // page.
-    if (callee.kind === 'identifier' && !this._boolContext) {
+    // No `_boolContext`-style structural exemption here (#3012): scoping
+    // the exemption by "is this call's value only consumed for
+    // truthiness?" rather than by callee identity let ANY OTHER helper
+    // called from a condition/ternary test keep the pre-#2994 broken
+    // fallback silently. `isValidElement` — the one caller that
+    // legitimately needs to keep working under the degraded fallback
+    // (`ui/components/ui/slot`'s `asChild` guard) — is now resolved above
+    // as an identity-scoped `templatePrimitive` (`bf.is_element`, backed
+    // by the Ruby port of the shared BarefootJS runtime's shape-check
+    // method), so it never reaches this branch at all. Every other
+    // bare-name call refuses here unconditionally, in a boolean-test
+    // position or not.
+    if (callee.kind === 'identifier') {
       this.ctx._recordExprBF101(
         `Call to '${callee.name}(...)' has no ERB template lowering — '${callee.name}' is not a signal getter, a registered template primitive, or a recognised lowering call, so there is no Ruby binding for it in template scope.`,
         `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — ERB has no way to invoke it.`,
@@ -562,15 +529,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    if (op === '!') {
-      // `argument`'s own value never surfaces as rendered content — only
-      // whether it's JS-truthy matters — so it's evaluated under
-      // `_boolContext` (#2994). Numeric `-`/unary `+` below do NOT set
-      // this: their operand's actual numeric value feeds the result.
-      const arg = this._underBoolContext(() => emit(argument))
-      return `!bf.truthy?(${arg})`
-    }
     const arg = emit(argument)
+    if (op === '!') return `!bf.truthy?(${arg})`
     if (op === '-') return `-(${arg})`
     return arg
   }
@@ -749,13 +709,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // JS ternary tests JS truthiness — wrap (see file docstring). `test`'s
-    // own value never surfaces as rendered content (only `consequent` or
-    // `alternate` can), so it's evaluated under `_boolContext` (#2994) —
-    // restored before `consequent`/`alternate`, whose values very much can
-    // be the rendered result.
-    const testStr = this._underBoolContext(() => emit(test))
-    return `(bf.truthy?(${testStr}) ? ${emit(consequent)} : ${emit(alternate)})`
+    // JS ternary tests JS truthiness — wrap (see file docstring).
+    return `(bf.truthy?(${emit(test)}) ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {

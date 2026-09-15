@@ -876,6 +876,30 @@ module BarefootJS
       end
     end
 
+    # `isValidElement(x)` -- the framework "is this a renderable element (not
+    # plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266, #3012).
+    # Mirrors JS's `'tag' in x && 'props' in x`: true only for a Hash
+    # carrying both keys (case-insensitively, matching the case-tolerant key
+    # lookups elsewhere in this module -- `get`'s Hash branch above, the Go
+    # adapter's `IsValidElement` (bf.go), and the Perl runtime's
+    # `is_element` this ports). A passed-through JSX child is represented as
+    # pre-rendered markup (a plain String) on this SSR model, so a
+    # non-empty STRING child is NOT a valid element -- routing
+    # `isValidElement` through bare truthiness here would wrongly take the
+    # element-merge branch.
+    def is_element(v)
+      return false unless v.is_a?(Hash)
+
+      has_tag = false
+      has_props = false
+      v.each_key do |k|
+        key = k.to_s.downcase
+        has_tag = true if key == 'tag'
+        has_props = true if key == 'props'
+      end
+      has_tag && has_props
+    end
+
     # Mirrors Hono's own CSS-injection guard (`hono/jsx/utils.ts`'s
     # `hasUnsafeStyleValue` -- the ORACLE a dynamic `style={{...}}` value
     # must match, #2261): a hand-rolled structural scan for characters that

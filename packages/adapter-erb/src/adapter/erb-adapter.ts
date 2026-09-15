@@ -852,10 +852,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       return `<%= bf.comment("cond-start:${cond.slotId}") %><%= bf.comment("cond-end:${cond.slotId}") %>`
     }
 
-    // #2994: the condition's own value is never rendered as content — only
-    // whether it's JS-truthy decides which branch's markup to emit — so
-    // the whole tree renders under `boolContext`.
-    const condition = this.convertExpressionToRuby(cond.condition, undefined, 'rendered', true)
+    const condition = this.convertExpressionToRuby(cond.condition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -1415,10 +1412,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   // ===========================================================================
 
   private renderIfStatement(ifStmt: IRIfStatement): string {
-    // #2994: same reasoning as `renderConditional` — the condition's own
-    // value is never rendered as content, only its JS-truthiness decides
-    // the branch, so the whole tree renders under `boolContext`.
-    const condition = this.convertExpressionToRuby(ifStmt.condition, undefined, 'rendered', true)
+    const condition = this.convertExpressionToRuby(ifStmt.condition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1567,7 +1561,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       {
         const m = this.parseUndefinedAlternateTernary(value.expr)
         if (m) {
-          const cond = this.convertExpressionToRuby('', m.testParsed, 'rendered', true)
+          const cond = this.convertExpressionToRuby('', m.testParsed)
           const val = this.convertExpressionToRuby('', m.consequentParsed)
           return `<% if bf.truthy?(${cond}) %>${name}="<%= bf.h(${val}) %>"<% end %>`
         }
@@ -1814,7 +1808,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         // interpolation through verbatim into the rendered HTML.
         parts.push(this.substituteJsInterpolationsToRuby(part.value))
       } else if (part.type === 'ternary') {
-        const cond = this.convertExpressionToRuby(part.condition, undefined, 'rendered', true)
+        const cond = this.convertExpressionToRuby(part.condition)
         parts.push(`(bf.truthy?(${cond}) ? ${rubyStringLiteral(part.whenTrue)} : ${rubyStringLiteral(part.whenFalse)})`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Ruby
@@ -1947,7 +1941,6 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     expr: string,
     preParsed?: ParsedExpr,
     pos: 'rendered' | 'value' = 'rendered',
-    boolContext = false,
   ): string {
     // Parse-first lowering — parity with the Go adapter's
     // `convertExpressionToGo`. Parse the JS expression once, gate it on
@@ -2002,24 +1995,16 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       return "''"
     }
 
-    return this.renderParsedExprToRuby(parsed, boolContext)
+    return this.renderParsedExprToRuby(parsed)
   }
 
   /**
    * Render a full ParsedExpr tree to Ruby for top-level (non-filter)
    * expressions where identifiers are signals / vars-Hash entries.
    * Delegates to the shared ParsedExpr dispatcher with `ErbTopLevelEmitter`.
-   *
-   * `boolContext` (#2994) seeds the emitter's `_boolContext` flag: pass
-   * `true` when the ENTIRE tree being rendered is itself only ever
-   * consumed for JS truthiness (an `IRConditional`'s `condition` — see
-   * `renderConditional`), never reachable as rendered content. This is
-   * the whole-tree case; a NESTED test (a ternary inside a value
-   * expression, `!x`) is handled inside the emitter itself
-   * (`ErbTopLevelEmitter.conditional()` / `.unary()`).
    */
-  private renderParsedExprToRuby(expr: ParsedExpr, boolContext = false): string {
-    return emitParsedExpr(expr, new ErbTopLevelEmitter(this.emitCtx, boolContext))
+  private renderParsedExprToRuby(expr: ParsedExpr): string {
+    return emitParsedExpr(expr, new ErbTopLevelEmitter(this.emitCtx))
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value — gates
