@@ -26,6 +26,17 @@ export type Context<T> = {
  * `useContext()` returns the nearest provider value, then the default,
  * then `undefined`. It never throws — guard with optional chaining.
  *
+ * @example
+ * ```tsx
+ * "use client"
+ * import { createContext } from '@barefootjs/client'
+ *
+ * export const TabsContext = createContext<{ active: () => string }>()
+ *
+ * // A parent provides the value; any descendant reads it with useContext().
+ * // <TabsContext.Provider value={{ active }}>...</TabsContext.Provider>
+ * ```
+ *
  * @since 0.1.0
  * @stability beta
  */

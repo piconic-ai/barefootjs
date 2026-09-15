@@ -57,6 +57,19 @@ export interface RegionProps {
  * streaming primitive (Hono `<Suspense>`); `fallback` is shown until the
  * children resolve. Compiled away — never executes at runtime.
  *
+ * @example
+ * ```tsx
+ * import { Async } from '@barefootjs/client'
+ *
+ * export function Page() {
+ *   return (
+ *     <Async fallback={<p>Loading comments…</p>}>
+ *       <Comments />
+ *     </Async>
+ *   )
+ * }
+ * ```
+ *
  * @since 0.15.0
  * @stability beta
  */
@@ -70,6 +83,22 @@ export function Async(_props: AsyncProps): any {
  * Page-lifecycle boundary (spec/router.md). Lowered by the compiler to a
  * wrapper element carrying a deterministic `bf-region` marker the client
  * router matches on. Compiled away — never executes at runtime.
+ *
+ * @example
+ * ```tsx
+ * import { Region } from '@barefootjs/client'
+ *
+ * // The router disposes and re-hydrates only what is inside <Region> on a
+ * // navigation; the header outside it survives untouched.
+ * export function Layout(props: { children?: unknown }) {
+ *   return (
+ *     <>
+ *       <SiteHeader />
+ *       <Region>{props.children}</Region>
+ *     </>
+ *   )
+ * }
+ * ```
  *
  * @since 0.15.0
  * @stability beta

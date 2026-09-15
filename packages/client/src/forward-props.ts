@@ -14,6 +14,14 @@
  * @param overrides - Object literal with getters/values that override source props
  * @param excludeKeys - Keys from source to exclude (already destructured)
  *
+ * @example
+ * ```tsx
+ * // Compiler-generated for `<Button {...rest} class={merged}>`: `class` comes
+ * // from the override, everything else is forwarded from `props` by getter, so
+ * // the child still sees reactive updates.
+ * forwardProps(props, { class: merged }, ['class', 'children'])
+ * ```
+ *
  * @since 0.1.0
  * @stability beta
  */

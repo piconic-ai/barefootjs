@@ -568,6 +568,16 @@ function disposeEffect(effect: EffectContext): void {
  * @param fn - Function to run in the new scope. Receives a dispose function.
  * @returns The return value of fn
  *
+ * @example
+ * ```ts
+ * const dispose = createRoot((dispose) => {
+ *   createEffect(() => console.log(count()))
+ *   return dispose
+ * })
+ *
+ * dispose()  // tears down every effect and memo created inside the scope
+ * ```
+ *
  * @since 0.1.0
  * @stability beta
  */
@@ -609,6 +619,15 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
  * Used for effects inside conditional branches that need cleanup on branch switch.
  *
  * @returns A dispose function that stops the effect and removes it from all signal dependencies.
+ *
+ * @example
+ * ```ts
+ * const dispose = createDisposableEffect(() => {
+ *   document.title = `${count()} items`
+ * })
+ *
+ * dispose()  // stops re-running and unsubscribes from count
+ * ```
  *
  * @since 0.1.0
  * @stability alpha
@@ -1104,6 +1123,18 @@ const searchParamsTuple: readonly [
 
 /**
  * Request-scoped query-string signal, returned as a `createSignal`-shaped `[getter, setter]` tuple. See the doc comment on `searchParamsTuple` above for the read/write semantics.
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * const [searchParams, setSearchParams] = createSearchParams()
+ *
+ * // Reads re-run when the router changes the query, with no swap or re-hydration.
+ * const sort = createMemo(() => searchParams().get('sort') ?? 'date')
+ *
+ * // Writing navigates: soft same-route when a router is running, hard otherwise.
+ * setSearchParams({ sort: 'price' })
+ * ```
  *
  * @since 0.17.0
  * @stability beta

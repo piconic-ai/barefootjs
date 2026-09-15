@@ -149,6 +149,26 @@ function normalizeComponents(
 /**
  * The core BarefootJS Vite plugin: compiles every `.tsx` under `components` into a template for `adapter` and client JS for Vite to bundle. See `docs/core/advanced/vite-plugin.md`.
  *
+ * @example
+ * ```ts
+ * // vite.config.ts
+ * import { defineConfig } from 'vite'
+ * import { barefoot } from '@barefootjs/vite'
+ * import { HonoAdapter } from '@barefootjs/hono'
+ *
+ * export default defineConfig({
+ *   base: '/static/components/',
+ *   build: { outDir: 'public/components' },
+ *   plugins: [
+ *     barefoot({
+ *       adapter: new HonoAdapter(),
+ *       components: ['components'],
+ *       templates: 'dist/components',
+ *     }),
+ *   ],
+ * })
+ * ```
+ *
  * @since 0.31.0
  * @stability beta
  */

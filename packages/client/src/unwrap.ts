@@ -13,6 +13,14 @@
  * @param prop - The prop value (may be a value or a getter function)
  * @returns The unwrapped value
  *
+ * @example
+ * ```ts
+ * // A prop arrives either as a plain value or as a getter (the compiler wraps
+ * // reactive ones), so read it through unwrap() when either is possible.
+ * unwrap('Save')        // 'Save'
+ * unwrap(() => 'Save')  // 'Save'
+ * ```
+ *
  * @since 0.1.0
  * @stability beta
  */

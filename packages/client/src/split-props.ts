@@ -3,16 +3,6 @@
  *
  * SolidJS-compatible utility for splitting a props object into local and rest.
  * Uses Proxy to preserve getter-based reactivity.
- *
- * @example
- * ```tsx
- * import { splitProps } from '@barefootjs/client'
- *
- * function Checkbox(props: CheckboxProps) {
- *   const [local, rest] = splitProps(props, ['checked', 'onCheckedChange'])
- *   return <button {...rest} aria-checked={local.checked} />
- * }
- * ```
  */
 
 /**
@@ -22,6 +12,17 @@
  * @param props - The source props object
  * @param keys - Keys to extract into the first (local) object
  * @returns A tuple [local, rest] where local has the specified keys and rest has everything else
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * function Checkbox(props: CheckboxProps) {
+ *   // `local` carries the two keys this component handles itself; everything
+ *   // else rides along to the DOM element, still reactive.
+ *   const [local, rest] = splitProps(props, ['checked', 'onCheckedChange'])
+ *   return <button {...rest} aria-checked={local.checked} />
+ * }
+ * ```
  *
  * @since 0.1.0
  * @stability beta

@@ -22,14 +22,19 @@
 </p>
 
 > [!NOTE]
-> **Stability:** pre-1.0, so a minor release is still the breaking-change slot. On a **beta** surface a breaking change ships with a migration note in the changelog; an **alpha** surface may change without notice, so pin exact versions if you depend on it. The [API Reference](./docs/core/advanced/api-reference.md) lists every API with the release it first shipped in and its tier, generated from the `@since` / `@stability` tags on the code.
+> **Stability.** Pre-1.0, so a minor release is still the breaking-change slot. On a **beta**
+> surface a breaking change ships with a migration note in the changelog; an **alpha** surface
+> may change without notice, so pin exact versions if you depend on it. Each row below links to
+> that surface's section of the [API Reference](./docs/core/advanced/api-reference.md), which lists every API with the release it
+> first shipped in, its tier and an example — generated from the JSDoc on the exports.
 >
-> | Surface | Status | Reference |
+> | Surface | Status | Covers |
 > |---|---|---|
-> | Runtime | **Beta** | [`@barefootjs/client` primitives, context, portals, built-ins](./docs/core/advanced/api-reference.md#runtime) and the [`"use client"` / `/* @client */` directives](./docs/core/advanced/api-reference.md#directives) |
-> | Build: Vite plugin | **Beta** | [`@barefootjs/vite`: `barefoot()`, its options, and the files it writes](./docs/core/advanced/api-reference.md#vite-plugin) |
-> | Build: adapter builders | Alpha | [Each adapter's `/vite` subpath and the helpers re-exported for them](./docs/core/advanced/api-reference.md#adapter-builders) |
-> | Adapters | Alpha | [The adapter classes, `@barefootjs/jsx`, and the language-side runtimes](./docs/core/advanced/api-reference.md#adapters) |
+> | [Runtime](./docs/core/advanced/api-reference.md#runtime) | **Beta** | `@barefootjs/client` — `createSignal`, `createEffect`, `createMemo`, context, props helpers, portals, `<Async>` / `<Region>` |
+> | [Directives](./docs/core/advanced/api-reference.md#directives) | **Beta** | `"use client"` and `/* @client */` |
+> | [Vite plugin](./docs/core/advanced/api-reference.md#vite-plugin) | **Beta** | `@barefootjs/vite`'s `barefoot()`, its options, and the files it writes |
+> | [Adapter builders](./docs/core/advanced/api-reference.md#adapter-builders) | Alpha | Each adapter's `/vite` subpath and the helpers re-exported for them |
+> | [Adapters](./docs/core/advanced/api-reference.md#adapters) | Alpha | The adapter classes, everything `@barefootjs/jsx` exports, and the language-side runtimes |
 
 ---
 

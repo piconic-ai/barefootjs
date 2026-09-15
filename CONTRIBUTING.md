@@ -129,11 +129,17 @@ A few rules the codebase enforces (see [`CLAUDE.md`](CLAUDE.md) for the full set
 
 Every export of a documented surface — `@barefootjs/client`, `@barefootjs/vite`,
 the compiler directives, each adapter's `/vite` builder, and the adapter
-classes — carries two JSDoc tags:
+classes — carries stability tags in its JSDoc:
 
 ```ts
 /**
  * Create a reactive value
+ *
+ * @example
+ * ```ts
+ * const [count, setCount] = createSignal(0)
+ * setCount(n => n + 1)
+ * ```
  *
  * @since 0.1.0
  * @stability beta
@@ -146,12 +152,27 @@ export function createSignal<T>(initialValue: T): Signal<T> { ... }
 - `@stability` is `beta` or `alpha`, per the tiers in `README.md`'s stability
   table. An export that is not part of the public surface carries
   `@internal` instead.
+- `@example` is a short, copyable snippet. Required for a **beta** function,
+  const or class on one of the reference's detail surfaces (Runtime,
+  Directives, Vite plugin); types and interfaces are exempt, since their
+  shape is the documentation.
 
 `scripts/generate-api-reference.ts` renders them into
-`docs/core/advanced/api-reference.md` and refuses to run while any export of
-those surfaces is untagged, so adding an export means deciding its tier. Run
-it after touching one of those surfaces and commit the result; CI checks that
-the page is up to date (`.github/workflows/update-api-reference.yml`).
+`docs/core/advanced/api-reference.md` — one `###` section per API, so each one
+is linkable and lands in the page's table of contents — and refuses to run
+while any export of those surfaces is untagged, a beta promotion has no
+example, two headings would claim one anchor, or a link into the page (from
+the README's stability table, say) points at a heading that does not exist.
+Run it after touching one of those surfaces and commit the result; CI checks
+the same thing (`.github/workflows/update-api-reference.yml`).
+
+Two characters cannot appear literally in a JSDoc example: the `*/` that
+would close the comment, and a space-preceded `@`, which TypeScript's JSDoc
+scanner reads as the start of a new tag and which silently truncates the
+example there. Write either with a zero-width space (U+200B) in front of the
+character that needs hiding — the generator strips every U+200B, so the
+published snippet is the real syntax. `packages/jsx/src/directives.ts` is the
+worked example.
 
 ## Changesets
 

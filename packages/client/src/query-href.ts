@@ -51,6 +51,16 @@ export type QueryParams = Record<string, QueryParamValue>
 /**
  * Build an href from a base path and a query-params object. Pure; SSR adapters lower the call to their own query helper.
  *
+ * @example
+ * ```ts
+ * queryHref('/posts', { sort: 'price', tag: 'hono' })  // '/posts?sort=price&tag=hono'
+ * queryHref('/posts', { tag: ['hono', 'go'] })         // '/posts?tag=hono&tag=go'
+ *
+ * // Empty, null and undefined values are omitted, so a conditional include
+ * // folds into the value itself. Nothing survives here, so the base is returned:
+ * queryHref('/posts', { sort: undefined, tag: '' })    // '/posts'
+ * ```
+ *
  * @since 0.17.0
  * @stability beta
  */

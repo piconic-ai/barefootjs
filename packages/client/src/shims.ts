@@ -25,6 +25,20 @@ function browserOnly(name: string): never {
 /**
  * Read the nearest provided value for a context. Browser-only; the compiler rewrites the import in `"use client"` components.
  *
+ * @example
+ * ```tsx
+ * "use client"
+ * function AccordionContent(props: { children?: unknown }) {
+ *   const handleMount = (el: HTMLElement) => {
+ *     const ctx = useContext(AccordionItemContext)
+ *     createEffect(() => {
+ *       el.dataset.state = ctx.open() ? 'open' : 'closed'
+ *     })
+ *   }
+ *   return <div ref={handleMount}>{props.children}</div>
+ * }
+ * ```
+ *
  * @since 0.1.0
  * @stability beta
  */
@@ -35,6 +49,14 @@ export function useContext<T>(_context: Context<T>): T {
 /**
  * Provide a context value to the current component subtree. Browser-only.
  *
+ * @example
+ * ```tsx
+ * "use client"
+ * // Normally written as JSX, which the compiler lowers to this call:
+ * //   <TabsContext.Provider value={{ active }}>{props.children}</TabsContext.Provider>
+ * provideContext(TabsContext, { active })
+ * ```
+ *
  * @since 0.1.0
  * @stability beta
  */
@@ -44,6 +66,18 @@ export function provideContext<T>(_context: Context<T>, _value: T): void {
 
 /**
  * Render children into a container outside the parent DOM hierarchy. Browser-only.
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * function DialogOverlay() {
+ *   const handleMount = (el: HTMLElement) => {
+ *     // Move the overlay to <body> so no ancestor's overflow or z-index clips it.
+ *     createPortal(el, document.body)
+ *   }
+ *   return <div ref={handleMount} class="fixed inset-0 bg-black/50" />
+ * }
+ * ```
  *
  * @since 0.1.0
  * @stability beta
@@ -85,6 +119,19 @@ export function cleanupPortalPlaceholder(_portalId: string): void {
 
 /**
  * Keep a floating element positioned while open: runs `update` now, on capture-phase scroll and on resize, and once more on dispose. Browser-only.
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * // Keep an open popover pinned to its trigger while the page scrolls.
+ * const dispose = trackPosition(() => {
+ *   const r = trigger.getBoundingClientRect()
+ *   el.style.top = `${r.bottom + window.scrollY}px`
+ * })
+ *
+ * // When the popover closes: runs `update` once more, then detaches.
+ * dispose()
+ * ```
  *
  * @since 0.35.0
  * @stability alpha
