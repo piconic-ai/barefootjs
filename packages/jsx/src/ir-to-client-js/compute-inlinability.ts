@@ -25,7 +25,6 @@
 
 import type { ConstantInfo, DeclarationScope, IRNode, ReferencesGraph } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { graphFunctionReferences } from './build-references.ts'
 import { computeDeclarationScopes } from './compute-scope.ts'
 import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts'
 import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate.ts'
@@ -241,9 +240,26 @@ export function computeInlinability(
   const constants = new Map<string, ConstantInlinability>()
   const functions = new Map<string, FunctionInlinability>()
 
+  // #3000: single producer for "is this module-level function safe to
+  // reference by bare name from the CSR template lambda" — reuses
+  // `compute-scope.ts`'s forward-reachability fixpoint (already the sole
+  // producer for constants as of #2998) instead of the independent, more
+  // conservative `functionReferencesDeclaredName`, which flagged a
+  // module-scope function unsafe on a reference to ANY name in
+  // `graph.declaredNames` — including another module-scope-SAFE helper —
+  // rather than only names that are themselves unsafe. A module-scope
+  // function calling another module-scope pure helper (`fmt(s) { return
+  // inner(s) }`) is exactly the shape `compute-scope.ts`'s own fixpoint
+  // already gets right for both functions transitively (it demotes a
+  // candidate only when it transitively references something actually
+  // `init`-scoped) — computing the shared scopes once here, before both
+  // the function loop and the constant classification below, makes
+  // functions and constants resolve through the same producer.
+  const { constantScope, functionScope } = computeDeclarationScopes(ctx, graph)
+
   // --- Functions ---
   for (const fn of ctx.localFunctions) {
-    functions.set(fn.name, fn.isModule && !functionReferencesDeclaredName(graph, fn.name)
+    functions.set(fn.name, functionScope.get(fn.name) === 'module'
       ? { kind: 'module-scope-safe' }
       : { kind: 'references-component-scope' })
   }
@@ -273,11 +289,10 @@ export function computeInlinability(
   // place a constant's own `var` declaration at module vs init scope in
   // the compiled bundle, instead of `classifyConstantInitial` re-deriving
   // an independent (and, pre-#2988, unconditional) `arrow-literal`
-  // verdict for every arrow-valued constant. Calling it again here is
-  // pure and byte-identical to the earlier call `generate-init.ts` makes
-  // via `classifyLocalDeclarations` — both read the same immutable
-  // `(ctx, graph)` pair with nothing mutating either in between.
-  const { constantScope } = computeDeclarationScopes(ctx, graph)
+  // verdict for every arrow-valued constant. `constantScope` was already
+  // computed above (#3000) alongside `functionScope`, from the same
+  // `(ctx, graph)` pair with nothing mutating either in between — reused
+  // here rather than calling `computeDeclarationScopes` a second time.
 
   const decisionsByName = new Map<string, RelocateDecision[]>()
   for (const c of ctx.localConstants) {
@@ -393,7 +408,7 @@ function populateCsrInlinable(
       // there), so the template lambda — itself module scope — can
       // reference it by its own bare name with no rewrite needed, the
       // same principle a `module-scope-safe` function already gets via
-      // `functionReferencesDeclaredName` above.
+      // `functionScope` (#3000) above.
       ctx.csrInlinable.set(c.name, { rewrittenValue: c.name, freeIdentifiers: new Set() })
       finalised.add(c.name)
       continue
@@ -757,14 +772,6 @@ function classifyConstantInitial(
     },
     decisions,
   }
-}
-
-function functionReferencesDeclaredName(graph: ReferencesGraph, fnName: string): boolean {
-  const refs = graphFunctionReferences(graph, fnName)
-  for (const r of refs) {
-    if (graph.declaredNames.has(r)) return true
-  }
-  return false
 }
 
 /**

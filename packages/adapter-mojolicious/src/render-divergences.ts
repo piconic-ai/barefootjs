@@ -40,4 +40,12 @@ export const renderDivergences: RenderDivergences = {
   // execution fails.
   'module-const-arrow-helper':
     'a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
+  // #3000: the `function`-declaration analog of `module-const-arrow-helper`
+  // above — same #2994 root cause and same Perl `strict`-mode render-time
+  // crash (`Global symbol "$fmt" requires explicit package name`). The
+  // doc comment above already anticipated this shape ("arrow-valued const
+  // OR `function` declaration"); this entry is that other shape's
+  // fixture.
+  'module-function-helper-chain':
+    'a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
 }

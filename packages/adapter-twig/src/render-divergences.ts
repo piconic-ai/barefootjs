@@ -34,4 +34,11 @@ export const renderDivergences: RenderDivergences = {
   // investigation.
   'module-const-arrow-helper':
     'a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
+  // #3000: the `function`-declaration analog of `module-const-arrow-helper`
+  // above — same #2994 root cause (no `fmt` binding in PHP/Twig template
+  // scope), same silently-empty render. The doc comment above already
+  // anticipated this shape ("arrow-valued const OR `function`
+  // declaration"); this entry is that other shape's fixture.
+  'module-function-helper-chain':
+    'a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
 }
