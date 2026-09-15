@@ -31,6 +31,7 @@
  */
 
 import ts from 'typescript'
+import { isUseClientDirectiveText } from './directives.ts'
 import type { CompilerError, SourceLocation } from './types.ts'
 import { ErrorCodes, createError } from './errors.ts'
 
@@ -97,7 +98,7 @@ function runSinglePass(
   const hasUseClient = sourceFile.statements.some(stmt =>
     ts.isExpressionStatement(stmt) &&
     ts.isStringLiteral(stmt.expression) &&
-    (stmt.expression.text === 'use client' || stmt.expression.text === "'use client'")
+    isUseClientDirectiveText(stmt.expression.text)
   )
 
   // Without `'use client'` the synthesized component has nowhere to

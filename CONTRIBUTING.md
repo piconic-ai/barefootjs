@@ -125,6 +125,80 @@ A few rules the codebase enforces (see [`CLAUDE.md`](CLAUDE.md) for the full set
   Go `html/template`, Mojolicious, and more), so keep core compiler and
   runtime code adapter-agnostic. CSS uses UnoCSS.
 
+## API stability tags
+
+Every export of a documented surface — `@barefootjs/client`, `@barefootjs/vite`,
+the compiler directives, each adapter's `/vite` builder, and the adapter
+classes — carries stability tags in its JSDoc:
+
+```ts
+/**
+ * Create a reactive value
+ *
+ * @example
+ * ```ts
+ * const [count, setCount] = createSignal(0)
+ * setCount(n => n + 1)
+ * ```
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
+export function createSignal<T>(initialValue: T): Signal<T> { ... }
+```
+
+- `@since` is the first release that shipped the API (the workspace's single
+  version, since changesets are `fixed`).
+- `@stability` is `beta` or `alpha`, per the tiers in `README.md`'s stability
+  table. An export that is not part of the public surface carries
+  `@internal` instead.
+- `@example` is a short, copyable snippet. Required for a **beta** function,
+  const or class on one of the reference's detail surfaces (Runtime,
+  Directives, Vite plugin); types and interfaces are exempt, since their
+  shape is the documentation.
+
+### What earns `beta`
+
+`beta` is a promise, so the bar is evidence rather than readiness:
+
+- An API a **component author writes** — with authored call sites in `ui/`,
+  `site/` or `integrations/`, or a docs page teaching it. Everything else
+  stays `alpha`: shipped and usable, but with a contract we have not frozen.
+- Never the compiler's own ABI. `provideContext`, `forwardProps` and `unwrap`
+  are emitted into a bundle from `@barefootjs/client/runtime`; an author
+  writes `<Ctx.Provider>`, a `{...rest}` spread, or nothing at all. Those
+  carry `@internal`, so the reference does not list them.
+- The beta set is **closed under the types its own signatures name**. A beta
+  API whose signature names an `alpha`, `@internal` or untiered type fails the
+  generator: the caller has to name that type to hold the value, so claiming
+  stability for the function but not the type promises nothing. A parameter
+  named `__bf…` is exempt — that prefix is the convention for an argument only
+  the compiler passes, so its type is not part of the promise.
+- When the honest answer is that a beta API's promise covers only part of its
+  signature, say so in the surface's `betaClosureExceptions` rather than
+  promoting the type. The entry names the API, the type and the reason; the
+  reason is rendered into the reference so a reader sees the same carve-out
+  the check does, and the generator fails once the signature stops naming that
+  type, so the exception cannot outlive its reason. `render()`'s
+  `ComponentDef` overload is the one entry today.
+
+`scripts/generate-api-reference.ts` renders them into
+`docs/core/advanced/api-reference.md` — one `###` section per API, so each one
+is linkable and lands in the page's table of contents — and refuses to run
+while any export of those surfaces is untagged, a beta promotion has no
+example, two headings would claim one anchor, or a link into the page (from
+the README's stability table, say) points at a heading that does not exist.
+Run it after touching one of those surfaces and commit the result; CI checks
+the same thing (`.github/workflows/update-api-reference.yml`).
+
+Two characters cannot appear literally in a JSDoc example: the `*/` that
+would close the comment, and a space-preceded `@`, which TypeScript's JSDoc
+scanner reads as the start of a new tag and which silently truncates the
+example there. Write either with a zero-width space (U+200B) in front of the
+character that needs hiding — the generator strips every U+200B, so the
+published snippet is the real syntax. `packages/jsx/src/directives.ts` is the
+worked example.
+
 ## Changesets
 
 This repo uses [Changesets](https://github.com/changesets/changesets) for

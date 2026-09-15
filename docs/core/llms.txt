@@ -52,9 +52,11 @@
 
 ## Advanced
 
+- [API Reference](https://barefootjs.dev/docs/advanced/api-reference.md): Every public API with the release it first shipped in, its stability tier and a usage example — generated from the JSDoc on the exports themselves.
 - [Vendor code-splitting](https://barefootjs.dev/docs/advanced/code-splitting.md): Split large vendor libraries into separately-cached browser chunks via Vite's own `manualChunks`
 - [Compiler Internals](https://barefootjs.dev/docs/advanced/compiler-internals.md): How the BarefootJS compiler transforms JSX into marked templates and client JavaScript.
 - [Error Codes Reference](https://barefootjs.dev/docs/advanced/error-codes.md): BF-prefixed compiler error codes with explanations and fixes.
 - [IR Schema Reference](https://barefootjs.dev/docs/advanced/ir-schema.md): JSON tree structure of the Intermediate Representation consumed by adapters and client-JS generation.
 - [Performance Optimization](https://barefootjs.dev/docs/advanced/performance.md): Strategies to minimize bundle size, reduce hydration cost, and optimize runtime reactivity
+- [Vite Plugin](https://barefootjs.dev/docs/advanced/vite-plugin.md): The `@barefootjs/vite` plugin — its options, what it writes to disk in build and dev, and where the adapter-specific builders fit.
 - [xyflow browser bundle](https://barefootjs.dev/docs/advanced/xyflow-browser-bundle.md): How to serve @barefootjs/xyflow as a pre-built browser chunk via an importmap

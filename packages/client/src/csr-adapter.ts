@@ -78,6 +78,12 @@ const EMPTY_OUTPUT: AdapterOutput = Object.freeze({
   extension: '.tsx',
 })
 
+/**
+ * The `CSRAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.1.0
+ * @stability alpha
+ */
 export class CSRAdapter extends BaseAdapter {
   name: string
   extension = '.tsx'

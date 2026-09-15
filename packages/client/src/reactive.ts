@@ -11,9 +11,18 @@ import { BF_SEAM_NAV_SEARCH, BF_SEAM_PUSH_SEARCH } from '@barefootjs/shared'
  * Phantom brand for compile-time reactivity detection.
  * The compiler checks for the '__reactive' property via TypeChecker
  * to identify reactive expressions.
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export type Reactive<T> = T & { readonly __reactive: true }
 
+/**
+ * The `[getter, setter]` tuple `createSignal` returns.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type Signal<T> = [
   /** Get current value (registers dependency when called inside effect) */
   Reactive<() => T>,
@@ -21,8 +30,26 @@ export type Signal<T> = [
   (valueOrFn: T | ((prev: T) => T)) => void
 ]
 
+/**
+ * A cleanup callback, as registered with `onCleanup` or returned from an effect.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type CleanupFn = () => void
+/**
+ * An effect body; may return a `CleanupFn`.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type EffectFn = () => void | CleanupFn
+/**
+ * The cached getter `createMemo` returns.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type Memo<T> = Reactive<() => T>
 
 // -- Dev-only instrumentation (SR1 / SR8, #1690) ------------------------------
@@ -36,6 +63,12 @@ export type Memo<T> = Reactive<() => T>
 // (`@barefootjs/client/reactive`); splitting the sink into a sibling file
 // would bundle a second copy into this entry and break the live binding.
 
+/**
+ * Which kind of subscriber a profiler event is attributed to.
+ *
+ * @since 0.11.0
+ * @stability alpha
+ */
 export type SubscriberKind = 'effect' | 'memo' | 'root'
 
 /**
@@ -44,6 +77,9 @@ export type SubscriberKind = 'effect' | 'memo' | 'root'
  * `set()`'s synchronous semantics). Ids are stable handles; `''` means the
  * node was created while profiling was off. The compiler will later emit
  * IR-aligned ids (SR3); until then ids are runtime-assigned counters.
+ *
+ * @since 0.11.0
+ * @stability alpha
  */
 export interface ProfilerEventSink {
   /** A signal's value changed (post `Object.is` bail). `batched` = inside `batch()`. */
@@ -108,6 +144,9 @@ let subscriberSeq = 0
  * disable. Calling this before a scenario runs lets `bf debug profile` collect
  * the event stream; production code never calls it, so the sink stays null and
  * the choke points stay free (dev-only instrumentation, #1690).
+ *
+ * @since 0.11.0
+ * @stability alpha
  */
 export function setProfilerSink(sink: ProfilerEventSink | null): void {
   profilerSink = sink
@@ -120,12 +159,20 @@ export function setProfilerSink(sink: ProfilerEventSink | null): void {
  * only — it does not change `set()`'s synchronous semantics; it just stamps a
  * turn onto the events emitted between begin and end. No-op when profiling is
  * off.
+ *
+ * @since 0.11.0
+ * @stability alpha
  */
 export function beginTurn(handlerId: string, loc?: string): void {
   if (profilerSink) profilerSink.turnBegin(handlerId, loc)
 }
 
-/** Mark the end of the current interaction turn (#1690, SR3). */
+/**
+ * Mark the end of the current interaction turn (#1690, SR3).
+ *
+ * @since 0.11.0
+ * @stability alpha
+ */
 export function endTurn(): void {
   if (profilerSink) profilerSink.turnEnd()
 }
@@ -140,6 +187,9 @@ export function endTurn(): void {
  *
  * No-op when profiling is off or called outside a run — the wasted-re-runs
  * analysis is the only consumer and it lives behind the dev-only sink (SR8).
+ *
+ * @since 0.11.0
+ * @internal
  */
 export function __bfReportOutput(changed: boolean): void {
   if (!profilerSink || !Owner) return
@@ -218,6 +268,9 @@ const PendingEffects = new Set<EffectContext>()
  * count()              // 0
  * setCount(5)          // Update to 5
  * setCount(n => n + 1) // Update with function (becomes 6)
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
   let value = initialValue
@@ -315,6 +368,9 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
  *   console.log("count changed:", count())
  * })
  * setCount(1)  // Logs "count changed: 1"
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: SubscriberKind = 'effect'): void {
   // Note: Nested effects are now allowed. runEffect() properly saves/restores
@@ -509,8 +565,21 @@ function disposeEffect(effect: EffectContext): void {
  *
  * Used internally by mapArray for per-item reactive scopes.
  *
- * @param fn - Function to run in the new scope. Receives a dispose function.
- * @returns The return value of fn
+ * Alpha rather than beta: no authored call site outside the runtime itself
+ * (`mapArray` builds the per-row scopes), and no documented pattern.
+ *
+ * @example
+ * ```ts
+ * const dispose = createRoot((dispose) => {
+ *   createEffect(() => console.log(count()))
+ *   return dispose
+ * })
+ *
+ * dispose()  // tears down every effect and memo created inside the scope
+ * ```
+ *
+ * @since 0.1.0
+ * @stability alpha
  */
 export function createRoot<T>(fn: (dispose: () => void) => T): T {
   const root: EffectContext = {
@@ -550,6 +619,18 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
  * Used for effects inside conditional branches that need cleanup on branch switch.
  *
  * @returns A dispose function that stops the effect and removes it from all signal dependencies.
+ *
+ * @example
+ * ```ts
+ * const dispose = createDisposableEffect(() => {
+ *   document.title = `${count()} items`
+ * })
+ *
+ * dispose()  // stops re-running and unsubscribes from count
+ * ```
+ *
+ * @since 0.1.0
+ * @stability alpha
  */
 export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => void {
   let disposed = false
@@ -593,6 +674,9 @@ export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => voi
  *   const timer = setInterval(() => console.log('tick'), 1000)
  *   onCleanup(() => clearInterval(timer))
  * })
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function onCleanup(fn: CleanupFn): void {
   if (Owner) {
@@ -616,6 +700,9 @@ export function onCleanup(fn: CleanupFn): void {
  *   const value = untrack(() => someSignal()) // won't re-run when someSignal changes
  *   console.log(value)
  * })
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function untrack<T>(fn: () => T): T {
   const prevListener = Listener
@@ -648,6 +735,9 @@ export function untrack<T>(fn: () => T): T {
  *   setB(2)  // queued
  * })
  * // effects run once here, not twice
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function batch<T>(fn: () => T): T {
   BatchDepth++
@@ -686,6 +776,9 @@ function flushEffects(): void {
  *   console.log('Component mounted!')
  *   onCleanup(() => console.log('Component unmounted!'))
  * })
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function onMount(fn: () => void): void {
   createEffect(() => untrack(fn))
@@ -708,6 +801,9 @@ export function onMount(fn: () => void): void {
  * doubled()    // 4
  * setCount(5)
  * doubled()    // 10
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   // A memo is an effect that writes a private signal. Share one id across both
@@ -749,11 +845,17 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
  * type-based reactivity analysis recognises `isSelected(row.id)` as a
  * reactive expression exactly like a signal/memo read.
  *
+ * Alpha rather than beta: shipped for SolidJS compatibility, with no authored
+ * call site and no documented pattern yet.
+ *
  * @example
  * const [selected, setSelected] = createSignal<number>(0)
  * const isSelected = createSelector(selected)
  * // inside a loop body:
  * //   <tr class={isSelected(row.id) ? 'danger' : ''}>
+ *
+ * @since 0.18.7
+ * @stability alpha
  */
 export function createSelector<T, U = T>(
   source: () => T,
@@ -854,6 +956,9 @@ let serverEnvReader: ((key: string) => string | undefined) | null = null
  * (`'search'`, …) and returns the raw value, or `undefined` to defer (to the
  * `globalThis` seam, else the empty default). Call once with a reader that
  * resolves per-request.
+ *
+ * @since 0.15.0
+ * @internal
  */
 export function __bfSetServerEnvReader(
   reader: ((key: string) => string | undefined) | null,
@@ -947,7 +1052,11 @@ function createEnvSignal<T>(
 
 /** Accepted inputs for `setSearchParams` — a raw query string (with or without
  *  a leading `?`), a `URLSearchParams`, or a plain record (array = multi-value,
- *  form-encoded like the client `queryHref`, cf. #2048). */
+ *  form-encoded like the client `queryHref`, cf. #2048).
+ *
+ * @since 0.17.0
+ * @stability beta
+ */
 export type SearchParamsInit =
   | string
   | URLSearchParams
@@ -1015,6 +1124,24 @@ const searchParamsTuple: readonly [
   (next: SearchParamsInit) => void,
 ] = [searchParamsGetter, setSearchParams]
 
+/**
+ * Request-scoped query-string signal, returned as a `createSignal`-shaped `[getter, setter]` tuple. See the doc comment on `searchParamsTuple` above for the read/write semantics.
+ *
+ * @example
+ * ```tsx
+ * "use client"
+ * const [searchParams, setSearchParams] = createSearchParams()
+ *
+ * // Reads re-run when the router changes the query, with no swap or re-hydration.
+ * const sort = createMemo(() => searchParams().get('sort') ?? 'date')
+ *
+ * // Writing navigates: soft same-route when a router is running, hard otherwise.
+ * setSearchParams({ sort: 'price' })
+ * ```
+ *
+ * @since 0.17.0
+ * @stability beta
+ */
 export function createSearchParams(): readonly [
   Reactive<() => URLSearchParams>,
   (next: SearchParamsInit) => void,

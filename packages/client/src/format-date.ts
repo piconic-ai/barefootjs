@@ -108,6 +108,24 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+/**
+ * Format a date with a fixed pattern and time zone. SSR adapters lower the call to their own date helper.
+ *
+ * @example
+ * ```tsx
+ * const createdAt = new Date('2026-09-15T00:00:00Z')
+ *
+ * formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')  // '2026/9/15'
+ * formatDate(createdAt, 'YYYY-MM-DD')              // '2026-09-15' (defaults to UTC)
+ *
+ * // In a component — every SSR adapter lowers this to its own date helper,
+ * // so the server-rendered text matches the client byte for byte.
+ * <time>{formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')}</time>
+ * ```
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export function formatDate(
   date: Date | string,
   pattern: string,

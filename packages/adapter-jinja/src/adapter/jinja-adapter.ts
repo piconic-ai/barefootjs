@@ -185,6 +185,12 @@ import {
 export type { JinjaAdapterOptions } from './lib/types.ts'
 import type { JinjaAdapterOptions } from './lib/types.ts'
 
+/**
+ * The `JinjaAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.18.0
+ * @stability alpha
+ */
 export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRenderCtx> {
   name = 'jinja'
   extension = '.jinja'

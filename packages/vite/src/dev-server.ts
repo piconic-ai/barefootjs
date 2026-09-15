@@ -58,6 +58,9 @@ function toPosixAbsolute(absPath: string): string {
  * must use to reach `absPath` through Vite's dev server: a root-relative
  * path when `absPath` is under `config.root`, or Vite's `/@fs/`
  * absolute-path passthrough when it isn't.
+ *
+ * @since 0.31.0
+ * @stability alpha
  */
 export function devRequestPath(config: Pick<ResolvedConfig, 'root'>, absPath: string): string {
   const posixAbs = toPosixAbsolute(absPath)
@@ -68,7 +71,11 @@ export function devRequestPath(config: Pick<ResolvedConfig, 'root'>, absPath: st
 }
 
 /** Full absolute URL (origin + `base` + request path) for `absPath` under
- * the dev server. */
+ * the dev server.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export function devModuleUrl(
   config: Pick<ResolvedConfig, 'root' | 'base'>,
   origin: string,
@@ -110,6 +117,9 @@ export function devScriptAssets(
  *
  * Call only after the server is actually listening (`httpServer`'s
  * `'listening'` event) — the resolved port isn't known before then.
+ *
+ * @since 0.31.0
+ * @stability alpha
  */
 export function resolveDevOrigin(server: ViteDevServer): string {
   const configured = server.config.server.origin

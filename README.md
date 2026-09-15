@@ -21,8 +21,21 @@
   <a href="https://x.com/barefootjs_dev"><img alt="Follow on X" src="https://img.shields.io/badge/follow-%40barefootjs__dev-black?logo=x" /></a>
 </p>
 
-> [!WARNING]
-> **Alpha Software** — BarefootJS is in early alpha. APIs may change without notice. Not recommended for production use.
+> [!NOTE]
+> **Stability.** Pre-1.0, so a minor release is still the breaking-change slot. On a **beta**
+> surface a breaking change ships with a migration note in the changelog; an **alpha** surface
+> may change without notice, so pin exact versions if you depend on it. Each row below links to
+> that surface's section of the [API Reference](./docs/core/advanced/api-reference.md), which lists every API with the release it
+> first shipped in, its tier and an example — generated from the JSDoc on the exports.
+>
+> | Surface | Status | Covers |
+> |---|---|---|
+> | [Runtime](./docs/core/advanced/api-reference.md#runtime) | **Beta** | The `@barefootjs/client` APIs a component author writes: `createSignal`, `createEffect`, `createMemo`, `onMount`, `onCleanup`, `untrack`, `batch`, context, portals, `<Async>` / `<Region>`, `queryHref`, `formatDate`. The rest of the package is alpha or compiler-internal |
+> | [Directives](./docs/core/advanced/api-reference.md#directives) | **Beta** | `"use client"` and `/* @client */` |
+> | [Browser mount](./docs/core/advanced/api-reference.md#browser-mount) | **Beta** | The two APIs an app calls itself on the browser-only `@barefootjs/client/runtime` entry: `render()` for CSR and `setupStreaming()` for a streaming page or the client router |
+> | [Vite plugin](./docs/core/advanced/api-reference.md#vite-plugin) | **Beta** | What configuring a build takes: `@barefootjs/vite`'s `barefoot()`, its four options, the `afterEmit` context, and the files it writes |
+> | [Adapter builders](./docs/core/advanced/api-reference.md#adapter-builders) | Alpha | Each adapter's `/vite` subpath and the helpers re-exported for them |
+> | [Adapters](./docs/core/advanced/api-reference.md#adapters) | Alpha | The adapter classes, everything `@barefootjs/jsx` exports, and the language-side runtimes |
 
 ---
 

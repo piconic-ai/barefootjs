@@ -153,6 +153,12 @@ function rubyAccessorFromSegments(base: string, segments: readonly LoopBindingPa
   return accessor
 }
 
+/**
+ * The `ErbAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.18.0
+ * @stability alpha
+ */
 export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCtx> {
   name = 'erb'
   extension = '.erb'

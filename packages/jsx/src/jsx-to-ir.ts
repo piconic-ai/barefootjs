@@ -5,6 +5,7 @@
  */
 
 import ts from 'typescript'
+import { CLIENT_DIRECTIVE_INTERIOR_RE } from './directives.ts'
 import {
   type IRNode,
   type IRElement,
@@ -272,7 +273,6 @@ interface TransformContext {
  * specially), so we read the trivia text directly and parse block
  * comments out of it.
  */
-const CLIENT_DIRECTIVE_INTERIOR_RE = /^\s*@client\s*$/
 const BLOCK_COMMENT_RE = /\/\*([\s\S]*?)\*\//g
 function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFile): boolean {
   const trivia = sourceFile.text.slice(expr.pos, expr.getStart(sourceFile))

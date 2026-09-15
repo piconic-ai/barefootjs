@@ -335,6 +335,12 @@ import {
 export type { BladeAdapterOptions } from './lib/types.ts'
 import type { BladeAdapterOptions } from './lib/types.ts'
 
+/**
+ * The `BladeAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.18.0
+ * @stability alpha
+ */
 export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRenderCtx> {
   name = 'blade'
   extension = '.blade.php'

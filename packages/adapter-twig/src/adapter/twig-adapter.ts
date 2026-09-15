@@ -235,6 +235,12 @@ import {
 export type { TwigAdapterOptions } from './lib/types.ts'
 import type { TwigAdapterOptions } from './lib/types.ts'
 
+/**
+ * The `TwigAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.18.0
+ * @stability alpha
+ */
 export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRenderCtx> {
   name = 'twig'
   extension = '.twig'

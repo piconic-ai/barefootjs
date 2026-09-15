@@ -6,6 +6,7 @@
  */
 
 import { Marked } from 'marked'
+import { headingSlug } from './heading-slug.ts'
 import { createHighlighterCore, type HighlighterCore } from 'shiki/core'
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
 import type { TocItem } from '../../shared/components/table-of-contents'
@@ -142,13 +143,7 @@ function createMarked(): Marked {
       },
 
       heading({ text, depth }: { text: string; depth: number }) {
-        const id = text
-          .toLowerCase()
-          .replace(/<[^>]*>/g, '')
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim()
+        const id = headingSlug(text)
         const anchor = depth >= 2
           ? `<a href="#${id}" class="heading-anchor" aria-label="Link to ${text.replace(/<[^>]*>/g, '')}">#</a>`
           : ''

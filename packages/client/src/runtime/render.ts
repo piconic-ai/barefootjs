@@ -26,6 +26,10 @@ import type { ComponentDef, InitFn } from './types.ts'
  * with the given props. Unlike hydrate(), no pre-rendered HTML is required; the
  * container's content is replaced entirely.
  *
+ * Lives on the browser-only `@barefootjs/client/runtime` entry, not on
+ * `@barefootjs/client`: the root entry is SSR-safe and must not pull the DOM
+ * runtime into a server bundle.
+ *
  * @param container - Target DOM element to render into
  * @param nameOrDef - Registered component name or a ComponentDef
  * @param props - Props to pass to the component
@@ -38,6 +42,9 @@ import type { ComponentDef, InitFn } from './types.ts'
  * @example
  * // By ComponentDef (registry-free)
  * render(container, { name: 'MyNode', init, template }, { id: 'n1' })
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function render(
   container: HTMLElement,

@@ -7,11 +7,21 @@
  * the server-rendered DOM for hydration.
  */
 
+/**
+ * Marker object `__slot` wraps component-valued props in.
+ *
+ * @since 0.1.0
+ * @internal
+ */
 export interface SlotMarker {
   __isSlot: true
   toString(): string
 }
 
+/**
+ * @since 0.1.0
+ * @internal
+ */
 export function __slot(thunk: () => unknown): SlotMarker {
   return {
     __isSlot: true,

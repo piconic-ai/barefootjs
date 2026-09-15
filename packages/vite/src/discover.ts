@@ -82,6 +82,16 @@ export async function discoverComponentFiles(
   return results
 }
 
+/**
+ * One `.tsx` file `discoverComponents` found under a `components` directory,
+ * with everything the compile passes need to act on it: its path and the
+ * source snapshot discovery classified, whether it is (or transitively
+ * needs) a client entry, the components it exports and instantiates, and the
+ * CSS cascade layer its `components` entry asked for.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export interface DiscoveredComponent {
   /** Absolute path to the `.tsx` source file. */
   absPath: string
@@ -148,6 +158,9 @@ export interface DiscoveredComponent {
  * (`integrations/h3`/`elysia`'s `vite.config.ts`, reusing this exported
  * function to resolve every discovered client component's URL) keep
  * compiling and behaving unchanged.
+ *
+ * @since 0.31.0
+ * @stability alpha
  */
 export interface ResolvedComponentDirEntry {
   /** Absolute path to the source directory to scan. */
@@ -171,6 +184,9 @@ export interface ResolvedComponentDirEntry {
  * array order and `seen` short-circuits every later match, the same
  * first-writer-wins precedence `buildChildNameIndex` already documents for
  * `@bf-child:` name collisions.
+ *
+ * @since 0.31.0
+ * @stability alpha
  */
 export async function discoverComponents(
   entries: readonly (string | ResolvedComponentDirEntry)[],

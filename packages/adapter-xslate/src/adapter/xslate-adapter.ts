@@ -155,6 +155,12 @@ function kolonStringLiteral(s: string): string {
   return `'${escapeKolonSingleQuoted(s)}'`
 }
 
+/**
+ * The `XslateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.9.1
+ * @stability alpha
+ */
 export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRenderCtx> {
   name = 'xslate'
   extension = '.tx'
