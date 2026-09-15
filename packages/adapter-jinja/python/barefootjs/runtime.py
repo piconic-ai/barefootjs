@@ -1291,6 +1291,29 @@ class BarefootJS:
             parts.append(f"{_html_escape(key)}:{_html_escape(v)}")
         return Markup(";".join(parts))
 
+    def is_element(self, v: Any) -> bool:
+        """`isValidElement(x)` -- the framework "is this a renderable
+        element (not plain text)?" predicate `Slot`'s `asChild` pattern
+        uses (#2266, #3012). Mirrors JS's `'tag' in x && 'props' in x`:
+        true only for a dict carrying both keys (case-insensitively,
+        matching the case-tolerant lookups elsewhere in this runtime and
+        the Perl / Go / Ruby ports' own `is_element`/`IsValidElement`). A
+        passed-through JSX child is represented as pre-rendered markup (a
+        plain str) on this SSR model, so a non-empty STRING child is NOT
+        a valid element -- routing `isValidElement` through bare
+        truthiness here would wrongly take the element-merge branch."""
+        if not isinstance(v, dict):
+            return False
+        has_tag = False
+        has_props = False
+        for k in v.keys():
+            key = str(k).lower()
+            if key == "tag":
+                has_tag = True
+            if key == "props":
+                has_props = True
+        return has_tag and has_props
+
     def lc(self, s: Any) -> str:
         return js_string(s).lower()
 

@@ -387,6 +387,26 @@ class EvalDelegationTest(unittest.TestCase):
         users = [{"name": "Ada"}, {"name": "Grace"}]
         self.assertEqual(self.bf.map_eval(users, json.dumps(name_field), "u"), ["Ada", "Grace"])
 
+    def test_is_element(self):
+        # `bf.is_element` -- the framework "is this a renderable element
+        # (not plain text)?" predicate `Slot`'s `asChild` pattern uses
+        # (#2266, #3012). Ported from the shared Perl runtime's
+        # `is_element` (packages/adapter-perl/lib/BarefootJS.pm), which
+        # the Mojolicious / Xslate adapters' own `isValidElement`
+        # primitives already call.
+        self.assertTrue(self.bf.is_element({"tag": "div", "props": {}}))
+        # Case-insensitive key match, mirroring the Perl/Go/Ruby ports.
+        self.assertTrue(self.bf.is_element({"Tag": "div", "Props": {}}))
+        self.assertFalse(self.bf.is_element({"tag": "div"}))
+        self.assertFalse(self.bf.is_element({"props": {}}))
+        # A passed-through JSX child is pre-rendered markup (a plain str)
+        # on this SSR model -- a non-empty string must NOT read as an
+        # element, or `Slot`'s `asChild` guard would wrongly take the
+        # element-merge branch.
+        self.assertFalse(self.bf.is_element("<span>hello</span>"))
+        self.assertFalse(self.bf.is_element(None))
+        self.assertFalse(self.bf.is_element([1, 2, 3]))
+
 
 if __name__ == "__main__":
     unittest.main()

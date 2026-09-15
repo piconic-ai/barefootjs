@@ -416,3 +416,24 @@ fn flat_map_eval_and_map_eval_delegate_to_evaluator() {
     let out = evaluator::map_json(&users, &name_field.to_string(), "u", &evaluator::Env::new()).unwrap();
     assert_eq!(out, vec![s("Ada"), s("Grace")]);
 }
+
+// `runtime::is_element` -- the framework "is this a renderable element
+// (not plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266,
+// #3012). Ported from the shared Perl runtime's `is_element`
+// (packages/adapter-perl/lib/BarefootJS.pm), which the Mojolicious /
+// Xslate adapters' own `isValidElement` primitives already call.
+#[test]
+fn is_element_helper() {
+    assert!(runtime::is_element(&obj(&[("tag", s("div")), ("props", obj(&[]))])));
+    // Case-insensitive key match, mirroring the Perl/Go/Ruby/Python ports.
+    assert!(runtime::is_element(&obj(&[("Tag", s("div")), ("Props", obj(&[]))])));
+    assert!(!runtime::is_element(&obj(&[("tag", s("div"))])));
+    assert!(!runtime::is_element(&obj(&[("props", obj(&[]))])));
+    // A passed-through JSX child is pre-rendered markup (a plain
+    // `JsValue::String`) on this SSR model -- a non-empty string must NOT
+    // read as an element, or `Slot`'s `asChild` guard would wrongly take
+    // the element-merge branch.
+    assert!(!runtime::is_element(&s("<span>hello</span>")));
+    assert!(!runtime::is_element(&JsValue::Null));
+    assert!(!runtime::is_element(&arr(vec![n(1.0), n(2.0), n(3.0)])));
+}
