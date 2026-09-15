@@ -15,7 +15,12 @@
 /** Subscriber kinds the reactive instrumentation reports (SR1). */
 export type ProfilerSubscriberKind = 'effect' | 'memo' | 'root'
 
-/** The instrumentation points, as a discriminated `type` tag. */
+/**
+ * The instrumentation points, as a discriminated `type` tag.
+ *
+ * @since 0.11.0
+ * @stability alpha
+ */
 export type ProfilerEventType =
   | 'signalSet'
   | 'subscribeAdd'
@@ -34,6 +39,9 @@ export type ProfilerEventType =
  * One normalized instrumentation event (SR2). Flat with optional fields rather
  * than a per-type union so the analyses can scan a homogeneous log; `type`
  * discriminates which fields are populated.
+ *
+ * @since 0.11.0
+ * @stability alpha
  */
 export interface ProfilerEvent {
   type: ProfilerEventType

@@ -117,6 +117,7 @@ export const navigation: NavItem[] = [
       { title: 'Performance', slug: 'advanced/performance' },
       { title: 'Compatibility Matrix', slug: 'advanced/compatibility-matrix' },
       { title: 'Vite Plugin', slug: 'advanced/vite-plugin' },
+      { title: 'API Reference', slug: 'advanced/api-reference' },
     ],
   },
 ]

@@ -23,6 +23,12 @@ import type { ProfilerEvent } from '@barefootjs/shared'
 // on by both this runtime and the jsx analyses) — see that module for why.
 export type { ProfilerEvent, ProfilerEventType } from '@barefootjs/shared'
 
+/**
+ * The sink `createRecordingSink` returns.
+ *
+ * @since 0.11.0
+ * @stability alpha
+ */
 export interface RecordingSink {
   /** The sink to hand to `setProfilerSink(...)`. */
   sink: ProfilerEventSink
@@ -37,6 +43,9 @@ export interface RecordingSink {
  * scenario, then read `.events` — a turn-stamped, ordered log ready for the
  * SR4 join and the analyses. Turns may nest (a handler that dispatches another
  * handler); the stack's top is the attributed turn.
+ *
+ * @since 0.11.0
+ * @stability alpha
  */
 export function createRecordingSink(): RecordingSink {
   const events: ProfilerEvent[] = []

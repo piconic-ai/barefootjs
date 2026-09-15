@@ -137,6 +137,12 @@ function perlStringLiteral(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 }
 
+/**
+ * The `MojoAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.1.0
+ * @stability alpha
+ */
 export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'

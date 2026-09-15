@@ -28,6 +28,12 @@ function compiledAway(name: string): never {
   )
 }
 
+/**
+ * Props of the `<Async>` built-in.
+ *
+ * @since 0.15.0
+ * @stability beta
+ */
 export interface AsyncProps {
   /** UI rendered while the streamed children resolve. */
   fallback: unknown
@@ -35,6 +41,12 @@ export interface AsyncProps {
   children?: unknown
 }
 
+/**
+ * Props of the `<Region>` built-in.
+ *
+ * @since 0.15.0
+ * @stability beta
+ */
 export interface RegionProps {
   /** The page-lifecycle subtree the router disposes / re-hydrates on navigation. */
   children?: unknown
@@ -44,6 +56,9 @@ export interface RegionProps {
  * Streaming async boundary. Lowered by the compiler to the adapter's
  * streaming primitive (Hono `<Suspense>`); `fallback` is shown until the
  * children resolve. Compiled away — never executes at runtime.
+ *
+ * @since 0.15.0
+ * @stability beta
  */
 // Return type is `any` so the built-in satisfies every adapter's
 // `JSX.Element` regardless of the active `jsxImportSource`.
@@ -55,6 +70,9 @@ export function Async(_props: AsyncProps): any {
  * Page-lifecycle boundary (spec/router.md). Lowered by the compiler to a
  * wrapper element carrying a deterministic `bf-region` marker the client
  * router matches on. Compiled away — never executes at runtime.
+ *
+ * @since 0.15.0
+ * @stability beta
  */
 // Return type is `any` so the built-in satisfies every adapter's
 // `JSX.Element` regardless of the active `jsxImportSource`.

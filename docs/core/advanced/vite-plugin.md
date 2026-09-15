@@ -137,6 +137,8 @@ The core plugin's four options, `ComponentDirEntry`, `AfterEmitContext`, and the
 
 The adapter builders (`@barefootjs/*/vite`) and the helpers the core package re-exports for them are **alpha** and may change without notice. Pin exact versions if you depend on them.
 
+The [API Reference](./api-reference.md#vite-plugin) lists each export with the release it first shipped in.
+
 ## Tooling
 
 The plugin attaches its options to the returned plugin's `api` (`BarefootPluginApi`), Vite's own convention for exposing plugin state to other tools. The `bf` CLI reads `vite.config.ts` through Vite's `loadConfigFromFile`, finds the plugin by name (`PLUGIN_NAME`, exported alongside `barefoot`), and takes `api.options.components` as its source directories — so `bf` needs no config of its own.

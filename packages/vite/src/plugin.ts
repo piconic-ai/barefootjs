@@ -101,6 +101,12 @@ import { createDebouncedSerialRunner } from './debounced-serial-runner.ts'
 // config's `plugins` array (e.g. `bf`'s `context.ts`, reading `api` off it —
 // see `BarefootPluginApi`'s docstring) without hardcoding the string
 // independently of what this file actually names the plugin.
+/**
+ * The plugin's `name`, for tooling that looks it up in a resolved Vite config's `plugins` array.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export const PLUGIN_NAME = 'barefoot'
 
 function reportErrors(result: CompileResult, source: string, projectDir: string): void {
@@ -140,6 +146,12 @@ function normalizeComponents(
   )
 }
 
+/**
+ * The core BarefootJS Vite plugin: compiles every `.tsx` under `components` into a template for `adapter` and client JS for Vite to bundle. See `docs/core/advanced/vite-plugin.md`.
+ *
+ * @since 0.31.0
+ * @stability beta
+ */
 export function barefoot(options: BarefootViteOptions): Plugin {
   const cache = new CompileCache()
 

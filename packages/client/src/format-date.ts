@@ -108,6 +108,12 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+/**
+ * Format a date with a fixed pattern and time zone. SSR adapters lower the call to their own date helper.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export function formatDate(
   date: Date | string,
   pattern: string,

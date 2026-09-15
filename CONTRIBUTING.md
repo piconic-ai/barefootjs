@@ -125,6 +125,34 @@ A few rules the codebase enforces (see [`CLAUDE.md`](CLAUDE.md) for the full set
   Go `html/template`, Mojolicious, and more), so keep core compiler and
   runtime code adapter-agnostic. CSS uses UnoCSS.
 
+## API stability tags
+
+Every export of a documented surface — `@barefootjs/client`, `@barefootjs/vite`,
+the compiler directives, each adapter's `/vite` builder, and the adapter
+classes — carries two JSDoc tags:
+
+```ts
+/**
+ * Create a reactive value
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
+export function createSignal<T>(initialValue: T): Signal<T> { ... }
+```
+
+- `@since` is the first release that shipped the API (the workspace's single
+  version, since changesets are `fixed`).
+- `@stability` is `beta` or `alpha`, per the tiers in `README.md`'s stability
+  table. An export that is not part of the public surface carries
+  `@internal` instead.
+
+`scripts/generate-api-reference.ts` renders them into
+`docs/core/advanced/api-reference.md` and refuses to run while any export of
+those surfaces is untagged, so adding an export means deciding its tier. Run
+it after touching one of those surfaces and commit the result; CI checks that
+the page is up to date (`.github/workflows/update-api-reference.yml`).
+
 ## Changesets
 
 This repo uses [Changesets](https://github.com/changesets/changesets) for

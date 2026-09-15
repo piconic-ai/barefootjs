@@ -9,7 +9,11 @@
 import { basename, dirname, relative, resolve, sep } from 'node:path'
 
 /** Posix-normalized path of `absPath` relative to `root` (manifest keys and
- * Rollup `input` specifiers both want forward slashes regardless of OS). */
+ * Rollup `input` specifiers both want forward slashes regardless of OS).
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export function toPosixRelative(root: string, absPath: string): string {
   return relative(root, absPath).split(sep).join('/')
 }

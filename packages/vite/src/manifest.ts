@@ -11,7 +11,11 @@ import type { Manifest } from 'vite'
 
 /** Read and parse the manifest Vite just wrote to `outDir`. `manifestOption`
  * mirrors `build.manifest`: `true` → the default `.vite/manifest.json`
- * path; a string → that custom path, relative to `outDir`. */
+ * path; a string → that custom path, relative to `outDir`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export async function loadManifest(outDir: string, manifestOption: boolean | string): Promise<Manifest> {
   const relPath = typeof manifestOption === 'string' ? manifestOption : '.vite/manifest.json'
   const content = await readFile(resolve(outDir, relPath), 'utf8')
@@ -20,7 +24,11 @@ export async function loadManifest(outDir: string, manifestOption: boolean | str
 
 /** Join a Vite `base` (may or may not have a trailing slash; may be a full
  * URL, an absolute path, or `'./'`) with a manifest-relative file path
- * (never starts with `/`) into the URL an adapter should register. */
+ * (never starts with `/`) into the URL an adapter should register.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export function joinBaseAndFile(base: string, file: string): string {
   if (base === '' || base === './') return file
   return base.endsWith('/') ? `${base}${file}` : `${base}/${file}`
@@ -33,6 +41,9 @@ export function joinBaseAndFile(base: string, file: string): string {
  * on its own, so they need no separate registration. `[]` when the entry
  * isn't in the manifest (e.g. a `'use client'` file whose compile produced
  * no client JS at all, or a stale discovery/build mismatch).
+ *
+ * @since 0.31.0
+ * @stability alpha
  */
 export function resolveScriptAssets(
   manifest: Manifest,

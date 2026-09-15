@@ -13,6 +13,9 @@
  * @param source - The parent props object (reads are deferred via getters)
  * @param overrides - Object literal with getters/values that override source props
  * @param excludeKeys - Keys from source to exclude (already destructured)
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function forwardProps<T extends Record<string, unknown>>(
   source: T,

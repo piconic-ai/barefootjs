@@ -22,6 +22,9 @@
  * @param props - The source props object
  * @param keys - Keys to extract into the first (local) object
  * @returns A tuple [local, rest] where local has the specified keys and rest has everything else
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export function splitProps<
   T extends Record<string, unknown>,

@@ -68,6 +68,12 @@ import { devModuleUrl, loadManifest, resolveDevOrigin, resolveScriptAssets, toPo
 import { GoTemplateAdapter } from './adapter/index.ts'
 import { combineGoTypes } from './go-types.ts'
 
+/**
+ * Options of `@barefootjs/go-template/vite`'s `barefoot()`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export interface GoTemplateViteOptions {
   /** Source directories to scan for `.tsx` components, relative to the
    * Vite project root (or absolute). */
@@ -257,6 +263,12 @@ async function writeAssetMap(
   await writeIfChanged(resolve(ctx.projectDir, outputFile), content, outputFile)
 }
 
+/**
+ * Adapter builder: composes the core `@barefootjs/vite` plugin with a constructed adapter and this backend's post-processing. See `docs/core/advanced/vite-plugin.md`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export function barefoot(options: GoTemplateViteOptions): Plugin[] {
   const packageName = options.packageName ?? 'main'
   const typesOutputFile = options.typesOutputFile ?? 'components.go'

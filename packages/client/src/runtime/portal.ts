@@ -11,6 +11,12 @@ import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '
 import { parseHTML } from './component.ts'
 import { getPortalScopeId } from './scope.ts'
 
+/**
+ * The handle `createPortal` returns.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type Portal = {
   /** The mounted element */
   element: HTMLElement
@@ -20,6 +26,9 @@ export type Portal = {
 
 /**
  * Options for createPortal
+ *
+ * @since 0.1.0
+ * @stability beta
  */
 export interface PortalOptions {
   /**
@@ -30,10 +39,20 @@ export interface PortalOptions {
   ownerScope?: Element
 }
 
-/** Anything that can be converted to HTML string via toString() */
+/**
+ * Anything that can be converted to HTML string via toString()
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type Renderable = { toString(): string }
 
-/** Valid children types for createPortal */
+/**
+ * Valid children types for createPortal
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export type PortalChildren = HTMLElement | string | Renderable
 
 /**

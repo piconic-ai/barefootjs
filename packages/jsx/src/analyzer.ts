@@ -7,6 +7,7 @@
  */
 
 import ts from 'typescript'
+import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
@@ -416,10 +417,7 @@ function visit(
 ): void {
   // Check for 'use client' directive at module level
   if (ts.isExpressionStatement(node) && ts.isStringLiteral(node.expression)) {
-    if (
-      node.expression.text === 'use client' ||
-      node.expression.text === "'use client'"
-    ) {
+    if (isUseClientDirectiveText(node.expression.text)) {
       ctx.hasUseClientDirective = true
     }
   }
@@ -3091,7 +3089,6 @@ function declarationIsReactiveFactoryCall(
 // Module-level `/* @client */` directive detection + collection
 // =============================================================================
 
-const CLIENT_DIRECTIVE_INTERIOR_RE = /^\s*@client\s*$/
 const BLOCK_COMMENT_RE = /\/\*([\s\S]*?)\*\//g
 
 /**
@@ -4288,7 +4285,7 @@ function fileHasUseClientDirective(filePath: string): boolean {
   function visit(node: ts.Node): void {
     if (found) return
     if (ts.isExpressionStatement(node) && ts.isStringLiteral(node.expression)) {
-      if (node.expression.text === 'use client') {
+      if (node.expression.text === USE_CLIENT_DIRECTIVE) {
         found = true
         return
       }
@@ -4472,7 +4469,7 @@ function listComponentFunctionsFromSourceFile(sourceFile: ts.SourceFile): string
   const hasUseClient = sourceFile.statements.some(stmt =>
     ts.isExpressionStatement(stmt) &&
     ts.isStringLiteral(stmt.expression) &&
-    (stmt.expression.text === 'use client' || stmt.expression.text === "'use client'")
+    isUseClientDirectiveText(stmt.expression.text)
   )
   const namedExports = collectNamedExports(sourceFile)
 
@@ -5905,7 +5902,7 @@ function factoryImportInsertionOffset(sf: ts.SourceFile): number {
   for (const stmt of sf.statements) {
     if (ts.isImportDeclaration(stmt)) { lastImportEnd = stmt.getEnd(); continue }
     if (directiveEnd === -1 && ts.isExpressionStatement(stmt) &&
-        ts.isStringLiteral(stmt.expression) && stmt.expression.text === 'use client') {
+        ts.isStringLiteral(stmt.expression) && stmt.expression.text === USE_CLIENT_DIRECTIVE) {
       directiveEnd = stmt.getEnd()
     }
   }

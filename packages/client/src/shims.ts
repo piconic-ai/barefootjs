@@ -22,14 +22,32 @@ function browserOnly(name: string): never {
   )
 }
 
+/**
+ * Read the nearest provided value for a context. Browser-only; the compiler rewrites the import in `"use client"` components.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export function useContext<T>(_context: Context<T>): T {
   return browserOnly('useContext')
 }
 
+/**
+ * Provide a context value to the current component subtree. Browser-only.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export function provideContext<T>(_context: Context<T>, _value: T): void {
   return browserOnly('provideContext')
 }
 
+/**
+ * Render children into a container outside the parent DOM hierarchy. Browser-only.
+ *
+ * @since 0.1.0
+ * @stability beta
+ */
 export function createPortal(
   _children: PortalChildren,
   _container?: Element,
@@ -38,10 +56,18 @@ export function createPortal(
   return browserOnly('createPortal')
 }
 
+/**
+ * @since 0.1.0
+ * @internal
+ */
 export function isSSRPortal(_element: HTMLElement): boolean {
   return browserOnly('isSSRPortal')
 }
 
+/**
+ * @since 0.1.0
+ * @internal
+ */
 export function findSiblingSlot(
   _el: HTMLElement,
   _slotSelector: string,
@@ -49,10 +75,20 @@ export function findSiblingSlot(
   return browserOnly('findSiblingSlot')
 }
 
+/**
+ * @since 0.1.0
+ * @internal
+ */
 export function cleanupPortalPlaceholder(_portalId: string): void {
   return browserOnly('cleanupPortalPlaceholder')
 }
 
+/**
+ * Keep a floating element positioned while open: runs `update` now, on capture-phase scroll and on resize, and once more on dispose. Browser-only.
+ *
+ * @since 0.35.0
+ * @stability alpha
+ */
 export function trackPosition(_update: () => void): () => void {
   return browserOnly('trackPosition')
 }

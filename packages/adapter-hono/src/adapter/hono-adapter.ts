@@ -124,6 +124,12 @@ function applyHonoLoopChain(loop: IRLoop): string {
   })
 }
 
+/**
+ * The `HonoAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.1.0
+ * @stability alpha
+ */
 export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderCtx> {
   name = 'hono'
   extension = '.tsx'

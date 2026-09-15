@@ -22,14 +22,14 @@
 </p>
 
 > [!NOTE]
-> **Stability:** pre-1.0, so a minor release is still the breaking-change slot. On a **beta** surface a breaking change ships with a migration note in the changelog; an **alpha** surface may change without notice, so pin exact versions if you depend on it.
+> **Stability:** pre-1.0, so a minor release is still the breaking-change slot. On a **beta** surface a breaking change ships with a migration note in the changelog; an **alpha** surface may change without notice, so pin exact versions if you depend on it. The [API Reference](./docs/core/advanced/api-reference.md) lists every API with the release it first shipped in and its tier, generated from the `@since` / `@stability` tags on the code.
 >
-> | Surface | Status | Covers |
+> | Surface | Status | Reference |
 > |---|---|---|
-> | Runtime | **Beta** | `@barefootjs/client` reactive primitives (`createSignal`, `createEffect`, `createMemo`, `createContext`, ...) and the `"use client"` / `/* @client */` directives |
-> | Build: Vite plugin | **Beta** | `@barefootjs/vite`'s `barefoot()` — `adapter` / `components` / `templates` / `afterEmit` — and the files it writes. See [Vite Plugin](./docs/core/advanced/vite-plugin.md) |
-> | Build: adapter builders | Alpha | Each adapter's `/vite` subpath (`@barefootjs/hono/vite`, `@barefootjs/go-template/vite`, ...) and the helpers `@barefootjs/vite` re-exports for them |
-> | Adapters | Alpha | Everything exported from `@barefootjs/jsx`, each adapter package, and its language-side runtime |
+> | Runtime | **Beta** | [`@barefootjs/client` primitives, context, portals, built-ins](./docs/core/advanced/api-reference.md#runtime) and the [`"use client"` / `/* @client */` directives](./docs/core/advanced/api-reference.md#directives) |
+> | Build: Vite plugin | **Beta** | [`@barefootjs/vite`: `barefoot()`, its options, and the files it writes](./docs/core/advanced/api-reference.md#vite-plugin) |
+> | Build: adapter builders | Alpha | [Each adapter's `/vite` subpath and the helpers re-exported for them](./docs/core/advanced/api-reference.md#adapter-builders) |
+> | Adapters | Alpha | [The adapter classes, `@barefootjs/jsx`, and the language-side runtimes](./docs/core/advanced/api-reference.md#adapters) |
 
 ---
 

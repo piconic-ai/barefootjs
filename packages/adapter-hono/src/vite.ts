@@ -54,6 +54,12 @@ import { devModuleUrl, loadManifest, resolveDevOrigin, resolveScriptAssets, toPo
 import { HonoAdapter } from './adapter/index.ts'
 import type { HonoAdapterOptions } from './adapter/index.ts'
 
+/**
+ * Options of `@barefootjs/hono/vite`'s `barefoot()`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export interface HonoViteOptions {
   /** Source directories to scan for `.tsx` components, relative to the
    * Vite project root (or absolute). */
@@ -169,6 +175,12 @@ async function writeAssetMap(
   await writeIfChanged(resolve(ctx.projectDir, assetsOutputFile), content, assetsOutputFile)
 }
 
+/**
+ * Adapter builder: composes the core `@barefootjs/vite` plugin with a constructed adapter and this backend's post-processing. See `docs/core/advanced/vite-plugin.md`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export function barefoot(options: HonoViteOptions): Plugin[] {
   const assets = options.assets ?? {}
   const assetsOutputFile = options.assetsOutputFile ?? 'dist/bf-assets.ts'

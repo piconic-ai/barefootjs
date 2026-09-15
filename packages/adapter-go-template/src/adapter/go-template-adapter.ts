@@ -203,6 +203,12 @@ const STRING_METHODS: ReadonlySet<string> = new Set([
   'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
 ])
 
+/**
+ * The `GoTemplateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.1.0
+ * @stability alpha
+ */
 export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
   name = 'go-template'
   extension = '.tmpl'

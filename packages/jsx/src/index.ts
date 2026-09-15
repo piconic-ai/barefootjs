@@ -345,6 +345,9 @@ export type {
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 
+// The compiler's source-level directives (single definition of their spelling)
+export { USE_CLIENT_DIRECTIVE, CLIENT_EXPRESSION_DIRECTIVE } from './directives.ts'
+
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
 export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, collectContextConsumers } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'

@@ -233,6 +233,12 @@ function minijinjaAccessorFromSegments(base: string, segments: readonly LoopBind
   return accessor
 }
 
+/**
+ * The `MinijinjaAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.18.0
+ * @stability alpha
+ */
 export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRenderCtx> {
   name = 'minijinja'
   extension = '.j2'

@@ -27,6 +27,9 @@ import type { TemplateAdapter } from '@barefootjs/jsx'
  * CLAUDE.md's "never add compiler options/hooks for tool-specific output
  * rewriting") — closing that door by TYPE, not by convention, is the
  * point of keeping this context this narrow.
+ *
+ * @since 0.31.0
+ * @stability beta
  */
 export interface AfterEmitContext {
   /** Per-source-file `types` output, keyed by that file's absolute path.
@@ -46,6 +49,9 @@ export interface AfterEmitContext {
  * One `components` entry with per-directory compile behavior. A plain
  * string is exactly equivalent to `{ dir: string }` — see
  * `BarefootViteOptions.components`.
+ *
+ * @since 0.31.0
+ * @stability beta
  */
 export interface ComponentDirEntry {
   /** Source directory to scan, relative to the Vite root (or absolute). */
@@ -74,6 +80,9 @@ export interface ComponentDirEntry {
  * skip, is a function of WHICH `components` entry a file came from — so
  * that behavior rides on the `components` entries themselves
  * (`ComponentDirEntry`) rather than becoming a 4th/5th top-level option.
+ *
+ * @since 0.31.0
+ * @stability beta
  */
 export interface BarefootViteOptions {
   /** A constructed `TemplateAdapter` instance (e.g. `new
@@ -137,6 +146,9 @@ export interface BarefootViteOptions {
  * returns the resulting plugin instances, so anything gated behind
  * `configResolved` (e.g. the plugin's own resolved absolute `componentDirs`)
  * would never be visible to a caller going through that path.
+ *
+ * @since 0.31.0
+ * @stability alpha
  */
 export interface BarefootPluginApi {
   /** The exact options object `barefoot()` was constructed with. */

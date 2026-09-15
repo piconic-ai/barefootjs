@@ -33,9 +33,27 @@
  * `queryHref(base, { … })` call to their query helper (go-template: `bf_query`),
  * which is why the params object must be a plain object literal at the call site.
  */
+/**
+ * One `queryHref` param value: a string, a repeated string, or absent.
+ *
+ * @since 0.17.0
+ * @stability beta
+ */
 export type QueryParamValue = string | string[] | null | undefined
+/**
+ * The params object `queryHref` accepts.
+ *
+ * @since 0.17.0
+ * @stability beta
+ */
 export type QueryParams = Record<string, QueryParamValue>
 
+/**
+ * Build an href from a base path and a query-params object. Pure; SSR adapters lower the call to their own query helper.
+ *
+ * @since 0.17.0
+ * @stability beta
+ */
 export function queryHref(base: string, params: QueryParams): string {
   const u = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {

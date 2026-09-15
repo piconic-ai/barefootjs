@@ -74,6 +74,12 @@ import type { AfterEmitContext } from '@barefootjs/vite'
 import { devModuleUrl, loadManifest, resolveDevOrigin, resolveScriptAssets, toPosixRelative } from '@barefootjs/vite'
 import { MinijinjaAdapter } from './adapter/index.ts'
 
+/**
+ * Options of `@barefootjs/rust/vite`'s `barefoot()`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export interface RustViteOptions {
   /** Source directories to scan for `.tsx` components, relative to the
    * Vite project root (or absolute). */
@@ -176,6 +182,12 @@ async function writeAssetMap(
   await writeIfChanged(resolve(ctx.projectDir, assetsOutputFile), content, assetsOutputFile)
 }
 
+/**
+ * Adapter builder: composes the core `@barefootjs/vite` plugin with a constructed adapter and this backend's post-processing. See `docs/core/advanced/vite-plugin.md`.
+ *
+ * @since 0.31.0
+ * @stability alpha
+ */
 export function barefoot(options: RustViteOptions): Plugin[] {
   const assets = options.assets ?? {}
   const assetsOutputFile = options.assetsOutputFile ?? 'dist/bf-assets.json'
