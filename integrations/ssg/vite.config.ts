@@ -7,7 +7,7 @@ import { BASE_PATH, OUT_DIR } from './constants.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
-// The 9 page-specific mount scripts (index has no island so it's excluded).
+// The 10 page-specific mount scripts (index has no island so it's excluded).
 // barefoot() auto-discovers ../shared/components/*.tsx and turns each into an
 // entry; these are hand-written non-component entries registered alongside
 // that — the same pattern as integrations/hono's client/router-entry.ts.
@@ -21,6 +21,7 @@ const pageIslands = [
   'conditional-return',
   'conditional-return-link',
   'todos',
+  'ai-chat',
 ] as const
 
 export default defineConfig({
