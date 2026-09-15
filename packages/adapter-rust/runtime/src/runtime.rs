@@ -1498,6 +1498,7 @@ impl Object for BfInstance {
             "uc" => Ok(MjValue::from(js_string(a(0)).to_uppercase())),
             "join" => Ok(MjValue::from(join(a(0), a(1)))),
             "length" => Ok(MjValue::from(length(a(0)))),
+            "is_element" => Ok(MjValue::from(is_element(a(0)))),
             "style_object" => Ok(safe(style_object(&js_args))),
             "index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), false))),
             "last_index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), true))),
@@ -1659,6 +1660,36 @@ pub fn length(recv: &JsValue) -> f64 {
         JsValue::Array(a) => a.len() as f64,
         JsValue::Object(_) => 0.0,
         other => utf16_len(&js_string(other)) as f64,
+    }
+}
+
+/// `isValidElement(x)` -- the framework "is this a renderable element (not
+/// plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266, #3012).
+/// Mirrors JS's `'tag' in x && 'props' in x`: true only for a
+/// `JsValue::Object` carrying both keys (case-insensitively, matching the
+/// case-tolerant key lookups the Perl / Go / Ruby / Python ports use for
+/// their own `is_element`/`IsValidElement`). A passed-through JSX child is
+/// represented as pre-rendered markup (a plain `JsValue::String`) on this
+/// SSR model, so a non-empty STRING child is NOT a valid element -- routing
+/// `isValidElement` through bare truthiness here would wrongly take the
+/// element-merge branch.
+pub fn is_element(recv: &JsValue) -> bool {
+    match recv {
+        JsValue::Object(map) => {
+            let mut has_tag = false;
+            let mut has_props = false;
+            for key in map.keys() {
+                let lower = key.to_lowercase();
+                if lower == "tag" {
+                    has_tag = true;
+                }
+                if lower == "props" {
+                    has_props = true;
+                }
+            }
+            has_tag && has_props
+        }
+        _ => false,
     }
 }
 
