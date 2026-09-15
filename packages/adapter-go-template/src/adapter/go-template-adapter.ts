@@ -5313,6 +5313,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         },
       })
     }
+    // #2994: any other identifier callee reaching here is a call to an
+    // arbitrary JS function by bare name — a module-scope `function`/arrow
+    // `const` helper being the repro shape. Zero-arg calls already
+    // returned above as signal reads, so this is always a call WITH args.
+    // Falling through to the generic render below used to emit the bare
+    // name as a Go template field/func reference (`.Fmt .Label`), which
+    // `html/template` then fails to evaluate at RENDER time (`can't
+    // evaluate field Fmt in type ...`) — a crash, not a silent empty
+    // render, but still no compile-time diagnostic. Refuse loudly here
+    // instead.
+    if (callee.kind === 'identifier') {
+      this.state.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Call to '${callee.name}(...)' has no Go template lowering — '${callee.name}' is not a signal read, a registered template primitive, or a recognised lowering call, so there is no Go binding for it in template scope.`,
+        loc: this.makeLoc(),
+        suggestion: {
+          message: `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — html/template has no way to invoke it. Pre-compute the value server-side and pass it as a prop, or wrap the position in /* @client */ so it runs in JS on the client.`,
+        },
+      })
+      return ''
+    }
     // Generic call: render callee and args.
     const calleeStr = emit(callee)
     if (args.length === 0) return calleeStr

@@ -365,8 +365,25 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   // `BladeFilterEmitter`'s constructor comment above for why.
   private readonly ctx: BladeEmitContext
 
-  constructor(ctx: BladeEmitContext) {
+  // #2994: true while emitting a subtree whose VALUE is only ever
+  // consumed for JS truthiness — never reachable as rendered content.
+  // Seeded by the constructor for a WHOLE-TREE test (an `IRConditional`'s
+  // `condition` / `IRIfStatement`'s `condition`); narrowed for a NESTED
+  // test — a ternary's `test`, or `!x`'s operand — by `conditional()` /
+  // `unary()` below (save/restore around just that subtree). `logical()`
+  // deliberately leaves it untouched and just inherits whatever the
+  // caller set, since `a && b` / `a || b` can themselves still surface as
+  // the rendered value (`{cond && children}`), not only as a nested
+  // truthiness test. `call()` reads this to decide whether a bare-name
+  // call to an unresolvable module-scope helper is safe to leave as the
+  // pre-#2994 fallback (its result is provably discarded down to a
+  // truthiness check either way) or must refuse loudly (its value can
+  // reach the page).
+  private _boolContext: boolean
+
+  constructor(ctx: BladeEmitContext, boolContext = false) {
     this.ctx = ctx
+    this._boolContext = boolContext
   }
 
   /**
@@ -476,11 +493,37 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
       )
       return "''"
     }
+    // #2994: any other identifier callee reaching here is a call to an
+    // arbitrary JS function by bare name — a module-scope `function`/arrow
+    // `const` helper being the repro shape. Zero-arg calls already
+    // returned above as signal getters, so this is always a call WITH
+    // args. Falling through to `emit(callee)` used to silently resolve the
+    // bare name against Blade's undefined-variable semantics (renders
+    // empty) and drop every argument. Refuse loudly instead of guessing.
+    // EXCEPT under `_boolContext` — see the field doc for the full
+    // `ui/components/ui/slot` `isValidElement` reasoning (the same as the
+    // ERB adapter's identical comment).
+    if (callee.kind === 'identifier' && !this._boolContext) {
+      this.ctx._recordExprBF101(
+        `Call to '${callee.name}(...)' has no Blade template lowering — '${callee.name}' is not a signal getter, a registered template primitive, or a recognised lowering call, so there is no PHP binding for it in template scope.`,
+        `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — Blade has no way to invoke it.`,
+      )
+      return "''"
+    }
     return emit(callee)
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    if (op === '!') return `!${truthyTest(argument, emit(argument))}`
+    if (op === '!') {
+      // `argument`'s own value never surfaces as rendered content — only
+      // whether it's JS-truthy matters — so it's evaluated under
+      // `_boolContext` (#2994).
+      const prevBoolContext = this._boolContext
+      this._boolContext = true
+      const arg = emit(argument)
+      this._boolContext = prevBoolContext
+      return `!${truthyTest(argument, arg)}`
+    }
     if (op === '-') return `-${emit(argument)}`
     return emit(argument)
   }
@@ -666,7 +709,14 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string {
     // See the file header, divergence 3: symbolic ternary.
-    return `(${truthyTest(test, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
+    // `test`'s own value never surfaces as rendered content (only
+    // `consequent`/`alternate` can), so it's evaluated under
+    // `_boolContext` (#2994) — restored before `consequent`/`alternate`.
+    const prevBoolContext = this._boolContext
+    this._boolContext = true
+    const testStr = truthyTest(test, emit(test))
+    this._boolContext = prevBoolContext
+    return `(${testStr} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {

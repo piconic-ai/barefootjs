@@ -118,4 +118,20 @@ export const conformancePins: ConformancePins = {
     severity: 'error',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2911',
   }],
+  // #2994 graduated the render-divergence pin: a call to a module-scope
+  // helper (arrow-valued const OR `function` declaration) by bare name
+  // has no Perl binding in Text::Xslate template scope — `call()`'s
+  // generic fallback now refuses it loudly (BF101) instead of silently
+  // resolving against Xslate's undefined-variable semantics (renders
+  // empty) and dropping the call's arguments. No verified escape twin
+  // exists yet (the shape has no structural lowering — see #2994's
+  // "Suggested fix shape" for the deferred, harder direction);
+  // `/* @client */` works informally but isn't pinned as a corpus
+  // fixture yet.
+  'module-const-arrow-helper': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
+  'module-function-helper-chain': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
 }

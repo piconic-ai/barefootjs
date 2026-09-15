@@ -2773,36 +2773,100 @@
       },
       "module-const-arrow-helper": {
         "blade": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "erb": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "go-template": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "jinja": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "minijinja": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "mojolicious": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "twig": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "xslate": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "module-const-loop-source-computed": {
@@ -2913,36 +2977,100 @@
       },
       "module-function-helper-chain": {
         "blade": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "erb": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "go-template": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "jinja": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "minijinja": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "mojolicious": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position crashes template execution instead of computing the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "twig": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "xslate": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "namespace-import-primitive": {

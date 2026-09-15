@@ -23,23 +23,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // seeds the evaluated default and the adapter's presence guard no longer
 // treats the prop as defaultless — `data-label` now renders `'none'` here
 // exactly like Hono, both for a plain default and a renamed one.
-export const renderDivergences: RenderDivergences = {
-  // #2994: a module-scope helper (arrow-valued const OR `function`
-  // declaration) that's safe to reference by bare name from the CSR
-  // template lambda is ALSO treated safe by the same
-  // `compute-inlinability.ts` verdict feeding the static "Marked
-  // Template" this adapter renders from — but there is no `fmt` binding
-  // in minijinja template scope. The `fmt(label)` slot renders silently
-  // empty instead of computing the real value or refusing to compile.
-  // Verified directly against the real `bf-render` minijinja binary in
-  // the #2994 investigation.
-  'module-const-arrow-helper':
-    'a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
-  // #3000: the `function`-declaration analog of `module-const-arrow-helper`
-  // above — same #2994 root cause (no `fmt` binding in minijinja template
-  // scope), same silently-empty render. The doc comment above already
-  // anticipated this shape ("arrow-valued const OR `function`
-  // declaration"); this entry is that other shape's fixture.
-  'module-function-helper-chain':
-    'a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)',
-}
+// #2994 graduated both entries formerly here (`module-const-arrow-helper`,
+// `module-function-helper-chain`): a module-scope helper call in a
+// template position (arrow-valued const OR `function` declaration) now
+// refuses loudly with BF101 instead of silently rendering empty — see
+// `conformance-pins.ts`.
+export const renderDivergences: RenderDivergences = {}

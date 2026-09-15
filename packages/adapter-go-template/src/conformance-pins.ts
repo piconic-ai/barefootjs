@@ -121,4 +121,21 @@ export const conformancePins: ConformancePins = {
     severity: 'error',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2909',
   }],
+  // #2994 graduated the render-divergence pin: a call to a module-scope
+  // helper (arrow-valued const OR `function` declaration) by bare name
+  // has no Go binding in template scope — `call()`'s generic fallback now
+  // refuses it loudly (BF101) instead of emitting a bare struct-field
+  // reference (`.Fmt .Label`) that `html/template` fails to evaluate at
+  // RENDER time (`can't evaluate field Fmt in type ...`, `go run` exiting
+  // non-zero) with no compile-time diagnostic. No verified escape twin
+  // exists yet (the shape has no structural lowering — see #2994's
+  // "Suggested fix shape" for the deferred, harder direction);
+  // `/* @client */` works informally but isn't pinned as a corpus fixture
+  // yet.
+  'module-const-arrow-helper': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
+  'module-function-helper-chain': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
 }
