@@ -1,5 +1,20 @@
 # @barefootjs/go-template
 
+## 0.36.0
+
+### Patch Changes
+
+- 231688e: Tag every public export of the documented surfaces with `@since` / `@stability` / `@example` JSDoc tags (or `@internal`), the source of the new generated API reference (`docs/core/advanced/api-reference.md`, `scripts/generate-api-reference.ts`) — one linkable section per API with its example.
+  
+  The `beta` tier is scoped to what a component author actually writes, measured against authored call sites in `ui/` / `site/` / `integrations/`: `@barefootjs/client`'s `provideContext`, `forwardProps` and `unwrap` are compiler ABI (emitted from `@barefootjs/client/runtime`, zero authored imports) and are now `@internal`; `createRoot`, `createSelector` and `splitProps` are `alpha`; the three portal helpers `isSSRPortal`, `findSiblingSlot` and `cleanupPortalPlaceholder` are `beta`, since `createPortal` is unusable in an SSR app without the first and the other two have authored call sites in six `ui/` components and a docs page respectively. No export was added or removed.
+  
+  The reference also covers the two APIs an app calls itself on the browser-only `@barefootjs/client/runtime` entry — `render` (CSR) and `setupStreaming` — which are now tagged `beta`. They stay on that entry rather than moving to `@barefootjs/client`, whose root must remain safe to import from a server bundle.
+  
+  `@barefootjs/jsx` additionally exports the compiler's two directive spellings as constants (`USE_CLIENT_DIRECTIVE`, `CLIENT_EXPRESSION_DIRECTIVE`) from a new `directives.ts` that every detection site now reads instead of repeating the literal. Comments and docs only — no behavior change.
+- f55e64d: Refuse a bare-name call to a module-scope helper (a `const` arrow or `function` declaration, or any other unregistered JS-only callee) in template position with a loud `BF101` diagnostic, instead of silently emitting broken template output. Previously this shape compiled clean and either rendered the slot empty and dropped every argument (ERB, Jinja, minijinja, Twig, Blade, Text::Xslate) or crashed template execution at render time (Go `html/template`, Mojolicious under Perl `strict`) — a real JS runtime (Hono SSR, CSR) is required to execute an arbitrary JS function reference, and none of these eight non-JS "Marked Template" adapters have one.
+- Updated dependencies [231688e]
+  - @barefootjs/shared@0.36.0
+
 ## 0.35.8
 
 ### Patch Changes
