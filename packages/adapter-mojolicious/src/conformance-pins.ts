@@ -126,4 +126,16 @@ export const conformancePins: ConformancePins = {
   'module-function-helper-chain': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
   ],
+  // #3012: same #2994 refusal as the two entries above, exercised from a
+  // boolean-TEST position (a ternary's `test`) instead of a plain text
+  // position. Unlike the six adapters #3012 is actually about, this
+  // adapter's `isValidElement` handling (`emitters.ts`) was ALREADY
+  // identity-scoped (registered by name via the shared `isValidElement`
+  // runtime primitive, #2266) rather than exempted by structural
+  // position, so it never had the `_boolContext` gap — every other
+  // bare-name call already refused loudly here regardless of position.
+  // This pin just extends the existing #2994 contract to the new fixture.
+  'module-helper-boolcontext-call': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
 }

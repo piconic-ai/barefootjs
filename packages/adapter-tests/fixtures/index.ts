@@ -672,6 +672,11 @@ import { fixture as moduleConstArrowHelper } from './module-const-arrow-helper'
 // `functionReferencesDeclaredName` check that flagged any reference to a
 // declared name (even a safe one) as unsafe.
 import { fixture as moduleFunctionHelperChain } from './module-function-helper-chain'
+// #3012: the boolean-test-position companion of moduleConstArrowHelper /
+// moduleFunctionHelperChain above — a module-scope helper called from
+// inside a ternary's `test` (not `isValidElement`), pinning that the
+// BF101 refusal is scoped by callee identity, not by structural position.
+import { fixture as moduleHelperBoolcontextCall } from './module-helper-boolcontext-call'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1125,4 +1130,5 @@ export const jsxFixtures: JSXFixture[] = [
   moduleHelperAsync,
   moduleConstArrowHelper,
   moduleFunctionHelperChain,
+  moduleHelperBoolcontextCall,
 ]

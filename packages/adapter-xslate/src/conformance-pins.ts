@@ -134,4 +134,21 @@ export const conformancePins: ConformancePins = {
   'module-function-helper-chain': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
   ],
+  // #3012: same #2994 refusal as the two entries above, but exercised from
+  // a boolean-TEST position (a ternary's `test`) instead of a plain text
+  // position — pins that the refusal is scoped by CALLEE IDENTITY, not by
+  // structural position. Before #3012, this adapter exempted ANY call
+  // inside a boolean-test position from BF101 (`_boolContext`), not just
+  // `isValidElement` (the one caller that legitimately needs it, for
+  // `ui/components/ui/slot`'s `asChild` guard) — so a non-`isValidElement`
+  // helper called from a condition/ternary test silently kept the broken
+  // pre-#2994 fallback instead of refusing. `isValidElement` now resolves
+  // as an identity-scoped `templatePrimitive` (`lib/constants.ts`, backed
+  // by the shared BarefootJS Perl runtime's `is_element` method) before
+  // `call()`'s generic fallback is ever reached, so the structural
+  // `_boolContext` exemption was removed entirely for this adapter — every
+  // other bare-name call now refuses here regardless of position.
+  'module-helper-boolcontext-call': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
 }

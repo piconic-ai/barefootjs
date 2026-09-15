@@ -138,4 +138,20 @@ export const conformancePins: ConformancePins = {
   'module-function-helper-chain': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
   ],
+  // #3012: the boolean-TEST-position companion of the two entries above —
+  // a ternary's `test`, not a plain text position, so it never reaches
+  // `call()`'s generic (BF101) fallback at all. `renderConditionExpr`
+  // (`go-template-adapter.ts`) is a SEPARATE, dedicated boolean-context
+  // expression renderer used only for condition/predicate positions; it
+  // already resolves `isValidElement` by identity (registered by name,
+  // #2266) ahead of a hard BF102 refusal for every other user-defined
+  // predicate call — this adapter never had a `_boolContext`-style
+  // structural exemption for the generic case, so it's unaffected by the
+  // gap #3012 fixes elsewhere. Permanent by design (`unescapable`):
+  // `html/template` cannot evaluate an arbitrary JS predicate
+  // server-side, so forcing a result (true or false) is a correctness
+  // hazard, not a capability gap to close later.
+  'module-helper-boolcontext-call': [
+    { code: 'BF102', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2266', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2266' } },
+  ],
 }
