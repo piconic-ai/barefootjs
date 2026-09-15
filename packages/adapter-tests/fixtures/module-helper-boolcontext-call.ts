@@ -12,14 +12,20 @@ import { createFixture } from '../src/types'
  * truthiness (`_boolContext`), an exemption carved out so `ui/components/
  * ui/slot`'s `isValidElement(children)` guard kept compiling on six
  * adapters (ERB, Jinja, minijinja/Rust, Twig, Blade, Text::Xslate) with no
- * dedicated shape-check primitive at the time — #3012 has since given
- * Text::Xslate one (this same PR), leaving five. That exemption was scoped by
- * STRUCTURAL POSITION (any call inside a condition/ternary-test/unary-`!`
- * operand), not by CALLEE IDENTITY — so a call to any OTHER helper from a
- * boolean-test position silently kept the pre-#3011 broken fallback
- * (undefined-variable semantics, typically falsy) instead of the BF101
- * refusal a same-position `isValidElement` call is exempted from for a
- * documented reason.
+ * dedicated shape-check primitive at the time. That exemption was scoped
+ * by STRUCTURAL POSITION (any call inside a condition/ternary-test/
+ * unary-`!` operand), not by CALLEE IDENTITY — so a call to any OTHER
+ * helper from a boolean-test position silently kept the pre-#3011 broken
+ * fallback (undefined-variable semantics, typically falsy) instead of the
+ * BF101 refusal a same-position `isValidElement` call is exempted from
+ * for a documented reason.
+ *
+ * #3012 closed this gap for all six adapters (Text::Xslate first, then
+ * ERB / Jinja / minijinja(Rust) / Twig / Blade): each now resolves
+ * `isValidElement` as an identity-scoped `templatePrimitive` ahead of
+ * `call()`'s generic fallback, and the `_boolContext` structural
+ * exemption is removed entirely — every OTHER bare-name call refuses with
+ * BF101 regardless of position, same as this fixture pins.
  *
  * Seeds are chosen so the correct result (Hono, real JS execution) and
  * the broken fallback's result diverge visibly: `isLong('hello')` is
