@@ -15,11 +15,18 @@ image_build_context = "../.."
 max_instances = 1
 # Memory and disk are billed on the instance type's provisioned size, so pin it
 # rather than inherit a platform default that could move the bill silently.
-# `lite` (256 MiB / 1/16 vCPU / 2 GB) is the smallest and fits this demo --
-# a Spring Boot fat jar's steady-state heap footprint is a few tens of MB for
-# a demo this size, well inside the ceiling; if a future addition grows the
-# heap noticeably, bump this before reaching for `basic`/`standard`.
-instance_type = "lite"
+# `lite` (256 MiB / 1/16 vCPU) is NOT enough here: it fits this demo's
+# steady-state heap footprint, but a cold-starting JVM (classloading + the
+# full Spring context bootstrap) needs meaningfully more memory AND CPU than
+# that just to bind the port before Cloudflare's readiness check gives up --
+# `lite` here produced "Failed to start container: The container is not
+# listening in the TCP address ...:8080" in production (#3027), a documented
+# Cloudflare Containers gotcha for JVM-family images
+# (https://github.com/cloudflare/containers/issues/139). `basic` (1 GiB,
+# 1/4 vCPU) is the smallest tier with enough headroom for a reliable cold
+# start; this is a startup-time floor, not a steady-state one, so it isn't
+# the same knob a growing steady-state heap would bump.
+instance_type = "basic"
 
 [[durable_objects.bindings]]
 name = "SPRING_CONTAINER"
