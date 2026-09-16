@@ -25,8 +25,12 @@ WORKDIR /src
 # workspace: dependencies this integration needs (@barefootjs/pebble,
 # @barefootjs/vite, @barefootjs/client, @barefootjs/router, the shared
 # integrations package) without copying every OTHER integration's node_modules
-# footprint into this layer.
-COPY package.json bun.lock ./
+# footprint into this layer. tsconfig.json is required too, not just for
+# `bun install`: integrations/shared/tsconfig.json's `extends:
+# "../../tsconfig.json"` resolves relative to the repo root, and Vite's
+# esbuild transform fails outright without it (missing here caused a real
+# production deploy failure -- #3024).
+COPY package.json bun.lock tsconfig.json ./
 COPY packages ./packages
 COPY integrations/shared ./integrations/shared
 COPY integrations/spring ./integrations/spring
