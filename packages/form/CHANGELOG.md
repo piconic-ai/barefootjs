@@ -1,5 +1,9 @@
 # @barefootjs/form
 
+## 0.37.0
+
+No changes in this release.
+
 ## 0.36.0
 
 No changes in this release.
