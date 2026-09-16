@@ -4228,7 +4228,15 @@ function scanImportedClientSignals(ctx: AnalyzerContext): void {
   }
 }
 
-function resolveRelativeImportToFile(source: string, fromFile: string): string | null {
+/**
+ * Resolve a relative import specifier (`./Zebra`, `../shared/types`) against
+ * the importing file's own absolute path to an on-disk source file, trying
+ * each of BarefootJS's known extensions and `index.*` forms. Exported (#2992)
+ * so an adapter can resolve — and read — a sibling component file on demand,
+ * instead of depending on that file having already been compiled and
+ * registered a cross-file lookup earlier in the same build.
+ */
+export function resolveRelativeImportToFile(source: string, fromFile: string): string | null {
   const baseDir = path.dirname(fromFile)
   const candidate = path.resolve(baseDir, source)
   // Source already carries an extension (`./x.tsx`) — try the candidate

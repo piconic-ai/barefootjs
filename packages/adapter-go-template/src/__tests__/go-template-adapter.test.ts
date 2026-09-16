@@ -4636,13 +4636,14 @@ export function Parent() {
     expect(parentTypes).not.toMatch(/Data:\s*nil/)
   })
 
-  // The #2992 known-limitation regression pin (an unfavorably-ordered
-  // cross-file type import falling back to interface{}/nil) now lives as a
-  // real `@barefootjs/vite` pipeline fixture — see
+  // #2992's regression test (an unfavorably-ordered cross-file type import,
+  // consumer sorting before its type's definer) lives as a real
+  // `@barefootjs/vite` pipeline fixture, not here — see
   // `packages/vite/src/__tests__/plugin.test.ts`'s `#2992: cross-file type
-  // resolution depends on file discovery order` describe block, which
-  // drives the real `discoverComponentFiles` alphabetical ordering through
-  // `plugin.writeBundle()` instead of approximating it by hand.
+  // resolution is independent of file discovery order` describe block,
+  // which drives the real `discoverComponentFiles` alphabetical ordering
+  // through `plugin.writeBundle()` instead of approximating it by hand
+  // (this test above already covers the FAVORABLE order in-process).
 })
 
 describe('GoTemplateAdapter - #2130 loop with element-wrapped child component', () => {
