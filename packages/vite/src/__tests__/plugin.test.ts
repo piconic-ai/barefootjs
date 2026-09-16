@@ -362,27 +362,31 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
   })
 })
 
-describe('#2992: cross-file type resolution depends on file discovery order', () => {
+describe('#2992: cross-file type resolution is independent of file discovery order', () => {
   let dir: string
 
   afterEach(async () => {
     if (dir) await rm(dir, { recursive: true, force: true })
   })
 
-  // known-limitation (https://github.com/piconic-ai/barefootjs/issues/2992):
-  // this PINS the CURRENT, INCOMPLETE behavior through the REAL
-  // `@barefootjs/vite` pipeline — `discoverComponentFiles`
-  // (`packages/vite/src/discover.ts`) walks the components dir and sorts
-  // filenames alphabetically, so `writeBundle`'s eager compile pass drives
-  // `GoTemplateAdapter` across `App.tsx` (the consumer) BEFORE `Zebra.tsx`
-  // (the definer of the `Dashboard` type App imports) has registered
-  // anything with the adapter's cross-file type registry (#2984). App's
-  // signal field therefore still falls back to `interface{}`/`nil`. This is
-  // not a spec — once #2992's order-independent fix lands, this test should
-  // flip to asserting the CORRECT resolved-struct output (mirroring
-  // `go-template-adapter.test.ts`'s `#2984` test) and this comment should be
-  // trimmed accordingly.
-  test('App.tsx (consumer, sorts first) importing a type from Zebra.tsx (definer, sorts second) still falls back to interface{}/nil in the real writeBundle pass', async () => {
+  // #2992 (fixed): `GoTemplateAdapter.buildLocalTypeTables` used to populate
+  // its cross-file type registry (`crossFileTypeAliases` /
+  // `crossFileStructFields` / `crossFileTypeDefinitions`, #2984) purely as a
+  // side effect of compiling the type's DEFINING file — so a consumer only
+  // resolved a borrowed type when the definer had already compiled first.
+  // `discoverComponentFiles` (`packages/vite/src/discover.ts`) sorts
+  // filenames alphabetically, not by import graph, so `App.tsx` (the
+  // consumer here) compiles before `Zebra.tsx` (the definer of the
+  // `Dashboard` type App imports) in the real `writeBundle` pass — the
+  // unfavorable order this test exercises.
+  //
+  // `ensureCrossFileTypes` now resolves a not-yet-registered relative import
+  // by reading and analyzing the definer file directly
+  // (`resolveRelativeImportToFile` + `analyzeComponent`/`buildMetadata`,
+  // `@barefootjs/jsx`) BEFORE a consumer's own resolution loop runs, so
+  // `App.tsx` here resolves `Dashboard` correctly regardless of which file
+  // this build happened to discover first.
+  test('App.tsx (consumer, sorts first) importing a type from Zebra.tsx (definer, sorts second) resolves the real struct in the real writeBundle pass', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-2992-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
     await writeFile(
@@ -443,14 +447,18 @@ describe('#2992: cross-file type resolution depends on file discovery order', ()
     // itself.
     const appTypes = await readFile(join(templatesDir, 'App.types'), 'utf8')
 
-    // THIS IS THE BUG #2992 TRACKS — do not "fix" this assertion without
-    // also fixing the underlying ordering dependency. `App.tsx` compiles
-    // before `Zebra.tsx` in real alphabetical discovery order, so it still
-    // hits the pre-#2984 fallback: no real `Dashboard` field or baked
-    // composite literal.
-    expect(appTypes).toContain('Data interface{}')
-    expect(appTypes).not.toContain('Data Dashboard')
-    expect(appTypes).not.toMatch(/Data:\s*Dashboard\{/)
+    // `App.tsx` compiles before `Zebra.tsx` in real alphabetical discovery
+    // order, but `ensureCrossFileTypes` resolves `Dashboard` against
+    // `Zebra.tsx` on disk before this assertion's data is generated — the
+    // pre-#2984 `interface{}`/`nil` fallback no longer fires.
+    expect(appTypes).not.toContain('Data interface{}')
+    expect(appTypes).toMatch(/Data\s+Dashboard/)
+    expect(appTypes).toMatch(/Data:\s*Dashboard\{/)
+
+    // Zebra.tsx must still own its own `Dashboard` struct declaration —
+    // `ensureCrossFileTypes`'s speculative scan of it must not ALSO emit a
+    // duplicate declaration into App's own `.types` fragment.
+    expect(appTypes).not.toContain('type Dashboard struct')
   })
 })
 

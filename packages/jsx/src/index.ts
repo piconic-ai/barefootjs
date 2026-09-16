@@ -79,7 +79,7 @@ export type {
 } from './types.ts'
 
 // Analyzer
-export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, needsTypeBasedDetection, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'
+export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, scanComponentFile, createProgramForFile, needsTypeBasedDetection, resolveRelativeImportToFile, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext, type ComponentFileScan } from './analyzer.ts'
 export { createProgramForCorpus, type SharedProgramOptions } from './shared-program.ts'
 
 // JSX to IR transformer
