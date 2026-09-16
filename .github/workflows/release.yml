@@ -34,12 +34,39 @@
 #     @barefootjs/php          Packagist barefootjs/php (via split mirror,
 #                              packages/adapter-php -- the engine-agnostic
 #                              runtime shared by the Twig/Blade/... backends)
+#
+# Recovery: the native-registry jobs gate on `needs.release.outputs.published`,
+# which Changesets only sets when it actually published something *this run*.
+# If a push-triggered run publishes to npm but a later job fails or gets
+# skipped (e.g. `@barefootjs/pebble@0.37.0`, first-release npm Trusted
+# Publishing couldn't be configured before the package existed on npm — see
+# npm/cli#8544), a plain re-run is a no-op: `changeset-publish.ts` skips every
+# package already matching the npm registry version, so `published` stays
+# false and the same jobs get skipped again for a different reason. Dispatch
+# this workflow manually with `force_native_release: true` against the ref
+# you're recovering to bypass that gate and re-run CPAN/PyPI/RubyGems/
+# crates.io/Packagist directly from the checked-out package.json versions.
 
 name: Release
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_native_release:
+        description: >-
+          Force-run the native-registry jobs (CPAN/PyPI/RubyGems/crates.io/
+          Packagist) even though the release job publishes nothing this run.
+          Recovery-only: use when a prior push-triggered run published to npm
+          but failed before its native-registry jobs ran (so they never
+          triggered off `needs.release.outputs.published`). Publishes
+          whatever version the checked-out package.json files declare, so
+          dispatch this against the ref of the release you're recovering
+          (e.g. the `@barefootjs/<pkg>@<version>` tag), not a moved-on
+          `main`, to avoid shipping the wrong version to these registries.
+        type: boolean
+        default: false
 
 concurrency:
   group: release-${{ github.ref }}
@@ -100,7 +127,7 @@ jobs:
 
   cpan-release:
     needs: release
-    if: needs.release.outputs.published == 'true'
+    if: needs.release.outputs.published == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     # Same backstop: a stalled CPAN upload shouldn't hold the run open for 6h.
     timeout-minutes: 30
@@ -136,12 +163,24 @@ jobs:
           PAUSE_ID: ${{ secrets.PAUSE_ID }}
           PAUSE_PASSWORD: ${{ secrets.PAUSE_PASSWORD }}
           PUBLISHED: ${{ needs.release.outputs.publishedPackages }}
+          # 'true'/'false' string, not the job's if: (which also allows a
+          # real changesets publish through) -- this only widens the
+          # per-package selection below to "all three", it doesn't gate the
+          # job itself.
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' && inputs.force_native_release }}
         run: |
           published=$(echo "$PUBLISHED" | jq -r '.[].name')
 
+          # True when this run was published by Changesets and includes $1,
+          # or when a recovery dispatch asked to force every package through.
+          publishes() {
+            [ "$FORCE_ALL" = "true" ] && return 0
+            echo "$published" | grep -qx "$1"
+          }
+
           # Publish core (BarefootJS) first and install locally so backend
           # dists can resolve their `requires 'BarefootJS'` at build time.
-          if echo "$published" | grep -qx '@barefootjs/perl'; then
+          if publishes '@barefootjs/perl'; then
             echo "Publishing packages/adapter-perl to CPAN..."
             cd packages/adapter-perl
             # installdeps from the cpanfile; keep these on separate lines (not
@@ -160,7 +199,7 @@ jobs:
           for pair in '@barefootjs/mojolicious:packages/adapter-mojolicious' '@barefootjs/xslate:packages/adapter-xslate'; do
             name="${pair%%:*}"
             dir="${pair##*:}"
-            echo "$published" | grep -qx "$name" || continue
+            publishes "$name" || continue
             echo "Publishing $dir to CPAN..."
             cd "$dir"
             # `requires 'BarefootJS'` resolves against the core dist installed above.
@@ -173,7 +212,7 @@ jobs:
           done
   pypi-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/jinja')
+    if: (needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/jinja')) || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Publishes via PyPI Trusted Publishing (OIDC): the `barefootjs` project on
@@ -208,7 +247,7 @@ jobs:
 
   rubygems-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/erb')
+    if: (needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/erb')) || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Publishes via RubyGems Trusted Publishing (OIDC): the barefoot_js gem
@@ -252,7 +291,7 @@ jobs:
 
   crates-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/rust')
+    if: (needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/rust')) || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Publishes via crates.io Trusted Publishing (OIDC): the `barefootjs` crate
@@ -299,7 +338,7 @@ jobs:
           cargo publish --allow-dirty
   packagist-twig-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/twig')
+    if: (needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/twig')) || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -380,7 +419,7 @@ jobs:
 
   packagist-blade-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/blade')
+    if: (needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/blade')) || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -461,7 +500,7 @@ jobs:
   # versioned/published independently.
   packagist-php-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/php')
+    if: (needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/php')) || (github.event_name == 'workflow_dispatch' && inputs.force_native_release)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
