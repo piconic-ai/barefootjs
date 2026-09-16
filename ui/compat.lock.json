@@ -3149,8 +3149,16 @@
           }
         },
         "pebble": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/2994)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "twig": {
           "kind": "refusal",
@@ -3370,8 +3378,16 @@
           }
         },
         "pebble": {
-          "kind": "render",
-          "reason": "a module-scope helper call in a template position renders empty instead of the real value, with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/3000)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2994"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "twig": {
           "kind": "refusal",
@@ -3472,8 +3488,16 @@
           }
         },
         "pebble": {
-          "kind": "render",
-          "reason": "a module-scope helper called from a boolean-test position resolves falsy instead of the real value, silently picking the wrong branch with no compile diagnostic (https://github.com/piconic-ai/barefootjs/issues/3012)"
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/3012"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         },
         "twig": {
           "kind": "refusal",

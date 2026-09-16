@@ -510,6 +510,38 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
       )
       return "''"
     }
+    // Array methods (`.join` and any others added to ArrayMethod) are
+    // lifted into the `array-method` IR kind at parse time, so they never
+    // reach this dispatcher.
+    // #3022 (porting #2994/#3011): any other identifier callee reaching
+    // here is a call to an arbitrary JS function by bare name — a
+    // module-scope `function`/arrow `const` helper being the repro shape,
+    // but the same reasoning covers any other unregistered callee (a
+    // destructured prop-valued callback, …). Zero-arg calls already
+    // returned above as signal getters, so this is always a call WITH
+    // args. Falling through to `emit(callee)` used to silently resolve the
+    // bare name against Pebble's template scope (undefined → renders
+    // empty) and drop every argument — no Pebble binding for an arbitrary
+    // JS closure reference exists, whether it resolves at runtime or not.
+    //
+    // No `_boolContext`-style structural exemption here (#3012): scoping
+    // the exemption by "is this call's value only consumed for
+    // truthiness?" rather than by callee identity let ANY OTHER helper
+    // called from a condition/ternary test keep the pre-#2994 broken
+    // fallback silently. `isValidElement` — the one caller that
+    // legitimately needs to keep working (`ui/components/ui/slot`'s
+    // `asChild` guard) — is resolved above as an identity-scoped
+    // `templatePrimitive` (`bf.is_element`, backed by the Java port of the
+    // shared BarefootJS runtime's shape-check method), so it never reaches
+    // this branch at all. Every other bare-name call refuses here
+    // unconditionally, in a boolean-test position or not.
+    if (callee.kind === 'identifier') {
+      this.ctx._recordExprBF101(
+        `Call to '${callee.name}(...)' has no Pebble template lowering — '${callee.name}' is not a signal getter, a registered template primitive, or a recognised lowering call, so there is no Pebble binding for it in template scope.`,
+        `A bare-name call to a module-scope helper (or any other JS-only function reference) only exists in the real JS runtime (Hono SSR / CSR) — Pebble has no way to invoke it.`,
+      )
+      return "''"
+    }
     return emit(callee)
   }
 

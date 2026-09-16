@@ -25,6 +25,16 @@ export const PEBBLE_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.min':       { arity: 2, emit: (args) => `bf.min(${args[0]}, ${args[1]})` },
   'Math.max':       { arity: 2, emit: (args) => `bf.max(${args[0]}, ${args[1]})` },
   'Math.abs':       { arity: 1, emit: (args) => `bf.abs(${args[0]})` },
+  // `isValidElement(x)` — the framework "is this a renderable element (not
+  // plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266).
+  // Registered as an identity-scoped `templatePrimitive`, resolved in
+  // `call()` BEFORE the generic bare-name-call BF101 refusal (#3022,
+  // porting #3011/#3012's fix shape from the sibling DSL adapters) — the
+  // one caller that legitimately needs to keep compiling under a bare-name
+  // call, so it never reaches that refusal at all. Backed by
+  // `Bf#is_element` (`java/.../Bf.java`), a port of the shared Go/Ruby/Perl
+  // runtimes' `IsValidElement`/`is_element` shape-check.
+  'isValidElement': { arity: 1, emit: (args) => `bf.is_element(${args[0]})` },
 }
 
 /**

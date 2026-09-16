@@ -336,6 +336,39 @@ public final class Bf {
   }
 
   /**
+   * `isValidElement(x)` — the framework "is this a renderable element (not
+   * plain text)?" predicate `Slot`'s `asChild` pattern (#2266) uses to
+   * decide whether to merge props into a child ELEMENT
+   * (`children.tag`/`children.props`) or fall back to rendering `children`
+   * as-is. Mirrors JS's `'tag' in x && 'props' in x`: true only for a
+   * {@link Map} carrying both keys (case-insensitively, matching {@link
+   * #fieldOf}/{@link #get}'s case-tolerant field lookups elsewhere in this
+   * class). A passed-through JSX child is represented as pre-rendered
+   * markup (a plain String) on this SSR model, so a non-empty STRING child
+   * is NOT a valid element — routing `isValidElement` through bare
+   * truthiness would wrongly take the element-merge branch. Ported from
+   * the Go runtime's `IsValidElement` / the Ruby port's `is_element`
+   * (#3022, porting #3011/#3012 to this adapter).
+   */
+  public boolean is_element(Object v) {
+    if (!(v instanceof Map)) {
+      return false;
+    }
+    boolean hasTag = false;
+    boolean hasProps = false;
+    for (Object k : ((Map<?, ?>) v).keySet()) {
+      String key = String.valueOf(k).toLowerCase(java.util.Locale.ROOT);
+      if (key.equals("tag")) {
+        hasTag = true;
+      }
+      if (key.equals("props")) {
+        hasProps = true;
+      }
+    }
+    return hasTag && hasProps;
+  }
+
+  /**
    * Dynamic member/index access (`obj[expr]`) — divergence in the file
    * header's "Member/index access" section. Arrays index numerically
    * (JS `Number()` coercion of the key, out-of-range -> null); maps index
