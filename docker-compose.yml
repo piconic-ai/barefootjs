@@ -244,6 +244,19 @@ services:
       - cargo-registry:/root/.cargo/registry
       - cargo-target-cache:/workspace/integrations/axum/target
 
+  spring:
+    build:
+      context: .
+      dockerfile: integrations/spring/Dockerfile.dev
+    working_dir: /workspace/integrations/spring
+    environment:
+      BASE_PATH: /integrations/spring
+      PORT: "3017"
+    volumes:
+      - ./integrations/spring:/workspace/integrations/spring
+      - ./packages/adapter-pebble/java:/workspace/packages/adapter-pebble/java
+      - gradle-cache:/root/.gradle
+
   php:
     build:
       context: .
@@ -325,3 +338,4 @@ volumes:
   go-build-cache:
   cargo-registry:
   cargo-target-cache:
+  gradle-cache:

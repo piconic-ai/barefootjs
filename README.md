@@ -107,6 +107,7 @@ BarefootJS compiles JSX into your backend's native template format — no Node.j
 | PHP | [Twig](docs/core/adapters/php-adapter.md) | `@barefootjs/twig` |
 | PHP | [Laravel Blade](docs/core/adapters/php-adapter.md) | `@barefootjs/blade` |
 | Rust | [minijinja](docs/core/adapters/rust-adapter.md) | `@barefootjs/rust` |
+| Java | [Pebble](docs/core/adapters/java-adapter.md) | `@barefootjs/pebble` |
 | — | [CSR (browser only)](docs/core/adapters/csr.md) | `@barefootjs/client` |
 <!-- ADAPTER-TABLE:END -->
 

@@ -44,6 +44,7 @@
 - [Writing a Custom Adapter](https://barefootjs.dev/docs/adapters/custom-adapter.md): Step-by-step guide to building a custom adapter using the TestAdapter as a reference.
 - [Go Template Adapter](https://barefootjs.dev/docs/adapters/go-template-adapter.md): Generate Go html/template files and type definitions from the compiler's IR.
 - [Hono Adapter](https://barefootjs.dev/docs/adapters/hono-adapter.md): Generate Hono JSX templates from the compiler's IR for Hono-based servers.
+- [Java Adapter](https://barefootjs.dev/docs/adapters/java-adapter.md): Render BarefootJS components from Java via Pebble — no framework required (Spring Boot, Ktor, plain Servlet apps).
 - [Perl Adapter](https://barefootjs.dev/docs/adapters/perl-adapter.md): Render BarefootJS components from Perl — one engine-agnostic runtime with Mojolicious and Text::Xslate (PSGI/Plack) backends.
 - [PHP Adapter](https://barefootjs.dev/docs/adapters/php-adapter.md): Render BarefootJS components from PHP — one engine-agnostic runtime with Twig and Laravel Blade backends.
 - [Python Adapter](https://barefootjs.dev/docs/adapters/python-adapter.md): Render BarefootJS components from Python via Jinja2 — no framework required (Flask, Django, bare WSGI).

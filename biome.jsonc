@@ -9,6 +9,12 @@
   // intentionally left off — this is a lint *gate*, not a formatting pass.
   "formatter": { "enabled": false },
   "assist": { "enabled": false },
+  // Without this, Biome's config-root discovery walks into gitignored
+  // directories too — including a git worktree checked out under
+  // .claude/worktrees/ (its own full clone carries its own root
+  // biome.jsonc), which Biome then treats as a conflicting nested project
+  // root and refuses to run at all ("Found a nested root configuration").
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   // Scope: the TypeScript SOURCES that JSR actually publishes.
   //   - `packages/*/src/**` only — never config, scripts, or built output.
   //   - cli / create-barefootjs are npm-only (never published to JSR), so

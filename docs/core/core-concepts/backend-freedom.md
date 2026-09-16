@@ -25,6 +25,7 @@ JSX → IR (backend-agnostic) → Adapter → Template
 | PHP | [Twig](../adapters/php-adapter.md) | `@barefootjs/twig` |
 | PHP | [Laravel Blade](../adapters/php-adapter.md) | `@barefootjs/blade` |
 | Rust | [minijinja](../adapters/rust-adapter.md) | `@barefootjs/rust` |
+| Java | [Pebble](../adapters/java-adapter.md) | `@barefootjs/pebble` |
 | — | [CSR (browser only)](../adapters/csr.md) | `@barefootjs/client` |
 <!-- ADAPTER-TABLE:END -->
 
