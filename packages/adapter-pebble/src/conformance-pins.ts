@@ -91,4 +91,30 @@ export const conformancePins: ConformancePins = {
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
   'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
+  // #3022 (porting #2994/#3011): a call to a module-scope helper (arrow-
+  // valued const OR `function` declaration) by bare name has no Pebble
+  // template binding — `call()`'s generic fallback now refuses it loudly
+  // (BF101) instead of silently resolving the name against Pebble's
+  // template scope (undefined → empty render) and dropping the call's
+  // arguments (formerly `render-divergences.ts`). No verified escape twin
+  // exists yet (the shape has no structural lowering — see #2994's
+  // "Suggested fix shape" for the deferred, harder direction); `/*
+  // @client */` works informally but isn't pinned as a corpus fixture yet.
+  'module-const-arrow-helper': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
+  'module-function-helper-chain': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+  ],
+  // #3022 (porting #3012): same BF101 refusal as the two entries above,
+  // for a module-scope helper called from a boolean-TEST position (a
+  // ternary `test`) rather than a plain text position — no
+  // `_boolContext`-style structural exemption was ported for this shape;
+  // `isValidElement` (the one caller that needs to keep compiling from a
+  // boolean-test position) is resolved ahead of `call()`'s generic
+  // fallback as an identity-scoped `templatePrimitive` instead
+  // (`bf.is_element`, `lib/constants.ts`).
+  'module-helper-boolcontext-call': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3012', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3012' } },
+  ],
 }
