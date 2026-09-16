@@ -8,6 +8,7 @@
 
 import type {
   ConditionalBranchEvent,
+  ConditionalBranchRef,
   LoopChildBranchSummary,
   LoopChildConditional,
   LoopChildEvent,
@@ -71,6 +72,8 @@ import type {
   BranchInnerLoop,
   BranchInnerLoopText,
   BranchInnerLoopsPlan,
+  BranchRef,
+  BranchRefBindingsPlan,
   LoopChildArmPlan,
   LoopChildConditionalPlan,
 } from './loop-child-arm.ts'
@@ -116,6 +119,28 @@ export function buildBranchEventBindingsPlan(
     slots.push({ slotId, listeners })
   }
   return slots
+}
+
+export interface BuildBranchRefBindingsArgs {
+  refs: readonly ConditionalBranchRef[] | undefined
+  /** Loop-param wrap closure. Identity (`x => x`) when no loop param applies. */
+  wrap: (expr: string) => string
+}
+
+/**
+ * Pre-wrap each branch ref's `callback` via the supplied loop-param wrap
+ * closure (#3009). Mirrors `buildBranchEventBindingsPlan`, minus the
+ * per-slot grouping — a slot carries at most one ref.
+ */
+export function buildBranchRefBindingsPlan(
+  args: BuildBranchRefBindingsArgs,
+): BranchRefBindingsPlan {
+  const { refs, wrap } = args
+  if (!refs || refs.length === 0) return []
+  return refs.map((ref): BranchRef => ({
+    slotId: ref.slotId,
+    wrappedCallback: wrap(ref.callback),
+  }))
 }
 
 /** A loose shape for one child component inside a conditional branch IR. */
@@ -489,6 +514,10 @@ function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
   return {
     events: buildBranchEventBindingsPlan({
       events: branch.events,
+      wrap,
+    }),
+    refs: buildBranchRefBindingsPlan({
+      refs: branch.refs,
       wrap,
     }),
     childComponents: buildBranchChildComponentInitsPlan({
