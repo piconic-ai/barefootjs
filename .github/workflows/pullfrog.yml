@@ -51,7 +51,7 @@ jobs:
         # Pullfrog's own template floats this at `@v0`. Pinned here instead, which means
         # the action no longer rolls forward on its own — bump this SHA when Pullfrog
         # ships a fix or its server expects a newer client.
-        uses: pullfrog/pullfrog@0212dedb0f92b8ba4020c17dc30d3eced32415d7 # v0.1.68
+        uses: pullfrog/pullfrog@a86b83b9a671a9fdb156f386cbcc28d665a6b36b # v0.1.78
         with:
           prompt: ${{ inputs.prompt }}
           # ↓↓↓ EDIT BELOW ↓↓↓
