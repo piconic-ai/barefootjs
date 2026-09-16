@@ -341,14 +341,15 @@ public final class Bf {
    * decide whether to merge props into a child ELEMENT
    * (`children.tag`/`children.props`) or fall back to rendering `children`
    * as-is. Mirrors JS's `'tag' in x && 'props' in x`: true only for a
-   * {@link Map} carrying both keys (case-insensitively, matching {@link
-   * #fieldOf}/{@link #get}'s case-tolerant field lookups elsewhere in this
-   * class). A passed-through JSX child is represented as pre-rendered
-   * markup (a plain String) on this SSR model, so a non-empty STRING child
-   * is NOT a valid element — routing `isValidElement` through bare
-   * truthiness would wrongly take the element-merge branch. Ported from
-   * the Go runtime's `IsValidElement` / the Ruby port's `is_element`
-   * (#3022, porting #3011/#3012 to this adapter).
+   * {@link Map} carrying both keys, checked case-insensitively to match the
+   * Go/Ruby ports' own case-insensitive shape-check (NOT {@link #fieldOf}/
+   * {@link #get} elsewhere in this class, which are exact-key lookups). A
+   * passed-through JSX child is represented as pre-rendered markup (a plain
+   * String) on this SSR model, so a non-empty STRING child is NOT a valid
+   * element — routing `isValidElement` through bare truthiness would
+   * wrongly take the element-merge branch. Ported from the Go runtime's
+   * `IsValidElement` / the Ruby port's `is_element` (#3022, porting
+   * #3011/#3012 to this adapter).
    */
   public boolean is_element(Object v) {
     if (!(v instanceof Map)) {
