@@ -20,9 +20,11 @@ max_instances = 1
 # full Spring context bootstrap) needs meaningfully more memory AND CPU than
 # that just to bind the port before Cloudflare's readiness check gives up --
 # `lite` here produced "Failed to start container: The container is not
-# listening in the TCP address ...:8080" in production (#3027), a documented
-# Cloudflare Containers gotcha for JVM-family images
-# (https://github.com/cloudflare/containers/issues/139). `basic` (1 GiB,
+# listening in the TCP address ...:8080" in production (#3027) -- the same
+# readiness-check-races-startup symptom reported for other slow-starting
+# runtimes on Cloudflare Containers, e.g. Laravel/FrankenPHP
+# (https://github.com/cloudflare/containers/issues/139), not something
+# that issue documents as JVM- or memory-specific itself. `basic` (1 GiB,
 # 1/4 vCPU) is the smallest tier with enough headroom for a reliable cold
 # start; this is a startup-time floor, not a steady-state one, so it isn't
 # the same knob a growing steady-state heap would bump.
