@@ -94,6 +94,7 @@ function wiringOn(branch: LoopChildBranchSummary): string[] {
   if (branch.innerLoops && branch.innerLoops.length > 0) found.push('an inner loop')
   if (branch.conditionals && branch.conditionals.length > 0) found.push('a nested conditional')
   if (branch.events && branch.events.length > 0) found.push('events')
+  if (branch.refs && branch.refs.length > 0) found.push('refs')
   if (branch.reactiveAttrs && branch.reactiveAttrs.length > 0) found.push('reactive attrs')
   if (branch.reactiveTexts && branch.reactiveTexts.length > 0) found.push('reactive text')
   return found

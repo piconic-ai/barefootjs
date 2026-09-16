@@ -11,7 +11,7 @@
  * every nesting depth.
  */
 
-import { varSlotId, DATA_BF_PH, keyAttrName, mapArrayKeyArgs, profileBindingId } from '../../utils.ts'
+import { varSlotId, DATA_BF_PH, keyAttrName, mapArrayKeyArgs, profileBindingId, emitRefCall } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { namespaceWrapForTemplate } from './template-parse.ts'
@@ -21,6 +21,7 @@ import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './clai
 import type {
   BranchChildComponentInitsPlan,
   BranchEventBindingsPlan,
+  BranchRefBindingsPlan,
   BranchInnerLoopsPlan,
   LoopChildArmPlan,
   LoopChildConditionalPlan,
@@ -96,6 +97,29 @@ export function stringifyBranchEventBindings(
       emitListenerLine(lines, `${indent}  `, `_${v}`, ev.eventName, ev.wrappedHandler, 'dom', ev.turnId)
     }
     lines.push(`${indent}}`)
+  }
+}
+
+/**
+ * Emit one imperative ref call per branch-interior ref (#3009). Looked up
+ * via `qsa(__branchScope, ...)` — same rationale as
+ * `stringifyBranchEventBindings`: `__branchScope` is the `insert()`-mounted
+ * element itself and may not carry a `bf-s` attribute, so the scope-aware
+ * `$()` (which walks up to the nearest `bf-s`) would miss it.
+ *
+ * Runs inside `insert()`'s `bindEvents`, so it fires on every branch
+ * activation — the fix for a ref that previously only ran once, at row
+ * creation, via the row-level `mapArray` renderItem body.
+ */
+export function stringifyBranchRefs(
+  lines: string[],
+  plan: BranchRefBindingsPlan,
+  indent: string,
+): void {
+  for (const ref of plan) {
+    const v = varSlotId(ref.slotId)
+    lines.push(`${indent}{ const _${v} = qsa(__branchScope, '[bf="${ref.slotId}"]')`)
+    lines.push(`${indent}if (_${v}) ${emitRefCall(ref.wrappedCallback, `_${v}`)} }`)
   }
 }
 
@@ -286,6 +310,7 @@ export function stringifyLoopChildArm(
   mapPreambleWrapped: string | undefined,
 ): void {
   stringifyBranchEventBindings(lines, arm.events, armIndent)
+  stringifyBranchRefs(lines, arm.refs, armIndent)
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
   stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
 

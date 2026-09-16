@@ -36,6 +36,7 @@ import {
   buildArmTextsPlan,
   buildBranchChildComponentInitsPlan,
   buildBranchEventBindingsPlan,
+  buildBranchRefBindingsPlan,
   buildBranchInnerLoopsPlan,
   buildLoopChildConditionalsPlan,
 } from './build-loop-child-arm.ts'
@@ -151,6 +152,10 @@ function buildOuterArm(
       events: branch.events,
       wrap,
       profileComponentName,
+    }),
+    refs: buildBranchRefBindingsPlan({
+      refs: branch.refs,
+      wrap,
     }),
     childComponents: buildBranchChildComponentInitsPlan({
       components: branch.childComponents,

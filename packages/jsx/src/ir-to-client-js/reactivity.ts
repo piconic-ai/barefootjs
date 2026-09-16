@@ -502,6 +502,21 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
  * `traverseElements` already stops at nested loops, so refs on elements
  * inside a `.map().map()` are picked up by that nested loop's own collector
  * pass, not by the outer one.
+ *
+ * Always stops at a nested reactive conditional (#3009, matching
+ * `collectConditionalBranchEvents`'s `true`): the row's sole caller
+ * (`summarizeLoopChildBranch` / the flat `collectLoopChildBindings` path)
+ * also collects that nested conditional separately and now gives its
+ * branches their own ref collection (`LoopChildBranchSummary.refs`, via
+ * `collectConditionalBranchRefs`). Before this changed, a ref on an element
+ * inside a branch was hoisted here to ROW level and emitted unconditionally
+ * once per `mapArray` renderItem call — which only happens on row CREATION,
+ * not on every branch activation. A branch that starts inactive, or that a
+ * keyed row's identity round-trips away from and back to (without the row
+ * itself unmounting), never got its ref (re-)run. Descending here would
+ * double-bind the same slot (once at row level unconditionally, once inside
+ * the branch's own `insert()`/bindEvents) in addition to reproducing the
+ * original bug for the row-level copy.
  */
 export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
   const refs: LoopChildRef[] = []
@@ -512,7 +527,7 @@ export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
         callback: el.ref,
       })
     }
-  })
+  }, true)
   return refs
 }
 
