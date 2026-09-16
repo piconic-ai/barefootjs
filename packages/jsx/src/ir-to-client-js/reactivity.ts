@@ -502,6 +502,13 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
  * `traverseElements` already stops at nested loops, so refs on elements
  * inside a `.map().map()` are picked up by that nested loop's own collector
  * pass, not by the outer one.
+ *
+ * Also stops at a nested reactive conditional (#3009, matching
+ * `collectConditionalBranchEvents`'s `true`): its caller collects that
+ * conditional separately and gives its branches their own ref collection
+ * (`LoopChildBranchSummary.refs`). Descending here too would hoist a
+ * branch's ref to row level, where it fires only once at row creation
+ * instead of on every branch activation — the bug #3009 fixed.
  */
 export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
   const refs: LoopChildRef[] = []
@@ -512,7 +519,7 @@ export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
         callback: el.ref,
       })
     }
-  })
+  }, true)
   return refs
 }
 

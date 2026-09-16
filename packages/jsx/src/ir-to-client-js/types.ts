@@ -580,6 +580,8 @@ export interface LoopChildBranchSummary {
   conditionals?: LoopChildConditional[]
   /** Events on elements inside the branch — attached via insert() bindEvents (#839). */
   events?: ConditionalBranchEvent[]
+  /** Refs on elements directly inside the branch — attached via insert() bindEvents, same as `events` above (#3009). Mirrors the top-level `BranchSummary.refs`. */
+  refs?: ConditionalBranchRef[]
   /**
    * Reactive attrs on elements directly inside the branch — attached via
    * insert() bindEvents (#2347). Collected loop-param-aware so `u().active`

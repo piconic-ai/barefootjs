@@ -36,6 +36,16 @@ export interface BranchEventSlot {
  */
 export type BranchEventBindingsPlan = readonly BranchEventSlot[]
 
+/** One imperative `ref` callback inside an arm body (#3009). Flat, not slot-grouped like events — a slot carries at most one ref. */
+export interface BranchRef {
+  slotId: string
+  /** Already wrapped via wrapLoopParamAsAccessor at build time. */
+  wrappedCallback: string
+}
+
+/** Pre-built ref bindings for one arm of a loop-scoped conditional. Mirrors `BranchEventBindingsPlan` (#3009). */
+export type BranchRefBindingsPlan = readonly BranchRef[]
+
 /**
  * One child component initialiser inside an arm body (qsa() + initChild for
  * SSR, or placeholder replacement + createComponent for CSR). The selector,
@@ -188,6 +198,7 @@ export interface LoopChildArmText {
  */
 export interface LoopChildArmPlan {
   events: BranchEventBindingsPlan
+  refs: BranchRefBindingsPlan
   childComponents: BranchChildComponentInitsPlan
   innerLoops: BranchInnerLoopsPlan
   nestedConditionals: readonly LoopChildConditionalPlan[]

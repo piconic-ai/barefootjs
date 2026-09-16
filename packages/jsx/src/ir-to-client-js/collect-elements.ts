@@ -1700,6 +1700,8 @@ function summarizeLoopChildBranch(
     innerLoops: inner.length > 0 ? inner : undefined,
     conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
     events: collectConditionalBranchEvents(node),
+    // Mirrors the top-level `summarizeBranch`'s `refs` field (#3009).
+    refs: collectConditionalBranchRefs(node),
     // Loop-param-aware — reuses the flat loop-item collectors scoped to just
     // this branch's subtree. Both already stop descending into any further
     // nested reactive conditional (own insert()/arm), so calling them here
