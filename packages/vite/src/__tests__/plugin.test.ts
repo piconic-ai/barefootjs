@@ -362,27 +362,31 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
   })
 })
 
-describe('#2992: cross-file type resolution depends on file discovery order', () => {
+describe('#2992: cross-file type resolution is independent of file discovery order', () => {
   let dir: string
 
   afterEach(async () => {
     if (dir) await rm(dir, { recursive: true, force: true })
   })
 
-  // known-limitation (https://github.com/piconic-ai/barefootjs/issues/2992):
-  // this PINS the CURRENT, INCOMPLETE behavior through the REAL
-  // `@barefootjs/vite` pipeline — `discoverComponentFiles`
-  // (`packages/vite/src/discover.ts`) walks the components dir and sorts
-  // filenames alphabetically, so `writeBundle`'s eager compile pass drives
-  // `GoTemplateAdapter` across `App.tsx` (the consumer) BEFORE `Zebra.tsx`
-  // (the definer of the `Dashboard` type App imports) has registered
-  // anything with the adapter's cross-file type registry (#2984). App's
-  // signal field therefore still falls back to `interface{}`/`nil`. This is
-  // not a spec — once #2992's order-independent fix lands, this test should
-  // flip to asserting the CORRECT resolved-struct output (mirroring
-  // `go-template-adapter.test.ts`'s `#2984` test) and this comment should be
-  // trimmed accordingly.
-  test('App.tsx (consumer, sorts first) importing a type from Zebra.tsx (definer, sorts second) still falls back to interface{}/nil in the real writeBundle pass', async () => {
+  // #2992 (fixed): `GoTemplateAdapter.buildLocalTypeTables` used to populate
+  // its cross-file type registry (`crossFileTypeAliases` /
+  // `crossFileStructFields` / `crossFileTypeDefinitions`, #2984) purely as a
+  // side effect of compiling the type's DEFINING file — so a consumer only
+  // resolved a borrowed type when the definer had already compiled first.
+  // `discoverComponentFiles` (`packages/vite/src/discover.ts`) sorts
+  // filenames alphabetically, not by import graph, so `App.tsx` (the
+  // consumer here) compiles before `Zebra.tsx` (the definer of the
+  // `Dashboard` type App imports) in the real `writeBundle` pass — the
+  // unfavorable order this test exercises.
+  //
+  // `ensureCrossFileTypes` now resolves a not-yet-registered relative import
+  // by reading and analyzing the definer file directly
+  // (`resolveRelativeImportToFile` + `analyzeComponent`/`buildMetadata`,
+  // `@barefootjs/jsx`) BEFORE a consumer's own resolution loop runs, so
+  // `App.tsx` here resolves `Dashboard` correctly regardless of which file
+  // this build happened to discover first.
+  test('App.tsx (consumer, sorts first) importing a type from Zebra.tsx (definer, sorts second) resolves the real struct in the real writeBundle pass', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-2992-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
     await writeFile(
@@ -443,14 +447,103 @@ describe('#2992: cross-file type resolution depends on file discovery order', ()
     // itself.
     const appTypes = await readFile(join(templatesDir, 'App.types'), 'utf8')
 
-    // THIS IS THE BUG #2992 TRACKS — do not "fix" this assertion without
-    // also fixing the underlying ordering dependency. `App.tsx` compiles
-    // before `Zebra.tsx` in real alphabetical discovery order, so it still
-    // hits the pre-#2984 fallback: no real `Dashboard` field or baked
-    // composite literal.
-    expect(appTypes).toContain('Data interface{}')
-    expect(appTypes).not.toContain('Data Dashboard')
-    expect(appTypes).not.toMatch(/Data:\s*Dashboard\{/)
+    // `App.tsx` compiles before `Zebra.tsx` in real alphabetical discovery
+    // order, but `ensureCrossFileTypes` resolves `Dashboard` against
+    // `Zebra.tsx` on disk before this assertion's data is generated — the
+    // pre-#2984 `interface{}`/`nil` fallback no longer fires.
+    expect(appTypes).not.toContain('Data interface{}')
+    expect(appTypes).toMatch(/Data\s+Dashboard/)
+    expect(appTypes).toMatch(/Data:\s*Dashboard\{/)
+
+    // Zebra.tsx must still own its own `Dashboard` struct declaration —
+    // `ensureCrossFileTypes`'s speculative scan of it must not ALSO emit a
+    // duplicate declaration into App's own `.types` fragment.
+    expect(appTypes).not.toContain('type Dashboard struct')
+  })
+
+  // Pullfrog's review of this PR caught a real gap the test above didn't
+  // exercise: `Dashboard.items` is an ANONYMOUS nested object
+  // (`{ id, label }[]`), covered by `ensureCrossFileTypes`'s
+  // `synthObjectStructNames` seeding — but a field referencing ANOTHER
+  // NAMED type the SAME definer file declares (`Dashboard.widget: Widget`)
+  // resolves through `state.localStructFields`/`localTypeAliases`
+  // (`typeInfoToGo`'s `'interface'` case, `type/type-codegen.ts`), which
+  // `ensureCrossFileTypes` used to never seed for the scanned definer. That
+  // silently fell back to `interface{}`/`map[string]interface{}` in the
+  // unfavorable order — WORSE than the pre-#2992 fallback, because App's
+  // baked composite-literal initial value then assigned a
+  // `map[string]interface{}` to a field Zebra's own struct declares as the
+  // named `Widget` type: a Go COMPILE error, not just a content divergence.
+  test('a nested field referencing ANOTHER named type the definer also declares resolves correctly, not as map[string]interface{}', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-2992-named-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    await writeFile(
+      join(dir, 'src/components/Zebra.tsx'),
+      [
+        '\'use client\'',
+        'export type Widget = {',
+        '  name: string',
+        '}',
+        'export type Dashboard = {',
+        '  title: string',
+        '  widget: Widget',
+        '}',
+        'export function Zebra({ data }: { data: Dashboard }) {',
+        '  return (',
+        '    <section>',
+        '      <h1>{data.title}</h1>',
+        '    </section>',
+        '  )',
+        '}',
+        '',
+      ].join('\n'),
+    )
+    await writeFile(
+      join(dir, 'src/components/App.tsx'),
+      [
+        '\'use client\'',
+        'import { createSignal } from \'@barefootjs/client\'',
+        'import { Zebra, type Dashboard } from \'./Zebra\'',
+        'export function App() {',
+        '  const [data] = createSignal<Dashboard>({ title: \'hello\', widget: { name: \'w\' } })',
+        '  return <Zebra data={data()} />',
+        '}',
+        '',
+      ].join('\n'),
+    )
+
+    const templatesDir = join(dir, 'internal/views')
+    const adapter = new GoTemplateAdapter({ packageName: 'main' })
+    const plugin = makePlugin('src/components', 'internal/views', adapter)
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    plugin.configResolved({
+      root: dir,
+      base: '/',
+      build: { outDir: 'dist', manifest: true },
+    })
+    await mkdir(join(dir, 'dist/.vite'), { recursive: true })
+    await writeFile(
+      join(dir, 'dist/.vite/manifest.json'),
+      JSON.stringify({
+        'src/components/App.tsx': { file: 'assets/App-abc123.js', isEntry: true },
+        'src/components/Zebra.tsx': { file: 'assets/Zebra-def456.js', isEntry: true },
+      }),
+    )
+
+    await plugin.writeBundle()
+
+    const appTypes = await readFile(join(templatesDir, 'App.types'), 'utf8')
+
+    // The composite-literal initial value's `widget` field must bake
+    // against the real `Widget` struct type — not a `map[string]interface{}`
+    // literal, which would be invalid Go when assigned to a field Zebra's
+    // own struct (in Zebra.types, not here) declares as `Widget`.
+    expect(appTypes).toMatch(/Widget:\s*Widget\{/)
+    expect(appTypes).not.toMatch(/Widget:\s*map\[string\]interface\{\}/)
+    // Neither Dashboard nor Widget's OWN struct declaration belongs here —
+    // Zebra.tsx owns both; App.types must not duplicate them.
+    expect(appTypes).not.toContain('type Widget struct')
+    expect(appTypes).not.toContain('type Dashboard struct')
   })
 })
 
