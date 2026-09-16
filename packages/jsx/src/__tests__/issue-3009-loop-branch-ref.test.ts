@@ -1,20 +1,8 @@
 /**
  * Emission pin for #3009: a `ref` on an element inside a keyed loop row's
- * conditional branch must be collected onto that branch's own
- * `LoopChildBranchSummary.refs` and emitted inside the branch's `insert()`
- * bindEvents — not hoisted to the row-level `mapArray` renderItem body
- * (`emitLoopChildRefs`, control-flow/stringify/loop.ts), which only fires
- * once per row CREATION.
- *
- * `collectLoopChildRefs` (ir-to-client-js/reactivity.ts) used to descend
- * straight through a nested reactive conditional (it called
- * `traverseElements` with `stopAtReactiveConditionals` defaulting to
- * `false`), unlike its sibling `collectConditionalBranchEvents` /
- * `collectConditionalBranchRefs`, which both pass `true`. The row-level
- * hoist meant the ref fired unconditionally exactly once, at row creation
- * — never again on a later branch activation (starting on the OTHER
- * branch, or a keyed row's identity round-tripping through the other
- * branch and back).
+ * conditional branch must land on that branch's own `insert()` bindEvents,
+ * not the row-level `mapArray` renderItem body (which only fires once, at
+ * row creation) — see `reactivity.ts`'s `collectLoopChildRefs` for the fix.
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'

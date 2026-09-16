@@ -1,18 +1,9 @@
 /**
- * Regression for #3009: a `ref` on an element inside a conditional branch
- * within a keyed `.map()` row only fired if that branch happened to be
- * active when the row was CREATED — it never fired on any later branch
- * activation (a round-trip through the other branch, or simply starting on
- * the other branch).
- *
- * Root cause: `collectLoopChildRefs` (ir-to-client-js/reactivity.ts)
- * descended straight through a nested reactive conditional and hoisted the
- * branch's ref to ROW level, where it is emitted unconditionally once per
- * `mapArray` renderItem call (row creation) instead of once per branch
- * activation. The fix collects branch-interior refs via
- * `LoopChildBranchSummary.refs` (mirroring `events`) and emits them inside
- * the branch's own `insert()` bindEvents, alongside `stringifyBranchEvents`
- * — the same place events already fire on every branch swap (#2927).
+ * Regression for #3009: a `ref` on an element inside a keyed `.map()` row's
+ * conditional branch only fired if that branch was active when the row was
+ * CREATED — never on a later activation (a round-trip through the other
+ * branch, or starting on the other branch). See `reactivity.ts`'s
+ * `collectLoopChildRefs` for the fix.
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'

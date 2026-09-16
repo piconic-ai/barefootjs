@@ -101,15 +101,11 @@ export function stringifyBranchEventBindings(
 }
 
 /**
- * Emit one imperative ref call per branch-interior ref (#3009). Looked up
- * via `qsa(__branchScope, ...)` — same rationale as
- * `stringifyBranchEventBindings`: `__branchScope` is the `insert()`-mounted
- * element itself and may not carry a `bf-s` attribute, so the scope-aware
- * `$()` (which walks up to the nearest `bf-s`) would miss it.
- *
- * Runs inside `insert()`'s `bindEvents`, so it fires on every branch
- * activation — the fix for a ref that previously only ran once, at row
- * creation, via the row-level `mapArray` renderItem body.
+ * Emit one imperative ref call per branch-interior ref (#3009), inside
+ * `insert()`'s `bindEvents` so it (re-)fires on every branch activation.
+ * Uses `qsa(__branchScope, ...)`, not the scope-aware `$()`, for the same
+ * reason `stringifyBranchEventBindings` does: `__branchScope` may not carry
+ * a `bf-s` attribute for `$()` to anchor on.
  */
 export function stringifyBranchRefs(
   lines: string[],

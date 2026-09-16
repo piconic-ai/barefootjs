@@ -580,16 +580,7 @@ export interface LoopChildBranchSummary {
   conditionals?: LoopChildConditional[]
   /** Events on elements inside the branch — attached via insert() bindEvents (#839). */
   events?: ConditionalBranchEvent[]
-  /**
-   * Imperative `ref` callbacks on elements directly inside the branch —
-   * attached via insert() bindEvents, same as `events` above (#3009). Before
-   * this field existed, `collectLoopChildRefs` descended straight through a
-   * nested reactive conditional and hoisted the ref to the ROW level, where
-   * it only fires once per `mapArray` renderItem call (row creation) rather
-   * than once per branch activation — so a ref on a branch that starts
-   * inactive, or one the row's key round-trips away from and back to, never
-   * (re-)runs. Mirrors the top-level `BranchSummary.refs`.
-   */
+  /** Refs on elements directly inside the branch — attached via insert() bindEvents, same as `events` above (#3009). Mirrors the top-level `BranchSummary.refs`. */
   refs?: ConditionalBranchRef[]
   /**
    * Reactive attrs on elements directly inside the branch — attached via

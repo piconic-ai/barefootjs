@@ -36,23 +36,14 @@ export interface BranchEventSlot {
  */
 export type BranchEventBindingsPlan = readonly BranchEventSlot[]
 
-/**
- * One imperative `ref` callback inside an arm body (#3009). Unlike events,
- * a slot carries at most one ref, so this is a flat list rather than a
- * slot-grouped one.
- */
+/** One imperative `ref` callback inside an arm body (#3009). Flat, not slot-grouped like events — a slot carries at most one ref. */
 export interface BranchRef {
   slotId: string
   /** Already wrapped via wrapLoopParamAsAccessor at build time. */
   wrappedCallback: string
 }
 
-/**
- * Pre-built ref bindings for one arm of a loop-scoped conditional. An empty
- * list means the stringifier emits nothing. Mirrors `BranchEventBindingsPlan`
- * (#3009) — attached inside `insert()`'s bindEvents so a ref (re-)runs on
- * every branch activation, not just once at row creation.
- */
+/** Pre-built ref bindings for one arm of a loop-scoped conditional. Mirrors `BranchEventBindingsPlan` (#3009). */
 export type BranchRefBindingsPlan = readonly BranchRef[]
 
 /**
