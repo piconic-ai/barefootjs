@@ -25,16 +25,17 @@ import { createFixture } from '../src/types'
  * fix does not change SSR output or break compilation for this shape.
  *
  * `items` is declared INSIDE the component (not at module scope) on
- * purpose: a module-level static array `.map()`'d directly in a client
- * component turns out to fail SSR on every non-Hono adapter today — a
- * real, pre-existing, and completely unrelated gap this fixture accidentally
+ * purpose, from when a module-level static array `.map()`'d directly in a
+ * client component failed SSR on every non-Hono adapter — a real,
+ * pre-existing, and completely unrelated gap this fixture accidentally
  * tripped over during authoring (confirmed with a minimal repro: dropping
- * both event handlers and keeping only the module-level array still fails
+ * both event handlers and keeping only the module-level array failed
  * identically on ERB/Twig/Blade/Jinja/Xslate/minijinja with an empty render,
- * and on Mojolicious/Go-template with a template compile error — see
- * https://github.com/piconic-ai/barefootjs/issues/2946). Keeping the array
- * component-local here avoids conflating that unrelated defect with this
- * fixture's actual subject.
+ * and on Mojolicious/Go-template with a template compile error). That gap
+ * (formerly tracked as #2946, fixed by #2950) no longer reproduces, but
+ * `items` stays component-local here anyway — moving it back to module
+ * scope has no bearing on this fixture's actual subject (#2930) and isn't
+ * worth the unrelated churn.
  */
 export const fixture = createFixture({
   id: 'event-delegation-container-handler',

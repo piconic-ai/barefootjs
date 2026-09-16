@@ -133,10 +133,10 @@ export const conformancePins: ConformancePins = {
   // `/* @client */` works informally but isn't pinned as a corpus fixture
   // yet.
   'module-const-arrow-helper': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
   'module-function-helper-chain': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
   // #3012: the boolean-TEST-position companion of the two entries above —
   // a ternary's `test`, not a plain text position, so it never reaches
@@ -152,6 +152,6 @@ export const conformancePins: ConformancePins = {
   // server-side, so forcing a result (true or false) is a correctness
   // hazard, not a capability gap to close later.
   'module-helper-boolcontext-call': [
-    { code: 'BF102', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2266', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2266' } },
+    { code: 'BF102', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
 }
