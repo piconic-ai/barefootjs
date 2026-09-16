@@ -3132,19 +3132,74 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const meta = buildMetadata(analyzeComponent(source, resolved, compName))
         // Compute the DEFINER's own anonymous-nested-object synth names
         // (#2674) so `structFieldsFor` (inside `registerCrossFileTypes`)
-        // resolves a nested object field's Go type the same way the
-        // definer's own real compile eventually will — WITHOUT emitting
+        // resolves a nested ANONYMOUS object field's Go type the same way
+        // the definer's own real compile eventually will — WITHOUT emitting
         // any Go struct text here (that stays the definer's own job when
         // it compiles for real; this call only needs the naming decision).
-        // Swapped back immediately after so it never leaks into whatever
-        // this consumer's OWN (unrelated) synth pass computes later.
+        // `seedLocalTypeTables` below is the NAMED-type counterpart (a
+        // field referencing another type this same definer declares, e.g.
+        // `Dashboard.widget: Widget`) — both must be seeded, or one of the
+        // two field shapes silently falls back to `interface{}`/
+        // `map[string]interface{}` (#2992 review). Every swap here is
+        // restored immediately after so nothing leaks into whatever this
+        // CONSUMER's own (unrelated) type tables hold later in its compile.
         const prevSynthNames = this.state.synthObjectStructNames
+        const prevLocalTypeNames = this.state.localTypeNames
+        const prevLocalTypeAliases = this.state.localTypeAliases
+        const prevLocalStructFields = this.state.localStructFields
+
         this.state.synthObjectStructNames = new Map()
         for (const entry of planSynthPropStructs(meta, compName)) {
           this.state.synthObjectStructNames.set(entry.typeInfo, entry.name)
         }
+        this.seedLocalTypeTables(meta.typeDefinitions, compName)
         this.registerCrossFileTypes(meta.typeDefinitions, compName)
+
         this.state.synthObjectStructNames = prevSynthNames
+        this.state.localTypeNames = prevLocalTypeNames
+        this.state.localTypeAliases = prevLocalTypeAliases
+        this.state.localStructFields = prevLocalStructFields
+      }
+    }
+  }
+
+  /**
+   * Seed `state.localTypeNames`/`localTypeAliases`/`localStructFields` from
+   * one file's own type definitions — the per-file local type table a
+   * compile needs before resolving any type reference in that file's own
+   * scope, INCLUDING a field that names another type the same file declares
+   * (`Dashboard.widget: Widget`): `typeInfoToGo`'s `'interface'` case and
+   * `tsTypeStringToGo` (`type/type-codegen.ts`) both resolve a named-type
+   * field only against these three maps, never against the class-private
+   * `crossFile*` registry. Shared by `buildLocalTypeTables`'s same-file path
+   * and `ensureCrossFileTypes`'s speculative scan (#2992 review — Pullfrog
+   * caught the scan skipping this seeding step, which resolved a nested
+   * named-type field to `map[string]interface{}` instead of the real struct
+   * name, producing Go that doesn't even compile) — one implementation, so
+   * a field that resolves correctly in a real compile resolves identically
+   * during a speculative one.
+   */
+  private seedLocalTypeTables(typeDefinitions: readonly TypeDefinition[], componentName: string): void {
+    this.state.localTypeNames = new Set<string>()
+    this.state.localTypeAliases = new Map<string, string>()
+    this.state.localStructFields = new Map<string, Map<string, string>>()
+    for (const td of typeDefinitions) {
+      // Skip the Props type (not reusable) and child Props (emitted by the child).
+      if (td.name === 'Props' || td.name === `${componentName}Props`) continue
+      if (td.name.endsWith('Props')) continue
+      this.state.localTypeNames.add(td.name)
+      if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
+        this.state.localTypeAliases.set(td.name, 'string')
+      } else {
+        // Source-key → Go-field-name map for the baker, from the same field
+        // derivation the struct emitter uses. Resolves a same-file forward
+        // reference to another named type correctly only when that type's
+        // own TypeDefinition precedes this one in `typeDefinitions` —
+        // pre-existing declaration-order sensitivity, unchanged here.
+        const fields = this.structFieldsFor(td)
+        if (fields.length > 0) {
+          this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
+        }
       }
     }
   }
@@ -3157,26 +3212,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `ensureCrossFileTypes`'s own docstring.
     this.ensureCrossFileTypes(ir.metadata.imports)
 
-    // Locally-defined type names and aliases so typeInfoToGo can resolve them.
-    this.state.localTypeNames = new Set<string>()
-    this.state.localTypeAliases = new Map<string, string>()
-    this.state.localStructFields = new Map<string, Map<string, string>>()
-    for (const td of ir.metadata.typeDefinitions) {
-      // Skip the Props type (not reusable) and child Props (emitted by the child).
-      if (td.name === 'Props' || td.name === `${componentName}Props`) continue
-      if (td.name.endsWith('Props')) continue
-      this.state.localTypeNames.add(td.name)
-      if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
-        this.state.localTypeAliases.set(td.name, 'string')
-      } else {
-        // Source-key → Go-field-name map for the baker, from the same field
-        // derivation the struct emitter uses.
-        const fields = this.structFieldsFor(td)
-        if (fields.length > 0) {
-          this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
-        }
-      }
-    }
+    this.seedLocalTypeTables(ir.metadata.typeDefinitions, componentName)
     // Cross-file registry (#2984): register this component's OWN type
     // definitions too, so a sibling compiled LATER in this build (the
     // favorable order) resolves them the ordinary way. Shared with
@@ -3226,13 +3262,83 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // array rather than pushing in place, or this would mutate the
           // CONSUMER's own IR metadata, corrupting it for any later re-read.
           const td = this.crossFileTypeDefinitions.get(spec.name)
-          if (td && !this.state.currentTypeDefinitions.some(t => t.name === localName)) {
-            this.state.currentTypeDefinitions = [
-              ...this.state.currentTypeDefinitions,
-              localName === td.name ? td : { ...td, name: localName },
-            ]
+          if (td) {
+            if (!this.state.currentTypeDefinitions.some(t => t.name === localName)) {
+              this.state.currentTypeDefinitions = [
+                ...this.state.currentTypeDefinitions,
+                localName === td.name ? td : { ...td, name: localName },
+              ]
+            }
+            // A property of the borrowed type may itself be typed as
+            // ANOTHER named type the SAME definer file declares
+            // (`Dashboard.widget: Widget`) that this consumer never
+            // imports by name — TS doesn't require it. Pull those in too,
+            // recursively, or `structPropertyType`
+            // (`value/parsed-literal-to-go.ts`) finds `Dashboard` but not
+            // `Widget`, and a composite-literal initial value bakes the
+            // nested field as `map[string]interface{}` instead of
+            // `Widget{...}` — invalid Go for a field the OTHER file's own
+            // struct declares as the named `Widget` type (#2992 review).
+            //
+            // Deliberately OUTSIDE the `currentTypeDefinitions` dedup guard
+            // above: `generateTypes()` calls `buildLocalTypeTables` TWICE
+            // per compile (once via `primeCompileState`, once directly),
+            // and `seedLocalTypeTables` resets `state.localStructFields`/
+            // `localTypeNames` fresh on EACH call, but never resets
+            // `currentTypeDefinitions` between them — so gating this walk
+            // on "not already spliced into currentTypeDefinitions" made it
+            // run on the FIRST call only, and the SECOND call's reset then
+            // silently dropped `Widget` with nothing to re-add it. This
+            // walk is naturally idempotent per call (each
+            // `registerTransitiveCrossFileTypes` re-checks
+            // `state.localTypeNames`, which was JUST reset), so running it
+            // unconditionally here is correct and cheap.
+            for (const prop of td.properties ?? []) {
+              this.registerTransitiveCrossFileTypes(prop.type, new Set([localName, td.name]))
+            }
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Recursively register a borrowed type's own nested named-type
+   * references into the consumer's local type tables — see the call site
+   * above for why. Pre-existing gap in BOTH compile orders (verified: the
+   * #2984 favorable-order in-process test reproduces the identical wrong
+   * bake before this fix), not introduced by `ensureCrossFileTypes` — but
+   * #2992's fix makes the unfavorable order reach composite-literal baking
+   * at all (it previously fell back to `interface{}`/`nil` before ever
+   * trying), so both orders need this closure now.
+   */
+  private registerTransitiveCrossFileTypes(typeInfo: TypeInfo | undefined, visited: Set<string>): void {
+    if (!typeInfo) return
+    if (typeInfo.kind === 'array') {
+      this.registerTransitiveCrossFileTypes(typeInfo.elementType, visited)
+      return
+    }
+    if (typeInfo.kind !== 'interface' || !typeInfo.raw) return
+    const name = typeInfo.raw
+    if (visited.has(name)) return
+    visited.add(name)
+    if (this.state.localTypeNames.has(name)) return
+
+    const aliasBacking = this.crossFileTypeAliases.get(name)
+    if (aliasBacking !== undefined) {
+      this.state.localTypeNames.add(name)
+      this.state.localTypeAliases.set(name, aliasBacking)
+      return
+    }
+    const fieldMap = this.crossFileStructFields.get(name)
+    if (!fieldMap) return
+    this.state.localTypeNames.add(name)
+    this.state.localStructFields.set(name, fieldMap)
+    const td = this.crossFileTypeDefinitions.get(name)
+    if (td && !this.state.currentTypeDefinitions.some(t => t.name === name)) {
+      this.state.currentTypeDefinitions = [...this.state.currentTypeDefinitions, td]
+      for (const prop of td.properties ?? []) {
+        this.registerTransitiveCrossFileTypes(prop.type, visited)
       }
     }
   }
