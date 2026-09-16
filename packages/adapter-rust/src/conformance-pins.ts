@@ -104,10 +104,10 @@ export const conformancePins: ConformancePins = {
   // shape" for the deferred, harder direction); `/* @client */` works
   // informally but isn't pinned as a corpus fixture yet.
   'module-const-arrow-helper': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
   'module-function-helper-chain': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
   // #3012: same BF101 refusal as the two entries above, for a module-scope
   // helper called from a boolean-TEST position (a ternary `test`) rather
@@ -118,6 +118,6 @@ export const conformancePins: ConformancePins = {
   // `call()`'s generic fallback as an identity-scoped `templatePrimitive`
   // instead (`bf.is_element`, `lib/constants.ts`).
   'module-helper-boolcontext-call': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3012', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3012' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
 }

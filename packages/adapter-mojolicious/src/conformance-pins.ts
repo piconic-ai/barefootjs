@@ -121,10 +121,10 @@ export const conformancePins: ConformancePins = {
   // deferred, harder direction); `/* @client */` works informally but
   // isn't pinned as a corpus fixture yet.
   'module-const-arrow-helper': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
   'module-function-helper-chain': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
   // #3012: same #2994 refusal as the two entries above, exercised from a
   // boolean-TEST position (a ternary's `test`) instead of a plain text
@@ -136,6 +136,6 @@ export const conformancePins: ConformancePins = {
   // bare-name call already refused loudly here regardless of position.
   // This pin just extends the existing #2994 contract to the new fixture.
   'module-helper-boolcontext-call': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2994', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/2994' } },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
   ],
 }
