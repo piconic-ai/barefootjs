@@ -1,5 +1,12 @@
 # @barefootjs/jinja
 
+## 0.37.1
+
+### Patch Changes
+
+- ec766fa: Re-point stale closed-issue citations in `conformancePins` (#3030): the module-scope-helper-call refusal family's `unescapable`/`issue` fields formerly cited closed #2994/#3012 (and Go's closed #2266) now cite #3032, the issue tracking the still-missing corpus escape twin; Pebble's `module-const-loop-source-computed` pin now cites the open #2321 instead of closed #2946, matching every sibling adapter's pin for the identical fixture. Doc-only — no behavior change.
+- @barefootjs/shared@0.37.1
+
 ## 0.37.0
 
 ### Patch Changes
