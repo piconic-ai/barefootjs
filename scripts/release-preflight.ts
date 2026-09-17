@@ -25,15 +25,21 @@ const repoRoot = resolve(import.meta.dir, '..')
 
 const { jsrPublishable } = discoverJsrPackages(repoRoot)
 
-const entries: PreflightEntry[] = await Promise.all(
-  npmPublishablePackages(repoRoot).map(async ({ rel, pkg }) => ({
+// Sequential on purpose, like changeset-publish.ts's loop. Two dozen
+// concurrent `npm view` processes plus as many jsr.io fetches is a burst
+// that can earn a 429 — and a rate-limited lookup lands in `unknown`, which
+// never blocks, so the burst would quietly turn the check into "did not
+// check". Once per release, ~1s per package, this is not worth optimizing.
+const entries: PreflightEntry[] = []
+for (const { rel, pkg } of npmPublishablePackages(repoRoot)) {
+  entries.push({
     name: pkg.name,
     version: pkg.version,
     dir: rel,
     npm: await npmRegistryVersion(pkg.name),
     jsr: jsrPublishable.has(pkg.name) ? await jsrPackagePresence(pkg.name) : null,
-  })),
-)
+  })
+}
 
 // The commit the instructions should name: what is checked out here (the
 // workflow runs on the release commit), falling back to the event SHA, or to
