@@ -102,17 +102,17 @@ const SYNC_REGISTRIES = [
 ]
 
 // JSR is deliberately absent. Checking it means knowing which packages are
-// eligible, and that rule lives in scripts/jsr-publish.ts: scoped, not
-// private, not in the ignore list, *not a `bin` package*, and — further down —
-// dropped when its exports resolve to nothing publishable. Restating it here
-// is the same duplication that let rubygems-release drift for eleven releases,
-// and getting it wrong is worse than not checking: a first attempt reported
-// @barefootjs/perl, @barefootjs/php and @barefootjs/cli as missing when they
-// are simply not published there. Asking JSR what the scope contains would
-// sidestep the rule entirely, but api.jsr.io is not reachable from here, so
-// that path could not be tested — and shipping an untested check is how this
-// file's own history went wrong. Left out until it can be written against
-// something verifiable.
+// eligible, and that rule lives in scripts/lib/jsr-packages.ts
+// (`discoverJsrPackages`): scoped, not private, not in the ignore list, *not
+// a `bin` package*, and dropped when its exports resolve to nothing
+// publishable. Restating it here is the same duplication that let
+// rubygems-release drift for eleven releases, and getting it wrong is worse
+// than not checking: a first attempt reported @barefootjs/perl,
+// @barefootjs/php and @barefootjs/cli as missing when they are simply not
+// published there. Now that the rule is importable, a JSR check here would
+// be a small addition — it was left out when api.jsr.io could not be reached
+// from where this was written, and shipping an untested check is how this
+// file's own history went wrong. Add it against something verifiable.
 const UA = 'barefootjs-verify-released (https://github.com/piconic-ai/barefootjs)'
 
 interface Problem {

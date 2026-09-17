@@ -13,6 +13,14 @@
 #       Package settings → Trusted Publishers → Add GitHub Actions
 #         Repository: piconic-ai/barefootjs
 #         Workflow:   release.yml
+#         Permission: "npm publish" (a trusted publisher without it fails
+#                     with "OIDC permission denied for this action")
+#     Trusted Publishing cannot CREATE a package (npm/cli#8544), and JSR
+#     wants a package created on jsr.io first — so a package's first
+#     release needs manual setup. `release:publish` starts with
+#     scripts/release-preflight.ts, which refuses the whole run (publishing
+#     nothing) while any package is missing from npm or JSR and prints the
+#     steps; once done, re-run the failed run and it completes normally.
 #
 # Native runtimes:
 #   - cpan-release publishes Perl dists that correspond to bumped npm packages.
@@ -38,14 +46,15 @@
 # Recovery: the native-registry jobs gate on `needs.release.outputs.published`,
 # which Changesets only sets when it actually published something *this run*.
 # If a push-triggered run publishes to npm but a later job fails or gets
-# skipped (e.g. `@barefootjs/pebble@0.37.0`, first-release npm Trusted
-# Publishing couldn't be configured before the package existed on npm — see
-# npm/cli#8544), a plain re-run is a no-op: `changeset-publish.ts` skips every
-# package already matching the npm registry version, so `published` stays
-# false and the same jobs get skipped again for a different reason. Dispatch
-# this workflow manually with `force_native_release: true` against the ref
-# you're recovering to bypass that gate and re-run CPAN/PyPI/RubyGems/
-# crates.io/Packagist directly from the checked-out package.json versions.
+# skipped (e.g. `@barefootjs/pebble@0.37.1`: its trusted publisher lacked the
+# "npm publish" permission, which the preflight cannot see — it only checks
+# that packages exist), a plain re-run is a no-op: `changeset-publish.ts`
+# skips every package already matching the npm registry version, so
+# `published` stays false and the same jobs get skipped again for a
+# different reason. Dispatch this workflow manually with
+# `force_native_release: true` against the ref you're recovering to bypass
+# that gate and re-run CPAN/PyPI/RubyGems/crates.io/Packagist directly from
+# the checked-out package.json versions.
 
 name: Release
 
