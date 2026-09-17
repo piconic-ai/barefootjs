@@ -1,5 +1,13 @@
 # @barefootjs/go-template
 
+## 0.37.1
+
+### Patch Changes
+
+- 35208e3: Fix #2992: Go-template's cross-file type resolution no longer depends on file discovery/compile order. `GoTemplateAdapter.buildLocalTypeTables` previously populated its cross-file type registry only as a side effect of compiling the type's defining file, so a consumer resolved a borrowed type only when the definer had already compiled first — but `@barefootjs/vite`'s discovery pipeline sorts files alphabetically, not by import graph, so an unfavorably-named consumer (e.g. `App.tsx` importing from `Zebra.tsx`) silently fell back to `interface{}`/`nil`. A new `ensureCrossFileTypes` pre-pass resolves a not-yet-registered relative import by reading and analyzing the definer file directly (`resolveRelativeImportToFile`, newly exported from `@barefootjs/jsx`) before a consumer's own resolution runs, so resolution now depends only on the import existing on disk.
+- ec766fa: Re-point stale closed-issue citations in `conformancePins` (#3030): the module-scope-helper-call refusal family's `unescapable`/`issue` fields formerly cited closed #2994/#3012 (and Go's closed #2266) now cite #3032, the issue tracking the still-missing corpus escape twin; Pebble's `module-const-loop-source-computed` pin now cites the open #2321 instead of closed #2946, matching every sibling adapter's pin for the identical fixture. Doc-only — no behavior change.
+- @barefootjs/shared@0.37.1
+
 ## 0.37.0
 
 ### Patch Changes

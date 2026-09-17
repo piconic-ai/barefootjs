@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/pebble",
-  "version": "0.37.0",
+  "version": "0.37.1",
   "description": "Pebble adapter for BarefootJS — compiles IR to .peb templates and ships the Java BarefootJS rendering runtime; runs under any JVM web framework (Spring Boot, Ktor, etc.)",
   "type": "module",
   "main": "./dist/index.js",

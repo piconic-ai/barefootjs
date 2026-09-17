@@ -1,5 +1,11 @@
 # @barefootjs/vite
 
+## 0.37.1
+
+### Patch Changes
+
+- @barefootjs/shared@0.37.1
+
 ## 0.37.0
 
 ### Patch Changes
