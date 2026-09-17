@@ -530,7 +530,7 @@ Each example's `playwright.config.ts` configures the webServer command, port, an
 
 ### Purpose
 
-Report whether every `ui/` component **compiles** against every workspace `TemplateAdapter`. `bun run compat -- [component…|--all] [--md] [--json]` runs `compileJSX` + the adapter's `generate()` for each component × adapter pair, entirely in-process, and renders the result as a matrix: `✓` when the compile produced no error-severity diagnostic, otherwise the `BF10x` code(s) it emitted. Known-limitation issue URLs are attached to codes automatically from the adapter's pins (see below), so a `✗` cell in the report links straight to its tracking issue.
+Report whether every `ui/` component **compiles** against every workspace `TemplateAdapter`. `bun run compat -- [component…|--all] [--md] [--json]` runs `compileJSX` + the adapter's `generate()` for each component × adapter pair, entirely in-process, and renders the result as a matrix: `✓` when the compile produced no error-severity diagnostic, otherwise the `BF10x` code(s) it emitted. Registry limitation ids are attached to codes automatically from the adapter's pins (see below), so a `✗` cell in the report links straight to the entry describing the limitation.
 
 This is a **compile-time** check only — it never invokes a language runtime (Go, Ruby, Perl, Rust, etc.) and never renders or compares HTML.
 
@@ -547,19 +547,35 @@ The point of committing the matrix is that compatibility gains and losses show u
 Each of the 8 adapter packages exports a `conformancePins` module (`ConformancePins`, from `@barefootjs/jsx`) — a machine-readable declaration of the diagnostics it intentionally emits for shared conformance fixtures instead of lowering them. These pins serve two consumers:
 
 - The adapter's own conformance test (Layer 3) passes them as `expectedDiagnostics`.
-- The compat engine (`packages/compat`) uses them to attach a tracking-issue URL to a matrix cell's diagnostic code.
+- The compat engine (`packages/compat`) uses them to attach the registry limitation id(s) to a matrix cell's diagnostic code.
 
 `packages/compat/src/__tests__/compat-pins.test.ts` is the consistency gate: it replays every pinned fixture through the compat engine and asserts the pinned `{code, severity}` actually appears and that the fixture id still exists in the shared corpus. This means the compat matrix's attribution cannot silently drift from the conformance suite — a pin that goes stale in one place fails a test in the other.
 
-Tracked limitations carry the [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label; that label is the source of truth for issue URLs referenced in the lockfile and matrix output.
+### The known-limitation registry
 
-A second label tiers each `known-limitation` entry by intent, with the compatibility policy as the classifier — silent wrong output is a defect, loud-or-escapable is not:
+Every pin (and every `renderDivergences` entry) cites, by id, the registry entry it is an instance of: `packages/adapter-tests/limitations/<id>.ts`, one file per limitation, flat (an entry's classification can change; its id must not). The registry is the source of truth for what is limited; the file name is the id, and it is what the lockfiles, the docs compatibility-matrix page (`#limitation-<id>` anchors), and the CLI output link to.
 
-- `+ bug` — a **silent divergence** to fix: rendered or emitted output silently differs from the contract (e.g. a loop host rendering empty, a scope id reused, a sentinel leaking into text).
-- `+ enhancement` — a **capability gap**: current behavior is a loud, `/* @client */`-escapable compile-time refusal working as designed; the issue tracks adding a faithful lowering later.
-- bare `known-limitation` — an **accepted design position**: permanent, pinned in the conformance declarations, and documented (e.g. ambient-locale-dependent formatting, JSON-boundary-unrevivable rich props).
+An entry declares only what the limitation IS (`packages/adapter-tests/src/limitations.ts` is the format), in fixed slots so entries read alike:
 
-Orthogonal to the tiers, `+ blocked` marks an entry whose resolution waits on an external dependency (e.g. #1920 waits on a bun fix). It records state, not intent: it composes with any tier, and comes off when the dependency clears — a `bug + blocked` entry is still a defect, just one that cannot be fixed from this repository yet.
+- `title` — a noun phrase.
+- `given` — the input shape. Names no adapter: affected adapters are DERIVED from the pins citing the entry.
+- `expected` — what the Hono reference renders for that shape (the reference output is the contract, so this slot is a definition, not an opinion).
+- `actual` — (`silent` only) what the affected adapter renders instead. For the two refusal kinds it is rendered from `diagnostic`.
+- `diagnostic` — (`refusal` / `by-design`) the code(s) fired.
+- `reason` — (`by-design` only) the design decision.
+- `fixtures` — the minimal reproductions in the corpus (never the escape twins; those live on the fixture's own `escapes`).
+
+No workflow state (planned / blocked / owner), no cause analysis for a gap nobody has root-caused yet, no issue or PR references — those rot, and git history holds the story.
+
+`kind` is the compatibility policy's classifier, applied to the behaviour — silent wrong output is a defect, loud-or-escapable is not:
+
+- `silent` — a **silent divergence** to fix: rendered or emitted output silently differs from the contract (e.g. a loop host rendering empty, a scope id reused, a sentinel leaking into text). Cited from `renderDivergences` / the scope gate's `KNOWN_UNDECLARED`.
+- `refusal` — a **capability gap**: current behavior is a loud, `/* @client */`-escapable compile-time refusal working as designed; a faithful lowering may land later. Cited from `conformancePins`.
+- `by-design` — an **accepted design position**: permanent, refused on purpose, `reason` stated (e.g. ambient-locale-dependent formatting, JSON-boundary-unrevivable rich props). Never graduates.
+
+Two tests hold the registry and the declarations together. `packages/adapter-tests/src/__tests__/limitations.test.ts` lints every entry (directory listing matches the index, slot shape, no adapter names in `given`, no issue/PR references, fixtures exist and are not escape twins, no fixture claimed twice). `packages/compat/src/__tests__/limitations-join.test.ts` joins the registry against every adapter: a pin must cite an existing `refusal` / `by-design` entry whose `diagnostic` includes the pin's code and whose `fixtures` list the pinned fixture; a render divergence must cite a `silent` entry listing its fixture; and every fixture an entry lists must be pinned under that id on at least one adapter, so an entry cannot outlive its last pin. Graduation therefore means: fix the emission, delete the pin, drop the fixture from the entry, delete the entry when its list empties.
+
+Picking work is reading the registry: the lock's `limitations` section (and `bun run compat --render`) lists every entry with its kind and affected adapters — `silent` first, then `refusal`, widest blast radius first. A GitHub issue is for discussing a design decision or receiving an outside report; once the report becomes an entry + fixture, the issue is closed pointing at the file.
 
 ### What NOT to test here
 

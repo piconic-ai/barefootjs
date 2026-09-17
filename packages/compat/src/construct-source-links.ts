@@ -20,8 +20,8 @@
 // (support-matrix.test.ts + ci-compat.yml) same as every other field —
 // so a link can never silently go stale. Moving a catalogue entry or a
 // `case` updates the line number the next regen picks up, and CI fails
-// if that regen is forgotten — the same guarantee the existing
-// `compat-issue-freshness` schedule gives the issue-tracking links.
+// if that regen is forgotten — the same guarantee the limitations join
+// test gives the registry ids the pins cite.
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

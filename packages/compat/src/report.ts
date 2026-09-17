@@ -9,15 +9,15 @@ import type { LoadedCompatAdapter } from './adapter-registry'
 import type { CompatCell } from './engine'
 import { classifyFixtureEscapeState, computeDomainFixtureIds, computeHonoErrorPinnedFixtures, type FixtureEscapeState } from './escape-coverage'
 import type { JSXFixture } from '../../adapter-tests/src/types'
+import type { LimitationsSection } from './limitations'
 
 export type { FixtureEscapeState } from './escape-coverage'
+export type { LimitationsSection, LimitationsSectionEntry } from './limitations'
 
 export const COMPAT_NOTE =
   'Compile-time compatibility (compileJSX + adapter generate() diagnostics). ' +
   'NOT render identity — rendered-output parity is owned by the adapter conformance suite ' +
   'and the eval vector corpus (spec/testing.md Layer 3).'
-
-export const KNOWN_LIMITATION_LABEL = 'https://github.com/piconic-ai/barefootjs/labels/known-limitation'
 
 /**
  * The compat determinism contract's adapter-column ordering: `hono`
@@ -46,17 +46,18 @@ export interface CompatReportCell {
  *   listed diagnostic codes (from the package's `conformancePins`).
  * - `'render'` — the fixture COMPILES clean but its rendered output
  *   diverges from the Hono reference on the adapter's real backend
- *   (from the package's `renderDivergences`); `reason` is the
- *   one-line description.
+ *   (from the package's `renderDivergences`).
+ *
+ * Either kind cites the registry limitation(s) it is an instance of
+ * (`limitations`, sorted + deduped) — the docs page links each cell to
+ * that entry, where the given / expected / actual description lives.
  */
 export interface FixtureDivergenceCell {
   kind: 'refusal' | 'render'
   /** Diagnostic codes for refusals (sorted), e.g. `["BF101"]`. */
   codes?: string[]
-  /** Known-limitation issue URLs for refusals (sorted, deduped). */
-  issues?: string[]
-  /** One-line divergence description for render-kind cells. */
-  reason?: string
+  /** Registry limitation ids (`packages/adapter-tests/limitations/<id>.ts`), sorted + deduped. */
+  limitations: string[]
   /**
    * Set only on `'refusal'` cells with an error-severity pin that's IN the
    * "loud-or-escapable" floor's domain (`computeDomainFixtureIds` —
@@ -120,7 +121,6 @@ export interface ComponentDoc {
 
 export interface CompatReport {
   note: string
-  knownLimitationLabel: string
   /** Adapter ids (matrix columns): `hono` first (reference adapter), then alphabetical. */
   adapters: string[]
   /** Component name → adapter id → cell. */
@@ -133,6 +133,13 @@ export interface CompatReport {
   componentDocs?: Record<string, ComponentDoc>
   /** Fixture-level divergences (build-time refusals + render divergences). */
   fixtureDivergences: FixtureDivergences
+  /**
+   * The known-limitation registry (`packages/adapter-tests/limitations/`)
+   * joined with the adapters citing each entry — see `./limitations.ts`.
+   * The docs page renders it as the "Known limitations" section every
+   * diagnostic / gap link on the page anchors into.
+   */
+  limitations: LimitationsSection
 }
 
 /**
@@ -140,7 +147,7 @@ export interface CompatReport {
  * adapter's declared `conformancePins` + `renderDivergences`, plus (#2613)
  * the escape state of every error-severity refusal that's in the
  * "loud-or-escapable" floor's domain. Sorted fixture ids, sorted adapter
- * keys within each fixture, sorted codes / issue URLs — same
+ * keys within each fixture, sorted codes / limitation ids — same
  * byte-stability contract as the component matrix.
  *
  * `corpus` is the full shared fixture corpus (`jsxFixtures`) — needed to read
@@ -170,20 +177,19 @@ export function buildFixtureDivergences(
     const domainFixtureIds = new Set(computeDomainFixtureIds(adapter, honoErrorPinned))
     for (const [fixtureId, pins] of Object.entries(adapter.pins)) {
       const codes = [...new Set(pins.map(p => p.code))].sort()
-      const issues = [...new Set(pins.flatMap(p => (p.issue ? [p.issue] : [])))].sort()
-      const cell: FixtureDivergenceCell = { kind: 'refusal', codes }
-      if (issues.length > 0) cell.issues = issues
+      const limitations = [...new Set(pins.map(p => p.limitation))].sort()
+      const cell: FixtureDivergenceCell = { kind: 'refusal', codes, limitations }
       if (domainFixtureIds.has(fixtureId)) {
         cell.escape = classifyFixtureEscapeState(adapter, fixtureId, corpus)
       }
       cellsOf(fixtureId).set(adapter.id, cell)
     }
-    for (const [fixtureId, reason] of Object.entries(adapter.renderDivergences)) {
+    for (const [fixtureId, divergence] of Object.entries(adapter.renderDivergences)) {
       // A fixture can't be both refused and render-divergent on ONE
       // adapter — pins win if an adapter ever declares both (the render
       // skip would be unreachable in its conformance suite anyway).
       if (cellsOf(fixtureId).has(adapter.id)) continue
-      cellsOf(fixtureId).set(adapter.id, { kind: 'render', reason })
+      cellsOf(fixtureId).set(adapter.id, { kind: 'render', limitations: [divergence.limitation] })
     }
   }
 
@@ -210,6 +216,7 @@ export function buildFixtureDivergences(
 export function buildCompatReport(
   cells: Record<string, Record<string, CompatCell>>,
   fixtureDivergences?: FixtureDivergences,
+  limitations: LimitationsSection = {},
 ): CompatReport {
   const adapterIds = new Set<string>()
   for (const row of Object.values(cells)) {
@@ -233,11 +240,11 @@ export function buildCompatReport(
 
   return {
     note: COMPAT_NOTE,
-    knownLimitationLabel: KNOWN_LIMITATION_LABEL,
     adapters,
     components,
     fixtureDivergences:
       fixtureDivergences ?? { note: FIXTURE_DIVERGENCES_NOTE, totalFixtures: 0, fixtures: {} },
+    limitations,
   }
 }
 
@@ -316,9 +323,9 @@ export function rowWorksEverywhere(row: Record<string, FixtureDivergenceCell>): 
 /**
  * Markdown matrix: boundary note, `component × adapter` table (✓ for a
  * clean cell, `?` for a missing cell — never rendered as success, comma-
- * joined codes otherwise — warnings prefixed `⚠`), and a legend mapping
- * every code that appears to its known-limitation issue URLs (falling
- * back to the label URL when a code has none).
+ * joined codes otherwise — warnings prefixed `⚠`), a legend mapping
+ * every code that appears to the registry limitation ids behind it, and
+ * the known-limitations list itself (id, kind, title, affected adapters).
  */
 export function formatCompatMarkdown(report: CompatReport): string {
   const lines: string[] = []
@@ -327,7 +334,7 @@ export function formatCompatMarkdown(report: CompatReport): string {
   lines.push(`| component | ${report.adapters.join(' | ')} |`)
   lines.push(`| --- | ${report.adapters.map(() => '---').join(' | ')} |`)
 
-  const issuesByCode = new Map<string, Set<string>>()
+  const limitationsByCode = new Map<string, Set<string>>()
   for (const name of Object.keys(report.components).sort()) {
     const row = report.components[name]
     const cellText = report.adapters.map(id => {
@@ -337,12 +344,12 @@ export function formatCompatMarkdown(report: CompatReport): string {
       if (diagnostics.length === 0) return '✓'
       return diagnostics
         .map(d => {
-          let set = issuesByCode.get(d.code)
+          let set = limitationsByCode.get(d.code)
           if (!set) {
             set = new Set()
-            issuesByCode.set(d.code, set)
+            limitationsByCode.set(d.code, set)
           }
-          for (const url of d.issues) set.add(url)
+          for (const id of d.limitations) set.add(id)
           return d.severity === 'warning' ? `⚠${d.code}` : d.code
         })
         .join(', ')
@@ -352,9 +359,9 @@ export function formatCompatMarkdown(report: CompatReport): string {
 
   lines.push('')
   lines.push('Legend:')
-  for (const code of [...issuesByCode.keys()].sort()) {
-    const urls = [...issuesByCode.get(code)!].sort()
-    lines.push(`- \`${code}\`: ${urls.length > 0 ? urls.join(', ') : report.knownLimitationLabel}`)
+  for (const code of [...limitationsByCode.keys()].sort()) {
+    const ids = [...limitationsByCode.get(code)!].sort()
+    lines.push(`- \`${code}\`: ${ids.length > 0 ? ids.map(id => `\`${id}\``).join(', ') : '(no registered limitation)'}`)
   }
 
   // Fixture-level render conformance. Rendered only when the report
@@ -398,14 +405,28 @@ export function formatCompatMarkdown(report: CompatReport): string {
     lines.push(`**✓ Works** — \`✓\` as written · \`✓${ESCAPABLE_MARKER}\` with a \`/* @client */\` comment`)
     lines.push('(a verified escape twin compiles clean on that adapter).')
     lines.push('')
-    lines.push('**☐ TODO** (fix planned, issue linked) — `≠` compiles clean but the rendered output')
-    lines.push('diverges from the Hono reference (see each adapter package’s `render-divergences.ts`')
-    lines.push('for the per-fixture rationale) · a bare diagnostic code means refused, no escape yet.')
+    lines.push('**☐ TODO** (a registered `silent` / `refusal` limitation) — `≠` compiles clean but the rendered output')
+    lines.push('diverges from the Hono reference (the limitation entry it cites says what renders instead)')
+    lines.push('· a bare diagnostic code means refused, no escape yet.')
     lines.push('')
     lines.push(
       `**${NOT_OWED_MARKER} Doesn't work** (by design, not a gap) — a code led by ` +
         `\`${NOT_OWED_MARKER}\` (e.g. \`${NOT_OWED_MARKER}BF021\`) is refused on purpose, no escape owed.`,
     )
+  }
+
+  // The registry itself: what each limitation IS, and where it bites.
+  const limitationIds = Object.keys(report.limitations ?? {}).sort()
+  if (limitationIds.length > 0) {
+    lines.push('')
+    lines.push('Known limitations (packages/adapter-tests/limitations/):')
+    lines.push('')
+    lines.push('| id | kind | title | adapters |')
+    lines.push('| --- | --- | --- | --- |')
+    for (const id of limitationIds) {
+      const entry = report.limitations[id]
+      lines.push(`| \`${id}\` | ${entry.kind} | ${entry.title} | ${entry.adapters.join(', ') || '—'} |`)
+    }
   }
 
   return lines.join('\n') + '\n'

@@ -176,8 +176,8 @@ export function evaluateFixtureEscapeCoverage(
       ok: false,
       message:
         `[${adapter.id}/${fixtureId}] refused with an error-severity pin but has no verified escape.\n\n` +
-        `FAST PATH: add 'unescapable: { issue: '<url>' }' to the error pin for '${fixtureId}' in ` +
-        `${adapter.pkg}'s own conformance-pins.ts (point at #2613 if no more specific issue exists yet) ` +
+        `FAST PATH: add 'unescapable: true' to the error pin for '${fixtureId}' in ` +
+        `${adapter.pkg}'s own conformance-pins.ts ` +
         `— this is the intended way to unblock landing the pin, not a stopgap.\n\n` +
         `Only author an escape fixture (declare 'escapes' on '${fixtureId}' pointing at a twin that ` +
         `compiles clean, is unpinned, non-divergent, and not CSR-skipped on '${adapter.id}') if you ` +
@@ -199,7 +199,7 @@ export function evaluateFixtureEscapeCoverage(
  *     test itself uses). `twin` is which declared twin fixture it was, so
  *     a renderer can link straight to the demonstration.
  *   - `'debt'` — refused, no working escape, and the adapter's own pin
- *     says so (`unescapable: { issue }`) — tracked, not silent.
+ *     says so (`unescapable: true`) — declared, not silent.
  *   - `'not-owed'` — the fixture itself declares `escapeNotOwed`: no
  *     escape will ever be authored here, by design. `reason` is the
  *     fixture's own prose justification, carried through so a renderer
@@ -274,21 +274,13 @@ export function classifyFixtureEscapeState(
 }
 
 /**
- * Every pin-config mistake `escapes-coverage.test.ts` guards against
- * beyond the domain check itself: `unescapable` set on a non-error pin
- * (meaningless — only an error-severity refusal owes an escape), or set
- * with no tracking issue (breaks the "every unescapable carries an
- * issue-URL" discipline `KNOWN_HOLES` established).
+ * The pin-config mistake `escapes-coverage.test.ts` guards against beyond
+ * the domain check itself: `unescapable` set on a non-error pin
+ * (meaningless — only an error-severity refusal owes an escape).
  */
 export function findMisappliedUnescapable(adapter: LoadedCompatAdapter): string[] {
   return Object.entries(adapter.pins).flatMap(([fixtureId, pins]) =>
     pins.filter(p => p.unescapable && p.severity !== 'error').map(p => `${fixtureId} (${p.severity}/${p.code})`),
-  )
-}
-
-export function findUnescapableMissingIssue(adapter: LoadedCompatAdapter): string[] {
-  return Object.entries(adapter.pins).flatMap(([fixtureId, pins]) =>
-    pins.filter(p => p.unescapable && !p.unescapable.issue).map(p => `${fixtureId} (${p.code})`),
   )
 }
 

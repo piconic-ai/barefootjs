@@ -131,10 +131,12 @@ Then iterate: **pick one failing fixture at a time**, make it pass, shrink the s
 ~190 shared fixtures exist; do not try to clear them in one pass and do not edit shared fixtures
 to fit your adapter. Rules for what remains skipped/pinned at the end:
 - A **genuine capability refusal** (target language can't express it) becomes an
-  `expectedDiagnostics` pin in `conformance-pins.ts`, with a docstring pointing at a
-  [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) issue URL.
-- `skipJsx` / `skipTemplatePrimitives` / `skipMarkerConformance` entries likewise each carry an
-  issue pointer. An unexplained skip is a review blocker.
+  `expectedDiagnostics` pin in `conformance-pins.ts` whose `limitation` field cites the registry
+  entry (`packages/adapter-tests/limitations/<id>.ts`) it is an instance of — add the entry (or
+  add your fixture to an existing one) in the same PR; the join test refuses an unknown id.
+- `skipJsx` (derived from `renderDivergences`, which cites an entry the same way) /
+  `skipTemplatePrimitives` / `skipMarkerConformance` entries likewise each carry a limitation
+  pointer. An unexplained skip is a review blocker.
 
 Also verify: `no-bun-coupling.test.ts` (published sources Bun-free except the `"bun"`-gated
 `./test-render`), marker conformance, and the CSR conformance suite (adapter-independent — you
@@ -205,9 +207,9 @@ easy to miss — check off each one:
 - **Verify with the suite, not by eye**: the conformance runner comparing against the reference
   adapter's frozen snapshots is the ground truth. When output differs, diff the emitted template
   against the closest sibling adapter's output for the same fixture before touching code.
-- **When blocked on a fixture**: check the
-  [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label
-  first — a sibling adapter may already have pinned the same case; mirror its pin and issue link.
+- **When blocked on a fixture**: check the registry (`packages/adapter-tests/limitations/`)
+  first — a sibling adapter may already have pinned the same case; mirror its pin and cite the
+  same limitation id.
 - **Never** edit shared fixtures, frozen snapshots, or the shared dispatchers to make your
   adapter pass; if the shared layer genuinely needs a new IR-carried field, that is its own
   stacked, byte-identical-for-existing-adapters PR (spec/adapter-architecture.md "How to add a unit").
@@ -228,7 +230,7 @@ naming = <bf_* | bf.* | …>.
 
 Work in small commits: package skeleton first, then the adapter core, then the native runtime
 with golden-vector replay, then grind the conformance suite one fixture at a time (skip list
-shrinks every commit; every surviving skip/pin carries a known-limitation issue URL). Finish
+shrinks every commit; every surviving skip/pin cites a registry limitation id). Finish
 with the Phase 5 integration checklist and Phase 6 docs — every box, none skipped. Do not edit
 shared fixtures, snapshots, or dispatchers. Gate on: bun run build, bun test, tsgo --noEmit,
 bun run lint, bun run compat:lock.

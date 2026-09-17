@@ -12,8 +12,8 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
-  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
-  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2648' }],
+  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', limitation: 'ambient-locale-date-formatting' }],
+  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', limitation: 'rich-typed-prop-hydration' }],
   // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop
   // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of
   // `adapter.generate()` in the shared jsx-to-ir.ts phase, so it is pinned
@@ -22,8 +22,8 @@ export const conformancePins: ConformancePins = {
   // (formerly tracked as #2667, closed): the issue's own acceptance criteria
   // treated a loud refusal as fully resolving the silent-divergence bug, so
   // no open issue tracks further work here.
-  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error' }],
-  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error' }],
+  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error', limitation: 'jsx-wrapped-in-non-children-prop' }],
+  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error', limitation: 'jsx-wrapped-in-non-children-prop' }],
   // A reactive primitive invoked through a namespace import
   // (`import * as bf from '@barefootjs/client'`, `bf.createSignal(...)`)
   // that the analyzer's checker-less fast path cannot recognize refuses
@@ -33,5 +33,5 @@ export const conformancePins: ConformancePins = {
   // that supplies a shared `ts.Program` (e.g. via `@barefootjs/vite`)
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
-  'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
+  'namespace-import-primitive': [{ code: 'BF013', severity: 'error', limitation: 'namespace-import-primitive-without-program' }],
 }

@@ -20,11 +20,12 @@
  *
  * KNOWN_UNDECLARED is the shrink-only ledger of fixtures whose emitted
  * JS is scope-unsound today. Each entry names the undeclared
- * identifiers and the tracking issue. The per-fixture test asserts the
+ * identifiers and the registry limitation it is an instance of
+ * (`packages/adapter-tests/limitations/<id>.ts`). The per-fixture test asserts the
  * EXACT set: a new undeclared name in a pinned fixture still fails,
  * and when a fix lands the pin goes stale and fails with a
  * "graduated — delete the pin" message. New entries may be added only
- * with a tracking issue; the goal state is an empty object.
+ * with a registry limitation; the goal state is an empty object.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -36,8 +37,8 @@ import { jsxFixtures } from '../../fixtures'
 interface KnownHole {
   /** Undeclared identifier names, sorted, exactly as the gate reports them. */
   names: string[]
-  /** Tracking issue URL (known-limitation label). */
-  issue: string
+  /** Registry limitation id (`packages/adapter-tests/limitations/<id>.ts`, kind `silent`). */
+  limitation: string
 }
 
 const KNOWN_UNDECLARED: Record<string, KnownHole> = {
@@ -194,14 +195,14 @@ describe('client-JS scope gate', () => {
         expect(
           names,
           `pinned scope holes for '${fixture.id}' changed — if the fix landed, ` +
-            `delete its KNOWN_UNDECLARED entry (${pin.issue})`,
+            `delete its KNOWN_UNDECLARED entry (${pin.limitation})`,
         ).toEqual(pin.names)
       } else {
         expect(
           names,
           `emitted client JS for '${fixture.id}' references undeclared identifiers — ` +
             `this is a guaranteed ReferenceError at runtime. Fix the emission or, if it is ` +
-            `a tracked limitation, pin it in KNOWN_UNDECLARED with its issue URL.`,
+            `a tracked limitation, pin it in KNOWN_UNDECLARED with its registry limitation id.`,
         ).toEqual([])
       }
     })

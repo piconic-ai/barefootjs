@@ -45,12 +45,12 @@ function syntheticCoverage(): SupportMatrixCoverageMap {
 /**
  * Three synthetic adapters, deliberately given non-alphabetical / non-hono-
  * first ids (`zeta`, `hono`, `alpha`) to pin the column-ordering contract
- * too. `hono` pins `f1` with three diagnostics: two carrying issue URLs
+ * too. `hono` pins `f1` with four diagnostics citing two limitation ids
  * (one duplicated, to pin dedup) in reverse sort order (to pin the sort),
- * and one carrying no issue (to pin that a pin can still gap a fixture
- * with an empty issues contribution). `alpha` declares no pins but a
+ * (to pin dedup + sort of the ids a gap carries).
+ * `alpha` declares no pins but a
  * `renderDivergences` entry for `f3` (to pin that render-divergence-only
- * gaps carry `issues: []`, since that map has no issue field at all).
+ * gaps carry the divergence's own cited limitation id).
  * `zeta` declares neither, so every cell on it is clean.
  */
 function syntheticAdapters(): SupportMatrixAdapterInput[] {
@@ -60,15 +60,15 @@ function syntheticAdapters(): SupportMatrixAdapterInput[] {
       id: 'hono',
       pins: {
         f1: [
-          { code: 'BF1', severity: 'error', issue: 'https://example.com/issues/2' },
-          { code: 'BF2', severity: 'error', issue: 'https://example.com/issues/1' },
-          { code: 'BF3', severity: 'warning', issue: 'https://example.com/issues/1' },
-          { code: 'BF4', severity: 'warning' },
+          { code: 'BF1', severity: 'error', limitation: 'lim-2' },
+          { code: 'BF2', severity: 'error', limitation: 'lim-1' },
+          { code: 'BF3', severity: 'warning', limitation: 'lim-1' },
+          { code: 'BF4', severity: 'warning', limitation: 'lim-1' },
         ],
       },
       renderDivergences: {},
     },
-    { id: 'alpha', pins: {}, renderDivergences: { f3: 'renders differently from the reference' } },
+    { id: 'alpha', pins: {}, renderDivergences: { f3: { limitation: 'lim-render' } } },
   ]
 }
 
@@ -94,33 +94,33 @@ describe('buildSupportMatrix (synthetic join)', () => {
     // unrelated renderDivergence on f3 (which doesn't exercise `call`).
     expect(call.cells.alpha).toEqual({ pass: 2, total: 2 })
 
-    // hono: f1 gapped via pins, f2 clean. Issues dedup+sorted.
+    // hono: f1 gapped via pins, f2 clean. Limitation ids dedup+sorted.
     expect(call.cells.hono).toEqual({
       pass: 1,
       total: 2,
-      gaps: [{ fixture: 'f1', issues: ['https://example.com/issues/1', 'https://example.com/issues/2'] }],
+      gaps: [{ fixture: 'f1', limitations: ['lim-1', 'lim-2'] }],
     })
   })
 
-  test('an axis: total + ratio + render-divergence gap with no issue URL', () => {
+  test('an axis: total + ratio + render-divergence gap citing its limitation', () => {
     const axis = report.axes['literal:string']
     expect(axis.total).toBe(2) // f1, f3
 
     // zeta: clean.
     expect(axis.cells.zeta).toEqual({ pass: 2, total: 2 })
 
-    // hono: f1 gapped via pins (same fixture, same issues as the `call` case).
+    // hono: f1 gapped via pins (same fixture, same limitations as the `call` case).
     expect(axis.cells.hono).toEqual({
       pass: 1,
       total: 2,
-      gaps: [{ fixture: 'f1', issues: ['https://example.com/issues/1', 'https://example.com/issues/2'] }],
+      gaps: [{ fixture: 'f1', limitations: ['lim-1', 'lim-2'] }],
     })
 
-    // alpha: f3 gapped via renderDivergences only — no issue URL available.
+    // alpha: f3 gapped via renderDivergences only — cites the divergence's limitation.
     expect(axis.cells.alpha).toEqual({
       pass: 1,
       total: 2,
-      gaps: [{ fixture: 'f3', issues: [] }],
+      gaps: [{ fixture: 'f3', limitations: ['lim-render'] }],
     })
   })
 

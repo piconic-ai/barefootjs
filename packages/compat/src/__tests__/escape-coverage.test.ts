@@ -17,7 +17,7 @@
 //      `renderDivergences`, not CSR-skipped — the structural proxy for
 //      "renders correctly," not re-checked behaviourally here); or
 //   2. the adapter's OWN error pin for this fixture carries
-//      `unescapable: { issue }` (`ConformancePin`, `@barefootjs/jsx`); or
+//      `unescapable: true` (`ConformancePin`, `@barefootjs/jsx`); or
 //   3. the fixture declares `escapeNotOwed: { reason }` — an explicit,
 //      required-non-empty prose declaration that NO escape is owed here,
 //      by design (not merely "not authored yet") — see `EscapeNotOwed` in
@@ -34,9 +34,9 @@
 // declaration is not an option this test allows, but the two paths that
 // ARE allowed are not equally expensive, and that asymmetry is deliberate:
 //
-//   - refuse + `unescapable: { issue }` on the pin: one field, one issue
-//     URL, in the SAME object literal as the refusal it qualifies. Costs
-//     a single line, in the adapter's own package.
+//   - refuse + `unescapable: true` on the pin: one field, in the SAME
+//     object literal as the refusal it qualifies. Costs a single line, in
+//     the adapter's own package.
 //   - silent divergence (an adapter that compiles clean but produces
 //     subtly wrong output): this repo's own rules require the FULL
 //     three-piece known-limitation set — a tracked issue, a hand-authored
@@ -49,7 +49,7 @@
 // Refuse-plus-`unescapable` is intentionally the cheap option, not the
 // shameful one: when you land a new adapter-specific refusal and don't
 // have (or don't yet want to invest in) a verified escape, the FAST PATH
-// is to set `unescapable: { issue: '<url>' }` on that pin, in YOUR
+// is to set `unescapable: true` on that pin, in YOUR
 // adapter's own `conformance-pins.ts` — not to author an escape fixture
 // under deadline pressure. Authoring a real twin is the *ratchet* (it
 // deletes the `unescapable` field), never the toll booth blocking a pin
@@ -104,7 +104,6 @@ import {
   computeDomainFixtureIds,
   evaluateFixtureEscapeCoverage,
   findMisappliedUnescapable,
-  findUnescapableMissingIssue,
   findUnprovenEscapeClaims,
 } from '../escape-coverage'
 
@@ -151,10 +150,6 @@ describe('escape coverage — every adapter refusal is escapable or self-declare
       // own package, caught here rather than silently doing nothing.
       test('no "unescapable" declared on a non-error pin', () => {
         expect(findMisappliedUnescapable(adapter)).toEqual([])
-      })
-
-      test('every "unescapable" declaration carries an issue URL', () => {
-        expect(findUnescapableMissingIssue(adapter)).toEqual([])
       })
 
       const domainFixtureIds = computeDomainFixtureIds(adapter, honoErrorPinnedFixtures)

@@ -48,9 +48,9 @@ describe('renderDivergences consistency', () => {
             )
           }
 
-          const reason = adapter.renderDivergences[fixtureId]
-          expect(typeof reason).toBe('string')
-          expect(reason.length).toBeGreaterThan(0)
+          const divergence = adapter.renderDivergences[fixtureId]
+          expect(typeof divergence.limitation).toBe('string')
+          expect(divergence.limitation.length).toBeGreaterThan(0)
 
           const instance = adapter.factory()
           const errors = compileForCompat(

@@ -10,21 +10,21 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
-  'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
-  'map-array-builder-body': [{ code: 'BF021', severity: 'error' }],
-  'map-array-builder-escaping': [{ code: 'BF021', severity: 'error' }],
-  'fill-unsupported': [{ code: 'BF101', severity: 'error' }],
-  'find-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
-  'some-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
-  'every-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
-  'reduce-typeof-body': [{ code: 'BF101', severity: 'error' }],
-  'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error' }],
-  'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error' }],
+  'filter-typeof-predicate': [{ code: 'BF021', severity: 'error', limitation: 'off-subset-callback-body' }],
+  'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
+  'map-array-builder-escaping': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
+  'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
+  'find-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
+  'some-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
+  'every-typeof-predicate': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
+  'reduce-typeof-body': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
+  'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
+  'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error', limitation: 'off-subset-callback-body' }],
   // A pure PROJECTION flatMap body (`flatmap-expression-body`) is NOT pinned —
   // it lowers to neutral nested-loop IR this adapter templatizes natively;
   // only the statement-carrying body refuses.
-  'tag-cloud': [{ code: 'BF021', severity: 'error' }],
-  'preamble-cells': [{ code: 'BF021', severity: 'error' }],
+  'tag-cloud': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
+  'preamble-cells': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   // Refused for the COMPUTED loop array (`const entries = Object.entries(...)
   // .filter(...)`), not the destructure param (that lowers, #2087) — loud
   // BF101 instead of silently iterating an unbound name zero times.
@@ -32,7 +32,7 @@ export const conformancePins: ConformancePins = {
     {
       code: 'BF101',
       severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
+      limitation: 'computed-const-loop-source',
     },
   ],
   // No BF103 pin: the harness registers sibling templates (#2205).
@@ -40,7 +40,7 @@ export const conformancePins: ConformancePins = {
     {
       code: 'BF101',
       severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
+      limitation: 'computed-const-loop-source',
     },
   ],
   // Module-scope companion of `static-array-from-props` above: the const
@@ -53,18 +53,18 @@ export const conformancePins: ConformancePins = {
     {
       code: 'BF101',
       severity: 'error',
-      issue: 'https://github.com/piconic-ai/barefootjs/issues/2321',
+      limitation: 'computed-const-loop-source',
     },
   ],
   // #2038: `renderFilterExpr`'s `call` arm has no faithful Go form for a
   // nested arrow — loud BF101 instead of the old silent drop of the arrow
   // argument.
   'filter-nested-callback-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
+    { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
   ],
-  'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' }],
-  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
-  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2648' }],
+  'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' }],
+  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', limitation: 'ambient-locale-date-formatting' }],
+  'rich-prop-client-read': [{ code: 'BF049', severity: 'error', limitation: 'rich-typed-prop-hydration' }],
   // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop
   // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of
   // `adapter.generate()` in the shared jsx-to-ir.ts phase, so it is pinned
@@ -73,8 +73,8 @@ export const conformancePins: ConformancePins = {
   // (formerly tracked as #2667, closed): the issue's own acceptance criteria
   // treated a loud refusal as fully resolving the silent-divergence bug, so
   // no open issue tracks further work here.
-  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error' }],
-  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error' }],
+  'jsx-element-prop-ternary': [{ code: 'BF021', severity: 'error', limitation: 'jsx-wrapped-in-non-children-prop' }],
+  'jsx-element-prop-array': [{ code: 'BF021', severity: 'error', limitation: 'jsx-wrapped-in-non-children-prop' }],
   // `jsx-element-prop-fragment-conditional` (#2703) and
   // `jsx-element-prop-rest-bag-dynamic` (#2805, graduated) are NOT pinned
   // here — both render correctly: `queueDynamicPropDefine`
@@ -92,7 +92,7 @@ export const conformancePins: ConformancePins = {
   'signal-object-spread-init': [{
     code: 'BF101',
     severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2700',
+    limitation: 'derived-object-literal-signal',
   }],
   // A reactive primitive invoked through a namespace import
   // (`import * as bf from '@barefootjs/client'`, `bf.createSignal(...)`)
@@ -103,7 +103,7 @@ export const conformancePins: ConformancePins = {
   // that supplies a shared `ts.Program` (e.g. via `@barefootjs/vite`)
   // resolves the primitive normally and never reaches this refusal (formerly
   // tracked as #2771, closed) — no open issue tracks further work.
-  'namespace-import-primitive': [{ code: 'BF013', severity: 'error' }],
+  'namespace-import-primitive': [{ code: 'BF013', severity: 'error', limitation: 'namespace-import-primitive-without-program' }],
   // #2893's nested-loop STRUCTURAL bail (the whole reason this fixture used
   // to refuse — see #2893's own minimal `static-nested-loop-plain` fixture,
   // which now compiles clean) is fixed: `analyzeBakeableStaticElementLoop`
@@ -119,7 +119,7 @@ export const conformancePins: ConformancePins = {
   'static-nested-loop-ref': [{
     code: 'BF101',
     severity: 'error',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2909',
+    limitation: 'signal-read-in-nested-static-loop',
   }],
   // #2994 graduated the render-divergence pin: a call to a module-scope
   // helper (arrow-valued const OR `function` declaration) by bare name
@@ -133,10 +133,10 @@ export const conformancePins: ConformancePins = {
   // `/* @client */` works informally but isn't pinned as a corpus fixture
   // yet.
   'module-const-arrow-helper': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
+    { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
   'module-function-helper-chain': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
+    { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
   // #3012: the boolean-TEST-position companion of the two entries above —
   // a ternary's `test`, not a plain text position, so it never reaches
@@ -152,6 +152,6 @@ export const conformancePins: ConformancePins = {
   // server-side, so forcing a result (true or false) is a correctness
   // hazard, not a capability gap to close later.
   'module-helper-boolcontext-call': [
-    { code: 'BF102', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/3032', unescapable: { issue: 'https://github.com/piconic-ai/barefootjs/issues/3032' } },
+    { code: 'BF102', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
 }

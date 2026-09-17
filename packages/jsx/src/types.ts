@@ -2350,28 +2350,36 @@ export interface ErrorSuggestion {
  * fixture (packages/adapter-tests) instead of lowering it — the adapter's
  * machine-readable known-limitations declaration. Consumed by the adapter's
  * own conformance test (as `expectedDiagnostics`) and by `bf compat`
- * (issue-URL attribution). Tracked limitations carry the `known-limitation`
- * label: https://github.com/piconic-ai/barefootjs/labels/known-limitation
+ * (limitation attribution). Every pin cites the registry entry that
+ * defines the limitation it is an instance of:
+ * `packages/adapter-tests/limitations/<id>.ts` (see that package's
+ * `src/limitations.ts` for the entry format). The registry, not a label or
+ * an issue tracker, is the source of truth for what is limited and why.
  */
 export interface ConformancePin {
   /** Diagnostic code, e.g. 'BF101'. */
   code: string
   severity: 'error' | 'warning'
-  /** Tracking issue URL (known-limitation label) for this refusal, when one exists. */
-  issue?: string
+  /**
+   * The registry id (`packages/adapter-tests/limitations/<id>.ts`) of the
+   * limitation this refusal is an instance of. Required: a pin with no
+   * definition behind it is a gap nobody can read about. The join test
+   * (`packages/compat/src/__tests__/limitations-join.test.ts`) fails on an
+   * id that has no entry, and on an entry whose `fixtures` do not list this
+   * pin's fixture.
+   */
+  limitation: string
   /**
    * Present when THIS adapter has no verified escape yet for this
-   * refusal — the per-adapter half of #2613's "loud-or-escapable" floor
-   * (`packages/compat/src/__tests__/escape-coverage.test.ts`). `issue` is
-   * the tracking pointer for closing the gap (fall back to
-   * https://github.com/piconic-ai/barefootjs/issues/2613 itself when no
-   * more specific issue exists yet).
+   * refusal — the per-adapter half of the "loud-or-escapable" floor
+   * (`packages/compat/src/__tests__/escape-coverage.test.ts`).
    *
    * Declared here, next to the refusal it qualifies, so an adapter's own
    * package is the sole place that states what it knows about its own
    * refusal — no central cross-adapter ledger to keep in sync (that was
-   * the architectural defect increment 1 shipped with: a `packages/compat`
-   * test hardcoding every adapter's id, which made adapters non-additive).
+   * the architectural defect the floor's first increment shipped with: a
+   * `packages/compat` test hardcoding every adapter's id, which made
+   * adapters non-additive).
    *
    * Absent means the adapter believes an escape is owed here — either
    * already satisfied (the refused fixture's `escapes` twin compiles
@@ -2381,8 +2389,10 @@ export interface ConformancePin {
    * Shrink-only, same discipline `KNOWN_HOLES` established: once a
    * working twin exists here, a lingering `unescapable` becomes a STALE
    * declaration and the floor test fails loudly on it, naming this pin.
+   * The set of pins still carrying it is the "escape twins still to
+   * author" work list — derived, never tracked elsewhere.
    */
-  unescapable?: { issue: string }
+  unescapable?: true
 }
 /** Keyed by shared-fixture id (`JSXFixture.id`). */
 export type ConformancePins = Record<string, ReadonlyArray<ConformancePin>>
@@ -2397,10 +2407,12 @@ export type ConformancePins = Record<string, ReadonlyArray<ConformancePin>>
  * file derives the skip list from this object so the two can't drift)
  * and by `packages/compat` (the fixture-divergences section of
  * `ui/compat.lock.json`, rendered on the docs compatibility-matrix
- * page). Keyed by shared-fixture id; the value is a one-line
- * human-readable description of the divergence.
+ * page). Keyed by shared-fixture id; the value cites the registry entry
+ * (`packages/adapter-tests/limitations/<id>.ts`, kind `silent`) that
+ * defines the divergence — what the reference renders, what this
+ * adapter renders instead.
  */
-export type RenderDivergences = Record<string, string>
+export type RenderDivergences = Record<string, { limitation: string }>
 
 // =============================================================================
 // Compile Options & Results

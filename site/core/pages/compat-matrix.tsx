@@ -25,7 +25,8 @@ const DESCRIPTION = 'Compile-compatibility of every ui/ component across templat
 interface CompatDiagnostic {
   code: string
   severity: 'error' | 'warning'
-  issues?: string[]
+  /** Registry limitation ids (`packages/adapter-tests/limitations/<id>.ts`) the adapters' pins cite for this code. */
+  limitations?: string[]
   escapes?: string[]
 }
 
@@ -90,9 +91,27 @@ type FixtureEscapeState = { state: 'escapable'; twin: string } | { state: 'debt'
 interface FixtureDivergenceCell {
   kind: 'refusal' | 'render'
   codes?: string[]
-  issues?: string[]
-  reason?: string
+  /** Registry limitation ids this cell is an instance of (sorted, deduped). */
+  limitations: string[]
   escape?: FixtureEscapeState
+}
+
+/**
+ * One known-limitation registry entry as the lock publishes it (mirrors
+ * `LimitationsSectionEntry` in `packages/compat/src/limitations.ts`; re-
+ * declared for the same no-runtime-dependency reason as every other type
+ * here). `adapters` is derived from the pins citing the entry.
+ */
+interface LimitationEntry {
+  title: string
+  kind: 'silent' | 'refusal' | 'by-design'
+  given: string
+  expected: string
+  actual: string
+  diagnostics?: string[]
+  reason?: string
+  fixtures: string[]
+  adapters: string[]
 }
 
 interface FixtureDoc {
@@ -118,13 +137,14 @@ interface ComponentDoc {
 
 interface CompatLock {
   note: string
-  knownLimitationLabel: string
   adapters: string[]
   components: Record<string, Record<string, CompatCell>>
   /** Optional: component name → title + description + source link (older locks lack it). */
   componentDocs?: Record<string, ComponentDoc>
   /** Optional: locks generated before #2168's render-honesty section lack it. */
   fixtureDivergences?: FixtureDivergences
+  /** The known-limitation registry joined with the adapters citing each entry (keys sorted). */
+  limitations?: Record<string, LimitationEntry>
 }
 
 const compat = lock as CompatLock
@@ -132,7 +152,7 @@ const compat = lock as CompatLock
 /** One `kind` or `axis` construct's covering-fixture total and its per-adapter cells (`ui/support-matrix.lock.json`). */
 interface SupportMatrixGap {
   fixture: string
-  issues: string[]
+  limitations: string[]
 }
 
 interface SupportMatrixCell {
@@ -163,7 +183,6 @@ interface SupportMatrixConstruct {
 
 interface SupportMatrixLock {
   note: string
-  knownLimitationLabel: string
   adapters: string[]
   kinds: Record<string, SupportMatrixConstruct>
   axes: Record<string, SupportMatrixConstruct>
@@ -217,20 +236,25 @@ function notOwedPrefix(escape: FixtureEscapeState | undefined): string {
   return escape?.state === 'not-owed' ? NOT_OWED_MARKER : ''
 }
 
+/** The in-page anchor of a registry entry in the "Known Limitations" section below. */
+function limitationAnchor(id: string): string {
+  return `#limitation-${id}`
+}
+
 /**
- * Deduped, sorted issue URLs as `#NNNN` links, falling back to the repo-
- * wide known-limitation label when none exist. Shared by `buildLegend`
- * (compat matrix, per diagnostic code) and the construct-support section
- * below (per gapped cell) so both link formats stay identical.
+ * Deduped, sorted registry ids as links into the "Known Limitations"
+ * section. Shared by `buildLegend` (compat matrix, per diagnostic code),
+ * the fixture cells, and the construct-support section (per gapped cell)
+ * so every link on the page resolves the same way.
  */
-function formatIssueLinks(issues: string[], fallbackLabel: string): string {
-  // Dedupe + code-unit sort HERE (matching the lockfiles' issue ordering) so
-  // both callers are deterministic from one place: `collectLegend` feeds
-  // Set-insertion-ordered URLs, and the construct-support cells feed already-
-  // flattened gap URLs — neither is pre-sorted at the call site.
-  const unique = [...new Set(issues)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-  if (unique.length === 0) return `[known limitation](${fallbackLabel})`
-  return unique.map((url) => `[#${url.split('/').pop()}](${url})`).join(', ')
+function formatLimitationLinks(ids: string[]): string {
+  // Dedupe + code-unit sort HERE (matching the lockfiles' ordering) so all
+  // callers are deterministic from one place: `collectLegend` feeds
+  // Set-insertion-ordered ids, and the construct-support cells feed already-
+  // flattened gap ids — neither is pre-sorted at the call site.
+  const unique = [...new Set(ids)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  if (unique.length === 0) return 'unregistered'
+  return unique.map((id) => `[\`${id}\`](${limitationAnchor(id)})`).join(', ')
 }
 
 /** Render one matrix cell as a Markdown fragment. */
@@ -243,8 +267,8 @@ function cellMarkdown(cell: CompatCell | undefined): string {
   return diagnostics
     .map((d) => {
       const label = d.severity === 'warning' ? `⚠ ${d.code}` : d.code
-      const firstIssue = d.issues?.[0]
-      return firstIssue ? `[${label}](${firstIssue})` : label
+      const first = d.limitations?.[0]
+      return first ? `[${label}](${limitationAnchor(first)})` : label
     })
     .join('<br>')
 }
@@ -287,15 +311,15 @@ function buildTable(componentNames: string[]): string {
   return [header, divider, ...rows].join('\n')
 }
 
-/** Collect every distinct diagnostic code across all cells, with its deduped issue URLs and escape claims. */
-function collectLegend(): { code: string; severity: CompatDiagnostic['severity']; issues: string[]; escapes: string[] }[] {
-  const byCode = new Map<string, { severity: CompatDiagnostic['severity']; issues: Set<string>; escapes: Set<string> }>()
+/** Collect every distinct diagnostic code across all cells, with its deduped limitation ids and escape claims. */
+function collectLegend(): { code: string; severity: CompatDiagnostic['severity']; limitations: string[]; escapes: string[] }[] {
+  const byCode = new Map<string, { severity: CompatDiagnostic['severity']; limitations: Set<string>; escapes: Set<string> }>()
 
   for (const adapterMap of Object.values(compat.components)) {
     for (const cell of Object.values(adapterMap)) {
       for (const d of cell.diagnostics ?? []) {
-        const entry = byCode.get(d.code) ?? { severity: d.severity, issues: new Set<string>(), escapes: new Set<string>() }
-        for (const issue of d.issues ?? []) entry.issues.add(issue)
+        const entry = byCode.get(d.code) ?? { severity: d.severity, limitations: new Set<string>(), escapes: new Set<string>() }
+        for (const id of d.limitations ?? []) entry.limitations.add(id)
         for (const kind of d.escapes ?? []) entry.escapes.add(kind)
         byCode.set(d.code, entry)
       }
@@ -304,7 +328,7 @@ function collectLegend(): { code: string; severity: CompatDiagnostic['severity']
 
   return [...byCode.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([code, { severity, issues, escapes }]) => ({ code, severity, issues: [...issues], escapes: [...escapes] }))
+    .map(([code, { severity, limitations, escapes }]) => ({ code, severity, limitations: [...limitations], escapes: [...escapes] }))
 }
 
 /**
@@ -328,10 +352,10 @@ function buildLegend(): string {
   }
 
   return entries
-    .map(({ code, severity, issues, escapes }) => {
+    .map(({ code, severity, limitations, escapes }) => {
       const label = severity === 'warning' ? `⚠ \`${code}\`` : `\`${code}\``
       const linked = `[${label}](${errorCodeDocLink(code)})`
-      const parts = [formatIssueLinks(issues, compat.knownLimitationLabel)]
+      const parts = [formatLimitationLinks(limitations)]
       const escapeText = formatEscapes(escapes)
       if (escapeText) parts.push(escapeText)
       return `- ${linked} — ${parts.join(' · ')}`
@@ -344,19 +368,19 @@ function buildLegend(): string {
  * work?" first: `✓` for clean, `✓${ESCAPABLE_MARKER}` for a refusal with a
  * verified working escape (it WORKS, given a `/* @client *\/` comment — no
  * diagnostic code shown; the suppressed code lives in the detail list
- * below), `≠` for a render divergence, and the diagnostic code (linked to
- * its tracking issue, led by \`${NOT_OWED_MARKER}\` when declared not owed)
- * for every other refusal — the two states that still mean "does not
- * work".
+ * below), `≠` for a render divergence (linked to its limitation entry),
+ * and the diagnostic code (linked to its limitation entry, led by
+ * \`${NOT_OWED_MARKER}\` when declared not owed) for every other refusal —
+ * the two states that still mean "does not work".
  */
 function fixtureCellMarkdown(cell: FixtureDivergenceCell | undefined): string {
   if (!cell) return '✓'
-  if (cell.kind === 'render') return '≠'
+  const first = cell.limitations?.[0]
+  if (cell.kind === 'render') return first ? `[≠](${limitationAnchor(first)})` : '≠'
   if (cell.escape?.state === 'escapable') return `✓${ESCAPABLE_MARKER}`
   const codes = cell.codes ?? []
-  const firstIssue = cell.issues?.[0]
   const label = codes.join(', ') || 'refused'
-  const linked = firstIssue ? `[${label}](${firstIssue})` : label
+  const linked = first ? `[${label}](${limitationAnchor(first)})` : label
   return `${notOwedPrefix(cell.escape)}${linked}`
 }
 
@@ -430,7 +454,10 @@ function buildFixtureDetails(fd: FixtureDivergences, fixtureIds: string[]): stri
     const byText = new Map<string, string[]>()
     for (const adapterId of Object.keys(row).sort()) {
       const cell = row[adapterId]
-      const text = cell.kind === 'refusal' ? refusalDetailText(cell, fd) : (cell.reason ?? 'rendered output diverges from the Hono reference')
+      const text =
+        cell.kind === 'refusal'
+          ? `${refusalDetailText(cell, fd)} — ${formatLimitationLinks(cell.limitations)}`
+          : `rendered output diverges from the Hono reference — ${formatLimitationLinks(cell.limitations)}`
       const adapters = byText.get(text) ?? []
       adapters.push(adapterId)
       byText.set(text, adapters)
@@ -538,7 +565,7 @@ function buildFixtureSection(): string {
 
 The component matrix above is **compile-time only**. This section answers the question that actually matters: **does the construct work**, on each adapter's real backend (Go, Ruby, Perl, PHP, Python, Rust), byte-compared against the Hono reference — not just whether it compiles. A construct works either **as written** (\`✓\`) or with a documented \`/* @client */\` comment (\`✓${ESCAPABLE_MARKER}\`, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each.
 
-The table lists only fixtures that need attention: at least one adapter where nothing works today. Each cell's meaning is in the legend below it; diagnostic codes link to their known-limitation issue, and the reason a code is led by \`${NOT_OWED_MARKER}\` is in that fixture's detail entry. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` in one column and a code needing attention in another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
+The table lists only fixtures that need attention: at least one adapter where nothing works today. Each cell's meaning is in the legend below it; diagnostic codes link to the [known limitation](#known-limitations) they are an instance of, and the reason a code is led by \`${NOT_OWED_MARKER}\` is in that fixture's detail entry. Escape verification is per adapter, so the same fixture can show \`✓${ESCAPABLE_MARKER}\` in one column and a code needing attention in another — see [\`escape-coverage.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/escape-coverage.ts).
 
 **${worksEverywhereCount} / ${fd.totalFixtures} fixtures work on every adapter** (${fullyEscapableIds.length} of those need a \`/* @client */\` comment on at least one adapter). The ${needsAttentionIds.length} below need attention:
 
@@ -549,9 +576,9 @@ ${[header, divider, ...rows].join('\n')}
 - \`✓\` — as written
 - \`✓${ESCAPABLE_MARKER}\` — with a \`/* @client */\` comment (the details below say which diagnostic it silences)
 
-**☐ TODO** — fix planned, issue linked
+**☐ TODO** — a registered \`silent\` / \`refusal\` limitation
 
-- \`≠\` — compiles, but renders differently from the Hono reference
+- \`≠\` — compiles, but renders differently from the Hono reference (the linked entry says what renders instead)
 - \`${debtExample}\` — a bare diagnostic code: build error, no escape yet
 
 **${NOT_OWED_MARKER} Doesn't work** — by design, not a gap
@@ -567,21 +594,22 @@ ${buildFixtureDetails(fd, needsAttentionIds)}
 }
 
 /**
- * Render one construct-support cell as `pass/total`, plus linked tracking
- * issues when the construct has gaps on this adapter. Deduped across every
- * gapped fixture in the cell — a common case is several fixtures gapped by
- * the same pinned diagnostic, which would otherwise repeat its issue link.
+ * Render one construct-support cell as `pass/total`, plus links to the
+ * limitation entries when the construct has gaps on this adapter. Deduped
+ * across every gapped fixture in the cell — a common case is several
+ * fixtures gapped by the same limitation, which would otherwise repeat
+ * its link.
  */
 function supportCellMarkdown(cell: SupportMatrixCell | undefined): string {
   if (!cell) return '?'
   const ratio = `${cell.pass}/${cell.total}`
   const gaps = cell.gaps ?? []
   if (gaps.length === 0) return ratio
-  // `formatIssueLinks` dedupes + sorts, so just flatten every gapped
-  // fixture's issues here (several fixtures gapped by the same diagnostic
-  // repeat its URL — the helper collapses them).
-  const issues = gaps.flatMap((gap) => gap.issues)
-  return `${ratio} (${formatIssueLinks(issues, supportMatrix.knownLimitationLabel)})`
+  // `formatLimitationLinks` dedupes + sorts, so just flatten every gapped
+  // fixture's ids here (several fixtures gapped by the same limitation
+  // repeat its id — the helper collapses them).
+  const ids = gaps.flatMap((gap) => gap.limitations)
+  return `${ratio} (${formatLimitationLinks(ids)})`
 }
 
 /**
@@ -655,6 +683,70 @@ ${buildSupportTable(supportMatrix.axes)}
 `
 }
 
+/** GitHub permalink to a registry entry's own file. */
+function limitationSourceUrl(id: string): string {
+  return `https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/limitations/${id}.ts`
+}
+
+/** GitHub permalink to a conformance fixture's source, when the lock has no doc link for it. */
+function fixtureSourceUrl(id: string, fd: FixtureDivergences | undefined): string {
+  return fd?.docs?.[id]?.url ?? `https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/${id}.ts`
+}
+
+const KIND_LABELS: Record<LimitationEntry['kind'], string> = {
+  silent: 'silent divergence — a defect to fix',
+  refusal: 'loud refusal — a capability gap, escapable',
+  'by-design': 'by design — permanent, no fix planned',
+}
+
+/**
+ * The registry itself: one entry per known limitation, each with the
+ * explicit anchor (`#limitation-<id>`) every diagnostic / gap link on this
+ * page resolves to. The anchor is independent of the heading wording (same
+ * device as `error-codes.md`'s `<a id="bfNNN">`), so retitling an entry
+ * cannot break the links into it. Content comes from the lock's
+ * \`limitations\` section, which is the registry joined with the adapters
+ * citing each entry — nothing here is hand-maintained.
+ */
+function buildLimitationsSection(): string {
+  const entries = compat.limitations ?? {}
+  const ids = Object.keys(entries).sort()
+  if (ids.length === 0) return ''
+  const fd = compat.fixtureDivergences
+
+  const blocks = ids.map((id) => {
+    const e = entries[id]
+    const rows: string[] = [
+      `| given | ${escapeCell(e.given)} |`,
+      `| expected | ${escapeCell(e.expected)} |`,
+      `| actual | ${escapeCell(e.actual)} |`,
+    ]
+    if (e.reason) rows.push(`| reason | ${escapeCell(escapeMarkdownProse(e.reason))} |`)
+    if (e.diagnostics?.length) {
+      rows.push(`| diagnostic | ${e.diagnostics.map((c) => `[\`${c}\`](${errorCodeDocLink(c)})`).join(', ')} |`)
+    }
+    rows.push(`| adapters | ${e.adapters.length ? e.adapters.map((a) => `\`${a}\``).join(', ') : '—'} |`)
+    rows.push(`| fixtures | ${e.fixtures.map((f) => `[\`${f}\`](${fixtureSourceUrl(f, fd)})`).join(', ')} |`)
+    return `<a id="limitation-${id}"></a>
+
+### ${escapeMarkdownProse(e.title)}
+
+\`${id}\` · ${KIND_LABELS[e.kind]} · [source](${limitationSourceUrl(id)})
+
+| | |
+| --- | --- |
+${rows.join('\n')}
+`
+  })
+
+  return `
+## Known Limitations
+
+Every gap on this page is an instance of a registered limitation — one file per entry under [\`packages/adapter-tests/limitations/\`](https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-tests/limitations), the source of truth for what is limited. An entry states the input shape (**given**), what the Hono reference renders for it (**expected**), what the affected adapters do instead (**actual**), and the minimal fixtures that reproduce it; which adapters are affected is derived from the pins citing the entry. The kind is the compatibility policy's classifier: a **silent** divergence is a defect, a loud **refusal** is an escapable capability gap, and **by design** is a permanent position with its reason stated.
+
+${blocks.join('\n')}`
+}
+
 function buildMarkdown(): string {
   const componentNames = Object.keys(compat.components).sort()
   const summary = buildSummary(componentNames)
@@ -662,6 +754,7 @@ function buildMarkdown(): string {
   const legend = buildLegend()
   const fixtureSection = buildFixtureSection()
   const supportMatrixSection = buildSupportMatrixSection()
+  const limitationsSection = buildLimitationsSection()
 
   return `# ${TITLE}
 
@@ -677,20 +770,20 @@ ${table}
 
 ## Legend
 
-Each diagnostic code below links to the known-limitation issue(s) tracking it. Codes with no linked issue fall back to the repo-wide [\`known-limitation\`](${compat.knownLimitationLabel}) label.
+Each diagnostic code below links to its error-code reference, then to the [known limitation](#known-limitations) entries the adapters' pins cite for it.
 
 ${legend}
 ${fixtureSection}
 ${supportMatrixSection}
+${limitationsSection}
 ## Data Source
 
-This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
+This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Every pin and divergence cites a registry entry under \`packages/adapter-tests/limitations/\`; the join is tested both ways (\`limitations-join.test.ts\`), so a link on this page cannot point at an entry that does not exist, and an entry cannot outlive its last pin.
 
 Component and fixture descriptions are computed into the same lock at regen time ([\`component-docs.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/component-docs.ts)) — component copy is taken from the public component page's own \`description\` (falling back to the \`ui/registry.json\` catalogue one-liner, then the component's JSDoc tagline), and the component name links to that page when one exists; fixture descriptions come from the corpus itself. All of it is drift-checked with everything else and can't go stale independently.
 
 The construct-support section above is generated from the committed [\`ui/support-matrix.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/support-matrix.lock.json), regenerated with \`bun run support-matrix:lock\` and drift-checked in CI alongside the component matrix. Each construct's fixture link and example description are computed the same way — the exemplar is mechanically chosen as the most narrowly targeted covering fixture ([\`construct-examples.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/construct-examples.ts)), and definition-site fallback links come from a TS AST walk over the compiler's construct catalogues ([\`construct-source-links.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/construct-source-links.ts)) — so they are regenerated and drift-checked on the same schedule: a link can't silently go stale, because moving the code it points at changes what the next regen commits, and CI fails if that regen was forgotten.
 
-Every issue link on this page is freshness-checked on a schedule (\`bun run compat:issues\`, the [\`compat-issue-freshness\`](https://github.com/piconic-ai/barefootjs/blob/main/.github/workflows/compat-issue-freshness.yml) workflow): if a referenced issue is closed while its pin still points at it, an alert issue is opened automatically so the link is re-pointed or removed — the matrix cannot silently link a live limitation to a completed ticket.
 `
 }
 

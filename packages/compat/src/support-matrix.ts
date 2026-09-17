@@ -31,7 +31,7 @@ import coverageMapJson from '../../adapter-tests/coverage-map.json' with { type:
 import { loadAllCompatAdapters } from './adapter-registry'
 import { computeConstructExamples, type ConstructExample } from './construct-examples'
 import { computeConstructSourceLinks, resolveAxisLink, resolveKindLink, type SourceLink } from './construct-source-links'
-import { compareAdapterIds, KNOWN_LIMITATION_LABEL } from './report'
+import { compareAdapterIds } from './report'
 
 export const SUPPORT_MATRIX_NOTE =
   'Construct-level support, derived from the same fixture-granular conformancePins/renderDivergences as ' +
@@ -40,8 +40,8 @@ export const SUPPORT_MATRIX_NOTE =
   'to pin down. Read each cell as a pass/total RATIO over the fixtures that exercise that construct, never ' +
   'as a binary verdict: a construct can show a healthy ratio (e.g. 250/253) with a handful of gapped ' +
   'fixtures — those are real, just narrow. Per-fixture detail for a gap lives in the `gaps` array (and in ' +
-  'the full compat matrix, ui/compat.lock.json); the known-limitation label below is the per-issue source ' +
-  'of truth for anything without a linked tracking issue.'
+  'the full compat matrix, ui/compat.lock.json); each gap cites the registry limitation ' +
+  '(packages/adapter-tests/limitations/<id>.ts) it is an instance of.'
 
 /** Minimal shape read from `packages/adapter-tests/coverage-map.json`. */
 export interface SupportMatrixCoverageMap {
@@ -54,14 +54,14 @@ export interface SupportMatrixCoverageMap {
 /** The subset of `LoadedCompatAdapter` the join needs — kept narrow for the unit test's synthetic fixtures. */
 export interface SupportMatrixAdapterInput {
   id: string
-  pins: Record<string, ReadonlyArray<{ code: string; severity: 'error' | 'warning'; issue?: string }>>
-  renderDivergences: Record<string, string>
+  pins: Record<string, ReadonlyArray<{ code: string; severity: 'error' | 'warning'; limitation: string }>>
+  renderDivergences: Record<string, { limitation: string }>
 }
 
-/** One fixture gapped on one adapter for one construct, with its (deduped, sorted) tracking-issue URLs. */
+/** One fixture gapped on one adapter for one construct, with the (deduped, sorted) registry limitation ids it cites. */
 export interface SupportMatrixGap {
   fixture: string
-  issues: string[]
+  limitations: string[]
 }
 
 /** `pass`/`total` over the fixtures that exercise this construct on this adapter; `gaps` omitted when empty. */
@@ -83,7 +83,6 @@ export interface SupportMatrixConstruct {
 
 export interface SupportMatrixReport {
   note: string
-  knownLimitationLabel: string
   /** Adapter ids (matrix columns): `hono` first (reference adapter), then alphabetical. */
   adapters: string[]
   kinds: Record<string, SupportMatrixConstruct>
@@ -109,19 +108,20 @@ function coveringFixtureIds(
  * A fixture is "gapped" on an adapter when its id is a key of that
  * adapter's `pins` (compile-time refusal) OR `renderDivergences`
  * (render-level divergence) — the same union `report.ts`'s
- * `buildFixtureDivergences` uses for the render-honesty section. Issues
- * are the pinned diagnostics' `issue` URLs (dedup+sorted); a
- * render-divergence-only gap carries no issue URL (that map has no
- * `issue` field), so `issues` is `[]` in that case.
+ * `buildFixtureDivergences` uses for the render-honesty section. The
+ * gap's `limitations` are the registry ids the pins cite (dedup+sorted),
+ * or the render divergence's one cited id.
  */
 function gapsFor(coveringIds: string[], adapter: SupportMatrixAdapterInput): SupportMatrixGap[] {
   const gaps: SupportMatrixGap[] = []
   for (const fixtureId of coveringIds) {
     const pins = adapter.pins[fixtureId]
-    const isDivergent = fixtureId in adapter.renderDivergences
-    if (!pins && !isDivergent) continue
-    const issues = pins ? [...new Set(pins.flatMap(p => (p.issue ? [p.issue] : [])))].sort(byCodeUnit) : []
-    gaps.push({ fixture: fixtureId, issues })
+    const divergence = adapter.renderDivergences[fixtureId]
+    if (!pins && !divergence) continue
+    const limitations = pins
+      ? [...new Set(pins.map(p => p.limitation))].sort(byCodeUnit)
+      : [divergence.limitation]
+    gaps.push({ fixture: fixtureId, limitations })
   }
   return gaps
 }
@@ -182,7 +182,6 @@ export function buildSupportMatrix(
 
   return {
     note: SUPPORT_MATRIX_NOTE,
-    knownLimitationLabel: KNOWN_LIMITATION_LABEL,
     adapters: adapterIds,
     kinds,
     axes,

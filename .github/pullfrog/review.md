@@ -46,8 +46,9 @@ stating the conclusion as settled.
 The cardinal failure mode of this compiler is **silent divergence** — output that differs from the
 contract without an error (SSR/CSR mismatch, an emitter that drops content instead of refusing
 loudly). A silent-divergence risk outranks any style concern. When you find a reproducible
-divergence, steer it toward the three-piece set (known-limitation issue + fixture asserting the
-correct output + pins on the broken side), not a prose report.
+divergence, steer it toward the three-piece set (a registry entry under
+`packages/adapter-tests/limitations/` + fixture asserting the correct output + pins on the
+broken side citing the entry), not a prose report.
 
 ## Output
 
