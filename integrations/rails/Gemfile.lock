@@ -153,6 +153,7 @@ PLATFORMS
 
 DEPENDENCIES
   actionpack (~> 8.0)
+  json (>= 2.21.2)
   puma (~> 8.0)
   railties (~> 8.0)
   rerun (~> 0.14)

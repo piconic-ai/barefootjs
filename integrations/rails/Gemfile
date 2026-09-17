@@ -14,6 +14,13 @@ gem 'railties', '~> 8.0'
 gem 'actionpack', '~> 8.0'
 gem 'puma', '~> 8.0'
 
+# Not used directly — ActiveSupport pulls `json` in transitively. Listed as a
+# security floor: 2.20.0 through 2.21.1 crash on truncated duplicate-key streams
+# (GHSA-9hj4-r449-hfvc). A floor stated only in Gemfile.lock travels with the
+# lockfile; stated here it also reaches anyone who copies this Gemfile as a
+# starting point, and survives any future re-resolve back into the 2.x range.
+gem 'json', '>= 2.21.2'
+
 group :development do
   # File-watcher for `bin/dev` / Dockerfile.dev — restarts the server when
   # Ruby source or the bind-mounted packages/adapter-erb/lib change (mirrors
