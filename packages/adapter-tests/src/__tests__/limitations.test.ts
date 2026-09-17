@@ -22,24 +22,26 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import { resolve } from 'node:path'
+import { npmPublishablePackages } from '../../../../scripts/lib/npm-packages'
 import { jsxFixtures } from '../../fixtures'
 import { limitations, listLimitationIds } from '../../limitations'
 import { LIMITATION_ID_RE, limitationDiagnostics, type Limitation } from '../limitations'
 
-/** Adapter ids and the backend names people write instead of them. */
-const ADAPTER_WORDS = [
-  'hono',
-  'blade',
-  'erb',
-  'go-template',
-  'go template',
-  'jinja',
-  'minijinja',
-  'mojolicious',
-  'pebble',
-  'twig',
-  'xslate',
-]
+const repoRoot = resolve(import.meta.dir, '../../../..')
+
+/**
+ * Words that name an adapter, derived from the workspace: every published
+ * `packages/adapter-*` package's short name (`@barefootjs/go-template` →
+ * `go-template`), plus its space-separated spelling. Not hand-listed, so a
+ * new adapter package is covered the moment it exists. Adapter *ids* that
+ * differ from the package name (`minijinja` for `@barefootjs/rust`) are
+ * checked from the loaded adapters in `limitations-join.test.ts`.
+ */
+const ADAPTER_WORDS = npmPublishablePackages(repoRoot)
+  .filter(p => p.rel.startsWith('packages/adapter-'))
+  .map(p => p.pkg.name.replace(/^@barefootjs\//, ''))
+  .flatMap(name => (name.includes('-') ? [name, name.replace(/-/g, ' ')] : [name]))
 
 /** `actual` must say what renders, starting with a verb from this (growable) list. */
 const ACTUAL_VERBS = ['renders', 'emits', 'drops', 'seeds', 'reuses', 'omits', 'leaves', 'keeps', 'throws', 'mirrors']
@@ -100,7 +102,8 @@ describe('limitation registry', () => {
         })
       }
 
-      test('given names no adapter (affected adapters are derived from pins)', () => {
+      test('given names no adapter package (affected adapters are derived from pins)', () => {
+        expect(ADAPTER_WORDS.length).toBeGreaterThan(0)
         const lower = entry.given.toLowerCase()
         const named = ADAPTER_WORDS.filter(w => new RegExp(`(^|[^a-z-])${w}([^a-z-]|$)`).test(lower))
         expect(named).toEqual([])

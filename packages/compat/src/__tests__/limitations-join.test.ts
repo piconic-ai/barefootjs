@@ -19,7 +19,12 @@
 //   (d) every fixture an entry lists is pinned / divergent under that id on
 //       at least one adapter (the entry is executable: nothing it names has
 //       silently graduated — when the last pin goes, the entry goes too,
-//       unless it is `by-design`, which is pinned forever by construction).
+//       unless it is `by-design`, which is pinned forever by construction);
+//   (e) no entry's `given` names an adapter by its id — affected adapters
+//       are derived from the citations, never written into the entry. The
+//       ids come from the loaded adapters, so this covers the ones whose id
+//       differs from their package name (`minijinja`); package names are
+//       checked by `limitations.test.ts` from the workspace listing.
 //
 // Same `loadCompatAdapters()` precedent as compat-pins.test.ts.
 
@@ -67,6 +72,14 @@ describe('limitation registry ↔ adapter declarations', () => {
   }
 
   for (const entry of limitations) {
+    test(`[${entry.id}] given names no adapter id`, () => {
+      const lower = entry.given.toLowerCase()
+      const named = loaded
+        .map(a => a.id)
+        .filter(id => new RegExp(`(^|[^a-z-])${id}([^a-z-]|$)`).test(lower))
+      expect(named).toEqual([])
+    })
+
     test(`[${entry.id}] every listed fixture is pinned or divergent under this id on at least one adapter`, () => {
       const orphaned = entry.fixtures.filter(fixtureId => {
         return !loaded.some(adapter => {
