@@ -26,7 +26,9 @@ on:
       # Central divergence validation in adapter-tests re-checks every
       # adapter's declarations, so it must re-run when any adapter edits its.
       - 'packages/**/vector-divergences.json'
-      - 'scripts/ci/shard-test-files.ts'
+      # The release scripts' unit tests (scripts/lib/__tests__) run in the
+      # `rest` group below; the sharder is what the jsx/adapter-tests groups run.
+      - 'scripts/**'
   pull_request:
     paths:
       - 'packages/client/**'
@@ -51,7 +53,9 @@ on:
       # Central divergence validation in adapter-tests re-checks every
       # adapter's declarations, so it must re-run when any adapter edits its.
       - 'packages/**/vector-divergences.json'
-      - 'scripts/ci/shard-test-files.ts'
+      # The release scripts' unit tests (scripts/lib/__tests__) run in the
+      # `rest` group below; the sharder is what the jsx/adapter-tests groups run.
+      - 'scripts/**'
 
 permissions:
   contents: read
@@ -95,7 +99,7 @@ jobs:
           - group: adapter-tests-3
             run: bun test $(bun scripts/ci/shard-test-files.ts packages/adapter-tests 3 3)
           - group: rest
-            run: bun test packages/client packages/test packages/router
+            run: bun test packages/client packages/test packages/router scripts/lib
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

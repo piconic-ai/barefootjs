@@ -23,6 +23,7 @@ import { resolve } from 'node:path'
 import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { $ } from 'bun'
+import { npmPublishablePackages, npmRegistryVersion } from './lib/npm-packages'
 
 const repoRoot = resolve(import.meta.dir, '..')
 const tmpDir = mkdtempSync(`${tmpdir()}/bf-publish-`)
@@ -36,56 +37,23 @@ const outputFile = process.env.CHANGESETS_OUTPUT
 // way that stays distinct from that.
 if (outputFile) writeFileSync(outputFile, '')
 
-// Publish order: dependencies before dependents.
-const PUBLISHABLE = [
-  'packages/shared',
-  'packages/streaming',
-  'packages/jsx',
-  'packages/vite',
-  'packages/client',
-  'packages/router',
-  'packages/test',
-  'packages/form',
-  'packages/chart',
-  'packages/xyflow',
-  'packages/adapter-hono',
-  'packages/adapter-go-template',
-  'packages/adapter-perl',
-  'packages/adapter-xslate',
-  'packages/adapter-mojolicious',
-  'packages/adapter-erb',
-  'packages/adapter-jinja',
-  'packages/adapter-php',
-  'packages/adapter-twig',
-  'packages/adapter-blade',
-  'packages/adapter-rust',
-  'packages/adapter-pebble',
-  'packages/cli',
-  'packages/create-barefootjs',
-]
-
-async function npmView(name: string): Promise<string | null> {
-  const result = await $`npm view ${name} version`.quiet().nothrow()
-  if (result.exitCode !== 0) {
-    const stderr = result.stderr.toString()
-    if (stderr.includes('E404')) return null
-    console.warn(`  warn  npm view "${name}" failed: ${stderr.trim()}`)
-    return null
-  }
-  return result.text().trim()
-}
-
 let published = 0
 let skipped = 0
 const errors: string[] = []
 
 try {
-  for (const pkgDir of PUBLISHABLE) {
-    const pkg = await Bun.file(resolve(repoRoot, pkgDir, 'package.json')).json()
-
-    if (pkg.private) continue
-
-    const registryVersion = await npmView(pkg.name)
+  for (const { rel: pkgDir, pkg } of npmPublishablePackages(repoRoot)) {
+    // The publish list and this lookup are shared with the release preflight
+    // (scripts/release-preflight.ts), which has already refused the run if a
+    // package does not exist on npm at all -- so `missing` here is only
+    // reachable when the script is run by hand. A lookup that could not
+    // tell is warned and treated as "not this version": the publish itself
+    // is the judge.
+    const lookup = await npmRegistryVersion(pkg.name)
+    if (lookup.status === 'unknown') {
+      console.warn(`  warn  npm view "${pkg.name}" failed: ${lookup.reason}`)
+    }
+    const registryVersion = lookup.status === 'present' ? lookup.version : null
     if (registryVersion === pkg.version) {
       console.log(`  skip  ${pkg.name}@${pkg.version} (already on npm)`)
       skipped++
