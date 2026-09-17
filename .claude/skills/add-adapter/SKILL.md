@@ -156,7 +156,23 @@ easy to miss — check off each one:
       (the ONE enumeration of TemplateAdapter packages); add the workspace devDependency in
       `packages/compat/package.json`; regenerate `ui/compat.lock.json` via `bun run compat:lock`
       (CI fails on drift).
-- [ ] `scripts/changeset-publish.ts` — insert the package in the ordered publish list.
+- [ ] Publish set — nothing to edit: `scripts/lib/workspace-packages.ts` derives it (every
+      non-private `packages/*` not in `.changeset/config.json`'s ignore list, dependencies first),
+      and `scripts/lib/__tests__/publishable-packages.test.ts` pins that. Run that test to see
+      the new package listed for npm, and — if it has TS `src` exports — for JSR.
+- [ ] **Create the package on each registry before the release that first ships it.** Trusted
+      Publishing (OIDC) can only publish to a package that already exists, so the release
+      workflow refuses to publish anything until these exist (`scripts/release-preflight.ts`
+      prints the exact steps; the summary):
+      - npm: publish the first version by hand with a token (`bun pm pack` +
+        `npm publish <tarball> --access public`), then on npmjs.com → package → Settings →
+        Trusted Publisher → GitHub Actions (`piconic-ai/barefootjs`, `release.yml`) **with the
+        "npm publish" permission** — without it the next publish fails with
+        "OIDC permission denied for this action".
+      - JSR (TS packages only): create it at `https://jsr.io/new?scope=barefootjs&package=<name>`
+        and link the GitHub repository in its settings. No manual publish needed.
+      - Native registry (CPAN / PyPI / RubyGems / crates.io / Packagist): whatever that registry's
+        trusted-publishing setup requires — see the matching job in `release.yml`.
 - [ ] `.github/workflows/ci-<name>.yml` — new workflow, path-filtered on
       `packages/{client,shared,jsx,adapter-<name>,adapter-tests}/**`, installing the language
       toolchain, running native runtime tests then `bun test packages/adapter-<name>`

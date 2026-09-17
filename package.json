@@ -18,7 +18,7 @@
     "test": "bun test --cwd . __tests__",
     "test:e2e": "bun run --filter '*' test:e2e",
     "clean": "bun run --filter '*' clean",
-    "release:publish": "bun run build && bun scripts/changeset-publish.ts",
+    "release:publish": "bun scripts/release-preflight.ts && bun run build && bun scripts/changeset-publish.ts",
     "dev": "docker compose up",
     "dev:build": "docker compose build",
     "dev:down": "docker compose down",
