@@ -3,7 +3,7 @@
 import { describe, expect, test } from 'bun:test'
 import { type PreflightEntry, assessPreflight } from '../release-preflight'
 
-const ctx = { repository: 'piconic-ai/barefootjs', workflow: 'release.yml' }
+const ctx = { repository: 'piconic-ai/barefootjs', workflow: 'release.yml', commit: '1cf54f7e' }
 
 const present = { status: 'present' as const }
 const missing = { status: 'missing' as const }
@@ -36,7 +36,9 @@ describe('assessPreflight', () => {
     // Nothing shipped, and a re-run is the whole recovery.
     expect(report.text).toContain('this run publishes nothing')
     expect(report.text).toContain('re-run this workflow')
-    // The manual first publish, concrete enough to paste.
+    // The manual first publish, concrete enough to paste — including the
+    // commit to do it from.
+    expect(report.text).toContain('git checkout 1cf54f7e')
     expect(report.text).toContain('cd packages/adapter-pebble')
     expect(report.text).toContain('npm publish ./barefootjs-pebble-0.37.1.tgz --access public')
     // The trusted-publisher setup that lets the workflow take over — including
@@ -45,7 +47,7 @@ describe('assessPreflight', () => {
     expect(report.text).toContain('repository: piconic-ai/barefootjs    workflow: release.yml')
     expect(report.text).toContain('"npm publish" permission')
     // The re-run skips a version already on npm, so the tag/release are manual too.
-    expect(report.text).toContain("git tag '@barefootjs/pebble@0.37.1'")
+    expect(report.text).toContain("git tag '@barefootjs/pebble@0.37.1' 1cf54f7e && git push origin")
     expect(report.text).toContain("gh release create '@barefootjs/pebble@0.37.1'")
     // No JSR instructions when JSR is fine.
     expect(report.text).not.toContain('jsr.io/new')
@@ -66,6 +68,12 @@ describe('assessPreflight', () => {
     expect(report.missing).toEqual(['@barefootjs/pebble'])
     expect(report.text.match(/npm — @barefootjs\/pebble is not on npm yet/g)).toHaveLength(1)
     expect(report.text.match(/JSR — @barefootjs\/pebble does not exist on JSR yet/g)).toHaveLength(1)
+  })
+
+  test('without a known commit (a by-hand run outside a checkout) the commands keep a visible placeholder', () => {
+    const report = assessPreflight([pebble({ npm: missing })], { ...ctx, commit: undefined })
+    expect(report.text).toContain('git checkout <the commit this run releases>')
+    expect(report.text).toContain("git tag '@barefootjs/pebble@0.37.1' <the commit this run releases>")
   })
 
   test('a package that is not mirrored to JSR is never asked about JSR', () => {

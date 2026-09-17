@@ -16,6 +16,7 @@
 // reported, never treated as missing); 1 at least one package is missing.
 
 import { resolve } from 'node:path'
+import { $ } from 'bun'
 import { discoverJsrPackages, jsrPackagePresence } from './lib/jsr-packages'
 import { npmPublishablePackages, npmRegistryVersion } from './lib/npm-packages'
 import { type PreflightEntry, assessPreflight } from './lib/release-preflight'
@@ -34,9 +35,16 @@ const entries: PreflightEntry[] = await Promise.all(
   })),
 )
 
+// The commit the instructions should name: what is checked out here (the
+// workflow runs on the release commit), falling back to the event SHA, or to
+// nothing — the report then prints a placeholder — when neither is available.
+const head = await $`git rev-parse HEAD`.cwd(repoRoot).quiet().nothrow()
+const commit = (head.exitCode === 0 ? head.text().trim() : '') || process.env.GITHUB_SHA || undefined
+
 const report = assessPreflight(entries, {
   repository: process.env.GITHUB_REPOSITORY ?? 'piconic-ai/barefootjs',
   workflow: 'release.yml',
+  commit,
 })
 
 console.log(report.text)

@@ -33,6 +33,12 @@ export interface PreflightContext {
   repository: string
   /** Workflow file name the registries trust, e.g. `release.yml`. */
   workflow: string
+  /**
+   * The commit this run releases (`git rev-parse HEAD` in the workflow
+   * checkout), so the manual-publish and tag commands are pasteable as-is.
+   * Optional: a by-hand run outside a checkout falls back to a placeholder.
+   */
+  commit?: string
 }
 
 export interface PreflightReport {
@@ -49,11 +55,13 @@ const npmTarball = (name: string, version: string) =>
 
 function npmInstructions(e: PreflightEntry, ctx: PreflightContext): string[] {
   const tag = `${e.name}@${e.version}`
+  const commit = ctx.commit ?? '<the commit this run releases>'
   return [
     `    npm — ${e.name} is not on npm yet.`,
     `      npm cannot create a package through Trusted Publishing (npm/cli#8544),`,
-    `      so publish this first version by hand, from a checkout of the commit`,
-    `      this run is releasing, with an npm token allowed to publish it:`,
+    `      so publish this first version by hand, from the commit this run is`,
+    `      releasing, with an npm token allowed to publish it:`,
+    `        git checkout ${commit}`,
     `        cd ${e.dir}`,
     `        bun pm pack`,
     `        npm publish ./${npmTarball(e.name, e.version)} --access public`,
@@ -65,7 +73,7 @@ function npmInstructions(e: PreflightEntry, ctx: PreflightContext): string[] {
     `        publisher without it fails with "OIDC permission denied for this action".`,
     `      The re-run will find ${e.version} on npm and skip this package, so its`,
     `      git tag and GitHub Release are yours to create:`,
-    `        git tag '${tag}' <that commit> && git push origin '${tag}'`,
+    `        git tag '${tag}' ${commit} && git push origin '${tag}'`,
     `        gh release create '${tag}' --title '${tag}' --notes 'See ${e.dir}/CHANGELOG.md'`,
   ]
 }
