@@ -24,8 +24,14 @@ function registerChildShape(adapter: TemplateAdapter, ir: ComponentIR): void {
 export interface CompatDiagnostic {
   code: string
   severity: 'error' | 'warning'
-  /** Known-limitation issue URLs pulled from the adapter's `conformancePins`, sorted + deduped. */
-  issues: string[]
+  /**
+   * Registry ids (`packages/adapter-tests/limitations/<id>.ts`) of the
+   * limitations the adapter's `conformancePins` cite for this code, sorted
+   * + deduped. Attribution is by code, not by fixture: a `ui/` component
+   * compile has no fixture id, so every limitation any pin attaches to the
+   * code is listed.
+   */
+  limitations: string[]
   /**
    * Escape kinds the diagnostics behind this cell CLAIM, deduped and
    * sorted (#2614). Sourced from `ErrorSuggestion.escape` — the structured
@@ -122,10 +128,10 @@ export function compileForCompat(
 /**
  * Reduce a raw `CompilerError[]` into a matrix cell: unique `(code,
  * severity)` pairs sorted by code then severity, `info` severity dropped
- * entirely, and each surviving diagnostic annotated with the known-
- * limitation issue URLs its code carries in `pins` — the pins ARE the
- * source of truth for that provenance, regardless of which fixture
- * originally declared them.
+ * entirely, and each surviving diagnostic annotated with the registry
+ * limitation ids its code carries in `pins` — the pins ARE the source of
+ * truth for that provenance, regardless of which fixture originally
+ * declared them.
  */
 export function buildCompatCell(errors: CompilerError[], pins: ConformancePins): CompatCell {
   const uniqueKeys = new Map<string, { code: string; severity: 'error' | 'warning' }>()
@@ -139,16 +145,15 @@ export function buildCompatCell(errors: CompilerError[], pins: ConformancePins):
     return a.severity < b.severity ? -1 : a.severity > b.severity ? 1 : 0
   })
 
-  const issuesByCode = new Map<string, Set<string>>()
+  const limitationsByCode = new Map<string, Set<string>>()
   for (const entries of Object.values(pins)) {
     for (const pin of entries) {
-      if (!pin.issue) continue
-      let set = issuesByCode.get(pin.code)
+      let set = limitationsByCode.get(pin.code)
       if (!set) {
         set = new Set()
-        issuesByCode.set(pin.code, set)
+        limitationsByCode.set(pin.code, set)
       }
-      set.add(pin.issue)
+      set.add(pin.limitation)
     }
   }
 
@@ -175,7 +180,7 @@ export function buildCompatCell(errors: CompilerError[], pins: ConformancePins):
     return {
       code,
       severity,
-      issues: [...(issuesByCode.get(code) ?? [])].sort(),
+      limitations: [...(limitationsByCode.get(code) ?? [])].sort(),
       ...(escapes?.size ? { escapes: [...escapes].sort() } : {}),
     }
   })

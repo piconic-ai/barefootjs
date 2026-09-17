@@ -1082,7 +1082,7 @@ The Go / Mojo / Xslate / Erb template adapters lower a finite, growing catalogue
 - **String methods out of scope.** `.charAt`, `.charCodeAt`, `.codePointAt`, `.normalize` (rarely needed in template position — compose with `String(...)` if required) and the iterator forms (`@@iterator`, `matchAll`, which would need synthetic IR).
 - **Mutating array methods (Tier D).** `.push` / `.pop` / `.splice` / `.fill` / … have no template-level meaning (SSR renders a snapshot); they only appear in client-runtime callbacks, which never reach the lowering path.
 
-Tracked limitations live under the [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label (the source of truth).
+Tracked limitations live in the registry under `packages/adapter-tests/limitations/` (the source of truth; one file per entry, cited by id from every adapter's `conformance-pins.ts`).
 
 ### Missing Key in List (BF023 / BF024)
 

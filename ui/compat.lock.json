@@ -1,6 +1,5 @@
 {
   "note": "Compile-time compatibility (compileJSX + adapter generate() diagnostics). NOT render identity — rendered-output parity is owned by the adapter conformance suite and the eval vector corpus (spec/testing.md Layer 3).",
-  "knownLimitationLabel": "https://github.com/piconic-ai/barefootjs/labels/known-limitation",
   "adapters": [
     "hono",
     "blade",
@@ -2009,8 +2008,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "erb": {
@@ -2018,8 +2017,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "go-template": {
@@ -2027,8 +2026,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "hono": {
@@ -2036,8 +2035,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "jinja": {
@@ -2045,8 +2044,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "minijinja": {
@@ -2054,8 +2053,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "mojolicious": {
@@ -2063,8 +2062,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "pebble": {
@@ -2072,8 +2071,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "twig": {
@@ -2081,8 +2080,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         },
         "xslate": {
@@ -2090,8 +2089,8 @@
           "codes": [
             "BF021"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2356"
+          "limitations": [
+            "ambient-locale-date-formatting"
           ]
         }
       },
@@ -2101,6 +2100,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "every-typeof-predicate-client"
@@ -2110,6 +2112,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2121,6 +2126,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "every-typeof-predicate-client"
@@ -2130,6 +2138,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2141,6 +2152,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "every-typeof-predicate-client"
@@ -2150,6 +2164,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2161,6 +2178,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "every-typeof-predicate-client"
@@ -2171,6 +2191,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "every-typeof-predicate-client"
@@ -2180,6 +2203,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2193,6 +2219,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "array-fill"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "fill-unsupported-client"
@@ -2202,6 +2231,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "array-fill"
           ],
           "escape": {
             "state": "escapable",
@@ -2213,6 +2245,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "array-fill"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "fill-unsupported-client"
@@ -2222,6 +2257,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "array-fill"
           ],
           "escape": {
             "state": "escapable",
@@ -2233,6 +2271,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "array-fill"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "fill-unsupported-client"
@@ -2242,6 +2283,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "array-fill"
           ],
           "escape": {
             "state": "escapable",
@@ -2253,6 +2297,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "array-fill"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "fill-unsupported-client"
@@ -2263,6 +2310,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "array-fill"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "fill-unsupported-client"
@@ -2272,6 +2322,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "array-fill"
           ],
           "escape": {
             "state": "escapable",
@@ -2285,8 +2338,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2298,8 +2351,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2311,8 +2364,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2324,8 +2377,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2337,8 +2390,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2350,8 +2403,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2363,8 +2416,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2378,8 +2431,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2391,8 +2444,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2404,8 +2457,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2417,8 +2470,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2430,8 +2483,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2443,8 +2496,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2456,8 +2509,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2469,8 +2522,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2482,8 +2535,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2320"
+          "limitations": [
+            "nested-callback-in-filter-predicate"
           ],
           "escape": {
             "state": "escapable",
@@ -2497,6 +2550,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "filter-typeof-predicate-client"
@@ -2506,6 +2562,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2517,6 +2576,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "filter-typeof-predicate-client"
@@ -2526,6 +2588,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2537,6 +2602,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "filter-typeof-predicate-client"
@@ -2546,6 +2614,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2557,6 +2628,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "filter-typeof-predicate-client"
@@ -2567,6 +2641,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "filter-typeof-predicate-client"
@@ -2576,6 +2653,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2589,6 +2669,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "find-typeof-predicate-client"
@@ -2598,6 +2681,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2609,6 +2695,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "find-typeof-predicate-client"
@@ -2618,6 +2707,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2629,6 +2721,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "find-typeof-predicate-client"
@@ -2638,6 +2733,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2649,6 +2747,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "find-typeof-predicate-client"
@@ -2659,6 +2760,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "find-typeof-predicate-client"
@@ -2668,6 +2772,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2681,6 +2788,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "flatmap-typeof-projection-client"
@@ -2690,6 +2800,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2701,6 +2814,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "flatmap-typeof-projection-client"
@@ -2710,6 +2826,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2721,6 +2840,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "flatmap-typeof-projection-client"
@@ -2730,6 +2852,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2741,6 +2866,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "flatmap-typeof-projection-client"
@@ -2751,6 +2879,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "flatmap-typeof-projection-client"
@@ -2760,6 +2891,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -2772,60 +2906,90 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "hono": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         }
       },
@@ -2834,60 +2998,90 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "hono": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "pebble": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "jsx-wrapped-in-non-children-prop"
           ]
         }
       },
@@ -2897,6 +3091,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -2906,6 +3103,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -2917,6 +3117,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -2926,6 +3129,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -2937,6 +3143,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -2946,6 +3155,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -2957,6 +3169,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -2967,6 +3182,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -2976,6 +3194,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -2989,6 +3210,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -2998,6 +3222,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -3009,6 +3236,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -3018,6 +3248,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -3029,6 +3262,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -3038,6 +3274,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -3049,6 +3288,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -3059,6 +3301,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "map-array-builder-body-client"
@@ -3068,6 +3313,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "escapable",
@@ -3081,8 +3329,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3093,8 +3341,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3105,8 +3353,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3117,8 +3365,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3129,8 +3377,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3141,8 +3389,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3153,8 +3401,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3165,8 +3413,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3177,8 +3425,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3191,8 +3439,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3204,8 +3452,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3217,8 +3465,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3230,8 +3478,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3243,8 +3491,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3256,8 +3504,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3269,8 +3517,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3282,8 +3530,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3295,8 +3543,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -3310,8 +3558,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3322,8 +3570,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3334,8 +3582,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3346,8 +3594,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3358,8 +3606,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3370,8 +3618,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3382,8 +3630,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3394,8 +3642,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3406,8 +3654,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3420,8 +3668,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3432,8 +3680,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3444,8 +3692,8 @@
           "codes": [
             "BF102"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3456,8 +3704,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3468,8 +3716,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3480,8 +3728,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3492,8 +3740,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3504,8 +3752,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3516,8 +3764,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/3032"
+          "limitations": [
+            "module-scope-helper-call"
           ],
           "escape": {
             "state": "debt"
@@ -3529,60 +3777,90 @@
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "hono": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "pebble": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF013"
+          ],
+          "limitations": [
+            "namespace-import-primitive-without-program"
           ]
         }
       },
@@ -3592,6 +3870,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -3601,6 +3882,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -3612,6 +3896,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -3621,6 +3908,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -3632,6 +3922,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -3641,6 +3934,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -3652,6 +3948,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -3662,6 +3961,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture is the SSR-adopting-hydration + patch-on-update regression pin for #2389. A '/* @client */' escape twin would SSR an empty region, eliminating the adopted DOM node the fixture exists to test patching — collapsing it to the already-covered client-only-loop case with zero new coverage. It is also deliberately kept out of integrations/shared/components (per this file's own docstring) because every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -3671,6 +3973,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -3684,6 +3989,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-right-typeof-body-client"
@@ -3693,6 +4001,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3704,6 +4015,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-right-typeof-body-client"
@@ -3713,6 +4027,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3724,6 +4041,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-right-typeof-body-client"
@@ -3733,6 +4053,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3744,6 +4067,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-right-typeof-body-client"
@@ -3754,6 +4080,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-right-typeof-body-client"
@@ -3763,6 +4092,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3776,6 +4108,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-typeof-body-client"
@@ -3785,6 +4120,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3796,6 +4134,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-typeof-body-client"
@@ -3805,6 +4146,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3816,6 +4160,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-typeof-body-client"
@@ -3825,6 +4172,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3836,6 +4186,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-typeof-body-client"
@@ -3846,6 +4199,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "reduce-typeof-body-client"
@@ -3855,6 +4211,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3868,8 +4227,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "erb": {
@@ -3877,8 +4236,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "go-template": {
@@ -3886,8 +4245,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "hono": {
@@ -3895,8 +4254,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "jinja": {
@@ -3904,8 +4263,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "minijinja": {
@@ -3913,8 +4272,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "mojolicious": {
@@ -3922,8 +4281,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "pebble": {
@@ -3931,8 +4290,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "twig": {
@@ -3940,8 +4299,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         },
         "xslate": {
@@ -3949,8 +4308,8 @@
           "codes": [
             "BF049"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2648"
+          "limitations": [
+            "rich-typed-prop-hydration"
           ]
         }
       },
@@ -3960,8 +4319,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2700"
+          "limitations": [
+            "derived-object-literal-signal"
           ],
           "escape": {
             "state": "escapable",
@@ -3975,6 +4334,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "some-typeof-predicate-client"
@@ -3984,6 +4346,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -3995,6 +4360,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "some-typeof-predicate-client"
@@ -4004,6 +4372,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -4015,6 +4386,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "some-typeof-predicate-client"
@@ -4024,6 +4398,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -4035,6 +4412,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "some-typeof-predicate-client"
@@ -4045,6 +4425,9 @@
           "codes": [
             "BF101"
           ],
+          "limitations": [
+            "off-subset-callback-body"
+          ],
           "escape": {
             "state": "escapable",
             "twin": "some-typeof-predicate-client"
@@ -4054,6 +4437,9 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "limitations": [
+            "off-subset-callback-body"
           ],
           "escape": {
             "state": "escapable",
@@ -4067,8 +4453,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4080,8 +4466,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4093,8 +4479,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4106,8 +4492,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4119,8 +4505,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4132,8 +4518,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4145,8 +4531,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4158,8 +4544,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4171,8 +4557,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4186,8 +4572,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4199,8 +4585,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4212,8 +4598,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4225,8 +4611,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4238,8 +4624,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4251,8 +4637,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4264,8 +4650,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4277,8 +4663,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4290,8 +4676,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2321"
+          "limitations": [
+            "computed-const-loop-source"
           ],
           "escape": {
             "state": "escapable",
@@ -4305,8 +4691,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2911"
+          "limitations": [
+            "boolean-in-static-loop-item"
           ],
           "escape": {
             "state": "escapable",
@@ -4318,8 +4704,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2911"
+          "limitations": [
+            "boolean-in-static-loop-item"
           ],
           "escape": {
             "state": "escapable",
@@ -4333,8 +4719,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2911"
+          "limitations": [
+            "boolean-in-static-loop-item"
           ],
           "escape": {
             "state": "escapable",
@@ -4346,8 +4732,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2911"
+          "limitations": [
+            "boolean-in-static-loop-item"
           ],
           "escape": {
             "state": "escapable",
@@ -4361,8 +4747,8 @@
           "codes": [
             "BF101"
           ],
-          "issues": [
-            "https://github.com/piconic-ai/barefootjs/issues/2909"
+          "limitations": [
+            "signal-read-in-nested-static-loop"
           ],
           "escape": {
             "state": "escapable",
@@ -4376,6 +4762,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -4385,6 +4774,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -4396,6 +4788,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -4405,6 +4800,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -4416,6 +4814,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -4425,6 +4826,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -4436,6 +4840,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -4446,6 +4853,9 @@
           "codes": [
             "BF021"
           ],
+          "limitations": [
+            "statement-body-callback"
+          ],
           "escape": {
             "state": "not-owed",
             "reason": "By design: this fixture pins hydration ADOPTING pre-existing SSR flatMap leaves (interaction 1) plus in-place patch/add/remove on top of that adopted DOM. A '/* @client */' escape twin would SSR zero leaves, so there would be nothing to adopt — the adoption regression this fixture exists for would be untestable, collapsing it to the already-covered client-only-loop case. Also deliberately kept out of integrations/shared/components (per this file's own docstring) since every DSL integration app's bf build compiles that directory wholesale, so no DSL escape variant is wanted there either."
@@ -4455,6 +4865,9 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ],
+          "limitations": [
+            "statement-body-callback"
           ],
           "escape": {
             "state": "not-owed",
@@ -4652,6 +5065,323 @@
         "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
       }
+    }
+  },
+  "limitations": {
+    "ambient-locale-date-formatting": {
+      "title": "Ambient-locale Date formatting",
+      "kind": "by-design",
+      "given": "a `Date`-typed prop formatted with zero-argument `toLocaleDateString()` (no explicit locale or options)",
+      "expected": "the date renders formatted for the server process default locale",
+      "actual": "the compiler refuses with BF021 (by design)",
+      "fixtures": [
+        "date-method-uncatalogued"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021"
+      ],
+      "reason": "The zero-argument form resolves against the runtime environment ambient locale (ICU/CLDR data, `LC_*`), which is not knowable at build time and differs across every backend language and between the server and the browser. Any lowering would be a silent SSR/CSR divergence; a Hono carve-out was tried and rejected because hydration re-evaluates the expression against a JSON-de-riched receiver. The literal-locale and named-timezone forms are lowered instead."
+    },
+    "array-fill": {
+      "title": "Array.prototype.fill in a template expression",
+      "kind": "refusal",
+      "given": "a template expression calling `.fill(value)` on an array",
+      "expected": "the filled array renders in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "fill-unsupported"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "boolean-in-static-loop-item": {
+      "title": "Boolean field in a static loop item",
+      "kind": "refusal",
+      "given": "a static array `.map()` whose item objects carry a boolean field, read by a conditional or a boolean attribute",
+      "expected": "each row renders in the server HTML with the boolean applied per item",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "static-loop-item-boolean-attr",
+        "static-loop-item-conditional"
+      ],
+      "adapters": [
+        "mojolicious",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "computed-const-loop-source": {
+      "title": "Computed component-scope const as a loop source",
+      "kind": "refusal",
+      "given": "a `.map()` whose array is a component- or module-scope `const` computed from props or a function call",
+      "expected": "the rows render in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "module-const-loop-source-computed",
+        "static-array-from-props",
+        "static-array-from-props-with-component"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "derived-object-literal-signal": {
+      "title": "Derived object-literal signal initializer",
+      "kind": "refusal",
+      "given": "a `createSignal` / `createMemo` whose initial value is an object literal referencing a live prop (with or without a spread)",
+      "expected": "field reads on the signal render the values the caller passed",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "signal-object-spread-init"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "jsx-wrapped-in-non-children-prop": {
+      "title": "JSX wrapped in a ternary or array at a non-children prop",
+      "kind": "by-design",
+      "given": "a component prop other than `children` whose value is a ternary or array literal wrapping JSX elements (`header={cond ? <a/> : <b/>}`)",
+      "expected": "the chosen elements render inside the child in the server HTML",
+      "actual": "the compiler refuses with BF021 (by design)",
+      "fixtures": [
+        "jsx-element-prop-array",
+        "jsx-element-prop-ternary"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021"
+      ],
+      "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "module-scope-helper-call": {
+      "title": "Module-scope helper called from a template position",
+      "kind": "refusal",
+      "given": "a template expression calling a module-scope helper by bare name (an arrow-valued `const`, a `function` declaration, or a chain of them), in text or boolean-test position",
+      "expected": "the helper runs at render time and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF101 / BF102",
+      "fixtures": [
+        "module-const-arrow-helper",
+        "module-function-helper-chain",
+        "module-helper-boolcontext-call"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101",
+        "BF102"
+      ]
+    },
+    "namespace-import-primitive-without-program": {
+      "title": "Reactive primitive called through a namespace import",
+      "kind": "by-design",
+      "given": "a reactive primitive invoked through a namespace import (`import * as bf`, `bf.createSignal(...)`) in a compile with no shared `ts.Program`",
+      "expected": "the signal is declared and the component hydrates",
+      "actual": "the compiler refuses with BF013 (by design)",
+      "fixtures": [
+        "namespace-import-primitive"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF013"
+      ],
+      "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
+    },
+    "nested-callback-in-filter-predicate": {
+      "title": "Nested higher-order callback inside a filter predicate",
+      "kind": "refusal",
+      "given": "a `.filter()` predicate whose body calls `.some()` / `.find()` with its own arrow callback",
+      "expected": "the filtered rows render in the server HTML with the nested predicate applied",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "filter-nested-callback-predicate",
+        "filter-nested-find-predicate"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "off-subset-callback-body": {
+      "title": "Off-subset expression in a collection-method callback",
+      "kind": "refusal",
+      "given": "a `.filter()` / `.find()` / `.some()` / `.every()` / `.reduce()` / `.flatMap()` callback whose body uses `typeof`",
+      "expected": "the callback runs and the result renders in the server HTML",
+      "actual": "the compiler refuses with BF021 / BF101",
+      "fixtures": [
+        "every-typeof-predicate",
+        "filter-typeof-predicate",
+        "find-typeof-predicate",
+        "flatmap-typeof-projection",
+        "reduce-right-typeof-body",
+        "reduce-typeof-body",
+        "some-typeof-predicate"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021",
+        "BF101"
+      ]
+    },
+    "rich-typed-prop-hydration": {
+      "title": "Rich-typed prop read by client code",
+      "kind": "by-design",
+      "given": "a prop typed as a JSON-unsafe host type (`Map`, `Set`, `WeakMap`, `WeakSet`, `URLSearchParams`, `RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function`) that the component own client code reads",
+      "expected": "the client handler sees the same value the server rendered with",
+      "actual": "the compiler refuses with BF049 (by design)",
+      "fixtures": [
+        "rich-prop-client-read"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF049"
+      ],
+      "reason": "Props cross the `bf-p` hydration boundary as `JSON.stringify` data with no type-aware revival, so these types lose their contents (`Map` / `Set` serialize to `{}`, `BigInt` throws, `Promise` / `Function` cannot cross a serialization boundary at all). A typed revival envelope was considered and rejected as a nine-adapter protocol change that still could not carry every listed type. The sound path is to pass a JSON-safe value and rebuild the rich value client-side."
+    },
+    "signal-read-in-nested-static-loop": {
+      "title": "Signal read inside a nested static loop row",
+      "kind": "refusal",
+      "given": "a static (non-signal) array `.map()` whose row contains a nested `.map()` reading a signal or memo getter",
+      "expected": "both loop levels render in the server HTML with the signal initial value",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "static-nested-loop-ref"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "statement-body-callback": {
+      "title": "Statement-carrying .map() / .flatMap() callback body",
+      "kind": "refusal",
+      "given": "a `.map()` or `.flatMap()` callback whose body is a block with statements (an imperative array builder, a const preamble feeding a leaf, an early return)",
+      "expected": "the callback body runs and every row renders in the server HTML",
+      "actual": "the compiler refuses with BF021",
+      "fixtures": [
+        "map-array-builder-body",
+        "map-array-builder-escaping",
+        "preamble-cells",
+        "tag-cloud"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021"
+      ]
     }
   },
   "componentDocs": {

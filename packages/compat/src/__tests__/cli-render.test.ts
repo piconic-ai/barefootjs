@@ -31,7 +31,7 @@ describe('renderLockToMarkdown', () => {
     const report = buildCompatReport({
       alpha: {
         'adapter-a': { ok: true, diagnostics: [] },
-        'adapter-b': { ok: false, diagnostics: [{ code: 'BF101', severity: 'error', issues: ['https://example.com/1'] }] },
+        'adapter-b': { ok: false, diagnostics: [{ code: 'BF101', severity: 'error', limitations: ['lim-1'] }] },
       },
       beta: {
         'adapter-a': { ok: true, diagnostics: [] },

@@ -84,13 +84,14 @@ describe('fixtureCellText — the check mark answers "does it work?" first', () 
   })
 
   test('a render divergence renders the divergence marker, not a checkmark', () => {
-    expect(fixtureCellText({ kind: 'render', reason: 'whitespace differs' })).toBe('≠')
+    expect(fixtureCellText({ kind: 'render', limitations: ['lim-render'] })).toBe('≠')
   })
 
   test('an escapable refusal renders WORKS (✓†) — no diagnostic code in the cell', () => {
     const text = fixtureCellText({
       kind: 'refusal',
       codes: ['BF101'],
+      limitations: ['lim-1'],
       escape: { state: 'escapable', twin: 'some-fixture-client' },
     })
     expect(text).toBe(`✓${ESCAPABLE_MARKER}`)
@@ -98,7 +99,7 @@ describe('fixtureCellText — the check mark answers "does it work?" first', () 
   })
 
   test('a debt refusal keeps its bare diagnostic code, unmarked', () => {
-    expect(fixtureCellText({ kind: 'refusal', codes: ['BF101'], escape: { state: 'debt' } })).toBe('BF101')
+    expect(fixtureCellText({ kind: 'refusal', codes: ['BF101'], limitations: ['lim-1'], escape: { state: 'debt' } })).toBe('BF101')
   })
 
   // The marker LEADS the code rather than trailing it: "tracked debt" vs
@@ -110,6 +111,7 @@ describe('fixtureCellText — the check mark answers "does it work?" first', () 
     const text = fixtureCellText({
       kind: 'refusal',
       codes: ['BF021'],
+      limitations: ['lim-1'],
       escape: { state: 'not-owed', reason: 'because' },
     })
     expect(text).toBe(`${NOT_OWED_MARKER}BF021`)
@@ -117,17 +119,18 @@ describe('fixtureCellText — the check mark answers "does it work?" first', () 
   })
 
   test('a debt cell and a not-owed cell on the same code differ at their FIRST character', () => {
-    const debt = fixtureCellText({ kind: 'refusal', codes: ['BF021'], escape: { state: 'debt' } })
+    const debt = fixtureCellText({ kind: 'refusal', codes: ['BF021'], limitations: ['lim-1'], escape: { state: 'debt' } })
     const notOwed = fixtureCellText({
       kind: 'refusal',
       codes: ['BF021'],
+      limitations: ['lim-1'],
       escape: { state: 'not-owed', reason: 'because' },
     })
     expect(debt[0]).not.toBe(notOwed[0])
   })
 
   test('an out-of-domain refusal (no escape field) keeps its bare code, same as debt', () => {
-    expect(fixtureCellText({ kind: 'refusal', codes: ['BF021'] })).toBe('BF021')
+    expect(fixtureCellText({ kind: 'refusal', codes: ['BF021'], limitations: ['lim-1'] })).toBe('BF021')
   })
 })
 
@@ -135,8 +138,8 @@ describe('rowWorksEverywhere — decides which fixtures need a row in the "needs
   test('a row where every cell is escapable works everywhere', () => {
     expect(
       rowWorksEverywhere({
-        hono: { kind: 'refusal', codes: ['BF101'], escape: { state: 'escapable', twin: 'x' } },
-        blade: { kind: 'refusal', codes: ['BF101'], escape: { state: 'escapable', twin: 'x' } },
+        hono: { kind: 'refusal', codes: ['BF101'], limitations: ['lim-1'], escape: { state: 'escapable', twin: 'x' } },
+        blade: { kind: 'refusal', codes: ['BF101'], limitations: ['lim-1'], escape: { state: 'escapable', twin: 'x' } },
       }),
     ).toBe(true)
   })
@@ -144,8 +147,8 @@ describe('rowWorksEverywhere — decides which fixtures need a row in the "needs
   test('a row with one debt cell needs attention, even if every other cell is escapable', () => {
     expect(
       rowWorksEverywhere({
-        hono: { kind: 'refusal', codes: ['BF101'], escape: { state: 'escapable', twin: 'x' } },
-        blade: { kind: 'refusal', codes: ['BF101'], escape: { state: 'debt' } },
+        hono: { kind: 'refusal', codes: ['BF101'], limitations: ['lim-1'], escape: { state: 'escapable', twin: 'x' } },
+        blade: { kind: 'refusal', codes: ['BF101'], limitations: ['lim-1'], escape: { state: 'debt' } },
       }),
     ).toBe(false)
   })
@@ -153,7 +156,7 @@ describe('rowWorksEverywhere — decides which fixtures need a row in the "needs
   test('a row with a render divergence needs attention', () => {
     expect(
       rowWorksEverywhere({
-        blade: { kind: 'render', reason: 'diverges' },
+        blade: { kind: 'render', limitations: ['lim-render'] },
       }),
     ).toBe(false)
   })

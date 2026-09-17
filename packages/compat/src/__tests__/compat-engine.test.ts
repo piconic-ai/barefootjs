@@ -43,48 +43,23 @@ describe('compileForCompat', () => {
 
     const cell = buildCompatCell(errors, goTemplatePins)
     expect(cell.ok).toBe(false)
-    // `issues` is the UNION of every issue URL any BF101 pin carries on
-    // this adapter (buildCompatCell attributes by code, not by fixture —
-    // see its docstring) — #2320 (this shape, nested filter callback,
-    // successor to #2038), #2321 (the "computed const as loop source can't
-    // be evaluated at SSR" design gap — covers both `static-array-from-props`
-    // and, since #2950, its module-scope twin
-    // `module-const-loop-source-computed`; #2946 fixed the STATIC-literal
-    // module-scope case but is now closed, so the computed-const pin was
-    // repointed here rather than left dangling on a closed issue), #2700
-    // (a `derived` object-literal signal/memo the constructor-time baker
-    // can't reproduce, `signal-object-spread-init`), and #2909 (a
-    // signal/memo call read inside a nested static loop's row,
-    // `static-nested-loop-ref`) surface here even though this
-    // test only exercises the nested-filter-callback shape. Six pins are no longer
-    // among them, each because the shape got a real lowering rather than a
-    // narrower refusal: #2319 (dangerous-inner-html-dynamic → a faithful
-    // raw-output lowering), #2208 (static-array-children → the loop-source
-    // gate bakes a fully-static array-of-objects const), #2448 (loop-row
-    // child prop override feeding a derived field → the child rebuilds
-    // itself per row through `bf_reprops`), #2898 (a conditional inside a
-    // static array's row with no nested loop → `isFoldableTree` now bakes
-    // it), #2893 (a nested `.map()`'s own structural bail → the bake now
-    // recurses into a nested loop; `static-nested-loop-conditional`
-    // graduated outright, `static-nested-loop-ref` still refuses but for the
-    // narrower #2909 reason), and #2805 (a named jsx-children prop routed
-    // into a child's rest bag → `bf_with_bag`/`WithBagEntry` delivers it
-    // instead of refusing), and #3032 (a bare-name call to a module-scope
-    // helper, `module-const-arrow-helper`/`module-function-helper-chain`;
-    // go-template's own `call()` fallback refuses that shape instead of
-    // crashing template execution, and #3032 now tracks authoring the
-    // still-missing corpus escape twin — see #3030). See `go-template`'s
-    // `conformance-pins.ts`.
+    // `limitations` is the UNION of every registry id any BF101 pin carries
+    // on this adapter (buildCompatCell attributes by code, not by fixture —
+    // see its docstring), so limitations this test's nested-filter-callback
+    // shape never touches surface here too. See `go-template`'s
+    // `conformance-pins.ts` for which fixture cites which.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
         severity: 'error',
-        issues: [
-          'https://github.com/piconic-ai/barefootjs/issues/2320',
-          'https://github.com/piconic-ai/barefootjs/issues/2321',
-          'https://github.com/piconic-ai/barefootjs/issues/2700',
-          'https://github.com/piconic-ai/barefootjs/issues/2909',
-          'https://github.com/piconic-ai/barefootjs/issues/3032',
+        limitations: [
+          'array-fill',
+          'computed-const-loop-source',
+          'derived-object-literal-signal',
+          'module-scope-helper-call',
+          'nested-callback-in-filter-predicate',
+          'off-subset-callback-body',
+          'signal-read-in-nested-static-loop',
         ],
       },
     ])
@@ -144,8 +119,8 @@ describe('buildCompatCell', () => {
       {},
     )
     expect(cell.diagnostics).toEqual([
-      { code: 'BF101', severity: 'error', issues: [] },
-      { code: 'BF102', severity: 'warning', issues: [] },
+      { code: 'BF101', severity: 'error', limitations: [] },
+      { code: 'BF102', severity: 'warning', limitations: [] },
     ])
     expect(cell.ok).toBe(false)
   })
@@ -158,19 +133,19 @@ describe('buildCompatCell', () => {
     expect(cell.ok).toBe(true)
   })
 
-  test('issue URLs are attached from pins matching the code, deduped and sorted', () => {
+  test('limitation ids are attached from pins matching the code, deduped and sorted', () => {
     const pins = {
-      'fixture-a': [{ code: 'BF101', severity: 'error' as const, issue: 'https://example.com/2' }],
-      'fixture-b': [{ code: 'BF101', severity: 'error' as const, issue: 'https://example.com/1' }],
-      'fixture-c': [{ code: 'BF101', severity: 'error' as const, issue: 'https://example.com/1' }],
-      'fixture-d': [{ code: 'BF999', severity: 'error' as const }],
+      'fixture-a': [{ code: 'BF101', severity: 'error' as const, limitation: 'lim-2' }],
+      'fixture-b': [{ code: 'BF101', severity: 'error' as const, limitation: 'lim-1' }],
+      'fixture-c': [{ code: 'BF101', severity: 'error' as const, limitation: 'lim-1' }],
+      'fixture-d': [{ code: 'BF999', severity: 'error' as const, limitation: 'lim-other' }],
     }
     const cell = buildCompatCell(
       [{ code: 'BF101', severity: 'error', message: '', loc: { file: 'f', start: { line: 0, column: 0 }, end: { line: 0, column: 0 } } }],
       pins,
     )
     expect(cell.diagnostics).toEqual([
-      { code: 'BF101', severity: 'error', issues: ['https://example.com/1', 'https://example.com/2'] },
+      { code: 'BF101', severity: 'error', limitations: ['lim-1', 'lim-2'] },
     ])
   })
 })

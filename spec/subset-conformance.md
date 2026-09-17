@@ -99,8 +99,8 @@ createFixture({
   (`&#34;` vs `&quot;` class) is precisely a difference we want to catch.
 - **Skips** follow the established discipline: a typed
   ``skipDataPoints: ReadonlySet<`${fixtureId}:${pointName}`>`` per
-  adapter, each entry commented with the follow-up issue
-  (`known-limitation`).
+  adapter, each entry commented with the registry limitation it is an
+  instance of (`packages/adapter-tests/limitations/`).
 - **Cost tiering.** Full matrix (fixtures × points × adapters, real backend
   execution) runs nightly; PR runs cover primary points. Adapters batch all
   points of a fixture through one backend process.
@@ -160,8 +160,8 @@ single fixture cannot witness.
   without fixtures in the same PR. Axes derive mechanically from variant
   fields, so adding a field widens required coverage automatically.
 - **Generated support matrix**: `kind × axis × adapter` pass/skip table
-  generated from the suite + skip declarations (the `known-limitation` label
-  stays the per-issue source of truth; the matrix links to it). The
+  generated from the suite + skip declarations (the limitation registry
+  stays the per-entry source of truth; the matrix links to it). The
   `@barefootjs/compat` component×adapter matrix is the seed for this.
 
 ## Date: first catalogued rich type

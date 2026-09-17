@@ -277,16 +277,16 @@ own constructor (#2636). This revival trick only works for `Date` and
 
 ### BF101 — No Template-Language Lowering
 
-**Trigger:** An expression that a JS-runtime adapter (Hono, CSR) executes verbatim has no lowering on a non-JS template adapter (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja). Two shapes are permanent known limitations rather than subset widenings:
+**Trigger:** An expression that a JS-runtime adapter (Hono, CSR) executes verbatim has no lowering on a non-JS template adapter (Go, Mojo, Xslate, Twig, ERB, Blade, Jinja, MiniJinja). Every such refusal is an instance of a registered [known limitation](/docs/advanced/compatibility-matrix#known-limitations); two common shapes:
 
-**A nested `.some()` / `.find()` inside a filter predicate** ([#2320](https://github.com/piconic-ai/barefootjs/issues/2320)) — `find`-family methods return an element, not a boolean, so degrading them to their receiver would silently change predicate semantics:
+**A nested `.some()` / `.find()` inside a filter predicate** ([`nested-callback-in-filter-predicate`](/docs/advanced/compatibility-matrix#limitation-nested-callback-in-filter-predicate)) — `find`-family methods return an element, not a boolean, so degrading them to their receiver would silently change predicate semantics:
 
 ```tsx
 // ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja
 {items().filter(t => picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.name}</li>)}
 ```
 
-**A `.map()` loop array bound to a component-scope `const` with a computed initializer** ([#2321](https://github.com/piconic-ai/barefootjs/issues/2321)) — no template adapter binds an arbitrary computed local, only a prop/param it passes straight through:
+**A `.map()` loop array bound to a component-scope `const` with a computed initializer** ([`computed-const-loop-source`](/docs/advanced/compatibility-matrix#limitation-computed-const-loop-source)) — no template adapter binds an arbitrary computed local, only a prop/param it passes straight through:
 
 ```tsx
 // ❌ BF101 on Go/Mojo/Xslate/Twig/ERB/Blade/Jinja/MiniJinja

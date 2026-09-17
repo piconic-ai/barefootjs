@@ -37,10 +37,11 @@ a specific issue), the rest of this guide is for you.
 
 - **Bug reports** → use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml).
 - **Feature / design proposals** → use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml).
-- **Known limitations** are tracked under the
-  [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation)
-  label. Each issue documents the shape, affected fixtures, available
-  workaround, and fix direction — a good place to understand current edges.
+- **Known limitations** live in the registry under
+  `packages/adapter-tests/limitations/` (one file per entry: the input shape,
+  what the reference renders, what the affected adapters do instead, and the
+  fixtures that reproduce it) — a good place to understand current edges.
+  This adapter's `conformance-pins.ts` cites those entries by id.
 
 ## Project overview
 

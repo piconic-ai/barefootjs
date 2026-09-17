@@ -17,7 +17,7 @@
 //      `renderDivergences`, not CSR-skipped — the structural proxy for
 //      "renders correctly," not re-checked behaviourally here); or
 //   2. the adapter's OWN error pin for this fixture carries
-//      `unescapable: { issue }` (`ConformancePin`, `@barefootjs/jsx`); or
+//      `unescapable: true` (`ConformancePin`, `@barefootjs/jsx`); or
 //   3. the fixture declares `escapeNotOwed: { reason }` — an explicit,
 //      required-non-empty prose declaration that NO escape is owed here,
 //      by design (not merely "not authored yet") — see `EscapeNotOwed` in
@@ -34,14 +34,15 @@
 // declaration is not an option this test allows, but the two paths that
 // ARE allowed are not equally expensive, and that asymmetry is deliberate:
 //
-//   - refuse + `unescapable: { issue }` on the pin: one field, one issue
-//     URL, in the SAME object literal as the refusal it qualifies. Costs
-//     a single line, in the adapter's own package.
+//   - refuse + `unescapable: true` on the pin: one field, in the SAME
+//     object literal as the refusal it qualifies. Costs a single line, in
+//     the adapter's own package.
 //   - silent divergence (an adapter that compiles clean but produces
 //     subtly wrong output): this repo's own rules require the FULL
-//     three-piece known-limitation set — a tracked issue, a hand-authored
+//     three-piece known-limitation set — a registry entry under
+//     `packages/adapter-tests/limitations/`, a hand-authored
 //     `expectedHtml` pinning the CORRECT output, and per-adapter pins on
-//     the broken side (CLAUDE.md, "A reproducible defect lands as a
+//     the broken side citing that entry (CLAUDE.md, "A reproducible defect lands as a
 //     fixture, not a prose report") — and risks tripping the
 //     no-silent-divergence trichotomy machinery
 //     (`map-body-no-silent-divergence.test.ts`) on top of that.
@@ -49,7 +50,7 @@
 // Refuse-plus-`unescapable` is intentionally the cheap option, not the
 // shameful one: when you land a new adapter-specific refusal and don't
 // have (or don't yet want to invest in) a verified escape, the FAST PATH
-// is to set `unescapable: { issue: '<url>' }` on that pin, in YOUR
+// is to set `unescapable: true` on that pin, in YOUR
 // adapter's own `conformance-pins.ts` — not to author an escape fixture
 // under deadline pressure. Authoring a real twin is the *ratchet* (it
 // deletes the `unescapable` field), never the toll booth blocking a pin
@@ -76,8 +77,9 @@
 // Shrink-only discipline mirrors `KNOWN_HOLES` in
 // `packages/jsx/src/__tests__/map-body-no-silent-divergence.test.ts`
 // verbatim in spirit — now enforced per adapter package instead of in one
-// central set: every `unescapable` carries an issue-URL (falling back to
-// #2613 itself when no more specific issue exists yet), and a STALE
+// central set: every `unescapable` sits on the pin that cites its registry
+// limitation (the "escape twins still to author" list is derived from
+// those pins, never tracked elsewhere), and a STALE
 // declaration — one whose fixture now has a working escape twin on THAT
 // adapter — must FAIL the test, not be silently ignored. Each adapter's
 // own remaining `unescapable` count is now visible in its own package,
@@ -104,7 +106,6 @@ import {
   computeDomainFixtureIds,
   evaluateFixtureEscapeCoverage,
   findMisappliedUnescapable,
-  findUnescapableMissingIssue,
   findUnprovenEscapeClaims,
 } from '../escape-coverage'
 
@@ -151,10 +152,6 @@ describe('escape coverage — every adapter refusal is escapable or self-declare
       // own package, caught here rather than silently doing nothing.
       test('no "unescapable" declared on a non-error pin', () => {
         expect(findMisappliedUnescapable(adapter)).toEqual([])
-      })
-
-      test('every "unescapable" declaration carries an issue URL', () => {
-        expect(findUnescapableMissingIssue(adapter)).toEqual([])
       })
 
       const domainFixtureIds = computeDomainFixtureIds(adapter, honoErrorPinnedFixtures)

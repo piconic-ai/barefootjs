@@ -6,6 +6,9 @@
 
 export { runJSXConformanceTests, normalizeHTML, stripConditionalMarkersForCrossAdapter } from './jsx-runner'
 export { createFixture, normalizeExpectedHtml } from './types'
+export { defineLimitation, limitationActual, limitationDiagnostics, LIMITATION_ID_RE } from './limitations'
+export type { Limitation, LimitationKind, LimitationSpec } from './limitations'
+export { limitations, findLimitation, listLimitationIds } from '../limitations'
 export type { JSXFixture, JSXDataPoint, ExpectedDiagnostic } from './types'
 export { runDataPointConformance } from './data-point-conformance'
 export type { RunDataPointConformanceOptions } from './data-point-conformance'
