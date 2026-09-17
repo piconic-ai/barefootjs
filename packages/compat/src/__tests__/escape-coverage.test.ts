@@ -39,9 +39,10 @@
 //     the adapter's own package.
 //   - silent divergence (an adapter that compiles clean but produces
 //     subtly wrong output): this repo's own rules require the FULL
-//     three-piece known-limitation set — a tracked issue, a hand-authored
+//     three-piece known-limitation set — a registry entry under
+//     `packages/adapter-tests/limitations/`, a hand-authored
 //     `expectedHtml` pinning the CORRECT output, and per-adapter pins on
-//     the broken side (CLAUDE.md, "A reproducible defect lands as a
+//     the broken side citing that entry (CLAUDE.md, "A reproducible defect lands as a
 //     fixture, not a prose report") — and risks tripping the
 //     no-silent-divergence trichotomy machinery
 //     (`map-body-no-silent-divergence.test.ts`) on top of that.
@@ -76,8 +77,9 @@
 // Shrink-only discipline mirrors `KNOWN_HOLES` in
 // `packages/jsx/src/__tests__/map-body-no-silent-divergence.test.ts`
 // verbatim in spirit — now enforced per adapter package instead of in one
-// central set: every `unescapable` carries an issue-URL (falling back to
-// #2613 itself when no more specific issue exists yet), and a STALE
+// central set: every `unescapable` sits on the pin that cites its registry
+// limitation (the "escape twins still to author" list is derived from
+// those pins, never tracked elsewhere), and a STALE
 // declaration — one whose fixture now has a working escape twin on THAT
 // adapter — must FAIL the test, not be silently ignored. Each adapter's
 // own remaining `unescapable` count is now visible in its own package,
