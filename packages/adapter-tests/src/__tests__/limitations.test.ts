@@ -5,8 +5,8 @@
  * keeps every entry in the one fixed shape `src/limitations.ts` documents
  * so entries read alike and never grow into prose reports:
  *
- *   - the directory listing and the index agree (a new file must be
- *     registered; a deleted file must be unregistered);
+ *   - every file in the directory loads as an entry (discovery is the
+ *     directory listing itself, so there is no second list to drift);
  *   - the id (file name) is a kebab-case slug;
  *   - every text slot is one line with no trailing period;
  *   - `given` names no adapter (affected adapters are derived from pins);
@@ -22,14 +22,9 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { readdirSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { jsxFixtures } from '../../fixtures'
-import { limitations } from '../../limitations'
+import { limitations, listLimitationIds } from '../../limitations'
 import { LIMITATION_ID_RE, limitationDiagnostics, type Limitation } from '../limitations'
-
-const LIMITATIONS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../limitations')
 
 /** Adapter ids and the backend names people write instead of them. */
 const ADAPTER_WORDS = [
@@ -67,12 +62,8 @@ const escapeTwinIds = new Set(jsxFixtures.flatMap(f => (f.escapes ?? []).map(e =
 const corpusIds = new Set(jsxFixtures.map(f => f.id))
 
 describe('limitation registry', () => {
-  test('the directory listing and the index agree', () => {
-    const files = readdirSync(LIMITATIONS_DIR)
-      .filter(f => f.endsWith('.ts') && f !== 'index.ts')
-      .map(f => f.slice(0, -'.ts'.length))
-      .sort()
-    expect(limitations.map(l => l.id)).toEqual(files)
+  test('every file in the directory is loaded as an entry, in id order', () => {
+    expect(limitations.map(l => l.id)).toEqual(listLimitationIds())
   })
 
   test('at least one entry is registered', () => {

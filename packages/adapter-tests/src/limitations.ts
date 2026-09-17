@@ -48,6 +48,8 @@
  *   - `by-design` — an accepted permanent position: refused on purpose,
  *                   with `reason` saying why. Never graduates.
  *
+ * Entries are discovered from the directory listing (`limitations/index.ts`
+ * is the loader, not a list): adding or deleting a file is the whole change.
  * `packages/adapter-tests/src/__tests__/limitations.test.ts` lints every
  * entry (slot shape, no issue/PR references, fixtures exist and are not
  * escape twins) and `packages/compat/src/__tests__/limitations-join.test.ts`
