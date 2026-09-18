@@ -30,13 +30,17 @@ export function initChildPropRestForward(__scope, _p = {}) {
 
   const [variant, setVariant] = createSignal('a')
   const [tag, setTag] = createSignal('one')
+  const [shown, setShown] = createSignal(true)
 
   const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
 
   if (_s1) _s1.addEventListener('click', () => {
           setVariant(v => (v === 'a' ? 'b' : 'a'))
-          setTag(t => (t === 'one' ? undefined : t === undefined ? 'two' : 'one'))
+          // (shown, tag): (true, one) → (false, one) → (true, two) → (true, one) → …
+          if (shown() && tag() === 'one') setShown(false)
+          else if (!shown()) { setShown(true); setTag('two') }
+          else setTag('one')
         })
 
   // Reactive prop bindings
@@ -44,7 +48,6 @@ export function initChildPropRestForward(__scope, _p = {}) {
   createEffect(() => {
     if (_s0) {
       if (__m[0] ??= _s0.hasAttribute('variant')) { const __v = variant(); if (__v != null) _s0.setAttribute('variant', String(__v)); else _s0.removeAttribute('variant') }
-      if (__m[1] ??= _s0.hasAttribute('tag')) { const __v = tag(); if (__v != null) _s0.setAttribute('tag', String(__v)); else _s0.removeAttribute('tag') }
     }
   }) }
 
@@ -58,7 +61,7 @@ export function initChildPropRestForward(__scope, _p = {}) {
         if (__m[0] ??= __RestForwardTag_s0El.hasAttribute('variant')) { const __v = __x; if (__v != null) __RestForwardTag_s0El.setAttribute('variant', String(__v)); else __RestForwardTag_s0El.removeAttribute('variant') }
       }
       __l[0] = __x }
-      { const __x = tag()
+      { const __x = shown() ? tag() : undefined
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         if (__m[1] ??= __RestForwardTag_s0El.hasAttribute('tag')) { const __v = __x; if (__v != null) __RestForwardTag_s0El.setAttribute('tag', String(__v)); else __RestForwardTag_s0El.removeAttribute('tag') }
       }
@@ -67,8 +70,8 @@ export function initChildPropRestForward(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('RestForwardTag', _s0, { get variant() { return variant() }, get tag() { return tag() } })
+  initChild('RestForwardTag', _s0, { get variant() { return variant() }, get tag() { return shown() ? tag() : undefined } })
 }
 
-hydrate('ChildPropRestForward', { init: initChildPropRestForward, template: (_p) => `<div>${renderChild('RestForwardTag', {variant: ('a'), tag: ('one')}, undefined, 's0')}<button bf="s1"> cycle </button></div>` })
+hydrate('ChildPropRestForward', { init: initChildPropRestForward, template: (_p) => `<div>${renderChild('RestForwardTag', {variant: ('a'), tag: (true) ? ('one') : undefined}, undefined, 's0')}<button bf="s1"> cycle </button></div>` })
 export function ChildPropRestForward(_p, __bfKey) { return createComponent('ChildPropRestForward', _p, __bfKey) }

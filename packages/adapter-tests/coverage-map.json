@@ -1233,6 +1233,7 @@
     "child-prop-rest-forward": {
       "kinds": [
         "call",
+        "conditional",
         "identifier",
         "index-access",
         "literal",
@@ -1240,6 +1241,7 @@
         "object-literal"
       ],
       "axes": [
+        "literal:boolean",
         "literal:string"
       ],
       "contexts": [
@@ -6999,7 +7001,7 @@
     "arrow": 76,
     "binary": 109,
     "call": 290,
-    "conditional": 33,
+    "conditional": 34,
     "identifier": 412,
     "index-access": 15,
     "literal": 327,
@@ -7046,7 +7048,7 @@
     "binary:===": 55,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 71,
+    "literal:boolean": 72,
     "literal:null": 26,
     "literal:number": 151,
     "literal:string": 221,
