@@ -5297,6 +5297,27 @@
         "attribute"
       ]
     },
+    "select-out-of-range-hydration": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "select-value-no-match-ssr": {
       "kinds": [
         "binary",
@@ -6960,17 +6981,17 @@
     "array-literal": 119,
     "array-method": 72,
     "arrow": 76,
-    "binary": 108,
-    "call": 288,
+    "binary": 109,
+    "call": 289,
     "conditional": 33,
-    "identifier": 410,
+    "identifier": 411,
     "index-access": 14,
-    "literal": 325,
-    "logical": 52,
+    "literal": 326,
+    "logical": 53,
     "member": 243,
     "object-literal": 95,
     "template-literal": 31,
-    "unary": 29,
+    "unary": 30,
     "unsupported": 51
   },
   "axisCounts": {
@@ -7006,16 +7027,16 @@
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 54,
+    "binary:===": 55,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 71,
     "literal:null": 26,
-    "literal:number": 150,
-    "literal:string": 219,
+    "literal:number": 151,
+    "literal:string": 220,
     "logical:&&": 7,
     "logical:??": 44,
-    "logical:||": 16,
+    "logical:||": 17,
     "lowering:date": 4,
     "lowering:formatDate": 2,
     "lowering:queryHref": 5,
@@ -7030,7 +7051,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 21,
+    "unary:!": 22,
     "unary:-": 11
   },
   "uncoveredKinds": [
