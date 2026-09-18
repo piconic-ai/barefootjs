@@ -19,15 +19,16 @@ import { createFixture } from '../src/types'
  * #2630's divergence for that shallower sibling already graduated (see
  * `packages/adapter-go-template/src/render-divergences.ts`'s header
  * comment) — the harness's prop-seeding for a prop-derived static
- * child-component loop is generic, not shape-specific — so this fixture is
- * expected to render correctly everywhere, including Go. It exists to make
- * that an executed, CI-verified fact (via the real `go run` in
- * `ci-go-template.yml`) rather than an inference from a sibling fixture,
- * for the specific shape #3048 newly classifies as prop-derived.
+ * child-component loop is generic, not shape-specific. This deeper shape
+ * turned out NOT to inherit that fix, though: KNOWN DIVERGENCE —
+ * go-template renders the `<ul>` EMPTY here (see `render-divergences.ts`'s
+ * `nested-prop-object-array-child-component-go` entry). Hono and CSR both
+ * render correctly; this fixture exists to pin the Go gap as an executed,
+ * CI-verified fact rather than an inference from a sibling fixture.
  */
 export const fixture = createFixture({
   id: 'nested-prop-object-array-with-component',
-  description: '#3044: a nested array on a destructured object prop, mapped to a child component, renders at SSR on every adapter',
+  description: '#3044: a nested array on a destructured object prop, mapped to a child component — renders correctly on Hono/CSR; KNOWN DIVERGENCE on go-template (empty render, see render-divergences.ts)',
   source: `
 'use client'
 import { Tag } from './tag'
