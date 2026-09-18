@@ -34,11 +34,12 @@ Two placeholders may be used anywhere in `deck.md` (and `deck.<lang>.md`): `%%CO
 hand-typed number that drifts.
 
 The output lands in `public/slides/<slug>/`, which is gitignored: the deploy workflow
-(`.github/workflows/deploy.yml`) installs a pinned peitho release and runs
-`bun run slides:build --all` before `bun run build`, which copies `public/slides/**` into
-`dist/slides/**` for Cloudflare Workers Assets. Pull requests that touch `slides/**` run the
-same build in `.github/workflows/ci-slides.yml`, so a deck that no longer builds fails there.
-To bump peitho, change `PEITHO_VERSION` and `PEITHO_SHA256` in both workflows.
+(`.github/workflows/deploy.yml`) builds peitho from source (`.github/actions/install-peitho`,
+currently `kfly8/peitho`) and runs `bun run slides:build --all` before `bun run build`, which
+copies `public/slides/**` into `dist/slides/**` for Cloudflare Workers Assets. Pull requests
+that touch `slides/**` run the same build in `.github/workflows/ci-slides.yml`, so a deck that
+no longer builds fails there. To build a different peitho commit, pass `ref` to
+`install-peitho` at each call site.
 
 To add a deck: `peitho new slides/<slug>` (or copy an existing directory), write `deck.md`,
 run `bun run slides:build <slug>` to check it locally, and commit the sources only.

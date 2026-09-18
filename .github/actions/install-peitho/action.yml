@@ -10,7 +10,13 @@ inputs:
   ref:
     description: 'kfly8/peitho branch or commit to build.'
     required: false
-    default: 'main'
+    # Pinned to a commit, not floating on main, for the same reproducibility
+    # the removed PEITHO_VERSION/PEITHO_SHA256 pin gave: a push to
+    # kfly8/peitho:main shouldn't silently change CI/deploy output with no
+    # diff in this repo. Bump by hand as the fork gains commits this deck
+    # needs; drop this action for mizzy/peitho's release flow once the
+    # Shadow DOM fix (site/core/slides/overview/component/mount.ts) upstreams.
+    default: '9fa356dbbcf98e3e7322fbbe88319c4fee964f8b'
 
 runs:
   using: 'composite'
@@ -43,6 +49,6 @@ runs:
       shell: bash
       run: |
         cd .peitho-src
-        cargo build --release --bin peitho
+        cargo build --release --locked --bin peitho
         sudo install -m755 target/release/peitho /usr/local/bin/peitho
         peitho --version
