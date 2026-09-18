@@ -2002,6 +2002,14 @@
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "totalFixtures": 434,
     "fixtures": {
+      "child-prop-rest-forward": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "child-prop-undefined-alternate-dropped"
+          ]
+        }
+      },
       "composite-row-child-rest-bag-prop": {
         "go-template": {
           "kind": "render",
@@ -4900,6 +4908,10 @@
       }
     },
     "docs": {
+      "child-prop-rest-forward": {
+        "description": "a child-component prop the child forwards via {...rest} onto its root keeps updating reactively,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-prop-rest-forward.ts"
+      },
       "composite-row-child-rest-bag-prop": {
         "description": "Dynamic loop row root is an element containing a child whose per-row prop routes into its rest bag",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/composite-row-child-rest-bag-prop.ts"
@@ -5169,6 +5181,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "child-prop-undefined-alternate-dropped": {
+      "title": "A child-component prop whose value is a ternary with an undefined alternate is dropped from the slot props",
+      "kind": "silent",
+      "given": "a child component call whose prop is a ternary with an `undefined` alternate (`<RestForwardTag tag={shown() ? tag() : undefined} />`), the child forwarding that prop onto its root via `{...rest}`",
+      "expected": "the server HTML carries `tag=\"one\"` while the branch is taken and no `tag` attribute otherwise, as the reference renders",
+      "actual": "omits the prop from the generated slot props (`RestForwardTagInput{ Variant: \"a\" }`, no `Tag`), so the child’s rest-bag lookup renders `tag=\"\"` whichever branch is taken",
+      "fixtures": [
+        "child-prop-rest-forward"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "client-only-loop-in-static-loop": {

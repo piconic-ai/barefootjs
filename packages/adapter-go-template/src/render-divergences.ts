@@ -74,6 +74,14 @@ export const renderDivergences: RenderDivergences = {
   // sibling route (`queueDynamicPropDefine` → `bf_with_bag`) is not wired
   // for loop rows yet.
   'composite-row-child-rest-bag-prop': { limitation: 'loop-row-rest-bag-prop-override' },
+  // The nested-child-props baker has no arm for a ternary whose alternate is
+  // `undefined` (`tag={shown() ? tag() : undefined}`): the prop gets no
+  // field at all in `RestForwardTagInput{...}`, so the child's rest-bag
+  // lookup renders `tag=""` whichever branch is taken, where the reference
+  // renders `tag="one"` / no attribute. Measured under Go 1.25 (the version
+  // gate in `test-render.ts` skips the render on older toolchains, which is
+  // why a Go 1.24 host reports this fixture green).
+  'child-prop-rest-forward': { limitation: 'child-prop-undefined-alternate-dropped' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
