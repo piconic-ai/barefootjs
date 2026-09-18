@@ -61,6 +61,27 @@ export const renderDivergences: RenderDivergences = {
   // sibling route (`queueDynamicPropDefine` → `bf_with_bag`) is not wired
   // for loop rows yet.
   'composite-row-child-rest-bag-prop': { limitation: 'loop-row-rest-bag-prop-override' },
+  // #3044 pullfrog review (PR #3048): a destructured OBJECT-shaped prop's
+  // own field is typed `interface{}` in the generated `Input`/`Props`
+  // structs instead of its properly-generated named struct type (measured:
+  // `generateTypes` DOES emit a correct `type Data struct { Entries
+  // []Entry }` — the input/props field for `data` just doesn't use it) —
+  // so `NewXxxProps`'s existing prop-derived child-slice auto-population
+  // (the #2630 mechanism, `isNestedArrayShadowed`/`propDerivedNestedArrayFields`
+  // in `go-template-adapter.ts`) has no typed field to read `data.entries`
+  // off, and the loop's `.Tags` stays a nil slice — same "compiles clean,
+  // `go run`s clean, renders empty" shape as #2630's original gap, one
+  // destructure-hop deeper. Confirmed via a real `go run` (`GOTOOLCHAIN=
+  // go1.25.6 bun test`, this sandbox's system Go was 1.24, below go.mod's
+  // 1.25 floor) that Hono/CSR/the harness's own compile step are all fine —
+  // only Go's real SSR renders the `<ul>` empty. Root cause is in the
+  // PRODUCTION adapter's own type/props generation, not a test-harness
+  // gap — unlike #2630, a harness-side prop-seeding fix alone cannot close
+  // this (verified: teaching the harness's route-handler stand-in to walk
+  // the nested field path just relocates the same untyped-field problem
+  // into a Go compile error, `interface{} has no field or method Entries`,
+  // instead of a silent empty render).
+  'nested-prop-object-array-with-component': { limitation: 'nested-prop-object-array-child-component-go' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
