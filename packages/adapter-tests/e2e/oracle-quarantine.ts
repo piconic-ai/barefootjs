@@ -53,13 +53,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     oracles: ['snap', 'three-point'],
     reason:
       "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly).",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   'radio-group': {
     oracles: ['snap', 'three-point'],
     reason:
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   // `idempotence` graduated (#2827): the bimodal divergence was the
   // component's own rAF-deferred group/empty `hidden` + `data-selected`
@@ -70,7 +70,7 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     oracles: ['snap', 'three-point'],
     reason:
       'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
   // direction and mechanism corrected 2026-08-26): `emitReactiveChildProps`
