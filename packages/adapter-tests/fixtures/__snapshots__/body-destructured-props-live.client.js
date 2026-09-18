@@ -85,14 +85,14 @@ export function initBodyDestructuredPropsLive(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__BodyLiveChild_s6El] = $c(__scope, 's6')
     if (__BodyLiveChild_s6El) {
       if ('value' in __BodyLiveChild_s6El) { const __val = String(count()); if (__BodyLiveChild_s6El.value !== __val) __BodyLiveChild_s6El.value = __val }
       { const __x = named() ? 'named' : undefined
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__BodyLiveChild_s6El.hasAttribute('label')) { const __v = __x; if (__v != null) __BodyLiveChild_s6El.setAttribute('label', String(__v)); else __BodyLiveChild_s6El.removeAttribute('label') }
+        if (__m[0] ??= __BodyLiveChild_s6El.hasAttribute('label')) { const __v = __x; if (__v != null) __BodyLiveChild_s6El.setAttribute('label', String(__v)); else __BodyLiveChild_s6El.removeAttribute('label') }
       }
       __l[0] = __x }
     }

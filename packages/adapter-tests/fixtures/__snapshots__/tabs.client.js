@@ -228,7 +228,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     if (__scope) {
       if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
@@ -351,7 +351,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     if (__scope) {
       if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }
@@ -482,7 +482,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     if (__scope) {
       if ('value' in __scope) { const __val = String(activeTab()); if (__scope.value !== __val) __scope.value = __val }

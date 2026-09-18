@@ -2912,13 +2912,13 @@ export function initIcon(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__GitHubIcon_s11El] = $c(__scope, 's11')
     if (__GitHubIcon_s11El) {
       { const __x = (_p.size ?? 'md')
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__GitHubIcon_s11El.hasAttribute('size')) { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
+        if (__m[0] ??= __GitHubIcon_s11El.hasAttribute('size')) { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
       }
       __l[0] = __x }
       { const __x = (_p.className ?? '')
@@ -2931,7 +2931,7 @@ export function initIcon(__scope, _p = {}) {
     if (__SearchIcon_s10El) {
       { const __x = (_p.size ?? 'md')
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        if (__SearchIcon_s10El.hasAttribute('size')) { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
+        if (__m[2] ??= __SearchIcon_s10El.hasAttribute('size')) { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
       }
       __l[2] = __x }
       { const __x = (_p.className ?? '')
@@ -2944,7 +2944,7 @@ export function initIcon(__scope, _p = {}) {
     if (__SettingsIcon_s9El) {
       { const __x = (_p.size ?? 'md')
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
-        if (__SettingsIcon_s9El.hasAttribute('size')) { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
+        if (__m[4] ??= __SettingsIcon_s9El.hasAttribute('size')) { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
       }
       __l[4] = __x }
       { const __x = (_p.className ?? '')
@@ -2957,7 +2957,7 @@ export function initIcon(__scope, _p = {}) {
     if (__GlobeIcon_s8El) {
       { const __x = (_p.size ?? 'md')
       if (!(6 in __l) || !Object.is(__l[6], __x)) {
-        if (__GlobeIcon_s8El.hasAttribute('size')) { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
+        if (__m[6] ??= __GlobeIcon_s8El.hasAttribute('size')) { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
       }
       __l[6] = __x }
       { const __x = (_p.className ?? '')
@@ -2970,7 +2970,7 @@ export function initIcon(__scope, _p = {}) {
     if (__LogOutIcon_s7El) {
       { const __x = (_p.size ?? 'md')
       if (!(8 in __l) || !Object.is(__l[8], __x)) {
-        if (__LogOutIcon_s7El.hasAttribute('size')) { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
+        if (__m[8] ??= __LogOutIcon_s7El.hasAttribute('size')) { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
       }
       __l[8] = __x }
       { const __x = (_p.className ?? '')
@@ -2983,7 +2983,7 @@ export function initIcon(__scope, _p = {}) {
     if (__CircleHelpIcon_s6El) {
       { const __x = (_p.size ?? 'md')
       if (!(10 in __l) || !Object.is(__l[10], __x)) {
-        if (__CircleHelpIcon_s6El.hasAttribute('size')) { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
+        if (__m[10] ??= __CircleHelpIcon_s6El.hasAttribute('size')) { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
       }
       __l[10] = __x }
       { const __x = (_p.className ?? '')
@@ -2996,7 +2996,7 @@ export function initIcon(__scope, _p = {}) {
     if (__CalendarIcon_s5El) {
       { const __x = (_p.size ?? 'md')
       if (!(12 in __l) || !Object.is(__l[12], __x)) {
-        if (__CalendarIcon_s5El.hasAttribute('size')) { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
+        if (__m[12] ??= __CalendarIcon_s5El.hasAttribute('size')) { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
       }
       __l[12] = __x }
       { const __x = (_p.className ?? '')
@@ -3009,7 +3009,7 @@ export function initIcon(__scope, _p = {}) {
     if (__GripVerticalIcon_s4El) {
       { const __x = (_p.size ?? 'md')
       if (!(14 in __l) || !Object.is(__l[14], __x)) {
-        if (__GripVerticalIcon_s4El.hasAttribute('size')) { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
+        if (__m[14] ??= __GripVerticalIcon_s4El.hasAttribute('size')) { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
       }
       __l[14] = __x }
       { const __x = (_p.className ?? '')
@@ -3022,7 +3022,7 @@ export function initIcon(__scope, _p = {}) {
     if (__LoaderCircleIcon_s3El) {
       { const __x = (_p.size ?? 'md')
       if (!(16 in __l) || !Object.is(__l[16], __x)) {
-        if (__LoaderCircleIcon_s3El.hasAttribute('size')) { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
+        if (__m[16] ??= __LoaderCircleIcon_s3El.hasAttribute('size')) { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
       }
       __l[16] = __x }
       { const __x = (_p.className ?? '')
@@ -3035,7 +3035,7 @@ export function initIcon(__scope, _p = {}) {
     if (__PanelLeftIcon_s2El) {
       { const __x = (_p.size ?? 'md')
       if (!(18 in __l) || !Object.is(__l[18], __x)) {
-        if (__PanelLeftIcon_s2El.hasAttribute('size')) { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
+        if (__m[18] ??= __PanelLeftIcon_s2El.hasAttribute('size')) { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
       }
       __l[18] = __x }
       { const __x = (_p.className ?? '')
@@ -3367,13 +3367,13 @@ export function initDataTablePreviewDemo(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__DataTableColumnHeader_s1El] = $c(__scope, 's1')
     if (__DataTableColumnHeader_s1El) {
       { const __x = sortKey() === 'status' ? sortDir() : false
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__DataTableColumnHeader_s1El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s1El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s1El.removeAttribute('sorted') }
+        if (__m[0] ??= __DataTableColumnHeader_s1El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s1El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s1El.removeAttribute('sorted') }
       }
       __l[0] = __x }
     }
@@ -3381,7 +3381,7 @@ export function initDataTablePreviewDemo(__scope, _p = {}) {
     if (__DataTableColumnHeader_s4El) {
       { const __x = sortKey() === 'amount' ? sortDir() : false
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        if (__DataTableColumnHeader_s4El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s4El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s4El.removeAttribute('sorted') }
+        if (__m[1] ??= __DataTableColumnHeader_s4El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s4El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s4El.removeAttribute('sorted') }
       }
       __l[1] = __x }
     }
@@ -3509,13 +3509,13 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__DataTableColumnHeader_s1El] = $c(__scope, 's1')
     if (__DataTableColumnHeader_s1El) {
       { const __x = sortKey() === 'status' ? sortDir() : false
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__DataTableColumnHeader_s1El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s1El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s1El.removeAttribute('sorted') }
+        if (__m[0] ??= __DataTableColumnHeader_s1El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s1El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s1El.removeAttribute('sorted') }
       }
       __l[0] = __x }
     }
@@ -3523,7 +3523,7 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
     if (__DataTableColumnHeader_s4El) {
       { const __x = sortKey() === 'amount' ? sortDir() : false
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        if (__DataTableColumnHeader_s4El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s4El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s4El.removeAttribute('sorted') }
+        if (__m[1] ??= __DataTableColumnHeader_s4El.hasAttribute('sorted')) { const __v = __x; if (__v != null) __DataTableColumnHeader_s4El.setAttribute('sorted', String(__v)); else __DataTableColumnHeader_s4El.removeAttribute('sorted') }
       }
       __l[1] = __x }
     }
@@ -3531,12 +3531,12 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
     if (__DataTablePagination_s21El) {
       { const __x = page() > 0
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        if (__DataTablePagination_s21El.hasAttribute('canPrev')) { const __v = __x; if (__v != null) __DataTablePagination_s21El.setAttribute('canPrev', String(__v)); else __DataTablePagination_s21El.removeAttribute('canPrev') }
+        if (__m[2] ??= __DataTablePagination_s21El.hasAttribute('canPrev')) { const __v = __x; if (__v != null) __DataTablePagination_s21El.setAttribute('canPrev', String(__v)); else __DataTablePagination_s21El.removeAttribute('canPrev') }
       }
       __l[2] = __x }
       { const __x = page() < pageCount() - 1
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
-        if (__DataTablePagination_s21El.hasAttribute('canNext')) { const __v = __x; if (__v != null) __DataTablePagination_s21El.setAttribute('canNext', String(__v)); else __DataTablePagination_s21El.removeAttribute('canNext') }
+        if (__m[3] ??= __DataTablePagination_s21El.hasAttribute('canNext')) { const __v = __x; if (__v != null) __DataTablePagination_s21El.setAttribute('canNext', String(__v)); else __DataTablePagination_s21El.removeAttribute('canNext') }
       }
       __l[3] = __x }
     }
@@ -3724,18 +3724,18 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
   if (_s0) _s0.addEventListener('input', handleFilterInput)
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__DataTablePagination_s20El] = $c(__scope, 's20')
     if (__DataTablePagination_s20El) {
       { const __x = page() > 0
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__DataTablePagination_s20El.hasAttribute('canPrev')) { const __v = __x; if (__v != null) __DataTablePagination_s20El.setAttribute('canPrev', String(__v)); else __DataTablePagination_s20El.removeAttribute('canPrev') }
+        if (__m[0] ??= __DataTablePagination_s20El.hasAttribute('canPrev')) { const __v = __x; if (__v != null) __DataTablePagination_s20El.setAttribute('canPrev', String(__v)); else __DataTablePagination_s20El.removeAttribute('canPrev') }
       }
       __l[0] = __x }
       { const __x = page() < pageCount() - 1
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        if (__DataTablePagination_s20El.hasAttribute('canNext')) { const __v = __x; if (__v != null) __DataTablePagination_s20El.setAttribute('canNext', String(__v)); else __DataTablePagination_s20El.removeAttribute('canNext') }
+        if (__m[1] ??= __DataTablePagination_s20El.hasAttribute('canNext')) { const __v = __x; if (__v != null) __DataTablePagination_s20El.setAttribute('canNext', String(__v)); else __DataTablePagination_s20El.removeAttribute('canNext') }
       }
       __l[1] = __x }
     }
@@ -3865,7 +3865,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Checkbox_s0El] = $c(__scope, 's0')
     if (__Checkbox_s0El) {

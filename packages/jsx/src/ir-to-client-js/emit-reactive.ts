@@ -90,20 +90,28 @@ function emitChildValueMirrorStatements(target: string, expression: string): str
  * Per-kind WRITE dispatch only — an effect body must never call this
  * directly, only through `emitDedupedAttrUpdate` below (#2869).
  *
- * `mirrorPresentOnly` (child-prop-mirror-attr-ssr): true only for the two
+ * `mirrorSeed` (child-prop-mirror-attr-ssr): set only by the two
  * CHILD-ROOT MIRROR callers (`emitReactivePropBindings` /
  * `emitReactiveChildProps`) writing a parent-passed named prop onto a
  * child component's root element, never for an element's OWN attribute
- * binding. Unlike a developer-authored attribute
- * on an element the compiler controls, this mirror has no way to know
- * whether the CHILD actually renders `attrName` at all — the child may
- * consume the prop as text, a class token, or not render it anywhere,
- * in which case SSR never emits the attribute and an unconditional write
- * here would plant one hydration alone created (the exact defect
- * `child-prop-mirror-attr-ssr` tracks). Gating the generic/presence
- * branches on `target.hasAttribute` restricts the mirror to attributes
- * the child's OWN render (SSR or its own reactive/`applyRestAttrs` path)
- * already put there — never CREATING an attribute SSR wouldn't have.
+ * binding. Unlike a developer-authored attribute on an element the
+ * compiler controls, this mirror has no way to know whether the CHILD
+ * actually renders `attrName` at all — the child may consume the prop as
+ * text, a class token, or not render it anywhere, in which case SSR never
+ * emits the attribute and an unconditional write here would plant one
+ * hydration alone created (the exact defect `child-prop-mirror-attr-ssr`
+ * tracked). So the generic/presence branches gate on whether the child's
+ * OWN render (SSR markup, or the child's own template on a client mount)
+ * put the attribute there — never CREATING an attribute SSR wouldn't have.
+ *
+ * The answer is read from the DOM ONCE, on the effect's first run, and
+ * remembered in the caller's `MIRROR_SEED_STORE_DECL` slot
+ * (`__m[i] ??= target.hasAttribute(name)`), never re-read: this branch's
+ * own `removeAttribute` (value went `null`) is what would flip a live
+ * `hasAttribute` read to `false`, and a live gate would then ratchet a
+ * one-time removal into a permanent stop — a forwarded prop that goes
+ * `null` and back would never be re-applied. Seeding once keeps the
+ * decision about the CHILD, not about the mirror's own last write.
  * `class`/`value`/boolean stay ungated: `class` mirrors an established,
  * separately-relied-on forwarding convention (icon components), and
  * `value`/boolean already have their own no-SSR-fallback handling
@@ -114,7 +122,7 @@ export function emitAttrUpdate(
   attrName: string,
   expression: string,
   meta: AttrMeta,
-  mirrorPresentOnly = false,
+  mirrorSeed: MirrorSeed | null = null,
 ): string[] {
   const htmlName = toHtmlAttrName(attrName)
   if (attrName === 'dangerouslySetInnerHTML' || htmlName === 'dangerouslySetInnerHTML') {
@@ -145,9 +153,9 @@ export function emitAttrUpdate(
   if (meta.presenceOrUndefined) {
     // aria-* requires explicit "true" value per WAI-ARIA spec
     const attrVal = htmlName.startsWith('aria-') ? 'true' : ''
-    if (mirrorPresentOnly) {
+    if (mirrorSeed) {
       return [
-        `if (${target}.hasAttribute('${htmlName}')) { if (${expression}) ${target}.setAttribute('${htmlName}', '${attrVal}'); else ${target}.removeAttribute('${htmlName}') }`,
+        `if (${mirrorSeedGate(mirrorSeed, target, htmlName)}) { if (${expression}) ${target}.setAttribute('${htmlName}', '${attrVal}'); else ${target}.removeAttribute('${htmlName}') }`,
       ]
     }
     return [
@@ -155,9 +163,9 @@ export function emitAttrUpdate(
       `else ${target}.removeAttribute('${htmlName}')`,
     ]
   }
-  if (mirrorPresentOnly) {
+  if (mirrorSeed) {
     return [
-      `if (${target}.hasAttribute('${htmlName}')) { const __v = ${expression}; if (__v != null) ${target}.setAttribute('${htmlName}', String(__v)); else ${target}.removeAttribute('${htmlName}') }`,
+      `if (${mirrorSeedGate(mirrorSeed, target, htmlName)}) { const __v = ${expression}; if (__v != null) ${target}.setAttribute('${htmlName}', String(__v)); else ${target}.removeAttribute('${htmlName}') }`,
     ]
   }
   return [
@@ -178,6 +186,27 @@ export function emitAttrUpdate(
  * it (#2869).
  */
 export const DEDUP_STORE_DECL = 'const __l = []'
+
+/**
+ * Per-effect store for the child-root mirror's seeded presence answers
+ * (`emitAttrUpdate`'s `mirrorSeed`) — `const __m = []`, declared once in
+ * the block that creates the mirror effect, indexed by the prop's ordinal
+ * within that effect.
+ */
+export const MIRROR_SEED_STORE_DECL = 'const __m = []'
+
+/** Where one mirrored prop keeps its seeded "does the child render this attribute?" answer. */
+export interface MirrorSeed {
+  /** The store variable declared by `MIRROR_SEED_STORE_DECL` in the enclosing block. */
+  store: string
+  /** This prop's slot in that store — unique within the effect. */
+  index: number
+}
+
+/** The seeded gate: read `hasAttribute` on the first run only, then reuse the answer. */
+function mirrorSeedGate(seed: MirrorSeed, target: string, htmlName: string): string {
+  return `${seed.store}[${seed.index}] ??= ${target}.hasAttribute('${htmlName}')`
+}
 
 /**
  * `__l`-backed dedup test. `in` (not a truthiness check) so a legitimately
@@ -226,9 +255,9 @@ export function emitDedupedAttrUpdate(
   meta: AttrMeta,
   ordinal: number,
   guard: string | null = dedupGuard(ordinal),
-  mirrorPresentOnly = false,
+  mirrorSeed: MirrorSeed | null = null,
 ): string[] {
-  const write = emitAttrUpdate(target, attrName, '__x', meta, mirrorPresentOnly)
+  const write = emitAttrUpdate(target, attrName, '__x', meta, mirrorSeed)
   const lines = [`{ const __x = ${expression}`]
   if (guard) {
     lines.push(`if (${guard}) {`)
@@ -638,7 +667,16 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
   if (ctx.reactiveProps.length > 0) {
     lines.push('')
     lines.push(`  // Reactive prop bindings`)
+    // The generic named-prop mirror below seeds its presence answer once
+    // per prop (`emitAttrUpdate`'s `mirrorSeed`); the store is declared
+    // only when some prop takes that path, so effects made of `selected` /
+    // `value` / boolean mirrors alone keep their shape.
+    const isGenericMirror = (prop: ClientJsContext['reactiveProps'][number]): boolean =>
+      prop.propName !== 'selected' && prop.propName !== 'value' && !isBooleanAttr(prop.propName)
+    const needsSeedStore = ctx.reactiveProps.some(isGenericMirror)
+    if (needsSeedStore) lines.push(`  { ${MIRROR_SEED_STORE_DECL}`)
     lines.push(`  createEffect(() => {`)
+    let seedIndex = 0
 
     const propsBySlot = new Map<string, typeof ctx.reactiveProps>()
     for (const prop of ctx.reactiveProps) {
@@ -686,19 +724,20 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
           lines.push(`      ${ref}.${prop.propName} = !!(${value})`)
         } else {
           // Generic named-prop mirror (child-prop-mirror-attr-ssr):
-          // `mirrorPresentOnly` restricts the write to a `${prop.propName}`
+          // `mirrorSeed` restricts the write to a `${prop.propName}`
           // attribute the child's OWN render already put on `ref` — see
           // `emitAttrUpdate`'s docstring. Routed through the shared
           // dispatcher instead of a hand-rolled `setAttribute` so this and
           // `emitReactiveChildProps`'s identical generic mirror share one
           // implementation of the gate.
-          for (const stmt of emitAttrUpdate(ref, prop.propName, value, {}, true)) lines.push(`      ${stmt}`)
+          const seed: MirrorSeed = { store: '__m', index: seedIndex++ }
+          for (const stmt of emitAttrUpdate(ref, prop.propName, value, {}, seed)) lines.push(`      ${stmt}`)
         }
       }
       lines.push(`    }`)
     }
 
-    lines.push(`  }${bindingIdArg(ctx, ctx.reactiveProps[0]?.slotId)})`)
+    lines.push(`  }${bindingIdArg(ctx, ctx.reactiveProps[0]?.slotId)})${needsSeedStore ? ' }' : ''}`)
   }
 }
 
@@ -707,7 +746,7 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
   if (ctx.reactiveChildProps.length > 0) {
     lines.push('')
     lines.push(`  // Reactive child component props`)
-    lines.push(`  { ${DEDUP_STORE_DECL}`)
+    lines.push(`  { ${DEDUP_STORE_DECL}; ${MIRROR_SEED_STORE_DECL}`)
     lines.push(`  createEffect(() => {`)
 
     const propsByComponent = new Map<string, typeof ctx.reactiveChildProps>()
@@ -740,14 +779,15 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
         // of `emitAttrUpdate`'s generic (attribute-fallback) dispatch;
         // see `emitChildValueMirrorStatements`'s docstring (#2716). It has
         // its own DOM-compare and consumes no dedup ordinal (#2869).
-        // `mirrorPresentOnly: true` (child-prop-mirror-attr-ssr) — this is
-        // the CHILD-ROOT MIRROR, not an element's own attribute binding;
-        // see `emitAttrUpdate`'s docstring for why only the generic/
-        // presence branches gate on `hasAttribute` here.
+        // `mirrorSeed` (child-prop-mirror-attr-ssr) — this is the
+        // CHILD-ROOT MIRROR, not an element's own attribute binding; see
+        // `emitAttrUpdate`'s docstring for why only the generic/presence
+        // branches gate on the child's rendered attribute, seeded once.
+        // The dedup ordinal doubles as the seed slot: unique per prop here.
         const isValueMirror = toHtmlAttrName(prop.attrName) === 'value'
         const stmts = isValueMirror
           ? emitChildValueMirrorStatements(varName, prop.expression)
-          : emitDedupedAttrUpdate(varName, prop.attrName, prop.expression, prop, ordinal, dedupGuard(ordinal), true)
+          : emitDedupedAttrUpdate(varName, prop.attrName, prop.expression, prop, ordinal, dedupGuard(ordinal), { store: '__m', index: ordinal })
         if (!isValueMirror) ordinal++
         for (const stmt of stmts) {
           lines.push(`      ${stmt}`)

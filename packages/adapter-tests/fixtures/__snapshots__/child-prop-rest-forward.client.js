@@ -36,30 +36,31 @@ export function initChildPropRestForward(__scope, _p = {}) {
 
   if (_s1) _s1.addEventListener('click', () => {
           setVariant(v => (v === 'a' ? 'b' : 'a'))
-          setTag(t => (t === 'one' ? 'two' : 'one'))
+          setTag(t => (t === 'one' ? undefined : t === undefined ? 'two' : 'one'))
         })
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s0) {
-      if (_s0.hasAttribute('variant')) { const __v = variant(); if (__v != null) _s0.setAttribute('variant', String(__v)); else _s0.removeAttribute('variant') }
-      if (_s0.hasAttribute('tag')) { const __v = tag(); if (__v != null) _s0.setAttribute('tag', String(__v)); else _s0.removeAttribute('tag') }
+      if (__m[0] ??= _s0.hasAttribute('variant')) { const __v = variant(); if (__v != null) _s0.setAttribute('variant', String(__v)); else _s0.removeAttribute('variant') }
+      if (__m[1] ??= _s0.hasAttribute('tag')) { const __v = tag(); if (__v != null) _s0.setAttribute('tag', String(__v)); else _s0.removeAttribute('tag') }
     }
-  })
+  }) }
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__RestForwardTag_s0El] = $c(__scope, 's0')
     if (__RestForwardTag_s0El) {
       { const __x = variant()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__RestForwardTag_s0El.hasAttribute('variant')) { const __v = __x; if (__v != null) __RestForwardTag_s0El.setAttribute('variant', String(__v)); else __RestForwardTag_s0El.removeAttribute('variant') }
+        if (__m[0] ??= __RestForwardTag_s0El.hasAttribute('variant')) { const __v = __x; if (__v != null) __RestForwardTag_s0El.setAttribute('variant', String(__v)); else __RestForwardTag_s0El.removeAttribute('variant') }
       }
       __l[0] = __x }
       { const __x = tag()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        if (__RestForwardTag_s0El.hasAttribute('tag')) { const __v = __x; if (__v != null) __RestForwardTag_s0El.setAttribute('tag', String(__v)); else __RestForwardTag_s0El.removeAttribute('tag') }
+        if (__m[1] ??= __RestForwardTag_s0El.hasAttribute('tag')) { const __v = __x; if (__v != null) __RestForwardTag_s0El.setAttribute('tag', String(__v)); else __RestForwardTag_s0El.removeAttribute('tag') }
       }
       __l[1] = __x }
     }

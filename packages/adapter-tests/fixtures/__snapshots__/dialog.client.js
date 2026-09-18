@@ -412,7 +412,7 @@ export function initDialogBasicDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {
@@ -495,7 +495,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Dialog_s10El] = $c(__scope, 's10')
     if (__Dialog_s10El) {
@@ -570,7 +570,7 @@ export function initDialogLongContentDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {

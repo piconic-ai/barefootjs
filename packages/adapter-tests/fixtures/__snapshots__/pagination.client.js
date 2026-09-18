@@ -2712,13 +2712,13 @@ export function initIcon(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__GitHubIcon_s11El] = $c(__scope, 's11')
     if (__GitHubIcon_s11El) {
       { const __x = (_p.size ?? 'md')
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__GitHubIcon_s11El.hasAttribute('size')) { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
+        if (__m[0] ??= __GitHubIcon_s11El.hasAttribute('size')) { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
       }
       __l[0] = __x }
       { const __x = (_p.className ?? '')
@@ -2731,7 +2731,7 @@ export function initIcon(__scope, _p = {}) {
     if (__SearchIcon_s10El) {
       { const __x = (_p.size ?? 'md')
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        if (__SearchIcon_s10El.hasAttribute('size')) { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
+        if (__m[2] ??= __SearchIcon_s10El.hasAttribute('size')) { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
       }
       __l[2] = __x }
       { const __x = (_p.className ?? '')
@@ -2744,7 +2744,7 @@ export function initIcon(__scope, _p = {}) {
     if (__SettingsIcon_s9El) {
       { const __x = (_p.size ?? 'md')
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
-        if (__SettingsIcon_s9El.hasAttribute('size')) { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
+        if (__m[4] ??= __SettingsIcon_s9El.hasAttribute('size')) { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
       }
       __l[4] = __x }
       { const __x = (_p.className ?? '')
@@ -2757,7 +2757,7 @@ export function initIcon(__scope, _p = {}) {
     if (__GlobeIcon_s8El) {
       { const __x = (_p.size ?? 'md')
       if (!(6 in __l) || !Object.is(__l[6], __x)) {
-        if (__GlobeIcon_s8El.hasAttribute('size')) { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
+        if (__m[6] ??= __GlobeIcon_s8El.hasAttribute('size')) { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
       }
       __l[6] = __x }
       { const __x = (_p.className ?? '')
@@ -2770,7 +2770,7 @@ export function initIcon(__scope, _p = {}) {
     if (__LogOutIcon_s7El) {
       { const __x = (_p.size ?? 'md')
       if (!(8 in __l) || !Object.is(__l[8], __x)) {
-        if (__LogOutIcon_s7El.hasAttribute('size')) { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
+        if (__m[8] ??= __LogOutIcon_s7El.hasAttribute('size')) { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
       }
       __l[8] = __x }
       { const __x = (_p.className ?? '')
@@ -2783,7 +2783,7 @@ export function initIcon(__scope, _p = {}) {
     if (__CircleHelpIcon_s6El) {
       { const __x = (_p.size ?? 'md')
       if (!(10 in __l) || !Object.is(__l[10], __x)) {
-        if (__CircleHelpIcon_s6El.hasAttribute('size')) { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
+        if (__m[10] ??= __CircleHelpIcon_s6El.hasAttribute('size')) { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
       }
       __l[10] = __x }
       { const __x = (_p.className ?? '')
@@ -2796,7 +2796,7 @@ export function initIcon(__scope, _p = {}) {
     if (__CalendarIcon_s5El) {
       { const __x = (_p.size ?? 'md')
       if (!(12 in __l) || !Object.is(__l[12], __x)) {
-        if (__CalendarIcon_s5El.hasAttribute('size')) { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
+        if (__m[12] ??= __CalendarIcon_s5El.hasAttribute('size')) { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
       }
       __l[12] = __x }
       { const __x = (_p.className ?? '')
@@ -2809,7 +2809,7 @@ export function initIcon(__scope, _p = {}) {
     if (__GripVerticalIcon_s4El) {
       { const __x = (_p.size ?? 'md')
       if (!(14 in __l) || !Object.is(__l[14], __x)) {
-        if (__GripVerticalIcon_s4El.hasAttribute('size')) { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
+        if (__m[14] ??= __GripVerticalIcon_s4El.hasAttribute('size')) { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
       }
       __l[14] = __x }
       { const __x = (_p.className ?? '')
@@ -2822,7 +2822,7 @@ export function initIcon(__scope, _p = {}) {
     if (__LoaderCircleIcon_s3El) {
       { const __x = (_p.size ?? 'md')
       if (!(16 in __l) || !Object.is(__l[16], __x)) {
-        if (__LoaderCircleIcon_s3El.hasAttribute('size')) { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
+        if (__m[16] ??= __LoaderCircleIcon_s3El.hasAttribute('size')) { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
       }
       __l[16] = __x }
       { const __x = (_p.className ?? '')
@@ -2835,7 +2835,7 @@ export function initIcon(__scope, _p = {}) {
     if (__PanelLeftIcon_s2El) {
       { const __x = (_p.size ?? 'md')
       if (!(18 in __l) || !Object.is(__l[18], __x)) {
-        if (__PanelLeftIcon_s2El.hasAttribute('size')) { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
+        if (__m[18] ??= __PanelLeftIcon_s2El.hasAttribute('size')) { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
       }
       __l[18] = __x }
       { const __x = (_p.className ?? '')
@@ -3183,13 +3183,13 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__PaginationLink_s2El] = $c(__scope, 's2')
     if (__PaginationLink_s2El) {
       { const __x = currentPage() === 1
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__PaginationLink_s2El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s2El.setAttribute('isActive', String(__v)); else __PaginationLink_s2El.removeAttribute('isActive') }
+        if (__m[0] ??= __PaginationLink_s2El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s2El.setAttribute('isActive', String(__v)); else __PaginationLink_s2El.removeAttribute('isActive') }
       }
       __l[0] = __x }
     }
@@ -3197,7 +3197,7 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
     if (__PaginationLink_s4El) {
       { const __x = currentPage() === 2
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        if (__PaginationLink_s4El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s4El.setAttribute('isActive', String(__v)); else __PaginationLink_s4El.removeAttribute('isActive') }
+        if (__m[1] ??= __PaginationLink_s4El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s4El.setAttribute('isActive', String(__v)); else __PaginationLink_s4El.removeAttribute('isActive') }
       }
       __l[1] = __x }
     }
@@ -3205,7 +3205,7 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
     if (__PaginationLink_s6El) {
       { const __x = currentPage() === 3
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        if (__PaginationLink_s6El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s6El.setAttribute('isActive', String(__v)); else __PaginationLink_s6El.removeAttribute('isActive') }
+        if (__m[2] ??= __PaginationLink_s6El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s6El.setAttribute('isActive', String(__v)); else __PaginationLink_s6El.removeAttribute('isActive') }
       }
       __l[2] = __x }
     }
@@ -3213,7 +3213,7 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
     if (__PaginationLink_s8El) {
       { const __x = currentPage() === 4
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
-        if (__PaginationLink_s8El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s8El.setAttribute('isActive', String(__v)); else __PaginationLink_s8El.removeAttribute('isActive') }
+        if (__m[3] ??= __PaginationLink_s8El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s8El.setAttribute('isActive', String(__v)); else __PaginationLink_s8El.removeAttribute('isActive') }
       }
       __l[3] = __x }
     }
@@ -3221,7 +3221,7 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
     if (__PaginationLink_s10El) {
       { const __x = currentPage() === 5
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
-        if (__PaginationLink_s10El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s10El.setAttribute('isActive', String(__v)); else __PaginationLink_s10El.removeAttribute('isActive') }
+        if (__m[4] ??= __PaginationLink_s10El.hasAttribute('isActive')) { const __v = __x; if (__v != null) __PaginationLink_s10El.setAttribute('isActive', String(__v)); else __PaginationLink_s10El.removeAttribute('isActive') }
       }
       __l[4] = __x }
     }

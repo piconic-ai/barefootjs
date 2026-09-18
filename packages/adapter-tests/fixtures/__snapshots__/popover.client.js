@@ -257,7 +257,7 @@ export function initPopoverPreviewDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     if (__scope) {
       { const __x = open()
@@ -293,7 +293,7 @@ export function initPopoverBasicDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     if (__scope) {
       { const __x = open()
@@ -349,7 +349,7 @@ export function initPopoverFormDemo(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     if (__scope) {
       { const __x = open()

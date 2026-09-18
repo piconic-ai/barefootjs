@@ -14,7 +14,7 @@ export function initSlot(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Tag_s0El] = $c(__scope, 's0')
     if (__Tag_s0El) {
@@ -56,7 +56,7 @@ export function initKbd(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
@@ -98,7 +98,7 @@ export function initKbdGroup(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Slot_s1El] = $c(__scope, 's1')
     if (__Slot_s1El) {
