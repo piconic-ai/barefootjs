@@ -657,6 +657,7 @@ import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
 // across hydration (placeholder selected → nothing selected); browser-oracle
 // twin of `select-value-no-match-ssr`.
 import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
+import { fixture as signalOptionalInit } from './signal-optional-init'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
@@ -1148,6 +1149,7 @@ export const jsxFixtures: JSXFixture[] = [
   aliasedLoopSource,
   keyedLoopIndexReorder,
   selectOutOfRangeHydration,
+  signalOptionalInit,
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,

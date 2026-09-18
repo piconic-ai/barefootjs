@@ -74,6 +74,11 @@ export const renderDivergences: RenderDivergences = {
   // sibling route (`queueDynamicPropDefine` → `bf_with_bag`) is not wired
   // for loop rows yet.
   'composite-row-child-rest-bag-prop': { limitation: 'loop-row-rest-bag-prop-override' },
+  // A signal declared as `createSignal<string | undefined>('one')` gets its
+  // Props field typed from the union (`interface{}`) and seeded with `nil`
+  // rather than the literal `'one'`, so `title="{{.Label}}"` and
+  // `{{.Label}}` render empty where the reference renders `one`.
+  'signal-optional-init': { limitation: 'optional-typed-signal-initial-value-dropped' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
