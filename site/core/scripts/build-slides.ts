@@ -10,9 +10,9 @@
  *   slides/<slug>/slide.json       optional — { "title": "..." } for the page <title>
  *   slides/<slug>/assets/          optional — media copied verbatim into the output's assets/
  *                                  (*.md files such as SOURCES.md are skipped)
- *   slides/<slug>/component/       optional — a Vite project (barefoot() + CSRAdapter) whose
- *                                  non-component entries are bundled into assets/deck.js and
- *                                  injected into index.html
+ *   slides/<slug>/component/       optional — a Vite project (barefoot() + CSRAdapter) built
+ *                                  into the deck's own assets/ as mount.js + narration.js,
+ *                                  which index.html loads (layouts load mount.js themselves)
  *
  * The output (public/slides/<slug>/) is gitignored and rebuilt by `bun run build` (see
  * build.ts), which invokes `--all` as its first step. deploy.yml and ci-slides.yml install a
@@ -57,8 +57,25 @@ function buildDeck(slug: string): void {
   // 1. peitho: viewer + slides + css (rewrites index.html from scratch every time)
   run([PEITHO, 'build', 'deck.md', '--out', out], src)
 
-  // 2. media assets
+  // 2. interactive components → the deck's own assets/. vite.config.ts pins the entry names,
+  //    so vite's output is usable as-is (no re-bundling step to get a stable path). It lands
+  //    in the deck's *source* assets/ rather than only in the output because the layouts load
+  //    it as `assets/mount.js` — that is also how `peitho present` and peitho-studio reach it,
+  //    neither having a head-injection step of its own. Step 3 carries it into the output.
   const assetsSrc = join(src, 'assets')
+  const componentDir = join(src, 'component')
+  const hasComponents = existsSync(join(componentDir, 'package.json'))
+  if (hasComponents) {
+    run(['bunx', 'vite', 'build'], componentDir)
+    const componentDist = join(componentDir, 'dist')
+    mkdirSync(assetsSrc, { recursive: true })
+    for (const name of readdirSync(componentDist)) {
+      if (name === '.vite' || name === 'templates') continue
+      cpSync(join(componentDist, name), join(assetsSrc, name), { recursive: true })
+    }
+  }
+
+  // 3. assets/ → the output's assets/: the deck's media plus whatever step 2 built
   const assetsOut = join(out, 'assets')
   mkdirSync(assetsOut, { recursive: true })
   if (existsSync(assetsSrc)) {
@@ -68,27 +85,16 @@ function buildDeck(slug: string): void {
     }
   }
 
-  // 3. interactive components → assets/deck.js
+  // 4. index.html: the deck's scripts, and the page title (peitho writes "Peitho Deck").
+  //    narration.js is loaded here and nowhere else — it injects page-wide chrome into
+  //    document.body unconditionally, which is right only for the distribution viewer.
   let indexHtml = readFileSync(join(out, 'index.html'), 'utf8')
-  const componentDir = join(src, 'component')
-  if (existsSync(join(componentDir, 'package.json'))) {
-    run(['bunx', 'vite', 'build'], componentDir)
-    const manifest = JSON.parse(readFileSync(join(componentDir, 'dist', '.vite', 'manifest.json'), 'utf8')) as Record<string, { file: string; isEntry?: boolean }>
-    // The barefoot() plugin adds one entry per component; the deck's own entries (mount, chrome)
-    // import those, so only non-component entries are bundled. One entry → one runtime instance.
-    const entries = Object.entries(manifest)
-      .filter(([key, v]) => v.isEntry && !key.startsWith('components/'))
-      .map(([, v]) => `import './${v.file}'`)
-    if (entries.length === 0) {
-      console.error(`✗ slides/${slug}/component: no non-component entry in vite manifest`)
-      process.exit(1)
-    }
-    writeFileSync(join(componentDir, 'dist', 'entry.js'), entries.join('\n') + '\n')
-    run(['bun', 'build', 'dist/entry.js', '--bundle', '--format=esm', '--minify', `--outfile=${join(assetsOut, 'deck.js')}`], componentDir)
-    indexHtml = indexHtml.replace('<head>', '<head>\n  <script type="module" src="assets/deck.js"></script>')
+  if (hasComponents) {
+    indexHtml = indexHtml.replace(
+      '<head>',
+      '<head>\n  <script type="module" src="assets/mount.js"></script>\n  <script type="module" src="assets/narration.js"></script>'
+    )
   }
-
-  // 4. page title (peitho writes "Peitho Deck")
   const metaPath = join(src, 'slide.json')
   if (existsSync(metaPath)) {
     const meta = JSON.parse(readFileSync(metaPath, 'utf8')) as { title?: string }
