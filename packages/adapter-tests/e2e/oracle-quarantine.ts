@@ -95,6 +95,17 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Hydration never claims the fragment-wrapped branch root (no bf-s, events unbound); csr-mount renders it with its scope id.',
     limitation: 'fragment-wrapped-conditional-return-branch-scope',
   },
+  // #2852 (fixing #2758) made SSR select a hidden placeholder for an
+  // out-of-range controlled select instead of the browser's first-option
+  // default; the surviving half is the live state — placeholder selected
+  // (`selectedIndex` 0) on the server, nothing selected (-1) once the
+  // hydration effect assigns the out-of-range value. Both read as blank.
+  'select-out-of-range-hydration': {
+    oracles: ['snap', 'three-point'],
+    reason:
+      'SSR has the placeholder option selected (selectedIndex 0); the hydration controlled-value effect assigns the out-of-range value and the browser resolves it to selectedIndex -1.',
+    limitation: 'select-out-of-range-selected-index',
+  },
   'branch-root-prop-attr': {
     oracles: ['snap', 'three-point'],
     reason:

@@ -653,6 +653,10 @@ import { fixture as aliasedLoopSource } from './aliased-loop-source'
 // the row's own index — a same-key reorder must update both to the row's
 // CURRENT position, not the position it was created at.
 import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
+// #2758 residue: an out-of-range controlled select's live selection differs
+// across hydration (placeholder selected → nothing selected); browser-oracle
+// twin of `select-value-no-match-ssr`.
+import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
@@ -1143,6 +1147,7 @@ export const jsxFixtures: JSXFixture[] = [
   statelessRestSpreadForward,
   aliasedLoopSource,
   keyedLoopIndexReorder,
+  selectOutOfRangeHydration,
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,
