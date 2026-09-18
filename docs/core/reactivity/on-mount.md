@@ -59,6 +59,8 @@ onMount(() => {
 
 `onMount` is equivalent to `createEffect(() => untrack(fn))`. The function runs inside an effect context (so `onCleanup` works), but `untrack` prevents dependency tracking.
 
+Because it is an effect, it runs synchronously during hydration, before any user interaction. A signal written from `onMount` therefore changes the server-rendered DOM as soon as the component hydrates — the server can only bake a signal's declared initial value. That is the intended use (the "Browser state" pattern above reads `window.location`, which the server does not have), but if the value is knowable up front, seed the signal with it instead. See [Effects Run During Hydration](./create-effect.md#effects-run-during-hydration).
+
 
 ## `onMount` vs `createEffect`
 
