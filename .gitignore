@@ -133,5 +133,8 @@ benchmarks/ssr/apps/*/.build-temp/
 
 # peitho slide decks: built at deploy time from site/core/slides/<slug>/ (deploy.yml)
 site/core/public/slides/
+# A deck's component/ build output is copied next to its media (build-slides.ts step 2) so that
+# the layouts' `assets/mount.js` resolves under `peitho present` / peitho-studio too.
+site/core/slides/*/assets/*.js
 
 **/.peitho/

@@ -35,7 +35,7 @@ server.use('/static/*', serveStatic({
 }))
 
 // Each deck's index.html links its own assets with relative paths
-// (peitho.css, assets/deck.js), which only resolve correctly when the
+// (peitho.css, assets/mount.js), which only resolve correctly when the
 // browser's URL ends in a slash. Production's Cloudflare Workers Assets
 // auto-redirects a trailing-slash-less directory request before serving its
 // index.html; hono/bun's serveStatic below does not (it 200s /slides/<slug>
