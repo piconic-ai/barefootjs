@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 431,
+    "totalFixtures": 432,
     "fixtures": {
       "composite-row-child-rest-bag-prop": {
         "go-template": {
@@ -3872,6 +3872,14 @@
           ]
         }
       },
+      "nested-prop-object-array-with-component": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nested-prop-object-array-child-component-go"
+          ]
+        }
+      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -4972,6 +4980,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "nested-prop-object-array-with-component": {
+        "description": "#3044: a nested array on a destructured object prop, mapped to a child component — renders…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-object-array-with-component.ts"
+      },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/preamble-cells.ts"
@@ -5371,6 +5383,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "nested-prop-object-array-child-component-go": {
+      "title": "Child-component loop over a nested array on a destructured object prop renders empty on Go",
+      "kind": "silent",
+      "given": "a `.map()` over a nested array property of a destructured OBJECT-shaped prop (`data.entries.map(entry => <Tag .../>)`, where `data` — not `entries` — is the prop), body a child component",
+      "expected": "the child component renders once per array entry, same as Hono/CSR",
+      "actual": "renders the parent element with no child rows at all",
+      "fixtures": [
+        "nested-prop-object-array-with-component"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "off-subset-callback-body": {
