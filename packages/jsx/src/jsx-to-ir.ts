@@ -8039,9 +8039,22 @@ function checkBareSignalOrMemoIdentifier(
  *     `const toggleItems__alias = toggleItems`, any number of hops, `const`
  *     or `let`, #2724 — see `propAliasHopCandidates`'s docstring for why
  *     `let` stays eligible)
- * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`),
- *     OR one whose object reaches the props object through the same kind of
- *     alias-hop chain as (a) (e.g. `const p = props; p.items`, #2724 review)
+ * (b) A PropertyAccessExpression whose ROOT object (walking through any
+ *     number of chained `.foo` accesses, e.g. `props.data.items` or
+ *     `data.items`) is either the whole props object (e.g. `props.items`)
+ *     OR itself a destructured prop binding (e.g. `data.items` where `data`
+ *     is a destructured OBJECT-shaped prop, #3044) — OR reaches either of
+ *     those through the same kind of alias-hop chain as (a) (e.g.
+ *     `const p = props; p.items`, #2724 review)
+ *
+ * (b) covers a REACTIVE PROP whose value is itself an object: the prop
+ * identifier (`data`) is bound to a fresh object on every parent re-render,
+ * so a `.map()` over one of its own properties (`data.items`) needs the same
+ * `mapArray` reconciliation as a top-level array prop — before #3044 this
+ * shape (destructured OBJECT prop + nested member access, as opposed to
+ * `props.items`'s single member access off the WHOLE props object) fell
+ * through both (a) and (b) and silently stayed on the static SSR-row-bind
+ * path, so a parent's array-from-empty update never reached the child.
  *
  * Unlike the regex-based `isPropsReference`, this avoids false positives from
  * unrelated identifiers that happen to share a prop name (e.g. `state.items`
@@ -8071,10 +8084,14 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
     return resolveAliasOrigin(propAliasHopCandidates(ctx), arrayExpr.text, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
   }
 
-  if (ts.isPropertyAccessExpression(arrayExpr) && propsObjName) {
-    const obj = arrayExpr.expression
-    if (ts.isIdentifier(obj)) {
-      return resolveAliasOrigin(propAliasHopCandidates(ctx), obj.text, name => (name === propsObjName ? true : null)) === true
+  if (ts.isPropertyAccessExpression(arrayExpr)) {
+    let root: ts.Expression = arrayExpr.expression
+    while (ts.isPropertyAccessExpression(root)) root = root.expression
+    if (ts.isIdentifier(root)) {
+      return resolveAliasOrigin(propAliasHopCandidates(ctx), root.text, name => {
+        if (propsObjName && name === propsObjName) return true
+        return isDirectPropBindingName(name, ctx) ? true : null
+      }) === true
     }
   }
 
