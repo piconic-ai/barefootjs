@@ -4353,6 +4353,23 @@
         "text"
       ]
     },
+    "nested-prop-object-array-with-component": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-ternary": {
       "kinds": [
         "binary",
@@ -6943,14 +6960,14 @@
     "array-literal": 119,
     "array-method": 72,
     "arrow": 76,
-    "binary": 107,
+    "binary": 108,
     "call": 288,
     "conditional": 33,
-    "identifier": 409,
+    "identifier": 410,
     "index-access": 14,
-    "literal": 324,
+    "literal": 325,
     "logical": 52,
-    "member": 242,
+    "member": 243,
     "object-literal": 95,
     "template-literal": 31,
     "unary": 29,
@@ -6985,7 +7002,7 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 14,
-    "binary:+": 25,
+    "binary:+": 26,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
@@ -6995,7 +7012,7 @@
     "literal:boolean": 71,
     "literal:null": 26,
     "literal:number": 150,
-    "literal:string": 218,
+    "literal:string": 219,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 16,
