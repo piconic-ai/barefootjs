@@ -4255,7 +4255,7 @@ export function initProductPage(__scope, _p = {}) {
     if (__ReviewStars_s5El) {
       { const __x = (_p.product ?? {}).rating
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
+        if (__ReviewStars_s5El.hasAttribute('rating')) { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
       }
       __l[0] = __x }
     }
@@ -4263,7 +4263,7 @@ export function initProductPage(__scope, _p = {}) {
     if (__AddToCart_s6El) {
       { const __x = (_p.product ?? {}).id
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
+        if (__AddToCart_s6El.hasAttribute('productId')) { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
       }
       __l[1] = __x }
     }

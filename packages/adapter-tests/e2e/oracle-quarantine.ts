@@ -106,41 +106,29 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'SSR has the placeholder option selected (selectedIndex 0); the hydration controlled-value effect assigns the out-of-range value and the browser resolves it to selectedIndex -1.',
     limitation: 'select-out-of-range-selected-index',
   },
-  'branch-root-prop-attr': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
-  },
   // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the
   // pair bimodal on the `combobox-empty` row's `hidden` attribute — the
   // same rAF-deferred write as `command` (#2827), fixed the same way. The
-  // remaining oracles are the #2715 placeholder mirror.
+  // remaining oracles are the `ComboboxValue`/`SelectValue` `ref` effect
+  // that imperatively (re-)applies `data-placeholder` on hydrate —
+  // originally miscategorized here as an instance of the compiler's
+  // named-prop child-root mirror (`child-prop-mirror-attr-ssr`, #3055);
+  // re-pointed to `combobox-select-placeholder-ref-effect-ssr` once #3055
+  // fixed the mirror and this row was the sole survivor, still failing for
+  // the unrelated hand-written-effect reason.
   combobox: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
+      'The ComboboxValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it.',
+    limitation: 'combobox-select-placeholder-ref-effect-ssr',
   },
   select: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it (same shape as combobox).',
-    limitation: 'child-prop-mirror-attr-ssr',
-  },
-  pagination: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The mirrored isactive="true" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
-  },
-  'data-table': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The mirrored sorted="false" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
+      'The SelectValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it (same shape as combobox).',
+    limitation: 'combobox-select-placeholder-ref-effect-ssr',
   },
   // Portal-origin marker (`bf-po`) present in the SSR placeholder, gone
   // after hydration moves the portaled content to its real destination —

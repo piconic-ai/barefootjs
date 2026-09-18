@@ -89,8 +89,33 @@ function emitChildValueMirrorStatements(target: string, expression: string): str
  *
  * Per-kind WRITE dispatch only — an effect body must never call this
  * directly, only through `emitDedupedAttrUpdate` below (#2869).
+ *
+ * `mirrorPresentOnly` (child-prop-mirror-attr-ssr): true only for the two
+ * CHILD-ROOT MIRROR callers (`emitReactivePropBindings` /
+ * `emitReactiveChildProps`) writing a parent-passed named prop onto a
+ * child component's root element, never for an element's OWN attribute
+ * binding. Unlike a developer-authored attribute
+ * on an element the compiler controls, this mirror has no way to know
+ * whether the CHILD actually renders `attrName` at all — the child may
+ * consume the prop as text, a class token, or not render it anywhere,
+ * in which case SSR never emits the attribute and an unconditional write
+ * here would plant one hydration alone created (the exact defect
+ * `child-prop-mirror-attr-ssr` tracks). Gating the generic/presence
+ * branches on `target.hasAttribute` restricts the mirror to attributes
+ * the child's OWN render (SSR or its own reactive/`applyRestAttrs` path)
+ * already put there — never CREATING an attribute SSR wouldn't have.
+ * `class`/`value`/boolean stay ungated: `class` mirrors an established,
+ * separately-relied-on forwarding convention (icon components), and
+ * `value`/boolean already have their own no-SSR-fallback handling
+ * (`emitChildValueMirrorStatements`, #2716) this flag doesn't touch.
  */
-export function emitAttrUpdate(target: string, attrName: string, expression: string, meta: AttrMeta): string[] {
+export function emitAttrUpdate(
+  target: string,
+  attrName: string,
+  expression: string,
+  meta: AttrMeta,
+  mirrorPresentOnly = false,
+): string[] {
   const htmlName = toHtmlAttrName(attrName)
   if (attrName === 'dangerouslySetInnerHTML' || htmlName === 'dangerouslySetInnerHTML') {
     // `{ __html }` is not an attribute — it replaces the element's content.
@@ -120,9 +145,19 @@ export function emitAttrUpdate(target: string, attrName: string, expression: str
   if (meta.presenceOrUndefined) {
     // aria-* requires explicit "true" value per WAI-ARIA spec
     const attrVal = htmlName.startsWith('aria-') ? 'true' : ''
+    if (mirrorPresentOnly) {
+      return [
+        `if (${target}.hasAttribute('${htmlName}')) { if (${expression}) ${target}.setAttribute('${htmlName}', '${attrVal}'); else ${target}.removeAttribute('${htmlName}') }`,
+      ]
+    }
     return [
       `if (${expression}) ${target}.setAttribute('${htmlName}', '${attrVal}')`,
       `else ${target}.removeAttribute('${htmlName}')`,
+    ]
+  }
+  if (mirrorPresentOnly) {
+    return [
+      `if (${target}.hasAttribute('${htmlName}')) { const __v = ${expression}; if (__v != null) ${target}.setAttribute('${htmlName}', String(__v)); else ${target}.removeAttribute('${htmlName}') }`,
     ]
   }
   return [
@@ -191,8 +226,9 @@ export function emitDedupedAttrUpdate(
   meta: AttrMeta,
   ordinal: number,
   guard: string | null = dedupGuard(ordinal),
+  mirrorPresentOnly = false,
 ): string[] {
-  const write = emitAttrUpdate(target, attrName, '__x', meta)
+  const write = emitAttrUpdate(target, attrName, '__x', meta, mirrorPresentOnly)
   const lines = [`{ const __x = ${expression}`]
   if (guard) {
     lines.push(`if (${guard}) {`)
@@ -649,7 +685,14 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
         } else if (isBooleanAttr(prop.propName)) {
           lines.push(`      ${ref}.${prop.propName} = !!(${value})`)
         } else {
-          lines.push(`      ${ref}.setAttribute('${prop.propName}', String(${value}))`)
+          // Generic named-prop mirror (child-prop-mirror-attr-ssr):
+          // `mirrorPresentOnly` restricts the write to a `${prop.propName}`
+          // attribute the child's OWN render already put on `ref` — see
+          // `emitAttrUpdate`'s docstring. Routed through the shared
+          // dispatcher instead of a hand-rolled `setAttribute` so this and
+          // `emitReactiveChildProps`'s identical generic mirror share one
+          // implementation of the gate.
+          for (const stmt of emitAttrUpdate(ref, prop.propName, value, {}, true)) lines.push(`      ${stmt}`)
         }
       }
       lines.push(`    }`)
@@ -697,9 +740,15 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
         // of `emitAttrUpdate`'s generic (attribute-fallback) dispatch;
         // see `emitChildValueMirrorStatements`'s docstring (#2716). It has
         // its own DOM-compare and consumes no dedup ordinal (#2869).
-        const stmts = toHtmlAttrName(prop.attrName) === 'value'
+        // `mirrorPresentOnly: true` (child-prop-mirror-attr-ssr) — this is
+        // the CHILD-ROOT MIRROR, not an element's own attribute binding;
+        // see `emitAttrUpdate`'s docstring for why only the generic/
+        // presence branches gate on `hasAttribute` here.
+        const isValueMirror = toHtmlAttrName(prop.attrName) === 'value'
+        const stmts = isValueMirror
           ? emitChildValueMirrorStatements(varName, prop.expression)
-          : emitDedupedAttrUpdate(varName, prop.attrName, prop.expression, prop, ordinal++)
+          : emitDedupedAttrUpdate(varName, prop.attrName, prop.expression, prop, ordinal, dedupGuard(ordinal), true)
+        if (!isValueMirror) ordinal++
         for (const stmt of stmts) {
           lines.push(`      ${stmt}`)
         }

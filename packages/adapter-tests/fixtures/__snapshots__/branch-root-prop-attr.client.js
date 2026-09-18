@@ -49,7 +49,7 @@ export function initBranchRootPropAttr(__scope, _p = {}) {
   // Reactive prop bindings
   createEffect(() => {
     if (_s0) {
-      _s0.setAttribute('variant', String(variant()))
+      if (_s0.hasAttribute('variant')) { const __v = variant(); if (__v != null) _s0.setAttribute('variant', String(__v)); else _s0.removeAttribute('variant') }
     }
   })
 
@@ -60,7 +60,7 @@ export function initBranchRootPropAttr(__scope, _p = {}) {
     if (__VariantTag_s0El) {
       { const __x = variant()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __VariantTag_s0El.setAttribute('variant', String(__v)); else __VariantTag_s0El.removeAttribute('variant') }
+        if (__VariantTag_s0El.hasAttribute('variant')) { const __v = __x; if (__v != null) __VariantTag_s0El.setAttribute('variant', String(__v)); else __VariantTag_s0El.removeAttribute('variant') }
       }
       __l[0] = __x }
     }

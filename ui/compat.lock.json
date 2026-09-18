@@ -5171,21 +5171,6 @@
         "BF101"
       ]
     },
-    "child-prop-mirror-attr-ssr": {
-      "title": "Mirrored child-prop attribute appears only after hydration",
-      "kind": "silent",
-      "given": "a non-standard named prop passed to a child component call (`<VariantTag variant={variant()} />`) that the compiler mirrors onto the child root as a DOM attribute",
-      "expected": "the server HTML and the hydrated DOM carry the same attributes on the child root",
-      "actual": "renders the child root without the attribute in the server HTML; the hydration effect then adds it, so pre- and post-hydration DOM differ",
-      "fixtures": [
-        "branch-root-prop-attr",
-        "combobox",
-        "data-table",
-        "pagination",
-        "select"
-      ],
-      "adapters": []
-    },
     "client-only-loop-in-static-loop": {
       "title": "Client-only nested loop inside a static loop row",
       "kind": "refusal",
@@ -5201,6 +5186,18 @@
       "diagnostics": [
         "BF101"
       ]
+    },
+    "combobox-select-placeholder-ref-effect-ssr": {
+      "title": "Combobox/Select placeholder styling attribute appears only after hydration",
+      "kind": "silent",
+      "given": "a `ComboboxValue`/`SelectValue` whose `ref` callback runs a `createEffect` that imperatively calls `trigger.setAttribute('data-placeholder', '')` on its trigger ancestor whenever no value is selected — an application-level DOM-query effect, not a compiler-generated binding",
+      "expected": "the server HTML and the hydrated DOM carry the same `data-placeholder` presence on the trigger",
+      "actual": "renders the trigger without `data-placeholder` in the server HTML; the ref effect runs once on hydrate and unconditionally adds it whenever no value is selected, so pre- and post-hydration DOM differ",
+      "fixtures": [
+        "combobox",
+        "select"
+      ],
+      "adapters": []
     },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
