@@ -8089,7 +8089,7 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
     while (ts.isPropertyAccessExpression(root)) root = root.expression
     if (ts.isIdentifier(root)) {
       return resolveAliasOrigin(propAliasHopCandidates(ctx), root.text, name => {
-        if (propsObjName && name === propsObjName) return true
+        if (propsObjName && name === propsObjName && !ctx.scope.isBound(name)) return true
         return isDirectPropBindingName(name, ctx) ? true : null
       }) === true
     }
@@ -8128,14 +8128,27 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
  * (needed so its regex still matches `props.<key>`) rather than local
  * bindings, so a same-named module const was matching here as if it were
  * the prop itself.
+ *
+ * The member-parsed branch walks `parsed.object` to the chain's ROOT (e.g.
+ * `const items = props.data.items` or `const items = data.items`, #3044
+ * pullfrog review), accepting it whether the root is the whole props object
+ * OR itself a destructured prop binding — the same two-way root check
+ * `isArrayExprDirectPropRef`'s own property-access branch makes for the
+ * `.map()` array expression directly. Without this, aliasing a nested
+ * prop-object array to a local const first (an extremely common pattern)
+ * reproduced #3044's exact silent-freeze bug one hop away from the direct
+ * expression this fix otherwise covers.
  */
 function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
   if (ctx.scope.isBound(name)) return false
   if (ctx.boundPropNames.has(name)) return true
   const propsObjName = ctx.analyzer.propsObjectName
-  if (!propsObjName) return false
   const parsed = constantsByName(ctx).get(name)?.parsed
-  return !!parsed && parsed.kind === 'member' && !parsed.computed && parsed.object.kind === 'identifier' && parsed.object.name === propsObjName
+  if (!parsed || parsed.kind !== 'member' || parsed.computed) return false
+  let root: ParsedExpr = parsed.object
+  while (root.kind === 'member' && !root.computed) root = root.object
+  if (root.kind !== 'identifier' || ctx.scope.isBound(root.name)) return false
+  return root.name === propsObjName || ctx.boundPropNames.has(root.name)
 }
 
 /**

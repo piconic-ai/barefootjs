@@ -139,4 +139,75 @@ describe('#3044 — nested array off a destructured object prop uses mapArray, n
     expect(flags.isStaticArray).toBe(true)
     expect(flags.isPropDerivedArray).toBeUndefined()
   })
+
+  // Pullfrog review findings on the initial fix (both confirmed against the
+  // real compiler before being fixed):
+
+  test('pullfrog review finding: a local const aliasing `data.items` (one hop before .map()) also uses mapArray', () => {
+    // `const items = data.items; items.map(...)` — the extremely common
+    // "alias the array to a local const before mapping" pattern. The
+    // initial fix only widened `isArrayExprDirectPropRef`'s OWN property-
+    // access branch (the `.map()` array expression itself); it left
+    // `isDirectPropBindingName`'s member-parsed check — used to resolve a
+    // local const's value — still single-level (`parsed.object.kind ===
+    // 'identifier' && parsed.object.name === propsObjName`), so this shape
+    // reproduced #3044's exact silent-freeze bug one alias hop away.
+    const flags = loopFlags(`
+      'use client'
+      export type ReproData = { items: { id: string; label: string }[] }
+      export function ReproChild({ data }: { data: ReproData }) {
+        const items = data.items
+        return <ul>{items.map((item) => <li key={item.id}>{item.label}</li>)}</ul>
+      }
+    `, 'ConstAliasOfObjectProp.tsx')
+    expect(flags.isStaticArray).toBe(false)
+    expect(flags.isPropDerivedArray).toBe(true)
+  })
+
+  test('pullfrog review finding: a local const aliasing the whole-props two-level chain also uses mapArray', () => {
+    // `const items = props.data.items; items.map(...)` — same gap as above,
+    // reached through the whole-props (non-destructured) form instead.
+    const flags = loopFlags(`
+      'use client'
+      export type ReproData = { items: { id: string; label: string }[] }
+      export function ReproChild(props: { data: ReproData }) {
+        const items = props.data.items
+        return <ul>{items.map((item) => <li key={item.id}>{item.label}</li>)}</ul>
+      }
+    `, 'ConstAliasOfWholePropsChain.tsx')
+    expect(flags.isStaticArray).toBe(false)
+    expect(flags.isPropDerivedArray).toBe(true)
+  })
+
+  test('pullfrog review finding: a loop-row parameter shadowing the outer props-object name is not misclassified', () => {
+    // `props.rows.map((props) => props.items.map(...))` — the inner `props`
+    // is an arbitrary row value bound by the OUTER `.map()`, unrelated to
+    // the real props object it happens to share a name with. The initial
+    // fix's new property-access branch checked `name === propsObjName`
+    // without the shadow guard `isDirectPropBindingName` uses right next to
+    // it, and widened that unguarded check from a single member access
+    // (`props.foo`) to an arbitrarily deep chain — increasing the blast
+    // radius of a pre-existing gap. `isPropDerivedArray` feeds real
+    // Go-adapter codegen decisions for nested components, so a false
+    // positive here is a genuine misclassification risk, not just a
+    // redundant `mapArray`.
+    const ctx = analyzeComponent(`
+      'use client'
+      type Row = { items: { id: string; label: string }[] }
+      export function Foo(props: { rows: Row[] }) {
+        return (
+          <div>
+            {props.rows.map((props) => (
+              <ul>{props.items.map((item) => <li key={item.id}>{item.label}</li>)}</ul>
+            ))}
+          </div>
+        )
+      }
+    `, 'ShadowedPropsParam.tsx', 'Foo')
+    const ir = jsxToIR(ctx)
+    const inner = findLoop(ir, (n: any) => n.array === 'props.items')
+    expect(inner).toBeDefined()
+    expect(inner.isStaticArray).toBe(true)
+    expect(inner.isPropDerivedArray).toBeUndefined()
+  })
 })
