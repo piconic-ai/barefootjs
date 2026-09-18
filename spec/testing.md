@@ -544,6 +544,23 @@ Every failure writes a self-contained reproduction (`.explore/failures/<case>.js
 
 Bounds are deliberately small (arrays of 0–3 items, one or two signals, depth ≤ 2); widen a scenario's `bounds.maxDepth` or add a scenario under `explore/scenarios/` and list it in `explore/scenarios/index.ts`.
 
+### The four browser sweeps and what each owns
+
+All four run the same oracle bodies (`e2e/oracle-core.ts`) against the same host (`e2e/fixture-host.ts`); they differ in what they feed it and what question a failure answers. Keep that split when adding cases — a case in the wrong sweep is measured against the wrong question.
+
+| Sweep | Input | Question a red row answers | Oracles | Cadence | Ledger |
+|---|---|---|---|---|---|
+| fixture-hydrate + oracle (`test:fixture-hydrate`) | the frozen fixture corpus | does a committed fixture hydrate and mount consistently? | snap, three-point, idempotence, scripted interactions | every PR (`ci.yml`) | `oracle-quarantine.ts` |
+| mutation (`test:mutation`) | corpus × single meaning-preserving mutations | does a mutation that should not change meaning change the render? | snap, three-point, idempotence | nightly (`mutation-sweep.yml`) | `mutation-quarantine.ts` |
+| pairwise (`test:pairwise`) | generated t=2 / t=3 combinations of the five static feature axes | does a **static feature combination** the corpus never wrote render, hydrate and mount consistently at its SSR-time state? | snap, three-point, idempotence (one scripted click) | nightly (`pairwise-sweep.yml`) | `pairwise-quarantine.ts` |
+| explore (`test:explore`) | hand-modelled scenarios × bounded action sequences | does a **transition** from a given state preserve the component's declarative meaning? | snap, three-point per state; transition-hydrate, transition-csr per path | nightly (`explore-sweep.yml`) | `explore-quarantine.ts` |
+
+Pairwise is breadth over the *grammar*: every case is one covering-array tuple rendered once and clicked once, so it finds features that are wrong in isolation or in pairs. Explore is depth over *state*: a few hand-written components driven through every short action sequence, so it finds machinery that works from the SSR-time state and nowhere else (a loop that never creates its first row, a child that comes to exist client-side and is wired differently from an adopted one). A defect that shows up in pairwise is usually visible in a single render; one that only explore can see needs a specific *sequence*. When a pairwise finding turns out to depend on a transition, model it as an explore scenario rather than widening the covering array; when an explore finding reproduces on the initial render alone, it belongs in the corpus as an ordinary fixture and the scenario is just where it was noticed.
+
+The pairwise composer (`pairwise/compose.ts`) is deliberately the only *generator* of components today; explore scenarios are written by hand with a mirrored reducer. #3046 leaves the door open for the composer to become a second producer of explore scenarios once a generating action DSL exists — that is the point at which the two sweeps stop being separate corpora. Until then the split is: pairwise generates, explore models.
+
+**A nightly sweep is a gate for its ledger, not a dashboard.** Its only legitimate steady state is green: every known divergence quarantined against a registry entry, every graduated one deleted (the rot-check makes a stale row fail loudly for exactly this reason). A nightly that has been red for days is a sweep nobody is reading, and its findings are being lost — treat it like a red `main` (CLAUDE.md, "When `main` Breaks"): triage the rows the same day, either into the registry with a fixture or out of the ledger, and never let a second class of failure pile up behind the first.
+
 ---
 
 ## Layer 7: Component × Adapter Compat Lockfile
