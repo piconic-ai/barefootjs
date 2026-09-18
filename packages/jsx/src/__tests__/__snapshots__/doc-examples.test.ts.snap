@@ -2198,6 +2198,31 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div><button \${load
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/reactivity/create-effect.md doc-examples L135 — (no label) 1`] = `
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+
+export function initSeen(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [seen, setSeen] = createSignal(0)
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = seen()
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+  createEffect(() => {
+    setSeen(_p.value)
+  })
+}
+
+hydrate('Seen', { init: initSeen, template: (_p) => \`<span bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></span>\` })
+export function Seen(_p, __bfKey) { return createComponent('Seen', _p, __bfKey) }"
+`;
+
 exports[`docs/core/reactivity/create-memo.md doc-examples L22 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
