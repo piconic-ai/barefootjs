@@ -171,7 +171,7 @@ test.describe('pairwise sweep', () => {
     if (failure === undefined) {
       throw new Error(
         `pairwise-quarantine.ts entry for [${caseId}]/'${oracle}' is stale — the case now passes this oracle; ` +
-          `delete the entry (and close/update its tracking issue: ${entry.issue ?? '<none filed yet>'}).`,
+          `delete the entry (and drop the case's mechanism from limitation '${entry.limitation}' if this was its last pairwise citation).`,
       )
     }
   }
