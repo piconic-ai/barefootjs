@@ -16,19 +16,19 @@ import { createFixture } from '../src/types'
  * one destructure-hop deeper (`data.entries.map(entry => <Tag .../>)`
  * where `data` — not `entries` — is the prop).
  *
- * #2630's divergence for that shallower sibling already graduated (see
- * `packages/adapter-go-template/src/render-divergences.ts`'s header
- * comment) — the harness's prop-seeding for a prop-derived static
- * child-component loop is generic, not shape-specific. This deeper shape
- * turned out NOT to inherit that fix, though: KNOWN DIVERGENCE —
- * go-template renders the `<ul>` EMPTY here (see `render-divergences.ts`'s
- * `nested-prop-object-array-child-component-go` entry). Hono and CSR both
- * render correctly; this fixture exists to pin the Go gap as an executed,
- * CI-verified fact rather than an inference from a sibling fixture.
+ * This deeper shape looked at first like it hadn't inherited #2630's
+ * graduation — go-template initially rendered the `<ul>` EMPTY here — but a
+ * real `go run` check (a hand-written `main.go` populating
+ * `TagListInput.Tags` directly) showed the adapter's own emission was
+ * correct all along; only the TEST HARNESS's prop-seeding
+ * (`test-render.ts`'s `buildDynamicChildLoopSeeding`/`findLoopPropField`)
+ * didn't resolve this two-hop shape yet. Same fix as #2630, one hop deeper
+ * (`resolveNestedPropDerivedArrayValue`) — renders correctly on every
+ * adapter, no pin needed.
  */
 export const fixture = createFixture({
   id: 'nested-prop-object-array-with-component',
-  description: '#3044: a nested array on a destructured object prop, mapped to a child component — renders correctly on Hono/CSR; KNOWN DIVERGENCE on go-template (empty render, see render-divergences.ts)',
+  description: '#3044: a nested array on a destructured object prop, mapped to a child component — renders correctly on every adapter',
   source: `
 'use client'
 import { Tag } from './tag'

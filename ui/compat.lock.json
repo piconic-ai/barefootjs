@@ -3872,14 +3872,6 @@
           ]
         }
       },
-      "nested-prop-object-array-with-component": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nested-prop-object-array-child-component-go"
-          ]
-        }
-      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -4980,10 +4972,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "nested-prop-object-array-with-component": {
-        "description": "#3044: a nested array on a destructured object prop, mapped to a child component — renders…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-object-array-with-component.ts"
-      },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/preamble-cells.ts"
@@ -5383,19 +5371,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "nested-prop-object-array-child-component-go": {
-      "title": "Child-component loop over a nested array on a destructured object prop renders empty on Go",
-      "kind": "silent",
-      "given": "a `.map()` over a nested array property of a destructured OBJECT-shaped prop (`data.entries.map(entry => <Tag .../>)`, where `data` — not `entries` — is the prop), body a child component",
-      "expected": "the child component renders once per array entry, same as Hono/CSR",
-      "actual": "renders the parent element with no child rows at all",
-      "fixtures": [
-        "nested-prop-object-array-with-component"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "off-subset-callback-body": {

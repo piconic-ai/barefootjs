@@ -1773,7 +1773,7 @@
           ]
         },
         "go-template": {
-          "pass": 98,
+          "pass": 99,
           "total": 108,
           "gaps": [
             {
@@ -1810,12 +1810,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "nested-prop-object-array-with-component",
-              "limitations": [
-                "nested-prop-object-array-child-component-go"
               ]
             },
             {
@@ -3889,7 +3883,7 @@
           ]
         },
         "go-template": {
-          "pass": 381,
+          "pass": 382,
           "total": 410,
           "gaps": [
             {
@@ -3998,12 +3992,6 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "nested-prop-object-array-with-component",
-              "limitations": [
-                "nested-prop-object-array-child-component-go"
               ]
             },
             {
@@ -5263,7 +5251,7 @@
           ]
         },
         "go-template": {
-          "pass": 306,
+          "pass": 307,
           "total": 325,
           "gaps": [
             {
@@ -5318,12 +5306,6 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "nested-prop-object-array-with-component",
-              "limitations": [
-                "nested-prop-object-array-child-component-go"
               ]
             },
             {
@@ -6439,7 +6421,7 @@
           ]
         },
         "go-template": {
-          "pass": 219,
+          "pass": 220,
           "total": 243,
           "gaps": [
             {
@@ -6518,12 +6500,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "nested-prop-object-array-with-component",
-              "limitations": [
-                "nested-prop-object-array-child-component-go"
               ]
             },
             {
@@ -10509,15 +10485,9 @@
           ]
         },
         "go-template": {
-          "pass": 24,
+          "pass": 25,
           "total": 26,
           "gaps": [
-            {
-              "fixture": "nested-prop-object-array-with-component",
-              "limitations": [
-                "nested-prop-object-array-child-component-go"
-              ]
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
@@ -12334,7 +12304,7 @@
           ]
         },
         "go-template": {
-          "pass": 209,
+          "pass": 210,
           "total": 219,
           "gaps": [
             {
@@ -12365,12 +12335,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "nested-prop-object-array-with-component",
-              "limitations": [
-                "nested-prop-object-array-child-component-go"
               ]
             },
             {
