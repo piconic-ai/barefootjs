@@ -45,6 +45,19 @@
  * `signalSeedGo`/`resolveLocalGetterAsGo` seeding the top-level field uses,
  * so `DisplayInput{ Value: 5 }` / `DisplayInput{ Value: DisplayValue{V: 5} }`
  * bake correctly instead of omitting the field.)
+ *
+ * (#3044's `nested-prop-object-array-with-component` was pinned here first,
+ * then un-pinned in the same PR (#3048) once real `go run` verification
+ * (a hand-written `main.go` populating `TagListInput.Tags` directly,
+ * bypassing the harness) showed the ADAPTER'S OWN emission was never wrong:
+ * `NewXxxProps` ranges over `.Tags` unconditionally, regardless of any other
+ * field's type, and a real route handler populating it directly renders
+ * correctly today. The empty render was `test-render.ts`'s own
+ * `buildDynamicChildLoopSeeding`/`findLoopPropField` failing to resolve a
+ * TWO-HOP prop-derived array (`data.entries`, where `data` — not `entries`
+ * — is the destructured prop) — exactly #2630's original shape of gap, one
+ * destructure-hop deeper. Same fix as #2630: teach the harness, not the
+ * adapter — see `resolveNestedPropDerivedArrayValue`'s doc comment.)
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'

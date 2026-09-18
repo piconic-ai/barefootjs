@@ -229,6 +229,12 @@ import { fixture as staticArrayFromPropsPrecomputed } from './static-array-from-
 import { fixture as staticArrayFromPropsWithComponent } from './static-array-from-props-with-component'
 import { fixture as staticArrayFromPropsWithComponentClient } from './static-array-from-props-with-component-client'
 import { fixture as staticArrayFromPropsWithComponentPrecomputed } from './static-array-from-props-with-component-precomputed'
+// #3044 pullfrog review (PR #3048): the destructured-object-prop twin of
+// staticArrayFromPropsWithComponentPrecomputed above, one destructure hop
+// deeper — the shape #3048 newly classifies isPropDerivedArray, combined
+// with a child-component loop body (the part that actually drives Go SSR
+// codegen for isPropDerived).
+import { fixture as nestedPropObjectArrayWithComponent } from './nested-prop-object-array-with-component'
 // Priority 8: CSR conformance
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
@@ -852,6 +858,7 @@ export const jsxFixtures: JSXFixture[] = [
   staticArrayFromPropsWithComponent,
   staticArrayFromPropsWithComponentClient,
   staticArrayFromPropsWithComponentPrecomputed,
+  nestedPropObjectArrayWithComponent,
   // Priority 8: CSR conformance
   booleanDynamicAttr,
   aliasedImportChildComponent,

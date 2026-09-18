@@ -61,7 +61,7 @@ import { extractFreeIdentifiersFromText } from './ir-to-client-js/csr-substitute
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
-import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, type MultiReturnJsxBranches } from './analyzer.ts'
+import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, rootIdentifierOf, type MultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
@@ -8039,9 +8039,23 @@ function checkBareSignalOrMemoIdentifier(
  *     `const toggleItems__alias = toggleItems`, any number of hops, `const`
  *     or `let`, #2724 — see `propAliasHopCandidates`'s docstring for why
  *     `let` stays eligible)
- * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`),
- *     OR one whose object reaches the props object through the same kind of
- *     alias-hop chain as (a) (e.g. `const p = props; p.items`, #2724 review)
+ * (b) A PropertyAccessExpression whose ROOT identifier (walking through any
+ *     number of chained `.foo` accesses via `rootIdentifierOf`, e.g.
+ *     `props.data.items` or `data.items`) is itself recognized by (a)'s
+ *     same terminal (`isDirectPropBindingName`) — the whole props object
+ *     (e.g. `props.items`) OR a destructured OBJECT-shaped prop (e.g.
+ *     `data.items` where `data` is the prop, #3044) — OR reaches either of
+ *     those through the same kind of alias-hop chain as (a) (e.g.
+ *     `const p = props; p.items`, #2724 review)
+ *
+ * (b) covers a REACTIVE PROP whose value is itself an object: the prop
+ * identifier (`data`) is bound to a fresh object on every parent re-render,
+ * so a `.map()` over one of its own properties (`data.items`) needs the same
+ * `mapArray` reconciliation as a top-level array prop — before #3044 this
+ * shape (destructured OBJECT prop + nested member access, as opposed to
+ * `props.items`'s single member access off the WHOLE props object) fell
+ * through both (a) and (b) and silently stayed on the static SSR-row-bind
+ * path, so a parent's array-from-empty update never reached the child.
  *
  * Unlike the regex-based `isPropsReference`, this avoids false positives from
  * unrelated identifiers that happen to share a prop name (e.g. `state.items`
@@ -8065,16 +8079,14 @@ function checkBareSignalOrMemoIdentifier(
  * `isPropsReference`/`isSignalOrMemoReference`'s chain walk.
  */
 function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContext): boolean {
-  const propsObjName = ctx.analyzer.propsObjectName
-
   if (ts.isIdentifier(arrayExpr)) {
     return resolveAliasOrigin(propAliasHopCandidates(ctx), arrayExpr.text, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
   }
 
-  if (ts.isPropertyAccessExpression(arrayExpr) && propsObjName) {
-    const obj = arrayExpr.expression
-    if (ts.isIdentifier(obj)) {
-      return resolveAliasOrigin(propAliasHopCandidates(ctx), obj.text, name => (name === propsObjName ? true : null)) === true
+  if (ts.isPropertyAccessExpression(arrayExpr)) {
+    const root = rootIdentifierOf(arrayExpr.expression)
+    if (root !== null) {
+      return resolveAliasOrigin(propAliasHopCandidates(ctx), root, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
     }
   }
 
@@ -8111,14 +8123,36 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
  * (needed so its regex still matches `props.<key>`) rather than local
  * bindings, so a same-named module const was matching here as if it were
  * the prop itself.
+ *
+ * Recognizes the WHOLE props object identifier itself (`name === propsObjName`)
+ * as directly denoting a prop — needed so a hop landing on the bare `props`
+ * identifier (e.g. `const p = props; p.items`, #2724 review) terminates
+ * here rather than each caller re-checking `propsObjName` separately
+ * (folded in during #3044 pullfrog review to remove exactly that
+ * duplication, which had also skipped this function's shadow guard).
+ *
+ * The member-parsed branch walks `parsed.object` to the chain's ROOT (e.g.
+ * `const items = props.data.items` or `const items = data.items`, #3044
+ * pullfrog review), accepting it whether the root is the whole props object
+ * OR itself a destructured prop binding — the same two-way root check
+ * `isArrayExprDirectPropRef`'s own property-access branch makes (via
+ * `rootIdentifierOf` + this same terminal) for the `.map()` array
+ * expression directly. Without this, aliasing a nested prop-object array to
+ * a local const first (an extremely common pattern) reproduced #3044's
+ * exact silent-freeze bug one hop away from the direct expression this fix
+ * otherwise covers.
  */
 function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
   if (ctx.scope.isBound(name)) return false
   if (ctx.boundPropNames.has(name)) return true
   const propsObjName = ctx.analyzer.propsObjectName
-  if (!propsObjName) return false
+  if (propsObjName && name === propsObjName) return true
   const parsed = constantsByName(ctx).get(name)?.parsed
-  return !!parsed && parsed.kind === 'member' && !parsed.computed && parsed.object.kind === 'identifier' && parsed.object.name === propsObjName
+  if (!parsed || parsed.kind !== 'member' || parsed.computed) return false
+  let root: ParsedExpr = parsed.object
+  while (root.kind === 'member' && !root.computed) root = root.object
+  if (root.kind !== 'identifier' || ctx.scope.isBound(root.name)) return false
+  return root.name === propsObjName || ctx.boundPropNames.has(root.name)
 }
 
 /**
