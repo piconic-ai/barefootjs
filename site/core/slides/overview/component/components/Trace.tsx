@@ -29,8 +29,35 @@ export function Trace() {
     })
   }
 
+  // `peitho present` mounts every slide's component once, up front, and
+  // keeps it alive across navigation (a video background elsewhere in
+  // this deck shouldn't restart every time a viewer flips back to check
+  // something). Without this, the auto-demo above starts ticking — and
+  // `count`/`writes` keeps climbing — from the moment the whole
+  // presentation loads, not from when this slide is actually shown, and
+  // a manual click on an earlier visit (which turns `auto` off) stays off
+  // for the rest of the presentation. `peitho:slidechange` (dispatched on
+  // `window` by present's shell every time the visible slide changes) is
+  // how this restarts fresh each time a viewer arrives at this slide
+  // specifically. `getRootNode()` finds this element's own shadow root —
+  // `document.currentScript` doesn't work inside one, confirmed on-device.
+  const mountRoot = (el: HTMLElement) => {
+    const root = el.getRootNode()
+    const slideKey = root instanceof ShadowRoot ? (root.host as HTMLElement).dataset.slideKey : undefined
+    if (slideKey === undefined) return
+    const onSlideChange = (event: Event): void => {
+      if ((event as CustomEvent<{ key?: string }>).detail?.key === slideKey) {
+        setCount(0)
+        setWrites(0)
+        setAuto(true)
+      }
+    }
+    window.addEventListener('peitho:slidechange', onSlideChange)
+    onCleanup(() => window.removeEventListener('peitho:slidechange', onSlideChange))
+  }
+
   return (
-    <div className="trace">
+    <div className="trace" ref={mountRoot}>
       <div className="trace-app">
         <p className="trace-value">{count()}</p>
         <button className="counter-btn" onClick={click}>+1</button>
