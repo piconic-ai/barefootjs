@@ -622,6 +622,10 @@ import { fixture as signalEarlyReturn } from './signal-early-return'
 // ui/badge asChild shape. Pins the one-hop-const lookup lowering (SSR on
 // every adapter) and the live-prop class update (CSR interactions).
 import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
+// Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
+// a conditional return whose default branch is fragment-wrapped — the
+// `fragment-wrap` mutant shape as real source, with its own oracle rows.
+import { fixture as conditionalReturnFragmentBranch } from './conditional-return-fragment-branch'
 import { fixture as logicalAndZero } from './logical-and-zero'
 // HTML element/attribute semantics checklist (state-carrying attributes)
 import { fixture as controlledCheckboxChecked } from './controlled-checkbox-checked'
@@ -677,6 +681,15 @@ import { fixture as moduleFunctionHelperChain } from './module-function-helper-c
 // inside a ternary's `test` (not `isValidElement`), pinning that the
 // BF101 refusal is scoped by callee identity, not by structural position.
 import { fixture as moduleHelperBoolcontextCall } from './module-helper-boolcontext-call'
+// Registry limitation `client-only-loop-in-static-loop`: a /* @client */
+// nested .map() inside a static outer loop row, plus its whole-loop
+// /* @client */ escape twin.
+import { fixture as staticLoopClientOnlyNested } from './static-loop-client-only-nested'
+import { fixture as staticLoopClientOnlyNestedClient } from './static-loop-client-only-nested-client'
+import { fixture as staticLoopClientOnlyNestedPrecomputed } from './static-loop-client-only-nested-precomputed'
+// The rest-bag-routed sibling of compositeRowChildComponent: a per-row value
+// delivered through a prop the child captures only via `...rest`.
+import { fixture as compositeRowChildRestBagProp } from './composite-row-child-rest-bag-prop'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1107,6 +1120,7 @@ export const jsxFixtures: JSXFixture[] = [
   textareaValueSsr,
   signalEarlyReturn,
   branchRootPropAttr,
+  conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,
   controlledRadioChecked,
@@ -1131,4 +1145,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstArrowHelper,
   moduleFunctionHelperChain,
   moduleHelperBoolcontextCall,
+  staticLoopClientOnlyNested,
+  staticLoopClientOnlyNestedClient,
+  staticLoopClientOnlyNestedPrecomputed,
+  compositeRowChildRestBagProp,
 ]

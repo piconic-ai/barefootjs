@@ -108,6 +108,14 @@ const statelessFixtures = new Set([
   'conditional-return-button',
   'todo-app',
   'ai-chat',
+  // Same one-side-renders-less shape as `conditional-return-button`: the
+  // SSR HTML carries only the default `<button>` branch's `s1`/`s0`, while
+  // the client JS also wires the `<a>` branch's `s3`/`s2`. (The fixture's
+  // own reason to exist — hydration never claiming the fragment-wrapped
+  // branch root — is the registry limitation
+  // `fragment-wrapped-conditional-return-branch-scope`, pinned in
+  // `oracle-quarantine.ts` and `csr-skip-set.ts`; this exemption is not it.)
+  'conditional-return-fragment-branch',
   // Priority-12 edge-case sweep: same one-side-renders-less divergence as
   // `conditional-return-button` above — the three-branch if/else-if/else
   // chain's client JS wires marker ids for EVERY branch, but the SSR HTML

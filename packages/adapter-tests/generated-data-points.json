@@ -872,6 +872,14 @@
       }
     }
   ],
+  "composite-row-child-rest-bag-prop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "conditional-return-button": [
     {
       "name": "gen:variant:empty",
@@ -892,6 +900,22 @@
       "props": {
         "__instanceId": "ConditionalReturn_test",
         "variant": "日本語"
+      }
+    }
+  ],
+  "conditional-return-fragment-branch": [
+    {
+      "name": "gen:asLink:true",
+      "props": {
+        "__instanceId": "ConditionalReturnFragmentBranch_test",
+        "asLink": true
+      }
+    },
+    {
+      "name": "gen:asLink:false",
+      "props": {
+        "__instanceId": "ConditionalReturnFragmentBranch_test",
+        "asLink": false
       }
     }
   ],
@@ -2751,6 +2775,14 @@
       "name": "gen:entries:empty",
       "props": {
         "entries": []
+      }
+    }
+  ],
+  "static-loop-client-only-nested-precomputed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],

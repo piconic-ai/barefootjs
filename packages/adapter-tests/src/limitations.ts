@@ -53,9 +53,12 @@
  * `packages/adapter-tests/src/__tests__/limitations.test.ts` lints every
  * entry (slot shape, no issue/PR references, fixtures exist and are not
  * escape twins) and `packages/compat/src/__tests__/limitations-join.test.ts`
- * joins the registry against every adapter's pins (every pin cites an
- * existing id; every fixture an entry lists is pinned under that id on at
- * least one adapter; every pinned fixture is listed by the entry it cites).
+ * joins the registry against every adapter's pins and the e2e quarantine
+ * ledgers (every pin cites an existing id; every fixture an entry lists is
+ * pinned, declared divergent, or oracle-quarantined under that id; every
+ * pinned fixture is listed by the entry it cites). For a hydration-parity
+ * gap (server HTML vs hydrated or client-mounted DOM) `expected` states the
+ * parity the contract requires rather than a reference render.
  */
 
 export type LimitationKind = 'silent' | 'refusal' | 'by-design'

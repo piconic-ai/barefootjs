@@ -2000,8 +2000,16 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 426,
+    "totalFixtures": 431,
     "fixtures": {
+      "composite-row-child-rest-bag-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-rest-bag-prop-override"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -4685,6 +4693,21 @@
           }
         }
       },
+      "static-loop-client-only-nested": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "client-only-loop-in-static-loop"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "static-loop-client-only-nested-precomputed"
+          }
+        }
+      },
       "static-loop-item-boolean-attr": {
         "mojolicious": {
           "kind": "refusal",
@@ -4877,6 +4900,10 @@
       }
     },
     "docs": {
+      "composite-row-child-rest-bag-prop": {
+        "description": "Dynamic loop row root is an element containing a child whose per-row prop routes into its rest bag",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/composite-row-child-rest-bag-prop.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -4977,6 +5004,10 @@
         "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
       },
+      "static-loop-client-only-nested": {
+        "description": "A /* @client */ nested .map() inside a static outer loop row renders the outer rows with an empty…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested.ts"
+      },
       "static-loop-item-boolean-attr": {
         "description": "static array's .map() row boolean attribute keyed off the item itself renders per item (#2898)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-boolean-attr.ts"
@@ -5052,6 +5083,10 @@
       "static-array-from-props-with-component-precomputed": {
         "description": "prop-precompute twin of static-array-from-props-with-component — child components render at SSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-precomputed.ts"
+      },
+      "static-loop-client-only-nested-precomputed": {
+        "description": "prop-precompute twin of static-loop-client-only-nested — items moved to a prop, full SSR of the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested-precomputed.ts"
       },
       "static-loop-item-boolean-attr-precomputed": {
         "description": "prop-precompute twin of static-loop-item-boolean-attr — items moved to a prop, full SSR (#2898,…",
@@ -5136,6 +5171,37 @@
         "BF101"
       ]
     },
+    "child-prop-mirror-attr-ssr": {
+      "title": "Mirrored child-prop attribute appears only after hydration",
+      "kind": "silent",
+      "given": "a non-standard named prop passed to a child component call (`<VariantTag variant={variant()} />`) that the compiler mirrors onto the child root as a DOM attribute",
+      "expected": "the server HTML and the hydrated DOM carry the same attributes on the child root",
+      "actual": "renders the child root without the attribute in the server HTML; the hydration effect then adds it, so pre- and post-hydration DOM differ",
+      "fixtures": [
+        "branch-root-prop-attr",
+        "combobox",
+        "data-table",
+        "pagination",
+        "select"
+      ],
+      "adapters": []
+    },
+    "client-only-loop-in-static-loop": {
+      "title": "Client-only nested loop inside a static loop row",
+      "kind": "refusal",
+      "given": "a static (non-signal) array `.map()` whose row contains a `/* @client */` nested `.map()`",
+      "expected": "the outer rows render in the server HTML, each with an empty inner loop host for the client to fill",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "static-loop-client-only-nested"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
       "kind": "refusal",
@@ -5178,6 +5244,17 @@
         "BF101"
       ]
     },
+    "fragment-wrapped-conditional-return-branch-scope": {
+      "title": "Fragment-wrapped branch of a conditional return is never hydrated",
+      "kind": "silent",
+      "given": "a component with an early-return branch whose other branch is wrapped in a fragment (`if (x) return <a/>; return <><button/></>`)",
+      "expected": "the rendered branch root carries the component scope id on every render path, so its events bind",
+      "actual": "renders the fragment-wrapped branch root without a scope id after hydration (the server HTML is correct, a pure client mount is correct), so its events never bind",
+      "fixtures": [
+        "conditional-return-fragment-branch"
+      ],
+      "adapters": []
+    },
     "jsx-wrapped-in-non-children-prop": {
       "title": "JSX wrapped in a ternary or array at a non-children prop",
       "kind": "by-design",
@@ -5204,6 +5281,19 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-row-rest-bag-prop-override": {
+      "title": "Per-row prop routed into a child rest bag inside a composite loop row",
+      "kind": "silent",
+      "given": "a signal-driven `.map()` whose row root is a plain element wrapping a child component, passing a per-row value through a prop the child captures only via `...rest`",
+      "expected": "each row renders the child with that row's value applied (`title=\"one\"`, `title=\"two\"`)",
+      "actual": "renders the child without the rest-bag attribute at all, on every row",
+      "fixtures": [
+        "composite-row-child-rest-bag-prop"
+      ],
+      "adapters": [
+        "go-template"
+      ]
     },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",

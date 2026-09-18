@@ -116,6 +116,12 @@ export const conformancePins: ConformancePins = {
   // item-independent escape hatch for (unlike a `conditional`'s own
   // condition, #2898's `classifyBakedCondition`) — tracked separately as
   // #2909.
+  // A `/* @client */` nested loop inside a static outer loop's row: the
+  // static-array bake (`isFoldableTree`) refuses a `clientOnly` loop node
+  // and falls through to the generic computed-loop-array BF101.
+  'static-loop-client-only-nested': [
+    { code: 'BF101', severity: 'error', limitation: 'client-only-loop-in-static-loop' },
+  ],
   'static-nested-loop-ref': [{
     code: 'BF101',
     severity: 'error',

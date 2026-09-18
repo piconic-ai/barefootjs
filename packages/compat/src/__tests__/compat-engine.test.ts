@@ -54,6 +54,7 @@ describe('compileForCompat', () => {
         severity: 'error',
         limitations: [
           'array-fill',
+          'client-only-loop-in-static-loop',
           'computed-const-loop-source',
           'derived-object-literal-signal',
           'module-scope-helper-call',
