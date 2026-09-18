@@ -54,7 +54,14 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // template position (arrow-valued const OR `function` declaration) now
 // refuses loudly with BF101 at compile time instead of silently crashing
 // `html/template` at render time — see `conformance-pins.ts`.
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // `loopRowChildPropOverrides` skips a prop that routes into the child's
+  // rest bag (`routesToRestBag`), so the per-row value never reaches the
+  // row: the child renders without the attribute at all. The out-of-loop
+  // sibling route (`queueDynamicPropDefine` → `bf_with_bag`) is not wired
+  // for loop rows yet.
+  'composite-row-child-rest-bag-prop': { limitation: 'loop-row-rest-bag-prop-override' },
+}
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
 // `ParamInfo.defaultValue` directly (the analyzer overlays it onto

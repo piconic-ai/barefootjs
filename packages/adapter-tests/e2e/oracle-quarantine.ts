@@ -16,9 +16,11 @@
  * starts passing fails its rot check with a "stale — delete the entry"
  * message pointing at exactly which pair to remove.
  *
- * `issue` starts undefined for freshly-quarantined pairs; the person
- * triaging the first-run inventory fills it in once a `known-limitation`
- * issue exists for each row (some rows may share one issue).
+ * A row cites the registry limitation it is an instance of
+ * (`limitation`, `packages/adapter-tests/limitations/<id>.ts`, kind
+ * `silent`); the compat join test checks the id exists and that the entry
+ * lists this fixture. Rows not yet migrated to the registry still carry
+ * the `issue` URL they were triaged under.
  */
 
 export type OracleKind = 'three-point' | 'snap' | 'idempotence'
@@ -28,7 +30,9 @@ export interface QuarantineEntry {
   oracles: ReadonlyArray<OracleKind>
   /** Why — a short human summary of the observed divergence. */
   reason: string
-  /** `known-limitation` issue URL, filled in after triage. */
+  /** Registry limitation id (`packages/adapter-tests/limitations/<id>.ts`, kind `silent`). */
+  limitation?: string
+  /** Legacy tracking-issue URL, for rows not yet migrated to a registry limitation. */
   issue?: string
 }
 
@@ -76,11 +80,26 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // attribute is ABSENT from SSR markup and first appears after hydration.
   // Not a rest-spread path at all; `apply-rest-attrs`/`spread-attrs` were
   // checked and are consistent between SSR-string and CSR-apply modes.
+  // Registry limitation `fragment-wrapped-conditional-return-branch-scope`
+  // (the `fragment-wrap` mutant shape as real source): the HYDRATED leg
+  // renders the fragment-wrapped default branch's root without `bf-s` —
+  // hydration never claims the comment-scoped root — while csr-mount gives
+  // it one, so three-point diverges structurally. `snap` passes because
+  // SSR carries the scope as a comment pair, not as an attribute, so
+  // pre- and post-hydration markup look the same. The fixture carries no
+  // action step (a click would fail the fixture-hydrate runner for the
+  // same reason), so no idempotence pair exists.
+  'conditional-return-fragment-branch': {
+    oracles: ['three-point'],
+    reason:
+      'Hydration never claims the fragment-wrapped branch root (no bf-s, events unbound); csr-mount renders it with its scope id.',
+    limitation: 'fragment-wrapped-conditional-return-branch-scope',
+  },
   'branch-root-prop-attr': {
     oracles: ['snap', 'three-point'],
     reason:
       'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+    limitation: 'child-prop-mirror-attr-ssr',
   },
   // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
@@ -92,25 +111,25 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     oracles: ['snap', 'three-point'],
     reason:
       'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+    limitation: 'child-prop-mirror-attr-ssr',
   },
   select: {
     oracles: ['snap', 'three-point'],
     reason:
       'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it (same shape as combobox).',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+    limitation: 'child-prop-mirror-attr-ssr',
   },
   pagination: {
     oracles: ['snap', 'three-point'],
     reason:
       'The mirrored isactive="true" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+    limitation: 'child-prop-mirror-attr-ssr',
   },
   'data-table': {
     oracles: ['snap', 'three-point'],
     reason:
       'The mirrored sorted="false" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+    limitation: 'child-prop-mirror-attr-ssr',
   },
   // Portal-origin marker (`bf-po`) present in the SSR placeholder, gone
   // after hydration moves the portaled content to its real destination —

@@ -136,7 +136,13 @@ export interface PairwiseQuarantineEntry {
   oracle: OracleKind
   /** Why — a short human summary of the observed divergence. */
   reason: string
-  /** `known-limitation` issue URL, filled in after triage. */
+  /**
+   * Registry limitation id (`packages/adapter-tests/limitations/<id>.ts`,
+   * kind `silent`). A generated pairwise case is not a corpus fixture, so
+   * the join test checks only that the id exists.
+   */
+  limitation?: string
+  /** Legacy tracking-issue URL, for rows not yet migrated to a registry limitation. */
   issue?: string
 }
 

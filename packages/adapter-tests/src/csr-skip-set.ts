@@ -49,6 +49,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // #2131: same `applyRestAttrs`-not-modeled class as `input`; per-adapter
   // render conformance pins the SSR contract.
   'rest-spread-child-attrs',
+  // Same `applyRestAttrs`-not-modeled harness class: the per-row `title`
+  // reaches the child's root only through its `{...rest}` spread, which the
+  // harness stubs, so the CSR template lacks it. Per-adapter render
+  // conformance pins the SSR contract (and is where the go-template gap
+  // this fixture exists for shows up).
+  'composite-row-child-rest-bag-prop',
   // #2754: the stateless sibling of `rest-spread-child-attrs`, and the same
   // harness limitation — the CSR path here evaluates only the `template`
   // lambda, and `data-probe` arrives through `applyRestAttrs` in `init`,
