@@ -69,6 +69,11 @@ function buildDeck(slug: string): void {
     run(['bunx', 'vite', 'build'], componentDir)
     const componentDist = join(componentDir, 'dist')
     mkdirSync(assetsSrc, { recursive: true })
+    // Clear last build's .js output first (media like hero.mp4 is untouched) so a
+    // component renamed or removed since then doesn't leave a stale file behind.
+    for (const f of readdirSync(assetsSrc)) {
+      if (f.endsWith('.js')) rmSync(join(assetsSrc, f), { force: true })
+    }
     for (const name of readdirSync(componentDist)) {
       if (name === '.vite' || name === 'templates') continue
       cpSync(join(componentDist, name), join(assetsSrc, name), { recursive: true })
