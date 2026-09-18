@@ -39,6 +39,7 @@ import { describe, test, expect } from 'bun:test'
 import { MUTATION_QUARANTINE } from '../../../adapter-tests/e2e/mutation-quarantine'
 import { ORACLE_QUARANTINE } from '../../../adapter-tests/e2e/oracle-quarantine'
 import { PAIRWISE_QUARANTINE } from '../../../adapter-tests/e2e/pairwise-quarantine'
+import { EXPLORE_QUARANTINE } from '../../../adapter-tests/e2e/explore-quarantine'
 import { findLimitation, limitations } from '../../../adapter-tests/limitations'
 import { limitationDiagnostics } from '../../../adapter-tests/src/limitations'
 import { loadCompatAdapters } from '../adapter-registry'
@@ -123,6 +124,18 @@ describe('limitation registry ↔ adapter declarations', () => {
         if (!entry) {
           throw new Error(
             `pairwise-quarantine row '${key}' cites limitation '${row.limitation}', ` +
+              `which has no entry under packages/adapter-tests/limitations/`,
+          )
+        }
+        expect(entry.kind).toBe('silent')
+      })
+    }
+    for (const [key, row] of EXPLORE_QUARANTINE) {
+      test(`[explore:${key}] cites a registered silent limitation`, () => {
+        const entry = findLimitation(row.limitation)
+        if (!entry) {
+          throw new Error(
+            `explore-quarantine row '${key}' cites limitation '${row.limitation}', ` +
               `which has no entry under packages/adapter-tests/limitations/`,
           )
         }

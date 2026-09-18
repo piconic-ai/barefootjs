@@ -520,6 +520,30 @@ todoAppTests('http://localhost:3004', '/todos-ssr')
 
 Each example's `playwright.config.ts` configures the webServer command, port, and single-worker mode for CI (to avoid shared state conflicts with `/api/todos`).
 
+### Bounded state-space exploration (`test:explore`)
+
+**Location:** `packages/adapter-tests/explore/` (scenario model, explorer, scenarios), `packages/adapter-tests/e2e/explore.playwright.ts` (browser oracles), `packages/adapter-tests/scripts/explore-generate.ts` (generator)
+**Runner:** `bun run --filter '@barefootjs/adapter-tests' test:explore` (scheduled: `.github/workflows/explore-sweep.yml`)
+**Speed:** seconds to minutes (browser)
+
+The fixture-hydrate oracles above check one render per fixture; the pairwise sweep checks generated *static* feature combinations. Some defects only appear on a *transition* from a particular state — a keyed loop that renders empty at SSR and never creates its first row when the array becomes non-empty is the canonical case. The exploration harness generalizes the browser-oracle machinery to bounded model-based testing: a **scenario** (`explore/scenario.ts`) pairs a real component with a pure TypeScript reducer over the same small state, and the harness asks, for every action sequence up to the scenario's depth bound,
+
+```text
+DOM(initial = S0, then click a1 … an)  ==  DOM(initial = reduce*(S0, a1 … an), rendered fresh)
+```
+
+Scenario contract: the component takes one prop `initial: S`, seeds its signals from it, and renders one `<button data-action="<name>">` per action whose handler is the one-line mirror of the reducer branch. Transitions are driven through those buttons with the ordinary `interaction-runner.ts` click, so the real event → setter → reconcile path is what gets measured; "a fresh render of state S" is an ordinary fixture render with `props: { initial: S }`.
+
+The layers, cheapest first:
+
+1. **IR smoke** (`explore/__tests__/scenarios.test.ts`, plain `bun test`, every PR) — `renderToTest` pins that every action button's handler reaches a state setter and the loop / child wiring exists. A scenario that fails here is an analyzer finding; one that passes here and fails in the browser is a lowering or runtime finding.
+2. **Generator** (`scripts/explore-generate.ts`) — enumerates every distinct reachable state and every path (`explore/explorer.ts`; every prefix of a path is itself a path, so the shortest failing sequence is always present), renders one fixture per state into `.explore/` (gitignored), and classifies each scenario `ok` / `refused` / `broken` like the mutation and pairwise sweeps (a loud refusal is a pass).
+3. **Browser oracles** (`e2e/explore.playwright.ts`) — per state, the existing `snap` and `three-point` oracles; per path, `transition-hydrate` (SSR+hydrated page clicked through vs. an SSR+hydrated fresh render of the end state) and `transition-csr` (the same on csr-mounted pages). Each leg compares like with like, so a failure is attributable. Page and console errors during the clicked leg fail the oracle after the DOM comparison.
+
+Every failure writes a self-contained reproduction (`.explore/failures/<case>.json`, also attached to the Playwright report): commit, scenario, initial and expected state, action sequence, TSX, ComponentIR, client JS, both SSR documents, both DOM snapshots and their diff, browser errors. Failures are quarantined in `e2e/explore-quarantine.ts` — keyed `(scenario, subject, oracle)`, each row citing a `silent` registry entry, with the same rot-check as the pairwise ledger — and graduate exactly as pairwise rows do. Exploration is a discovery tool: a minimized failure still lands as a permanent conformance fixture; generated cases are never committed.
+
+Bounds are deliberately small (arrays of 0–3 items, one or two signals, depth ≤ 2); widen a scenario's `bounds.maxDepth` or add a scenario under `explore/scenarios/` and list it in `explore/scenarios/index.ts`.
+
 ---
 
 ## Layer 7: Component × Adapter Compat Lockfile
