@@ -49,7 +49,7 @@ async function compileAndEvalClientJs(source: string, filename: string): Promise
     .replace(/^import '\/\* @bf-child:\w+ \*\/'\n/gm, '')
 
   const dir = mkdtempSync(join(tmpdir(), 'bf-3044-'))
-  const file = join(dir, `${filename.replace(/\W/g, '_')}_${Math.random().toString(36).slice(2)}.mjs`)
+  const file = join(dir, `${filename.replace(/\W/g, '_')}.mjs`)
   writeFileSync(file, rewritten)
   try {
     await import(file)

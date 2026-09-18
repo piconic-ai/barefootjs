@@ -1982,20 +1982,30 @@ const MUTATING_METHOD_NAMES: ReadonlySet<string> = new Set([
  * binding) silently drops everything the mutation was supposed to do. See
  * `ConstantInfo.mutatedAfterDeclaration` for where this is consumed.
  */
+/**
+ * The identifier a (possibly chained) member/element-access/parenthesized/
+ * non-null-asserted expression is ultimately rooted at (`a.b.c`, `a?.b[0]`,
+ * `(a!).b` all resolve to `a`), or `null` when the root isn't a bare
+ * identifier (e.g. a call result). Shared by `extractMutatedIdentifiersFromNode`
+ * below and `isArrayExprDirectPropRef` (`jsx-to-ir.ts`, #3044 pullfrog
+ * review) — the same "walk a member chain to its root" question, structural
+ * and side-effect-free, so one implementation serves both instead of a
+ * second inline while-loop reinventing it with narrower node coverage.
+ */
+export function rootIdentifierOf(expr: ts.Expression): string | null {
+  let current: ts.Expression = expr
+  while (true) {
+    if (ts.isIdentifier(current)) return current.text
+    if (ts.isParenthesizedExpression(current)) { current = current.expression; continue }
+    if (ts.isNonNullExpression(current)) { current = current.expression; continue }
+    if (ts.isPropertyAccessExpression(current)) { current = current.expression; continue }
+    if (ts.isElementAccessExpression(current)) { current = current.expression; continue }
+    return null
+  }
+}
+
 function extractMutatedIdentifiersFromNode(node: ts.Node): Set<string> {
   const ids = new Set<string>()
-
-  function rootIdentifierOf(expr: ts.Expression): string | null {
-    let current: ts.Expression = expr
-    while (true) {
-      if (ts.isIdentifier(current)) return current.text
-      if (ts.isParenthesizedExpression(current)) { current = current.expression; continue }
-      if (ts.isNonNullExpression(current)) { current = current.expression; continue }
-      if (ts.isPropertyAccessExpression(current)) { current = current.expression; continue }
-      if (ts.isElementAccessExpression(current)) { current = current.expression; continue }
-      return null
-    }
-  }
 
   function visit(n: ts.Node): void {
     // Same init/sub-init boundary as `extractAssignedIdentifiersFromNode`:
