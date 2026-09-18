@@ -189,14 +189,6 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     reason: 'SSR bakes style="transform: translate3d(0px, 0px, 0px)" on the track; hydration (embla measuring real, CSS-less-page geometry) removes the inline style — likely the #1971 layout-dependence caveat, not a hydration defect.',
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
   },
-  // `data-key` loop-reconciliation marker present in SSR, gone after
-  // hydration claims the row — plausibly intended cleanup, same caveat
-  // as the portal-origin-marker group above.
-  'tag-cloud': {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
-  },
   // `tabs` graduated (#2728): fixed in `materializeComponent`
   // (`packages/client/src/runtime/component.ts`) — see the changeset for
   // the root-cause narrative. Verified with the real oracle run.
