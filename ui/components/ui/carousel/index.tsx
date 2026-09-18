@@ -77,8 +77,12 @@ interface CarouselProps extends HTMLBaseAttributes {
 
 function Carousel(props: CarouselProps) {
   const orientation = createMemo(() => props.orientation ?? 'horizontal')
+  // Initial values are the resting state of the default options (first
+  // slide, no loop): prev cannot scroll, next can. SSR bakes the same
+  // state into the buttons' `disabled` attributes, so hydration only
+  // changes them once embla has measured something different.
   const [canScrollPrev, setCanScrollPrev] = createSignal(false)
-  const [canScrollNext, setCanScrollNext] = createSignal(false)
+  const [canScrollNext, setCanScrollNext] = createSignal(true)
   let emblaApi: EmblaCarouselType | undefined
 
   const scrollPrev = () => emblaApi?.scrollPrev()
@@ -173,11 +177,16 @@ function CarouselContent(props: CarouselContentProps) {
 
   const directionClasses = createMemo(() => orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')
 
+  // The track carries embla's resting transform for the first slide, in
+  // the form the browser serializes once embla writes `style.transform`
+  // on init — so SSR markup and the hydrated track agree instead of
+  // hydration adding the attribute.
   return (
     <div data-slot="carousel-viewport" className="overflow-hidden">
       <div
         data-slot="carousel-content"
         className={`${directionClasses()} ${props.className ?? ''}`}
+        style="transform: translate3d(0px, 0px, 0px);"
         ref={handleMount}
       >
         {props.children}
@@ -284,7 +293,6 @@ function CarouselNext(props: CarouselNextProps) {
       data-slot="carousel-next"
       type="button"
       className={`${carouselButtonBaseClasses} ${positionClasses()} ${props.className ?? ''}`}
-      disabled
       aria-label="Next slide"
       ref={handleMount}
     >

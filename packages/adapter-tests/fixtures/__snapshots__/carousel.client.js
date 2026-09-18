@@ -2890,7 +2890,7 @@ export function initCarousel(__scope, _p = {}) {
   const carouselClasses = 'relative'
   const orientation = createMemo(() => _p.orientation ?? 'horizontal')
   const [canScrollPrev, setCanScrollPrev] = createSignal(false)
-  const [canScrollNext, setCanScrollNext] = createSignal(false)
+  const [canScrollNext, setCanScrollNext] = createSignal(true)
   let emblaApi
   const scrollPrev = () => emblaApi?.scrollPrev()
   const scrollNext = () => emblaApi?.scrollNext()
@@ -3008,7 +3008,7 @@ export function initCarouselContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('CarouselContent', { init: initCarouselContent, template: (_p) => `<div data-slot="carousel-viewport" class="overflow-hidden"><div data-slot="carousel-content" ${(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div></div>` })
+hydrate('CarouselContent', { init: initCarouselContent, template: (_p) => `<div data-slot="carousel-viewport" class="overflow-hidden"><div data-slot="carousel-content" ${(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) + '"' : ''} style="transform: translate3d(0px, 0px, 0px);" bf="s0">${markupOrEmpty(_p.children)}</div></div>` })
 export function CarouselContent(_p, __bfKey) { return createComponent('CarouselContent', _p, __bfKey) }
 export function initCarouselItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3126,7 +3126,7 @@ export function initCarouselNext(__scope, _p = {}) {
   initChild('ChevronRightIcon', _s0, { size: "sm" })
 }
 
-hydrate('CarouselNext', { init: initCarouselNext, template: (_p) => `<button data-slot="carousel-next" type="button" ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) + '"' : ''} disabled aria-label="Next slide" bf="s1">${renderChild('ChevronRightIcon', {size: "sm"}, undefined, 's0')}<span class="sr-only">Next slide</span></button>` })
+hydrate('CarouselNext', { init: initCarouselNext, template: (_p) => `<button data-slot="carousel-next" type="button" ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) + '"' : ''} aria-label="Next slide" bf="s1">${renderChild('ChevronRightIcon', {size: "sm"}, undefined, 's0')}<span class="sr-only">Next slide</span></button>` })
 export function CarouselNext(_p, __bfKey) { return createComponent('CarouselNext', _p, __bfKey) }
 export function initCarouselPreviewDemo(__scope, _p = {}) {
   if (!__scope) return

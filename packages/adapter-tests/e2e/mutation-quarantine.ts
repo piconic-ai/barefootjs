@@ -227,15 +227,6 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // does not route away from that path) is a separate, still-open defect —
   // filed independently as #2833, not part of this graduation.
 
-  // --- G6 -------------------------------------------------------------------
-  {
-    fixtureId: 'carousel',
-    mutationId: 'fragment-wrap',
-    oracle: 'idempotence',
-    reason:
-      "Click on '[data-slot=\"carousel-next\"]' times out (button stays disabled). The base fixture's idempotence oracle is already excluded (not merely quarantined) in oracle.playwright.ts's IDEMPOTENCE_EXCLUDED map for the same reason: embla's drag steps are pointer-position-dependent on a CSS-less host page (#1971), so replaying the SAME drag sequence twice is inherently flaky independent of any real bug. This mutant reproduces that known flakiness rather than a new fragment-wrap-specific defect; kept here (mutation.playwright.ts has no equivalent exclusion map, only the ORACLE_QUARANTINE skip) rather than silently passing.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/1971',
-  },
 ]
 
 export const MUTATION_QUARANTINE: ReadonlyMap<string, MutationQuarantineEntry> = new Map(
