@@ -77,15 +77,21 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // template position (arrow-valued const OR `function` declaration) now
 // refuses loudly with BF101 at compile time instead of silently crashing
 // `html/template` at render time — see `conformance-pins.ts`.
-// #3062 graduated the last entry formerly here
-// (`composite-row-child-rest-bag-prop` / `loop-row-rest-bag-prop-override`):
+// #3062 graduated the entry formerly here for
+// `composite-row-child-rest-bag-prop` (`loop-row-rest-bag-prop-override`):
 // `loopRowChildPropOverrides` now delivers a rest-bag-routed per-row prop
 // through `bf_with_bag`, the same route `queueDynamicPropDefine`'s static
 // sibling already used, synced onto every render-consulted bag field
 // (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
-// undelivered. Kept as an empty object — the next divergence lands here, not
-// in a re-created file.
-export const renderDivergences: RenderDivergences = {}
+// undelivered.
+export const renderDivergences: RenderDivergences = {
+  // A component-body const bound to an opaque call (`const label =
+  // makeLabel()`) and invoked in text position lowers to a bare template
+  // variable named after the const, with no diagnostic — the reference runs
+  // the accessor at render time. Escape twin:
+  // `opaque-local-accessor-call-client`.
+  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+}
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
 // `ParamInfo.defaultValue` directly (the analyzer overlays it onto

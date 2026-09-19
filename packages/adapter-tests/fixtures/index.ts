@@ -699,6 +699,12 @@ import { fixture as moduleFunctionHelperChain } from './module-function-helper-c
 // inside a ternary's `test` (not `isValidElement`), pinning that the
 // BF101 refusal is scoped by callee identity, not by structural position.
 import { fixture as moduleHelperBoolcontextCall } from './module-helper-boolcontext-call'
+// Opaque local accessor (`const label = makeLabel()`, `{label()}`): the
+// reference runs it at render time, every DSL adapter silently lowers it to a
+// bare variable lookup — registry entry `opaque-local-accessor-call`, with its
+// `/* @client */` escape twin.
+import { fixture as opaqueLocalAccessorCall } from './opaque-local-accessor-call'
+import { fixture as opaqueLocalAccessorCallClient } from './opaque-local-accessor-call-client'
 // Registry limitation `client-only-loop-in-static-loop`: a /* @client */
 // nested .map() inside a static outer loop row, plus its whole-loop
 // /* @client */ escape twin.
@@ -1168,6 +1174,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstArrowHelper,
   moduleFunctionHelperChain,
   moduleHelperBoolcontextCall,
+  opaqueLocalAccessorCall,
+  opaqueLocalAccessorCallClient,
   staticLoopClientOnlyNested,
   staticLoopClientOnlyNestedClient,
   staticLoopClientOnlyNestedPrecomputed,
