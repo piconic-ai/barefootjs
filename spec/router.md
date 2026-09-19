@@ -136,7 +136,10 @@ Owned by the **backend SSR layer**, not a client protocol. Slow regions stream a
 ordinary out-of-order HTML (`@barefootjs/streaming`); the router only **must not break**
 in-flight streaming and re-hydrates islands as chunks land. The client-transition feel
 comes from prefetch + stale-while-revalidate (and an optional skeleton during a swap).
-No `<Suspense>` / `loading.tsx` / streaming protocol of its own.
+No `<Suspense>` / `loading.tsx` / streaming protocol of its own. The router owns this
+page-level continuity; a single query's own pending/ready/error value is
+[`spec/async.md`](./async.md)'s layer — the router owns continuity, the async layer owns
+the value.
 
 ## Seams & correctness
 
