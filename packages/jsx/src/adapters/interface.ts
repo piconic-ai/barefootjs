@@ -314,6 +314,19 @@ export interface TemplateAdapter {
   generateTypes?(ir: ComponentIR): string | null
 
   /**
+   * Register a component's shape (declared props, rest bag, derived-field
+   * dependencies) with the adapter BEFORE any component that may nest it
+   * generates, so a parent finds a child's shape whatever the declaration
+   * order. Cross-file children reach it from the CLI / compat /
+   * test-render pre-passes (one call per sibling file);
+   * `compileMultipleComponents` calls it for every same-file component
+   * ahead of its generate loop, so a child declared AFTER its parent —
+   * legal through function-declaration hoisting — is registered too.
+   * Adapters with no cross-component shape registry leave it undefined.
+   */
+  registerChildComponentShape?(ir: ComponentIR): void
+
+  /**
    * Generate the SSR declaration block for the user's reactive bindings
    * (signals, memos, locally-declared functions/constants) at the top
    * of the rendered component body.

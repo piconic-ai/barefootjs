@@ -65,6 +65,7 @@ describe('CSR skip-ledger rot', () => {
           // the shared fixture.props object.
           props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
           components: fixture.components,
+        componentName: fixture.componentName,
         })
       } catch {
         threw = true

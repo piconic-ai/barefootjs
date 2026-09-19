@@ -30,15 +30,119 @@ import type { GoEmitContext } from '../emit-context.ts'
 import type { SpreadSlotInfo } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 
+/** A raw top-level intrinsic-element spread attr, before bag-source classification. */
+interface RawSpreadAttr {
+  slotId: string
+  expr: string
+  parsed: ParsedExpr | undefined
+  templateExpr: string | undefined
+}
+
+/**
+ * Walk the IR (elements, fragments, conditionals, providers, async, components)
+ * but stop at loop bodies. Each `'spread'` attr value with a `slotId` becomes
+ * one entry. Shared by `collectSpreadSlots` (classifies each into
+ * `SpreadSlotInfo`) and `collectRestBagSpreadFields` (picks out the ones fed
+ * by a specific rest binding) — the SAME traversal answers both questions, so
+ * it lives once here rather than twice.
+ */
+function collectRawSpreadAttrs(node: IRNode, result: RawSpreadAttr[]): void {
+  if (node.type === 'element') {
+    const element = node as IRElement
+    for (const attr of element.attrs) {
+      if (attr.value.kind !== 'spread') continue
+      if (!attr.value.slotId) continue
+      result.push({
+        slotId: attr.value.slotId,
+        expr: attr.value.expr,
+        parsed: attr.value.parsed,
+        templateExpr: attr.value.templateExpr,
+      })
+    }
+    for (const child of element.children) {
+      collectRawSpreadAttrs(child, result)
+    }
+    return
+  }
+  if (node.type === 'fragment') {
+    const fragment = node as IRFragment
+    for (const child of fragment.children) {
+      collectRawSpreadAttrs(child, result)
+    }
+    return
+  }
+  if (node.type === 'conditional') {
+    const cond = node as IRConditional
+    collectRawSpreadAttrs(cond.whenTrue, result)
+    if (cond.whenFalse) collectRawSpreadAttrs(cond.whenFalse, result)
+    return
+  }
+  if (node.type === 'if-statement') {
+    const stmt = node as IRIfStatement
+    collectRawSpreadAttrs(stmt.consequent, result)
+    if (stmt.alternate) collectRawSpreadAttrs(stmt.alternate, result)
+    return
+  }
+  if (node.type === 'component') {
+    const comp = node as IRComponent
+    // `IRComponent.children` are the JSX children passed to *this* instance at
+    // the call site (`<Child>...</Child>`) — part of the PARENT's IR, evaluated
+    // in the parent's render scope, so spreads inside them belong on the
+    // parent's Props struct. The child's own template body is a separate
+    // `ComponentIR` compiled in a separate `generate()` pass, so the recursion
+    // never crosses a component boundary and per-component `spreadIdCounter`
+    // can't collide across unrelated components.
+    for (const child of comp.children) {
+      collectRawSpreadAttrs(child, result)
+    }
+    return
+  }
+  if (node.type === 'provider') {
+    const p = node as IRProvider
+    for (const child of p.children) {
+      collectRawSpreadAttrs(child, result)
+    }
+    return
+  }
+  if (node.type === 'async') {
+    const a = node as IRAsync
+    collectRawSpreadAttrs(a.fallback, result)
+    for (const child of a.children) {
+      collectRawSpreadAttrs(child, result)
+    }
+    return
+  }
+  // Loops are intentionally not descended — loop-internal spreads emit
+  // `{{bf_spread_attrs <go-expr>}}` inline from `elementAttrEmitter.emitSpread`
+  // instead of plumbing through a Props struct field.
+}
+
 /**
  * Walk the IR (elements, fragments, conditionals, providers, async, components)
  * but stop at loop bodies. Each `'spread'` attr value with a `slotId` becomes
  * one `SpreadSlotInfo` entry.
  */
 export function collectSpreadSlots(ctx: GoEmitContext, node: IRNode): SpreadSlotInfo[] {
-  const result: SpreadSlotInfo[] = []
-  collectSpreadSlotsRecursive(ctx, node, result)
-  return result
+  const raw: RawSpreadAttr[] = []
+  collectRawSpreadAttrs(node, raw)
+  return raw.map(r => ({ ...r, bagSource: classifySpreadBagSource(ctx, r.expr) }))
+}
+
+/**
+ * The `Spread_<slotId>` field name(s) an element spread of `restPropsName`
+ * (`{...rest}` on some element in the tree, as opposed to a member read like
+ * `rest.header`) renders from — see `ChildComponentShape.restBagSpreadFields`
+ * and `restBagOverrideFields` (`lib/types.ts`) for why a dynamic per-instance
+ * rest-bag override needs this IN ADDITION TO `restBagField`. No `GoEmitContext`
+ * needed: `restPropsName` is passed directly (a REGISTRATION-time caller, like
+ * `registerChildComponentShape`, has the child's `ir.metadata.restPropsName`
+ * but no live emit context bound to that child yet — the child's own
+ * `generate()` pass hasn't run).
+ */
+export function collectRestBagSpreadFields(root: IRNode, restPropsName: string): string[] {
+  const raw: RawSpreadAttr[] = []
+  collectRawSpreadAttrs(root, raw)
+  return raw.filter(r => r.expr.trim() === restPropsName).map(r => r.slotId)
 }
 
 /**
@@ -56,78 +160,6 @@ function classifySpreadBagSource(ctx: GoEmitContext, spreadExpr: string): 'input
     return 'input-bag'
   }
   return 'inline'
-}
-
-function collectSpreadSlotsRecursive(ctx: GoEmitContext, node: IRNode, result: SpreadSlotInfo[]): void {
-  if (node.type === 'element') {
-    const element = node as IRElement
-    for (const attr of element.attrs) {
-      if (attr.value.kind !== 'spread') continue
-      if (!attr.value.slotId) continue
-      result.push({
-        slotId: attr.value.slotId,
-        expr: attr.value.expr,
-        parsed: attr.value.parsed,
-        templateExpr: attr.value.templateExpr,
-        bagSource: classifySpreadBagSource(ctx, attr.value.expr),
-      })
-    }
-    for (const child of element.children) {
-      collectSpreadSlotsRecursive(ctx, child, result)
-    }
-    return
-  }
-  if (node.type === 'fragment') {
-    const fragment = node as IRFragment
-    for (const child of fragment.children) {
-      collectSpreadSlotsRecursive(ctx, child, result)
-    }
-    return
-  }
-  if (node.type === 'conditional') {
-    const cond = node as IRConditional
-    collectSpreadSlotsRecursive(ctx, cond.whenTrue, result)
-    if (cond.whenFalse) collectSpreadSlotsRecursive(ctx, cond.whenFalse, result)
-    return
-  }
-  if (node.type === 'if-statement') {
-    const stmt = node as IRIfStatement
-    collectSpreadSlotsRecursive(ctx, stmt.consequent, result)
-    if (stmt.alternate) collectSpreadSlotsRecursive(ctx, stmt.alternate, result)
-    return
-  }
-  if (node.type === 'component') {
-    const comp = node as IRComponent
-    // `IRComponent.children` are the JSX children passed to *this* instance at
-    // the call site (`<Child>...</Child>`) — part of the PARENT's IR, evaluated
-    // in the parent's render scope, so spreads inside them belong on the
-    // parent's Props struct. The child's own template body is a separate
-    // `ComponentIR` compiled in a separate `generate()` pass, so the recursion
-    // never crosses a component boundary and per-component `spreadIdCounter`
-    // can't collide across unrelated components.
-    for (const child of comp.children) {
-      collectSpreadSlotsRecursive(ctx, child, result)
-    }
-    return
-  }
-  if (node.type === 'provider') {
-    const p = node as IRProvider
-    for (const child of p.children) {
-      collectSpreadSlotsRecursive(ctx, child, result)
-    }
-    return
-  }
-  if (node.type === 'async') {
-    const a = node as IRAsync
-    collectSpreadSlotsRecursive(ctx, a.fallback, result)
-    for (const child of a.children) {
-      collectSpreadSlotsRecursive(ctx, child, result)
-    }
-    return
-  }
-  // Loops are intentionally not descended — loop-internal spreads emit
-  // `{{bf_spread_attrs <go-expr>}}` inline from `elementAttrEmitter.emitSpread`
-  // instead of plumbing through a Props struct field.
 }
 
 /**

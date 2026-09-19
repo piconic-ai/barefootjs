@@ -1567,6 +1567,19 @@
         "text"
       ]
     },
+    "composite-row-child-rest-bag-prop-hoisted": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "cond-arm-tag-collision": {
       "kinds": [
         "array-literal",
@@ -7040,13 +7053,13 @@
     "array-method": 72,
     "arrow": 76,
     "binary": 109,
-    "call": 293,
+    "call": 294,
     "conditional": 34,
-    "identifier": 415,
+    "identifier": 416,
     "index-access": 15,
     "literal": 330,
     "logical": 53,
-    "member": 244,
+    "member": 245,
     "object-literal": 96,
     "template-literal": 31,
     "unary": 30,

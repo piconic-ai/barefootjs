@@ -24,6 +24,44 @@ import { collapseLiteralUnion } from '../type/type-codegen.ts'
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
 
 /**
+ * Unwrap a `T | undefined`/`T | null` union — the controlled-component
+ * idiom's widened signal/prop type, e.g. `createSignal<string | undefined>
+ * ('one')` — to its single non-nullish PRIMITIVE branch. The `| undefined`/
+ * `| null` half is source-level documentation of nullability, not a
+ * Go-representable branch or evidence about the INITIAL VALUE (#3061).
+ *
+ * Only fires for the EXACT shape "one nullish primitive member, one other
+ * PRIMITIVE member" — every other two-member union is returned unchanged:
+ * - `string | number` (no `undefined`/`null` at all) — picking a branch by
+ *   declaration order would silently mistype whichever literal doesn't
+ *   match it (e.g. a `number` initial value baked as the `""` string zero
+ *   value because `string` happened to sort first in `unionTypes`), worse
+ *   than the pre-existing `nil`/unhandled fallback for that genuinely
+ *   ambiguous shape.
+ * - `T[] | undefined` / `SomeInterface | undefined` — the non-nullish side
+ *   isn't a primitive literal-baking decision at all; left on the
+ *   pre-existing fallback rather than silently widening the covered scope
+ *   to an untested one. The covered scope is what the `#3061 nullable-union
+ *   signal seed` unit tests (`go-template-adapter.test.ts`) and the
+ *   `signal-optional-init` fixture pin: a string / number / boolean literal
+ *   under `| undefined` or `| null`, and the `string | number` bail-out.
+ *
+ * Shared with `memo-compute.ts`'s boolean-getter classification so the
+ * "which half of a nullable union is the real type" decision lives in one
+ * place (a looser inline copy there used to accept `boolean | number`).
+ */
+export function unwrapNullableUnion(typeInfo: TypeInfo): TypeInfo {
+  if (typeInfo.kind !== 'union' || typeInfo.unionTypes?.length !== 2) return typeInfo
+  const isNullish = (t: TypeInfo): boolean =>
+    t.kind === 'primitive' && (t.primitive === 'undefined' || t.primitive === 'null')
+  const isOtherPrimitive = (t: TypeInfo): boolean => t.kind === 'primitive' && !isNullish(t)
+  const [a, b] = typeInfo.unionTypes
+  if (isNullish(a) && isOtherPrimitive(b)) return b
+  if (isNullish(b) && isOtherPrimitive(a)) return a
+  return typeInfo
+}
+
+/**
  * A bare prop-field reference (`in.<Field>`), type-asserted when the prop
  * was flipped to nillable `interface{}` (#2248/#2259/#2260's
  * `resolvePropGoType` flips) while THE CONSUMER's own expected type is a
@@ -34,12 +72,6 @@ const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
  * compile error) — safely type-assert with a zero-value fallback for the
  * concrete-scalar case instead of the bare field reference. Object/array
  * expected types are left alone (already `interface{}`-compatible).
- *
- * `expectedType` may be `kind: 'union'` — a `T | undefined` signal type
- * annotation (the controlled-component idiom's controlled signal) — the `|
- * undefined` half is source-level documentation of nullability, not a
- * Go-representable branch, so it's unwrapped to its single non-
- * undefined/null primitive branch.
  *
  * `param.name` is the LOCAL binding — `nillablePropNames` (a source-level
  * analysis set, `collectNillablePropNames`) stays keyed by it — while the
@@ -52,13 +84,8 @@ function nillableAwarePropRef(
   expectedType: TypeInfo,
 ): string {
   const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-  const scalar =
-    expectedType.kind === 'primitive'
-      ? expectedType
-      : expectedType.kind === 'union' && expectedType.unionTypes?.length === 2
-        ? expectedType.unionTypes.find(t => t.primitive !== 'undefined' && t.primitive !== 'null')
-        : undefined
-  if (ctx.state.nillablePropNames.has(param.name) && scalar?.kind === 'primitive') {
+  const scalar = unwrapNullableUnion(expectedType)
+  if (ctx.state.nillablePropNames.has(param.name) && scalar.kind === 'primitive') {
     const goType =
       scalar.primitive === 'boolean' ? 'bool' :
       scalar.primitive === 'number' ? 'float64' :
@@ -118,8 +145,22 @@ export function convertInitialValue(
     return propRef(param)
   }
 
-  if (typeInfo.kind === 'primitive') {
-    if (typeInfo.primitive === 'boolean') {
+  // A `T | undefined`/`T | null` union's literal initial value silently fell
+  // through to `nil` before #3061: `collapseLiteralUnion` above
+  // intentionally leaves this heterogeneous union alone (member families
+  // differ: `string` vs `undefined`), so none of the primitive/array/
+  // interface branches below ever matched. `unwrapNullableUnion` (above)
+  // unwraps it to the union's single non-nullish branch for THIS
+  // literal-baking decision only — the field itself keeps its `interface{}`
+  // type from `typeInfoToGo`, which doesn't collapse this shape either — an
+  // `interface{}` holding a baked Go string/bool/float64 still renders
+  // correctly through `{{.Field}}`/`title="{{.Field}}"`, and the
+  // `undefined` step of a toggling signal keeps its `nil` zero value on the
+  // branches that don't match below.
+  const literalTypeInfo = unwrapNullableUnion(typeInfo)
+
+  if (literalTypeInfo.kind === 'primitive') {
+    if (literalTypeInfo.primitive === 'boolean') {
       // Structural first: the SAME initial value, already parsed
       // (`SignalInfo.parsed`/module-const `parsed`) — text-matching
       // `value === 'true'` is the fallback for a caller with no `preParsed`
@@ -129,7 +170,7 @@ export function convertInitialValue(
       }
       return value === 'true' ? 'true' : 'false'
     }
-    if (typeInfo.primitive === 'number') {
+    if (literalTypeInfo.primitive === 'number') {
       // Structural first — `numberLiteralRawGo` unwraps a leading unary minus
       // (#2168 math-methods: `createSignal(-7.6)`) off the literal's OWN
       // `raw` token (exact source spelling, never a re-stringified value).
@@ -143,7 +184,7 @@ export function convertInitialValue(
       if (/^-?\d+\.\d+$/.test(value)) return value
       return '0'
     }
-    if (typeInfo.primitive === 'string') {
+    if (literalTypeInfo.primitive === 'string') {
       // Structural first: `JSON.stringify` re-quotes/escapes the literal's
       // unquoted `value` for Go — correct for any embedded quote/backslash,
       // unlike the text fallback's blind `'` → `"` swap below.
@@ -174,13 +215,13 @@ export function convertInitialValue(
     }
   }
 
-  if (typeInfo.kind === 'array') {
-    return jsLiteralToGo(ctx, typeInfo, preParsed) ?? 'nil'
+  if (literalTypeInfo.kind === 'array') {
+    return jsLiteralToGo(ctx, literalTypeInfo, preParsed) ?? 'nil'
   }
 
   // A string type-alias keeps its string value instead of falling to nil.
-  if (typeInfo.kind === 'interface' && typeInfo.raw) {
-    const aliasBase = ctx.state.localTypeAliases.get(typeInfo.raw)
+  if (literalTypeInfo.kind === 'interface' && literalTypeInfo.raw) {
+    const aliasBase = ctx.state.localTypeAliases.get(literalTypeInfo.raw)
     if (aliasBase === 'string') {
       if (value.startsWith("'") || value.startsWith('"')) {
         return value.replace(/'/g, '"')
@@ -196,8 +237,8 @@ export function convertInitialValue(
     // fell straight through to `nil` — a compile error for a non-pointer
     // struct field (`cannot use nil as User value in struct literal`), not
     // merely a silently-dropped initial value.
-    if (ctx.state.localStructFields.has(typeInfo.raw)) {
-      const baked = jsLiteralToGo(ctx, typeInfo, preParsed)
+    if (ctx.state.localStructFields.has(literalTypeInfo.raw)) {
+      const baked = jsLiteralToGo(ctx, literalTypeInfo, preParsed)
       if (baked !== null) return baked
       // Baking failed (a non-literal initial value, or no `preParsed` tree)
       // — `nil` is STILL invalid Go for this non-pointer struct field, so
@@ -206,7 +247,7 @@ export function convertInitialValue(
       // correct fallback here — mirrors this function's own docstring
       // ("falls back to the type's zero value") for every other typed
       // branch above.
-      return `${typeInfo.raw}{}`
+      return `${literalTypeInfo.raw}{}`
     }
   }
 

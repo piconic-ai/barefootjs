@@ -2000,24 +2000,8 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 437,
+    "totalFixtures": 438,
     "fixtures": {
-      "child-prop-rest-forward": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "child-prop-undefined-alternate-dropped"
-          ]
-        }
-      },
-      "composite-row-child-rest-bag-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-rest-bag-prop-override"
-          ]
-        }
-      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -4400,14 +4384,6 @@
           }
         }
       },
-      "signal-optional-init": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "optional-typed-signal-initial-value-dropped"
-          ]
-        }
-      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -4972,14 +4948,6 @@
       }
     },
     "docs": {
-      "child-prop-rest-forward": {
-        "description": "a child-component prop the child forwards via {...rest} onto its root keeps updating reactively,…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-prop-rest-forward.ts"
-      },
-      "composite-row-child-rest-bag-prop": {
-        "description": "Dynamic loop row root is an element containing a child whose per-row prop routes into its rest bag",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/composite-row-child-rest-bag-prop.ts"
-      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -5071,10 +5039,6 @@
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
-      },
-      "signal-optional-init": {
-        "description": "a signal declared as `T | undefined` with a literal initial value renders that value at SSR as an…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-optional-init.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -5255,19 +5219,6 @@
         "BF101"
       ]
     },
-    "child-prop-undefined-alternate-dropped": {
-      "title": "A child-component prop whose value is a ternary with an undefined alternate is dropped from the slot props",
-      "kind": "silent",
-      "given": "a child component call whose prop is a ternary with an `undefined` alternate (`<RestForwardTag tag={shown() ? tag() : undefined} />`), the child forwarding that prop onto its root via `{...rest}`",
-      "expected": "the server HTML carries `tag=\"one\"` while the branch is taken and no `tag` attribute otherwise, as the reference renders",
-      "actual": "omits the prop from the generated slot props (`RestForwardTagInput{ Variant: \"a\" }`, no `Tag`), so the child’s rest-bag lookup renders `tag=\"\"` whichever branch is taken",
-      "fixtures": [
-        "child-prop-rest-forward"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
     "client-only-loop-in-static-loop": {
       "title": "Client-only nested loop inside a static loop row",
       "kind": "refusal",
@@ -5374,19 +5325,6 @@
         "data-table"
       ],
       "adapters": []
-    },
-    "loop-row-rest-bag-prop-override": {
-      "title": "Per-row prop routed into a child rest bag inside a composite loop row",
-      "kind": "silent",
-      "given": "a signal-driven `.map()` whose row root is a plain element wrapping a child component, passing a per-row value through a prop the child captures only via `...rest`",
-      "expected": "each row renders the child with that row's value applied (`title=\"one\"`, `title=\"two\"`)",
-      "actual": "renders the child without the rest-bag attribute at all, on every row",
-      "fixtures": [
-        "composite-row-child-rest-bag-prop"
-      ],
-      "adapters": [
-        "go-template"
-      ]
     },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",
@@ -5516,19 +5454,6 @@
         "pebble",
         "twig",
         "xslate"
-      ]
-    },
-    "optional-typed-signal-initial-value-dropped": {
-      "title": "A signal declared with an explicit `T | undefined` type argument loses its literal initial value at SSR",
-      "kind": "silent",
-      "given": "a signal created as `createSignal<string | undefined>('one')` whose getter is rendered as an attribute (`title={label()}`) or as a text expression",
-      "expected": "the server HTML carries the literal initial value (`title=\"one\"` and the text `one`), as the reference renders",
-      "actual": "seeds the field from the union type instead of the literal (`Label interface{}` initialised to `nil`), so the server HTML renders `title=\"\"` and empty text until hydration writes the real value",
-      "fixtures": [
-        "signal-optional-init"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "ref-callback-portal-content-inline-at-ssr": {

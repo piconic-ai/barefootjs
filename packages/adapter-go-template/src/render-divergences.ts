@@ -58,6 +58,16 @@
  * — is the destructured prop) — exactly #2630's original shape of gap, one
  * destructure-hop deeper. Same fix as #2630: teach the harness, not the
  * adapter — see `resolveNestedPropDerivedArrayValue`'s doc comment.)
+ *
+ * (`signal-optional-init`'s divergence graduated by an actual lowering
+ * fix: `createSignal<string | undefined>('one')` seeded its Props field
+ * from the union type (`interface{}`, `nil`) instead of the literal,
+ * because `convertInitialValue`'s literal-union collapse deliberately left
+ * a mixed nullish/primitive union alone and no primitive branch below it
+ * matched. `unwrapNullableUnion` (`value/value-lowering.ts`) now takes the
+ * single non-nullish primitive half for the literal-baking decision only —
+ * the field stays `interface{}`-typed, so the `undefined` step of a
+ * toggling signal keeps its `nil` zero value.)
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
@@ -67,6 +77,13 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // template position (arrow-valued const OR `function` declaration) now
 // refuses loudly with BF101 at compile time instead of silently crashing
 // `html/template` at render time — see `conformance-pins.ts`.
+// #3062 graduated the entry formerly here for
+// `composite-row-child-rest-bag-prop` (`loop-row-rest-bag-prop-override`):
+// `loopRowChildPropOverrides` now delivers a rest-bag-routed per-row prop
+// through `bf_with_bag`, the same route `queueDynamicPropDefine`'s static
+// sibling already used, synced onto every render-consulted bag field
+// (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
+// undelivered.
 export const renderDivergences: RenderDivergences = {
   // A component-body const bound to an opaque call (`const label =
   // makeLabel()`) and invoked in text position lowers to a bare template
@@ -74,25 +91,6 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
-  // `loopRowChildPropOverrides` skips a prop that routes into the child's
-  // rest bag (`routesToRestBag`), so the per-row value never reaches the
-  // row: the child renders without the attribute at all. The out-of-loop
-  // sibling route (`queueDynamicPropDefine` → `bf_with_bag`) is not wired
-  // for loop rows yet.
-  'composite-row-child-rest-bag-prop': { limitation: 'loop-row-rest-bag-prop-override' },
-  // The nested-child-props baker has no arm for a ternary whose alternate is
-  // `undefined` (`tag={shown() ? tag() : undefined}`): the prop gets no
-  // field at all in `RestForwardTagInput{...}`, so the child's rest-bag
-  // lookup renders `tag=""` whichever branch is taken, where the reference
-  // renders `tag="one"` / no attribute. Measured under Go 1.25 (the version
-  // gate in `test-render.ts` skips the render on older toolchains, which is
-  // why a Go 1.24 host reports this fixture green).
-  'child-prop-rest-forward': { limitation: 'child-prop-undefined-alternate-dropped' },
-  // A signal declared as `createSignal<string | undefined>('one')` gets its
-  // Props field typed from the union (`interface{}`) and seeded with `nil`
-  // rather than the literal `'one'`, so `title="{{.Label}}"` and
-  // `{{.Label}}` render empty where the reference renders `one`.
-  'signal-optional-init': { limitation: 'optional-typed-signal-initial-value-dropped' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

@@ -1888,6 +1888,157 @@ export function Host() {
     })
   })
 
+  describe('#3060 ternary-with-undefined-alternate rest-bag prop', () => {
+    // `emitChildField`'s conditional arm resolves each ternary operand through
+    // `resolveDynamicPropValue` — the SAME guarded resolver a bare child-prop
+    // value uses — so a bare-identifier consequent that names a LOCAL const
+    // shadowing a same-named prop is left unresolved (field unbaked) instead
+    // of being misresolved to the prop's `in.<Field>` (#2198's hazard, which
+    // the resolver's shadow guard exists for). Requires the child's shape
+    // registered (the CLI's cross-file pre-pass) so `tag` routes to its bag.
+    const childSource = `
+export function Tag({ variant, ...rest }: { variant?: string }) {
+  return <span {...rest}>{variant}</span>
+}
+`
+    test('a destructured prop as the consequent bakes the prop field', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const parentSource = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [shown, setShown] = createSignal(true)
+  return <div><Tag variant="a" tag={shown() ? label : undefined} /></div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(parentSource, adapter))!
+      expect(types).toContain('return in.Label')
+    })
+
+    test('a local const shadowing a same-named prop is not misresolved to the prop field', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const parentSource = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host(props: { label: string }) {
+  const [shown, setShown] = createSignal(true)
+  const label = props.label + '!'
+  return <div><Tag variant="a" tag={shown() ? label : undefined} /></div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(parentSource, adapter))!
+      // The bare `label` is the LOCAL, not the prop: the ternary arm bakes
+      // nothing (the field is left on the pre-existing unbaked path) — the
+      // only `in.Label` reads are the parent's own constructor seeds.
+      expect(types).not.toContain('return in.Label')
+      expect(types).not.toContain('func() interface{}')
+    })
+
+    // The ternary TEST lands in a Go `if`, which takes a `bool` and has no
+    // truthiness: a boolean signal seed (`true`) passes through, anything
+    // else — a string/number signal seed, a prop field — is coerced with
+    // `bf.Truthy` (JS `Boolean(x)`), mirroring `lowerTernaryTest`. Without
+    // the coercion `if "x" {` fails to compile.
+    test('a boolean test operand is the Go condition as-is', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const types = adapter.generateTypes(compileToIR(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [shown, setShown] = createSignal(true)
+  return <div><Tag variant="a" tag={shown() ? label : undefined} /></div>
+}
+`, adapter))!
+      expect(types).toContain('if true { return in.Label }')
+    })
+
+    test('a non-boolean test operand is coerced through bf.Truthy', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const types = adapter.generateTypes(compileToIR(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [tag, setTag] = createSignal('x')
+  return <div><Tag variant="a" tag={tag() ? label : undefined} /></div>
+}
+`, adapter))!
+      expect(types).toContain('if bf.Truthy("x") { return in.Label }')
+      expect(types).not.toContain('if "x" {')
+    })
+
+    test('e2e: a string-tested ternary rest-bag prop compiles and renders on go run', async () => {
+      try {
+        const html = await renderGoTemplateComponent({
+          source: `
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [tag, setTag] = createSignal('x')
+  return <div><Tag variant="a" tag={tag() ? label : undefined} /></div>
+}
+`.trimStart(),
+          adapter: new GoTemplateAdapter(),
+          components: { './tag': childSource.trimStart() },
+          props: { label: 'hello' },
+        })
+        // `'x'` is truthy, so the consequent (the `label` prop) reaches the
+        // child's rest bag and renders as the attribute.
+        expect(html).toContain('tag="hello"')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping #3060 string-test e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
+  })
+
+  describe('#3061 nullable-union signal seed', () => {
+    // `createSignal<T | undefined>(lit)` / `<T | null>(lit)`: the union is
+    // source-level nullability documentation, not evidence about the initial
+    // value, so `convertInitialValue` unwraps it (`unwrapNullableUnion`) to
+    // the primitive half for the LITERAL-BAKING decision only. The field
+    // itself stays `interface{}` (the union's Go type), so a toggling
+    // signal's `undefined` step keeps its `nil` zero value.
+    const host = (init: string) => `
+"use client"
+import { createSignal } from '@barefootjs/client'
+export function Host() {
+  const [label, setLabel] = ${init}
+  return <span title={label() as any}>{label()}</span>
+}
+`
+    test.each([
+      ['string | undefined', "createSignal<string | undefined>('one')", 'Label: "one",'],
+      ['boolean | undefined', 'createSignal<boolean | undefined>(true)', 'Label: true,'],
+      ['number | null', 'createSignal<number | null>(3)', 'Label: 3,'],
+    ])('%s seeds the literal, not the union zero value', (_shape, init, seed) => {
+      const result = compileAndGenerate(host(init))
+      expect(result.types).toContain('Label interface{}')
+      expect(result.types).toContain(seed)
+      expect(result.types).not.toContain('Label: nil,')
+    })
+
+    test('a union with no nullish member is not unwrapped by declaration order', () => {
+      // `string | number` has no `undefined`/`null` half: picking either
+      // branch would mistype whichever literal doesn't match it, so the
+      // helper bails and the seed stays on the pre-existing `nil` fallback.
+      const result = compileAndGenerate(host('createSignal<string | number>(3)'))
+      expect(result.types).toContain('Label interface{}')
+      expect(result.types).toContain('Label: nil,')
+    })
+  })
+
   describe('#2925 nested-child getter/object-literal props', () => {
     // Companion to the #2674 collision test above (`a synthesized-name
     // collision gracefully falls back...`), but for `registerChildComponentShape`'s
@@ -5039,12 +5190,15 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
   })
 
   // A prop that routes into the child's rest bag (not a declared param) has
-  // no named Go field for `bf_with_props` to override — it must stay on the
-  // constructor path rather than emit a pipeline argument that can only
-  // ever no-op at the runtime helper's unknown-field passthrough. Requires
+  // no named Go field for `bf_with_props` to override — a pipeline argument
+  // there could only ever no-op at the runtime helper's unknown-field
+  // passthrough. #3062: it now has a delivery route of its own —
+  // `bf_with_bag`/`WithBagEntry`, wrapping the constructor-path reference
+  // rather than replacing it — instead of the prop staying undelivered on
+  // every row (this test's pre-#3062 pin). Requires
   // `registerChildComponentShape` (normally the CLI's cross-file pre-pass,
   // #2131) so the adapter actually knows `Badge`'s rest-bag shape.
-  test('a rest-bag-routed per-row prop stays on the constructor path', () => {
+  test('a rest-bag-routed per-row prop is delivered via bf_with_bag, not bf_with_props', () => {
     // Mirrors the `registerChildComponentShape` pattern the `#2087` test
     // above uses: a bare `compileJSX` never calls that hook (only the CLI's
     // cross-file pre-pass, #2131, does), so this builds each component's IR
@@ -5094,8 +5248,14 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
 
     // `tone` isn't a declared `Badge` param, so it routes into the rest bag
     // (`emitChildField`'s rule) — no named Go field for `bf_with_props` to
-    // override, so the call stays the bare shared-instance reference.
-    expect(template).toContain('{{template "Badge" $.BadgeSlot0}}')
+    // target, so it never emits that helper. #3062: it IS still delivered,
+    // through `bf_with_bag`, onto every render-consulted bag field — `Rest`
+    // (a `rest.x` member read) AND `Spread_0` (Badge's OWN `{...rest}`
+    // element spread onto its root) — since patching only one would leave
+    // the other, whichever the child's render actually reads, stale.
+    expect(template).toContain(
+      '{{template "Badge" (bf_with_bag (bf_with_bag $.BadgeSlot0 "Rest" "tone" .Label) "Spread_0" "tone" .Label)}}',
+    )
     expect(template).not.toContain('bf_with_props')
   })
 })
