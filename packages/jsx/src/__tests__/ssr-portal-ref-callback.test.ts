@@ -95,6 +95,39 @@ export function P() {
     expect(flaggedRefs(ir)).toEqual([])
   })
 
+  test('flags createPortal deferred through queueMicrotask — same callback, not a separate helper', () => {
+    // Regression pin: `SelectContent` (`ui/components/ui/select/index.tsx`)
+    // defers its `createPortal` call through
+    // `queueMicrotask(() => createPortal(el, document.body, { ownerScope }))`
+    // specifically so sibling `initChild` calls can find their elements
+    // before the element leaves its DOM subtree. This must still match:
+    // the guard that decides WHETHER to call runs synchronously inside
+    // the `ref` callback itself, only the call is deferred — the "DIRECT
+    // call only" rule (see `containsSsrPortalPlacementCall`'s docstring)
+    // is about not crossing into a SEPARATELY-DECLARED helper function's
+    // own body, not about a same-callback scheduling deferral like this
+    // one. An earlier draft over-corrected this by stopping at ANY
+    // nested function/arrow boundary, which wrongly excluded exactly
+    // this shape — confirmed against the real fixture pipeline
+    // (`generate-expected-html.ts`), where `select`'s own reference
+    // output flags its Content element the same as `combobox`'s (whose
+    // `createPortal` call is direct, not deferred).
+    const ir = root(`
+'use client'
+import { createPortal, isSSRPortal } from '@barefootjs/client'
+export function P() {
+  const handleMount = (el: HTMLElement) => {
+    if (el.parentNode !== document.body && !isSSRPortal(el)) {
+      const ownerScope = el.closest('[bf-s]') ?? undefined
+      queueMicrotask(() => createPortal(el, document.body, { ownerScope }))
+    }
+  }
+  return <div ref={handleMount} />
+}
+`)
+    expect(flaggedRefs(ir)).toEqual(['handleMount'])
+  })
+
   test('does not flag createPortal targeting a DIFFERENT container', () => {
     const ir = root(`
 'use client'

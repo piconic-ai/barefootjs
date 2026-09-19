@@ -6775,6 +6775,23 @@ function firstSimpleParamName(
  * the client-side `createPortal` never stamps `bf-po`, so SSR placing
  * the element at the outlet and adding `bf-po` would itself create a new
  * SSR/hydration mismatch instead of closing the existing one.
+ *
+ * Deliberately does NOT stop at a nested function/arrow boundary the way
+ * `findNamedCallbackInScope` does: `SelectContent`
+ * (`ui/components/ui/select/index.tsx`) defers its call through
+ * `queueMicrotask(() => createPortal(el, document.body, { ownerScope
+ * }))` — still the SAME `ref` callback's own call, just scheduled async,
+ * not routed through a separately-declared helper — and must match here
+ * the same as a direct call. The `if (…) createPortal(…)` guard that
+ * decides WHETHER to call still runs synchronously inside `handleMount`
+ * itself; only the call is deferred. So once SSR places the element at
+ * the outlet with `bf-po`, hydration's `isSSRPortal(el)` check is true
+ * before the microtask would even be scheduled, keeping the guard a
+ * no-op exactly like the direct-call components. The "DIRECT call only"
+ * guarantee `isSsrPortalRefCallback`'s docstring describes is about NOT
+ * crossing into a separately-declared helper function's own body (see
+ * `findNamedCallbackInScope`'s scope limit for that), not about this
+ * same-callback scheduling deferral.
  */
 function containsSsrPortalPlacementCall(body: ts.Node, paramName: string): boolean {
   let found = false
