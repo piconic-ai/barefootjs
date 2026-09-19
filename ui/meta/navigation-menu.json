@@ -133,6 +133,7 @@
   },
   "dependencies": {
     "internal": [
+      "track-position",
       "icon"
     ],
     "external": [

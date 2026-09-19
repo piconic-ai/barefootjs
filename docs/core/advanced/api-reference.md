@@ -49,7 +49,6 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`SearchParamsInit`](#searchparamsinit) | type | 0.17.0 | **Beta** |
 | [`Signal`](#signal) | type | 0.1.0 | **Beta** |
 | [`splitProps()`](#splitprops) | function | 0.1.0 | Alpha |
-| [`trackPosition()`](#trackposition) | function | 0.35.0 | Alpha |
 | [`untrack()`](#untrack) | function | 0.1.0 | **Beta** |
 | [`useContext()`](#usecontext) | function | 0.1.0 | **Beta** |
 
@@ -233,10 +232,8 @@ The nearest element matching `slotSelector` among `el`'s siblings, or `null`. Br
 const handleMount = (el: HTMLElement) => {
   const triggerEl = findSiblingSlot(el, '[data-slot="popover-trigger"]')
   if (!triggerEl) return
-  trackPosition(() => {
-    const r = triggerEl.getBoundingClientRect()
-    el.style.top = `${r.bottom + window.scrollY}px`
-  })
+  const r = triggerEl.getBoundingClientRect()
+  el.style.top = `${r.bottom + window.scrollY}px`
 }
 ```
 
@@ -426,24 +423,6 @@ function Checkbox(props: CheckboxProps) {
   const [local, rest] = splitProps(props, ['checked', 'onCheckedChange'])
   return <button {...rest} aria-checked={local.checked} />
 }
-```
-
-### `trackPosition()`
-
-`function` · Alpha since 0.35.0 · `@barefootjs/client`
-
-Keep a floating element positioned while open: runs `update` now, on capture-phase scroll and on resize, and once more on dispose. Browser-only.
-
-```tsx
-"use client"
-// Keep an open popover pinned to its trigger while the page scrolls.
-const dispose = trackPosition(() => {
-  const r = trigger.getBoundingClientRect()
-  el.style.top = `${r.bottom + window.scrollY}px`
-})
-
-// When the popover closes: runs `update` once more, then detaches.
-dispose()
 ```
 
 ### `untrack()`

@@ -132,7 +132,6 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 | BarefootJS | Tier | Imp. | Notes |
 |---|---|---|---|
 | `formatDate` | Beta | 2 | adapter-lowered helper on 9 adapters; ui=1 site=2 (task C of #3078) |
-| `trackPosition` | Alpha | 2 | floating UI; ui=6 (task C) |
 | `beginTurn` / `endTurn` / `createRecordingSink` / `setProfilerSink` / `ProfilerEvent*` | **compiler ABI, not public** | 1 | profiler plumbing; compiler-emitted + `bf debug profile` |
 
 ## Sources

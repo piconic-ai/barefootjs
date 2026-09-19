@@ -138,10 +138,8 @@ export function isSSRPortal(_element: HTMLElement): boolean {
  * const handleMount = (el: HTMLElement) => {
  *   const triggerEl = findSiblingSlot(el, '[data-slot="popover-trigger"]')
  *   if (!triggerEl) return
- *   trackPosition(() => {
- *     const r = triggerEl.getBoundingClientRect()
- *     el.style.top = `${r.bottom + window.scrollY}px`
- *   })
+ *   const r = triggerEl.getBoundingClientRect()
+ *   el.style.top = `${r.bottom + window.scrollY}px`
  * }
  * ```
  *
@@ -155,25 +153,3 @@ export function findSiblingSlot(
   return browserOnly('findSiblingSlot')
 }
 
-/**
- * Keep a floating element positioned while open: runs `update` now, on capture-phase scroll and on resize, and once more on dispose. Browser-only.
- *
- * @example
- * ```tsx
- * "use client"
- * // Keep an open popover pinned to its trigger while the page scrolls.
- * const dispose = trackPosition(() => {
- *   const r = trigger.getBoundingClientRect()
- *   el.style.top = `${r.bottom + window.scrollY}px`
- * })
- *
- * // When the popover closes: runs `update` once more, then detaches.
- * dispose()
- * ```
- *
- * @since 0.35.0
- * @stability alpha
- */
-export function trackPosition(_update: () => void): () => void {
-  return browserOnly('trackPosition')
-}
