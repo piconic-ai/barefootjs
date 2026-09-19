@@ -105,6 +105,14 @@ export const ErrorCodes = {
   // dangling reference (#2432).
   INLINED_IMPORT_MISSING_EXPORT: 'BF055',
 
+  // `@barefootjs/client`'s `formatDate` called directly by name in a
+  // template-lowered position (#3089). `formatDate` is compiler ABI — the
+  // lowering TARGET of the `.toLocaleDateString()` sugar, emitted by the
+  // compiler itself — never an authored API, so this is a POLICY refusal
+  // (not a per-adapter capability gap) and fires identically on every
+  // adapter including Hono. See `format-date-refusal.ts`.
+  FORMAT_DATE_AUTHORED_CALL: 'BF056',
+
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 
@@ -210,6 +218,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.WRONG_PACKAGE_IMPORT]:
     'Import from wrong package.',
+
+  [ErrorCodes.FORMAT_DATE_AUTHORED_CALL]:
+    'formatDate cannot be called directly — it is compiler ABI, not an authored API.',
 
   [ErrorCodes.BUILTIN_REQUIRES_IMPORT]:
     "Built-in <Async> / <Region> must be imported from '@barefootjs/client'. " +

@@ -30,7 +30,7 @@
 >
 > | Surface | Status | Covers |
 > |---|---|---|
-> | [Runtime](./docs/core/advanced/api-reference.md#runtime) | **Beta** | The `@barefootjs/client` APIs a component author writes: `createSignal`, `createEffect`, `createMemo`, `onMount`, `onCleanup`, `untrack`, `batch`, context, portals, `<Async>` / `<Region>`, `queryHref`, `formatDate`. The rest of the package is alpha or compiler-internal |
+> | [Runtime](./docs/core/advanced/api-reference.md#runtime) | **Beta** | The `@barefootjs/client` APIs a component author writes: `createSignal`, `createEffect`, `createMemo`, `onMount`, `onCleanup`, `untrack`, `batch`, context, portals, `<Async>` / `<Region>`, `queryHref`. The rest of the package is alpha or compiler-internal |
 > | [Directives](./docs/core/advanced/api-reference.md#directives) | **Beta** | `"use client"` and `/* @client */` |
 > | [Browser mount](./docs/core/advanced/api-reference.md#browser-mount) | **Beta** | The two APIs an app calls itself on the browser-only `@barefootjs/client/runtime` entry: `render()` for CSR and `setupStreaming()` for a streaming page or the client router |
 > | [Vite plugin](./docs/core/advanced/api-reference.md#vite-plugin) | **Beta** | What configuring a build takes: `@barefootjs/vite`'s `barefoot()`, its four options, the `afterEmit` context, and the files it writes |

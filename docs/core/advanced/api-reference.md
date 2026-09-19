@@ -31,7 +31,6 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
 | [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
-| [`formatDate()`](#formatdate) | function | 0.1.0 | **Beta** |
 | [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
 | [`Memo`](#memo) | type | 0.1.0 | **Beta** |
 | [`onCleanup()`](#oncleanup) | function | 0.1.0 | **Beta** |
@@ -235,23 +234,6 @@ const handleMount = (el: HTMLElement) => {
   const r = triggerEl.getBoundingClientRect()
   el.style.top = `${r.bottom + window.scrollY}px`
 }
-```
-
-### `formatDate()`
-
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
-
-Format a date with a fixed pattern and time zone. SSR adapters lower the call to their own date helper.
-
-```tsx
-const createdAt = new Date('2026-09-15T00:00:00Z')
-
-formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')  // '2026/9/15'
-formatDate(createdAt, 'YYYY-MM-DD')              // '2026-09-15' (defaults to UTC)
-
-// In a component — every SSR adapter lowers this to its own date helper,
-// so the server-rendered text matches the client byte for byte.
-<time>{formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')}</time>
 ```
 
 ### `isSSRPortal()`

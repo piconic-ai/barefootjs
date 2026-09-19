@@ -574,7 +574,7 @@ import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
-import { fixture as formatDateTernary } from './format-date-ternary'
+import { fixture as formatDateClient } from './format-date-client'
 import { fixture as queryHref } from './query-href'
 import { fixture as queryHrefSrc } from './query-href-src'
 import { fixture as queryHrefTernary } from './query-href-ternary'
@@ -1124,7 +1124,7 @@ export const jsxFixtures: JSXFixture[] = [
   richPropClientRead,
   richPropPrecompute,
   formatDate,
-  formatDateTernary,
+  formatDateClient,
   queryHref,
   queryHrefSrc,
   queryHrefTernary,

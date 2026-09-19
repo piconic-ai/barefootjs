@@ -2901,6 +2901,98 @@
           }
         }
       },
+      "format-date": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        }
+      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -4980,6 +5072,10 @@
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
       },
+      "format-date": {
+        "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
+      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -5199,6 +5295,31 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "authored-format-date-call": {
+      "title": "Authored call to formatDate",
+      "kind": "refusal",
+      "given": "a template-position call to `formatDate` imported by name from `@barefootjs/client` (or its `/runtime` subpath), e.g. `{formatDate(date, pattern)}`",
+      "expected": "a compile-time refusal pointing at `date.toLocaleDateString(locale, { timeZone, ... })` with literal options, or `/* @client */` to defer the read",
+      "actual": "the compiler refuses with BF056",
+      "fixtures": [
+        "format-date"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF056"
       ]
     },
     "boolean-in-static-loop-item": {

@@ -109,22 +109,15 @@ function pad2(n: number): string {
 }
 
 /**
- * Format a date with a fixed pattern and time zone. SSR adapters lower the call to their own date helper.
+ * Format a date with a fixed pattern and time zone. This is the lowering
+ * TARGET of the `.toLocaleDateString(locale, { timeZone, ... })` sugar
+ * (a literal-locale call compiles to this call) — never call it by name in
+ * authored code: `import { formatDate } from '@barefootjs/client'` used in a
+ * template position is refused at compile time (BF056, `format-date-refusal.ts`).
+ * Use `.toLocaleDateString(...)` with literal options, or defer the whole
+ * read to the client with `/* @client *\/`.
  *
- * @example
- * ```tsx
- * const createdAt = new Date('2026-09-15T00:00:00Z')
- *
- * formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')  // '2026/9/15'
- * formatDate(createdAt, 'YYYY-MM-DD')              // '2026-09-15' (defaults to UTC)
- *
- * // In a component — every SSR adapter lowers this to its own date helper,
- * // so the server-rendered text matches the client byte for byte.
- * <time>{formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')}</time>
- * ```
- *
- * @since 0.1.0
- * @stability beta
+ * @internal
  */
 export function formatDate(
   date: Date | string,

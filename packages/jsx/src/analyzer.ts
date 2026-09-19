@@ -2142,9 +2142,14 @@ const CLIENT_EXPORTS = new Set([
   // `searchParams`. Runs natively on the client; SSR adapters lower a
   // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
   'queryHref',
-  // Pure date formatter (#2324). Runs natively on the client; SSR adapters
-  // lower a `formatDate(date, pattern, tz)` call to their `format_date`
-  // helper (spec/template-helpers.md).
+  // Pure date formatter (#2324), demoted to compiler ABI in #3089: it is
+  // still a REAL (now `@internal`) export — the lowering TARGET the
+  // `.toLocaleDateString()` sugar rewrites to, and the emitted client JS's
+  // own import — so it stays in this set to keep `WRONG_PACKAGE_IMPORT`'s
+  // "is this actually exported" check truthful (same reasoning as
+  // `forwardProps`/`unwrap` above, also `@internal` and also still listed).
+  // An AUTHORED call is refused separately and more specifically by
+  // `format-date-refusal.ts`'s BF056, which fires regardless of this entry.
   'formatDate',
   // Compile-away JSX built-ins (#1915) — importing them is what scopes the
   // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
