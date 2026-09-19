@@ -405,11 +405,12 @@ export function initDialogBasicDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s9) {
-      _s9.open = !!(open())
+      if (__m[0] ??= _s9.hasAttribute('open')) _s9.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -488,11 +489,12 @@ export function initDialogFormDemo(__scope, _p = {}) {
   if (_s7) _s7.addEventListener('click', handleDelete)
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s10) {
-      _s10.open = !!(open())
+      if (__m[0] ??= _s10.hasAttribute('open')) _s10.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -563,11 +565,12 @@ export function initDialogLongContentDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s9) {
-      _s9.open = !!(open())
+      if (__m[0] ??= _s9.hasAttribute('open')) _s9.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []

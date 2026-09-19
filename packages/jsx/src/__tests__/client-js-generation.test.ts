@@ -1321,6 +1321,20 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       expect(clientJs!.content).toContain(".hasAttribute('open')")
       expect(clientJs!.content).toContain('.open = !!')
+      // A bare `open={signal()}` reaches BOTH the named-prop-binding mirror
+      // (`emitReactivePropBindings`, ctx.reactiveProps) and the child-prop
+      // mirror (`emitReactiveChildProps`, ctx.reactiveChildProps) for the
+      // same slot — a regression in EITHER path's gate would still leave
+      // the OTHER path's gated write in the output, so asserting presence
+      // of a gated write alone can't catch one path regressing back to
+      // unconditional. Each gated write is emitted on its own single line
+      // (`emitAttrUpdate`'s mirrorSeed branch), so require every line that
+      // writes `.open = !!` to also carry its `hasAttribute('open')` gate.
+      const openWriteLines = clientJs!.content.split('\n').filter((line) => line.includes('.open = !!'))
+      expect(openWriteLines.length).toBeGreaterThan(0)
+      for (const line of openWriteLines) {
+        expect(line).toContain("hasAttribute('open')")
+      }
     })
 
     // #2716: a `value` prop passed to a CHILD COMPONENT (above) drives the

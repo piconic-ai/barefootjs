@@ -3858,11 +3858,12 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s0) {
-      _s0.checked = !!(isAllSelected())
+      if (__m[0] ??= _s0.hasAttribute('checked')) _s0.checked = !!(isAllSelected())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []

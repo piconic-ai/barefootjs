@@ -680,13 +680,19 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
   if (ctx.reactiveProps.length > 0) {
     lines.push('')
     lines.push(`  // Reactive prop bindings`)
-    // The generic named-prop mirror below seeds its presence answer once
-    // per prop (`emitAttrUpdate`'s `mirrorSeed`); the store is declared
-    // only when some prop takes that path, so effects made of `selected` /
-    // `value` / boolean mirrors alone keep their shape.
-    const isGenericMirror = (prop: ClientJsContext['reactiveProps'][number]): boolean =>
-      prop.propName !== 'selected' && prop.propName !== 'value' && !isBooleanAttr(prop.propName)
-    const needsSeedStore = ctx.reactiveProps.some(isGenericMirror)
+    // The generic named-prop mirror AND the boolean-IDL mirror below both
+    // seed their presence answer once per prop (`emitAttrUpdate`'s
+    // `mirrorSeed`) — same CHILD-ROOT MIRROR reasoning `emitAttrUpdate`'s
+    // docstring gives for `emitReactiveChildProps`'s identical boolean
+    // branch: the compiler can't know whether this slot's root is one of
+    // the elements that natively expose e.g. `open`/`checked`, so an
+    // unconditional `target.open = …` here would plant a live DOM property
+    // SSR never rendered (`child-prop-mirror-attr-ssr`). The store is
+    // declared only when some prop takes one of those two paths, so
+    // effects made of `selected` / `value` mirrors alone keep their shape.
+    const usesMirrorSeed = (prop: ClientJsContext['reactiveProps'][number]): boolean =>
+      prop.propName !== 'selected' && prop.propName !== 'value'
+    const needsSeedStore = ctx.reactiveProps.some(usesMirrorSeed)
     if (needsSeedStore) lines.push(`  { ${MIRROR_SEED_STORE_DECL}`)
     lines.push(`  createEffect(() => {`)
     let seedIndex = 0
@@ -733,16 +739,19 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
         // truthy, so setAttribute('disabled', 'false') still disables the element.
         } else if (prop.propName === 'value') {
           for (const stmt of emitChildValueMirrorStatements(ref, value)) lines.push(`      ${stmt}`)
-        } else if (isBooleanAttr(prop.propName)) {
-          lines.push(`      ${ref}.${prop.propName} = !!(${value})`)
         } else {
-          // Generic named-prop mirror (child-prop-mirror-attr-ssr):
-          // `mirrorSeed` restricts the write to a `${prop.propName}`
-          // attribute the child's OWN render already put on `ref` — see
-          // `emitAttrUpdate`'s docstring. Routed through the shared
-          // dispatcher instead of a hand-rolled `setAttribute` so this and
-          // `emitReactiveChildProps`'s identical generic mirror share one
-          // implementation of the gate.
+          // Generic AND boolean-IDL named-prop mirror alike
+          // (child-prop-mirror-attr-ssr): `mirrorSeed` restricts the write
+          // to when the child's OWN render already put the
+          // `${prop.propName}` attribute on `ref` — see `emitAttrUpdate`'s
+          // docstring, which dispatches boolean-IDL names (`open`,
+          // `checked`, …) to its own gated branch internally. Routed
+          // through the shared dispatcher instead of a hand-rolled
+          // `target.x = !!(...)` / `setAttribute` so this and
+          // `emitReactiveChildProps`'s identical mirror share one
+          // implementation of the gate — a second hand-rolled boolean
+          // write here previously bypassed it entirely
+          // (child-prop-mirror-attr-ssr reopened via this parallel path).
           const seed: MirrorSeed = { store: '__m', index: seedIndex++ }
           for (const stmt of emitAttrUpdate(ref, prop.propName, value, {}, seed)) lines.push(`      ${stmt}`)
         }

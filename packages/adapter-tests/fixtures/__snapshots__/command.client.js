@@ -4032,11 +4032,12 @@ export function initCommandDialogDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s17) {
-      _s17.open = !!(open())
+      if (__m[0] ??= _s17.hasAttribute('open')) _s17.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []

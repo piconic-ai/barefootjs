@@ -3335,35 +3335,36 @@ export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s2) {
-      _s2.open = !!(item1Open())
+      if (__m[0] ??= _s2.hasAttribute('open')) _s2.open = !!(item1Open())
     }
     if (_s0) {
-      _s0.open = !!(item1Open())
+      if (__m[1] ??= _s0.hasAttribute('open')) _s0.open = !!(item1Open())
     }
     if (_s1) {
-      _s1.open = !!(item1Open())
+      if (__m[2] ??= _s1.hasAttribute('open')) _s1.open = !!(item1Open())
     }
     if (_s5) {
-      _s5.open = !!(item2Open())
+      if (__m[3] ??= _s5.hasAttribute('open')) _s5.open = !!(item2Open())
     }
     if (_s3) {
-      _s3.open = !!(item2Open())
+      if (__m[4] ??= _s3.hasAttribute('open')) _s3.open = !!(item2Open())
     }
     if (_s4) {
-      _s4.open = !!(item2Open())
+      if (__m[5] ??= _s4.hasAttribute('open')) _s4.open = !!(item2Open())
     }
     if (_s8) {
-      _s8.open = !!(item3Open())
+      if (__m[6] ??= _s8.hasAttribute('open')) _s8.open = !!(item3Open())
     }
     if (_s6) {
-      _s6.open = !!(item3Open())
+      if (__m[7] ??= _s6.hasAttribute('open')) _s6.open = !!(item3Open())
     }
     if (_s7) {
-      _s7.open = !!(item3Open())
+      if (__m[8] ??= _s7.hasAttribute('open')) _s7.open = !!(item3Open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []

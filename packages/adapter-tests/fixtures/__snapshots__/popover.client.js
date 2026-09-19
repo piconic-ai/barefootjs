@@ -250,11 +250,12 @@ export function initPopoverPreviewDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -286,11 +287,12 @@ export function initPopoverBasicDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -342,11 +344,12 @@ export function initPopoverFormDemo(__scope, _p = {}) {
   if (_s3) _s3.addEventListener('click', handleSave)
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
