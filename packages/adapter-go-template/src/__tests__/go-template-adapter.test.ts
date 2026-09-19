@@ -1888,6 +1888,42 @@ export function Host() {
     })
   })
 
+  describe('#3061 nullable-union signal seed', () => {
+    // `createSignal<T | undefined>(lit)` / `<T | null>(lit)`: the union is
+    // source-level nullability documentation, not evidence about the initial
+    // value, so `convertInitialValue` unwraps it (`unwrapNullableUnion`) to
+    // the primitive half for the LITERAL-BAKING decision only. The field
+    // itself stays `interface{}` (the union's Go type), so a toggling
+    // signal's `undefined` step keeps its `nil` zero value.
+    const host = (init: string) => `
+"use client"
+import { createSignal } from '@barefootjs/client'
+export function Host() {
+  const [label, setLabel] = ${init}
+  return <span title={label() as any}>{label()}</span>
+}
+`
+    test.each([
+      ['string | undefined', "createSignal<string | undefined>('one')", 'Label: "one",'],
+      ['boolean | undefined', 'createSignal<boolean | undefined>(true)', 'Label: true,'],
+      ['number | null', 'createSignal<number | null>(3)', 'Label: 3,'],
+    ])('%s seeds the literal, not the union zero value', (_shape, init, seed) => {
+      const result = compileAndGenerate(host(init))
+      expect(result.types).toContain('Label interface{}')
+      expect(result.types).toContain(seed)
+      expect(result.types).not.toContain('Label: nil,')
+    })
+
+    test('a union with no nullish member is not unwrapped by declaration order', () => {
+      // `string | number` has no `undefined`/`null` half: picking either
+      // branch would mistype whichever literal doesn't match it, so the
+      // helper bails and the seed stays on the pre-existing `nil` fallback.
+      const result = compileAndGenerate(host('createSignal<string | number>(3)'))
+      expect(result.types).toContain('Label interface{}')
+      expect(result.types).toContain('Label: nil,')
+    })
+  })
+
   describe('#2925 nested-child getter/object-literal props', () => {
     // Companion to the #2674 collision test above (`a synthesized-name
     // collision gracefully falls back...`), but for `registerChildComponentShape`'s

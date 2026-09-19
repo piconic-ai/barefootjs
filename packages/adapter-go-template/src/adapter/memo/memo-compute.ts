@@ -25,6 +25,7 @@ import {
   getSignalInitialValueAsGo,
   mapJoinChainToGo,
   matchMapJoinChain,
+  unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -42,14 +43,14 @@ function getterCallName(e: ParsedExpr): string | null {
 
 /** Whether `t` is `boolean`, or a `T | undefined`/`T | null` union whose
  *  non-nullish branch is `boolean` (the controlled-signal shape,
- *  `createSignal<boolean | undefined>(...)`). */
+ *  `createSignal<boolean | undefined>(...)`). The union half goes through
+ *  the shared `unwrapNullableUnion`, which only unwraps an EXACT
+ *  nullish-plus-primitive pair — so `boolean | number` (no nullish member)
+ *  is not boolean-typed here, where the previous inline check took the
+ *  first non-nullish member and misclassified it. */
 function isBooleanTypeInfo(t: TypeInfo): boolean {
-  if (t.kind === 'primitive') return t.primitive === 'boolean'
-  if (t.kind === 'union' && t.unionTypes?.length === 2) {
-    const scalar = t.unionTypes.find(u => u.primitive !== 'undefined' && u.primitive !== 'null')
-    return scalar?.kind === 'primitive' && scalar.primitive === 'boolean'
-  }
-  return false
+  const scalar = unwrapNullableUnion(t)
+  return scalar.kind === 'primitive' && scalar.primitive === 'boolean'
 }
 
 /** Whether the getter NAME (a signal or memo) has a boolean-compatible

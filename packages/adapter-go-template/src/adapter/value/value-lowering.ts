@@ -40,10 +40,17 @@ const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
  *   ambiguous shape.
  * - `T[] | undefined` / `SomeInterface | undefined` — the non-nullish side
  *   isn't a primitive literal-baking decision at all; left on the
- *   pre-existing fallback rather than silently widening this fix's tested
- *   scope (string/number/boolean literals, #3061) to an untested one.
+ *   pre-existing fallback rather than silently widening the covered scope
+ *   to an untested one. The covered scope is what the `#3061 nullable-union
+ *   signal seed` unit tests (`go-template-adapter.test.ts`) and the
+ *   `signal-optional-init` fixture pin: a string / number / boolean literal
+ *   under `| undefined` or `| null`, and the `string | number` bail-out.
+ *
+ * Shared with `memo-compute.ts`'s boolean-getter classification so the
+ * "which half of a nullable union is the real type" decision lives in one
+ * place (a looser inline copy there used to accept `boolean | number`).
  */
-function unwrapNullableUnion(typeInfo: TypeInfo): TypeInfo {
+export function unwrapNullableUnion(typeInfo: TypeInfo): TypeInfo {
   if (typeInfo.kind !== 'union' || typeInfo.unionTypes?.length !== 2) return typeInfo
   const isNullish = (t: TypeInfo): boolean =>
     t.kind === 'primitive' && (t.primitive === 'undefined' || t.primitive === 'null')
