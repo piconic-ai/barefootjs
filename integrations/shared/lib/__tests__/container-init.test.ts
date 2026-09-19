@@ -16,6 +16,15 @@ import { dirname, join, resolve } from 'node:path'
 
 const INTEGRATIONS_DIR = resolve(import.meta.dir, '../../..')
 
+/**
+ * Images that run their server as PID 1 without tini, each of which must
+ * install its own SIGTERM handler so it still stops on sleepAfter. Shrink-only:
+ * an entry is deleted when its image moves onto tini (the test fails while a
+ * listed image already uses it), and nothing is added without the reason being
+ * written up in integrations/README.md.
+ */
+const RUNS_WITHOUT_INIT = new Set(['rails', 'sinatra'])
+
 type Instruction = { keyword: string; args: string }
 
 /** Splits a Dockerfile into instructions, dropping comment lines and joining `\` continuations. */
@@ -54,18 +63,37 @@ function containerDockerfiles(): { name: string; dockerfile: string }[] {
 
 const images = containerDockerfiles()
 
+function finalStageOf(dockerfile: string): Instruction[] {
+  const instructions = parseDockerfile(readFileSync(dockerfile, 'utf8'))
+  return instructions.slice(instructions.map((i) => i.keyword).lastIndexOf('FROM'))
+}
+
+function entrypointOf(finalStage: Instruction[]): unknown {
+  const entrypoint = finalStage.filter((i) => i.keyword === 'ENTRYPOINT').pop()
+  return entrypoint && JSON.parse(entrypoint.args)
+}
+
 describe('Container integration images', () => {
   test('are discovered from wrangler.toml', () => {
     expect(images.length).toBeGreaterThan(0)
   })
 
-  for (const { name, dockerfile } of images) {
-    test(`${name}: the final stage runs its server under tini`, () => {
-      const instructions = parseDockerfile(readFileSync(dockerfile, 'utf8'))
-      const finalStage = instructions.slice(instructions.map((i) => i.keyword).lastIndexOf('FROM'))
+  test('every image allowed to run without tini is a Container integration', () => {
+    const names = new Set(images.map((image) => image.name))
+    expect([...RUNS_WITHOUT_INIT].filter((name) => !names.has(name))).toEqual([])
+  })
 
-      const entrypoint = finalStage.filter((i) => i.keyword === 'ENTRYPOINT').pop()
-      expect(entrypoint && JSON.parse(entrypoint.args)).toEqual(['tini', '-g', '--'])
+  for (const { name, dockerfile } of images) {
+    if (RUNS_WITHOUT_INIT.has(name)) {
+      test(`${name}: still runs without tini (drop it from RUNS_WITHOUT_INIT once it does)`, () => {
+        expect(entrypointOf(finalStageOf(dockerfile))).not.toEqual(['tini', '-g', '--'])
+      })
+      continue
+    }
+
+    test(`${name}: the final stage runs its server under tini`, () => {
+      const finalStage = finalStageOf(dockerfile)
+      expect(entrypointOf(finalStage)).toEqual(['tini', '-g', '--'])
 
       // The ENTRYPOINT is only as good as the binary behind it: without the
       // install the container cannot start at all.
