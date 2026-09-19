@@ -9,7 +9,9 @@ import { createFixture } from '../src/types'
  * VARIABLE lookup named after the const (`{{.Label}}`, `v[:label]`,
  * `{{ label }}`, `$label`, …) — the `makeLabel()` binding never reaches the
  * template, so the backend sees an unbound name and renders an empty slot
- * (or fails at render), with no diagnostic anywhere. Same shape as an
+ * (or fails at render), with no diagnostic anywhere. The CSR template lambda
+ * has the same hole: `label` is an init-scope local it cannot see, so the slot
+ * is emitted empty (pinned in `CSR_SKIP_FIXTURES`). Same shape as an
  * accessor returned by an imported library (`const posts = createQuery(…)`,
  * `{posts()}`); the same-file helper is the minimal reproduction.
  *
