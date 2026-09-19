@@ -4384,12 +4384,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Resolve ONE structural operand of a ternary destined for a child prop
    * (#3060's `emitChildField` conditional arm) to its Go constructor-time
-   * value: a zero-arg getter call (`shown()`, `tag()`) through the SAME
-   * `resolveLocalGetterAsGo` seeding a bare getter already uses; a bare
-   * identifier as either a local getter or a passthrough prop reference
-   * (mirrors `resolveDynamicPropValue`'s own bare-identifier arms); a literal
-   * through `parsedLiteralToGo`. Returns null for any other operand shape
-   * (member expression, nested call, binary/logical) — the caller falls
+   * value: a zero-arg getter call (`shown()`, `tag()`) and a bare identifier
+   * (a local getter, or a passthrough prop reference) both go through
+   * `resolveDynamicPropValue` — the ONE place that already answers "what does
+   * this expression evaluate to at constructor time" for a bare child-prop
+   * value, including its local-shadow guard (a `const label = …` shadowing a
+   * `label` prop must NOT resolve to `in.Label`; #2198's hazard). A literal
+   * goes through `parsedLiteralToGo`. Returns null for any other operand
+   * shape (member expression, nested call, binary/logical) — the caller falls
    * through to leaving the field unbaked (the pre-existing behavior for a
    * ternary this narrow arm doesn't cover) rather than guessing.
    */
@@ -4401,16 +4403,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
     if (node.kind === 'call' && node.callee.kind === 'identifier' && node.args.length === 0) {
-      return this.resolveLocalGetterAsGo(node.callee.name, signals, memos, propsParams, propFallbackVars)
+      return this.resolveDynamicPropValue(`${node.callee.name}()`, signals, memos, propsParams, propFallbackVars)
     }
     if (node.kind === 'identifier') {
-      const local = this.resolveLocalGetterAsGo(node.name, signals, memos, propsParams, propFallbackVars)
-      if (local !== null) return local
-      const param = propsParams.find(p => p.name === node.name)
-      if (param) {
-        return `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-      }
-      return null
+      return this.resolveDynamicPropValue(node.name, signals, memos, propsParams, propFallbackVars)
     }
     if (node.kind === 'literal') {
       return parsedLiteralToGo(this.emitCtx, node)
