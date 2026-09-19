@@ -2679,6 +2679,59 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // literal-wrapped twin of the bare-getter fix below.
             const parsedValue =
               prop.value.kind === 'expression' ? prop.value.parsed : undefined
+            // A ternary whose falsy branch is `undefined`/`null`
+            // (`tag={shown() ? tag() : undefined}`, #3060) has no arm in
+            // `templatePartsToGoCode` (it explicitly opts a `ternary` part
+            // out — see that function's docstring — reserving the shape for
+            // the element-attribute `{{if}}` path) NOR in
+            // `resolveDynamicPropValue` below (which only matches a bare
+            // getter call/comparison/passthrough, never a conditional). Both
+            // silently fell through to no field at all in the generated
+            // `<Child>Input{...}` literal, so the child's rest-bag/named-prop
+            // lookup saw no value on EITHER branch. Bake it as a Go
+            // `interface{}`-valued IIFE evaluated at constructor time — the
+            // same "what does this signal/prop expression evaluate to right
+            // now" question `resolveDynamicPropValue`/`resolveLocalGetterAsGo`
+            // already answer for a bare operand, just wrapped in the ternary's
+            // own test.
+            //
+            // Scoped to a REST-BAG destination on purpose (`routesToRestBag`):
+            // that field is always `map[string]any`-typed (`interface{}`
+            // values), so a `nil` alternate is always valid there. A NAMED
+            // field is concrete-typed (`string`, `int`, …) — a bare `interface{}`
+            // IIFE result fails to compile against it ("need type assertion",
+            // caught by `destructured-props-live`'s `label?: string` ternary
+            // prop, a pre-existing passing shape this must not regress). A
+            // named field's own conditional lowering is out of scope here;
+            // it keeps falling through to the unchanged paths below.
+            if (parsedValue?.kind === 'conditional' && routesToRestBag(childShape, prop.name)) {
+              const isUndef = (e: ParsedExpr): boolean =>
+                (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
+                (e.kind === 'literal' && (e.value === null || e.value === undefined))
+              if (isUndef(parsedValue.alternate) && !isUndef(parsedValue.consequent)) {
+                const testGo = this.resolveTernaryOperandAsGo(
+                  parsedValue.test,
+                  ir.metadata.signals,
+                  ir.metadata.memos,
+                  ir.metadata.propsParams,
+                  propFallbackVars,
+                )
+                const consequentGo = this.resolveTernaryOperandAsGo(
+                  parsedValue.consequent,
+                  ir.metadata.signals,
+                  ir.metadata.memos,
+                  ir.metadata.propsParams,
+                  propFallbackVars,
+                )
+                if (testGo !== null && consequentGo !== null) {
+                  emitChildField(
+                    prop.name,
+                    `func() interface{} { if ${testGo} { return ${consequentGo} }; return nil }()`,
+                  )
+                  break
+                }
+              }
+            }
             const objectTarget = objectBakeTargetFor(childShape, prop.name)
             if (parsedValue && objectTarget) {
               const goObj = objectLiteralToGoComposite(
@@ -4301,6 +4354,43 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `in.${capitalizeFieldName(passthroughParam.sourceName ?? passthroughParam.name)}`
     }
 
+    return null
+  }
+
+  /**
+   * Resolve ONE structural operand of a ternary destined for a child prop
+   * (#3060's `emitChildField` conditional arm) to its Go constructor-time
+   * value: a zero-arg getter call (`shown()`, `tag()`) through the SAME
+   * `resolveLocalGetterAsGo` seeding a bare getter already uses; a bare
+   * identifier as either a local getter or a passthrough prop reference
+   * (mirrors `resolveDynamicPropValue`'s own bare-identifier arms); a literal
+   * through `parsedLiteralToGo`. Returns null for any other operand shape
+   * (member expression, nested call, binary/logical) — the caller falls
+   * through to leaving the field unbaked (the pre-existing behavior for a
+   * ternary this narrow arm doesn't cover) rather than guessing.
+   */
+  private resolveTernaryOperandAsGo(
+    node: ParsedExpr,
+    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    propsParams: { name: string; sourceName?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    if (node.kind === 'call' && node.callee.kind === 'identifier' && node.args.length === 0) {
+      return this.resolveLocalGetterAsGo(node.callee.name, signals, memos, propsParams, propFallbackVars)
+    }
+    if (node.kind === 'identifier') {
+      const local = this.resolveLocalGetterAsGo(node.name, signals, memos, propsParams, propFallbackVars)
+      if (local !== null) return local
+      const param = propsParams.find(p => p.name === node.name)
+      if (param) {
+        return `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+      }
+      return null
+    }
+    if (node.kind === 'literal') {
+      return parsedLiteralToGo(this.emitCtx, node)
+    }
     return null
   }
 

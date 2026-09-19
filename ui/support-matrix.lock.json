@@ -2467,15 +2467,9 @@
           ]
         },
         "go-template": {
-          "pass": 267,
+          "pass": 268,
           "total": 291,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "composite-row-child-rest-bag-prop",
               "limitations": [
@@ -3423,15 +3417,9 @@
           ]
         },
         "go-template": {
-          "pass": 31,
+          "pass": 32,
           "total": 34,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -3895,15 +3883,9 @@
           ]
         },
         "go-template": {
-          "pass": 384,
+          "pass": 385,
           "total": 413,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "composite-row-child-rest-bag-prop",
               "limitations": [
@@ -5021,16 +5003,8 @@
           "total": 15
         },
         "go-template": {
-          "pass": 14,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "jinja": {
           "pass": 15,
@@ -5277,15 +5251,9 @@
           ]
         },
         "go-template": {
-          "pass": 309,
+          "pass": 310,
           "total": 328,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -6453,15 +6421,9 @@
           ]
         },
         "go-template": {
-          "pass": 220,
+          "pass": 221,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "composite-row-child-rest-bag-prop",
               "limitations": [
@@ -7409,15 +7371,9 @@
           ]
         },
         "go-template": {
-          "pass": 89,
+          "pass": 90,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -11451,15 +11407,9 @@
           ]
         },
         "go-template": {
-          "pass": 68,
+          "pass": 69,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -12354,15 +12304,9 @@
           ]
         },
         "go-template": {
-          "pass": 212,
+          "pass": 213,
           "total": 222,
           "gaps": [
-            {
-              "fixture": "child-prop-rest-forward",
-              "limitations": [
-                "child-prop-undefined-alternate-dropped"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
