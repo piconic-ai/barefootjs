@@ -1888,6 +1888,57 @@ export function Host() {
     })
   })
 
+  describe('#3060 ternary-with-undefined-alternate rest-bag prop', () => {
+    // `emitChildField`'s conditional arm resolves each ternary operand through
+    // `resolveDynamicPropValue` — the SAME guarded resolver a bare child-prop
+    // value uses — so a bare-identifier consequent that names a LOCAL const
+    // shadowing a same-named prop is left unresolved (field unbaked) instead
+    // of being misresolved to the prop's `in.<Field>` (#2198's hazard, which
+    // the resolver's shadow guard exists for). Requires the child's shape
+    // registered (the CLI's cross-file pre-pass) so `tag` routes to its bag.
+    const childSource = `
+export function Tag({ variant, ...rest }: { variant?: string }) {
+  return <span {...rest}>{variant}</span>
+}
+`
+    test('a destructured prop as the consequent bakes the prop field', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const parentSource = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [shown, setShown] = createSignal(true)
+  return <div><Tag variant="a" tag={shown() ? label : undefined} /></div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(parentSource, adapter))!
+      expect(types).toContain('return in.Label')
+    })
+
+    test('a local const shadowing a same-named prop is not misresolved to the prop field', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const parentSource = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host(props: { label: string }) {
+  const [shown, setShown] = createSignal(true)
+  const label = props.label + '!'
+  return <div><Tag variant="a" tag={shown() ? label : undefined} /></div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(parentSource, adapter))!
+      // The bare `label` is the LOCAL, not the prop: the ternary arm bakes
+      // nothing (the field is left on the pre-existing unbaked path) — the
+      // only `in.Label` reads are the parent's own constructor seeds.
+      expect(types).not.toContain('return in.Label')
+      expect(types).not.toContain('func() interface{}')
+    })
+  })
+
   describe('#2925 nested-child getter/object-literal props', () => {
     // Companion to the #2674 collision test above (`a synthesized-name
     // collision gracefully falls back...`), but for `registerChildComponentShape`'s
