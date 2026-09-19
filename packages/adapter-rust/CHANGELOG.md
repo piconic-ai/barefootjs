@@ -1,5 +1,13 @@
 # @barefootjs/rust
 
+## 0.37.2
+
+### Patch Changes
+
+- 737ce71: Known limitations now live in an in-repo registry (`packages/adapter-tests/limitations/<id>.ts`) instead of the `known-limitation` GitHub label. `ConformancePin.issue` is replaced by the required `limitation` id, `unescapable` becomes a bare `true`, and `RenderDivergences` values cite a limitation id instead of a prose reason. Every adapter's `conformancePins` cites the registry accordingly.
+- 82b99f5: Declare the `opaque-local-accessor-call` render divergence: a component-body `const` bound to an opaque call (`const label = makeLabel()`) and invoked in text position lowers to a bare template-variable lookup on every DSL adapter, with no diagnostic, while the reference runs the accessor at render time. Pinned as a `silent` known limitation with a `/* @client */` escape twin; no lowering change yet.
+- @barefootjs/shared@0.37.2
+
 ## 0.37.1
 
 ### Patch Changes
