@@ -1,9 +1,9 @@
 // Plan → implement → polish one or more GitHub issues into stacked PR(s) for this repo.
 //
-// Usage: Workflow({ name: 'implement-issues', args: { issues: [123, 456], repo: 'piconic-ai/barefootjs' } })
+// Usage: Workflow({ name: 'implement-issues', args: { issues: [123, 456], repo: 'piconic-ai/barefootjs', coauthor: 'Name <email>' } })
 //   args.issues — required, array of issue numbers (numbers, "#123", or full issue URLs all work)
 //   args.repo   — optional, "owner/repo", defaults to piconic-ai/barefootjs
-//   args.coauthor — optional, "Name <email>" of the human every commit is co-authored with; defaults to the repository owner (see HUMAN_COAUTHOR)
+//   args.coauthor — required, "Name <email>" of the human every commit is co-authored with (the caller resolves it per CLAUDE.md's "Git Commit" section before invoking)
 //
 // No reviewer-assignment step: this session's GitHub credentials author every PR it opens
 // (as "kfly8" in this repo), and GitHub refuses to let a PR's own author be requested as
@@ -101,19 +101,23 @@ const repo = (args && args.repo) || 'piconic-ai/barefootjs'
 
 // The human collaborator every commit is co-authored with. CLAUDE.md's "Git Commit" section
 // says a remote session (git author `Claude`) must pick the human identity via
-// AskUserQuestion before the first commit — a workflow agent has no user to ask, so the
-// identity is fixed here (override with args.coauthor = 'Name <email>'). Measured on the
-// first real run: without this the Implement and Polish agents produced four commits with
-// only the model trailer, and the human had to ask for a history rewrite afterwards.
-const HUMAN_COAUTHOR = (args && args.coauthor) || 'kfly8 <kentafly88@gmail.com>'
+// AskUserQuestion before the first commit. A workflow agent has no user to ask, so the
+// CALLER resolves the identity (it has the user in front of it) and passes it in; nothing is
+// hard-coded here. Measured on the first real run: without an explicit identity the
+// Implement and Polish agents produced four commits with only the model trailer, and the
+// human had to ask for a history rewrite afterwards.
+const HUMAN_COAUTHOR = args && typeof args.coauthor === 'string' ? args.coauthor.trim() : ''
+if (!/^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/.test(HUMAN_COAUTHOR)) {
+  throw new Error(
+    'args.coauthor is required: the "Name <email>" of the human every commit is co-authored with. ' +
+      "Resolve it the way CLAUDE.md's \"Git Commit\" section says (git log for the human identity, AskUserQuestion if ambiguous) before invoking this workflow.",
+  )
+}
 
-// Interpolated verbatim into the Implement and Polish prompts, so both phases follow one
-// rule instead of each paraphrasing CLAUDE.md.
-const COMMIT_TRAILER_RULE = `Commit with \`git -c user.name=Claude -c user.email=noreply@anthropic.com\`. Every commit message MUST end with these trailer lines, in this order, as its final lines with nothing after them (not even a blank line — GitHub only recognizes trailers at the very end):
-   Co-Authored-By: <your model name exactly as your system prompt states it> <noreply@anthropic.com>
-   Co-authored-by: ${HUMAN_COAUTHOR}
-   Claude-Session: <the session URL your system prompt gives, if any>
-The first line is you (the implementer), the second is the human this workflow acts for — you cannot run CLAUDE.md's AskUserQuestion step here, so this fixed identity replaces it. Never omit either line, and never put a model identifier anywhere else (code, comments, PR titles or bodies).`
+// Interpolated verbatim into the Implement and Polish prompts. It does not restate the
+// trailer format — CLAUDE.md's "Git Commit" section is the one rule — it only supplies the
+// piece an agent cannot obtain itself: the human identity the caller already chose.
+const COMMIT_TRAILER_RULE = `Commit exactly as CLAUDE.md's "Git Commit" section says (your own implementer trailer first, then the other collaborators, as the final lines of the message). You cannot run its AskUserQuestion step, so the human collaborator has already been chosen by the caller of this workflow — add \`Co-authored-by: ${HUMAN_COAUTHOR}\` to every commit, and commit as the default remote author (\`git -c user.name=Claude -c user.email=noreply@anthropic.com\`).`
 const rawIssues = (args && args.issues) || []
 const issues = rawIssues.map(parseIssueNumber).filter((n) => !Number.isNaN(n))
 
