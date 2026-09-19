@@ -58,6 +58,16 @@
  * — is the destructured prop) — exactly #2630's original shape of gap, one
  * destructure-hop deeper. Same fix as #2630: teach the harness, not the
  * adapter — see `resolveNestedPropDerivedArrayValue`'s doc comment.)
+ *
+ * (`signal-optional-init`'s divergence graduated by an actual lowering
+ * fix: `createSignal<string | undefined>('one')` seeded its Props field
+ * from the union type (`interface{}`, `nil`) instead of the literal,
+ * because `convertInitialValue`'s literal-union collapse deliberately left
+ * a mixed nullish/primitive union alone and no primitive branch below it
+ * matched. `unwrapNullableUnion` (`value/value-lowering.ts`) now takes the
+ * single non-nullish primitive half for the literal-baking decision only —
+ * the field stays `interface{}`-typed, so the `undefined` step of a
+ * toggling signal keeps its `nil` zero value.)
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
