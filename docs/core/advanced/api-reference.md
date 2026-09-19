@@ -29,7 +29,6 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createPortal()`](#createportal) | function | 0.1.0 | **Beta** |
 | [`createRoot()`](#createroot) | function | 0.1.0 | Alpha |
 | [`createSearchParams()`](#createsearchparams) | function | 0.17.0 | **Beta** |
-| [`createSelector()`](#createselector) | function | 0.18.7 | Alpha |
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
 | [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
@@ -215,19 +214,6 @@ const sort = createMemo(() => searchParams().get('sort') ?? 'date')
 
 // Writing navigates: soft same-route when a router is running, hard otherwise.
 setSearchParams({ sort: 'price' })
-```
-
-### `createSelector()`
-
-`function` · Alpha since 0.18.7 · `@barefootjs/client`
-
-O(changed) selection primitive (SolidJS-compatible `createSelector`).
-
-```tsx
-const [selected, setSelected] = createSignal<number>(0)
-const isSelected = createSelector(selected)
-// inside a loop body:
-//   <tr class={isSelected(row.id) ? 'danger' : ''}>
 ```
 
 ### `createSignal()`

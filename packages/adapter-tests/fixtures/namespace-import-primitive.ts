@@ -19,10 +19,10 @@ import { createFixture } from '../src/types'
  * `conformance-pins.ts`.
  *
  * IMPORTANT for anyone editing this fixture: it must stay free of
- * `.map(`, `createSelector`, and `@barefootjs/form` — any of those makes
- * the compiler's `needsTypeBasedDetection` build a per-file `ts.Program`
- * for OTHER reasons, which would make the checker's slow path resolve
- * this shape correctly and the pinned BF013 refusal would stop firing.
+ * `.map(` and `@barefootjs/form` — either of those makes the compiler's
+ * `needsTypeBasedDetection` build a per-file `ts.Program` for OTHER
+ * reasons, which would make the checker's slow path resolve this shape
+ * correctly and the pinned BF013 refusal would stop firing.
  *
  * `escapes` twin: `namespace-import-primitive-named-escape` — the SAME
  * component with the primitive imported by name instead of through the

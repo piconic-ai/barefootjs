@@ -41,13 +41,19 @@ consolidated `createEffect` per plain loop row (slot unification row
 granularity, `spec/slot-unification.md` §5a), so a compiler change that
 splits or multiplies per-row effects shows up here first.
 
-This app **does** exercise the lazy row graph (§9). It did not until
-§9.5c(2) was lifted: its row reads `createSelector(selected)`, an opaque
-local whose CALL is the reactive read, which the eligibility gate refused
-while the compiler still had to prove every outer read primable. With the
+This app exercises the lazy row graph (§9). It did not until §9.5c(2) was
+lifted: its row used to read `createSelector(selected)`, an opaque local
+whose CALL was the reactive read, which the eligibility gate refused while
+the compiler still had to prove every outer read primable. With the
 runtime's re-subscribe seam carrying that obligation the loop became
 eligible, and this memory column moved 1768KB -> ~1052KB in the same
 change — the first time the DOM suite reflected that work at all.
+`createSelector` was removed from `@barefootjs/client` afterwards (#3091,
+zero authored callers besides this benchmark); the row now expresses
+selection as the plain `selected() === row.id` comparison instead (same
+pattern as the SSR app below), so this app no longer depends on the
+opaque-local path specifically — the lazy row graph itself is still
+exercised through the ordinary primable-signal-getter path.
 
 ### 2. SSR + hydration (`ssr/bench-ssr.ts`)
 

@@ -56,7 +56,6 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 | `batch` | automatic batching (React 18) | [`batch`](./api-reference.md#batch) Beta | match | 3 | site=5 |
 | `untrack` | — (deps array) | [`untrack`](./api-reference.md#untrack) Beta | match | 3 | the only way to narrow dependencies (no `on()`) |
 | `on(deps, fn)` | deps array | — | none | 2 | write with `untrack` instead; no action |
-| `createSelector` | — | [`createSelector`](./api-reference.md#createselector) Alpha | match | 2 | analyzer recognises the brand; ui=0 site=0 (task C of #3078) |
 | `createStore` / `produce` / `reconcile` | `useReducer` / external store | — | none | 3 | put the object in a signal; forms live in `@barefootjs/form` |
 | `createRoot` | — (ReactDOM's `createRoot` is a mount API) | [`createRoot`](./api-reference.md#createroot) Alpha | match | 2 | test / CSR harness use; ui=0 site=0 |
 | `getOwner` / `runWithOwner` | — | — (not exported) | none | 1 | ownership is internal scope |
