@@ -47,6 +47,25 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
  * hazard for anything that duck-types form controls via `'value' in el`
  * (#2716).
  *
+ * A single-selection `<select>` gets one more step (#3066,
+ * `select-out-of-range-selected-index`): if the assigned value matches no
+ * `<option>`, the browser resolves `select.value = __val` to no selection
+ * at all (`selectedIndex` -1) — but #2852 made SSR select a hidden
+ * placeholder `<option value="">` (`selectedIndex` 0) for exactly this
+ * case. Falling back to `selectedIndex = 0` here keeps the live post-
+ * hydration state equal to what SSR already rendered, instead of the two
+ * legs agreeing only visually (both blank) while their actual selection
+ * state diverges. `!target.multiple && target.size <= 1` excludes list
+ * boxes — mirroring `jsx-to-ir.ts`'s `isMultiSelection`, which skips the
+ * SSR placeholder for EITHER `multiple` OR a `size` > 1 (a `<select
+ * size={2}>` is a list box even without the `multiple` attribute): an
+ * unmatched value already leaves a `multiple`/`size>1` select with nothing
+ * selected on both legs (see `select-multiple-value-no-match-ssr`'s
+ * docstring), so there is no placeholder to reconcile against there and
+ * forcing a selection would be a behavior change of its own — checking
+ * `multiple` alone would wrongly force `selectedIndex = 0` on a bare
+ * `size={2}` select whose SSR leg (correctly) left nothing selected.
+ *
  * NOT for the child-component-root `value` MIRROR (`emitReactivePropBindings`
  * / `emitReactiveChildProps` reflecting a named prop onto a child's root
  * element) — that mechanism has no SSR-rendered counterpart at all
@@ -56,7 +75,7 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
 function emitValueUpdateStatements(target: string, expression: string): string[] {
   return [
     `const __val = String(${expression})`,
-    `if ('value' in ${target}) { if (${target}.value !== __val) ${target}.value = __val } else { ${target}.setAttribute('value', __val) }`,
+    `if ('value' in ${target}) { if (${target}.value !== __val) { ${target}.value = __val; if (${target}.tagName === 'SELECT' && !${target}.multiple && ${target}.size <= 1 && ${target}.value !== __val) ${target}.selectedIndex = 0 } } else { ${target}.setAttribute('value', __val) }`,
   ]
 }
 
@@ -148,6 +167,19 @@ export function emitAttrUpdate(
     return emitValueUpdateStatements(target, expression)
   }
   if (isBooleanAttr(htmlName)) {
+    // CHILD-ROOT MIRROR case (`mirrorSeed` set): same reasoning as the
+    // `presenceOrUndefined`/generic branches below — a boolean-IDL name
+    // like `open`/`checked` is only a REAL property on the elements that
+    // natively expose it (`<details>`, `<dialog>`, form controls); the
+    // compiler can't know whether the CHILD's own root is one of those or
+    // an ordinary `<div>` that merely happens to receive a prop sharing
+    // that name. An unconditional `target.open = …` plants a live DOM
+    // property SSR never had (and never reflects to a visible attribute
+    // on a plain element), so gate it the same way: seed once from
+    // whether the child's OWN render already put the attribute there.
+    if (mirrorSeed) {
+      return [`if (${mirrorSeedGate(mirrorSeed, target, htmlName)}) ${target}.${htmlName} = !!(${expression})`]
+    }
     return [`${target}.${htmlName} = !!(${expression})`]
   }
   if (meta.presenceOrUndefined) {
@@ -667,13 +699,19 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
   if (ctx.reactiveProps.length > 0) {
     lines.push('')
     lines.push(`  // Reactive prop bindings`)
-    // The generic named-prop mirror below seeds its presence answer once
-    // per prop (`emitAttrUpdate`'s `mirrorSeed`); the store is declared
-    // only when some prop takes that path, so effects made of `selected` /
-    // `value` / boolean mirrors alone keep their shape.
-    const isGenericMirror = (prop: ClientJsContext['reactiveProps'][number]): boolean =>
-      prop.propName !== 'selected' && prop.propName !== 'value' && !isBooleanAttr(prop.propName)
-    const needsSeedStore = ctx.reactiveProps.some(isGenericMirror)
+    // The generic named-prop mirror AND the boolean-IDL mirror below both
+    // seed their presence answer once per prop (`emitAttrUpdate`'s
+    // `mirrorSeed`) — same CHILD-ROOT MIRROR reasoning `emitAttrUpdate`'s
+    // docstring gives for `emitReactiveChildProps`'s identical boolean
+    // branch: the compiler can't know whether this slot's root is one of
+    // the elements that natively expose e.g. `open`/`checked`, so an
+    // unconditional `target.open = …` here would plant a live DOM property
+    // SSR never rendered (`child-prop-mirror-attr-ssr`). The store is
+    // declared only when some prop takes one of those two paths, so
+    // effects made of `selected` / `value` mirrors alone keep their shape.
+    const usesMirrorSeed = (prop: ClientJsContext['reactiveProps'][number]): boolean =>
+      prop.propName !== 'selected' && prop.propName !== 'value'
+    const needsSeedStore = ctx.reactiveProps.some(usesMirrorSeed)
     if (needsSeedStore) lines.push(`  { ${MIRROR_SEED_STORE_DECL}`)
     lines.push(`  createEffect(() => {`)
     let seedIndex = 0
@@ -720,16 +758,19 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
         // truthy, so setAttribute('disabled', 'false') still disables the element.
         } else if (prop.propName === 'value') {
           for (const stmt of emitChildValueMirrorStatements(ref, value)) lines.push(`      ${stmt}`)
-        } else if (isBooleanAttr(prop.propName)) {
-          lines.push(`      ${ref}.${prop.propName} = !!(${value})`)
         } else {
-          // Generic named-prop mirror (child-prop-mirror-attr-ssr):
-          // `mirrorSeed` restricts the write to a `${prop.propName}`
-          // attribute the child's OWN render already put on `ref` — see
-          // `emitAttrUpdate`'s docstring. Routed through the shared
-          // dispatcher instead of a hand-rolled `setAttribute` so this and
-          // `emitReactiveChildProps`'s identical generic mirror share one
-          // implementation of the gate.
+          // Generic AND boolean-IDL named-prop mirror alike
+          // (child-prop-mirror-attr-ssr): `mirrorSeed` restricts the write
+          // to when the child's OWN render already put the
+          // `${prop.propName}` attribute on `ref` — see `emitAttrUpdate`'s
+          // docstring, which dispatches boolean-IDL names (`open`,
+          // `checked`, …) to its own gated branch internally. Routed
+          // through the shared dispatcher instead of a hand-rolled
+          // `target.x = !!(...)` / `setAttribute` so this and
+          // `emitReactiveChildProps`'s identical mirror share one
+          // implementation of the gate — a second hand-rolled boolean
+          // write here previously bypassed it entirely
+          // (child-prop-mirror-attr-ssr reopened via this parallel path).
           const seed: MirrorSeed = { store: '__m', index: seedIndex++ }
           for (const stmt of emitAttrUpdate(ref, prop.propName, value, {}, seed)) lines.push(`      ${stmt}`)
         }

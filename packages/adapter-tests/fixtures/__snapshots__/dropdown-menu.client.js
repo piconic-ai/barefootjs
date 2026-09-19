@@ -3650,11 +3650,12 @@ export function initDropdownMenuBasicDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -3662,7 +3663,7 @@ export function initDropdownMenuBasicDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -3694,17 +3695,18 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(open())
     }
     if (_s3) {
-      _s3.checked = !!(showStatus())
+      if (__m[1] ??= _s3.hasAttribute('checked')) _s3.checked = !!(showStatus())
     }
     if (_s4) {
-      _s4.checked = !!(showActivity())
+      if (__m[2] ??= _s4.hasAttribute('checked')) _s4.checked = !!(showActivity())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -3712,7 +3714,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -3720,7 +3722,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s3El) {
       { const __x = showStatus()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __DropdownMenuCheckboxItem_s3El.checked = !!(__x)
+        if (__m[1] ??= __DropdownMenuCheckboxItem_s3El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s3El.checked = !!(__x)
       }
       __l[1] = __x }
     }
@@ -3728,7 +3730,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s4El) {
       { const __x = showActivity()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __DropdownMenuCheckboxItem_s4El.checked = !!(__x)
+        if (__m[2] ??= __DropdownMenuCheckboxItem_s4El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s4El.checked = !!(__x)
       }
       __l[2] = __x }
     }
@@ -3759,20 +3761,21 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (__scope) {
-      __scope.open = !!(open())
+      if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(open())
     }
     if (_s11) {
       if ('value' in _s11) { const __val = String(language()); if (_s11.value !== __val) _s11.value = __val }
     }
     if (_s18) {
-      _s18.checked = !!(showBookmarks())
+      if (__m[1] ??= _s18.hasAttribute('checked')) _s18.checked = !!(showBookmarks())
     }
     if (_s19) {
-      _s19.checked = !!(showToolbar())
+      if (__m[2] ??= _s19.hasAttribute('checked')) _s19.checked = !!(showToolbar())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -3780,7 +3783,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -3792,7 +3795,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s18El) {
       { const __x = showBookmarks()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __DropdownMenuCheckboxItem_s18El.checked = !!(__x)
+        if (__m[1] ??= __DropdownMenuCheckboxItem_s18El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s18El.checked = !!(__x)
       }
       __l[1] = __x }
     }
@@ -3800,7 +3803,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s19El) {
       { const __x = showToolbar()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __DropdownMenuCheckboxItem_s19El.checked = !!(__x)
+        if (__m[2] ??= __DropdownMenuCheckboxItem_s19El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s19El.checked = !!(__x)
       }
       __l[2] = __x }
     }

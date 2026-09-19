@@ -3792,7 +3792,7 @@ export function initCommandDialog(__scope, _p = {}) {
     if (__scope) {
       { const __x = _p.open ?? false
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -4032,11 +4032,12 @@ export function initCommandDialogDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s17) {
-      _s17.open = !!(open())
+      if (__m[0] ??= _s17.hasAttribute('open')) _s17.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -4045,7 +4046,7 @@ export function initCommandDialogDemo(__scope, _p = {}) {
     if (__CommandDialog_s17El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __CommandDialog_s17El.open = !!(__x)
+        if (__m[0] ??= __CommandDialog_s17El.hasAttribute('open')) __CommandDialog_s17El.open = !!(__x)
       }
       __l[0] = __x }
     }

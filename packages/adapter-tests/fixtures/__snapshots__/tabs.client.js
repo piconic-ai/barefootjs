@@ -237,7 +237,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
     if (__TabsTrigger_s0El) {
       { const __x = isAccountSelected()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __TabsTrigger_s0El.selected = !!(__x)
+        if (__m[0] ??= __TabsTrigger_s0El.hasAttribute('selected')) __TabsTrigger_s0El.selected = !!(__x)
       }
       __l[0] = __x }
     }
@@ -245,7 +245,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
     if (__TabsTrigger_s1El) {
       { const __x = isPasswordSelected()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __TabsTrigger_s1El.selected = !!(__x)
+        if (__m[1] ??= __TabsTrigger_s1El.hasAttribute('selected')) __TabsTrigger_s1El.selected = !!(__x)
       }
       __l[1] = __x }
     }
@@ -253,7 +253,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
     if (__TabsContent_s3El) {
       { const __x = isAccountSelected()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __TabsContent_s3El.selected = !!(__x)
+        if (__m[2] ??= __TabsContent_s3El.hasAttribute('selected')) __TabsContent_s3El.selected = !!(__x)
       }
       __l[2] = __x }
     }
@@ -261,7 +261,7 @@ export function initTabsBasicDemo(__scope, _p = {}) {
     if (__TabsContent_s4El) {
       { const __x = isPasswordSelected()
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
-        __TabsContent_s4El.selected = !!(__x)
+        if (__m[3] ??= __TabsContent_s4El.hasAttribute('selected')) __TabsContent_s4El.selected = !!(__x)
       }
       __l[3] = __x }
     }
@@ -360,7 +360,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsTrigger_s0El) {
       { const __x = isOverviewSelected()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __TabsTrigger_s0El.selected = !!(__x)
+        if (__m[0] ??= __TabsTrigger_s0El.hasAttribute('selected')) __TabsTrigger_s0El.selected = !!(__x)
       }
       __l[0] = __x }
     }
@@ -368,7 +368,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsTrigger_s1El) {
       { const __x = isAnalyticsSelected()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __TabsTrigger_s1El.selected = !!(__x)
+        if (__m[1] ??= __TabsTrigger_s1El.hasAttribute('selected')) __TabsTrigger_s1El.selected = !!(__x)
       }
       __l[1] = __x }
     }
@@ -376,7 +376,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsTrigger_s2El) {
       { const __x = isReportsSelected()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __TabsTrigger_s2El.selected = !!(__x)
+        if (__m[2] ??= __TabsTrigger_s2El.hasAttribute('selected')) __TabsTrigger_s2El.selected = !!(__x)
       }
       __l[2] = __x }
     }
@@ -384,7 +384,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsTrigger_s3El) {
       { const __x = isNotificationsSelected()
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
-        __TabsTrigger_s3El.selected = !!(__x)
+        if (__m[3] ??= __TabsTrigger_s3El.hasAttribute('selected')) __TabsTrigger_s3El.selected = !!(__x)
       }
       __l[3] = __x }
     }
@@ -392,7 +392,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsContent_s5El) {
       { const __x = isOverviewSelected()
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
-        __TabsContent_s5El.selected = !!(__x)
+        if (__m[4] ??= __TabsContent_s5El.hasAttribute('selected')) __TabsContent_s5El.selected = !!(__x)
       }
       __l[4] = __x }
     }
@@ -400,7 +400,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsContent_s6El) {
       { const __x = isAnalyticsSelected()
       if (!(5 in __l) || !Object.is(__l[5], __x)) {
-        __TabsContent_s6El.selected = !!(__x)
+        if (__m[5] ??= __TabsContent_s6El.hasAttribute('selected')) __TabsContent_s6El.selected = !!(__x)
       }
       __l[5] = __x }
     }
@@ -408,7 +408,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsContent_s7El) {
       { const __x = isReportsSelected()
       if (!(6 in __l) || !Object.is(__l[6], __x)) {
-        __TabsContent_s7El.selected = !!(__x)
+        if (__m[6] ??= __TabsContent_s7El.hasAttribute('selected')) __TabsContent_s7El.selected = !!(__x)
       }
       __l[6] = __x }
     }
@@ -416,7 +416,7 @@ export function initTabsMultipleDemo(__scope, _p = {}) {
     if (__TabsContent_s8El) {
       { const __x = isNotificationsSelected()
       if (!(7 in __l) || !Object.is(__l[7], __x)) {
-        __TabsContent_s8El.selected = !!(__x)
+        if (__m[7] ??= __TabsContent_s8El.hasAttribute('selected')) __TabsContent_s8El.selected = !!(__x)
       }
       __l[7] = __x }
     }
@@ -491,7 +491,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
     if (__TabsTrigger_s0El) {
       { const __x = isActiveSelected()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __TabsTrigger_s0El.selected = !!(__x)
+        if (__m[0] ??= __TabsTrigger_s0El.hasAttribute('selected')) __TabsTrigger_s0El.selected = !!(__x)
       }
       __l[0] = __x }
     }
@@ -499,7 +499,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
     if (__TabsTrigger_s2El) {
       { const __x = isAnotherSelected()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __TabsTrigger_s2El.selected = !!(__x)
+        if (__m[1] ??= __TabsTrigger_s2El.hasAttribute('selected')) __TabsTrigger_s2El.selected = !!(__x)
       }
       __l[1] = __x }
     }
@@ -507,7 +507,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
     if (__TabsContent_s4El) {
       { const __x = isActiveSelected()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __TabsContent_s4El.selected = !!(__x)
+        if (__m[2] ??= __TabsContent_s4El.hasAttribute('selected')) __TabsContent_s4El.selected = !!(__x)
       }
       __l[2] = __x }
     }
@@ -515,7 +515,7 @@ export function initTabsDisabledDemo(__scope, _p = {}) {
     if (__TabsContent_s5El) {
       { const __x = isAnotherSelected()
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
-        __TabsContent_s5El.selected = !!(__x)
+        if (__m[3] ??= __TabsContent_s5El.hasAttribute('selected')) __TabsContent_s5El.selected = !!(__x)
       }
       __l[3] = __x }
     }

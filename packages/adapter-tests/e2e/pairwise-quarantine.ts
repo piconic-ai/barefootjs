@@ -220,21 +220,15 @@ const ENTRIES: readonly PairwiseQuarantineEntry[] = [
   { caseId: "state-memo__structure-nested-loop-depth-2__binding-controlled-textarea__event-ref-callback__callback-function-reference", oracle: "snap", reason: "#2750 (the nested-loop `ref` const declaration dropped from the module) is fixed — no ReferenceError on either leg any more, measured 2026-09-18 on the local sweep and the nightly run. What remains is the #2714 half: the sole structural difference is `data-mounted=\"0\"` on every inner-row `<span>`, present in the hydrated leg and absent from SSR, because the ref-callback mount effect cannot run at SSR.", limitation: "ref-effect-attr-state-ssr" },
   { caseId: "state-memo__structure-nested-loop-depth-2__binding-controlled-textarea__event-ref-callback__callback-function-reference", oracle: "three-point", reason: "#2750 (the nested-loop `ref` const declaration dropped from the module) is fixed — no ReferenceError on either leg any more, measured 2026-09-18 on the local sweep and the nightly run. What remains is the #2714 half: the sole structural difference is `data-mounted=\"0\"` on every inner-row `<span>`, present in the hydrated leg and absent from SSR, because the ref-callback mount effect cannot run at SSR.", limitation: "ref-effect-attr-state-ssr" },
 
-  // --- select-out-of-range-selected-index (the #2758 residue; every prop-shadowing-signal × controlled-select case) ---
-  { caseId: "state-prop-shadowing-signal__structure-early-return__binding-controlled-select__event-direct-handler__callback-function-reference", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-early-return__binding-controlled-select__event-direct-handler__callback-function-reference", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-nested-loop-depth-2__binding-controlled-select__event-handler-reading-outer-signal__callback-filter-predicate", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-nested-loop-depth-2__binding-controlled-select__event-handler-reading-outer-signal__callback-filter-predicate", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-conditional-ternary__binding-controlled-select__event-direct-handler__callback-inline-arrow", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-conditional-ternary__binding-controlled-select__event-direct-handler__callback-inline-arrow", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-child-component__binding-controlled-select__event-handler-reading-outer-signal__callback-function-reference", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-child-component__binding-controlled-select__event-handler-reading-outer-signal__callback-function-reference", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-static-array-loop__binding-controlled-select__event-delegated-handler-in-row__callback-function-reference", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-static-array-loop__binding-controlled-select__event-delegated-handler-in-row__callback-function-reference", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-fragment-row-loop__binding-controlled-select__event-handler-reading-loop-param__callback-inline-arrow", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-fragment-row-loop__binding-controlled-select__event-handler-reading-loop-param__callback-inline-arrow", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-nested-loop-depth-2__binding-controlled-select__event-direct-handler__callback-function-reference", oracle: "snap", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
-  { caseId: "state-prop-shadowing-signal__structure-nested-loop-depth-2__binding-controlled-select__event-direct-handler__callback-function-reference", oracle: "three-point", reason: "The `val` prop (7) matches neither option: SSR selects the #2852 hidden placeholder (`selectedIndex` 0), then hydration's controlled-value effect assigns `String(val())` and the browser resolves the no-match to `selectedIndex` -1 — measured `BODY/…/SELECT[0]#selectedIndex: 0 !== -1` on every one of these rows, structural HTML identical.", limitation: "select-out-of-range-selected-index" },
+  // --- select-out-of-range-selected-index: graduated (#3066) --------------
+  // Every `prop-shadowing-signal × controlled-select` out-of-range row
+  // (14 rows) is fixed by the same tag-gated `selectedIndex = 0` fallback
+  // in `emitValueUpdateStatements` (`emit-reactive.ts`) that graduated the
+  // dedicated `select-out-of-range-hydration` oracle-quarantine row and
+  // its registry entry — one shared codegen function every
+  // `<select value={…}>` compiles through, regardless of the surrounding
+  // structure these rows vary (early-return, nested loops, conditionals,
+  // child components, fragment rows).
 
   // --- #2750: fully graduated (2026-09-18) --------------------------------
   // #2799 restored the nested-loop `ref` const declaration, so no leg throws
@@ -243,7 +237,7 @@ const ENTRIES: readonly PairwiseQuarantineEntry[] = [
   // actually show now (`data-mounted="0"` after hydration, absent from SSR),
   // alongside their previously unquarantined `snap` twins.
 
-  // --- #2758: graduated, residue re-filed as a registry entry --------------
+  // --- #2758: graduated, residue graduated too (#3066) --------------------
   // `lowerFormControlValueSsr` (`jsx-to-ir.ts`) now injects a hidden
   // `disabled` placeholder `<option>` whenever a controlled single-selection
   // `<select>`'s options are statically enumerable, `selected` via the
@@ -251,15 +245,13 @@ const ENTRIES: readonly PairwiseQuarantineEntry[] = [
   // matching no option now SSRs as "nothing selected" instead of the
   // browser's implicit first-option default. The MARKUP half is fixed and
   // pinned by `select-value-no-match-ssr` / `select-multiple-value-no-match-ssr`.
-  // The LIVE-STATE half is not (measured 2026-09-18, identical on the local
-  // sweep and the nightly): the server has the placeholder selected
-  // (`selectedIndex` 0) while hydration's `.value` assignment still yields
-  // `selectedIndex` -1, so every `prop-shadowing-signal × controlled-select`
-  // case fails `snap`/`three-point` on `DOM state diverges` — the same pair
-  // this file's header once described as "deliberately left out". It now
-  // has its own registry entry, `select-out-of-range-selected-index`, with
-  // the browser-oracle fixture `select-out-of-range-hydration` as its
-  // reproduction; the 14 rows above cite it.
+  // The LIVE-STATE half (the server has the placeholder selected while
+  // hydration's `.value` assignment used to yield `selectedIndex` -1, the
+  // same pair this file's header once described as "deliberately left
+  // out") was tracked as the registry entry `select-out-of-range-selected-
+  // index`; both it and the 14 `prop-shadowing-signal × controlled-select`
+  // rows above are graduated now that the controlled-value effect falls
+  // back to `selectedIndex = 0` on no match (see the section above).
 
   // --- #2481 t=3 sweep (variable-strength promotion, #2796/#2797) -----
   // Populated from the t=3 additionalCases browser-oracle sweep. All 156

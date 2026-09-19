@@ -405,11 +405,12 @@ export function initDialogBasicDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s9) {
-      _s9.open = !!(open())
+      if (__m[0] ??= _s9.hasAttribute('open')) _s9.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -418,7 +419,7 @@ export function initDialogBasicDemo(__scope, _p = {}) {
     if (__Dialog_s9El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Dialog_s9El.open = !!(__x)
+        if (__m[0] ??= __Dialog_s9El.hasAttribute('open')) __Dialog_s9El.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -467,7 +468,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
       { const __x = confirmText()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         const __val = String(__x)
-        if ('value' in _s5) { if (_s5.value !== __val) _s5.value = __val } else { _s5.setAttribute('value', __val) }
+        if ('value' in _s5) { if (_s5.value !== __val) { _s5.value = __val; if (_s5.tagName === 'SELECT' && !_s5.multiple && _s5.size <= 1 && _s5.value !== __val) _s5.selectedIndex = 0 } } else { _s5.setAttribute('value', __val) }
       }
       __l[0] = __x }
     }
@@ -488,11 +489,12 @@ export function initDialogFormDemo(__scope, _p = {}) {
   if (_s7) _s7.addEventListener('click', handleDelete)
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s10) {
-      _s10.open = !!(open())
+      if (__m[0] ??= _s10.hasAttribute('open')) _s10.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -501,7 +503,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
     if (__Dialog_s10El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Dialog_s10El.open = !!(__x)
+        if (__m[0] ??= __Dialog_s10El.hasAttribute('open')) __Dialog_s10El.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -563,11 +565,12 @@ export function initDialogLongContentDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s9) {
-      _s9.open = !!(open())
+      if (__m[0] ??= _s9.hasAttribute('open')) _s9.open = !!(open())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -576,7 +579,7 @@ export function initDialogLongContentDemo(__scope, _p = {}) {
     if (__Dialog_s9El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Dialog_s9El.open = !!(__x)
+        if (__m[0] ??= __Dialog_s9El.hasAttribute('open')) __Dialog_s9El.open = !!(__x)
       }
       __l[0] = __x }
     }

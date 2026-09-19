@@ -5552,10 +5552,8 @@
       "expected": "the server HTML and the hydrated DOM carry the same attribute value",
       "actual": "renders the compile-time literal (or no attribute at all) in the server HTML — a `ref` callback never runs at SSR — and the first client effect pass then writes the computed value, so pre- and post-hydration DOM differ — a visible snap at the hydrate boundary",
       "fixtures": [
-        "accordion",
         "combobox",
         "command",
-        "radio-group",
         "select"
       ],
       "adapters": []
@@ -5585,17 +5583,6 @@
         "BF049"
       ],
       "reason": "Props cross the `bf-p` hydration boundary as `JSON.stringify` data with no type-aware revival, so these types lose their contents (`Map` / `Set` serialize to `{}`, `BigInt` throws, `Promise` / `Function` cannot cross a serialization boundary at all). A typed revival envelope was considered and rejected as a nine-adapter protocol change that still could not carry every listed type. The sound path is to pass a JSON-safe value and rebuild the rich value client-side."
-    },
-    "select-out-of-range-selected-index": {
-      "title": "Out-of-range controlled select: placeholder selected on the server, nothing selected after hydration",
-      "kind": "silent",
-      "given": "a controlled `<select value={...}>` with statically enumerable `<option>`s whose bound value matches none of them",
-      "expected": "the server-rendered select and the hydrated select agree on the live selection (`selectedIndex` / `value`)",
-      "actual": "renders the hidden placeholder option selected (`selectedIndex` 0, `value` \"\"); the hydration controlled-value effect then assigns the out-of-range value, which the browser resolves to no selection (`selectedIndex` -1), so the live state changes across hydration although both read as blank",
-      "fixtures": [
-        "select-out-of-range-hydration"
-      ],
-      "adapters": []
     },
     "signal-read-in-nested-static-loop": {
       "title": "Signal read inside a nested static loop row",
