@@ -400,6 +400,16 @@ function compileMultipleComponents(
   }
   try {
 
+  // Same-file siblings: hand every component's shape to the adapter before
+  // any of them generates, so a parent finds a same-file child's shape
+  // whatever the declaration order — `entries` follows source order, and a
+  // child declared AFTER its parent is legal (function-declaration
+  // hoisting). Cross-file children reach the same hook from the CLI /
+  // compat / test-render pre-passes; this is the same-file door.
+  if (adapter.registerChildComponentShape) {
+    for (const { componentIR } of entries) adapter.registerChildComponentShape(componentIR)
+  }
+
   for (const { componentIR } of entries) {
     // Non-default exports share the parent's .client.js, so they
     // route to the default export's script name. The pipeline's

@@ -647,28 +647,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.scope = BindingScope.EMPTY
     this.primeCompileState(ir)
     this.state.stringValueNames = collectStringValueNames(ir)
-    // #2448: self-register this component's derived-memo dependencies, so a
-    // SAME-FILE child (generated before its parent in the same run) is
-    // visible to `loopRowChildPropOverrides`. The cross-file pre-pass door is
-    // `registerChildComponentShape`; `compileJSX` only goes through here.
-    this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
-    // #3062: same self-registration gap, one registry over. A SAME-FILE
-    // child's `childComponentShapes` entry (which `routesToRestBag` reads to
-    // decide `bf_with_props` vs `bf_with_bag` delivery) was ONLY ever
-    // populated by the cross-file pre-pass hook (`registerChildComponentShape`,
-    // called externally per sibling FILE) — `compileJSX`/`compileMultipleComponents`
-    // never calls it, so a same-file child (the ONLY kind a loop row may
-    // contain — a cross-file child there is BF103-refused) had no shape
-    // entry by the time its parent's OWN `generate()` looked it up, and
-    // EVERY prop on it — rest-bag-destined or not — fell through
-    // `routesToRestBag`'s `false` default onto the named-field path, where
-    // `bf.WithProps`'s silent-unknown-field passthrough swallowed it with no
-    // diagnostic. Self-registering here (this component is generated before
-    // any same-file parent that nests it in a loop, same ordering
-    // `recordDerivedFieldDeps` above already relies on) closes the gap at
-    // its source instead of special-casing every reader of
-    // `childComponentShapes` a second time.
-    this.registerChildComponentShape(ir)
+    // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
+    // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
+    // `childDerivedFieldDeps` for `loopRowChildPropOverrides`) is registered
+    // by `compileMultipleComponents`' pre-pass through the
+    // `registerChildComponentShape` hook — for EVERY component of the file
+    // before any of them generates, so it holds whatever the declaration
+    // order (`composite-row-child-rest-bag-prop-hoisted`). Cross-file
+    // children reach the same hook from the CLI / compat / test-render
+    // pre-passes. Self-registering here instead (#2448, #3062) only covered
+    // a child generated before its parent.
 
     // Surface loop-body usages of sibling-imported components (see
     // `checkImportedLoopChildComponents`). The barefoot CLI compiles a

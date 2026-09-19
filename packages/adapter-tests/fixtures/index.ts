@@ -708,6 +708,7 @@ import { fixture as staticLoopClientOnlyNestedPrecomputed } from './static-loop-
 // The rest-bag-routed sibling of compositeRowChildComponent: a per-row value
 // delivered through a prop the child captures only via `...rest`.
 import { fixture as compositeRowChildRestBagProp } from './composite-row-child-rest-bag-prop'
+import { fixture as compositeRowChildRestBagPropHoisted } from './composite-row-child-rest-bag-prop-hoisted'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1171,4 +1172,5 @@ export const jsxFixtures: JSXFixture[] = [
   staticLoopClientOnlyNestedClient,
   staticLoopClientOnlyNestedPrecomputed,
   compositeRowChildRestBagProp,
+  compositeRowChildRestBagPropHoisted,
 ]
