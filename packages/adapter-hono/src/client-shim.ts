@@ -174,12 +174,3 @@ export function findSiblingSlot(_el: unknown, _slotSelector: string): null {
   return null
 }
 
-// ---------------------------------------------------------------------------
-// Floating-element positioning — geometry exists only in the browser
-// ---------------------------------------------------------------------------
-
-export function trackPosition(_update: () => void): () => void {
-  return () => {
-    // no-op
-  }
-}

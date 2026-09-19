@@ -1,4 +1,5 @@
-import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { trackPosition } from '../../../lib/track-position'
 
 var PopoverContext = PopoverContext ?? createContext()
 

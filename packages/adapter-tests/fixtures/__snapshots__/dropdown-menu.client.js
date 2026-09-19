@@ -1,4 +1,5 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { trackPosition } from '../../../lib/track-position'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
