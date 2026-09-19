@@ -35,6 +35,14 @@ export interface CsrRenderOptions {
   props?: Record<string, unknown>
   /** Additional component files (filename → source) */
   components?: Record<string, string>
+  /**
+   * The component to mount when `source` declares several (a fixture's
+   * `componentName`). Without it the harness mounts the LAST component
+   * `hydrate()` registered — source order — which is the wrong one as soon
+   * as a same-file child is declared after its parent
+   * (`composite-row-child-rest-bag-prop-hoisted`).
+   */
+  componentName?: string
 }
 
 /**
@@ -110,7 +118,7 @@ function compileToClientJs(source: string, filePath: string): string {
 }
 
 export async function renderCsrComponent(options: CsrRenderOptions): Promise<string> {
-  const { source, props = {}, components } = options
+  const { source, props = {}, components, componentName } = options
 
   // Compile child components first and collect their client JS
   const childClientJsList: string[] = []
@@ -127,7 +135,7 @@ export async function renderCsrComponent(options: CsrRenderOptions): Promise<str
 
   // Build evaluation module
   const allClientJs = [...childClientJsList, clientJs].join('\n')
-  const code = buildCsrEvalModule(allClientJs, props)
+  const code = buildCsrEvalModule(allClientJs, props, componentName)
 
   await mkdir(CSR_TEMP_DIR, { recursive: true })
   const tempFile = resolve(
@@ -152,7 +160,7 @@ export async function renderCsrComponent(options: CsrRenderOptions): Promise<str
  * 2. Execute client JS code (stripped of imports) which calls hydrate() for each component
  * 3. The last component registered is the main one — evaluate its template with props
  */
-function buildCsrEvalModule(clientJs: string, props: Record<string, unknown>): string {
+function buildCsrEvalModule(clientJs: string, props: Record<string, unknown>, componentName?: string): string {
   // Strip ES module import statements (named imports and bare side-effect imports)
   const strippedCode = clientJs
     .replace(/^import\s+\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*$/gm, '')
@@ -525,11 +533,16 @@ function queryHref(base, params) {
 // --- Execute client JS (registers templates via hydrate()) ---
 ${strippedCode}
 
+// --- Pick the main component: the caller's \`componentName\` when given, else
+// the last one \`hydrate()\` registered (source order) ---
+const __mainComponent = ${componentName ? JSON.stringify(componentName) : '__lastComponent'}
+if (!__templates.has(__mainComponent)) throw new Error('CSR harness: no template registered for ' + __mainComponent)
+
 // --- Run main component init (so Provider state is set, child inits cascade) ---
-__runInit(__lastComponent, ${JSON.stringify(props)})
+__runInit(__mainComponent, ${JSON.stringify(props)})
 
 // --- Evaluate main component template ---
-const __templateFn = __templates.get(__lastComponent)
+const __templateFn = __templates.get(__mainComponent)
 let __html = __templateFn ? __templateFn(${JSON.stringify(props)}) : ''
 // #1320: resolve any hoisted-children placeholder that didn't pass
 // through a nested renderChild. The outer bf-s="test" injection
@@ -543,7 +556,7 @@ __html = __html.replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __rootSco
 // mirrors production's \`createComponent\` (component.ts), which leaves
 // \`scopeId === null\` for such wrappers rather than stamping their own
 // bf-s over the inner component's root (#2653).
-if (!__comments.get(__lastComponent) && !/^<[a-zA-Z][^\\s/>]*[^>]*\\sbf-s="/.test(__html)) {
+if (!__comments.get(__mainComponent) && !/^<[a-zA-Z][^\\s/>]*[^>]*\\sbf-s="/.test(__html)) {
 if (__html.match(/^<[a-zA-Z][^\\s/>]*[^>]* bf="/)) {
   __html = __html.replace(/ bf="/, ' bf-s="' + __rootScope + '" bf="')
 } else if (__html.match(/^<[a-zA-Z][^\\s/>]*\\s[^>]*>/)) {

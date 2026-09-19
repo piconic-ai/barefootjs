@@ -880,6 +880,14 @@
       }
     }
   ],
+  "composite-row-child-rest-bag-prop-hoisted": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "conditional-return-button": [
     {
       "name": "gen:variant:empty",

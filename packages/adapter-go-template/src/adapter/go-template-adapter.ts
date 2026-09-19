@@ -130,7 +130,7 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { routesToRestBag, objectBakeTargetFor } from "./lib/types.ts"
+import { routesToRestBag, objectBakeTargetFor, restBagOverrideFields } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
@@ -152,7 +152,7 @@ import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/mem
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit } from "./memo/memo-compute.ts"
-import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
+import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
@@ -647,11 +647,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.scope = BindingScope.EMPTY
     this.primeCompileState(ir)
     this.state.stringValueNames = collectStringValueNames(ir)
-    // #2448: self-register this component's derived-memo dependencies, so a
-    // SAME-FILE child (generated before its parent in the same run) is
-    // visible to `loopRowChildPropOverrides`. The cross-file pre-pass door is
-    // `registerChildComponentShape`; `compileJSX` only goes through here.
-    this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
+    // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
+    // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
+    // `childDerivedFieldDeps` for `loopRowChildPropOverrides`) is registered
+    // by `compileMultipleComponents`' pre-pass through the
+    // `registerChildComponentShape` hook — for EVERY component of the file
+    // before any of them generates, so it holds whatever the declaration
+    // order (`composite-row-child-rest-bag-prop-hoisted`). Cross-file
+    // children reach the same hook from the CLI / compat / test-render
+    // pre-passes. Self-registering here instead (#2448, #3062) only covered
+    // a child generated before its parent.
 
     // Surface loop-body usages of sibling-imported components (see
     // `checkImportedLoopChildComponents`). The barefoot CLI compiles a
@@ -996,7 +1001,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
   }
 
-  registerChildComponentShape(ir: Pick<ComponentIR, 'metadata'>): void {
+  registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
@@ -1010,6 +1015,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name))
     const restPropsName = ir.metadata.restPropsName ?? null
     const restBagField = restPropsName ? capitalizeFieldName(restPropsName) : null
+    // #3062: which `Spread_N` field(s), if any, an element spread of THIS
+    // rest binding (`{...rest}` somewhere in the child's own tree) renders
+    // from — computed structurally off `ir.root` since no `GoEmitContext`
+    // for this child exists yet at registration time (see
+    // `collectRestBagSpreadFields`'s docstring). Empty for the #2805 shape
+    // (`rest.header`, a member read with no element spread at all).
+    const restBagSpreadFields = restPropsName ? collectRestBagSpreadFields(ir.root, restPropsName) : []
     // Optional object/named-interface params lower to `map[string]interface{}`
     // (see `resolvePropGoType`); track them so a parent baking an inline object
     // literal targets a Go map literal.
@@ -1054,7 +1066,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         mapTypedParamNames.add(key)
       }
     }
-    this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames, structTypedObjectParams })
+    this.childComponentShapes.set(name, { paramNames, restBagField, restBagSpreadFields, mapTypedParamNames, structTypedObjectParams })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
     // IDENTIFIERS in the memo/signal body — those are the LOCAL bindings
@@ -2679,6 +2691,69 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // literal-wrapped twin of the bare-getter fix below.
             const parsedValue =
               prop.value.kind === 'expression' ? prop.value.parsed : undefined
+            // A ternary whose falsy branch is `undefined`/`null`
+            // (`tag={shown() ? tag() : undefined}`, #3060) has no arm in
+            // `templatePartsToGoCode` (it explicitly opts a `ternary` part
+            // out — see that function's docstring — reserving the shape for
+            // the element-attribute `{{if}}` path) NOR in
+            // `resolveDynamicPropValue` below (which only matches a bare
+            // getter call/comparison/passthrough, never a conditional). Both
+            // silently fell through to no field at all in the generated
+            // `<Child>Input{...}` literal, so the child's rest-bag/named-prop
+            // lookup saw no value on EITHER branch. Bake it as a Go
+            // `interface{}`-valued IIFE evaluated at constructor time — the
+            // same "what does this signal/prop expression evaluate to right
+            // now" question `resolveDynamicPropValue`/`resolveLocalGetterAsGo`
+            // already answer for a bare operand, just wrapped in the ternary's
+            // own test.
+            //
+            // Scoped to a REST-BAG destination on purpose (`routesToRestBag`):
+            // that field is always `map[string]any`-typed (`interface{}`
+            // values), so a `nil` alternate is always valid there. A NAMED
+            // field is concrete-typed (`string`, `int`, …) — a bare `interface{}`
+            // IIFE result fails to compile against it ("need type assertion",
+            // caught by `destructured-props-live`'s `label?: string` ternary
+            // prop, a pre-existing passing shape this must not regress). A
+            // named field's own conditional lowering is out of scope here;
+            // it keeps falling through to the unchanged paths below.
+            if (parsedValue?.kind === 'conditional' && routesToRestBag(childShape, prop.name)) {
+              const isUndef = (e: ParsedExpr): boolean =>
+                (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
+                (e.kind === 'literal' && (e.value === null || e.value === undefined))
+              if (isUndef(parsedValue.alternate) && !isUndef(parsedValue.consequent)) {
+                const testGo = this.resolveTernaryOperandAsGo(
+                  parsedValue.test,
+                  ir.metadata.signals,
+                  ir.metadata.memos,
+                  ir.metadata.propsParams,
+                  propFallbackVars,
+                )
+                const consequentGo = this.resolveTernaryOperandAsGo(
+                  parsedValue.consequent,
+                  ir.metadata.signals,
+                  ir.metadata.memos,
+                  ir.metadata.propsParams,
+                  propFallbackVars,
+                )
+                if (testGo !== null && consequentGo !== null) {
+                  // Go's `if` takes a `bool` and has no truthiness: a test that
+                  // resolves to anything but a bool literal (a string/number
+                  // signal seed, `tag={label() ? x : undefined}` over
+                  // `createSignal('x')` → `"x"`; a prop field of another
+                  // type) would embed `if "x" {` and fail to compile. Mirror
+                  // `lowerTernaryTest` (`expr/url-builder.ts`): a resolved
+                  // bool literal passes through, everything else goes through
+                  // `bf.Truthy` — JS `Boolean(x)` over string / number / bool
+                  // / nil, the same coercion the spread-bag conditionals use.
+                  const condGo = testGo === 'true' || testGo === 'false' ? testGo : `bf.Truthy(${testGo})`
+                  emitChildField(
+                    prop.name,
+                    `func() interface{} { if ${condGo} { return ${consequentGo} }; return nil }()`,
+                  )
+                  break
+                }
+              }
+            }
             const objectTarget = objectBakeTargetFor(childShape, prop.name)
             if (parsedValue && objectTarget) {
               const goObj = objectLiteralToGoComposite(
@@ -4301,6 +4376,39 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `in.${capitalizeFieldName(passthroughParam.sourceName ?? passthroughParam.name)}`
     }
 
+    return null
+  }
+
+  /**
+   * Resolve ONE structural operand of a ternary destined for a child prop
+   * (#3060's `emitChildField` conditional arm) to its Go constructor-time
+   * value: a zero-arg getter call (`shown()`, `tag()`) and a bare identifier
+   * (a local getter, or a passthrough prop reference) both go through
+   * `resolveDynamicPropValue` — the ONE place that already answers "what does
+   * this expression evaluate to at constructor time" for a bare child-prop
+   * value, including its local-shadow guard (a `const label = …` shadowing a
+   * `label` prop must NOT resolve to `in.Label`; #2198's hazard). A literal
+   * goes through `parsedLiteralToGo`. Returns null for any other operand
+   * shape (member expression, nested call, binary/logical) — the caller falls
+   * through to leaving the field unbaked (the pre-existing behavior for a
+   * ternary this narrow arm doesn't cover) rather than guessing.
+   */
+  private resolveTernaryOperandAsGo(
+    node: ParsedExpr,
+    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
+    memos: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }[],
+    propsParams: { name: string; sourceName?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    if (node.kind === 'call' && node.callee.kind === 'identifier' && node.args.length === 0) {
+      return this.resolveDynamicPropValue(`${node.callee.name}()`, signals, memos, propsParams, propFallbackVars)
+    }
+    if (node.kind === 'identifier') {
+      return this.resolveDynamicPropValue(node.name, signals, memos, propsParams, propFallbackVars)
+    }
+    if (node.kind === 'literal') {
+      return parsedLiteralToGo(this.emitCtx, node)
+    }
     return null
   }
 
@@ -7150,7 +7258,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private loopRowChildPropOverrides(
     comp: IRComponent,
-  ): { args: string; helper: 'bf_with_props' | 'bf_reprops' } | null {
+  ): {
+    args: string | null
+    helper: 'bf_with_props' | 'bf_reprops'
+    bagEntries: Array<{ bagField: string; key: string; go: string }>
+  } | null {
     // #2822: every cross-file map below is keyed by the child's own
     // declared name, not the caller-local alias — see `importAliases`.
     // Diagnostics still name `comp.name` (what the user actually wrote in
@@ -7158,6 +7270,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const declaredName = this.resolveChildName(comp.name)
     const childShape = this.childComponentShapes.get(declaredName)
     const args: string[] = []
+    const bagEntries: Array<{ bagField: string; key: string; go: string }> = []
     // Set by the derived-field check below when at least one overridden prop
     // feeds a constructor-derived field AND the child can rebuild itself.
     let needsRebuild = false
@@ -7172,22 +7285,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (prop.name.includes('-')) continue
       // A prop that routes into the child's rest bag (`routesToRestBag`,
       // `emitChildField`'s same routing rule) has no named Go field to
-      // override via `bf_with_props`. Unlike `queueDynamicPropDefine`'s
-      // named-children-prop route (#2805, `bf_with_bag`), a loop-row VALUE
-      // override into a rest-bag key is left on the constructor-only path —
-      // out of scope here, tracked separately (#2920).
-      if (routesToRestBag(childShape, prop.name)) continue
+      // override via `bf_with_props` — routed into `bagEntries` below instead
+      // (#3062), the loop-row delivery `queueDynamicPropDefine`'s static
+      // sibling route (#2805, `bf_with_bag`) didn't reach yet.
+      const isRestBag = routesToRestBag(childShape, prop.name)
       // `literal` / `boolean-shorthand` / `boolean-attr` carry no runtime
       // expression to re-evaluate per row; `spread` / `jsx-children` are
       // handled elsewhere (`emitSpreadBagInits`, `queueLoopBodyChildrenDefine`).
       if (prop.value.kind !== 'expression') continue
       const free = prop.freeIdentifiers
       if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
-      // #2448: does this prop feed a field the child's CONSTRUCTOR derives?
-      // If so, patching fields on the shared instance leaves that field at the
-      // one-shot value on every row. Re-run the constructor per row when the
-      // child has a rebuilder; refuse when it doesn't.
-      {
+      // #2448's derived-field staleness check only applies to a NAMED FIELD
+      // override — `bf_with_props` patches struct fields the constructor may
+      // derive OTHER fields from. A rest-bag entry is an opaque
+      // `map[string]any` value nothing derives from, so it never needs a
+      // rebuild and skips this check entirely.
+      if (!isRestBag) {
         const derived = this.childDerivedFieldDeps.get(declaredName)
         const overriddenField = capitalizeFieldName(prop.name)
         const staleField = derived
@@ -7262,6 +7375,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         })
         continue
       }
+      // #3062: a rest-bag prop has no declared field — deliver its per-row
+      // value through `bf_with_bag` (keyed by the RAW JSX attribute name,
+      // same as `queueDynamicPropDefine`'s static sibling route) instead of
+      // a `bf_with_props` field-name pair. Synced onto EVERY render-consulted
+      // bag field (`restBagOverrideFields` — `Rest` for a `rest.x` member
+      // read, plus any `Spread_N` an element spread of the same binding
+      // renders from), not just `restBagField`, or the override lands on a
+      // field the child's render never reads (#3062's actual failure mode).
+      if (isRestBag) {
+        const wrapped = wrapIfMultiToken(go)
+        for (const bagField of restBagOverrideFields(childShape)) {
+          bagEntries.push({ bagField, key: prop.name, go: wrapped })
+        }
+        continue
+      }
       // Emit the CHILD's own PROPS field name, not the JSX attribute name —
       // `bf.WithProps`/`bf.RepropsAssign` patch the constructed PROPS
       // instance, and passing a name the struct doesn't have (an aliased
@@ -7272,8 +7400,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const fieldName = this.childPropFieldNames.get(declaredName)?.get(prop.name) ?? capitalizeFieldName(prop.name)
       args.push(`${JSON.stringify(fieldName)} ${wrapIfMultiToken(go)}`)
     }
-    if (args.length === 0) return null
-    return { args: args.join(' '), helper: needsRebuild ? 'bf_reprops' : 'bf_with_props' }
+    if (args.length === 0 && bagEntries.length === 0) return null
+    return {
+      args: args.length > 0 ? args.join(' ') : null,
+      helper: needsRebuild ? 'bf_reprops' : 'bf_with_props',
+      bagEntries,
+    }
   }
 
   /**
@@ -8390,8 +8522,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // it through `bf_with_bag`/`WithBagEntry` instead (#2805), keyed by
       // the RAW JSX attribute name — a rest-bag entry has no local alias to
       // resolve through `childPropFieldNames` the way a declared field does.
+      // Synced onto every render-consulted bag field (`restBagOverrideFields`,
+      // #3062) — a child that ALSO spreads this same rest binding onto an
+      // element root reads a separate `Spread_N` field, which patching only
+      // `restBagField` would leave stale.
       if (routesToRestBag(childShape, prop.name)) {
-        bagEntries.push({ bagField: childShape!.restBagField!, key: prop.name, defineName: name })
+        for (const bagField of restBagOverrideFields(childShape)) {
+          bagEntries.push({ bagField, key: prop.name, defineName: name })
+        }
         continue
       }
       // `bf_with_props`/`WithProps` patches the child's Props struct, keyed
@@ -8507,11 +8645,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // component name; `bf_with_props` patches fields and doesn't (#2448).
       // Either way the props helper stays INNER — `bf_with_children` applies
       // the row's children last, on the rebuilt value.
-      const base = overrides
+      let base = overrides?.args
         ? overrides.helper === 'bf_reprops'
           ? `(bf_reprops ${JSON.stringify(declaredName)} $.${comp.name}${suffix} ${overrides.args})`
           : `(bf_with_props $.${comp.name}${suffix} ${overrides.args})`
         : `$.${comp.name}${suffix}`
+      // #3062: each loop-row rest-bag override (no declared field —
+      // `loopRowChildPropOverrides`'s `bagEntries`) wraps in its OWN
+      // `bf_with_bag` call, outside the (optional) `bf_with_props`/
+      // `bf_reprops` wrap — same disjoint-fields, order-doesn't-matter
+      // reasoning as the static call site's identical loop just below.
+      for (const entry of overrides?.bagEntries ?? []) {
+        base = `(bf_with_bag ${base} ${JSON.stringify(entry.bagField)} ${JSON.stringify(entry.key)} ${entry.go})`
+      }
       templateCall = loopBodyDefine
         ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`
         : `{{template "${declaredName}" ${base}}}`

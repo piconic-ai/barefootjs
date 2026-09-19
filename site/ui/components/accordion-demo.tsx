@@ -23,26 +23,26 @@ export function AccordionSingleOpenDemo() {
   return (
     <Accordion>
       <AccordionItem value="item-1" open={openItem() === 'item-1'} onOpenChange={(v) => setOpenItem(v ? 'item-1' : null)}>
-        <AccordionTrigger>
+        <AccordionTrigger open={openItem() === 'item-1'}>
           Is it accessible?
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent open={openItem() === 'item-1'}>
           Yes. It adheres to the WAI-ARIA design pattern.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-2" open={openItem() === 'item-2'} onOpenChange={(v) => setOpenItem(v ? 'item-2' : null)}>
-        <AccordionTrigger>
+        <AccordionTrigger open={openItem() === 'item-2'}>
           Is it styled?
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent open={openItem() === 'item-2'}>
           Yes. It comes with default styles that match the other components' aesthetic.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-3" open={openItem() === 'item-3'} onOpenChange={(v) => setOpenItem(v ? 'item-3' : null)}>
-        <AccordionTrigger>
+        <AccordionTrigger open={openItem() === 'item-3'}>
           Is it animated?
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent open={openItem() === 'item-3'}>
           Yes. It uses CSS transitions for smooth open/close animations.
         </AccordionContent>
       </AccordionItem>
@@ -61,7 +61,7 @@ export function AccordionAsChildDemo() {
     <div>
       <Accordion>
         <AccordionItem value="custom" open={openItem() === 'custom'} onOpenChange={(v) => setOpenItem(v ? 'custom' : null)}>
-          <AccordionTrigger asChild>
+          <AccordionTrigger asChild open={openItem() === 'custom'}>
             <button
               type="button"
               data-testid="accordion-aschild-trigger"
@@ -70,15 +70,15 @@ export function AccordionAsChildDemo() {
               Custom Trigger
             </button>
           </AccordionTrigger>
-          <AccordionContent>
+          <AccordionContent open={openItem() === 'custom'}>
             This item uses a custom trigger element via asChild.
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="standard" open={openItem() === 'standard'} onOpenChange={(v) => setOpenItem(v ? 'standard' : null)}>
-          <AccordionTrigger>
+          <AccordionTrigger open={openItem() === 'standard'}>
             Standard Trigger
           </AccordionTrigger>
-          <AccordionContent>
+          <AccordionContent open={openItem() === 'standard'}>
             This item uses the default button trigger.
           </AccordionContent>
         </AccordionItem>
@@ -99,26 +99,26 @@ export function AccordionMultipleOpenDemo() {
   return (
     <Accordion>
       <AccordionItem value="item-1" open={item1Open()} onOpenChange={setItem1Open}>
-        <AccordionTrigger>
+        <AccordionTrigger open={item1Open()}>
           First Item
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent open={item1Open()}>
           This accordion allows multiple items to be open at once.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-2" open={item2Open()} onOpenChange={setItem2Open}>
-        <AccordionTrigger>
+        <AccordionTrigger open={item2Open()}>
           Second Item
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent open={item2Open()}>
           Each item manages its own open/close state independently.
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="item-3" open={item3Open()} onOpenChange={setItem3Open}>
-        <AccordionTrigger>
+        <AccordionTrigger open={item3Open()}>
           Third Item
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent open={item3Open()}>
           Click any trigger to toggle that item without affecting others.
         </AccordionContent>
       </AccordionItem>

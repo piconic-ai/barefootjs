@@ -112,6 +112,15 @@ interface RadioGroupItemProps extends ButtonHTMLAttributes {
   value: string
   /** Whether this item is disabled. */
   disabled?: boolean
+  /**
+   * Whether this item is the group's initial selection. Pass `true` on
+   * the item whose `value` matches the parent RadioGroup's `defaultValue`
+   * (or its initial `value` in controlled mode) so `aria-checked` /
+   * `data-state` / the indicator dot render correctly in the
+   * server-rendered HTML, instead of "unchecked" being corrected by the
+   * `ref`-mount effect only after hydration.
+   */
+  defaultChecked?: boolean
 }
 
 /**
@@ -151,15 +160,15 @@ function RadioGroupItem(props: RadioGroupItemProps) {
   return (
     <button
       data-slot="radio-group-item"
-      data-state="unchecked"
+      data-state={props.defaultChecked ? 'checked' : 'unchecked'}
       role="radio"
-      aria-checked="false"
+      aria-checked={props.defaultChecked ? 'true' : 'false'}
       disabled={props.disabled ?? false}
       id={props.id}
       className={`${itemClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
-      <span data-slot="radio-group-indicator" className="flex size-4 items-center justify-center" style="display:none">
+      <span data-slot="radio-group-indicator" className="flex size-4 items-center justify-center" style={props.defaultChecked ? 'display:flex' : 'display:none'}>
         <span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" />
       </span>
     </button>

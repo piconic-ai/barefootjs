@@ -106,6 +106,24 @@ export interface ChildComponentShape {
   paramNames: Set<string>
   restBagField: string | null
   /**
+   * The Go field name(s) an element-spread of the child's OWN rest binding
+   * (`{...rest}` on the child's root, as opposed to a member read like
+   * `rest.header`) actually renders from — `Spread_<slotId>` fields
+   * (IR-build-time-assigned, `jsx-to-ir.ts`'s `spreadIdCounter`), collected
+   * structurally off the child's own JSX tree at shape-registration time.
+   * `restBagField` (`Rest`) is a SEPARATE struct field the child's own
+   * `New<Child>Props` seeds with the identical map (`Spread_0: in.Rest,
+   * Rest: in.Rest`) but which the template never reads back — a dynamic
+   * per-instance override (`bf_with_bag`, #2805/#3062) that patches only
+   * `restBagField` leaves whichever `Spread_N` field the render actually
+   * consults stale. Empty when the child has no such element spread (the
+   * #2805 shape, `rest.header`, needs no entry here — `restBagField` alone
+   * is what that read consults). See `routesToRestBag`'s docstring for the
+   * shared-decision rule this closes for `emitChildField` /
+   * `queueDynamicPropDefine` / `loopRowChildPropOverrides` alike.
+   */
+  restBagSpreadFields: readonly string[]
+  /**
    * Child param names whose Go field is `map[string]interface{}` — an optional
    * object/named-interface prop (`opts?: EmblaOptionsType`), OR a REQUIRED
    * anonymous-object prop whose synthesized struct name (#2674) collided with
@@ -142,6 +160,21 @@ export interface ChildComponentShape {
  */
 export function routesToRestBag(shape: ChildComponentShape | undefined, jsxName: string): boolean {
   return !!shape?.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
+ * Every Go field name a dynamic per-instance rest-bag override (`bf_with_bag`,
+ * #2805/#3062) must patch to actually reach the child's render — `restBagField`
+ * (`Rest`, what a `rest.x` member read consults) PLUS any `restBagSpreadFields`
+ * (`Spread_N`, what a `{...rest}` element spread consults). Both are seeded
+ * from the identical map at construction time but are SEPARATE struct fields
+ * (`New<Child>Props`: `Spread_0: in.Rest, Rest: in.Rest`) — patching only one
+ * leaves whichever one the child's render actually reads stale. Empty (never
+ * called) when `shape` has no rest bag at all.
+ */
+export function restBagOverrideFields(shape: ChildComponentShape | undefined): readonly string[] {
+  if (!shape?.restBagField) return []
+  return [shape.restBagField, ...shape.restBagSpreadFields]
 }
 
 /**

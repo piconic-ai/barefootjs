@@ -49,18 +49,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // item's trigger sits inside the same comment-wrapper composition).
   // `snap`/`three-point` are a separate, unrelated divergence (see reason
   // below) and stay quarantined.
-  accordion: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly).",
-    limitation: 'ref-effect-attr-state-ssr',
-  },
-  'radio-group': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
-    limitation: 'ref-effect-attr-state-ssr',
-  },
+  //
+  // `accordion` and `radio-group` graduated (#3065): AccordionTrigger's
+  // `aria-expanded` and RadioGroupItem's `aria-checked`/`data-state`/
+  // indicator style now come from an explicit prop the caller passes down
+  // (`open`, `defaultChecked`) instead of a hard-coded literal, mirroring
+  // the carousel's `data-orientation` precedent — SSR and the hydrated DOM
+  // now agree.
   // `idempotence` graduated (#2827): the bimodal divergence was the
   // component's own rAF-deferred group/empty `hidden` + `data-selected`
   // writes landing one frame after the item `hidden` writes; the root now
@@ -97,15 +92,17 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   },
   // #2852 (fixing #2758) made SSR select a hidden placeholder for an
   // out-of-range controlled select instead of the browser's first-option
-  // default; the surviving half is the live state — placeholder selected
-  // (`selectedIndex` 0) on the server, nothing selected (-1) once the
-  // hydration effect assigns the out-of-range value. Both read as blank.
-  'select-out-of-range-hydration': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR has the placeholder option selected (selectedIndex 0); the hydration controlled-value effect assigns the out-of-range value and the browser resolves it to selectedIndex -1.',
-    limitation: 'select-out-of-range-selected-index',
-  },
+  // default; graduated (#3066): the controlled-value effect now falls
+  // back to `selectedIndex = 0` (the same placeholder) when the assigned
+  // value matches no `<option>`, instead of leaving the browser's own
+  // out-of-range resolution (`selectedIndex` -1) as the live post-
+  // hydration state — see `emitValueUpdateStatements`'s docstring in
+  // `emit-reactive.ts`. The fix is a single tag-gated branch in the one
+  // shared codegen function every `<select value={…}>` compiles through
+  // regardless of surrounding structure, so the pairwise sweep's
+  // `controlled-select` × out-of-range cases (former
+  // `select-out-of-range-selected-index` citations, now removed from
+  // `pairwise-quarantine.ts`) graduate the same way.
   // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the

@@ -39,7 +39,7 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
         { const __x = value()
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           const __val = String(__x)
-          if ('value' in __ra_s2) { if (__ra_s2.value !== __val) __ra_s2.value = __val } else { __ra_s2.setAttribute('value', __val) }
+          if ('value' in __ra_s2) { if (__ra_s2.value !== __val) { __ra_s2.value = __val; if (__ra_s2.tagName === 'SELECT' && !__ra_s2.multiple && __ra_s2.size <= 1 && __ra_s2.value !== __val) __ra_s2.selectedIndex = 0 } } else { __ra_s2.setAttribute('value', __val) }
         }
         __l[0] = __x }
       }

@@ -1286,6 +1286,57 @@ describe('Client JS generation', () => {
       expect(clientJs!.content).not.toContain("setAttribute('disabled'")
     })
 
+    // #3065 (accordion/radio-group): a boolean-IDL-named prop like `open`
+    // is only a REAL property on the elements that natively expose it
+    // (`<details>`, `<dialog>`) — most child components receiving it are
+    // plain elements (a `<div>`, here) that merely happen to accept a
+    // prop sharing that name for their OWN unrelated purposes. Before this
+    // fix the mirror wrote `target.open = …` unconditionally (unlike the
+    // `presenceOrUndefined`/generic branches, which already seed-gate on
+    // `hasAttribute`), planting a live DOM property SSR never had and
+    // that `captureDomState`'s STATE_PROPS check (`open` is one of the
+    // properties it diffs) then saw appear only after hydration —
+    // discovered via the accordion oracle once its OWN aria-expanded/
+    // data-state divergence (the actual target of #3065) was fixed.
+    test('mirrors a child component `open` prop gated on hasAttribute, not unconditionally (#3065)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { Section } from './Section'
+
+        export function Accordion() {
+          const [expanded, setExpanded] = createSignal(false)
+          return (
+            <div>
+              <Section open={expanded()} />
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'Accordion.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain(".hasAttribute('open')")
+      expect(clientJs!.content).toContain('.open = !!')
+      // A bare `open={signal()}` reaches BOTH the named-prop-binding mirror
+      // (`emitReactivePropBindings`, ctx.reactiveProps) and the child-prop
+      // mirror (`emitReactiveChildProps`, ctx.reactiveChildProps) for the
+      // same slot — a regression in EITHER path's gate would still leave
+      // the OTHER path's gated write in the output, so asserting presence
+      // of a gated write alone can't catch one path regressing back to
+      // unconditional. Each gated write is emitted on its own single line
+      // (`emitAttrUpdate`'s mirrorSeed branch), so require every line that
+      // writes `.open = !!` to also carry its `hasAttribute('open')` gate.
+      const openWriteLines = clientJs!.content.split('\n').filter((line) => line.includes('.open = !!'))
+      expect(openWriteLines.length).toBeGreaterThan(0)
+      for (const line of openWriteLines) {
+        expect(line).toContain("hasAttribute('open')")
+      }
+    })
+
     // #2716: a `value` prop passed to a CHILD COMPONENT (above) drives the
     // no-SSR-fallback mirror path; a `value` ATTRIBUTE the developer writes
     // directly on a plain HOST element is the opposite case — SSR renders
@@ -1313,6 +1364,68 @@ describe('Client JS generation', () => {
       expect(clientJs!.content).toContain("'value' in")
       expect(clientJs!.content).toContain('.value =')
       expect(clientJs!.content).toContain("setAttribute('value'")
+    })
+
+    // #3066: a controlled <select> whose value matches no <option> falls
+    // back to selectedIndex 0 (the #2852 SSR placeholder) instead of
+    // leaving the browser's own out-of-range resolution (selectedIndex -1)
+    // as the live post-hydration state, which SSR never rendered.
+    test('a controlled <select> value falls back to selectedIndex 0 on no match (#3066)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function OutOfRangeSelect() {
+          const [val] = createSignal(7)
+          return (
+            <select value={String(val())}>
+              <option value="0">Zero</option>
+              <option value="1">One</option>
+            </select>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'OutOfRangeSelect.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain("tagName === 'SELECT'")
+      expect(clientJs!.content).toContain('!')
+      expect(clientJs!.content).toContain('.multiple')
+      expect(clientJs!.content).toContain('.size <= 1')
+      expect(clientJs!.content).toContain('.selectedIndex = 0')
+    })
+
+    // A list box is `multiple` OR a `size` > 1 (`jsx-to-ir.ts`'s
+    // `isMultiSelection`, which the SSR placeholder decision already keys
+    // off) — checking `.multiple` alone here would force `selectedIndex =
+    // 0` on a bare `size={2}` select whose SSR leg (correctly, per
+    // `isMultiSelection`) left nothing selected on an out-of-range value,
+    // reintroducing exactly the divergence #3066 fixed for `multiple`.
+    test('does not force selectedIndex 0 on an out-of-range size>1 (list box) select (#3066)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function OutOfRangeListBox() {
+          const [val] = createSignal(7)
+          return (
+            <select size={2} value={String(val())}>
+              <option value="0">Zero</option>
+              <option value="1">One</option>
+            </select>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'OutOfRangeListBox.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('.size <= 1')
     })
   })
 

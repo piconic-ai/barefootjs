@@ -42,6 +42,15 @@ interface RadioGroupItemProps extends ButtonHTMLAttributes {
   value: string
   /** Whether this item is disabled. */
   disabled?: boolean
+  /**
+   * Whether this item is the group's initial selection. Pass `true` on
+   * the item whose `value` matches the parent RadioGroup's `defaultValue`
+   * (or its initial `value` in controlled mode) so `aria-checked` /
+   * `data-state` / the indicator dot render correctly in the
+   * server-rendered HTML, instead of "unchecked" being corrected by the
+   * `ref`-mount effect only after hydration.
+   */
+  defaultChecked?: boolean
 }
 
 export type { RadioGroupProps, RadioGroupItemProps }
@@ -99,10 +108,11 @@ export function RadioGroupItem(__allProps: RadioGroupItemProps & { __instanceId?
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.defaultChecked === 'object' && props.defaultChecked !== null && 'isEscaped' in props.defaultChecked)) __hydrateProps['defaultChecked'] = props.defaultChecked
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'RadioGroupItem', {})
   }
 
   return (
-    <button data-slot="radio-group-item" data-state="unchecked" role="radio" aria-checked="false" disabled={(props.disabled ?? false) || undefined} id={props.id} className={`${itemClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0"><span data-slot="radio-group-indicator" className="flex size-4 items-center justify-center" style="display:none"><span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" /></span></button>
+    <button data-slot="radio-group-item" data-state={`${props.defaultChecked ? 'checked' : 'unchecked'}`} role="radio" aria-checked={`${props.defaultChecked ? 'true' : 'false'}`} disabled={(props.disabled ?? false) || undefined} id={props.id} className={`${itemClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span data-slot="radio-group-indicator" className="flex size-4 items-center justify-center" style={`${props.defaultChecked ? 'display:flex' : 'display:none'}`} bf="s0"><span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" /></span></button>
   )
 }

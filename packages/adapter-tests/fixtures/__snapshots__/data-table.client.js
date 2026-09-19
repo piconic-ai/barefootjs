@@ -3715,7 +3715,7 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
       { const __x = filter()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         const __val = String(__x)
-        if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
+        if ('value' in _s0) { if (_s0.value !== __val) { _s0.value = __val; if (_s0.tagName === 'SELECT' && !_s0.multiple && _s0.size <= 1 && _s0.value !== __val) _s0.selectedIndex = 0 } } else { _s0.setAttribute('value', __val) }
       }
       __l[0] = __x }
     }
@@ -3858,11 +3858,12 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
 
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s0) {
-      _s0.checked = !!(isAllSelected())
+      if (__m[0] ??= _s0.hasAttribute('checked')) _s0.checked = !!(isAllSelected())
     }
-  })
+  }) }
 
   // Reactive child component props
   { const __l = []; const __m = []
@@ -3871,7 +3872,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     if (__Checkbox_s0El) {
       { const __x = isAllSelected()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Checkbox_s0El.checked = !!(__x)
+        if (__m[0] ??= __Checkbox_s0El.hasAttribute('checked')) __Checkbox_s0El.checked = !!(__x)
       }
       __l[0] = __x }
     }

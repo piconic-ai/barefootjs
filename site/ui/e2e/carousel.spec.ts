@@ -1,4 +1,20 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
+
+/**
+ * Click Next until embla answers it.
+ *
+ * The carousel bakes the Previous button's first-slide `disabled` state into
+ * SSR, so `toBeDisabled()` passes before embla's dynamic import has resolved
+ * and wired the click handlers; a single click landing in that window is a
+ * no-op and Previous stays disabled. Retrying the click until Previous
+ * enables proves the navigation without depending on load timing.
+ */
+async function clickNextUntilEmblaReady(nextBtn: Locator, prevBtn: Locator) {
+  await expect(async () => {
+    await nextBtn.click()
+    await expect(prevBtn).not.toBeDisabled({ timeout: 500 })
+  }).toPass({ timeout: 10_000 })
+}
 
 test.describe('Carousel Reference Page', () => {
   test.beforeEach(async ({ page }) => {
@@ -60,15 +76,11 @@ test.describe('Carousel Reference Page', () => {
       const prevBtn = carousel.locator('[data-slot="carousel-previous"]')
       const nextBtn = carousel.locator('[data-slot="carousel-next"]')
 
-      // SSR bakes the resting state (prev disabled at the first slide), so
-      // `disabled` alone does not prove embla has mounted: `scrollNext` is a
-      // no-op until the island hydrates and embla's dynamic import resolves.
-      // Retry the click + assertion together until the navigation sticks.
-      await expect(prevBtn).toBeDisabled()
-      await expect(async () => {
-        await nextBtn.click()
-        await expect(prevBtn).not.toBeDisabled({ timeout: 1000 })
-      }).toPass({ timeout: 10000 })
+      // Previous is disabled at the first slide (baked into SSR, kept by embla)
+      await expect(prevBtn).toBeDisabled({ timeout: 5000 })
+
+      // Navigating to the next slide enables Previous
+      await clickNextUntilEmblaReady(nextBtn, prevBtn)
     })
   })
 
@@ -106,13 +118,11 @@ test.describe('Carousel Reference Page', () => {
       const nextBtn = verticalCarousel.locator('[data-slot="carousel-next"]')
       const prevBtn = verticalCarousel.locator('[data-slot="carousel-previous"]')
 
-      // Same race as the Playground test above: SSR already renders prev
-      // disabled, so retry click + assertion until embla has mounted.
-      await expect(prevBtn).toBeDisabled()
-      await expect(async () => {
-        await nextBtn.click()
-        await expect(prevBtn).not.toBeDisabled({ timeout: 1000 })
-      }).toPass({ timeout: 10000 })
+      // Previous is disabled at the first slide (baked into SSR, kept by embla)
+      await expect(prevBtn).toBeDisabled({ timeout: 5000 })
+
+      // Navigating to the next slide enables Previous
+      await clickNextUntilEmblaReady(nextBtn, prevBtn)
     })
   })
 

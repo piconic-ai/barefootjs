@@ -31,6 +31,7 @@ describe('CSR Conformance Tests', () => {
         // same isolation in `jsx-runner.ts` for the SSR side.
         props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
         components: fixture.components,
+        componentName: fixture.componentName,
       })
 
       expect(html).toBeTruthy()

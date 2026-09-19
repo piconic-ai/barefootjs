@@ -51,6 +51,14 @@ interface AccordionTriggerProps extends ButtonHTMLAttributes {
   disabled?: boolean
   /** Render child element as trigger instead of built-in button */
   asChild?: boolean
+  /**
+   * Whether this item is open. Pass the same expression given to the
+   * sibling `AccordionItem`'s `open` prop (e.g. `openItem() === 'item-1'`)
+   * so `aria-expanded` is correct in the server-rendered HTML instead of
+   * being corrected by a mount effect after hydration. Falls back to the
+   * `AccordionItemContext`-driven effect when omitted.
+   */
+  open?: boolean
   /** Trigger label */
   children?: Child
 }
@@ -58,6 +66,15 @@ interface AccordionTriggerProps extends ButtonHTMLAttributes {
 interface AccordionContentProps extends HTMLBaseAttributes {
   /** Content to display */
   children?: Child
+  /**
+   * Whether this item is open. Pass the same expression given to the
+   * sibling `AccordionItem`'s `open` prop (e.g. `openItem() === 'item-1'`)
+   * so `data-state` and the open/closed grid classes are correct in the
+   * server-rendered HTML instead of being corrected by a mount effect
+   * after hydration. Falls back to the `AccordionItemContext`-driven
+   * effect when omitted.
+   */
+  open?: boolean
 }
 
 type AccordionPropsWithHydration = AccordionProps & {
@@ -133,17 +150,18 @@ export function AccordionTrigger(__allProps: AccordionTriggerProps & { __instanc
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
     if (!(typeof props.asChild === 'object' && props.asChild !== null && 'isEscaped' in props.asChild)) __hydrateProps['asChild'] = props.asChild
+    if (!(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionTrigger', {})
   }
 
   if (props.asChild) {
     return (
-      <h3 className="flex" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><span data-slot="accordion-trigger" style="display:contents" aria-expanded="false" bf="s2">{props.children}</span></h3>
+      <h3 className="flex" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><span data-slot="accordion-trigger" style="display:contents" aria-expanded={`${props.open ? 'true' : 'false'}`} bf="s2">{props.children}</span></h3>
     )
   }
   return (
-    <h3 className="flex" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><button data-slot="accordion-trigger" id={props.id} className={`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${className}`} disabled={(props.disabled) || undefined} aria-expanded="false" aria-disabled={(props.disabled) || undefined} bf="s1">{props.children}<ChevronDownIcon size="sm" className={`text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`} __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button></h3>
+    <h3 className="flex" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><button data-slot="accordion-trigger" id={props.id} className={`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${className}`} disabled={(props.disabled) || undefined} aria-expanded={`${props.open ? 'true' : 'false'}`} aria-disabled={(props.disabled) || undefined} bf="s1">{props.children}<ChevronDownIcon size="sm" className={`text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`} __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button></h3>
   )
 }
 
@@ -160,10 +178,11 @@ export function AccordionContent(__allProps: AccordionContentProps & { __instanc
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
+    if (!(typeof props.open === 'object' && props.open !== null && 'isEscaped' in props.open)) __hydrateProps['open'] = props.open
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'AccordionContent', {})
   }
 
   return (
-    <div data-slot="accordion-content" id={props.id} role="region" data-state="closed" className={`${accordionContentBaseClasses} ${accordionContentClosedClasses}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><div className={`overflow-hidden text-sm`}><div className={`pt-0 pb-4 ${className()}`} bf="s0">{props.children}</div></div></div>
+    <div data-slot="accordion-content" id={props.id} role="region" data-state={`${props.open ? 'open' : 'closed'}`} className={`${accordionContentBaseClasses} ${props.open ? accordionContentOpenClasses : accordionContentClosedClasses}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><div className={`overflow-hidden text-sm`}><div className={`pt-0 pb-4 ${className()}`} bf="s0">{props.children}</div></div></div>
   )
 }

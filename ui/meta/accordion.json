@@ -72,6 +72,12 @@
           "description": "Render child element as trigger instead of built-in button"
         },
         {
+          "name": "open",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether this item is open. Pass the same expression given to the sibling `AccordionItem`'s `open` prop (e.g. `openItem() === 'item-1'`) so `aria-expanded` is correct in the server-rendered HTML instead of being corrected by a mount effect after hydration. Falls back to the `AccordionItemContext`-driven effect when omitted."
+        },
+        {
           "name": "children",
           "type": "Child",
           "required": false,
@@ -88,6 +94,12 @@
           "type": "Child",
           "required": false,
           "description": "Content to display"
+        },
+        {
+          "name": "open",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether this item is open. Pass the same expression given to the sibling `AccordionItem`'s `open` prop (e.g. `openItem() === 'item-1'`) so `data-state` and the open/closed grid classes are correct in the server-rendered HTML instead of being corrected by a mount effect after hydration. Falls back to the `AccordionItemContext`-driven effect when omitted."
         }
       ]
     }
