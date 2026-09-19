@@ -70,4 +70,15 @@ describe('RadioGroupItem', () => {
     expect(radio.dataState).not.toBeNull()
   })
 
+  test('aria-checked/data-state/indicator style are compiler-analyzable expressions bound to defaultChecked, not hard-coded literals (#3065)', () => {
+    // Previously these were the literals "false" / "unchecked" /
+    // "display:none", corrected only by the ref-mount effect — never at
+    // SSR. They now depend on `props.defaultChecked` (passed by the
+    // caller on the item matching the group's defaultValue), so the
+    // server HTML and the hydrated DOM agree from the start.
+    const radio = result.find({ role: 'radio' })!
+    expect(radio.aria.checked).toBe('{props.defaultChecked}')
+    expect(radio.dataState).toBe('{props.defaultChecked}')
+  })
+
 })

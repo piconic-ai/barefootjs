@@ -49,18 +49,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // item's trigger sits inside the same comment-wrapper composition).
   // `snap`/`three-point` are a separate, unrelated divergence (see reason
   // below) and stay quarantined.
-  accordion: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly).",
-    limitation: 'ref-effect-attr-state-ssr',
-  },
-  'radio-group': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
-    limitation: 'ref-effect-attr-state-ssr',
-  },
+  //
+  // `accordion` and `radio-group` graduated (#3065): AccordionTrigger's
+  // `aria-expanded` and RadioGroupItem's `aria-checked`/`data-state`/
+  // indicator style now come from an explicit prop the caller passes down
+  // (`open`, `defaultChecked`) instead of a hard-coded literal, mirroring
+  // the carousel's `data-orientation` precedent — SSR and the hydrated DOM
+  // now agree.
   // `idempotence` graduated (#2827): the bimodal divergence was the
   // component's own rAF-deferred group/empty `hidden` + `data-selected`
   // writes landing one frame after the item `hidden` writes; the root now

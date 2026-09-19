@@ -262,7 +262,7 @@ export function initPopoverPreviewDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -298,7 +298,7 @@ export function initPopoverBasicDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -354,7 +354,7 @@ export function initPopoverFormDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }

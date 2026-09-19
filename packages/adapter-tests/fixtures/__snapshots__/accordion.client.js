@@ -2963,10 +2963,15 @@ export function initAccordionTrigger(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(AccordionItemContext)
 
-    // Reactive aria-expanded and chevron rotation
+    // Reactive aria-expanded and chevron rotation. aria-expanded is only
+    // written imperatively here when the caller didn't pass `open` — when
+    // it did, the compiled reactive attribute binding on the JSX below
+    // already keeps it in sync, and SSR already rendered the right value.
     createEffect(() => {
       const isOpen = ctx.open()
-      el.setAttribute('aria-expanded', String(isOpen))
+      if (_p.open === undefined) {
+        el.setAttribute('aria-expanded', String(isOpen))
+      }
       const icon = el.querySelector('svg')
       if (icon) {
         if (isOpen) {
@@ -3029,6 +3034,17 @@ export function initAccordionTrigger(__scope, _p = {}) {
 
   { const __l = []
   createEffect(() => {
+    if (_s2) {
+      { const __x = `${_p.open ? 'true' : 'false'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s2.setAttribute('aria-expanded', String(__v)); else _s2.removeAttribute('aria-expanded') }
+      }
+      __l[0] = __x }
+    }
+  }) }
+
+  { const __l = []
+  createEffect(() => {
     if (_s1) {
       { const __x = _p.id
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
@@ -3045,12 +3061,17 @@ export function initAccordionTrigger(__scope, _p = {}) {
         _s1.disabled = !!(__x)
       }
       __l[2] = __x }
-      { const __x = _p.disabled
+      { const __x = `${_p.open ? 'true' : 'false'}`
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('aria-expanded', String(__v)); else _s1.removeAttribute('aria-expanded') }
+      }
+      __l[3] = __x }
+      { const __x = _p.disabled
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
         if (__x) _s1.setAttribute('aria-disabled', 'true')
         else _s1.removeAttribute('aria-disabled')
       }
-      __l[3] = __x }
+      __l[4] = __x }
     }
   }) }
 
@@ -3061,7 +3082,7 @@ export function initAccordionTrigger(__scope, _p = {}) {
   initChild('ChevronDownIcon', _s0, { size: "sm", get className() { return `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal` } })
 }
 
-hydrate('AccordionTrigger', { init: initAccordionTrigger, template: (_p) => `${_p.asChild ? `<h3 class="flex"><span data-slot="accordion-trigger" style="display:contents" aria-expanded="false" bf="s2">${markupOrEmpty(_p.children)}</span></h3>` : `<h3 class="flex"><button data-slot="accordion-trigger" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) + '"' : ''} ${_p.disabled ? 'disabled' : ''} aria-expanded="false" ${_p.disabled ? 'aria-disabled' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {size: "sm", className: `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`}, undefined, 's0')}</button></h3>`}` })
+hydrate('AccordionTrigger', { init: initAccordionTrigger, template: (_p) => `${_p.asChild ? `<h3 class="flex"><span data-slot="accordion-trigger" style="display:contents" ${(`${_p.open ? 'true' : 'false'}`) != null ? 'aria-expanded="' + escapeAttr(`${_p.open ? 'true' : 'false'}`) + '"' : ''} bf="s2">${markupOrEmpty(_p.children)}</span></h3>` : `<h3 class="flex"><button data-slot="accordion-trigger" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${(_p.className ?? '')}`) + '"' : ''} ${_p.disabled ? 'disabled' : ''} ${(`${_p.open ? 'true' : 'false'}`) != null ? 'aria-expanded="' + escapeAttr(`${_p.open ? 'true' : 'false'}`) + '"' : ''} ${_p.disabled ? 'aria-disabled' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {size: "sm", className: `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`}, undefined, 's0')}</button></h3>`}` })
 export function AccordionTrigger(_p, __bfKey) { return createComponent('AccordionTrigger', _p, __bfKey) }
 var AccordionItemContext = AccordionItemContext ?? createContext()
 
@@ -3078,8 +3099,10 @@ export function initAccordionContent(__scope, _p = {}) {
 
     createEffect(() => {
       const isOpen = ctx.open()
-      el.dataset.state = isOpen ? 'open' : 'closed'
-      el.className = `${accordionContentBaseClasses} ${isOpen ? accordionContentOpenClasses : accordionContentClosedClasses}`
+      if (_p.open === undefined) {
+        el.dataset.state = isOpen ? 'open' : 'closed'
+        el.className = `${accordionContentBaseClasses} ${isOpen ? accordionContentOpenClasses : accordionContentClosedClasses}`
+      }
     })
   }
 
@@ -3093,6 +3116,16 @@ export function initAccordionContent(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
       }
       __l[0] = __x }
+      { const __x = `${_p.open ? 'open' : 'closed'}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-state', String(__v)); else _s1.removeAttribute('data-state') }
+      }
+      __l[1] = __x }
+      { const __x = `${accordionContentBaseClasses} ${_p.open ? accordionContentOpenClasses : accordionContentClosedClasses}`
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      }
+      __l[2] = __x }
     }
   }) }
 
@@ -3110,7 +3143,7 @@ export function initAccordionContent(__scope, _p = {}) {
   if (_s1) (handleMount)(_s1)
 }
 
-hydrate('AccordionContent', { init: initAccordionContent, template: (_p) => `<div data-slot="accordion-content" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="region" data-state="closed" ${(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${('grid-rows-[0fr] invisible')}`) != null ? 'class="' + escapeAttr(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${('grid-rows-[0fr] invisible')}`) + '"' : ''} bf="s1"><div ${(`overflow-hidden text-sm`) != null ? 'class="' + escapeAttr(`overflow-hidden text-sm`) + '"' : ''}><div ${(`pt-0 pb-4 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`pt-0 pb-4 ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div></div></div>` })
+hydrate('AccordionContent', { init: initAccordionContent, template: (_p) => `<div data-slot="accordion-content" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} role="region" ${(`${_p.open ? 'open' : 'closed'}`) != null ? 'data-state="' + escapeAttr(`${_p.open ? 'open' : 'closed'}`) + '"' : ''} ${(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${_p.open ? ('grid-rows-[1fr] visible') : ('grid-rows-[0fr] invisible')}`) != null ? 'class="' + escapeAttr(`${('grid transition-[grid-template-rows,visibility] duration-normal ease-out')} ${_p.open ? ('grid-rows-[1fr] visible') : ('grid-rows-[0fr] invisible')}`) + '"' : ''} bf="s1"><div ${(`overflow-hidden text-sm`) != null ? 'class="' + escapeAttr(`overflow-hidden text-sm`) + '"' : ''}><div ${(`pt-0 pb-4 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`pt-0 pb-4 ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div></div></div>` })
 export function AccordionContent(_p, __bfKey) { return createComponent('AccordionContent', _p, __bfKey) }
 export function initAccordionSingleOpenDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3128,42 +3161,90 @@ export function initAccordionSingleOpenDemo(__scope, _p = {}) {
     if (__AccordionItem_s2El) {
       { const __x = openItem() === 'item-1'
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __AccordionItem_s2El.open = !!(__x)
+        if (__m[0] ??= __AccordionItem_s2El.hasAttribute('open')) __AccordionItem_s2El.open = !!(__x)
       }
       __l[0] = __x }
+    }
+    const [__AccordionTrigger_s0El] = $c(__scope, 's0')
+    if (__AccordionTrigger_s0El) {
+      { const __x = openItem() === 'item-1'
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        if (__m[1] ??= __AccordionTrigger_s0El.hasAttribute('open')) __AccordionTrigger_s0El.open = !!(__x)
+      }
+      __l[1] = __x }
+    }
+    const [__AccordionContent_s1El] = $c(__scope, 's1')
+    if (__AccordionContent_s1El) {
+      { const __x = openItem() === 'item-1'
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        if (__m[2] ??= __AccordionContent_s1El.hasAttribute('open')) __AccordionContent_s1El.open = !!(__x)
+      }
+      __l[2] = __x }
     }
     const [__AccordionItem_s5El] = $c(__scope, 's5')
     if (__AccordionItem_s5El) {
       { const __x = openItem() === 'item-2'
-      if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __AccordionItem_s5El.open = !!(__x)
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        if (__m[3] ??= __AccordionItem_s5El.hasAttribute('open')) __AccordionItem_s5El.open = !!(__x)
       }
-      __l[1] = __x }
+      __l[3] = __x }
+    }
+    const [__AccordionTrigger_s3El] = $c(__scope, 's3')
+    if (__AccordionTrigger_s3El) {
+      { const __x = openItem() === 'item-2'
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        if (__m[4] ??= __AccordionTrigger_s3El.hasAttribute('open')) __AccordionTrigger_s3El.open = !!(__x)
+      }
+      __l[4] = __x }
+    }
+    const [__AccordionContent_s4El] = $c(__scope, 's4')
+    if (__AccordionContent_s4El) {
+      { const __x = openItem() === 'item-2'
+      if (!(5 in __l) || !Object.is(__l[5], __x)) {
+        if (__m[5] ??= __AccordionContent_s4El.hasAttribute('open')) __AccordionContent_s4El.open = !!(__x)
+      }
+      __l[5] = __x }
     }
     const [__AccordionItem_s8El] = $c(__scope, 's8')
     if (__AccordionItem_s8El) {
       { const __x = openItem() === 'item-3'
-      if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __AccordionItem_s8El.open = !!(__x)
+      if (!(6 in __l) || !Object.is(__l[6], __x)) {
+        if (__m[6] ??= __AccordionItem_s8El.hasAttribute('open')) __AccordionItem_s8El.open = !!(__x)
       }
-      __l[2] = __x }
+      __l[6] = __x }
+    }
+    const [__AccordionTrigger_s6El] = $c(__scope, 's6')
+    if (__AccordionTrigger_s6El) {
+      { const __x = openItem() === 'item-3'
+      if (!(7 in __l) || !Object.is(__l[7], __x)) {
+        if (__m[7] ??= __AccordionTrigger_s6El.hasAttribute('open')) __AccordionTrigger_s6El.open = !!(__x)
+      }
+      __l[7] = __x }
+    }
+    const [__AccordionContent_s7El] = $c(__scope, 's7')
+    if (__AccordionContent_s7El) {
+      { const __x = openItem() === 'item-3'
+      if (!(8 in __l) || !Object.is(__l[8], __x)) {
+        if (__m[8] ??= __AccordionContent_s7El.hasAttribute('open')) __AccordionContent_s7El.open = !!(__x)
+      }
+      __l[8] = __x }
     }
   }) }
 
   // Initialize child components with props
   initChild('Accordion', __scope, {})
   initChild('AccordionItem', _s2, { value: "item-1", get open() { return openItem() === 'item-1' }, onOpenChange: (v) => setOpenItem(v ? 'item-1' : null) })
-  initChild('AccordionTrigger', _s0, {})
-  initChild('AccordionContent', _s1, {})
+  initChild('AccordionTrigger', _s0, { get open() { return openItem() === 'item-1' } })
+  initChild('AccordionContent', _s1, { get open() { return openItem() === 'item-1' } })
   initChild('AccordionItem', _s5, { value: "item-2", get open() { return openItem() === 'item-2' }, onOpenChange: (v) => setOpenItem(v ? 'item-2' : null) })
-  initChild('AccordionTrigger', _s3, {})
-  initChild('AccordionContent', _s4, {})
+  initChild('AccordionTrigger', _s3, { get open() { return openItem() === 'item-2' } })
+  initChild('AccordionContent', _s4, { get open() { return openItem() === 'item-2' } })
   initChild('AccordionItem', _s8, { value: "item-3", get open() { return openItem() === 'item-3' }, onOpenChange: (v) => setOpenItem(v ? 'item-3' : null) })
-  initChild('AccordionTrigger', _s6, {})
-  initChild('AccordionContent', _s7, {})
+  initChild('AccordionTrigger', _s6, { get open() { return openItem() === 'item-3' } })
+  initChild('AccordionContent', _s7, { get open() { return openItem() === 'item-3' } })
 }
 
-hydrate('AccordionSingleOpenDemo', { init: initAccordionSingleOpenDemo, template: (_p) => `${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "item-1", open: ('item-1') === 'item-1', children: `${renderChild('AccordionTrigger', {children: ` Is it accessible? `}, undefined, 's0')}${renderChild('AccordionContent', {children: ` Yes. It adheres to the WAI-ARIA design pattern. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "item-2", open: ('item-1') === 'item-2', children: `${renderChild('AccordionTrigger', {children: ` Is it styled? `}, undefined, 's3')}${renderChild('AccordionContent', {children: ` Yes. It comes with default styles that match the other components' aesthetic. `}, undefined, 's4')}`}, undefined, 's5')}${renderChild('AccordionItem', {value: "item-3", open: ('item-1') === 'item-3', children: `${renderChild('AccordionTrigger', {children: ` Is it animated? `}, undefined, 's6')}${renderChild('AccordionContent', {children: ` Yes. It uses CSS transitions for smooth open/close animations. `}, undefined, 's7')}`}, undefined, 's8')}`}, undefined, 's9')}`, comment: true })
+hydrate('AccordionSingleOpenDemo', { init: initAccordionSingleOpenDemo, template: (_p) => `${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "item-1", open: ('item-1') === 'item-1', children: `${renderChild('AccordionTrigger', {open: ('item-1') === 'item-1', children: ` Is it accessible? `}, undefined, 's0')}${renderChild('AccordionContent', {open: ('item-1') === 'item-1', children: ` Yes. It adheres to the WAI-ARIA design pattern. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "item-2", open: ('item-1') === 'item-2', children: `${renderChild('AccordionTrigger', {open: ('item-1') === 'item-2', children: ` Is it styled? `}, undefined, 's3')}${renderChild('AccordionContent', {open: ('item-1') === 'item-2', children: ` Yes. It comes with default styles that match the other components' aesthetic. `}, undefined, 's4')}`}, undefined, 's5')}${renderChild('AccordionItem', {value: "item-3", open: ('item-1') === 'item-3', children: `${renderChild('AccordionTrigger', {open: ('item-1') === 'item-3', children: ` Is it animated? `}, undefined, 's6')}${renderChild('AccordionContent', {open: ('item-1') === 'item-3', children: ` Yes. It uses CSS transitions for smooth open/close animations. `}, undefined, 's7')}`}, undefined, 's8')}`}, undefined, 's9')}`, comment: true })
 export function AccordionSingleOpenDemo(_p, __bfKey) { return createComponent('AccordionSingleOpenDemo', _p, __bfKey) }
 export function initAccordionAsChildDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3192,17 +3273,41 @@ export function initAccordionAsChildDemo(__scope, _p = {}) {
     if (__AccordionItem_s2El) {
       { const __x = openItem() === 'custom'
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __AccordionItem_s2El.open = !!(__x)
+        if (__m[0] ??= __AccordionItem_s2El.hasAttribute('open')) __AccordionItem_s2El.open = !!(__x)
       }
       __l[0] = __x }
+    }
+    const [__AccordionContent_s1El] = $c(__scope, 's1')
+    if (__AccordionContent_s1El) {
+      { const __x = openItem() === 'custom'
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        if (__m[1] ??= __AccordionContent_s1El.hasAttribute('open')) __AccordionContent_s1El.open = !!(__x)
+      }
+      __l[1] = __x }
     }
     const [__AccordionItem_s5El] = $c(__scope, 's5')
     if (__AccordionItem_s5El) {
       { const __x = openItem() === 'standard'
-      if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __AccordionItem_s5El.open = !!(__x)
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        if (__m[2] ??= __AccordionItem_s5El.hasAttribute('open')) __AccordionItem_s5El.open = !!(__x)
       }
-      __l[1] = __x }
+      __l[2] = __x }
+    }
+    const [__AccordionTrigger_s3El] = $c(__scope, 's3')
+    if (__AccordionTrigger_s3El) {
+      { const __x = openItem() === 'standard'
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        if (__m[3] ??= __AccordionTrigger_s3El.hasAttribute('open')) __AccordionTrigger_s3El.open = !!(__x)
+      }
+      __l[3] = __x }
+    }
+    const [__AccordionContent_s4El] = $c(__scope, 's4')
+    if (__AccordionContent_s4El) {
+      { const __x = openItem() === 'standard'
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        if (__m[4] ??= __AccordionContent_s4El.hasAttribute('open')) __AccordionContent_s4El.open = !!(__x)
+      }
+      __l[4] = __x }
     }
   }) }
 
@@ -3210,13 +3315,13 @@ export function initAccordionAsChildDemo(__scope, _p = {}) {
   initChild('Accordion', _s6, {})
   initChild('AccordionItem', _s2, { value: "custom", get open() { return openItem() === 'custom' }, onOpenChange: (v) => setOpenItem(v ? 'custom' : null) })
   initChild('AccordionTrigger', _s0, { asChild: true })
-  initChild('AccordionContent', _s1, {})
+  initChild('AccordionContent', _s1, { get open() { return openItem() === 'custom' } })
   initChild('AccordionItem', _s5, { value: "standard", get open() { return openItem() === 'standard' }, onOpenChange: (v) => setOpenItem(v ? 'standard' : null) })
-  initChild('AccordionTrigger', _s3, {})
-  initChild('AccordionContent', _s4, {})
+  initChild('AccordionTrigger', _s3, { get open() { return openItem() === 'standard' } })
+  initChild('AccordionContent', _s4, { get open() { return openItem() === 'standard' } })
 }
 
-hydrate('AccordionAsChildDemo', { init: initAccordionAsChildDemo, template: (_p) => `<div>${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "custom", open: (null) === 'custom', children: `${renderChild('AccordionTrigger', {asChild: true, children: `<button type="button" data-testid="accordion-aschild-trigger" class="flex flex-1 items-center justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"> Custom Trigger </button>`}, undefined, 's0')}${renderChild('AccordionContent', {children: ` This item uses a custom trigger element via asChild. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "standard", open: (null) === 'standard', children: `${renderChild('AccordionTrigger', {children: ` Standard Trigger `}, undefined, 's3')}${renderChild('AccordionContent', {children: ` This item uses the default button trigger. `}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}<span data-testid="accordion-aschild-state" bf="s8">${(null) === 'custom' ? `<!--bf-cond-start:s7-->${escapeText('open')}<!--bf-cond-end:s7-->` : `<!--bf-cond-start:s7-->${escapeText('closed')}<!--bf-cond-end:s7-->`}</span></div>` })
+hydrate('AccordionAsChildDemo', { init: initAccordionAsChildDemo, template: (_p) => `<div>${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "custom", open: (null) === 'custom', children: `${renderChild('AccordionTrigger', {asChild: true, children: `<button type="button" data-testid="accordion-aschild-trigger" class="flex flex-1 items-center justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"> Custom Trigger </button>`}, undefined, 's0')}${renderChild('AccordionContent', {open: (null) === 'custom', children: ` This item uses a custom trigger element via asChild. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "standard", open: (null) === 'standard', children: `${renderChild('AccordionTrigger', {open: (null) === 'standard', children: ` Standard Trigger `}, undefined, 's3')}${renderChild('AccordionContent', {open: (null) === 'standard', children: ` This item uses the default button trigger. `}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}<span data-testid="accordion-aschild-state" bf="s8">${(null) === 'custom' ? `<!--bf-cond-start:s7-->${escapeText('open')}<!--bf-cond-end:s7-->` : `<!--bf-cond-start:s7-->${escapeText('closed')}<!--bf-cond-end:s7-->`}</span></div>` })
 export function AccordionAsChildDemo(_p, __bfKey) { return createComponent('AccordionAsChildDemo', _p, __bfKey) }
 export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3226,7 +3331,7 @@ export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
   const [item2Open, setItem2Open] = createSignal(false)
   const [item3Open, setItem3Open] = createSignal(false)
 
-  const [_s2, _s5, _s8, _s0, _s1, _s3, _s4, _s6, _s7] = $c(__scope, 's2', 's5', 's8', 's0', 's1', 's3', 's4', 's6', 's7')
+  const [_s2, _s0, _s1, _s5, _s3, _s4, _s8, _s6, _s7] = $c(__scope, 's2', 's0', 's1', 's5', 's3', 's4', 's8', 's6', 's7')
 
 
   // Reactive prop bindings
@@ -3234,11 +3339,29 @@ export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
     if (_s2) {
       _s2.open = !!(item1Open())
     }
+    if (_s0) {
+      _s0.open = !!(item1Open())
+    }
+    if (_s1) {
+      _s1.open = !!(item1Open())
+    }
     if (_s5) {
       _s5.open = !!(item2Open())
     }
+    if (_s3) {
+      _s3.open = !!(item2Open())
+    }
+    if (_s4) {
+      _s4.open = !!(item2Open())
+    }
     if (_s8) {
       _s8.open = !!(item3Open())
+    }
+    if (_s6) {
+      _s6.open = !!(item3Open())
+    }
+    if (_s7) {
+      _s7.open = !!(item3Open())
     }
   })
 
@@ -3249,40 +3372,88 @@ export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
     if (__AccordionItem_s2El) {
       { const __x = item1Open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __AccordionItem_s2El.open = !!(__x)
+        if (__m[0] ??= __AccordionItem_s2El.hasAttribute('open')) __AccordionItem_s2El.open = !!(__x)
       }
       __l[0] = __x }
+    }
+    const [__AccordionTrigger_s0El] = $c(__scope, 's0')
+    if (__AccordionTrigger_s0El) {
+      { const __x = item1Open()
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        if (__m[1] ??= __AccordionTrigger_s0El.hasAttribute('open')) __AccordionTrigger_s0El.open = !!(__x)
+      }
+      __l[1] = __x }
+    }
+    const [__AccordionContent_s1El] = $c(__scope, 's1')
+    if (__AccordionContent_s1El) {
+      { const __x = item1Open()
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        if (__m[2] ??= __AccordionContent_s1El.hasAttribute('open')) __AccordionContent_s1El.open = !!(__x)
+      }
+      __l[2] = __x }
     }
     const [__AccordionItem_s5El] = $c(__scope, 's5')
     if (__AccordionItem_s5El) {
       { const __x = item2Open()
-      if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __AccordionItem_s5El.open = !!(__x)
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        if (__m[3] ??= __AccordionItem_s5El.hasAttribute('open')) __AccordionItem_s5El.open = !!(__x)
       }
-      __l[1] = __x }
+      __l[3] = __x }
+    }
+    const [__AccordionTrigger_s3El] = $c(__scope, 's3')
+    if (__AccordionTrigger_s3El) {
+      { const __x = item2Open()
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        if (__m[4] ??= __AccordionTrigger_s3El.hasAttribute('open')) __AccordionTrigger_s3El.open = !!(__x)
+      }
+      __l[4] = __x }
+    }
+    const [__AccordionContent_s4El] = $c(__scope, 's4')
+    if (__AccordionContent_s4El) {
+      { const __x = item2Open()
+      if (!(5 in __l) || !Object.is(__l[5], __x)) {
+        if (__m[5] ??= __AccordionContent_s4El.hasAttribute('open')) __AccordionContent_s4El.open = !!(__x)
+      }
+      __l[5] = __x }
     }
     const [__AccordionItem_s8El] = $c(__scope, 's8')
     if (__AccordionItem_s8El) {
       { const __x = item3Open()
-      if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __AccordionItem_s8El.open = !!(__x)
+      if (!(6 in __l) || !Object.is(__l[6], __x)) {
+        if (__m[6] ??= __AccordionItem_s8El.hasAttribute('open')) __AccordionItem_s8El.open = !!(__x)
       }
-      __l[2] = __x }
+      __l[6] = __x }
+    }
+    const [__AccordionTrigger_s6El] = $c(__scope, 's6')
+    if (__AccordionTrigger_s6El) {
+      { const __x = item3Open()
+      if (!(7 in __l) || !Object.is(__l[7], __x)) {
+        if (__m[7] ??= __AccordionTrigger_s6El.hasAttribute('open')) __AccordionTrigger_s6El.open = !!(__x)
+      }
+      __l[7] = __x }
+    }
+    const [__AccordionContent_s7El] = $c(__scope, 's7')
+    if (__AccordionContent_s7El) {
+      { const __x = item3Open()
+      if (!(8 in __l) || !Object.is(__l[8], __x)) {
+        if (__m[8] ??= __AccordionContent_s7El.hasAttribute('open')) __AccordionContent_s7El.open = !!(__x)
+      }
+      __l[8] = __x }
     }
   }) }
 
   // Initialize child components with props
   initChild('Accordion', __scope, {})
   initChild('AccordionItem', _s2, { value: "item-1", get open() { return item1Open() }, onOpenChange: setItem1Open })
-  initChild('AccordionTrigger', _s0, {})
-  initChild('AccordionContent', _s1, {})
+  initChild('AccordionTrigger', _s0, { get open() { return item1Open() } })
+  initChild('AccordionContent', _s1, { get open() { return item1Open() } })
   initChild('AccordionItem', _s5, { value: "item-2", get open() { return item2Open() }, onOpenChange: setItem2Open })
-  initChild('AccordionTrigger', _s3, {})
-  initChild('AccordionContent', _s4, {})
+  initChild('AccordionTrigger', _s3, { get open() { return item2Open() } })
+  initChild('AccordionContent', _s4, { get open() { return item2Open() } })
   initChild('AccordionItem', _s8, { value: "item-3", get open() { return item3Open() }, onOpenChange: setItem3Open })
-  initChild('AccordionTrigger', _s6, {})
-  initChild('AccordionContent', _s7, {})
+  initChild('AccordionTrigger', _s6, { get open() { return item3Open() } })
+  initChild('AccordionContent', _s7, { get open() { return item3Open() } })
 }
 
-hydrate('AccordionMultipleOpenDemo', { init: initAccordionMultipleOpenDemo, template: (_p) => `${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "item-1", open: (true), children: `${renderChild('AccordionTrigger', {children: ` First Item `}, undefined, 's0')}${renderChild('AccordionContent', {children: ` This accordion allows multiple items to be open at once. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "item-2", open: (false), children: `${renderChild('AccordionTrigger', {children: ` Second Item `}, undefined, 's3')}${renderChild('AccordionContent', {children: ` Each item manages its own open/close state independently. `}, undefined, 's4')}`}, undefined, 's5')}${renderChild('AccordionItem', {value: "item-3", open: (false), children: `${renderChild('AccordionTrigger', {children: ` Third Item `}, undefined, 's6')}${renderChild('AccordionContent', {children: ` Click any trigger to toggle that item without affecting others. `}, undefined, 's7')}`}, undefined, 's8')}`}, undefined, 's9')}`, comment: true })
+hydrate('AccordionMultipleOpenDemo', { init: initAccordionMultipleOpenDemo, template: (_p) => `${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "item-1", open: (true), children: `${renderChild('AccordionTrigger', {open: (true), children: ` First Item `}, undefined, 's0')}${renderChild('AccordionContent', {open: (true), children: ` This accordion allows multiple items to be open at once. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "item-2", open: (false), children: `${renderChild('AccordionTrigger', {open: (false), children: ` Second Item `}, undefined, 's3')}${renderChild('AccordionContent', {open: (false), children: ` Each item manages its own open/close state independently. `}, undefined, 's4')}`}, undefined, 's5')}${renderChild('AccordionItem', {value: "item-3", open: (false), children: `${renderChild('AccordionTrigger', {open: (false), children: ` Third Item `}, undefined, 's6')}${renderChild('AccordionContent', {open: (false), children: ` Click any trigger to toggle that item without affecting others. `}, undefined, 's7')}`}, undefined, 's8')}`}, undefined, 's9')}`, comment: true })
 export function AccordionMultipleOpenDemo(_p, __bfKey) { return createComponent('AccordionMultipleOpenDemo', _p, __bfKey) }

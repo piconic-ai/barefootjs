@@ -136,6 +136,14 @@ interface AccordionTriggerProps extends ButtonHTMLAttributes {
   disabled?: boolean
   /** Render child element as trigger instead of built-in button */
   asChild?: boolean
+  /**
+   * Whether this item is open. Pass the same expression given to the
+   * sibling `AccordionItem`'s `open` prop (e.g. `openItem() === 'item-1'`)
+   * so `aria-expanded` is correct in the server-rendered HTML instead of
+   * being corrected by a mount effect after hydration. Falls back to the
+   * `AccordionItemContext`-driven effect when omitted.
+   */
+  open?: boolean
   /** Trigger label */
   children?: Child
 }
@@ -146,15 +154,21 @@ interface AccordionTriggerProps extends ButtonHTMLAttributes {
  *
  * @param props.disabled - Whether disabled
  * @param props.asChild - Render child as trigger
+ * @param props.open - Whether this item is open (see prop doc)
  */
 function AccordionTrigger(props: AccordionTriggerProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(AccordionItemContext)
 
-    // Reactive aria-expanded and chevron rotation
+    // Reactive aria-expanded and chevron rotation. aria-expanded is only
+    // written imperatively here when the caller didn't pass `open` — when
+    // it did, the compiled reactive attribute binding on the JSX below
+    // already keeps it in sync, and SSR already rendered the right value.
     createEffect(() => {
       const isOpen = ctx.open()
-      el.setAttribute('aria-expanded', String(isOpen))
+      if (props.open === undefined) {
+        el.setAttribute('aria-expanded', String(isOpen))
+      }
       const icon = el.querySelector('svg')
       if (icon) {
         if (isOpen) {
@@ -218,7 +232,7 @@ function AccordionTrigger(props: AccordionTriggerProps) {
         <span
           data-slot="accordion-trigger"
           style="display:contents"
-          aria-expanded="false"
+          aria-expanded={props.open ? 'true' : 'false'}
           ref={handleMount}
         >
           {props.children}
@@ -238,7 +252,7 @@ function AccordionTrigger(props: AccordionTriggerProps) {
         id={props.id}
         className={classes}
         disabled={props.disabled}
-        aria-expanded="false"
+        aria-expanded={props.open ? 'true' : 'false'}
         aria-disabled={props.disabled || undefined}
         ref={handleMount}
       >
@@ -255,6 +269,15 @@ function AccordionTrigger(props: AccordionTriggerProps) {
 interface AccordionContentProps extends HTMLBaseAttributes {
   /** Content to display */
   children?: Child
+  /**
+   * Whether this item is open. Pass the same expression given to the
+   * sibling `AccordionItem`'s `open` prop (e.g. `openItem() === 'item-1'`)
+   * so `data-state` and the open/closed grid classes are correct in the
+   * server-rendered HTML instead of being corrected by a mount effect
+   * after hydration. Falls back to the `AccordionItemContext`-driven
+   * effect when omitted.
+   */
+  open?: boolean
 }
 
 /**
@@ -267,8 +290,10 @@ function AccordionContent(props: AccordionContentProps) {
 
     createEffect(() => {
       const isOpen = ctx.open()
-      el.dataset.state = isOpen ? 'open' : 'closed'
-      el.className = `${accordionContentBaseClasses} ${isOpen ? accordionContentOpenClasses : accordionContentClosedClasses}`
+      if (props.open === undefined) {
+        el.dataset.state = isOpen ? 'open' : 'closed'
+        el.className = `${accordionContentBaseClasses} ${isOpen ? accordionContentOpenClasses : accordionContentClosedClasses}`
+      }
     })
   }
 
@@ -279,8 +304,8 @@ function AccordionContent(props: AccordionContentProps) {
       data-slot="accordion-content"
       id={props.id}
       role="region"
-      data-state="closed"
-      className={`${accordionContentBaseClasses} ${accordionContentClosedClasses}`}
+      data-state={props.open ? 'open' : 'closed'}
+      className={`${accordionContentBaseClasses} ${props.open ? accordionContentOpenClasses : accordionContentClosedClasses}`}
       ref={handleMount}
     >
       <div className={accordionContentInnerClasses}>

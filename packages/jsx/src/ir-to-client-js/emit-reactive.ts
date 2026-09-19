@@ -148,6 +148,19 @@ export function emitAttrUpdate(
     return emitValueUpdateStatements(target, expression)
   }
   if (isBooleanAttr(htmlName)) {
+    // CHILD-ROOT MIRROR case (`mirrorSeed` set): same reasoning as the
+    // `presenceOrUndefined`/generic branches below — a boolean-IDL name
+    // like `open`/`checked` is only a REAL property on the elements that
+    // natively expose it (`<details>`, `<dialog>`, form controls); the
+    // compiler can't know whether the CHILD's own root is one of those or
+    // an ordinary `<div>` that merely happens to receive a prop sharing
+    // that name. An unconditional `target.open = …` plants a live DOM
+    // property SSR never had (and never reflects to a visible attribute
+    // on a plain element), so gate it the same way: seed once from
+    // whether the child's OWN render already put the attribute there.
+    if (mirrorSeed) {
+      return [`if (${mirrorSeedGate(mirrorSeed, target, htmlName)}) ${target}.${htmlName} = !!(${expression})`]
+    }
     return [`${target}.${htmlName} = !!(${expression})`]
   }
   if (meta.presenceOrUndefined) {

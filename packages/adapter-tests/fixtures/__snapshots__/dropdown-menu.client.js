@@ -3662,7 +3662,7 @@ export function initDropdownMenuBasicDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -3712,7 +3712,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -3720,7 +3720,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s3El) {
       { const __x = showStatus()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __DropdownMenuCheckboxItem_s3El.checked = !!(__x)
+        if (__m[1] ??= __DropdownMenuCheckboxItem_s3El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s3El.checked = !!(__x)
       }
       __l[1] = __x }
     }
@@ -3728,7 +3728,7 @@ export function initDropdownMenuCheckboxDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s4El) {
       { const __x = showActivity()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __DropdownMenuCheckboxItem_s4El.checked = !!(__x)
+        if (__m[2] ??= __DropdownMenuCheckboxItem_s4El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s4El.checked = !!(__x)
       }
       __l[2] = __x }
     }
@@ -3780,7 +3780,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     if (__scope) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __scope.open = !!(__x)
+        if (__m[0] ??= __scope.hasAttribute('open')) __scope.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -3792,7 +3792,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s18El) {
       { const __x = showBookmarks()
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        __DropdownMenuCheckboxItem_s18El.checked = !!(__x)
+        if (__m[1] ??= __DropdownMenuCheckboxItem_s18El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s18El.checked = !!(__x)
       }
       __l[1] = __x }
     }
@@ -3800,7 +3800,7 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
     if (__DropdownMenuCheckboxItem_s19El) {
       { const __x = showToolbar()
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        __DropdownMenuCheckboxItem_s19El.checked = !!(__x)
+        if (__m[2] ??= __DropdownMenuCheckboxItem_s19El.hasAttribute('checked')) __DropdownMenuCheckboxItem_s19El.checked = !!(__x)
       }
       __l[2] = __x }
     }

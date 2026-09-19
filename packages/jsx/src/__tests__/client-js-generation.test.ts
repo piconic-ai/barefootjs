@@ -1286,6 +1286,43 @@ describe('Client JS generation', () => {
       expect(clientJs!.content).not.toContain("setAttribute('disabled'")
     })
 
+    // #3065 (accordion/radio-group): a boolean-IDL-named prop like `open`
+    // is only a REAL property on the elements that natively expose it
+    // (`<details>`, `<dialog>`) — most child components receiving it are
+    // plain elements (a `<div>`, here) that merely happen to accept a
+    // prop sharing that name for their OWN unrelated purposes. Before this
+    // fix the mirror wrote `target.open = …` unconditionally (unlike the
+    // `presenceOrUndefined`/generic branches, which already seed-gate on
+    // `hasAttribute`), planting a live DOM property SSR never had and
+    // that `captureDomState`'s STATE_PROPS check (`open` is one of the
+    // properties it diffs) then saw appear only after hydration —
+    // discovered via the accordion oracle once its OWN aria-expanded/
+    // data-state divergence (the actual target of #3065) was fixed.
+    test('mirrors a child component `open` prop gated on hasAttribute, not unconditionally (#3065)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { Section } from './Section'
+
+        export function Accordion() {
+          const [expanded, setExpanded] = createSignal(false)
+          return (
+            <div>
+              <Section open={expanded()} />
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'Accordion.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain(".hasAttribute('open')")
+      expect(clientJs!.content).toContain('.open = !!')
+    })
+
     // #2716: a `value` prop passed to a CHILD COMPONENT (above) drives the
     // no-SSR-fallback mirror path; a `value` ATTRIBUTE the developer writes
     // directly on a plain HOST element is the opposite case — SSR renders

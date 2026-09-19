@@ -418,7 +418,7 @@ export function initDialogBasicDemo(__scope, _p = {}) {
     if (__Dialog_s9El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Dialog_s9El.open = !!(__x)
+        if (__m[0] ??= __Dialog_s9El.hasAttribute('open')) __Dialog_s9El.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -501,7 +501,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
     if (__Dialog_s10El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Dialog_s10El.open = !!(__x)
+        if (__m[0] ??= __Dialog_s10El.hasAttribute('open')) __Dialog_s10El.open = !!(__x)
       }
       __l[0] = __x }
     }
@@ -576,7 +576,7 @@ export function initDialogLongContentDemo(__scope, _p = {}) {
     if (__Dialog_s9El) {
       { const __x = open()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Dialog_s9El.open = !!(__x)
+        if (__m[0] ??= __Dialog_s9El.hasAttribute('open')) __Dialog_s9El.open = !!(__x)
       }
       __l[0] = __x }
     }

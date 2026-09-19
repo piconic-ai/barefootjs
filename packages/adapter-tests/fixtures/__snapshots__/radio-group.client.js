@@ -1,4 +1,4 @@
-import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, markupOrEmpty, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeTextOrMarkup, escapeTextOrNode, hydrate, initChild, lazySlots, markupOrEmpty, provideContext, renderChild, styleToCss, useContext } from '@barefootjs/client/runtime'
 
 var RadioGroupContext = RadioGroupContext ?? createContext()
 
@@ -79,33 +79,54 @@ export function initRadioGroupItem(__scope, _p = {}) {
     })
   }
 
-  const [_s0] = $(__scope, 's0')
+  const [_s1, _s0] = $(__scope, 's1', 's0')
+
+  { const __l = []
+  createEffect(() => {
+    if (_s1) {
+      { const __x = `${_p.defaultChecked ? 'checked' : 'unchecked'}`
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-state', String(__v)); else _s1.removeAttribute('data-state') }
+      }
+      __l[0] = __x }
+      { const __x = `${_p.defaultChecked ? 'true' : 'false'}`
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('aria-checked', String(__v)); else _s1.removeAttribute('aria-checked') }
+      }
+      __l[1] = __x }
+      { const __x = _p.disabled ?? false
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        _s1.disabled = !!(__x)
+      }
+      __l[2] = __x }
+      { const __x = _p.id
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
+      }
+      __l[3] = __x }
+      { const __x = `${itemClasses} ${_p.className ?? ''}`
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      }
+      __l[4] = __x }
+    }
+  }) }
 
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = _p.disabled ?? false
+      { const __x = `${_p.defaultChecked ? 'display:flex' : 'display:none'}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        _s0.disabled = !!(__x)
+        { const __v = styleToCss(__x); if (__v != null) _s0.setAttribute('style', __v); else _s0.removeAttribute('style') }
       }
       __l[0] = __x }
-      { const __x = _p.id
-      if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      }
-      __l[1] = __x }
-      { const __x = `${itemClasses} ${_p.className ?? ''}`
-      if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
-      }
-      __l[2] = __x }
     }
   }) }
 
-  if (_s0) (handleMount)(_s0)
+  if (_s1) (handleMount)(_s1)
 }
 
-hydrate('RadioGroupItem', { init: initRadioGroupItem, template: (_p) => `<button data-slot="radio-group-item" data-state="unchecked" role="radio" aria-checked="false" ${_p.disabled ?? false ? 'disabled' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${(`${('relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none transition-[color,box-shadow]')} ${('focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50')} ${('[&[data-state=checked]]:border-primary [&[data-state=checked]]:bg-primary [&[data-state=checked]]:text-primary-foreground dark:bg-input/30 dark:[&[data-state=checked]]:bg-primary')} ${('aria-[invalid]:border-destructive aria-[invalid]:ring-3 aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40')} ${('disabled:cursor-not-allowed disabled:opacity-50')}`)} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${(`${('relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none transition-[color,box-shadow]')} ${('focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50')} ${('[&[data-state=checked]]:border-primary [&[data-state=checked]]:bg-primary [&[data-state=checked]]:text-primary-foreground dark:bg-input/30 dark:[&[data-state=checked]]:bg-primary')} ${('aria-[invalid]:border-destructive aria-[invalid]:ring-3 aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40')} ${('disabled:cursor-not-allowed disabled:opacity-50')}`)} ${_p.className ?? ''}`) + '"' : ''} bf="s0"><span data-slot="radio-group-indicator" class="flex size-4 items-center justify-center" style="display:none"><span class="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground"></span></span></button>` })
+hydrate('RadioGroupItem', { init: initRadioGroupItem, template: (_p) => `<button data-slot="radio-group-item" ${(`${_p.defaultChecked ? 'checked' : 'unchecked'}`) != null ? 'data-state="' + escapeAttr(`${_p.defaultChecked ? 'checked' : 'unchecked'}`) + '"' : ''} role="radio" ${(`${_p.defaultChecked ? 'true' : 'false'}`) != null ? 'aria-checked="' + escapeAttr(`${_p.defaultChecked ? 'true' : 'false'}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${(`${('relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none transition-[color,box-shadow]')} ${('focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50')} ${('[&[data-state=checked]]:border-primary [&[data-state=checked]]:bg-primary [&[data-state=checked]]:text-primary-foreground dark:bg-input/30 dark:[&[data-state=checked]]:bg-primary')} ${('aria-[invalid]:border-destructive aria-[invalid]:ring-3 aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40')} ${('disabled:cursor-not-allowed disabled:opacity-50')}`)} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${(`${('relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none transition-[color,box-shadow]')} ${('focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50')} ${('[&[data-state=checked]]:border-primary [&[data-state=checked]]:bg-primary [&[data-state=checked]]:text-primary-foreground dark:bg-input/30 dark:[&[data-state=checked]]:bg-primary')} ${('aria-[invalid]:border-destructive aria-[invalid]:ring-3 aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40')} ${('disabled:cursor-not-allowed disabled:opacity-50')}`)} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="radio-group-indicator" class="flex size-4 items-center justify-center" ${((v) => v != null ? 'style="' + escapeAttr(v) + '"' : '')(styleToCss(`${_p.defaultChecked ? 'display:flex' : 'display:none'}`))} bf="s0"><span class="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground"></span></span></button>` })
 export function RadioGroupItem(_p, __bfKey) { return createComponent('RadioGroupItem', _p, __bfKey) }
 export function initRadioGroupBasicDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -124,12 +145,12 @@ export function initRadioGroupBasicDemo(__scope, _p = {}) {
 
   // Initialize child components with props
   initChild('RadioGroup', _s3, { defaultValue: "default", onValueChange: setDensity })
-  initChild('RadioGroupItem', _s0, { value: "default" })
+  initChild('RadioGroupItem', _s0, { value: "default", defaultChecked: true })
   initChild('RadioGroupItem', _s1, { value: "comfortable" })
   initChild('RadioGroupItem', _s2, { value: "compact" })
 }
 
-hydrate('RadioGroupBasicDemo', { init: initRadioGroupBasicDemo, template: (_p) => `<div class="space-y-4">${renderChild('RadioGroup', {defaultValue: "default", children: `<div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "default"}, undefined, 's0')}<span class="text-sm font-medium leading-none">Default</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "comfortable"}, undefined, 's1')}<span class="text-sm font-medium leading-none">Comfortable</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "compact"}, undefined, 's2')}<span class="text-sm font-medium leading-none">Compact</span></div>`}, undefined, 's3')}<div class="text-sm text-muted-foreground pt-2 border-t" bf="s5"> Selected: <!--bf:s4-->${escapeTextOrMarkup(('default'))}<!--/--></div></div>` })
+hydrate('RadioGroupBasicDemo', { init: initRadioGroupBasicDemo, template: (_p) => `<div class="space-y-4">${renderChild('RadioGroup', {defaultValue: "default", children: `<div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "default", defaultChecked: true}, undefined, 's0')}<span class="text-sm font-medium leading-none">Default</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "comfortable"}, undefined, 's1')}<span class="text-sm font-medium leading-none">Comfortable</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "compact"}, undefined, 's2')}<span class="text-sm font-medium leading-none">Compact</span></div>`}, undefined, 's3')}<div class="text-sm text-muted-foreground pt-2 border-t" bf="s5"> Selected: <!--bf:s4-->${escapeTextOrMarkup(('default'))}<!--/--></div></div>` })
 export function RadioGroupBasicDemo(_p, __bfKey) { return createComponent('RadioGroupBasicDemo', _p, __bfKey) }
 export function initRadioGroupFormDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -151,16 +172,16 @@ export function initRadioGroupFormDemo(__scope, _p = {}) {
 
   // Initialize child components with props
   initChild('RadioGroup', _s3, { defaultValue: "all", onValueChange: setNotifyType })
-  initChild('RadioGroupItem', _s0, { value: "all" })
+  initChild('RadioGroupItem', _s0, { value: "all", defaultChecked: true })
   initChild('RadioGroupItem', _s1, { value: "mentions" })
   initChild('RadioGroupItem', _s2, { value: "none" })
   initChild('RadioGroup', _s7, { defaultValue: "system", onValueChange: setTheme })
   initChild('RadioGroupItem', _s4, { value: "light" })
   initChild('RadioGroupItem', _s5, { value: "dark" })
-  initChild('RadioGroupItem', _s6, { value: "system" })
+  initChild('RadioGroupItem', _s6, { value: "system", defaultChecked: true })
 }
 
-hydrate('RadioGroupFormDemo', { init: initRadioGroupFormDemo, template: (_p) => `<div class="space-y-6"><div class="space-y-3"><h4 class="text-sm font-medium leading-none">Notify me about...</h4>${renderChild('RadioGroup', {defaultValue: "all", children: `<div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "all"}, undefined, 's0')}<span class="text-sm leading-none">All new messages</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "mentions"}, undefined, 's1')}<span class="text-sm leading-none">Direct messages and mentions</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "none"}, undefined, 's2')}<span class="text-sm leading-none">Nothing</span></div>`}, undefined, 's3')}</div><div class="space-y-3"><h4 class="text-sm font-medium leading-none">Theme</h4>${renderChild('RadioGroup', {defaultValue: "system", children: `<div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "light"}, undefined, 's4')}<span class="text-sm leading-none">Light</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "dark"}, undefined, 's5')}<span class="text-sm leading-none">Dark</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "system"}, undefined, 's6')}<span class="text-sm leading-none">System</span></div>`}, undefined, 's7')}</div><div class="text-sm text-muted-foreground pt-2 border-t" bf="s9"><!--bf:s8-->${escapeTextOrMarkup((`Notifications: ${('all')}, Theme: ${('system')}`))}<!--/--></div></div>` })
+hydrate('RadioGroupFormDemo', { init: initRadioGroupFormDemo, template: (_p) => `<div class="space-y-6"><div class="space-y-3"><h4 class="text-sm font-medium leading-none">Notify me about...</h4>${renderChild('RadioGroup', {defaultValue: "all", children: `<div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "all", defaultChecked: true}, undefined, 's0')}<span class="text-sm leading-none">All new messages</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "mentions"}, undefined, 's1')}<span class="text-sm leading-none">Direct messages and mentions</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "none"}, undefined, 's2')}<span class="text-sm leading-none">Nothing</span></div>`}, undefined, 's3')}</div><div class="space-y-3"><h4 class="text-sm font-medium leading-none">Theme</h4>${renderChild('RadioGroup', {defaultValue: "system", children: `<div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "light"}, undefined, 's4')}<span class="text-sm leading-none">Light</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "dark"}, undefined, 's5')}<span class="text-sm leading-none">Dark</span></div><div class="flex items-center space-x-2">${renderChild('RadioGroupItem', {value: "system", defaultChecked: true}, undefined, 's6')}<span class="text-sm leading-none">System</span></div>`}, undefined, 's7')}</div><div class="text-sm text-muted-foreground pt-2 border-t" bf="s9"><!--bf:s8-->${escapeTextOrMarkup((`Notifications: ${('all')}, Theme: ${('system')}`))}<!--/--></div></div>` })
 export function RadioGroupFormDemo(_p, __bfKey) { return createComponent('RadioGroupFormDemo', _p, __bfKey) }
 export function initRadioGroupCardDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -179,10 +200,10 @@ export function initRadioGroupCardDemo(__scope, _p = {}) {
 
   // Initialize child components with props
   initChild('RadioGroup', _s3, { defaultValue: "startup", onValueChange: setPlan, className: "grid-cols-1 sm:grid-cols-3" })
-  initChild('RadioGroupItem', _s0, { value: "startup" })
+  initChild('RadioGroupItem', _s0, { value: "startup", defaultChecked: true })
   initChild('RadioGroupItem', _s1, { value: "business" })
   initChild('RadioGroupItem', _s2, { value: "enterprise" })
 }
 
-hydrate('RadioGroupCardDemo', { init: initRadioGroupCardDemo, template: (_p) => `<div class="space-y-4">${renderChild('RadioGroup', {defaultValue: "startup", className: "grid-cols-1 sm:grid-cols-3", children: `<div class="relative"><label class="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">${renderChild('RadioGroupItem', {value: "startup"}, undefined, 's0')}<div class="space-y-1"><span class="text-sm font-medium leading-none">Startup</span><p class="text-xl font-bold text-foreground">$29<span class="text-sm font-normal text-muted-foreground">/mo</span></p><p class="text-sm text-muted-foreground">For small teams getting started</p></div></label></div><div class="relative"><label class="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">${renderChild('RadioGroupItem', {value: "business"}, undefined, 's1')}<div class="space-y-1"><span class="text-sm font-medium leading-none">Business</span><p class="text-xl font-bold text-foreground">$99<span class="text-sm font-normal text-muted-foreground">/mo</span></p><p class="text-sm text-muted-foreground">For growing companies</p></div></label></div><div class="relative"><label class="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">${renderChild('RadioGroupItem', {value: "enterprise"}, undefined, 's2')}<div class="space-y-1"><span class="text-sm font-medium leading-none">Enterprise</span><p class="text-xl font-bold text-foreground">$299<span class="text-sm font-normal text-muted-foreground">/mo</span></p><p class="text-sm text-muted-foreground">For large organizations</p></div></label></div>`}, undefined, 's3')}<div class="text-sm text-muted-foreground pt-2 border-t" bf="s5"> Selected plan: <!--bf:s4-->${escapeTextOrMarkup(('startup'))}<!--/--></div></div>` })
+hydrate('RadioGroupCardDemo', { init: initRadioGroupCardDemo, template: (_p) => `<div class="space-y-4">${renderChild('RadioGroup', {defaultValue: "startup", className: "grid-cols-1 sm:grid-cols-3", children: `<div class="relative"><label class="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">${renderChild('RadioGroupItem', {value: "startup", defaultChecked: true}, undefined, 's0')}<div class="space-y-1"><span class="text-sm font-medium leading-none">Startup</span><p class="text-xl font-bold text-foreground">$29<span class="text-sm font-normal text-muted-foreground">/mo</span></p><p class="text-sm text-muted-foreground">For small teams getting started</p></div></label></div><div class="relative"><label class="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">${renderChild('RadioGroupItem', {value: "business"}, undefined, 's1')}<div class="space-y-1"><span class="text-sm font-medium leading-none">Business</span><p class="text-xl font-bold text-foreground">$99<span class="text-sm font-normal text-muted-foreground">/mo</span></p><p class="text-sm text-muted-foreground">For growing companies</p></div></label></div><div class="relative"><label class="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">${renderChild('RadioGroupItem', {value: "enterprise"}, undefined, 's2')}<div class="space-y-1"><span class="text-sm font-medium leading-none">Enterprise</span><p class="text-xl font-bold text-foreground">$299<span class="text-sm font-normal text-muted-foreground">/mo</span></p><p class="text-sm text-muted-foreground">For large organizations</p></div></label></div>`}, undefined, 's3')}<div class="text-sm text-muted-foreground pt-2 border-t" bf="s5"> Selected plan: <!--bf:s4-->${escapeTextOrMarkup(('startup'))}<!--/--></div></div>` })
 export function RadioGroupCardDemo(_p, __bfKey) { return createComponent('RadioGroupCardDemo', _p, __bfKey) }

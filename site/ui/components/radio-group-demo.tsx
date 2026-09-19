@@ -20,7 +20,7 @@ export function RadioGroupBasicDemo() {
     <div className="space-y-4">
       <RadioGroup defaultValue="default" onValueChange={setDensity}>
         <div className="flex items-center space-x-2">
-          <RadioGroupItem value="default" />
+          <RadioGroupItem value="default" defaultChecked />
           <span className="text-sm font-medium leading-none">Default</span>
         </div>
         <div className="flex items-center space-x-2">
@@ -57,7 +57,7 @@ export function RadioGroupFormDemo() {
         <h4 className="text-sm font-medium leading-none">Notify me about...</h4>
         <RadioGroup defaultValue="all" onValueChange={setNotifyType}>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="all" />
+            <RadioGroupItem value="all" defaultChecked />
             <span className="text-sm leading-none">All new messages</span>
           </div>
           <div className="flex items-center space-x-2">
@@ -82,7 +82,7 @@ export function RadioGroupFormDemo() {
             <span className="text-sm leading-none">Dark</span>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="system" />
+            <RadioGroupItem value="system" defaultChecked />
             <span className="text-sm leading-none">System</span>
           </div>
         </RadioGroup>
@@ -106,7 +106,7 @@ export function RadioGroupCardDemo() {
       <RadioGroup defaultValue="startup" onValueChange={setPlan} className="grid-cols-1 sm:grid-cols-3">
         <div className="relative">
           <label className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 cursor-pointer">
-            <RadioGroupItem value="startup" />
+            <RadioGroupItem value="startup" defaultChecked />
             <div className="space-y-1">
               <span className="text-sm font-medium leading-none">Startup</span>
               <p className="text-xl font-bold text-foreground">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></p>

@@ -3871,7 +3871,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     if (__Checkbox_s0El) {
       { const __x = isAllSelected()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        __Checkbox_s0El.checked = !!(__x)
+        if (__m[0] ??= __Checkbox_s0El.hasAttribute('checked')) __Checkbox_s0El.checked = !!(__x)
       }
       __l[0] = __x }
     }

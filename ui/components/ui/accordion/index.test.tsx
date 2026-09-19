@@ -126,6 +126,18 @@ describe('AccordionTrigger', () => {
     expect(structure).toContain('button')
     expect(structure).toContain('[aria-expanded]')
   })
+
+  test('aria-expanded is a compiler-analyzable expression bound to the open prop, not a hard-coded literal (#3065)', () => {
+    // Previously this was the literal `"false"`, corrected only by the
+    // ref-mount effect — never at SSR. It now depends on `props.open`
+    // (passed by the caller alongside the sibling AccordionItem's `open`),
+    // so `aria-expanded` renders correctly for both branches at SSR.
+    const button = result.find({ tag: 'button' })!
+    expect(button.aria.expanded).toBe('{props.open}')
+
+    const span = result.find({ tag: 'span' })!
+    expect(span.aria.expanded).toBe('{props.open}')
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -152,8 +164,13 @@ describe('AccordionContent', () => {
     expect(result.root.props['data-slot']).toBe('accordion-content')
   })
 
-  test('has data-state=closed (initial state)', () => {
-    expect(result.root.dataState).toBe('closed')
+  test('data-state is a compiler-analyzable expression bound to the open prop, not a hard-coded "closed" literal (#3065)', () => {
+    // Previously this was the literal "closed", corrected only by the
+    // ref-mount effect — never at SSR. It now depends on `props.open`
+    // (passed by the caller alongside the sibling AccordionItem's
+    // `open`), so `data-state` renders correctly for both branches at
+    // SSR.
+    expect(result.root.dataState).toBe('{props.open}')
   })
 
   test('has resolved CSS classes including animation classes', () => {
