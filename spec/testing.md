@@ -520,6 +520,47 @@ todoAppTests('http://localhost:3004', '/todos-ssr')
 
 Each example's `playwright.config.ts` configures the webServer command, port, and single-worker mode for CI (to avoid shared state conflicts with `/api/todos`).
 
+### Bounded state-space exploration (`test:explore`)
+
+**Location:** `packages/adapter-tests/explore/` (scenario model, explorer, scenarios), `packages/adapter-tests/e2e/explore.playwright.ts` (browser oracles), `packages/adapter-tests/scripts/explore-generate.ts` (generator)
+**Runner:** `bun run --filter '@barefootjs/adapter-tests' test:explore` (scheduled: `.github/workflows/explore-sweep.yml`)
+**Speed:** seconds to minutes (browser)
+
+The fixture-hydrate oracles above check one render per fixture; the pairwise sweep checks generated *static* feature combinations. Some defects only appear on a *transition* from a particular state — a keyed loop that renders empty at SSR and never creates its first row when the array becomes non-empty is the canonical case. The exploration harness generalizes the browser-oracle machinery to bounded model-based testing: a **scenario** (`explore/scenario.ts`) pairs a real component with a pure TypeScript reducer over the same small state, and the harness asks, for every action sequence up to the scenario's depth bound,
+
+```text
+DOM(initial = S0, then click a1 … an)  ==  DOM(initial = reduce*(S0, a1 … an), rendered fresh)
+```
+
+Scenario contract: the component takes one prop `initial: S`, seeds its signals from it, and renders one `<button data-action="<name>">` per action whose handler is the one-line mirror of the reducer branch. Transitions are driven through those buttons with the ordinary `interaction-runner.ts` click, so the real event → setter → reconcile path is what gets measured; "a fresh render of state S" is an ordinary fixture render with `props: { initial: S }`.
+
+The layers, cheapest first:
+
+1. **IR smoke** (`explore/__tests__/scenarios.test.ts`, plain `bun test`, every PR) — `renderToTest` pins that every action button's handler reaches a state setter and the loop / child wiring exists. A scenario that fails here is an analyzer finding; one that passes here and fails in the browser is a lowering or runtime finding.
+2. **Generator** (`scripts/explore-generate.ts`) — enumerates every distinct reachable state and every path (`explore/explorer.ts`; every prefix of a path is itself a path, so the shortest failing sequence is always present), renders one fixture per state into `.explore/` (gitignored), and classifies each scenario `ok` / `refused` / `broken` like the mutation and pairwise sweeps (a loud refusal is a pass).
+3. **Browser oracles** (`e2e/explore.playwright.ts`) — per state, the existing `snap` and `three-point` oracles; per path, `transition-hydrate` (SSR+hydrated page clicked through vs. an SSR+hydrated fresh render of the end state) and `transition-csr` (the same on csr-mounted pages). Each leg compares like with like, so a failure is attributable. Page and console errors during the clicked leg fail the oracle after the DOM comparison.
+
+Every failure writes a self-contained reproduction (`.explore/failures/<case>.json`, also attached to the Playwright report): commit, scenario, initial and expected state, action sequence, TSX, ComponentIR, client JS, both SSR documents, both DOM snapshots and their diff, browser errors. Failures are quarantined in `e2e/explore-quarantine.ts` — keyed `(scenario, subject, oracle)`, each row citing a `silent` registry entry, with the same rot-check as the pairwise ledger — and graduate exactly as pairwise rows do. Exploration is a discovery tool: a minimized failure still lands as a permanent conformance fixture; generated cases are never committed.
+
+Bounds are deliberately small (arrays of 0–3 items, one or two signals, depth ≤ 2); widen a scenario's `bounds.maxDepth` or add a scenario under `explore/scenarios/` and list it in `explore/scenarios/index.ts`.
+
+### The four browser sweeps and what each owns
+
+All four run the same oracle bodies (`e2e/oracle-core.ts`) against the same host (`e2e/fixture-host.ts`); they differ in what they feed it and what question a failure answers. Keep that split when adding cases — a case in the wrong sweep is measured against the wrong question.
+
+| Sweep | Input | Question a red row answers | Oracles | Cadence | Ledger |
+|---|---|---|---|---|---|
+| fixture-hydrate + oracle (`test:fixture-hydrate`) | the frozen fixture corpus | does a committed fixture hydrate and mount consistently? | snap, three-point, idempotence, scripted interactions | every PR (`ci.yml`) | `oracle-quarantine.ts` |
+| mutation (`test:mutation`) | corpus × single meaning-preserving mutations | does a mutation that should not change meaning change the render? | snap, three-point, idempotence | nightly (`mutation-sweep.yml`) | `mutation-quarantine.ts` |
+| pairwise (`test:pairwise`) | generated t=2 / t=3 combinations of the five static feature axes | does a **static feature combination** the corpus never wrote render, hydrate and mount consistently at its SSR-time state? | snap, three-point, idempotence (one scripted click) | nightly (`pairwise-sweep.yml`) | `pairwise-quarantine.ts` |
+| explore (`test:explore`) | hand-modelled scenarios × bounded action sequences | does a **transition** from a given state preserve the component's declarative meaning? | snap, three-point per state; transition-hydrate, transition-csr per path | nightly (`explore-sweep.yml`) | `explore-quarantine.ts` |
+
+Pairwise is breadth over the *grammar*: every case is one covering-array tuple rendered once and clicked once, so it finds features that are wrong in isolation or in pairs. Explore is depth over *state*: a few hand-written components driven through every short action sequence, so it finds machinery that works from the SSR-time state and nowhere else (a loop that never creates its first row, a child that comes to exist client-side and is wired differently from an adopted one). A defect that shows up in pairwise is usually visible in a single render; one that only explore can see needs a specific *sequence*. When a pairwise finding turns out to depend on a transition, model it as an explore scenario rather than widening the covering array; when an explore finding reproduces on the initial render alone, it belongs in the corpus as an ordinary fixture and the scenario is just where it was noticed.
+
+The pairwise composer (`pairwise/compose.ts`) is deliberately the only *generator* of components today; explore scenarios are written by hand with a mirrored reducer. #3046 leaves the door open for the composer to become a second producer of explore scenarios once a generating action DSL exists — that is the point at which the two sweeps stop being separate corpora. Until then the split is: pairwise generates, explore models.
+
+**A nightly sweep is a gate for its ledger, not a dashboard.** Its only legitimate steady state is green: every known divergence quarantined against a registry entry, every graduated one deleted (the rot-check makes a stale row fail loudly for exactly this reason). A nightly that has been red for days is a sweep nobody is reading, and its findings are being lost — treat it like a red `main` (CLAUDE.md, "When `main` Breaks"): triage the rows the same day, either into the registry with a fixture or out of the ledger, and never let a second class of failure pile up behind the first.
+
 ---
 
 ## Layer 7: Component × Adapter Compat Lockfile
@@ -569,11 +610,11 @@ No workflow state (planned / blocked / owner), no cause analysis for a gap nobod
 
 `kind` is the compatibility policy's classifier, applied to the behaviour — silent wrong output is a defect, loud-or-escapable is not:
 
-- `silent` — a **silent divergence** to fix: rendered or emitted output silently differs from the contract (e.g. a loop host rendering empty, a scope id reused, a sentinel leaking into text). Cited from `renderDivergences` / the scope gate's `KNOWN_UNDECLARED`.
+- `silent` — a **silent divergence** to fix: rendered or emitted output silently differs from the contract (e.g. a loop host rendering empty, a scope id reused, a sentinel leaking into text). Cited from `renderDivergences` / the scope gate's `KNOWN_UNDECLARED`, or — for a divergence between the server HTML and the hydrated or client-mounted DOM, which no adapter declaration can express — from the real-browser e2e quarantine ledgers (`e2e/oracle-quarantine.ts` keyed by corpus fixture; `mutation-` / `pairwise-quarantine.ts` for mutated fixtures and generated cases). For such an entry `expected` states the parity the contract requires (what SSR and the client must agree on) rather than a reference render.
 - `refusal` — a **capability gap**: current behavior is a loud, `/* @client */`-escapable compile-time refusal working as designed; a faithful lowering may land later. Cited from `conformancePins`.
 - `by-design` — an **accepted design position**: permanent, refused on purpose, `reason` stated (e.g. ambient-locale-dependent formatting, JSON-boundary-unrevivable rich props). Never graduates.
 
-Two tests hold the registry and the declarations together. `packages/adapter-tests/src/__tests__/limitations.test.ts` lints every entry (every file in the directory loads as an entry, slot shape, no adapter names in `given`, no issue/PR references, fixtures exist and are not escape twins, no fixture claimed twice). `packages/compat/src/__tests__/limitations-join.test.ts` joins the registry against every adapter: a pin must cite an existing `refusal` / `by-design` entry whose `diagnostic` includes the pin's code and whose `fixtures` list the pinned fixture; a render divergence must cite a `silent` entry listing its fixture; and every fixture an entry lists must be pinned under that id on at least one adapter, so an entry cannot outlive its last pin. Graduation therefore means: fix the emission, delete the pin, drop the fixture from the entry, delete the entry when its list empties.
+Two tests hold the registry and the declarations together. `packages/adapter-tests/src/__tests__/limitations.test.ts` lints every entry (every file in the directory loads as an entry, slot shape, no adapter names in `given`, no issue/PR references, fixtures exist and are not escape twins, no fixture claimed twice). `packages/compat/src/__tests__/limitations-join.test.ts` joins the registry against every adapter: a pin must cite an existing `refusal` / `by-design` entry whose `diagnostic` includes the pin's code and whose `fixtures` list the pinned fixture; a render divergence or an oracle-quarantine row must cite a `silent` entry listing its fixture (a mutation or pairwise row only an existing `silent` entry); and every fixture an entry lists must be pinned, declared divergent, or oracle-quarantined under that id, so an entry cannot outlive its last pin. Graduation therefore means: fix the emission, delete the pin, drop the fixture from the entry, delete the entry when its list empties.
 
 Picking work is reading the registry: the lock's `limitations` section (and `bun run compat --render`) lists every entry with its kind and affected adapters — `silent` first, then `refusal`, widest blast radius first. A GitHub issue is for discussing a design decision or receiving an outside report; once the report becomes an entry + fixture, the issue is closed pointing at the file.
 

@@ -94,7 +94,7 @@ export function Carousel(__allProps: CarouselProps & { __instanceId?: string; __
   const __scopeId = __instanceId || `Carousel_${Math.random().toString(36).slice(2, 8)}`
   const canScrollPrev = () => false
   const setCanScrollPrev: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
-  const canScrollNext = () => false
+  const canScrollNext = () => true
   const setCanScrollNext: (valueOrFn: boolean | ((prev: boolean) => boolean)) => void = () => {}
   const orientation = () => props.orientation ?? 'horizontal'
   let emblaApi: EmblaCarouselType | undefined
@@ -147,7 +147,7 @@ export function CarouselContent(__allProps: CarouselContentProps & { __instanceI
   }
 
   return (
-    <div data-slot="carousel-viewport" className="overflow-hidden" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><div data-slot="carousel-content" className={`${directionClasses()} ${props.className ?? ''}`} bf="s0">{props.children}</div></div>
+    <div data-slot="carousel-viewport" className="overflow-hidden" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}><div data-slot="carousel-content" className={`${directionClasses()} ${props.className ?? ''}`} style="transform: translate3d(0px, 0px, 0px);" bf="s0">{props.children}</div></div>
   )
 }
 
@@ -213,6 +213,6 @@ export function CarouselNext(__allProps: CarouselNextProps & { __instanceId?: st
   }
 
   return (
-    <button data-slot="carousel-next" type="button" className={`${carouselButtonBaseClasses} ${positionClasses()} ${props.className ?? ''}`} disabled aria-label="Next slide" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><ChevronRightIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><span className="sr-only">Next slide</span></button>
+    <button data-slot="carousel-next" type="button" className={`${carouselButtonBaseClasses} ${positionClasses()} ${props.className ?? ''}`} aria-label="Next slide" bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><ChevronRightIcon size="sm" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /><span className="sr-only">Next slide</span></button>
   )
 }

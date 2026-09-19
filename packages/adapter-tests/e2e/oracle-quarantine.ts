@@ -16,9 +16,11 @@
  * starts passing fails its rot check with a "stale — delete the entry"
  * message pointing at exactly which pair to remove.
  *
- * `issue` starts undefined for freshly-quarantined pairs; the person
- * triaging the first-run inventory fills it in once a `known-limitation`
- * issue exists for each row (some rows may share one issue).
+ * A row cites the registry limitation it is an instance of
+ * (`limitation`, `packages/adapter-tests/limitations/<id>.ts`, kind
+ * `silent`); the compat join test checks the id exists and that the entry
+ * lists this fixture. Rows not yet migrated to the registry still carry
+ * the `issue` URL they were triaged under.
  */
 
 export type OracleKind = 'three-point' | 'snap' | 'idempotence'
@@ -28,7 +30,9 @@ export interface QuarantineEntry {
   oracles: ReadonlyArray<OracleKind>
   /** Why — a short human summary of the observed divergence. */
   reason: string
-  /** `known-limitation` issue URL, filled in after triage. */
+  /** Registry limitation id (`packages/adapter-tests/limitations/<id>.ts`, kind `silent`). */
+  limitation?: string
+  /** Legacy tracking-issue URL, for rows not yet migrated to a registry limitation. */
   issue?: string
 }
 
@@ -49,13 +53,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     oracles: ['snap', 'three-point'],
     reason:
       "First accordion item's trigger SSRs the hard-coded aria-expanded=\"false\" literal; hydration's mount effect corrects it to \"true\" (the sibling data-state attributes are compiler-analyzable JSX expressions, so SSR renders them correctly).",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   'radio-group': {
     oracles: ['snap', 'three-point'],
     reason:
       'Default-checked radio item SSRs the hard-coded aria-checked="false" literal; hydration corrects it to "true".',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   // `idempotence` graduated (#2827): the bimodal divergence was the
   // component's own rAF-deferred group/empty `hidden` + `data-selected`
@@ -66,7 +70,7 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
     oracles: ['snap', 'three-point'],
     reason:
       'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2714',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
   // direction and mechanism corrected 2026-08-26): `emitReactiveChildProps`
@@ -76,48 +80,80 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // attribute is ABSENT from SSR markup and first appears after hydration.
   // Not a rest-spread path at all; `apply-rest-attrs`/`spread-attrs` were
   // checked and are consistent between SSR-string and CSR-apply modes.
-  'branch-root-prop-attr': {
+  // Registry limitation `fragment-wrapped-conditional-return-branch-scope`
+  // (the `fragment-wrap` mutant shape as real source): the HYDRATED leg
+  // renders the fragment-wrapped default branch's root without `bf-s` —
+  // hydration never claims the comment-scoped root — while csr-mount gives
+  // it one, so three-point diverges structurally. `snap` passes because
+  // SSR carries the scope as a comment pair, not as an attribute, so
+  // pre- and post-hydration markup look the same. The fixture carries no
+  // action step (a click would fail the fixture-hydrate runner for the
+  // same reason), so no idempotence pair exists.
+  'conditional-return-fragment-branch': {
+    oracles: ['three-point'],
+    reason:
+      'Hydration never claims the fragment-wrapped branch root (no bf-s, events unbound); csr-mount renders it with its scope id.',
+    limitation: 'fragment-wrapped-conditional-return-branch-scope',
+  },
+  // #2852 (fixing #2758) made SSR select a hidden placeholder for an
+  // out-of-range controlled select instead of the browser's first-option
+  // default; the surviving half is the live state — placeholder selected
+  // (`selectedIndex` 0) on the server, nothing selected (-1) once the
+  // hydration effect assigns the out-of-range value. Both read as blank.
+  'select-out-of-range-hydration': {
     oracles: ['snap', 'three-point'],
     reason:
-      'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+      'SSR has the placeholder option selected (selectedIndex 0); the hydration controlled-value effect assigns the out-of-range value and the browser resolves it to selectedIndex -1.',
+    limitation: 'select-out-of-range-selected-index',
   },
   // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the
   // pair bimodal on the `combobox-empty` row's `hidden` attribute — the
   // same rAF-deferred write as `command` (#2827), fixed the same way. The
-  // remaining oracles are the #2715 placeholder mirror.
+  // remaining oracles are the `ComboboxValue`/`SelectValue` `ref` effect
+  // that imperatively adds `data-placeholder` to the trigger on hydrate —
+  // originally miscategorized here as an instance of the compiler's
+  // named-prop child-root mirror; once that mirror was fixed these rows
+  // were the survivors, still failing for the hand-written-effect reason,
+  // which is the registry's `ref-effect-attr-state-ssr` mechanism (an
+  // attribute whose real state is computed in a `ref` callback never
+  // reaches SSR), the same entry `accordion` / `radio-group` / `command`
+  // cite.
   combobox: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+      'The ComboboxValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it.',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   select: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it (same shape as combobox).',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+      'The SelectValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it (same shape as combobox).',
+    limitation: 'ref-effect-attr-state-ssr',
   },
-  pagination: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The mirrored isactive="true" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
-  },
+  // The mirrored `sorted` attribute this row used to record is fixed; what
+  // the quarantine masked underneath is a second, unrelated mechanism: each
+  // keyed row's hydration effect rewrites the forwarded cell text with
+  // `textContent`, which discards the `<!--bf:^sN-->…<!--/-->` slot markers
+  // the server emitted around `{payment.id}` etc. Measured on the base
+  // commit with the quarantine bypassed: both diffs were present; only the
+  // marker one remains.
   'data-table': {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored sorted="false" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2715',
+      'Row hydration rewrites each forwarded cell text with textContent, dropping the <!--bf:^sN--> slot markers SSR emitted; the text itself is unchanged.',
+    limitation: 'loop-row-child-text-children-markers-dropped',
   },
-  // Portal-origin marker (`bf-po`) present in the SSR placeholder, gone
-  // after hydration moves the portaled content to its real destination —
-  // plausibly the INTENDED cleanup once the portal claims its content
-  // rather than a bug, but flagged since this oracle has no way to tell
-  // "expected marker removal" apart from "lost attribute" on its own —
-  // worth a human look before assuming either.
+  // Registry limitation `ref-callback-portal-content-inline-at-ssr`
+  // (direction corrected 2026-09-18 — `assertSnapshotsAgree` reports
+  // Received = SSR, Expected = hydrated): SSR renders the overlay/content
+  // subtree INLINE at its source position with no `bf-po`; the hydrate-time
+  // `ref` callback's `createPortal` then moves it to the end of
+  // `document.body` and stamps `bf-po`. So the marker is not "lost" after
+  // hydration — it is ADDED, together with the relocation, because a `ref`
+  // callback never runs at SSR and no adapter places the subtree at its
+  // portal destination server-side.
   // `idempotence` graduated (#2717): the hydrated and csr-mount legs used
   // to disagree on where in `document.body`'s child order the portal
   // content sits relative to the main content — `[root, …portals]` vs
@@ -131,41 +167,27 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // step ran, so it was a mount-order defect, not an interaction one.
   dialog: {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
+    reason:
+      'SSR renders the dialog overlay/content inline inside the component root with no bf-po; hydration\'s createPortal moves it to the end of document.body and stamps bf-po="DialogBasicDemo_test_s1".',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   'dropdown-menu': {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
+    reason:
+      'SSR renders the menu content inline with no bf-po; hydration relocates it to document.body and stamps bf-po="DropdownMenuCheckboxDemo_test_s5" — same shape as dialog.',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   popover: {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
+    reason:
+      'SSR renders the popover content inline with no bf-po; hydration relocates it to document.body and stamps bf-po="PopoverBasicDemo_test_s1" — same shape as dialog.',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   portal: {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo).',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
-  },
-  // Layout-dependent: embla measures real geometry, which the CSS-less
-  // fixture-hydrate host page can't provide consistently pre/post
-  // hydration — the existing `hostStyles` determinism caveat (#1971)
-  // already calls this class out for interaction assertions; this oracle
-  // hits the same wall on the static transform style.
-  carousel: {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR bakes style="transform: translate3d(0px, 0px, 0px)" on the track; hydration (embla measuring real, CSS-less-page geometry) removes the inline style — likely the #1971 layout-dependence caveat, not a hydration defect.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
-  },
-  // `data-key` loop-reconciliation marker present in SSR, gone after
-  // hydration claims the row — plausibly intended cleanup, same caveat
-  // as the portal-origin-marker group above.
-  'tag-cloud': {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
+    reason:
+      'SSR renders the overlay and content divs inline with no bf-po; hydration relocates both to document.body and stamps bf-po="PortalExample_test" — same shape as dialog (this fixture IS the portal primitive demo).',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   // `tabs` graduated (#2728): fixed in `materializeComponent`
   // (`packages/client/src/runtime/component.ts`) — see the changeset for

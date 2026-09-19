@@ -58,7 +58,7 @@ export function initReactiveProps(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__ReactiveChild_s5El] = $c(__scope, 's5')
     if (__ReactiveChild_s5El) {
@@ -161,7 +161,7 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__PropsStyleChild_s3El] = $c(__scope, 's3')
     if (__PropsStyleChild_s3El) {

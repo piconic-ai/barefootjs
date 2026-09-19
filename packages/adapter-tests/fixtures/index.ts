@@ -229,6 +229,12 @@ import { fixture as staticArrayFromPropsPrecomputed } from './static-array-from-
 import { fixture as staticArrayFromPropsWithComponent } from './static-array-from-props-with-component'
 import { fixture as staticArrayFromPropsWithComponentClient } from './static-array-from-props-with-component-client'
 import { fixture as staticArrayFromPropsWithComponentPrecomputed } from './static-array-from-props-with-component-precomputed'
+// #3044 pullfrog review (PR #3048): the destructured-object-prop twin of
+// staticArrayFromPropsWithComponentPrecomputed above, one destructure hop
+// deeper — the shape #3048 newly classifies isPropDerivedArray, combined
+// with a child-component loop body (the part that actually drives Go SSR
+// codegen for isPropDerived).
+import { fixture as nestedPropObjectArrayWithComponent } from './nested-prop-object-array-with-component'
 // Priority 8: CSR conformance
 import { fixture as booleanDynamicAttr } from './boolean-dynamic-attr'
 import { fixture as childComponentInit } from './child-component-init'
@@ -622,6 +628,17 @@ import { fixture as signalEarlyReturn } from './signal-early-return'
 // ui/badge asChild shape. Pins the one-hop-const lookup lowering (SSR on
 // every adapter) and the live-prop class update (CSR interactions).
 import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
+// #3055 (`child-prop-mirror-attr-ssr`): the child-root prop mirror must
+// write an attribute onto a child component's root only where the
+// child's own render actually puts it there — a prop the child forwards
+// via `{...rest}` keeps updating reactively; a prop it only consumes
+// internally must never appear as an attribute, on SSR or after any
+// number of reactive updates.
+import { fixture as childPropRestForward } from './child-prop-rest-forward'
+// Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
+// a conditional return whose default branch is fragment-wrapped — the
+// `fragment-wrap` mutant shape as real source, with its own oracle rows.
+import { fixture as conditionalReturnFragmentBranch } from './conditional-return-fragment-branch'
 import { fixture as logicalAndZero } from './logical-and-zero'
 // HTML element/attribute semantics checklist (state-carrying attributes)
 import { fixture as controlledCheckboxChecked } from './controlled-checkbox-checked'
@@ -643,6 +660,11 @@ import { fixture as aliasedLoopSource } from './aliased-loop-source'
 // the row's own index — a same-key reorder must update both to the row's
 // CURRENT position, not the position it was created at.
 import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
+// #2758 residue: an out-of-range controlled select's live selection differs
+// across hydration (placeholder selected → nothing selected); browser-oracle
+// twin of `select-value-no-match-ssr`.
+import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
+import { fixture as signalOptionalInit } from './signal-optional-init'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
@@ -683,6 +705,15 @@ import { fixture as moduleHelperBoolcontextCall } from './module-helper-boolcont
 // `/* @client */` escape twin.
 import { fixture as opaqueLocalAccessorCall } from './opaque-local-accessor-call'
 import { fixture as opaqueLocalAccessorCallClient } from './opaque-local-accessor-call-client'
+// Registry limitation `client-only-loop-in-static-loop`: a /* @client */
+// nested .map() inside a static outer loop row, plus its whole-loop
+// /* @client */ escape twin.
+import { fixture as staticLoopClientOnlyNested } from './static-loop-client-only-nested'
+import { fixture as staticLoopClientOnlyNestedClient } from './static-loop-client-only-nested-client'
+import { fixture as staticLoopClientOnlyNestedPrecomputed } from './static-loop-client-only-nested-precomputed'
+// The rest-bag-routed sibling of compositeRowChildComponent: a per-row value
+// delivered through a prop the child captures only via `...rest`.
+import { fixture as compositeRowChildRestBagProp } from './composite-row-child-rest-bag-prop'
 
 import type { JSXFixture } from '../src/types'
 
@@ -845,6 +876,7 @@ export const jsxFixtures: JSXFixture[] = [
   staticArrayFromPropsWithComponent,
   staticArrayFromPropsWithComponentClient,
   staticArrayFromPropsWithComponentPrecomputed,
+  nestedPropObjectArrayWithComponent,
   // Priority 8: CSR conformance
   booleanDynamicAttr,
   aliasedImportChildComponent,
@@ -1113,6 +1145,8 @@ export const jsxFixtures: JSXFixture[] = [
   textareaValueSsr,
   signalEarlyReturn,
   branchRootPropAttr,
+  childPropRestForward,
+  conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,
   controlledRadioChecked,
@@ -1128,6 +1162,8 @@ export const jsxFixtures: JSXFixture[] = [
   statelessRestSpreadForward,
   aliasedLoopSource,
   keyedLoopIndexReorder,
+  selectOutOfRangeHydration,
+  signalOptionalInit,
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,
@@ -1139,4 +1175,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleHelperBoolcontextCall,
   opaqueLocalAccessorCall,
   opaqueLocalAccessorCallClient,
+  staticLoopClientOnlyNested,
+  staticLoopClientOnlyNestedClient,
+  staticLoopClientOnlyNestedPrecomputed,
+  compositeRowChildRestBagProp,
 ]

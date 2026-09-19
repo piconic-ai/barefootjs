@@ -37,7 +37,14 @@ export interface MutationQuarantineEntry {
   oracle: OracleKind
   /** Why — a short human summary of the observed divergence. */
   reason: string
-  /** `known-limitation` issue URL, filled in after triage. */
+  /**
+   * Registry limitation id (`packages/adapter-tests/limitations/<id>.ts`,
+   * kind `silent`). A mutated fixture is not the entry's own reproduction
+   * (the entry lists the unmutated fixture that shows the same divergence
+   * as written), so the join test checks only that the id exists.
+   */
+  limitation?: string
+  /** Legacy tracking-issue URL, for rows not yet migrated to a registry limitation. */
   issue?: string
 }
 
@@ -53,7 +60,7 @@ function key(fixtureId: string, mutationId: string, oracle: OracleKind): string 
 
 /** G2c: a conditional-return branch independently fragment-wrapped has no per-branch CSR scope-shape declaration. */
 const FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID =
-  "fragment-wrap wraps EVERY `return <jsx>` it finds, including ones inside an if-statement — for a conditional-return component (`if (asChild) return <Slot/>; return <button>...`, `ir.root.type === 'if-statement'`) this independently fragment-wraps one branch while leaving the other untouched. `emit-registration.ts`'s `isFragmentRoot`/`isCommentScope` only inspects `_ir.root.type` at the WHOLE-COMPONENT level (never 'if-statement'), so the resulting `ComponentDef` carries neither `comment` nor `fragmentRoot` — a single static per-component flag can't express \"branch A is fragment-rooted, branch B isn't\". `materializeComponent`'s pure CSR mount (`createComponent()`, no SSR) then picks ONE treatment for the whole component regardless of which branch actually renders, so the wrapped branch's root element gets no scope id at all (mirrors the pre-#2722 symptom, but the def-level #2722 fix cannot reach this per-branch shape). Distinct from #2722 (confirmed: #2722's fix graduated every OTHER `fragment-wrap` entry in this ledger; only the conditional-return-rooted components remain). Filed as its own enhancement (#2731) — the fix needs a per-branch scope-shape declaration or a CSR-time probe of the rendered markup's own shape, not a bigger flag."
+  "fragment-wrap wraps EVERY `return <jsx>` it finds, including ones inside an if-statement — for a conditional-return component (`if (asChild) return <Slot/>; return <button>...`, `ir.root.type === 'if-statement'`) this independently fragment-wraps one branch while leaving the other untouched. `emit-registration.ts`'s `isFragmentRoot`/`isCommentScope` only inspects `_ir.root.type` at the WHOLE-COMPONENT level (never 'if-statement'), so the resulting `ComponentDef` carries neither `comment` nor `fragmentRoot` — a single static per-component flag can't express \"branch A is fragment-rooted, branch B isn't\". `materializeComponent`'s pure CSR mount (`createComponent()`, no SSR) then picks ONE treatment for the whole component regardless of which branch actually renders, so the wrapped branch's root element gets no scope id at all (mirrors the pre-#2722 symptom, but the def-level #2722 fix cannot reach this per-branch shape). Distinct from #2722 (confirmed: #2722's fix graduated every OTHER `fragment-wrap` entry in this ledger; only the conditional-return-rooted components remain). Registry limitation `fragment-wrapped-conditional-return-branch-scope` (its own fixture, `conditional-return-fragment-branch`, is the same shape as real source) — the fix needs a per-branch scope-shape declaration or a CSR-time probe of the rendered markup's own shape, not a bigger flag."
 
 const ENTRIES: readonly MutationQuarantineEntry[] = [
   // --- G1 (fixed, #2721) --------------------------------------------------
@@ -122,18 +129,18 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // event and fixed in `oracle-core.ts`'s `settleScrollBeforeAction`.
 
   // --- G2c (open, #2731) ---------------------------------------------------
-  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },
-  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },
-  { fixtureId: 'conditional-return-button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },
-  { fixtureId: 'conditional-return-button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },
-  { fixtureId: 'conditional-return-link', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },
-  { fixtureId: 'conditional-return-link', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, issue: 'https://github.com/piconic-ai/barefootjs/issues/2731' },
+  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  { fixtureId: 'button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  { fixtureId: 'conditional-return-button', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  { fixtureId: 'conditional-return-button', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  { fixtureId: 'conditional-return-link', mutationId: 'fragment-wrap', oracle: 'three-point', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
+  { fixtureId: 'conditional-return-link', mutationId: 'fragment-wrap', oracle: 'idempotence', reason: FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID, limitation: 'fragment-wrapped-conditional-return-branch-scope' },
   {
     fixtureId: 'kbd',
     mutationId: 'fragment-wrap',
     oracle: 'three-point',
     reason: `${FRAGMENT_WRAP_CONDITIONAL_RETURN_BRANCH_SCOPE_ID} (kbd has no \`interactions\`, so only \`three-point\` runs for it — no \`idempotence\` triple.)`,
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2731',
+    limitation: 'fragment-wrapped-conditional-return-branch-scope',
   },
 
   // --- G3 (fixed, #2723) --------------------------------------------------
@@ -220,15 +227,6 @@ const ENTRIES: readonly MutationQuarantineEntry[] = [
   // does not route away from that path) is a separate, still-open defect —
   // filed independently as #2833, not part of this graduation.
 
-  // --- G6 -------------------------------------------------------------------
-  {
-    fixtureId: 'carousel',
-    mutationId: 'fragment-wrap',
-    oracle: 'idempotence',
-    reason:
-      "Click on '[data-slot=\"carousel-next\"]' times out (button stays disabled). The base fixture's idempotence oracle is already excluded (not merely quarantined) in oracle.playwright.ts's IDEMPOTENCE_EXCLUDED map for the same reason: embla's drag steps are pointer-position-dependent on a CSS-less host page (#1971), so replaying the SAME drag sequence twice is inherently flaky independent of any real bug. This mutant reproduces that known flakiness rather than a new fragment-wrap-specific defect; kept here (mutation.playwright.ts has no equivalent exclusion map, only the ORACLE_QUARANTINE skip) rather than silently passing.",
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/1971',
-  },
 ]
 
 export const MUTATION_QUARANTINE: ReadonlyMap<string, MutationQuarantineEntry> = new Map(

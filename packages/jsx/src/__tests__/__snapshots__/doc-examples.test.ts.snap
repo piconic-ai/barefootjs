@@ -392,7 +392,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L64 — ✅ Statement body — JS-runtime adapters; /* @client */ on Go/Mojo etc. 1`] = `
-"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, escapeText, mapArray, patchLeaf } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, escapeAttr, escapeText, mapArray, patchLeaf } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -441,7 +441,7 @@ export function initExample(__scope, _p = {}) {
 
   mapArray(() => (todos()).flatMap((todo) => {
   if (todo.hidden) return []
-  return todo.tags.map(tag => ({ k: (\`\${todo.id}:\${tag}\`), h: \`<li>\${escapeText(tag)}</li>\` }))
+  return todo.tags.map(tag => ({ k: (\`\${todo.id}:\${tag}\`), h: \`<li data-key="\${escapeAttr(String((\`\${todo.id}:\${tag}\`)))}">\${escapeText(tag)}</li>\` }))
 }), _s0, (__bfD, __bfI) => String(__bfD.k ?? __bfI), (__bfD, __idx, __existing) => {
     let __el = __existing
     if (!__el) { const __tpl = document.createElement('template'); __tpl.innerHTML = __bfD().h; __el = __tpl.content.firstElementChild }
@@ -458,7 +458,7 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s0"><!--bf-loop:l0-->\${([]).flatMap((todo) => {
   if (todo.hidden) return []
-  return todo.tags.map(tag => \`<li>\${escapeText(tag)}</li>\`)
+  return todo.tags.map(tag => \`<li data-key="\${escapeAttr(String((\`\${todo.id}:\${tag}\`)))}">\${escapeText(tag)}</li>\`)
 }).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
@@ -2198,6 +2198,31 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div><button \${load
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/reactivity/create-effect.md doc-examples L135 — (no label) 1`] = `
+"import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
+
+
+export function initSeen(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [seen, setSeen] = createSignal(0)
+
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = seen()
+    __bfw_s0('s0', escapeTextOrNode(__val))
+  })
+
+  createEffect(() => {
+    setSeen(_p.value)
+  })
+}
+
+hydrate('Seen', { init: initSeen, template: (_p) => \`<span bf="s1"><!--bf:s0-->\${escapeTextOrMarkup((0))}<!--/--></span>\` })
+export function Seen(_p, __bfKey) { return createComponent('Seen', _p, __bfKey) }"
+`;
+
 exports[`docs/core/reactivity/create-memo.md doc-examples L22 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
@@ -2733,7 +2758,7 @@ export function initExample(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Child_s0El] = $c(__scope, 's0')
     if (__Child_s0El) {
@@ -3350,7 +3375,7 @@ export function initExample(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {
@@ -4224,13 +4249,13 @@ export function initProductPage(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__ReviewStars_s5El] = $c(__scope, 's5')
     if (__ReviewStars_s5El) {
       { const __x = (_p.product ?? {}).rating
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
+        if (__m[0] ??= __ReviewStars_s5El.hasAttribute('rating')) { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
       }
       __l[0] = __x }
     }
@@ -4238,7 +4263,7 @@ export function initProductPage(__scope, _p = {}) {
     if (__AddToCart_s6El) {
       { const __x = (_p.product ?? {}).id
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
+        if (__m[1] ??= __AddToCart_s6El.hasAttribute('productId')) { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
       }
       __l[1] = __x }
     }

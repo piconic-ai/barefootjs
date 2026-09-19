@@ -2000,8 +2000,24 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 428,
+    "totalFixtures": 437,
     "fixtures": {
+      "child-prop-rest-forward": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "child-prop-undefined-alternate-dropped"
+          ]
+        }
+      },
+      "composite-row-child-rest-bag-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-rest-bag-prop-override"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -4384,6 +4400,14 @@
           }
         }
       },
+      "signal-optional-init": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "optional-typed-signal-initial-value-dropped"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -4738,6 +4762,21 @@
           "escape": {
             "state": "escapable",
             "twin": "static-array-from-props-with-component-precomputed"
+          }
+        }
+      },
+      "static-loop-client-only-nested": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "client-only-loop-in-static-loop"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "static-loop-client-only-nested-precomputed"
           }
         }
       },
@@ -4933,6 +4972,14 @@
       }
     },
     "docs": {
+      "child-prop-rest-forward": {
+        "description": "a child-component prop the child forwards via {...rest} onto its root keeps updating reactively,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-prop-rest-forward.ts"
+      },
+      "composite-row-child-rest-bag-prop": {
+        "description": "Dynamic loop row root is an element containing a child whose per-row prop routes into its rest bag",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/composite-row-child-rest-bag-prop.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -5025,6 +5072,10 @@
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
       },
+      "signal-optional-init": {
+        "description": "a signal declared as `T | undefined` with a literal initial value renders that value at SSR as an…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-optional-init.ts"
+      },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
@@ -5036,6 +5087,10 @@
       "static-array-from-props-with-component": {
         "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
+      },
+      "static-loop-client-only-nested": {
+        "description": "A /* @client */ nested .map() inside a static outer loop row renders the outer rows with an empty…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested.ts"
       },
       "static-loop-item-boolean-attr": {
         "description": "static array's .map() row boolean attribute keyed off the item itself renders per item (#2898)",
@@ -5112,6 +5167,10 @@
       "static-array-from-props-with-component-precomputed": {
         "description": "prop-precompute twin of static-array-from-props-with-component — child components render at SSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component-precomputed.ts"
+      },
+      "static-loop-client-only-nested-precomputed": {
+        "description": "prop-precompute twin of static-loop-client-only-nested — items moved to a prop, full SSR of the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested-precomputed.ts"
       },
       "static-loop-item-boolean-attr-precomputed": {
         "description": "prop-precompute twin of static-loop-item-boolean-attr — items moved to a prop, full SSR (#2898,…",
@@ -5196,6 +5255,35 @@
         "BF101"
       ]
     },
+    "child-prop-undefined-alternate-dropped": {
+      "title": "A child-component prop whose value is a ternary with an undefined alternate is dropped from the slot props",
+      "kind": "silent",
+      "given": "a child component call whose prop is a ternary with an `undefined` alternate (`<RestForwardTag tag={shown() ? tag() : undefined} />`), the child forwarding that prop onto its root via `{...rest}`",
+      "expected": "the server HTML carries `tag=\"one\"` while the branch is taken and no `tag` attribute otherwise, as the reference renders",
+      "actual": "omits the prop from the generated slot props (`RestForwardTagInput{ Variant: \"a\" }`, no `Tag`), so the child’s rest-bag lookup renders `tag=\"\"` whichever branch is taken",
+      "fixtures": [
+        "child-prop-rest-forward"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "client-only-loop-in-static-loop": {
+      "title": "Client-only nested loop inside a static loop row",
+      "kind": "refusal",
+      "given": "a static (non-signal) array `.map()` whose row contains a `/* @client */` nested `.map()`",
+      "expected": "the outer rows render in the server HTML, each with an empty inner loop host for the client to fill",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "static-loop-client-only-nested"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "computed-const-loop-source": {
       "title": "Computed component-scope const as a loop source",
       "kind": "refusal",
@@ -5238,6 +5326,17 @@
         "BF101"
       ]
     },
+    "fragment-wrapped-conditional-return-branch-scope": {
+      "title": "Fragment-wrapped branch of a conditional return is never hydrated",
+      "kind": "silent",
+      "given": "a component with an early-return branch whose other branch is wrapped in a fragment (`if (x) return <a/>; return <><button/></>`)",
+      "expected": "the rendered branch root carries the component scope id on every render path, so its events bind",
+      "actual": "renders the fragment-wrapped branch root without a scope id after hydration (the server HTML is correct, a pure client mount is correct), so its events never bind",
+      "fixtures": [
+        "conditional-return-fragment-branch"
+      ],
+      "adapters": []
+    },
     "jsx-wrapped-in-non-children-prop": {
       "title": "JSX wrapped in a ternary or array at a non-children prop",
       "kind": "by-design",
@@ -5264,6 +5363,30 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-row-child-text-children-markers-dropped": {
+      "title": "Forwarded text children of a child component inside a keyed loop row lose their SSR slot markers on hydration",
+      "kind": "silent",
+      "given": "a keyed `.map()` row whose child component call receives parent-owned reactive text as `children` (`<TableRow><TableCell>{payment.id}</TableCell></TableRow>`)",
+      "expected": "the server HTML and the hydrated DOM carry the same `<!--bf:^sN-->…<!--/-->` slot markers around the forwarded text",
+      "actual": "drops the markers: the row hydration effect rewrites each child root with `textContent` on its first run, so the hydrated cell holds a bare text node where the server HTML had the marker pair (the text itself is unchanged)",
+      "fixtures": [
+        "data-table"
+      ],
+      "adapters": []
+    },
+    "loop-row-rest-bag-prop-override": {
+      "title": "Per-row prop routed into a child rest bag inside a composite loop row",
+      "kind": "silent",
+      "given": "a signal-driven `.map()` whose row root is a plain element wrapping a child component, passing a per-row value through a prop the child captures only via `...rest`",
+      "expected": "each row renders the child with that row's value applied (`title=\"one\"`, `title=\"two\"`)",
+      "actual": "renders the child without the rest-bag attribute at all, on every row",
+      "fixtures": [
+        "composite-row-child-rest-bag-prop"
+      ],
+      "adapters": [
+        "go-template"
+      ]
     },
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",
@@ -5379,7 +5502,7 @@
       "kind": "silent",
       "given": "a component-body `const` bound to the result of a call the compiler cannot evaluate (a helper returning a function, or an accessor returned by a library), invoked with `()` in text position",
       "expected": "the accessor runs at render time and its result renders in the server HTML",
-      "actual": "emits the slot as a bare template-variable lookup named after the const, with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
+      "actual": "emits the slot as a bare template-variable lookup named after the const (an empty slot in the CSR template lambda), with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
       "fixtures": [
         "opaque-local-accessor-call"
       ],
@@ -5394,6 +5517,48 @@
         "twig",
         "xslate"
       ]
+    },
+    "optional-typed-signal-initial-value-dropped": {
+      "title": "A signal declared with an explicit `T | undefined` type argument loses its literal initial value at SSR",
+      "kind": "silent",
+      "given": "a signal created as `createSignal<string | undefined>('one')` whose getter is rendered as an attribute (`title={label()}`) or as a text expression",
+      "expected": "the server HTML carries the literal initial value (`title=\"one\"` and the text `one`), as the reference renders",
+      "actual": "seeds the field from the union type instead of the literal (`Label interface{}` initialised to `nil`), so the server HTML renders `title=\"\"` and empty text until hydration writes the real value",
+      "fixtures": [
+        "signal-optional-init"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "ref-callback-portal-content-inline-at-ssr": {
+      "title": "Portal content relocated from a ref callback renders inline on the server",
+      "kind": "silent",
+      "given": "a component that moves part of its own markup to `document.body` from a `ref` callback (`createPortal(el, document.body, { ownerScope })`), the overlay/content pattern the dialog-style primitives use",
+      "expected": "the server HTML places the portaled subtree where the hydrated DOM has it — appended to the body after the component root, carrying its owner scope as `bf-po` — so hydration changes nothing",
+      "actual": "renders the portaled subtree inline at its source position with no `bf-po` (a `ref` callback never runs at SSR); the hydrate-time callback then moves it to the end of `document.body` and stamps `bf-po`, so pre- and post-hydration DOM differ structurally",
+      "fixtures": [
+        "dialog",
+        "dropdown-menu",
+        "popover",
+        "portal"
+      ],
+      "adapters": []
+    },
+    "ref-effect-attr-state-ssr": {
+      "title": "Attribute state computed in a ref callback or mount effect never reaches SSR",
+      "kind": "silent",
+      "given": "a component whose real attribute state is computed inside a `ref` callback or a mount effect (context reads, `createEffect`) — a reactive attribute written as a compile-time JSX literal (`aria-expanded`, `aria-checked`, `data-selected`, `data-mounted`), or one the effect adds imperatively with `setAttribute` (`data-placeholder`)",
+      "expected": "the server HTML and the hydrated DOM carry the same attribute value",
+      "actual": "renders the compile-time literal (or no attribute at all) in the server HTML — a `ref` callback never runs at SSR — and the first client effect pass then writes the computed value, so pre- and post-hydration DOM differ — a visible snap at the hydrate boundary",
+      "fixtures": [
+        "accordion",
+        "combobox",
+        "command",
+        "radio-group",
+        "select"
+      ],
+      "adapters": []
     },
     "rich-typed-prop-hydration": {
       "title": "Rich-typed prop read by client code",
@@ -5420,6 +5585,17 @@
         "BF049"
       ],
       "reason": "Props cross the `bf-p` hydration boundary as `JSON.stringify` data with no type-aware revival, so these types lose their contents (`Map` / `Set` serialize to `{}`, `BigInt` throws, `Promise` / `Function` cannot cross a serialization boundary at all). A typed revival envelope was considered and rejected as a nine-adapter protocol change that still could not carry every listed type. The sound path is to pass a JSON-safe value and rebuild the rich value client-side."
+    },
+    "select-out-of-range-selected-index": {
+      "title": "Out-of-range controlled select: placeholder selected on the server, nothing selected after hydration",
+      "kind": "silent",
+      "given": "a controlled `<select value={...}>` with statically enumerable `<option>`s whose bound value matches none of them",
+      "expected": "the server-rendered select and the hydrated select agree on the live selection (`selectedIndex` / `value`)",
+      "actual": "renders the hidden placeholder option selected (`selectedIndex` 0, `value` \"\"); the hydration controlled-value effect then assigns the out-of-range value, which the browser resolves to no selection (`selectedIndex` -1), so the live state changes across hydration although both read as blank",
+      "fixtures": [
+        "select-out-of-range-hydration"
+      ],
+      "adapters": []
     },
     "signal-read-in-nested-static-loop": {
       "title": "Signal read inside a nested static loop row",

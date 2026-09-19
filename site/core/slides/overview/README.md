@@ -27,14 +27,18 @@ This is an in-progress prototype, not a polished/final deck.
   poster frame (a Pexels clip; see "Hero media" below and `assets/SOURCES.md`).
 - `component/` — a small Vite project that compiles the deck's interactive
   BarefootJS components (`component/components/*.tsx`) with `@barefootjs/vite`
-  and `CSRAdapter`, and bundles the result into a single client script. It
-  depends on the monorepo's own `@barefootjs/client`, `@barefootjs/vite`, and
-  `@barefootjs/jsx` via `workspace:*`, so the deck always compiles against
-  this repo's own compiler and runtime rather than a published npm version.
-  `component/mount.ts` finds `<div data-bf="...">` markers that peitho's
-  layouts emit and mounts the matching component into them as peitho swaps
-  slides in and out of the light-DOM viewer; `component/narration.ts` adds the
-  deck's progress bar, slide counter, and headline word-reveal.
+  and `CSRAdapter`. It depends on the monorepo's own `@barefootjs/client`,
+  `@barefootjs/vite`, and `@barefootjs/jsx` via `workspace:*`, so the deck
+  always compiles against this repo's own compiler and runtime rather than a
+  published npm version. The build output is copied into this deck's own
+  `assets/` (gitignored) as `mount.js`, `narration.js` and the compiled
+  components, which is what the layouts' `<script src="assets/mount.js">`
+  loads. `component/mount.ts` finds the `<div data-bf="...">` markers those
+  layouts emit and mounts the matching component into them — in the light-DOM
+  distribution viewer, and in the Shadow DOM one `peitho present` and
+  peitho-studio use; `component/narration.ts` adds the deck's progress bar,
+  slide counter, and headline word-reveal, and is loaded by the distribution
+  viewer only.
 - `slide.json` — the page `<title>`.
 - `css/1-ui-kit.css` — theme tokens, minimal base resets, and UnoCSS utilities
   for the `ui/components/ui/*` components the "62 components, designed after
@@ -48,14 +52,15 @@ The build itself is shared by every deck: `site/core/scripts/build-slides.ts`
 
 Not checked in: `fontsrc/` (the raw `.woff2` files and a scratch
 `fonts.css`/`google.css` used to *generate* `css/0-fonts.css`) — the deck only
-needs the already-embedded `css/0-fonts.css` at runtime, and `component/dist/`
-/ `component/node_modules/` (the build script's working output).
+needs the already-embedded `css/0-fonts.css` at runtime — and the build script's
+working output: `component/dist/`, `component/node_modules/`, and the `*.js`
+it copies into `assets/`.
 
 ## Building
 
 The output (`site/core/public/slides/overview/`: peitho's distribution viewer,
-`index.html`, `manifest.json`, `peitho.css`, `slides/*.html`, plus
-`assets/{hero.mp4,hero.jpg,deck.js}`) is not committed. The deploy workflow
+`index.html`, `manifest.json`, `peitho.css`, `slides/*.html`, plus `assets/` —
+the media above and the `component/` build output) is not committed. The deploy workflow
 installs a pinned peitho release and builds every deck before the site build;
 pull requests touching `slides/**` run the same build (`ci-slides.yml`).
 

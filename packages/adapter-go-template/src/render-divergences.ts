@@ -45,6 +45,19 @@
  * `signalSeedGo`/`resolveLocalGetterAsGo` seeding the top-level field uses,
  * so `DisplayInput{ Value: 5 }` / `DisplayInput{ Value: DisplayValue{V: 5} }`
  * bake correctly instead of omitting the field.)
+ *
+ * (#3044's `nested-prop-object-array-with-component` was pinned here first,
+ * then un-pinned in the same PR (#3048) once real `go run` verification
+ * (a hand-written `main.go` populating `TagListInput.Tags` directly,
+ * bypassing the harness) showed the ADAPTER'S OWN emission was never wrong:
+ * `NewXxxProps` ranges over `.Tags` unconditionally, regardless of any other
+ * field's type, and a real route handler populating it directly renders
+ * correctly today. The empty render was `test-render.ts`'s own
+ * `buildDynamicChildLoopSeeding`/`findLoopPropField` failing to resolve a
+ * TWO-HOP prop-derived array (`data.entries`, where `data` — not `entries`
+ * — is the destructured prop) — exactly #2630's original shape of gap, one
+ * destructure-hop deeper. Same fix as #2630: teach the harness, not the
+ * adapter — see `resolveNestedPropDerivedArrayValue`'s doc comment.)
  */
 
 import type { RenderDivergences } from '@barefootjs/jsx'
@@ -61,6 +74,25 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+  // `loopRowChildPropOverrides` skips a prop that routes into the child's
+  // rest bag (`routesToRestBag`), so the per-row value never reaches the
+  // row: the child renders without the attribute at all. The out-of-loop
+  // sibling route (`queueDynamicPropDefine` → `bf_with_bag`) is not wired
+  // for loop rows yet.
+  'composite-row-child-rest-bag-prop': { limitation: 'loop-row-rest-bag-prop-override' },
+  // The nested-child-props baker has no arm for a ternary whose alternate is
+  // `undefined` (`tag={shown() ? tag() : undefined}`): the prop gets no
+  // field at all in `RestForwardTagInput{...}`, so the child's rest-bag
+  // lookup renders `tag=""` whichever branch is taken, where the reference
+  // renders `tag="one"` / no attribute. Measured under Go 1.25 (the version
+  // gate in `test-render.ts` skips the render on older toolchains, which is
+  // why a Go 1.24 host reports this fixture green).
+  'child-prop-rest-forward': { limitation: 'child-prop-undefined-alternate-dropped' },
+  // A signal declared as `createSignal<string | undefined>('one')` gets its
+  // Props field typed from the union (`interface{}`) and seeded with `nil`
+  // rather than the literal `'one'`, so `title="{{.Label}}"` and
+  // `{{.Label}}` render empty where the reference renders `one`.
+  'signal-optional-init': { limitation: 'optional-typed-signal-initial-value-dropped' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

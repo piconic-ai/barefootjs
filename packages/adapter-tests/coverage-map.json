@@ -1230,6 +1230,24 @@
         "text"
       ]
     },
+    "child-prop-rest-forward": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"
@@ -1536,6 +1554,19 @@
         "text"
       ]
     },
+    "composite-row-child-rest-bag-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "cond-arm-tag-collision": {
       "kinds": [
         "array-literal",
@@ -1613,6 +1644,21 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "conditional-return-fragment-branch": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
         "condition",
         "text"
       ]
@@ -4325,6 +4371,23 @@
         "text"
       ]
     },
+    "nested-prop-object-array-with-component": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nested-ternary": {
       "kinds": [
         "binary",
@@ -5252,6 +5315,27 @@
         "attribute"
       ]
     },
+    "select-out-of-range-hydration": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "select-value-no-match-ssr": {
       "kinds": [
         "binary",
@@ -5423,6 +5507,20 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "signal-optional-init": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -5721,6 +5819,48 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "static-loop-client-only-nested": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-client-only-nested-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-client-only-nested-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
     },
     "static-loop-conditional": {
       "kinds": [
@@ -6870,20 +7010,20 @@
     }
   },
   "kindCounts": {
-    "array-literal": 117,
+    "array-literal": 119,
     "array-method": 72,
     "arrow": 76,
-    "binary": 107,
-    "call": 286,
-    "conditional": 33,
-    "identifier": 404,
-    "index-access": 14,
-    "literal": 322,
-    "logical": 52,
-    "member": 237,
-    "object-literal": 94,
+    "binary": 109,
+    "call": 291,
+    "conditional": 34,
+    "identifier": 413,
+    "index-access": 15,
+    "literal": 328,
+    "logical": 53,
+    "member": 244,
+    "object-literal": 96,
     "template-literal": 31,
-    "unary": 29,
+    "unary": 30,
     "unsupported": 51
   },
   "axisCounts": {
@@ -6915,20 +7055,20 @@
     "binary:!==": 12,
     "binary:%": 1,
     "binary:*": 14,
-    "binary:+": 25,
+    "binary:+": 26,
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 54,
+    "binary:===": 55,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 71,
+    "literal:boolean": 72,
     "literal:null": 26,
-    "literal:number": 148,
-    "literal:string": 218,
+    "literal:number": 151,
+    "literal:string": 222,
     "logical:&&": 7,
     "logical:??": 44,
-    "logical:||": 16,
+    "logical:||": 17,
     "lowering:date": 4,
     "lowering:formatDate": 2,
     "lowering:queryHref": 5,
@@ -6943,7 +7083,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 21,
+    "unary:!": 22,
     "unary:-": 11
   },
   "uncoveredKinds": [

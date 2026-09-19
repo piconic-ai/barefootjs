@@ -2712,13 +2712,13 @@ export function initIcon(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__GitHubIcon_s11El] = $c(__scope, 's11')
     if (__GitHubIcon_s11El) {
       { const __x = (_p.size ?? 'md')
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
+        if (__m[0] ??= __GitHubIcon_s11El.hasAttribute('size')) { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
       }
       __l[0] = __x }
       { const __x = (_p.className ?? '')
@@ -2731,7 +2731,7 @@ export function initIcon(__scope, _p = {}) {
     if (__SearchIcon_s10El) {
       { const __x = (_p.size ?? 'md')
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
+        if (__m[2] ??= __SearchIcon_s10El.hasAttribute('size')) { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
       }
       __l[2] = __x }
       { const __x = (_p.className ?? '')
@@ -2744,7 +2744,7 @@ export function initIcon(__scope, _p = {}) {
     if (__SettingsIcon_s9El) {
       { const __x = (_p.size ?? 'md')
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
-        { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
+        if (__m[4] ??= __SettingsIcon_s9El.hasAttribute('size')) { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
       }
       __l[4] = __x }
       { const __x = (_p.className ?? '')
@@ -2757,7 +2757,7 @@ export function initIcon(__scope, _p = {}) {
     if (__GlobeIcon_s8El) {
       { const __x = (_p.size ?? 'md')
       if (!(6 in __l) || !Object.is(__l[6], __x)) {
-        { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
+        if (__m[6] ??= __GlobeIcon_s8El.hasAttribute('size')) { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
       }
       __l[6] = __x }
       { const __x = (_p.className ?? '')
@@ -2770,7 +2770,7 @@ export function initIcon(__scope, _p = {}) {
     if (__LogOutIcon_s7El) {
       { const __x = (_p.size ?? 'md')
       if (!(8 in __l) || !Object.is(__l[8], __x)) {
-        { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
+        if (__m[8] ??= __LogOutIcon_s7El.hasAttribute('size')) { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
       }
       __l[8] = __x }
       { const __x = (_p.className ?? '')
@@ -2783,7 +2783,7 @@ export function initIcon(__scope, _p = {}) {
     if (__CircleHelpIcon_s6El) {
       { const __x = (_p.size ?? 'md')
       if (!(10 in __l) || !Object.is(__l[10], __x)) {
-        { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
+        if (__m[10] ??= __CircleHelpIcon_s6El.hasAttribute('size')) { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
       }
       __l[10] = __x }
       { const __x = (_p.className ?? '')
@@ -2796,7 +2796,7 @@ export function initIcon(__scope, _p = {}) {
     if (__CalendarIcon_s5El) {
       { const __x = (_p.size ?? 'md')
       if (!(12 in __l) || !Object.is(__l[12], __x)) {
-        { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
+        if (__m[12] ??= __CalendarIcon_s5El.hasAttribute('size')) { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
       }
       __l[12] = __x }
       { const __x = (_p.className ?? '')
@@ -2809,7 +2809,7 @@ export function initIcon(__scope, _p = {}) {
     if (__GripVerticalIcon_s4El) {
       { const __x = (_p.size ?? 'md')
       if (!(14 in __l) || !Object.is(__l[14], __x)) {
-        { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
+        if (__m[14] ??= __GripVerticalIcon_s4El.hasAttribute('size')) { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
       }
       __l[14] = __x }
       { const __x = (_p.className ?? '')
@@ -2822,7 +2822,7 @@ export function initIcon(__scope, _p = {}) {
     if (__LoaderCircleIcon_s3El) {
       { const __x = (_p.size ?? 'md')
       if (!(16 in __l) || !Object.is(__l[16], __x)) {
-        { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
+        if (__m[16] ??= __LoaderCircleIcon_s3El.hasAttribute('size')) { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
       }
       __l[16] = __x }
       { const __x = (_p.className ?? '')
@@ -2835,7 +2835,7 @@ export function initIcon(__scope, _p = {}) {
     if (__PanelLeftIcon_s2El) {
       { const __x = (_p.size ?? 'md')
       if (!(18 in __l) || !Object.is(__l[18], __x)) {
-        { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
+        if (__m[18] ??= __PanelLeftIcon_s2El.hasAttribute('size')) { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
       }
       __l[18] = __x }
       { const __x = (_p.className ?? '')
@@ -2890,7 +2890,7 @@ export function initCarousel(__scope, _p = {}) {
   const carouselClasses = 'relative'
   const orientation = createMemo(() => _p.orientation ?? 'horizontal')
   const [canScrollPrev, setCanScrollPrev] = createSignal(false)
-  const [canScrollNext, setCanScrollNext] = createSignal(false)
+  const [canScrollNext, setCanScrollNext] = createSignal(true)
   let emblaApi
   const scrollPrev = () => emblaApi?.scrollPrev()
   const scrollNext = () => emblaApi?.scrollNext()
@@ -3008,7 +3008,7 @@ export function initCarouselContent(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('CarouselContent', { init: initCarouselContent, template: (_p) => `<div data-slot="carousel-viewport" class="overflow-hidden"><div data-slot="carousel-content" ${(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div></div>` })
+hydrate('CarouselContent', { init: initCarouselContent, template: (_p) => `<div data-slot="carousel-viewport" class="overflow-hidden"><div data-slot="carousel-content" ${(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${((_p.orientation ?? 'horizontal') === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4')} ${_p.className ?? ''}`) + '"' : ''} style="transform: translate3d(0px, 0px, 0px);" bf="s0">${markupOrEmpty(_p.children)}</div></div>` })
 export function CarouselContent(_p, __bfKey) { return createComponent('CarouselContent', _p, __bfKey) }
 export function initCarouselItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3126,7 +3126,7 @@ export function initCarouselNext(__scope, _p = {}) {
   initChild('ChevronRightIcon', _s0, { size: "sm" })
 }
 
-hydrate('CarouselNext', { init: initCarouselNext, template: (_p) => `<button data-slot="carousel-next" type="button" ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) + '"' : ''} disabled aria-label="Next slide" bf="s1">${renderChild('ChevronRightIcon', {size: "sm"}, undefined, 's0')}<span class="sr-only">Next slide</span></button>` })
+hydrate('CarouselNext', { init: initCarouselNext, template: (_p) => `<button data-slot="carousel-next" type="button" ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50 absolute h-8 w-8 rounded-full')} ${((_p.orientation ?? 'horizontal') === 'vertical' ? ('-bottom-12 left-1/2 -translate-x-1/2 rotate-90') : ('-right-12 top-1/2 -translate-y-1/2'))} ${_p.className ?? ''}`) + '"' : ''} aria-label="Next slide" bf="s1">${renderChild('ChevronRightIcon', {size: "sm"}, undefined, 's0')}<span class="sr-only">Next slide</span></button>` })
 export function CarouselNext(_p, __bfKey) { return createComponent('CarouselNext', _p, __bfKey) }
 export function initCarouselPreviewDemo(__scope, _p = {}) {
   if (!__scope) return

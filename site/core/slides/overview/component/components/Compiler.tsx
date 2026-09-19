@@ -31,8 +31,30 @@ export function Compiler(props: { auto?: boolean }) {
 
   const pick = (n: number) => { setAuto(false); setIdx(n) }
 
+  // `peitho present` mounts every slide's component once, up front, and
+  // keeps it alive across navigation — see Trace.tsx's own note on why.
+  // Without this, the tab-cycling auto-demo above starts advancing from
+  // the moment the whole presentation loads, not from when this slide is
+  // actually shown, and a manual tab click on an earlier visit (which
+  // turns `auto` off) stays off for the rest of the presentation.
+  // `peitho:slidechange` is how this restarts fresh each time a viewer
+  // arrives at this slide specifically.
+  const mountRoot = (el: HTMLElement) => {
+    const root = el.getRootNode()
+    const slideKey = root instanceof ShadowRoot ? (root.host as HTMLElement).dataset.slideKey : undefined
+    if (slideKey === undefined) return
+    const onSlideChange = (event: Event): void => {
+      if ((event as CustomEvent<{ key?: string }>).detail?.key === slideKey) {
+        setIdx(0)
+        setAuto(props.auto ?? true)
+      }
+    }
+    window.addEventListener('peitho:slidechange', onSlideChange)
+    onCleanup(() => window.removeEventListener('peitho:slidechange', onSlideChange))
+  }
+
   return (
-    <div className="compiler">
+    <div className="compiler" ref={mountRoot}>
       <div className="compiler-tabs" role="tablist">
         {OUTPUTS.map((o, n) => (
           <button

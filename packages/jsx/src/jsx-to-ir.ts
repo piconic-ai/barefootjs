@@ -32,7 +32,7 @@ import {
   type PreambleSegment,
   type PreambleRegionSource,
   type PreambleValueDeclaration,
-  tsxSourceText,
+  tsxSourceText, type TsxSourceText,
   type SourceLocation,
   type TypeInfo,
   type OriginInfo,
@@ -61,7 +61,7 @@ import { extractFreeIdentifiersFromText } from './ir-to-client-js/csr-substitute
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
-import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, type MultiReturnJsxBranches } from './analyzer.ts'
+import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, rootIdentifierOf, type MultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
@@ -5552,11 +5552,16 @@ function buildFlatMapCallback(
   // the map-preamble collector.
   const leafSpans: Array<{ start: number; end: number }> = []
   const leafIrs: IRNode[] = []
+  const leafKeyAttrs: ts.JsxAttribute[] = []
   let refusalNode: ts.Node | undefined
   const collectJsx = (n: ts.Node, underTemplate: boolean): void => {
     if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) {
       if (underTemplate) refusalNode ??= n
       leafSpans.push({ start: n.getStart(ctx.sourceFile), end: n.getEnd() })
+      if (!ts.isJsxFragment(n)) {
+        const keyAttr = findKeyJsxAttribute(ts.isJsxElement(n) ? n.openingElement : n)
+        if (keyAttr) leafKeyAttrs.push(keyAttr)
+      }
       const ir = transformNode(n as ts.Expression, ctx)
       leafIrs.push(ir ?? { type: 'text', value: '', loc: getSourceLocation(n, ctx.sourceFile, ctx.filePath) })
       return
@@ -5662,8 +5667,50 @@ function buildFlatMapCallback(
   return {
     params: `(${paramsText})`,
     segments,
-    rawBody: tsxSourceText(body.getText(ctx.sourceFile)),
+    rawBody: flatMapRawBodyWithLeafKeys(body, leafKeyAttrs, ctx.sourceFile),
   }
+}
+
+/**
+ * The raw TSX body a JSX-runtime SSR adapter evaluates, with every keyed
+ * leaf's reconciliation attribute made explicit: ` data-key={String(<key>)}`
+ * spliced in right after the leaf's own `key={…}` attribute. A JSX runtime
+ * strips `key` from the rendered HTML, so without this the server row
+ * carries no `data-key` while the client runtime stamps one on every row it
+ * adopts or creates (`mapArray`'s `BF_KEY` default — the descriptor path
+ * never passes a depth-suffixed name) — a pre-/post-hydration divergence on
+ * exactly the attribute reconciliation keys on. `String(...)` matches the
+ * client's `String(__bfD.k ?? __bfI)` stamping, and the runtime escapes the
+ * value like any other attribute. Position-based splice over the AST's own
+ * attribute spans — the body text is never pattern-matched.
+ */
+function flatMapRawBodyWithLeafKeys(
+  body: ts.Block | ts.Expression,
+  leafKeyAttrs: readonly ts.JsxAttribute[],
+  sourceFile: ts.SourceFile,
+): TsxSourceText {
+  const text = body.getText(sourceFile)
+  if (leafKeyAttrs.length === 0) return tsxSourceText(text)
+  const bodyStart = body.getStart(sourceFile)
+  const insertions = leafKeyAttrs
+    .map((attr) => {
+      const init = attr.initializer
+      const keyText = init === undefined
+        ? 'true'
+        : ts.isJsxExpression(init)
+          ? (init.expression?.getText(sourceFile) ?? 'undefined')
+          : init.getText(sourceFile)
+      return { at: attr.getEnd() - bodyStart, text: ` ${BF_KEY}={String(${keyText})}` }
+    })
+    .sort((a, b) => a.at - b.at)
+  let out = ''
+  let cursor = 0
+  for (const { at, text: ins } of insertions) {
+    out += text.slice(cursor, at) + ins
+    cursor = at
+  }
+  out += text.slice(cursor)
+  return tsxSourceText(out)
 }
 
 /**
@@ -8039,9 +8086,23 @@ function checkBareSignalOrMemoIdentifier(
  *     `const toggleItems__alias = toggleItems`, any number of hops, `const`
  *     or `let`, #2724 — see `propAliasHopCandidates`'s docstring for why
  *     `let` stays eligible)
- * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`),
- *     OR one whose object reaches the props object through the same kind of
- *     alias-hop chain as (a) (e.g. `const p = props; p.items`, #2724 review)
+ * (b) A PropertyAccessExpression whose ROOT identifier (walking through any
+ *     number of chained `.foo` accesses via `rootIdentifierOf`, e.g.
+ *     `props.data.items` or `data.items`) is itself recognized by (a)'s
+ *     same terminal (`isDirectPropBindingName`) — the whole props object
+ *     (e.g. `props.items`) OR a destructured OBJECT-shaped prop (e.g.
+ *     `data.items` where `data` is the prop, #3044) — OR reaches either of
+ *     those through the same kind of alias-hop chain as (a) (e.g.
+ *     `const p = props; p.items`, #2724 review)
+ *
+ * (b) covers a REACTIVE PROP whose value is itself an object: the prop
+ * identifier (`data`) is bound to a fresh object on every parent re-render,
+ * so a `.map()` over one of its own properties (`data.items`) needs the same
+ * `mapArray` reconciliation as a top-level array prop — before #3044 this
+ * shape (destructured OBJECT prop + nested member access, as opposed to
+ * `props.items`'s single member access off the WHOLE props object) fell
+ * through both (a) and (b) and silently stayed on the static SSR-row-bind
+ * path, so a parent's array-from-empty update never reached the child.
  *
  * Unlike the regex-based `isPropsReference`, this avoids false positives from
  * unrelated identifiers that happen to share a prop name (e.g. `state.items`
@@ -8065,16 +8126,14 @@ function checkBareSignalOrMemoIdentifier(
  * `isPropsReference`/`isSignalOrMemoReference`'s chain walk.
  */
 function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContext): boolean {
-  const propsObjName = ctx.analyzer.propsObjectName
-
   if (ts.isIdentifier(arrayExpr)) {
     return resolveAliasOrigin(propAliasHopCandidates(ctx), arrayExpr.text, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
   }
 
-  if (ts.isPropertyAccessExpression(arrayExpr) && propsObjName) {
-    const obj = arrayExpr.expression
-    if (ts.isIdentifier(obj)) {
-      return resolveAliasOrigin(propAliasHopCandidates(ctx), obj.text, name => (name === propsObjName ? true : null)) === true
+  if (ts.isPropertyAccessExpression(arrayExpr)) {
+    const root = rootIdentifierOf(arrayExpr.expression)
+    if (root !== null) {
+      return resolveAliasOrigin(propAliasHopCandidates(ctx), root, name => (isDirectPropBindingName(name, ctx) ? true : null)) === true
     }
   }
 
@@ -8111,14 +8170,36 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
  * (needed so its regex still matches `props.<key>`) rather than local
  * bindings, so a same-named module const was matching here as if it were
  * the prop itself.
+ *
+ * Recognizes the WHOLE props object identifier itself (`name === propsObjName`)
+ * as directly denoting a prop — needed so a hop landing on the bare `props`
+ * identifier (e.g. `const p = props; p.items`, #2724 review) terminates
+ * here rather than each caller re-checking `propsObjName` separately
+ * (folded in during #3044 pullfrog review to remove exactly that
+ * duplication, which had also skipped this function's shadow guard).
+ *
+ * The member-parsed branch walks `parsed.object` to the chain's ROOT (e.g.
+ * `const items = props.data.items` or `const items = data.items`, #3044
+ * pullfrog review), accepting it whether the root is the whole props object
+ * OR itself a destructured prop binding — the same two-way root check
+ * `isArrayExprDirectPropRef`'s own property-access branch makes (via
+ * `rootIdentifierOf` + this same terminal) for the `.map()` array
+ * expression directly. Without this, aliasing a nested prop-object array to
+ * a local const first (an extremely common pattern) reproduced #3044's
+ * exact silent-freeze bug one hop away from the direct expression this fix
+ * otherwise covers.
  */
 function isDirectPropBindingName(name: string, ctx: TransformContext): boolean {
   if (ctx.scope.isBound(name)) return false
   if (ctx.boundPropNames.has(name)) return true
   const propsObjName = ctx.analyzer.propsObjectName
-  if (!propsObjName) return false
+  if (propsObjName && name === propsObjName) return true
   const parsed = constantsByName(ctx).get(name)?.parsed
-  return !!parsed && parsed.kind === 'member' && !parsed.computed && parsed.object.kind === 'identifier' && parsed.object.name === propsObjName
+  if (!parsed || parsed.kind !== 'member' || parsed.computed) return false
+  let root: ParsedExpr = parsed.object
+  while (root.kind === 'member' && !root.computed) root = root.object
+  if (root.kind !== 'identifier' || ctx.scope.isBound(root.name)) return false
+  return root.name === propsObjName || ctx.boundPropNames.has(root.name)
 }
 
 /**
