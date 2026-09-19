@@ -13,11 +13,14 @@ place. Tiers are copied from [API Reference](./api-reference.md); an entry that 
 public API at all — compiler-emitted code or tooling only — reads **compiler ABI, not
 public** instead of a tier.
 
-**Reading.** Of the rows rated 4 or higher, everything BarefootJS lacks (or has only
-partially) is the async trio (resource / query / action) plus `createUniqueId`; every 5 is
-present. Of the BarefootJS-only rows, `Region` and `Async` are the design core; the rest are
-rated 2 or lower, and two of those — `createDisposableEffect` and the profiler plumbing —
-are compiler ABI rather than a public API at all.
+**Reading.** Of the rows rated 4 or higher, three have no BarefootJS counterpart at all:
+`createResource` (rated 5), `query`/`createAsync`, and `createUniqueId`. `action()` gets a
+`partial` one. The remaining rated-4-or-higher rows are all present, either as a direct
+`match` or reshaped into a different form (`partial`: `Portal`, `<Suspense>`, `hydrate()`,
+`renderToString`/`renderToStream`, `<A href>`/`useNavigate`). Of the BarefootJS-only rows,
+`Region` and `Async` are the design core; the rest are rated 2 or lower, and two of those —
+`createDisposableEffect` and the profiler plumbing — are compiler ABI rather than a public
+API at all.
 
 ## Legend
 
