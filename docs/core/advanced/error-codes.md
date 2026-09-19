@@ -432,6 +432,46 @@ export function Page() {
 > long as it is imported or declared — the built-in only applies to the
 > `@barefootjs/client` import.
 
+<a id="bf056"></a>
+
+### BF056 — Authored Call to `formatDate`
+
+**Trigger:** A template-position call to `formatDate` imported by name from
+`@barefootjs/client` (or its `/runtime` subpath). `formatDate` is compiler
+ABI — the lowering target the `.toLocaleDateString(locale, { timeZone, ... })`
+sugar rewrites to, emitted by the compiler itself — never an authored API.
+This fires identically on every adapter, including Hono: it is a policy
+decision, not a per-adapter capability gap.
+
+```tsx
+// ❌ BF056
+import { formatDate } from '@barefootjs/client'
+export function Post({ createdAt }: { createdAt: Date }) {
+  return <time>{formatDate(createdAt, 'YYYY-MM-DD')}</time>
+}
+```
+
+**Fix:** Use the sanctioned `.toLocaleDateString()` sugar with literal
+options — it compiles to the same `format_date` helper every adapter
+already ships:
+
+```tsx
+// ✅ Fixed
+export function Post({ createdAt }: { createdAt: Date }) {
+  return <time>{createdAt.toLocaleDateString('en-US', { timeZone: 'UTC' })}</time>
+}
+```
+
+Or defer the whole read to the client, which can call any date-formatting
+API you like since it runs as real JS in the browser:
+
+```tsx
+// ✅ Also fixed
+export function Post({ createdAt }: { createdAt: Date }) {
+  return <time>{/* @client */ formatDate(createdAt, 'YYYY-MM-DD')}</time>
+}
+```
+
 ---
 
 ## Error Code Quick Reference
@@ -447,3 +487,4 @@ export function Page() {
 | BF044 | Error | Signal/memo getter passed without calling it |
 | BF049 | Error | Rich-typed prop read by client code cannot survive hydration |
 | BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |
+| BF056 | Error | Authored call to `formatDate` (compiler ABI, not an authored API) |

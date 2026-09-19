@@ -131,7 +131,7 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 
 | BarefootJS | Tier | Imp. | Notes |
 |---|---|---|---|
-| `formatDate` | Beta | 2 | adapter-lowered helper on 9 adapters; ui=1 site=2 (task C of #3078) |
+| `formatDate` | **compiler ABI, not public** | 1 | the `.toLocaleDateString(locale, { timeZone, ... })` sugar's lowering target on 9 adapters; an authored call refuses with BF056 (task C of #3078) |
 | `beginTurn` / `endTurn` / `createRecordingSink` / `setProfilerSink` / `ProfilerEvent*` | **compiler ABI, not public** | 1 | profiler plumbing; compiler-emitted + `bf debug profile` |
 
 ## Sources

@@ -27,6 +27,7 @@ import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 import { checkRichTypeMethodCalls, checkRichTypePropSerialization } from './rich-type-refusal.ts'
+import { checkAuthoredFormatDateCalls } from './format-date-refusal.ts'
 import { ErrorCodes, createError } from './errors.ts'
 import { collectComponentNamesFromIR } from './ir-to-client-js/child-components.ts'
 
@@ -209,6 +210,7 @@ function compileMultipleComponents(
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
     checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
     checkRichTypePropSerialization(componentIR.root, componentIR.metadata, errors, ctx.propsDestructuring?.loc)
+    checkAuthoredFormatDateCalls(componentIR.root, componentIR.metadata, errors)
 
     // Slot unification Step B — see the single-component path's identical
     // call for why this must run before adapter.generate/generateClientJs.
@@ -779,6 +781,7 @@ export function compileJSX(
   componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
   checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
   checkRichTypePropSerialization(componentIR.root, componentIR.metadata, errors, ctx.propsDestructuring?.loc)
+  checkAuthoredFormatDateCalls(componentIR.root, componentIR.metadata, errors)
 
   // Slot unification Step B (`spec/slot-unification.md` §5 Step B): decide
   // marker elision ONCE, mutating `componentIR.root` in place, before either

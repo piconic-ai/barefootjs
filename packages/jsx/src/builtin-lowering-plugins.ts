@@ -17,7 +17,6 @@ import { registerLoweringPlugin } from './lowering-registry.ts'
 import { queryHrefLocalNames } from './adapters/env-signal.ts'
 import { matchQueryHrefCall } from './query-href-lowering.ts'
 import { datePlugin } from './date-lowering.ts'
-import { formatDatePlugin } from './format-date-lowering.ts'
 import { toLocaleDatePlugin } from './to-locale-date-lowering.ts'
 
 /**
@@ -47,7 +46,6 @@ export const queryHrefPlugin: LoweringPlugin = {
 export const BUILTIN_LOWERING_PLUGINS: readonly LoweringPlugin[] = [
   queryHrefPlugin,
   datePlugin,
-  formatDatePlugin,
   toLocaleDatePlugin,
 ]
 

@@ -2860,18 +2860,19 @@
     "format-date": {
       "kinds": [
         "call",
+        "conditional",
         "identifier",
         "literal"
       ],
       "axes": [
-        "literal:string",
-        "lowering:formatDate"
+        "literal:string"
       ],
       "contexts": [
+        "attribute",
         "text"
       ]
     },
-    "format-date-ternary": {
+    "format-date-client": {
       "kinds": [
         "call",
         "conditional",
@@ -2879,11 +2880,11 @@
         "literal"
       ],
       "axes": [
-        "literal:string",
-        "lowering:formatDate"
+        "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "fragment": {
@@ -7054,7 +7055,7 @@
     "arrow": 76,
     "binary": 109,
     "call": 294,
-    "conditional": 34,
+    "conditional": 35,
     "identifier": 416,
     "index-access": 15,
     "literal": 330,
@@ -7109,7 +7110,6 @@
     "logical:??": 44,
     "logical:||": 17,
     "lowering:date": 4,
-    "lowering:formatDate": 2,
     "lowering:queryHref": 5,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,
