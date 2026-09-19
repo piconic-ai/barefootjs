@@ -53,6 +53,7 @@
 
 ## Advanced
 
+- [API Comparison](https://barefootjs.dev/docs/advanced/api-comparison.md): A Solid-baseline, row-by-row comparison of the runtime API against Solid and React — what BarefootJS calls the same concept, what it solves differently, and what it deliberately does not have.
 - [API Reference](https://barefootjs.dev/docs/advanced/api-reference.md): Every public API with the release it first shipped in, its stability tier and a usage example — generated from the JSDoc on the exports themselves.
 - [Vendor code-splitting](https://barefootjs.dev/docs/advanced/code-splitting.md): Split large vendor libraries into separately-cached browser chunks via Vite's own `manualChunks`
 - [Compiler Internals](https://barefootjs.dev/docs/advanced/compiler-internals.md): How the BarefootJS compiler transforms JSX into marked templates and client JavaScript.
