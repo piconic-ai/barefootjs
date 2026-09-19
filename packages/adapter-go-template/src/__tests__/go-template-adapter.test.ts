@@ -5039,12 +5039,15 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
   })
 
   // A prop that routes into the child's rest bag (not a declared param) has
-  // no named Go field for `bf_with_props` to override — it must stay on the
-  // constructor path rather than emit a pipeline argument that can only
-  // ever no-op at the runtime helper's unknown-field passthrough. Requires
+  // no named Go field for `bf_with_props` to override — a pipeline argument
+  // there could only ever no-op at the runtime helper's unknown-field
+  // passthrough. #3062: it now has a delivery route of its own —
+  // `bf_with_bag`/`WithBagEntry`, wrapping the constructor-path reference
+  // rather than replacing it — instead of the prop staying undelivered on
+  // every row (this test's pre-#3062 pin). Requires
   // `registerChildComponentShape` (normally the CLI's cross-file pre-pass,
   // #2131) so the adapter actually knows `Badge`'s rest-bag shape.
-  test('a rest-bag-routed per-row prop stays on the constructor path', () => {
+  test('a rest-bag-routed per-row prop is delivered via bf_with_bag, not bf_with_props', () => {
     // Mirrors the `registerChildComponentShape` pattern the `#2087` test
     // above uses: a bare `compileJSX` never calls that hook (only the CLI's
     // cross-file pre-pass, #2131, does), so this builds each component's IR
@@ -5094,8 +5097,14 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
 
     // `tone` isn't a declared `Badge` param, so it routes into the rest bag
     // (`emitChildField`'s rule) — no named Go field for `bf_with_props` to
-    // override, so the call stays the bare shared-instance reference.
-    expect(template).toContain('{{template "Badge" $.BadgeSlot0}}')
+    // target, so it never emits that helper. #3062: it IS still delivered,
+    // through `bf_with_bag`, onto every render-consulted bag field — `Rest`
+    // (a `rest.x` member read) AND `Spread_0` (Badge's OWN `{...rest}`
+    // element spread onto its root) — since patching only one would leave
+    // the other, whichever the child's render actually reads, stale.
+    expect(template).toContain(
+      '{{template "Badge" (bf_with_bag (bf_with_bag $.BadgeSlot0 "Rest" "tone" .Label) "Spread_0" "tone" .Label)}}',
+    )
     expect(template).not.toContain('bf_with_props')
   })
 })

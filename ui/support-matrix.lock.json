@@ -2467,15 +2467,9 @@
           ]
         },
         "go-template": {
-          "pass": 268,
+          "pass": 269,
           "total": 291,
           "gaps": [
-            {
-              "fixture": "composite-row-child-rest-bag-prop",
-              "limitations": [
-                "loop-row-rest-bag-prop-override"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -3883,15 +3877,9 @@
           ]
         },
         "go-template": {
-          "pass": 385,
+          "pass": 386,
           "total": 413,
           "gaps": [
-            {
-              "fixture": "composite-row-child-rest-bag-prop",
-              "limitations": [
-                "loop-row-rest-bag-prop-override"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -6421,15 +6409,9 @@
           ]
         },
         "go-template": {
-          "pass": 221,
+          "pass": 222,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "composite-row-child-rest-bag-prop",
-              "limitations": [
-                "loop-row-rest-bag-prop-override"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
