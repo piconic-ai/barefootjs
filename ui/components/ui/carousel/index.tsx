@@ -77,10 +77,18 @@ interface CarouselProps extends HTMLBaseAttributes {
 
 function Carousel(props: CarouselProps) {
   const orientation = createMemo(() => props.orientation ?? 'horizontal')
-  // Initial values are the resting state of the default options (first
-  // slide, no loop): prev cannot scroll, next can. SSR bakes the same
-  // state into the buttons' `disabled` attributes, so hydration only
-  // changes them once embla has measured something different.
+  // Initial values are the resting state of a carousel on its first slide
+  // with the default options (no loop): prev cannot scroll, next can. SSR
+  // bakes the same state into the buttons' `disabled` attributes, so
+  // hydration only changes them once embla has measured something
+  // different. The server cannot know the slide count (children are opaque
+  // at SSR), so this is a choice between the two pre-hydration states: a
+  // carousel exists to move between several slides, so the multi-slide
+  // state is the one SSR renders; a single-slide (or empty) carousel gets
+  // its Next button disabled by embla's first `updateButtons` on init,
+  // exactly as the multi-slide case used to get its Next button enabled.
+  // Neither button scrolls before embla mounts, so no-JS delivery is not a
+  // goal these attributes serve.
   const [canScrollPrev, setCanScrollPrev] = createSignal(false)
   const [canScrollNext, setCanScrollNext] = createSignal(true)
   let emblaApi: EmblaCarouselType | undefined
