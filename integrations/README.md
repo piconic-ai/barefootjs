@@ -207,3 +207,12 @@ processes a command starts as children (e.g. `php artisan serve` spawning
 It applies to every image rather than only the ones that need it today, so
 whether a runtime is safe as PID 1 is never a per-integration judgement call
 — `integrations/shared/lib/__tests__/container-init.test.ts` enforces it.
+
+The one exception is the two Puma images (`rails`, `sinatra`), listed in that
+test's `RUNS_WITHOUT_INIT`. After deploys that rolled out their tini images,
+the Container started answering every request with 500 "The container is not
+listening in the TCP address 10.0.0.1:8080" — treating the instance as
+healthy while Puma no longer listened — once for over two hours. It did not
+reproduce locally, where SIGTERM to tini stops Puma and the container exits,
+so the cause is unknown. Puma traps `SIGTERM` itself, so as PID 1 it still
+stops on `sleepAfter`; they stay off tini until the cause is understood.

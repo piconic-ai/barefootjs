@@ -19,7 +19,6 @@ RUN bundle config set --local without 'development' \
  && bundle install
 
 FROM ruby:3.3-slim
-RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -r -s /bin/false app
 WORKDIR /app
 
@@ -38,9 +37,6 @@ ENV BASE_PATH=/integrations/rails
 ENV RAILS_ENV=production
 EXPOSE 8080
 USER app
-# Run the server under an init so the Container's SIGTERM actually stops it
-# -- see "Why production images run under tini" in integrations/README.md.
-ENTRYPOINT ["tini", "-g", "--"]
 # Puma loads config.ru directly (which boots config/environment) — mirrors the
 # Sinatra example's Dockerfile invoking puma directly rather than going through
 # `bin/rails server`.
