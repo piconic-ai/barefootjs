@@ -21,7 +21,13 @@ export class RailsContainer extends Container<Env> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const id = env.RAILS_CONTAINER.idFromName('singleton')
+    // Not 'singleton': the instance under that name got stuck after an idle
+    // stop -- the Durable Object kept treating its container as running and
+    // healthy while nothing listened on 8080 (500 "The container is not
+    // listening"), and its alarm loop no longer ran to resync it. A copy of
+    // this worker with the same image does not reproduce it, so move rails
+    // onto a fresh Durable Object + container instance.
+    const id = env.RAILS_CONTAINER.idFromName('singleton-2')
     const stub = env.RAILS_CONTAINER.get(id) as unknown as { fetch: typeof fetch }
     return withCacheControl(request, await stub.fetch(request))
   },
