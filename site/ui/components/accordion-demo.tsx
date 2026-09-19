@@ -61,7 +61,7 @@ export function AccordionAsChildDemo() {
     <div>
       <Accordion>
         <AccordionItem value="custom" open={openItem() === 'custom'} onOpenChange={(v) => setOpenItem(v ? 'custom' : null)}>
-          <AccordionTrigger asChild>
+          <AccordionTrigger asChild open={openItem() === 'custom'}>
             <button
               type="button"
               data-testid="accordion-aschild-trigger"

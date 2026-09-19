@@ -3277,51 +3277,59 @@ export function initAccordionAsChildDemo(__scope, _p = {}) {
       }
       __l[0] = __x }
     }
+    const [__AccordionTrigger_s0El] = $c(__scope, 's0')
+    if (__AccordionTrigger_s0El) {
+      { const __x = openItem() === 'custom'
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        if (__m[1] ??= __AccordionTrigger_s0El.hasAttribute('open')) __AccordionTrigger_s0El.open = !!(__x)
+      }
+      __l[1] = __x }
+    }
     const [__AccordionContent_s1El] = $c(__scope, 's1')
     if (__AccordionContent_s1El) {
       { const __x = openItem() === 'custom'
-      if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        if (__m[1] ??= __AccordionContent_s1El.hasAttribute('open')) __AccordionContent_s1El.open = !!(__x)
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        if (__m[2] ??= __AccordionContent_s1El.hasAttribute('open')) __AccordionContent_s1El.open = !!(__x)
       }
-      __l[1] = __x }
+      __l[2] = __x }
     }
     const [__AccordionItem_s5El] = $c(__scope, 's5')
     if (__AccordionItem_s5El) {
       { const __x = openItem() === 'standard'
-      if (!(2 in __l) || !Object.is(__l[2], __x)) {
-        if (__m[2] ??= __AccordionItem_s5El.hasAttribute('open')) __AccordionItem_s5El.open = !!(__x)
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+        if (__m[3] ??= __AccordionItem_s5El.hasAttribute('open')) __AccordionItem_s5El.open = !!(__x)
       }
-      __l[2] = __x }
+      __l[3] = __x }
     }
     const [__AccordionTrigger_s3El] = $c(__scope, 's3')
     if (__AccordionTrigger_s3El) {
       { const __x = openItem() === 'standard'
-      if (!(3 in __l) || !Object.is(__l[3], __x)) {
-        if (__m[3] ??= __AccordionTrigger_s3El.hasAttribute('open')) __AccordionTrigger_s3El.open = !!(__x)
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
+        if (__m[4] ??= __AccordionTrigger_s3El.hasAttribute('open')) __AccordionTrigger_s3El.open = !!(__x)
       }
-      __l[3] = __x }
+      __l[4] = __x }
     }
     const [__AccordionContent_s4El] = $c(__scope, 's4')
     if (__AccordionContent_s4El) {
       { const __x = openItem() === 'standard'
-      if (!(4 in __l) || !Object.is(__l[4], __x)) {
-        if (__m[4] ??= __AccordionContent_s4El.hasAttribute('open')) __AccordionContent_s4El.open = !!(__x)
+      if (!(5 in __l) || !Object.is(__l[5], __x)) {
+        if (__m[5] ??= __AccordionContent_s4El.hasAttribute('open')) __AccordionContent_s4El.open = !!(__x)
       }
-      __l[4] = __x }
+      __l[5] = __x }
     }
   }) }
 
   // Initialize child components with props
   initChild('Accordion', _s6, {})
   initChild('AccordionItem', _s2, { value: "custom", get open() { return openItem() === 'custom' }, onOpenChange: (v) => setOpenItem(v ? 'custom' : null) })
-  initChild('AccordionTrigger', _s0, { asChild: true })
+  initChild('AccordionTrigger', _s0, { asChild: true, get open() { return openItem() === 'custom' } })
   initChild('AccordionContent', _s1, { get open() { return openItem() === 'custom' } })
   initChild('AccordionItem', _s5, { value: "standard", get open() { return openItem() === 'standard' }, onOpenChange: (v) => setOpenItem(v ? 'standard' : null) })
   initChild('AccordionTrigger', _s3, { get open() { return openItem() === 'standard' } })
   initChild('AccordionContent', _s4, { get open() { return openItem() === 'standard' } })
 }
 
-hydrate('AccordionAsChildDemo', { init: initAccordionAsChildDemo, template: (_p) => `<div>${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "custom", open: (null) === 'custom', children: `${renderChild('AccordionTrigger', {asChild: true, children: `<button type="button" data-testid="accordion-aschild-trigger" class="flex flex-1 items-center justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"> Custom Trigger </button>`}, undefined, 's0')}${renderChild('AccordionContent', {open: (null) === 'custom', children: ` This item uses a custom trigger element via asChild. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "standard", open: (null) === 'standard', children: `${renderChild('AccordionTrigger', {open: (null) === 'standard', children: ` Standard Trigger `}, undefined, 's3')}${renderChild('AccordionContent', {open: (null) === 'standard', children: ` This item uses the default button trigger. `}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}<span data-testid="accordion-aschild-state" bf="s8">${(null) === 'custom' ? `<!--bf-cond-start:s7-->${escapeText('open')}<!--bf-cond-end:s7-->` : `<!--bf-cond-start:s7-->${escapeText('closed')}<!--bf-cond-end:s7-->`}</span></div>` })
+hydrate('AccordionAsChildDemo', { init: initAccordionAsChildDemo, template: (_p) => `<div>${renderChild('Accordion', {children: `${renderChild('AccordionItem', {value: "custom", open: (null) === 'custom', children: `${renderChild('AccordionTrigger', {asChild: true, open: (null) === 'custom', children: `<button type="button" data-testid="accordion-aschild-trigger" class="flex flex-1 items-center justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"> Custom Trigger </button>`}, undefined, 's0')}${renderChild('AccordionContent', {open: (null) === 'custom', children: ` This item uses a custom trigger element via asChild. `}, undefined, 's1')}`}, undefined, 's2')}${renderChild('AccordionItem', {value: "standard", open: (null) === 'standard', children: `${renderChild('AccordionTrigger', {open: (null) === 'standard', children: ` Standard Trigger `}, undefined, 's3')}${renderChild('AccordionContent', {open: (null) === 'standard', children: ` This item uses the default button trigger. `}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}<span data-testid="accordion-aschild-state" bf="s8">${(null) === 'custom' ? `<!--bf-cond-start:s7-->${escapeText('open')}<!--bf-cond-end:s7-->` : `<!--bf-cond-start:s7-->${escapeText('closed')}<!--bf-cond-end:s7-->`}</span></div>` })
 export function AccordionAsChildDemo(_p, __bfKey) { return createComponent('AccordionAsChildDemo', _p, __bfKey) }
 export function initAccordionMultipleOpenDemo(__scope, _p = {}) {
   if (!__scope) return
