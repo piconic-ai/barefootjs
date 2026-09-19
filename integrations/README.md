@@ -182,3 +182,28 @@ Each Go adapter is its own Cloudflare Worker + Container, routed on the
 `barefootjs.dev` zone via its `wrangler.toml` (e.g.
 `barefootjs.dev/integrations/gin*`), and deployed by the matching
 `deploy-integrations-*` job in `.github/workflows/deploy.yml`.
+
+### Why production images run under `tini`
+
+Every production `Dockerfile` installs [`tini`](https://github.com/krallin/tini)
+and starts the server through `ENTRYPOINT ["tini", "-g", "--"]`. The
+`Container` class stops an idle instance (`sleepAfter`) by sending it
+`SIGTERM`, and Linux never applies a signal's default action to PID 1: a
+signal reaches PID 1 only if that process installed a handler for it.
+Wrangler's `[[containers]]` config has no equivalent of `docker run --init`,
+so without `tini` the server itself is PID 1, and a server that doesn't
+handle `SIGTERM` on its own (a plain Rust binary, Werkzeug, Django's
+`runserver --noreload`, `php -S`) ignores it and keeps running until the
+platform's `SIGKILL` up to 15 minutes later — billed as Container and Durable
+Object time the whole while, since the Durable Object stays awake for as long
+as its container runs.
+
+Under `tini` the server is PID 1's child, where `SIGTERM`'s default action
+(exit) applies; runtimes that install their own handler (the JVM, Go, Puma,
+Starman, Uvicorn) still receive it and shut down gracefully as before. `-g`
+sends the signal to the server's whole process group, so it also reaches
+processes a command starts as children (e.g. `php artisan serve` spawning
+`php -S`). `tini` also reaps orphaned zombie processes, PID 1's other duty.
+It applies to every image rather than only the ones that need it today, so
+whether a runtime is safe as PID 1 is never a per-integration judgement call
+— `integrations/shared/lib/__tests__/container-init.test.ts` enforces it.
