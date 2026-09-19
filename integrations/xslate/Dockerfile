@@ -29,6 +29,7 @@ RUN for i in 1 2 3; do \
     exit 1
 
 FROM perl:5.40-slim
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -r -s /bin/false app
 WORKDIR /app
 
@@ -44,4 +45,7 @@ ENV BASE_PATH=/integrations/xslate
 ENV PLACK_ENV=production
 EXPOSE 8080
 USER app
+# Run the server under an init so the Container's SIGTERM actually stops it
+# -- see "Why production images run under tini" in integrations/README.md.
+ENTRYPOINT ["tini", "-g", "--"]
 CMD ["starman", "--listen", ":8080", "--workers", "5", "app.psgi"]
