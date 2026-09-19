@@ -7,8 +7,9 @@
  * renders (`title="one"`, text `one`), whatever the declared type argument
  * is. A template adapter that derives the field's type from the union and
  * seeds it with its zero value instead of the literal renders `title=""`
- * and empty text — the `optional-typed-signal-initial-value-dropped`
- * registry entry, pinned by that adapter's `renderDivergences`.
+ * and empty text — go-template did until it learned to unwrap the
+ * `T | undefined` union for the literal seed (`unwrapNullableUnion`), so
+ * this fixture is that fix's regression test on every adapter.
  *
  * Interactions cycle the value `one` → `undefined` → `one`, so hydration
  * is checked both ways: the attribute and text come back after the

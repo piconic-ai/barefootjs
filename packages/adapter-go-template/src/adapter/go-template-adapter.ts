@@ -2748,9 +2748,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
                   propFallbackVars,
                 )
                 if (testGo !== null && consequentGo !== null) {
+                  // Go's `if` takes a `bool` and has no truthiness: a test that
+                  // resolves to anything but a bool literal (a string/number
+                  // signal seed, `tag={label() ? x : undefined}` over
+                  // `createSignal('x')` → `"x"`; a prop field of another
+                  // type) would embed `if "x" {` and fail to compile. Mirror
+                  // `lowerTernaryTest` (`expr/url-builder.ts`): a resolved
+                  // bool literal passes through, everything else goes through
+                  // `bf.Truthy` — JS `Boolean(x)` over string / number / bool
+                  // / nil, the same coercion the spread-bag conditionals use.
+                  const condGo = testGo === 'true' || testGo === 'false' ? testGo : `bf.Truthy(${testGo})`
                   emitChildField(
                     prop.name,
-                    `func() interface{} { if ${testGo} { return ${consequentGo} }; return nil }()`,
+                    `func() interface{} { if ${condGo} { return ${consequentGo} }; return nil }()`,
                   )
                   break
                 }
