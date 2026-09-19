@@ -1937,6 +1937,70 @@ export function Host(props: { label: string }) {
       expect(types).not.toContain('return in.Label')
       expect(types).not.toContain('func() interface{}')
     })
+
+    // The ternary TEST lands in a Go `if`, which takes a `bool` and has no
+    // truthiness: a boolean signal seed (`true`) passes through, anything
+    // else — a string/number signal seed, a prop field — is coerced with
+    // `bf.Truthy` (JS `Boolean(x)`), mirroring `lowerTernaryTest`. Without
+    // the coercion `if "x" {` fails to compile.
+    test('a boolean test operand is the Go condition as-is', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const types = adapter.generateTypes(compileToIR(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [shown, setShown] = createSignal(true)
+  return <div><Tag variant="a" tag={shown() ? label : undefined} /></div>
+}
+`, adapter))!
+      expect(types).toContain('if true { return in.Label }')
+    })
+
+    test('a non-boolean test operand is coerced through bf.Truthy', () => {
+      const adapter = new GoTemplateAdapter()
+      adapter.registerChildComponentShape(compileToIR(childSource, adapter))
+      const types = adapter.generateTypes(compileToIR(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [tag, setTag] = createSignal('x')
+  return <div><Tag variant="a" tag={tag() ? label : undefined} /></div>
+}
+`, adapter))!
+      expect(types).toContain('if bf.Truthy("x") { return in.Label }')
+      expect(types).not.toContain('if "x" {')
+    })
+
+    test('e2e: a string-tested ternary rest-bag prop compiles and renders on go run', async () => {
+      try {
+        const html = await renderGoTemplateComponent({
+          source: `
+"use client"
+import { createSignal } from '@barefootjs/client'
+import { Tag } from './tag'
+export function Host({ label }: { label: string }) {
+  const [tag, setTag] = createSignal('x')
+  return <div><Tag variant="a" tag={tag() ? label : undefined} /></div>
+}
+`.trimStart(),
+          adapter: new GoTemplateAdapter(),
+          components: { './tag': childSource.trimStart() },
+          props: { label: 'hello' },
+        })
+        // `'x'` is truthy, so the consequent (the `label` prop) reaches the
+        // child's rest bag and renders as the attribute.
+        expect(html).toContain('tag="hello"')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping #3060 string-test e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
   })
 
   describe('#3061 nullable-union signal seed', () => {
