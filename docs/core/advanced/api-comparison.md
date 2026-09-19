@@ -36,8 +36,14 @@ or fragile) · 2 niche (an idiom covers it) · 1 internal (tooling / framework-i
 authors never write it).
 
 Usage counts (`ui=`/`site=`/`integrations=`) are file counts of a case-sensitive,
-whole-word match over `ui/components` (tests excluded), `site` (tests, `e2e/`, `dist/` and
-`node_modules/` excluded) and `integrations` (tests excluded), re-measured 2026-09-19.
+whole-word match over `.ts`/`.tsx` source files only — Markdown, plain text and
+backend-language files (for example the `app.py` comments that mention `createSearchParams`)
+are not counted — in `ui/components` (tests excluded), `site` (tests, `e2e/`, `dist/` and
+`node_modules/` excluded) and `integrations` (tests excluded), re-measured 2026-09-19:
+
+```sh
+grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__tests__|e2e|dist|node_modules)/|\.test\.|\.spec\.' | wc -l
+```
 
 ## Reactive primitives
 
