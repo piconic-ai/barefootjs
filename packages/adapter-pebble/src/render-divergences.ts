@@ -26,4 +26,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`bf.is_element`, backed by a new Java port of the shared BarefootJS
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // A component-body const bound to an opaque call (`const label =
+  // makeLabel()`) and invoked in text position lowers to a bare template
+  // variable named after the const, with no diagnostic — the reference runs
+  // the accessor at render time. Escape twin:
+  // `opaque-local-accessor-call-client`.
+  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+}

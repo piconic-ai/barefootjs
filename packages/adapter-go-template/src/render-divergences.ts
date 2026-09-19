@@ -54,7 +54,14 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // template position (arrow-valued const OR `function` declaration) now
 // refuses loudly with BF101 at compile time instead of silently crashing
 // `html/template` at render time — see `conformance-pins.ts`.
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // A component-body const bound to an opaque call (`const label =
+  // makeLabel()`) and invoked in text position lowers to a bare template
+  // variable named after the const, with no diagnostic — the reference runs
+  // the accessor at render time. Escape twin:
+  // `opaque-local-accessor-call-client`.
+  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+}
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
 // `ParamInfo.defaultValue` directly (the analyzer overlays it onto
