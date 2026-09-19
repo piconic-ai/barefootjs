@@ -76,7 +76,6 @@ export {
   createPortal,
   isSSRPortal,
   findSiblingSlot,
-  cleanupPortalPlaceholder,
   trackPosition,
   type Portal,
   type PortalChildren,

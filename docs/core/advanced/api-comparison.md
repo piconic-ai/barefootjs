@@ -79,7 +79,7 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 | `<Switch>` / `<Match>` | ternary chain | ternary chain | partial | 2 | |
 | `<Dynamic component>` | variable as tag | — (`asChild` / `Slot` cover most uses) | none | 2 | |
 | `<ErrorBoundary>` / `catchError` | Error Boundary | — | none | 3 | SSR errors are the backend's; only client effect / handler errors remain |
-| `<Portal>` | `createPortal` (ReactDOM) | [`createPortal`](./api-reference.md#createportal) Beta + [`isSSRPortal`](./api-reference.md#isssrportal) / [`findSiblingSlot`](./api-reference.md#findsiblingslot) | partial | 4 | imperative (move a `ref` element to `body`); SSR leaves a placeholder. [`cleanupPortalPlaceholder`](./api-reference.md#cleanupportalplaceholder) (the placeholder's own cleanup) is Beta too, with zero in-repo callers. uses 14 / 13 / 6 / 0 |
+| `<Portal>` | `createPortal` (ReactDOM) | [`createPortal`](./api-reference.md#createportal) Beta + [`isSSRPortal`](./api-reference.md#isssrportal) / [`findSiblingSlot`](./api-reference.md#findsiblingslot) | partial | 4 | imperative (move a `ref` element to `body`); SSR leaves an inert placeholder that needs no cleanup. uses 14 / 13 / 6 |
 | `<Suspense fallback>` | `<Suspense fallback>` | [`<Async fallback>`](./api-reference.md#async) Beta | partial | 4 | Solid: client boundary on suspense-tracked reads. BF: SSR streaming only, compiled away to the adapter primitive; client-side boundary is layer 1 of [`spec/async.md`](../../../spec/async.md) |
 | `<SuspenseList>` | experimental | — | none | 1 | |
 | `lazy()` | `React.lazy` | — (Vite dynamic import) | partial | 3 | islands split per entry anyway |

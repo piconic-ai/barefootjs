@@ -156,29 +156,6 @@ export function findSiblingSlot(
 }
 
 /**
- * Remove the SSR placeholder left behind for the portal with this id.
- * Browser-only.
- *
- * The other half of the SSR portal story `isSSRPortal` opens: the server
- * leaves a placeholder where the portaled element used to be, and hydration
- * has to clear it. Taught in
- * [Portals → SSR Portal Detection](../../docs/core/components/portals.md).
- *
- * @example
- * ```tsx
- * "use client"
- * // After hydration, drop the placeholder the server rendered in place.
- * cleanupPortalPlaceholder(portalId)
- * ```
- *
- * @since 0.1.0
- * @stability beta
- */
-export function cleanupPortalPlaceholder(_portalId: string): void {
-  return browserOnly('cleanupPortalPlaceholder')
-}
-
-/**
  * Keep a floating element positioned while open: runs `update` now, on capture-phase scroll and on resize, and once more on dispose. Browser-only.
  *
  * @example

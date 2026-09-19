@@ -7,7 +7,7 @@
  * API inspired by React's createPortal(children, domNode).
  */
 
-import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '@barefootjs/shared'
+import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER } from '@barefootjs/shared'
 import { parseHTML } from './component.ts'
 import { getPortalScopeId } from './scope.ts'
 
@@ -136,13 +136,6 @@ export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElem
   if (!ownerScope) return null
 
   return ownerScope.querySelector(slotSelector) as HTMLElement | null
-}
-
-export function cleanupPortalPlaceholder(portalId: string): void {
-  const placeholder = document.querySelector(
-    `template[${BF_PORTAL_PLACEHOLDER}="${portalId}"]`
-  )
-  placeholder?.remove()
 }
 
 /**

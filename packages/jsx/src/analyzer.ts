@@ -2132,7 +2132,7 @@ const CLIENT_EXPORTS = new Set([
   'createRoot', 'onCleanup', 'onMount', 'untrack', 'batch', 'splitProps',
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
-  'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
+  'createPortal', 'isSSRPortal', 'findSiblingSlot',
   // Floating-element position tracking (#2848) — same runtime-only shape
   // as the portal entries above.
   'trackPosition',
@@ -4398,7 +4398,6 @@ export const BROWSER_ONLY_CLIENT_APIS = new Set([
   'createPortal',
   'isSSRPortal',
   'findSiblingSlot',
-  'cleanupPortalPlaceholder',
   'trackPosition',
 ])
 
