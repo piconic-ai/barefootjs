@@ -8,12 +8,13 @@
  * - TS type annotations in the block body are stripped from the client
  *   bundle (the old raw-slice carrier spliced them verbatim — invalid JS).
  *
- * Byte-level SSR/CSR parity for flatMap block bodies is NOT pinned at the
- * conformance layer: the CSR string render and the Hono rawBody SSR have
- * pre-existing structural asymmetries (leaf `data-key` emitted client-side
- * only, with an unescaped attribute value; slot comment markers client-side
- * only) that predate the unification and need their own investigation —
- * see the known-limitation issue referenced in the changeset.
+ * The leaf `data-key` rides BOTH renders of a flatMap leaf: the CSR string
+ * template (`h:` descriptor HTML, `escapeAttr`-wrapped) and the Hono rawBody
+ * SSR (the leaf's `key` attribute is rewritten to `data-key={String(key)}`
+ * in the branded source text). Hydration therefore finds the attribute
+ * already in place instead of adding it, which is what the browser oracle
+ * (`tag-cloud` fixture) pins. Slot comment markers inside flatMap leaves
+ * remain client-side only.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -165,7 +166,7 @@ export function F() {
     const cj = r.files.find(f => f.type === 'clientJs')!.content
     // Flattened source with descriptor leaves…
     expect(cj).toMatch(/mapArray\(\(\) => \(todos\(\)\)\.flatMap\(\(t\) => \{/)
-    expect(cj).toMatch(/\(\{ k: \(`\$\{t\.id\}:\$\{tag\}`\), h: `<li>/)
+    expect(cj).toMatch(/\(\{ k: \(`\$\{t\.id\}:\$\{tag\}`\), h: `<li data-key="\$\{escapeAttr\(String\(\(`\$\{t\.id\}:\$\{tag\}`\)\)\)\}">/)
     // …keyed on the leaf key with index fallback…
     expect(cj).toMatch(/\(__bfD, __bfI\) => String\(__bfD\.k \?\? __bfI\)/)
     // …renderItem builds from the descriptor HTML and patches on change…
@@ -174,8 +175,9 @@ export function F() {
     // …and the statements-before-return are NOT duplicated as a renderItem
     // preamble (the segments carrier is the single door).
     expect(cj).not.toMatch(/return \[\];* if \(__existing\)/)
-    // Leaf data-key never rides the string templates — mapArray stamps it.
-    expect(cj).not.toMatch(/data-key/)
+    // The leaf key is rendered as an escaped `data-key` in the descriptor HTML
+    // (SSR emits the same attribute, so hydration never has to add it).
+    expect(cj).toMatch(/data-key="\$\{escapeAttr\(/)
   })
 
   test('a leaf with an event handler refuses loudly (no silent dead DOM)', () => {

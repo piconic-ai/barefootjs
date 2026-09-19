@@ -37,6 +37,7 @@ import { ORACLE_QUARANTINE, type OracleKind } from './oracle-quarantine'
 import { mutationQuarantineEntry } from './mutation-quarantine'
 import { runIdempotenceOracle, runSnapOracle, runThreePointOracle } from './oracle-core'
 import { actionStepsOf } from './interaction-runner'
+import { IDEMPOTENCE_EXCLUDED } from './oracle-exclusions'
 import type { ManifestEntry } from '../scripts/mutation-generate'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -147,7 +148,12 @@ test.describe('mutation sweep', () => {
     })
 
     if (actionStepsOf(fixture.interactions).length === 0) continue
+    // A mutant replays its base fixture's action steps on the same host
+    // page, so a base fixture excluded from this oracle (`carousel`'s
+    // pointer-position-dependent drag) is excluded for its mutants too.
+    const idempotenceExcludeReason = IDEMPOTENCE_EXCLUDED.get(entry.fixtureId)
     test(`[idempotence] ${label}: replayed actions agree between hydrated and csr-mount`, async ({ page }) => {
+      test.skip(!!idempotenceExcludeReason, idempotenceExcludeReason)
       test.skip(
         baseAlreadyQuarantined(entry.fixtureId, 'idempotence'),
         `base fixture already quarantined for 'idempotence' in oracle-quarantine.ts`,

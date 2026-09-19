@@ -32,7 +32,7 @@ import {
   type PreambleSegment,
   type PreambleRegionSource,
   type PreambleValueDeclaration,
-  tsxSourceText,
+  tsxSourceText, type TsxSourceText,
   type SourceLocation,
   type TypeInfo,
   type OriginInfo,
@@ -5552,11 +5552,16 @@ function buildFlatMapCallback(
   // the map-preamble collector.
   const leafSpans: Array<{ start: number; end: number }> = []
   const leafIrs: IRNode[] = []
+  const leafKeyAttrs: ts.JsxAttribute[] = []
   let refusalNode: ts.Node | undefined
   const collectJsx = (n: ts.Node, underTemplate: boolean): void => {
     if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) {
       if (underTemplate) refusalNode ??= n
       leafSpans.push({ start: n.getStart(ctx.sourceFile), end: n.getEnd() })
+      if (!ts.isJsxFragment(n)) {
+        const keyAttr = findKeyJsxAttribute(ts.isJsxElement(n) ? n.openingElement : n)
+        if (keyAttr) leafKeyAttrs.push(keyAttr)
+      }
       const ir = transformNode(n as ts.Expression, ctx)
       leafIrs.push(ir ?? { type: 'text', value: '', loc: getSourceLocation(n, ctx.sourceFile, ctx.filePath) })
       return
@@ -5662,8 +5667,50 @@ function buildFlatMapCallback(
   return {
     params: `(${paramsText})`,
     segments,
-    rawBody: tsxSourceText(body.getText(ctx.sourceFile)),
+    rawBody: flatMapRawBodyWithLeafKeys(body, leafKeyAttrs, ctx.sourceFile),
   }
+}
+
+/**
+ * The raw TSX body a JSX-runtime SSR adapter evaluates, with every keyed
+ * leaf's reconciliation attribute made explicit: ` data-key={String(<key>)}`
+ * spliced in right after the leaf's own `key={…}` attribute. A JSX runtime
+ * strips `key` from the rendered HTML, so without this the server row
+ * carries no `data-key` while the client runtime stamps one on every row it
+ * adopts or creates (`mapArray`'s `BF_KEY` default — the descriptor path
+ * never passes a depth-suffixed name) — a pre-/post-hydration divergence on
+ * exactly the attribute reconciliation keys on. `String(...)` matches the
+ * client's `String(__bfD.k ?? __bfI)` stamping, and the runtime escapes the
+ * value like any other attribute. Position-based splice over the AST's own
+ * attribute spans — the body text is never pattern-matched.
+ */
+function flatMapRawBodyWithLeafKeys(
+  body: ts.Block | ts.Expression,
+  leafKeyAttrs: readonly ts.JsxAttribute[],
+  sourceFile: ts.SourceFile,
+): TsxSourceText {
+  const text = body.getText(sourceFile)
+  if (leafKeyAttrs.length === 0) return tsxSourceText(text)
+  const bodyStart = body.getStart(sourceFile)
+  const insertions = leafKeyAttrs
+    .map((attr) => {
+      const init = attr.initializer
+      const keyText = init === undefined
+        ? 'true'
+        : ts.isJsxExpression(init)
+          ? (init.expression?.getText(sourceFile) ?? 'undefined')
+          : init.getText(sourceFile)
+      return { at: attr.getEnd() - bodyStart, text: ` ${BF_KEY}={String(${keyText})}` }
+    })
+    .sort((a, b) => a.at - b.at)
+  let out = ''
+  let cursor = 0
+  for (const { at, text: ins } of insertions) {
+    out += text.slice(cursor, at) + ins
+    cursor = at
+  }
+  out += text.slice(cursor)
+  return tsxSourceText(out)
 }
 
 /**
