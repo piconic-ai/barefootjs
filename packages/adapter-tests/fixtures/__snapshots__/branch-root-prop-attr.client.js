@@ -47,20 +47,21 @@ export function initBranchRootPropAttr(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setVariant(v => (v === 'a' ? 'b' : 'a')) })
 
   // Reactive prop bindings
+  { const __m = []
   createEffect(() => {
     if (_s0) {
-      _s0.setAttribute('variant', String(variant()))
+      if (__m[0] ??= _s0.hasAttribute('variant')) { const __v = variant(); if (__v != null) _s0.setAttribute('variant', String(__v)); else _s0.removeAttribute('variant') }
     }
-  })
+  }) }
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__VariantTag_s0El] = $c(__scope, 's0')
     if (__VariantTag_s0El) {
       { const __x = variant()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __VariantTag_s0El.setAttribute('variant', String(__v)); else __VariantTag_s0El.removeAttribute('variant') }
+        if (__m[0] ??= __VariantTag_s0El.hasAttribute('variant')) { const __v = __x; if (__v != null) __VariantTag_s0El.setAttribute('variant', String(__v)); else __VariantTag_s0El.removeAttribute('variant') }
       }
       __l[0] = __x }
     }

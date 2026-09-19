@@ -106,41 +106,44 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'SSR has the placeholder option selected (selectedIndex 0); the hydration controlled-value effect assigns the out-of-range value and the browser resolves it to selectedIndex -1.',
     limitation: 'select-out-of-range-selected-index',
   },
-  'branch-root-prop-attr': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The child-prop mirror effect adds variant="a" to the child root only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
-  },
   // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the
   // pair bimodal on the `combobox-empty` row's `hidden` attribute — the
   // same rAF-deferred write as `command` (#2827), fixed the same way. The
-  // remaining oracles are the #2715 placeholder mirror.
+  // remaining oracles are the `ComboboxValue`/`SelectValue` `ref` effect
+  // that imperatively adds `data-placeholder` to the trigger on hydrate —
+  // originally miscategorized here as an instance of the compiler's
+  // named-prop child-root mirror; once that mirror was fixed these rows
+  // were the survivors, still failing for the hand-written-effect reason,
+  // which is the registry's `ref-effect-attr-state-ssr` mechanism (an
+  // attribute whose real state is computed in a `ref` callback never
+  // reaches SSR), the same entry `accordion` / `radio-group` / `command`
+  // cite.
   combobox: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
+      'The ComboboxValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it.',
+    limitation: 'ref-effect-attr-state-ssr',
   },
   select: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored placeholder attribute appears only after hydration; SSR markup never carries it (same shape as combobox).',
-    limitation: 'child-prop-mirror-attr-ssr',
+      'The SelectValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it (same shape as combobox).',
+    limitation: 'ref-effect-attr-state-ssr',
   },
-  pagination: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'The mirrored isactive="true" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
-  },
+  // The mirrored `sorted` attribute this row used to record is fixed; what
+  // the quarantine masked underneath is a second, unrelated mechanism: each
+  // keyed row's hydration effect rewrites the forwarded cell text with
+  // `textContent`, which discards the `<!--bf:^sN-->…<!--/-->` slot markers
+  // the server emitted around `{payment.id}` etc. Measured on the base
+  // commit with the quarantine bypassed: both diffs were present; only the
+  // marker one remains.
   'data-table': {
     oracles: ['snap', 'three-point'],
     reason:
-      'The mirrored sorted="false" named-prop attribute appears only after hydration; SSR markup never carries it.',
-    limitation: 'child-prop-mirror-attr-ssr',
+      'Row hydration rewrites each forwarded cell text with textContent, dropping the <!--bf:^sN--> slot markers SSR emitted; the text itself is unchanged.',
+    limitation: 'loop-row-child-text-children-markers-dropped',
   },
   // Registry limitation `ref-callback-portal-content-inline-at-ssr`
   // (direction corrected 2026-09-18 — `assertSnapshotsAgree` reports

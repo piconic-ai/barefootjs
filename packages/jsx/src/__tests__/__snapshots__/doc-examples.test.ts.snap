@@ -2758,7 +2758,7 @@ export function initExample(__scope, _p = {}) {
   })
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Child_s0El] = $c(__scope, 's0')
     if (__Child_s0El) {
@@ -3375,7 +3375,7 @@ export function initExample(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__Dialog_s9El] = $c(__scope, 's9')
     if (__Dialog_s9El) {
@@ -4249,13 +4249,13 @@ export function initProductPage(__scope, _p = {}) {
 
 
   // Reactive child component props
-  { const __l = []
+  { const __l = []; const __m = []
   createEffect(() => {
     const [__ReviewStars_s5El] = $c(__scope, 's5')
     if (__ReviewStars_s5El) {
       { const __x = (_p.product ?? {}).rating
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
+        if (__m[0] ??= __ReviewStars_s5El.hasAttribute('rating')) { const __v = __x; if (__v != null) __ReviewStars_s5El.setAttribute('rating', String(__v)); else __ReviewStars_s5El.removeAttribute('rating') }
       }
       __l[0] = __x }
     }
@@ -4263,7 +4263,7 @@ export function initProductPage(__scope, _p = {}) {
     if (__AddToCart_s6El) {
       { const __x = (_p.product ?? {}).id
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
+        if (__m[1] ??= __AddToCart_s6El.hasAttribute('productId')) { const __v = __x; if (__v != null) __AddToCart_s6El.setAttribute('productId', String(__v)); else __AddToCart_s6El.removeAttribute('productId') }
       }
       __l[1] = __x }
     }

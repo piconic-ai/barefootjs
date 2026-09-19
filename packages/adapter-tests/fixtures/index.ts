@@ -628,6 +628,13 @@ import { fixture as signalEarlyReturn } from './signal-early-return'
 // ui/badge asChild shape. Pins the one-hop-const lookup lowering (SSR on
 // every adapter) and the live-prop class update (CSR interactions).
 import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
+// #3055 (`child-prop-mirror-attr-ssr`): the child-root prop mirror must
+// write an attribute onto a child component's root only where the
+// child's own render actually puts it there — a prop the child forwards
+// via `{...rest}` keeps updating reactively; a prop it only consumes
+// internally must never appear as an attribute, on SSR or after any
+// number of reactive updates.
+import { fixture as childPropRestForward } from './child-prop-rest-forward'
 // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
 // a conditional return whose default branch is fragment-wrapped — the
 // `fragment-wrap` mutant shape as real source, with its own oracle rows.
@@ -1132,6 +1139,7 @@ export const jsxFixtures: JSXFixture[] = [
   textareaValueSsr,
   signalEarlyReturn,
   branchRootPropAttr,
+  childPropRestForward,
   conditionalReturnFragmentBranch,
   logicalAndZero,
   controlledCheckboxChecked,

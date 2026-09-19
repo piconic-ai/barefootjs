@@ -1230,6 +1230,24 @@
         "text"
       ]
     },
+    "child-prop-rest-forward": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"
@@ -6996,14 +7014,14 @@
     "array-method": 72,
     "arrow": 76,
     "binary": 109,
-    "call": 290,
-    "conditional": 33,
-    "identifier": 412,
-    "index-access": 14,
-    "literal": 327,
+    "call": 291,
+    "conditional": 34,
+    "identifier": 413,
+    "index-access": 15,
+    "literal": 328,
     "logical": 53,
-    "member": 243,
-    "object-literal": 95,
+    "member": 244,
+    "object-literal": 96,
     "template-literal": 31,
     "unary": 30,
     "unsupported": 51
@@ -7044,10 +7062,10 @@
     "binary:===": 55,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 71,
+    "literal:boolean": 72,
     "literal:null": 26,
     "literal:number": 151,
-    "literal:string": 221,
+    "literal:string": 222,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
