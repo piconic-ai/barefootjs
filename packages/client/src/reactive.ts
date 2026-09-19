@@ -66,8 +66,10 @@ export type Memo<T> = Reactive<() => T>
 /**
  * Which kind of subscriber a profiler event is attributed to.
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: profiler plumbing, named only by compiler-emitted
+ * profile-mode code and `bf debug profile`.
+ *
+ * @internal
  */
 export type SubscriberKind = 'effect' | 'memo' | 'root'
 
@@ -78,8 +80,11 @@ export type SubscriberKind = 'effect' | 'memo' | 'root'
  * node was created while profiling was off. The compiler will later emit
  * IR-aligned ids (SR3); until then ids are runtime-assigned counters.
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: profiler plumbing, implemented only by
+ * `createRecordingSink` and handed to `setProfilerSink` by compiler-emitted
+ * profile-mode code and `bf debug profile`.
+ *
+ * @internal
  */
 export interface ProfilerEventSink {
   /** A signal's value changed (post `Object.is` bail). `batched` = inside `batch()`. */
@@ -145,8 +150,10 @@ let subscriberSeq = 0
  * the event stream; production code never calls it, so the sink stays null and
  * the choke points stay free (dev-only instrumentation, #1690).
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: profiler plumbing, called only by compiler-emitted
+ * profile-mode code and `bf debug profile`.
+ *
+ * @internal
  */
 export function setProfilerSink(sink: ProfilerEventSink | null): void {
   profilerSink = sink
@@ -160,8 +167,10 @@ export function setProfilerSink(sink: ProfilerEventSink | null): void {
  * turn onto the events emitted between begin and end. No-op when profiling is
  * off.
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: emitted by the compiler at every event-handler
+ * boundary in profile mode.
+ *
+ * @internal
  */
 export function beginTurn(handlerId: string, loc?: string): void {
   if (profilerSink) profilerSink.turnBegin(handlerId, loc)
@@ -170,8 +179,10 @@ export function beginTurn(handlerId: string, loc?: string): void {
 /**
  * Mark the end of the current interaction turn (#1690, SR3).
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: emitted by the compiler at every event-handler
+ * boundary in profile mode.
+ *
+ * @internal
  */
 export function endTurn(): void {
   if (profilerSink) profilerSink.turnEnd()
@@ -618,6 +629,9 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
  * Create an effect that can be explicitly disposed (unsubscribed from all signals).
  * Used for effects inside conditional branches that need cleanup on branch switch.
  *
+ * Not an authoring API: emitted by the compiler
+ * (`packages/jsx/src/ir-to-client-js`) for branch-scoped effects.
+ *
  * @returns A dispose function that stops the effect and removes it from all signal dependencies.
  *
  * @example
@@ -629,8 +643,7 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
  * dispose()  // stops re-running and unsubscribes from count
  * ```
  *
- * @since 0.1.0
- * @stability alpha
+ * @internal
  */
 export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => void {
   let disposed = false

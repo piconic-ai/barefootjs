@@ -18,8 +18,11 @@ export type ProfilerSubscriberKind = 'effect' | 'memo' | 'root'
 /**
  * The instrumentation points, as a discriminated `type` tag.
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: profiler wire contract, produced only by
+ * `@barefootjs/client`'s `createRecordingSink` for compiler-emitted
+ * profile-mode code and `bf debug profile`.
+ *
+ * @internal
  */
 export type ProfilerEventType =
   | 'signalSet'
@@ -40,8 +43,11 @@ export type ProfilerEventType =
  * than a per-type union so the analyses can scan a homogeneous log; `type`
  * discriminates which fields are populated.
  *
- * @since 0.11.0
- * @stability alpha
+ * Not an authoring API: profiler wire contract, produced only by
+ * `@barefootjs/client`'s `createRecordingSink` for compiler-emitted
+ * profile-mode code and `bf debug profile`.
+ *
+ * @internal
  */
 export interface ProfilerEvent {
   type: ProfilerEventType

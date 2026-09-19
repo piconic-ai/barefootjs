@@ -20,22 +20,17 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`Async()`](#async) | function | 0.15.0 | **Beta** |
 | [`AsyncProps`](#asyncprops) | interface | 0.15.0 | **Beta** |
 | [`batch()`](#batch) | function | 0.1.0 | **Beta** |
-| [`beginTurn()`](#beginturn) | function | 0.11.0 | Alpha |
 | [`CleanupFn`](#cleanupfn) | type | 0.1.0 | **Beta** |
-| [`cleanupPortalPlaceholder()`](#cleanupportalplaceholder) | function | 0.1.0 | **Beta** |
 | [`Context`](#context) | type | 0.1.0 | **Beta** |
 | [`createContext()`](#createcontext) | function | 0.1.0 | **Beta** |
-| [`createDisposableEffect()`](#createdisposableeffect) | function | 0.1.0 | Alpha |
 | [`createEffect()`](#createeffect) | function | 0.1.0 | **Beta** |
 | [`createMemo()`](#creatememo) | function | 0.1.0 | **Beta** |
 | [`createPortal()`](#createportal) | function | 0.1.0 | **Beta** |
-| [`createRecordingSink()`](#createrecordingsink) | function | 0.11.0 | Alpha |
 | [`createRoot()`](#createroot) | function | 0.1.0 | Alpha |
 | [`createSearchParams()`](#createsearchparams) | function | 0.17.0 | **Beta** |
 | [`createSelector()`](#createselector) | function | 0.18.7 | Alpha |
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
-| [`endTurn()`](#endturn) | function | 0.11.0 | Alpha |
 | [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
 | [`formatDate()`](#formatdate) | function | 0.1.0 | **Beta** |
 | [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
@@ -45,22 +40,16 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`Portal`](#portal) | type | 0.1.0 | **Beta** |
 | [`PortalChildren`](#portalchildren) | type | 0.1.0 | **Beta** |
 | [`PortalOptions`](#portaloptions) | interface | 0.1.0 | **Beta** |
-| [`ProfilerEvent`](#profilerevent) | interface | 0.11.0 | Alpha |
-| [`ProfilerEventSink`](#profilereventsink) | interface | 0.11.0 | Alpha |
-| [`ProfilerEventType`](#profilereventtype) | type | 0.11.0 | Alpha |
 | [`queryHref()`](#queryhref) | function | 0.17.0 | **Beta** |
 | [`QueryParams`](#queryparams) | type | 0.17.0 | **Beta** |
 | [`QueryParamValue`](#queryparamvalue) | type | 0.17.0 | **Beta** |
 | [`Reactive`](#reactive) | type | 0.1.0 | **Beta** |
-| [`RecordingSink`](#recordingsink) | interface | 0.11.0 | Alpha |
 | [`Region()`](#region) | function | 0.15.0 | **Beta** |
 | [`RegionProps`](#regionprops) | interface | 0.15.0 | **Beta** |
 | [`Renderable`](#renderable) | type | 0.1.0 | **Beta** |
 | [`SearchParamsInit`](#searchparamsinit) | type | 0.17.0 | **Beta** |
-| [`setProfilerSink()`](#setprofilersink) | function | 0.11.0 | Alpha |
 | [`Signal`](#signal) | type | 0.1.0 | **Beta** |
 | [`splitProps()`](#splitprops) | function | 0.1.0 | Alpha |
-| [`SubscriberKind`](#subscriberkind) | type | 0.11.0 | Alpha |
 | [`trackPosition()`](#trackposition) | function | 0.35.0 | Alpha |
 | [`untrack()`](#untrack) | function | 0.1.0 | **Beta** |
 | [`useContext()`](#usecontext) | function | 0.1.0 | **Beta** |
@@ -110,29 +99,11 @@ batch(() => {
 // effects run once here, not twice
 ```
 
-### `beginTurn()`
-
-`function` · Alpha since 0.11.0 · `@barefootjs/client`
-
-Mark the start of a user-interaction turn (#1690, SR3). Compiler-emitted in profile mode at every event-handler boundary as `beginTurn(handlerId, loc); try { … } finally { endTurn() }`. Measurement only — it does not change `set()`'s synchronous semantics; it just stamps a turn onto the events emitted between begin and end. No-op when profiling is off.
-
 ### `CleanupFn`
 
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 A cleanup callback, as registered with `onCleanup` or returned from an effect.
-
-### `cleanupPortalPlaceholder()`
-
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
-
-Remove the SSR placeholder left behind for the portal with this id. Browser-only.
-
-```tsx
-"use client"
-// After hydration, drop the placeholder the server rendered in place.
-cleanupPortalPlaceholder(portalId)
-```
 
 ### `Context`
 
@@ -154,20 +125,6 @@ export const TabsContext = createContext<{ active: () => string }>()
 
 // A parent provides the value; any descendant reads it with useContext().
 // <TabsContext.Provider value={{ active }}>...</TabsContext.Provider>
-```
-
-### `createDisposableEffect()`
-
-`function` · Alpha since 0.1.0 · `@barefootjs/client`
-
-Create an effect that can be explicitly disposed (unsubscribed from all signals). Used for effects inside conditional branches that need cleanup on branch switch.
-
-```ts
-const dispose = createDisposableEffect(() => {
-  document.title = `${count()} items`
-})
-
-dispose()  // stops re-running and unsubscribes from count
 ```
 
 ### `createEffect()`
@@ -214,12 +171,6 @@ function DialogOverlay() {
   return <div ref={handleMount} class="fixed inset-0 bg-black/50" />
 }
 ```
-
-### `createRecordingSink()`
-
-`function` · Alpha since 0.11.0 · `@barefootjs/client`
-
-Build a recording sink (SR2). Hand `.sink` to `setProfilerSink`, drive a scenario, then read `.events` — a turn-stamped, ordered log ready for the SR4 join and the analyses. Turns may nest (a handler that dispatches another handler); the stack's top is the attributed turn.
 
 ### `createRoot()`
 
@@ -284,12 +235,6 @@ setCount(n => n + 1) // Update with function (becomes 6)
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 An effect body; may return a `CleanupFn`.
-
-### `endTurn()`
-
-`function` · Alpha since 0.11.0 · `@barefootjs/client`
-
-Mark the end of the current interaction turn (#1690, SR3).
 
 ### `findSiblingSlot()`
 
@@ -399,24 +344,6 @@ Options for createPortal
 |---|---|---|---|
 | `ownerScope` | 0.1.0 | **Beta** | The scope element that owns this portal. |
 
-### `ProfilerEvent`
-
-`interface` · Alpha since 0.11.0 · `@barefootjs/client`
-
-One normalized instrumentation event (SR2). Flat with optional fields rather than a per-type union so the analyses can scan a homogeneous log; `type` discriminates which fields are populated.
-
-### `ProfilerEventSink`
-
-`interface` · Alpha since 0.11.0 · `@barefootjs/client`
-
-Reactive measurement hooks. Every method is a measurement-only notification — implementations MUST NOT mutate reactive state or throw (a throw would change `set()`'s synchronous semantics). Ids are stable handles; `''` means the node was created while profiling was off. The compiler will later emit IR-aligned ids (SR3); until then ids are runtime-assigned counters.
-
-### `ProfilerEventType`
-
-`type` · Alpha since 0.11.0 · `@barefootjs/client`
-
-The instrumentation points, as a discriminated `type` tag.
-
 ### `queryHref()`
 
 `function` · **Beta** since 0.17.0 · `@barefootjs/client`
@@ -449,12 +376,6 @@ One `queryHref` param value: a string, a repeated string, or absent.
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 Phantom brand for compile-time reactivity detection. The compiler checks for the '__reactive' property via TypeChecker to identify reactive expressions.
-
-### `RecordingSink`
-
-`interface` · Alpha since 0.11.0 · `@barefootjs/client`
-
-The sink `createRecordingSink` returns.
 
 ### `Region()`
 
@@ -499,12 +420,6 @@ Anything that can be converted to HTML string via toString()
 
 Accepted inputs for `setSearchParams` — a raw query string (with or without a leading `?`), a `URLSearchParams`, or a plain record (array = multi-value, form-encoded like the client `queryHref`, cf. #2048).
 
-### `setProfilerSink()`
-
-`function` · Alpha since 0.11.0 · `@barefootjs/client`
-
-Install (or clear) the dev-only reactive measurement sink. Pass `null` to disable. Calling this before a scenario runs lets `bf debug profile` collect the event stream; production code never calls it, so the sink stays null and the choke points stay free (dev-only instrumentation, #1690).
-
 ### `Signal`
 
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
@@ -526,12 +441,6 @@ function Checkbox(props: CheckboxProps) {
   return <button {...rest} aria-checked={local.checked} />
 }
 ```
-
-### `SubscriberKind`
-
-`type` · Alpha since 0.11.0 · `@barefootjs/client`
-
-Which kind of subscriber a profiler event is attributed to.
 
 ### `trackPosition()`
 
