@@ -2200,11 +2200,11 @@
       }
     },
     "call": {
-      "total": 291,
+      "total": 293,
       "cells": {
         "hono": {
-          "pass": 289,
-          "total": 291,
+          "pass": 291,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2221,8 +2221,8 @@
           ]
         },
         "blade": {
-          "pass": 271,
-          "total": 291,
+          "pass": 272,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2303,6 +2303,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2347,8 +2353,8 @@
           ]
         },
         "erb": {
-          "pass": 272,
-          "total": 291,
+          "pass": 273,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2423,6 +2429,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2467,8 +2479,8 @@
           ]
         },
         "go-template": {
-          "pass": 266,
-          "total": 291,
+          "pass": 267,
+          "total": 293,
           "gaps": [
             {
               "fixture": "child-prop-rest-forward",
@@ -2561,6 +2573,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2623,8 +2641,8 @@
           ]
         },
         "jinja": {
-          "pass": 271,
-          "total": 291,
+          "pass": 272,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2702,6 +2720,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -2749,8 +2773,8 @@
           ]
         },
         "minijinja": {
-          "pass": 271,
-          "total": 291,
+          "pass": 272,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2828,6 +2852,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -2875,8 +2905,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 272,
-          "total": 291,
+          "pass": 273,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2948,6 +2978,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -2995,8 +3031,8 @@
           ]
         },
         "pebble": {
-          "pass": 271,
-          "total": 291,
+          "pass": 272,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3074,6 +3110,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3121,8 +3163,8 @@
           ]
         },
         "twig": {
-          "pass": 271,
-          "total": 291,
+          "pass": 272,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3200,6 +3242,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3247,8 +3295,8 @@
           ]
         },
         "xslate": {
-          "pass": 271,
-          "total": 291,
+          "pass": 272,
+          "total": 293,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3326,6 +3374,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3574,11 +3628,11 @@
       }
     },
     "identifier": {
-      "total": 413,
+      "total": 415,
       "cells": {
         "hono": {
-          "pass": 409,
-          "total": 413,
+          "pass": 411,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3607,8 +3661,8 @@
           ]
         },
         "blade": {
-          "pass": 389,
-          "total": 413,
+          "pass": 390,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3713,6 +3767,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3757,8 +3817,8 @@
           ]
         },
         "erb": {
-          "pass": 390,
-          "total": 413,
+          "pass": 391,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3857,6 +3917,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3901,8 +3967,8 @@
           ]
         },
         "go-template": {
-          "pass": 383,
-          "total": 413,
+          "pass": 384,
+          "total": 415,
           "gaps": [
             {
               "fixture": "child-prop-rest-forward",
@@ -4019,6 +4085,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4087,8 +4159,8 @@
           ]
         },
         "jinja": {
-          "pass": 389,
-          "total": 413,
+          "pass": 390,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4190,6 +4262,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -4237,8 +4315,8 @@
           ]
         },
         "minijinja": {
-          "pass": 389,
-          "total": 413,
+          "pass": 390,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4343,6 +4421,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -4387,8 +4471,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 388,
-          "total": 413,
+          "pass": 389,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4484,6 +4568,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -4543,8 +4633,8 @@
           ]
         },
         "pebble": {
-          "pass": 389,
-          "total": 413,
+          "pass": 390,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4646,6 +4736,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -4693,8 +4789,8 @@
           ]
         },
         "twig": {
-          "pass": 389,
-          "total": 413,
+          "pass": 390,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4796,6 +4892,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -4843,8 +4945,8 @@
           ]
         },
         "xslate": {
-          "pass": 387,
-          "total": 413,
+          "pass": 388,
+          "total": 415,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4946,6 +5048,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5082,11 +5190,11 @@
       }
     },
     "literal": {
-      "total": 328,
+      "total": 330,
       "cells": {
         "hono": {
-          "pass": 327,
-          "total": 328,
+          "pass": 329,
+          "total": 330,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -5097,8 +5205,8 @@
           ]
         },
         "blade": {
-          "pass": 313,
-          "total": 328,
+          "pass": 314,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5152,6 +5260,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5193,8 +5307,8 @@
           ]
         },
         "erb": {
-          "pass": 313,
-          "total": 328,
+          "pass": 314,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5251,6 +5365,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5289,8 +5409,8 @@
           ]
         },
         "go-template": {
-          "pass": 308,
-          "total": 328,
+          "pass": 309,
+          "total": 330,
           "gaps": [
             {
               "fixture": "child-prop-rest-forward",
@@ -5350,6 +5470,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5415,8 +5541,8 @@
           ]
         },
         "jinja": {
-          "pass": 313,
-          "total": 328,
+          "pass": 314,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5470,6 +5596,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5511,8 +5643,8 @@
           ]
         },
         "minijinja": {
-          "pass": 313,
-          "total": 328,
+          "pass": 314,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5566,6 +5698,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5607,8 +5745,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 311,
-          "total": 328,
+          "pass": 312,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5662,6 +5800,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5715,8 +5859,8 @@
           ]
         },
         "pebble": {
-          "pass": 313,
-          "total": 328,
+          "pass": 314,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5770,6 +5914,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5811,8 +5961,8 @@
           ]
         },
         "twig": {
-          "pass": 313,
-          "total": 328,
+          "pass": 314,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5866,6 +6016,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -5907,8 +6063,8 @@
           ]
         },
         "xslate": {
-          "pass": 311,
-          "total": 328,
+          "pass": 312,
+          "total": 330,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5962,6 +6118,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -11715,15 +11877,15 @@
       }
     },
     "literal:number": {
-      "total": 151,
+      "total": 153,
       "cells": {
         "hono": {
-          "pass": 151,
-          "total": 151
+          "pass": 153,
+          "total": 153
         },
         "blade": {
-          "pass": 143,
-          "total": 151,
+          "pass": 144,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -11747,6 +11909,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -11776,8 +11944,8 @@
           ]
         },
         "erb": {
-          "pass": 143,
-          "total": 151,
+          "pass": 144,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -11801,6 +11969,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -11830,8 +12004,8 @@
           ]
         },
         "go-template": {
-          "pass": 141,
-          "total": 151,
+          "pass": 142,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -11855,6 +12029,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -11896,8 +12076,8 @@
           ]
         },
         "jinja": {
-          "pass": 143,
-          "total": 151,
+          "pass": 144,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -11921,6 +12101,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -11950,8 +12136,8 @@
           ]
         },
         "minijinja": {
-          "pass": 143,
-          "total": 151,
+          "pass": 144,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -11975,6 +12161,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -12004,8 +12196,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 141,
-          "total": 151,
+          "pass": 142,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -12029,6 +12221,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -12070,8 +12268,8 @@
           ]
         },
         "pebble": {
-          "pass": 143,
-          "total": 151,
+          "pass": 144,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -12095,6 +12293,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -12124,8 +12328,8 @@
           ]
         },
         "twig": {
-          "pass": 143,
-          "total": 151,
+          "pass": 144,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -12149,6 +12353,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -12178,8 +12388,8 @@
           ]
         },
         "xslate": {
-          "pass": 141,
-          "total": 151,
+          "pass": 142,
+          "total": 153,
           "gaps": [
             {
               "fixture": "fill-unsupported",
@@ -12203,6 +12413,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
