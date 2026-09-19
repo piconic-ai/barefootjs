@@ -69,7 +69,6 @@ export {
   createPortal,
   isSSRPortal,
   findSiblingSlot,
-  cleanupPortalPlaceholder,
   type Portal,
   type PortalOptions,
   type Renderable,

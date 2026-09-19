@@ -3939,7 +3939,7 @@ hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\
 export function Tooltip(_p, __bfKey) { return createComponent('Tooltip', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/portals.md doc-examples L120 — (no label) 1`] = `
+exports[`docs/core/components/portals.md doc-examples L113 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
@@ -3948,7 +3948,7 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/portals.md doc-examples L141 — (no label) 1`] = `
+exports[`docs/core/components/portals.md doc-examples L134 — (no label) 1`] = `
 "import { $, createComponent, createEffect, createPortal, hydrate, isSSRPortal, useContext } from '@barefootjs/client/runtime'
 
 
@@ -3987,7 +3987,7 @@ hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => 
 export function DialogOverlay(_p, __bfKey) { return createComponent('DialogOverlay__b3c36eee', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/portals.md doc-examples L197 — (no label) 1`] = `
+exports[`docs/core/components/portals.md doc-examples L190 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createPortal, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 
