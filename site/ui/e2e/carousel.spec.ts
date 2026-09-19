@@ -1,4 +1,20 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
+
+/**
+ * Click Next until embla answers it.
+ *
+ * The carousel bakes the Previous button's first-slide `disabled` state into
+ * SSR, so `toBeDisabled()` passes before embla's dynamic import has resolved
+ * and wired the click handlers; a single click landing in that window is a
+ * no-op and Previous stays disabled. Retrying the click until Previous
+ * enables proves the navigation without depending on load timing.
+ */
+async function clickNextUntilEmblaReady(nextBtn: Locator, prevBtn: Locator) {
+  await expect(async () => {
+    await nextBtn.click()
+    await expect(prevBtn).not.toBeDisabled({ timeout: 500 })
+  }).toPass({ timeout: 10_000 })
+}
 
 test.describe('Carousel Reference Page', () => {
   test.beforeEach(async ({ page }) => {
@@ -60,15 +76,11 @@ test.describe('Carousel Reference Page', () => {
       const prevBtn = carousel.locator('[data-slot="carousel-previous"]')
       const nextBtn = carousel.locator('[data-slot="carousel-next"]')
 
-      // Wait for embla to initialize (prev button disabled at first slide)
+      // Previous is disabled at the first slide (baked into SSR, kept by embla)
       await expect(prevBtn).toBeDisabled({ timeout: 5000 })
 
-      // Click next
-      await nextBtn.click()
-      await page.waitForTimeout(300)
-
-      // Previous button should now be enabled
-      await expect(prevBtn).not.toBeDisabled()
+      // Navigating to the next slide enables Previous
+      await clickNextUntilEmblaReady(nextBtn, prevBtn)
     })
   })
 
@@ -106,15 +118,11 @@ test.describe('Carousel Reference Page', () => {
       const nextBtn = verticalCarousel.locator('[data-slot="carousel-next"]')
       const prevBtn = verticalCarousel.locator('[data-slot="carousel-previous"]')
 
-      // Wait for embla to initialize
+      // Previous is disabled at the first slide (baked into SSR, kept by embla)
       await expect(prevBtn).toBeDisabled({ timeout: 5000 })
 
-      // Click next
-      await nextBtn.click()
-      await page.waitForTimeout(300)
-
-      // Previous should now be enabled
-      await expect(prevBtn).not.toBeDisabled()
+      // Navigating to the next slide enables Previous
+      await clickNextUntilEmblaReady(nextBtn, prevBtn)
     })
   })
 
