@@ -61,7 +61,7 @@ whole-word match over `ui/components` (tests excluded), `site` (tests, `e2e/`, `
 |---|---|---|---|---|---|
 | `onMount` | `useEffect(fn, [])` | [`onMount`](./api-reference.md#onmount) Beta | match | 4 | once after hydration. site=9 |
 | `onCleanup` | effect return value | [`onCleanup`](./api-reference.md#oncleanup) Beta | match | 4 | ui=7 site=32 |
-| — (`createRoot` dispose) | — | `createDisposableEffect` **compiler ABI, not public** | BF-only | 1 | emitted by the compiler for branch-scoped effects; zero authored uses (task B of #3078, done) |
+| — (`createRoot` dispose) | — | `createDisposableEffect` **compiler ABI, not public** | BF-only | 1 | emitted by the compiler for branch-scoped effects; zero authored uses |
 | `ref={el => …}` | `useRef` / ref callback | `ref={handleMount}` | match | 4 | callback ref, entry point for portals and focus |
 
 ## Control flow (Solid: components; BarefootJS: compiler)
@@ -74,7 +74,7 @@ whole-word match over `ui/components` (tests excluded), `site` (tests, `e2e/`, `
 | `<Switch>` / `<Match>` | ternary chain | ternary chain | partial | 2 | |
 | `<Dynamic component>` | variable as tag | — (`asChild` / `Slot` cover most uses) | none | 2 | |
 | `<ErrorBoundary>` / `catchError` | Error Boundary | — | none | 3 | SSR errors are the backend's; only client effect / handler errors remain |
-| `<Portal>` | `createPortal` (ReactDOM) | [`createPortal`](./api-reference.md#createportal) Beta + [`isSSRPortal`](./api-reference.md#isssrportal) / [`findSiblingSlot`](./api-reference.md#findsiblingslot) | partial | 4 | imperative (move a `ref` element to `body`); SSR leaves a placeholder. `cleanupPortalPlaceholder` (the placeholder's own cleanup) is compiler ABI, not public — zero authored uses. uses 14 / 13 / 6 |
+| `<Portal>` | `createPortal` (ReactDOM) | [`createPortal`](./api-reference.md#createportal) Beta + [`isSSRPortal`](./api-reference.md#isssrportal) / [`findSiblingSlot`](./api-reference.md#findsiblingslot) | partial | 4 | imperative (move a `ref` element to `body`); SSR leaves a placeholder. [`cleanupPortalPlaceholder`](./api-reference.md#cleanupportalplaceholder) (the placeholder's own cleanup) is Beta too, with zero in-repo callers. uses 14 / 13 / 6 / 0 |
 | `<Suspense fallback>` | `<Suspense fallback>` | [`<Async fallback>`](./api-reference.md#async) Beta | partial | 4 | Solid: client boundary on suspense-tracked reads. BF: SSR streaming only, compiled away to the adapter primitive; client-side boundary is layer 1 of [`spec/async.md`](../../../spec/async.md) |
 | `<SuspenseList>` | experimental | — | none | 1 | |
 | `lazy()` | `React.lazy` | — (Vite dynamic import) | partial | 3 | islands split per entry anyway |
@@ -128,7 +128,7 @@ whole-word match over `ui/components` (tests excluded), `site` (tests, `e2e/`, `
 |---|---|---|---|
 | `formatDate` | Beta | 2 | adapter-lowered helper on 9 adapters; ui=1 site=2 (task C of #3078) |
 | `trackPosition` | Alpha | 2 | floating UI; ui=6 (task C) |
-| `beginTurn` / `endTurn` / `createRecordingSink` / `setProfilerSink` / `ProfilerEvent*` | **compiler ABI, not public** | 1 | profiler plumbing; compiler-emitted + `bf debug profile` (task B of #3078, done) |
+| `beginTurn` / `endTurn` / `createRecordingSink` / `setProfilerSink` / `ProfilerEvent*` | **compiler ABI, not public** | 1 | profiler plumbing; compiler-emitted + `bf debug profile` |
 
 ## Sources
 
