@@ -12,8 +12,13 @@ image = "./Dockerfile"
 max_instances = 1
 # Memory and disk are billed on the instance type's provisioned size, so pin it
 # rather than inherit a platform default that could move the bill silently.
-# `lite` (256 MiB / 1/16 vCPU / 2 GB) is the smallest and fits this demo.
-instance_type = "lite"
+# `lite` (256 MiB / 1/16 vCPU / 2 GB) fits this demo's footprint (~70 MiB),
+# but on `lite` the first idle stop after each deploy left the Container
+# believing the instance was healthy while nothing listened on 8080 (500
+# "The container is not listening") until the instance was recreated. A copy
+# on `lite` with the same image did not reproduce it, so `basic` (1 GiB /
+# 1/4 vCPU / 4 GB) is a trial of whether the instance type is involved.
+instance_type = "basic"
 
 [[durable_objects.bindings]]
 name = "RAILS_CONTAINER"
