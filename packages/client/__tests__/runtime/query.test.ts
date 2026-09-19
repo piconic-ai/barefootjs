@@ -829,3 +829,48 @@ describe('qsa', () => {
     expect(qsa(scope, '[bf-h="Toggle_test"][bf-m="s0"], [bf-s$="_s0"]')).toBe(child)
   })
 })
+
+describe('$c — self-owner SSR-portal child (#3059)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('finds a child component whose own root was SSR-placed at a portal outlet, outside the parent subtree', () => {
+    // The exact shape `HonoAdapter.renderElement`'s `ssrPortalOwnerScope`
+    // branch emits: the child's own root carries bf-s, so its client-side
+    // `el.closest('[bf-s]')` ownerScope is ITSELF — `bf-po` is
+    // self-referential (equal to the child's own bf-s), never the
+    // parent's. `findInPortals`'s `[bf-po="<parentScopeId>"]` search can
+    // never match this shape; only the document-wide selector fallback
+    // (added alongside it) can.
+    document.body.innerHTML = `
+      <div bf-s="PopoverBasicDemo_test">
+        <button bf-s="PopoverBasicDemo_test_s0" data-slot="popover-trigger">Open</button>
+      </div>
+      <div bf-h="PopoverBasicDemo_test" bf-m="s1" bf-s="PopoverBasicDemo_test_s1" bf-po="PopoverBasicDemo_test_s1" data-slot="popover-content"></div>
+    `
+    const scope = document.querySelector('[bf-s="PopoverBasicDemo_test"]')!
+    const [trigger, content] = $c(scope, 's0', 's1')
+    expect(trigger?.getAttribute('data-slot')).toBe('popover-trigger')
+    expect(content).not.toBeNull()
+    expect(content?.getAttribute('data-slot')).toBe('popover-content')
+    expect(content).toBe(document.querySelector('[data-slot="popover-content"]'))
+  })
+
+  test('does not cross-match a self-owner portal child belonging to a DIFFERENT parent scope', () => {
+    document.body.innerHTML = `
+      <div bf-s="PopoverA_test"></div>
+      <div bf-h="PopoverB_test" bf-m="s1" bf-s="PopoverB_test_s1" bf-po="PopoverB_test_s1" data-slot="popover-content"></div>
+    `
+    const scopeA = document.querySelector('[bf-s="PopoverA_test"]')!
+    // PopoverA never declared a child at slot s1 — searching from its own
+    // scope for "s1" must not accidentally pick up PopoverB's unrelated
+    // portal-placed child just because the document-wide fallback widened
+    // the search. The slot-ID suffix selector `[bf-s$="PopoverA_test_s1"]`
+    // simply doesn't match PopoverB's child (`PopoverB_test_s1`), so the
+    // fallback correctly returns null here — it widens WHERE the search
+    // looks, not WHAT counts as a match.
+    const [result] = $c(scopeA, 's1')
+    expect(result).toBeNull()
+  })
+})

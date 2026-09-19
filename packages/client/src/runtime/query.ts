@@ -760,9 +760,24 @@ function findChildScope(scope: Element, selector: string): Element | null {
   // Portal search
   const commentInfo = commentScopeRegistry.get(scope)
   const scopeId = commentInfo?.scopeId ?? getScopeId(scope)
-  if (scopeId) return findInPortals(scopeId, selector)
+  if (scopeId) {
+    const inPortal = findInPortals(scopeId, selector)
+    if (inPortal) return inPortal
+  }
 
-  return null
+  // Self-owner SSR-portal fallback (#3059): `findInPortals` above matches
+  // `[bf-po="<scopeId>"]` — correct when the portaled root has no bf-s of
+  // its own, so its client-side `el.closest('[bf-s]')` ownerScope lands on
+  // the TRUE ancestor (`scopeId`). A child COMPONENT's own root, though,
+  // carries bf-s itself, so `closest()` (which checks `el` before its
+  // ancestors) returns the element itself — `bf-po` is self-referential,
+  // never `scopeId`, and `findInPortals` can never match it. `selector`
+  // here always targets one globally-unique bf-s identity (the (parent,
+  // slot) suffix or the component-name prefix, per this function's two
+  // callers above), so once the scoped searches fail, a document-wide
+  // match of that SAME selector is the correct element wherever the SSR
+  // portal outlet placed it — not a broader or looser match.
+  return document.querySelector(selector)
 }
 
 /**
