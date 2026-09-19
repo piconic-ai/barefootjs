@@ -62,6 +62,7 @@ RUN gradle bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre
 
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r app && useradd -r -g app app
 WORKDIR /app
 
@@ -84,4 +85,7 @@ ENV BASE_PATH=/integrations/spring
 ENV PORT=8080
 EXPOSE 8080
 USER app
+# Run the server under an init so the Container's SIGTERM actually stops it
+# -- see "Why production images run under tini" in integrations/README.md.
+ENTRYPOINT ["tini", "-g", "--"]
 CMD ["java", "-jar", "/app/app.jar"]

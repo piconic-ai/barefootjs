@@ -7,6 +7,7 @@
 # composer.lock exist alongside the app.
 
 FROM php:8.4-cli
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -r -s /bin/false app
 WORKDIR /app
 
@@ -36,6 +37,9 @@ ENV LOG_CHANNEL=stderr
 ENV PORT=8080
 EXPOSE 8080
 USER app
+# Run the server under an init so the Container's SIGTERM actually stops it
+# -- see "Why production images run under tini" in integrations/README.md.
+ENTRYPOINT ["tini", "-g", "--"]
 # `artisan serve` is the same PHP built-in server integrations/blade runs
 # (with Laravel's request handling in front); PHP_CLI_SERVER_WORKERS gives it
 # a small worker pool so the SSE stream (/api/ai-chat) doesn't stall other
