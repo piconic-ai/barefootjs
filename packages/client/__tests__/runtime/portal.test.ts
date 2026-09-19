@@ -7,7 +7,7 @@
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { createPortal, isSSRPortal } from '../../src/runtime/portal'
+import { createPortal, isSSRPortal, findSiblingSlot } from '../../src/runtime/portal'
 
 beforeAll(() => {
   if (typeof window === 'undefined') {
@@ -589,5 +589,47 @@ describe('isSSRPortal', () => {
     const shouldMove = el.parentNode !== document.body && !isSSRPortal(el)
     expect(shouldMove).toBe(false)
     document.body.removeChild(el)
+  })
+})
+
+describe('findSiblingSlot — multi-instance SSR-portal pages (#3059 follow-up)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // Every real `site/ui` reference page stacks several demos of the same
+  // component (Basic/Preview/Form/…) on one page. Once a Content's root is
+  // itself SSR-portal-placed at the outlet (#3059), `el.parentElement` is
+  // the outlet's shared container, not any one instance — a plain
+  // `el.parentElement.querySelector(selector)` returns the FIRST matching
+  // sibling slot in document order, which may belong to a DIFFERENT
+  // instance than the one that owns `el`. Measured on the real
+  // `site/ui/e2e/select.spec.ts`/`popover.spec.ts` pages: `updatePosition()`
+  // then anchored to the wrong (or a zero-rect) trigger and Playwright's
+  // click landed "outside the viewport".
+  test('resolves the sibling belonging to the SAME host instance, not the first document-order match', () => {
+    document.body.innerHTML = `
+      <div bf-s="PopoverBasicDemo_test">
+        <button bf-s="PopoverBasicDemo_test_s0" data-slot="popover-trigger">Instance A trigger</button>
+      </div>
+      <div bf-s="PopoverPreviewDemo_test">
+        <button bf-s="PopoverPreviewDemo_test_s0" data-slot="popover-trigger">Instance B trigger</button>
+      </div>
+      <div bf-h="PopoverPreviewDemo_test" bf-m="s1" bf-s="PopoverPreviewDemo_test_s1" bf-po="PopoverPreviewDemo_test_s1" data-slot="popover-content"></div>
+    `
+    const content = document.querySelector('[data-slot="popover-content"]') as HTMLElement
+    const trigger = findSiblingSlot(content, '[data-slot="popover-trigger"]')
+    expect(trigger).not.toBeNull()
+    expect(trigger?.textContent).toBe('Instance B trigger')
+  })
+
+  test('falls back to the direct-parent lookup when el is not itself a child component (no bf-h)', () => {
+    const parent = document.createElement('div')
+    parent.innerHTML = '<span data-slot="target">found</span>'
+    const el = document.createElement('div')
+    parent.appendChild(el)
+    document.body.appendChild(parent)
+    const result = findSiblingSlot(el, '[data-slot="target"]')
+    expect(result?.textContent).toBe('found')
   })
 })

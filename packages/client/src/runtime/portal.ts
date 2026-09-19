@@ -7,7 +7,7 @@
  * API inspired by React's createPortal(children, domNode).
  */
 
-import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '@barefootjs/shared'
 import { parseHTML } from './component.ts'
 import { getPortalScopeId } from './scope.ts'
 
@@ -139,7 +139,35 @@ export function isSSRPortal(element: HTMLElement): boolean {
  * @returns The found element, or null
  */
 export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElement | null {
-  // Direct parent lookup (normal case)
+  // #3059 self-owner SSR-portal case, checked FIRST: `el`'s own root is a
+  // child COMPONENT (carries bf-h/bf-m — DialogOverlay/DialogContent/
+  // PopoverContent/etc., the shapes this function actually gets called
+  // on) that may already be SSR-placed at the portal outlet from the very
+  // first paint. `bf-h` names the REAL host scope this slot was upserted
+  // from — the same scope the actual sibling trigger was upserted from
+  // too, since both are declared as siblings in that host's own JSX — so
+  // it is ALWAYS the correctly-scoped anchor when present, portal-placed
+  // or not. Trying it first (not as a fallback after "direct" fails)
+  // matters: once portal-placed, `el.parentElement` is the outlet's
+  // shared container (document.body or wherever `<BfPortals />` renders)
+  // — on a page with more than one instance of the same component (every
+  // `site/ui` reference page stacks Basic/Preview/Form demos side by
+  // side), `el.parentElement.querySelector(selector)` doesn't fail, it
+  // WRONGLY SUCCEEDS on the FIRST matching sibling slot in document
+  // order, which may belong to a DIFFERENT instance than `el`'s own —
+  // trying it first would never even reach this correct path. (Measured:
+  // a Select/Popover on such a page anchored `updatePosition()` to the
+  // wrong instance's trigger and Playwright's click landed "outside the
+  // viewport".)
+  const hostId = el.getAttribute(BF_HOST)
+  if (hostId) {
+    const host = document.querySelector(`[${BF_SCOPE}="${hostId}"]`)
+    const inHost = host?.querySelector(slotSelector) as HTMLElement | null
+    if (inHost) return inHost
+  }
+
+  // Direct parent lookup (normal case: el carries no bf-h, e.g. a plain
+  // non-component element portaled via the explicit `<Portal>` wrapper).
   const direct = el.parentElement?.querySelector(slotSelector) as HTMLElement | null
   if (direct) return direct
 
