@@ -59,6 +59,12 @@
           "type": "boolean",
           "required": false,
           "description": "Whether this item is disabled."
+        },
+        {
+          "name": "defaultChecked",
+          "type": "boolean",
+          "required": false,
+          "description": "Whether this item is the group's initial selection. Pass `true` on the item whose `value` matches the parent RadioGroup's `defaultValue` (or its initial `value` in controlled mode) so `aria-checked` / `data-state` / the indicator dot render correctly in the server-rendered HTML, instead of \"unchecked\" being corrected by the `ref`-mount effect only after hydration."
         }
       ]
     }
