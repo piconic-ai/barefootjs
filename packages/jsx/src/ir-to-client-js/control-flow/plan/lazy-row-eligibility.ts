@@ -42,7 +42,7 @@
  *     may be defined as getters over the parent's signals), or a name the
  *     compiler cannot classify at all — is `opaque` and makes the loop
  *     ineligible. Imports and component-local functions are opaque TOO
- *     (`const isSelected = createSelector(selected)` is an ordinary local
+ *     (`const isSelected = someFactory(selected)` is an ordinary local
  *     whose CALL is the reactive read), so they refuse the loop as well —
  *     the `inert` set names them only so the refusal can say which one.
  *     Genuinely ignorable are the names that cannot carry a reactive read
@@ -471,8 +471,8 @@ export function classifyLazyBinding(args: {
     // Everything else is OPAQUE, and deliberately so — this is where the
     // conservative line has to sit, because a reactive accessor can hide
     // behind an ordinary-looking name:
-    //   - `const isSelected = createSelector(selected)` is a local `const`
-    //     whose CALL is reactive (`create-selector.test.ts`),
+    //   - `const isSelected = someFactory(selected)` is a local `const`
+    //     whose CALL is reactive,
     //   - a local function's body can read a signal,
     //   - a prop may be defined as a getter over the parent's signals,
     //   - an imported name may be another module's `@client` module signal.

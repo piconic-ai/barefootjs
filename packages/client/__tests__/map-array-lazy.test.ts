@@ -18,7 +18,7 @@ beforeAll(() => {
   }
 })
 
-const { createSignal, createSelector } = await import('../src/reactive')
+const { createSignal, createMemo } = await import('../src/reactive')
 const { mapArrayLazy } = await import('../src/runtime/map-array-lazy')
 type LazyRowEntry<T> = import('../src/runtime/map-array-lazy').LazyRowEntry<T>
 type LazyRowPlan<T> = import('../src/runtime/map-array-lazy').LazyRowPlan<T>
@@ -525,9 +525,10 @@ describe('mapArrayLazy — applyOuter loop-level effect', () => {
     // A row-creating reconcile DOES re-run the outer effect — the
     // re-subscribe seam. This inverts the original L2 contract ("reconciles
     // never re-run it") on purpose: an outer read may subscribe PER KEY
-    // (createSelector), in which case a freshly created row's key was never
-    // registered and a later selection of it would be missed. See the seam's
-    // comment in map-array-lazy.ts for the three reproduced sequences.
+    // (a per-key `createMemo`-backed accessor, e.g.), in which case a
+    // freshly created row's key was never registered and a later selection
+    // of it would be missed. See the seam's comment in map-array-lazy.ts for
+    // the three reproduced sequences.
     setItems([item('3', 'C'), a, b])
     expect(applyOuterCalls.length).toBe(3)
     expect(applyOuterCalls[2].seed).toBe(false)
@@ -603,13 +604,32 @@ describe('mapArrayLazy — reconciler tracking isolation', () => {
 /**
  * Re-subscribe seam. `applyOuter` subscribes to
  * whatever its body reads; when an outer read is NOT a primable signal
- * getter — `createSelector`, whose returned selector subscribes the caller
- * per KEY — that set depends on the entries it iterated, so a reconcile can
- * strand it. Each test below is a sequence that was reproduced as broken
+ * getter — a per-key subscription (each key backed by its own `createMemo`,
+ * so the caller's effect subscribes to just that key's memo instead of the
+ * raw signal) — that set depends on the entries it iterated, so a reconcile
+ * can strand it. Each test below is a sequence that was reproduced as broken
  * before the seam existed.
  */
 describe('mapArrayLazy — re-subscribe seam', () => {
   type Row = { id: number; tag?: string }
+
+  // Per-key subscription built from `createMemo`, standing in for the
+  // opaque-accessor shape formerly reproduced with `createSelector`: each
+  // key gets its own memo of `source() === key`, so a caller reading only
+  // one key's memo subscribes to that memo alone rather than to `source`
+  // directly — an "outer read that is not a primable signal getter" from
+  // the lazy-row emitter's point of view.
+  function makeIsSelected(source: () => number): (key: number) => boolean {
+    const memos = new Map<number, () => boolean>()
+    return (key: number): boolean => {
+      let memo = memos.get(key)
+      if (!memo) {
+        memo = createMemo(() => source() === key)
+        memos.set(key, memo)
+      }
+      return memo()
+    }
+  }
 
   function perKeyLoop(opts: { initial: Row[]; key?: (r: Row) => string }) {
     const host = document.createElement('div')
@@ -618,7 +638,7 @@ describe('mapArrayLazy — re-subscribe seam', () => {
     host.innerHTML = '<!--bf-loop:l0--><!--bf-/loop:l0-->'
     const [rows, setRows] = createSignal<Row[]>(opts.initial)
     const [selected, setSelected] = createSignal(0)
-    const isSelected = createSelector(selected)
+    const isSelected = makeIsSelected(selected)
     let outerRuns = 0
 
     const paint = (entry: { item: Row; primaryEl: HTMLElement; last: unknown }): void => {
