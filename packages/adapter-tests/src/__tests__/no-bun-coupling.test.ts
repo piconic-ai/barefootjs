@@ -21,8 +21,8 @@
  * This test pins both halves of that contract so the boundary is explicit
  * and regression-proof:
  *   1. every other src file in a published adapter is Bun-free, and
- *   2. where Bun *is* used (`test-render.ts`), the matching export stays
- *      gated to the `"bun"` condition only.
+ *   2. where Bun *is* used (`test-render.ts`/`.tsx`), the matching export
+ *      stays gated to the `"bun"` condition only.
  */
 import { describe, test, expect } from 'bun:test'
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
@@ -41,7 +41,9 @@ const BUN_GLOBAL_API =
 const BUN_MODULE_IMPORT = /from\s+['"]bun(:[a-z0-9]+)?['"]/
 
 // The single file per adapter where Bun coupling is allowed by design.
-const TEST_RENDER = 'test-render.ts'
+// `.tsx` (the Hono adapter's own test-render, #3059) is a plain
+// extension swap for real JSX syntax — same file, same exception.
+const TEST_RENDER = /^test-render\.tsx?$/
 
 /** Published adapter packages (skip `private: true`, e.g. adapter-tests). */
 function publishedAdapters(): { name: string; dir: string }[] {
@@ -70,6 +72,14 @@ function tsFiles(dir: string): string[] {
   return out
 }
 
+/** The adapter's `test-render.ts`/`.tsx` path, or undefined if it ships none. */
+function testRenderFile(dir: string): string | undefined {
+  const srcDir = join(dir, 'src')
+  if (!existsSync(srcDir)) return undefined
+  const match = readdirSync(srcDir).find(name => TEST_RENDER.test(name))
+  return match ? join(srcDir, match) : undefined
+}
+
 const adapters = publishedAdapters()
 
 describe('published adapters do not force the Bun runtime on users', () => {
@@ -80,9 +90,9 @@ describe('published adapters do not force the Bun runtime on users', () => {
   test.each(adapters)('$name: user-facing src uses no Bun-only API or module', ({ dir }) => {
     const srcDir = join(dir, 'src')
     for (const file of tsFiles(srcDir)) {
-      // test-render.ts is the deliberate, export-gated exception (asserted
-      // separately below); every other file must be Bun-free.
-      if (file.endsWith(TEST_RENDER)) continue
+      // test-render.ts/.tsx is the deliberate, export-gated exception
+      // (asserted separately below); every other file must be Bun-free.
+      if (TEST_RENDER.test(file.slice(file.lastIndexOf('/') + 1))) continue
       const rel = relative(PACKAGES_DIR, file)
       const contents = readFileSync(file, 'utf8')
       expect(contents, `${rel} uses the Bun-only global API`).not.toMatch(BUN_GLOBAL_API)
@@ -92,14 +102,12 @@ describe('published adapters do not force the Bun runtime on users', () => {
 
   // For adapters that *do* ship the Bun-only test-render helper, pin the
   // two facts that keep it from leaking onto non-bun users.
-  const withTestRender = adapters.filter(({ dir }) =>
-    existsSync(join(dir, 'src', TEST_RENDER)),
-  )
+  const withTestRender = adapters.filter(({ dir }) => testRenderFile(dir) !== undefined)
 
   test.each(withTestRender)(
     '$name: test-render.ts is the intentional Bun-only helper',
     ({ dir }) => {
-      const contents = readFileSync(join(dir, 'src', TEST_RENDER), 'utf8')
+      const contents = readFileSync(testRenderFile(dir)!, 'utf8')
       // Documents *why* test-render is excluded above: it genuinely uses
       // the Bun API. If this ever stops being true, drop the exclusion.
       expect(contents).toMatch(BUN_GLOBAL_API)

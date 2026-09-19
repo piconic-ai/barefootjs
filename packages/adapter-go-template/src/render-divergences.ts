@@ -91,6 +91,26 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+  // #3059: the compiler now recognizes the `ref`-callback SSR-portal
+  // pattern (`ssrPortalOwnerScope`) and the Hono reference adapter
+  // places the flagged element at its `<BfPortals />` outlet instead of
+  // rendering it inline — this adapter has no such outlet yet (a
+  // template-language-specific design the issue leaves open), so it
+  // still renders the element at its ORIGINAL inline position with no
+  // `bf-po`, diverging from the now-correct reference. See
+  // `ref-callback-portal-content-inline-at-ssr`.
+  dialog: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  'dropdown-menu': { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  popover: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  portal: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  // `combobox` / `select` carry the SAME #3059 portal-position divergence
+  // (their Content element is the same `ref`-callback SSR-portal pattern),
+  // but the registry lists a fixture on exactly one entry and these two
+  // are already claimed by `ref-effect-attr-state-ssr` (the data-placeholder
+  // divergence) — cite that one instead; see
+  // `ref-callback-portal-content-inline-at-ssr`'s own comment.
+  combobox: { limitation: 'ref-effect-attr-state-ssr' },
+  select: { limitation: 'ref-effect-attr-state-ssr' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

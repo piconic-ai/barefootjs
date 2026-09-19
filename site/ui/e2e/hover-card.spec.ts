@@ -51,7 +51,13 @@ test.describe('Hover Card Reference Page', () => {
     })
 
     test('has correct data-state transitions', async ({ page }) => {
-      const content = page.locator('[data-slot="hover-card-content"]').first()
+      // Scoped by `bf-h` (this instance's own host prefix), not `.first()` in
+      // document order: the portal-placed content of every HoverCard instance
+      // on this page (including the Playground demo's own) now shares one
+      // outlet, so document order no longer matches the page's visual section
+      // order — `.first()` picked a DIFFERENT instance's content once #3059
+      // moved portal content into that outlet.
+      const content = page.locator('[data-slot="hover-card-content"][bf-h^="HoverCardPreviewDemo_"]')
 
       // Initially closed
       await expect(content).toHaveAttribute('data-state', 'closed')

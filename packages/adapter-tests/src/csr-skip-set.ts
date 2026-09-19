@@ -113,4 +113,18 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // `renderDivergences`. The reference runs the accessor at render time. Its
   // `/* @client */` twin (`opaque-local-accessor-call-client`) is NOT skipped.
   'opaque-local-accessor-call',
+  // #3059: `renderCsrComponent`'s harness stubs `createPortal` as a no-op
+  // (`csr-render.ts`: `const createPortal = () => {}`) — it never moves
+  // anything or stamps `bf-po`, unlike the REAL runtime
+  // (`packages/client/src/runtime/portal.ts`) the oracle's `csr-mount`
+  // leg uses. Before #3059 this coincidentally matched `expectedHtml`
+  // (Hono rendered the same portal-marked element inline too, with no
+  // `bf-po`); now that Hono places it at the `<BfPortals />` outlet, this
+  // Bun-side mock's stub diverges from it — a pre-existing harness gap
+  // the fix newly exposes, not a real CSR regression. `select` /
+  // `dropdown-menu` / `combobox` carry the identical gap but were already
+  // skipped above for unrelated reasons.
+  'dialog',
+  'popover',
+  'portal',
 ])
