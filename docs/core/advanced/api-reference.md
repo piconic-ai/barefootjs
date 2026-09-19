@@ -21,6 +21,7 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`AsyncProps`](#asyncprops) | interface | 0.15.0 | **Beta** |
 | [`batch()`](#batch) | function | 0.1.0 | **Beta** |
 | [`CleanupFn`](#cleanupfn) | type | 0.1.0 | **Beta** |
+| [`cleanupPortalPlaceholder()`](#cleanupportalplaceholder) | function | 0.1.0 | **Beta** |
 | [`Context`](#context) | type | 0.1.0 | **Beta** |
 | [`createContext()`](#createcontext) | function | 0.1.0 | **Beta** |
 | [`createEffect()`](#createeffect) | function | 0.1.0 | **Beta** |
@@ -104,6 +105,18 @@ batch(() => {
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 A cleanup callback, as registered with `onCleanup` or returned from an effect.
+
+### `cleanupPortalPlaceholder()`
+
+`function` · **Beta** since 0.1.0 · `@barefootjs/client`
+
+Remove the SSR placeholder left behind for the portal with this id. Browser-only.
+
+```tsx
+"use client"
+// After hydration, drop the placeholder the server rendered in place.
+cleanupPortalPlaceholder(portalId)
+```
 
 ### `Context`
 

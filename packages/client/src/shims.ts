@@ -164,10 +164,6 @@ export function findSiblingSlot(
  * has to clear it. Taught in
  * [Portals → SSR Portal Detection](../../docs/core/components/portals.md).
  *
- * Not an authoring API: zero authored uses across `ui/`, `site/` and
- * `integrations/`; its portal siblings (`createPortal`, `isSSRPortal`,
- * `findSiblingSlot`) are the ones an author calls.
- *
  * @example
  * ```tsx
  * "use client"
@@ -175,7 +171,8 @@ export function findSiblingSlot(
  * cleanupPortalPlaceholder(portalId)
  * ```
  *
- * @internal
+ * @since 0.1.0
+ * @stability beta
  */
 export function cleanupPortalPlaceholder(_portalId: string): void {
   return browserOnly('cleanupPortalPlaceholder')
