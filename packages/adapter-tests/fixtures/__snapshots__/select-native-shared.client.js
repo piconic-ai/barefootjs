@@ -26,7 +26,7 @@ export function initSelectNative(__scope, _p = {}) {
       { const __x = picked()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         const __val = String(__x)
-        if ('value' in _s2) { if (_s2.value !== __val) { _s2.value = __val; if (_s2.tagName === 'SELECT' && !_s2.multiple && _s2.value !== __val) _s2.selectedIndex = 0 } } else { _s2.setAttribute('value', __val) }
+        if ('value' in _s2) { if (_s2.value !== __val) { _s2.value = __val; if (_s2.tagName === 'SELECT' && !_s2.multiple && _s2.size <= 1 && _s2.value !== __val) _s2.selectedIndex = 0 } } else { _s2.setAttribute('value', __val) }
       }
       __l[0] = __x }
     }
@@ -44,7 +44,7 @@ export function initSelectNative(__scope, _p = {}) {
       if (__t) {
         { const __x = f().id
         const __val = String(__x)
-        if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
+        if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.size <= 1 && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
         __l[0] = __x }
       } }
       { const __t = __r[0]
@@ -67,7 +67,7 @@ export function initSelectNative(__scope, _p = {}) {
         { const __x = f().id
         if (!(0 in __l) || !Object.is(__l[0], __x)) {
           const __val = String(__x)
-          if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
+          if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.size <= 1 && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
         }
         __l[0] = __x }
       } }

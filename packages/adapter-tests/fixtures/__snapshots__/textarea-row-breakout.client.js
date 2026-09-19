@@ -22,7 +22,7 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
       if (__t) {
         { const __x = value()
         const __val = String(__x)
-        if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
+        if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.size <= 1 && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
         __l[0] = __x }
       } }
       return __el
@@ -39,7 +39,7 @@ export function initTextareaRowBreakout(__scope, _p = {}) {
           { const __x = value()
           if (__seed ? (('value' in __t ? __t.value !== String(__x) : __t.getAttribute('value') !== String(__x))) : (!(0 in __l) || !Object.is(__l[0], __x))) {
             const __val = String(__x)
-            if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
+            if ('value' in __t) { if (__t.value !== __val) { __t.value = __val; if (__t.tagName === 'SELECT' && !__t.multiple && __t.size <= 1 && __t.value !== __val) __t.selectedIndex = 0 } } else { __t.setAttribute('value', __val) }
           }
           __l[0] = __x }
         } }

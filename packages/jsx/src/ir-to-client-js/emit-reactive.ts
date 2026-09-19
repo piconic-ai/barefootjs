@@ -55,11 +55,16 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
  * case. Falling back to `selectedIndex = 0` here keeps the live post-
  * hydration state equal to what SSR already rendered, instead of the two
  * legs agreeing only visually (both blank) while their actual selection
- * state diverges. `!target.multiple` excludes list boxes: an unmatched
- * value already leaves a `multiple`/`size>1` select with nothing selected
- * on both legs (see `select-multiple-value-no-match-ssr`'s docstring), so
- * there is no placeholder to reconcile against and forcing a selection
- * would be a behavior change of its own.
+ * state diverges. `!target.multiple && target.size <= 1` excludes list
+ * boxes — mirroring `jsx-to-ir.ts`'s `isMultiSelection`, which skips the
+ * SSR placeholder for EITHER `multiple` OR a `size` > 1 (a `<select
+ * size={2}>` is a list box even without the `multiple` attribute): an
+ * unmatched value already leaves a `multiple`/`size>1` select with nothing
+ * selected on both legs (see `select-multiple-value-no-match-ssr`'s
+ * docstring), so there is no placeholder to reconcile against there and
+ * forcing a selection would be a behavior change of its own — checking
+ * `multiple` alone would wrongly force `selectedIndex = 0` on a bare
+ * `size={2}` select whose SSR leg (correctly) left nothing selected.
  *
  * NOT for the child-component-root `value` MIRROR (`emitReactivePropBindings`
  * / `emitReactiveChildProps` reflecting a named prop onto a child's root
@@ -70,7 +75,7 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
 function emitValueUpdateStatements(target: string, expression: string): string[] {
   return [
     `const __val = String(${expression})`,
-    `if ('value' in ${target}) { if (${target}.value !== __val) { ${target}.value = __val; if (${target}.tagName === 'SELECT' && !${target}.multiple && ${target}.value !== __val) ${target}.selectedIndex = 0 } } else { ${target}.setAttribute('value', __val) }`,
+    `if ('value' in ${target}) { if (${target}.value !== __val) { ${target}.value = __val; if (${target}.tagName === 'SELECT' && !${target}.multiple && ${target}.size <= 1 && ${target}.value !== __val) ${target}.selectedIndex = 0 } } else { ${target}.setAttribute('value', __val) }`,
   ]
 }
 

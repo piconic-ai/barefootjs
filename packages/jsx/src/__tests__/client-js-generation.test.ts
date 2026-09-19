@@ -1394,7 +1394,38 @@ describe('Client JS generation', () => {
       expect(clientJs!.content).toContain("tagName === 'SELECT'")
       expect(clientJs!.content).toContain('!')
       expect(clientJs!.content).toContain('.multiple')
+      expect(clientJs!.content).toContain('.size <= 1')
       expect(clientJs!.content).toContain('.selectedIndex = 0')
+    })
+
+    // A list box is `multiple` OR a `size` > 1 (`jsx-to-ir.ts`'s
+    // `isMultiSelection`, which the SSR placeholder decision already keys
+    // off) — checking `.multiple` alone here would force `selectedIndex =
+    // 0` on a bare `size={2}` select whose SSR leg (correctly, per
+    // `isMultiSelection`) left nothing selected on an out-of-range value,
+    // reintroducing exactly the divergence #3066 fixed for `multiple`.
+    test('does not force selectedIndex 0 on an out-of-range size>1 (list box) select (#3066)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function OutOfRangeListBox() {
+          const [val] = createSignal(7)
+          return (
+            <select size={2} value={String(val())}>
+              <option value="0">Zero</option>
+              <option value="1">One</option>
+            </select>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'OutOfRangeListBox.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('.size <= 1')
     })
   })
 
