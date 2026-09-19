@@ -1,5 +1,16 @@
 # @barefootjs/jsx
 
+## 0.37.2
+
+### Patch Changes
+
+- caa37b7: The child-root prop mirror's boolean-IDL branch (`open`, `checked`, `disabled`, `hidden`, `selected`, `required`, `readonly`, `multiple`, …) now seed-gates on `hasAttribute` the same way the `presenceOrUndefined`/generic branches already do, instead of writing `target.open = …` unconditionally. A prop named after a native boolean attribute (e.g. `open`, matching `<details>`/`<dialog>`) but passed to a child component whose own root is an ordinary element no longer gets a live DOM property planted on it after hydration that SSR never had — the case `#2716`'s fix covered for `value` but missed for this branch.
+- 17df55b: The child-root prop mirror (`emitReactiveChildProps` / `emitReactivePropBindings`) no longer plants attributes the child never rendered. A reactive named prop passed to a child component call is now written onto the child's root only when that root already carries the attribute (from SSR, or from the child's own `applyRestAttrs` forwarding), so a prop the child consumes as text, a class token or data no longer appears as a stray attribute after hydration or on a client-constructed child. Props the child forwards onto its root via `{...rest}` keep updating reactively.
+- 7b8bab3: A keyed leaf inside a complex `.flatMap()` body (statements before the `return`) now renders its reconciliation attribute on the server too: the branded SSR body rewrites each leaf's `key={…}` to `data-key={String(…)}`, and the client string templates (hydrate template, CSR descriptor, module-scope template) render the same attribute, escaped like any other. Previously a JSX runtime dropped `key` from the SSR HTML while `mapArray` stamped `data-key` on every row it adopted, so hydration changed the DOM on exactly the attribute reconciliation keys on (the `tag-cloud` browser-oracle divergence).
+- 737ce71: Known limitations now live in an in-repo registry (`packages/adapter-tests/limitations/<id>.ts`) instead of the `known-limitation` GitHub label. `ConformancePin.issue` is replaced by the required `limitation` id, `unescapable` becomes a bare `true`, and `RenderDivergences` values cite a limitation id instead of a prose reason. Every adapter's `conformancePins` cites the registry accordingly.
+- 0b85965: Fix #3044: a `.map()` over a nested array property of a destructured OBJECT-shaped prop (`data.items` where `data` is a prop, or `props.data.items`) now reconciles via `mapArray` instead of silently freezing on the SSR-time array. `isArrayExprDirectPropRef` previously only recognized a bare destructured-prop identifier or a single member access off the WHOLE props object (`props.items`) as prop-derived; a nested member access off a destructured object prop fell through both cases and stayed on the static SSR-row-bind path, so a parent signal driving the prop from an empty array to a non-empty one (e.g. in `onMount`) never inserted rows into the child. The property-access branch now walks to the chain's root identifier and accepts it as prop-derived whether it resolves to the whole props object or to a destructured prop binding, through the same alias-hop chain as before.
+- @barefootjs/shared@0.37.2
+
 ## 0.37.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @barefootjs/client
 
+## 0.37.2
+
+### Patch Changes
+
+- 177be87: `createDisposableEffect` and the profiler plumbing (`beginTurn`, `endTurn`, `createRecordingSink`, `setProfilerSink`, `ProfilerEvent`, `ProfilerEventSink`, `ProfilerEventType`, `RecordingSink`, `SubscriberKind`) are now tagged `@internal` and no longer appear in `docs/core/advanced/api-reference.md`. They are compiler-emitted / tooling-only ABI with zero authored call sites in `ui/`, `site/` or `integrations/`. Documentation tier only; no runtime change.
+- @barefootjs/shared@0.37.2
+
 ## 0.37.1
 
 ### Patch Changes
