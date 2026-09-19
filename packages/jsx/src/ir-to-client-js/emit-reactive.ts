@@ -47,6 +47,20 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
  * hazard for anything that duck-types form controls via `'value' in el`
  * (#2716).
  *
+ * A single-selection `<select>` gets one more step (#3066,
+ * `select-out-of-range-selected-index`): if the assigned value matches no
+ * `<option>`, the browser resolves `select.value = __val` to no selection
+ * at all (`selectedIndex` -1) — but #2852 made SSR select a hidden
+ * placeholder `<option value="">` (`selectedIndex` 0) for exactly this
+ * case. Falling back to `selectedIndex = 0` here keeps the live post-
+ * hydration state equal to what SSR already rendered, instead of the two
+ * legs agreeing only visually (both blank) while their actual selection
+ * state diverges. `!target.multiple` excludes list boxes: an unmatched
+ * value already leaves a `multiple`/`size>1` select with nothing selected
+ * on both legs (see `select-multiple-value-no-match-ssr`'s docstring), so
+ * there is no placeholder to reconcile against and forcing a selection
+ * would be a behavior change of its own.
+ *
  * NOT for the child-component-root `value` MIRROR (`emitReactivePropBindings`
  * / `emitReactiveChildProps` reflecting a named prop onto a child's root
  * element) — that mechanism has no SSR-rendered counterpart at all
@@ -56,7 +70,7 @@ function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string 
 function emitValueUpdateStatements(target: string, expression: string): string[] {
   return [
     `const __val = String(${expression})`,
-    `if ('value' in ${target}) { if (${target}.value !== __val) ${target}.value = __val } else { ${target}.setAttribute('value', __val) }`,
+    `if ('value' in ${target}) { if (${target}.value !== __val) { ${target}.value = __val; if (${target}.tagName === 'SELECT' && !${target}.multiple && ${target}.value !== __val) ${target}.selectedIndex = 0 } } else { ${target}.setAttribute('value', __val) }`,
   ]
 }
 

@@ -468,7 +468,7 @@ export function initDialogFormDemo(__scope, _p = {}) {
       { const __x = confirmText()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         const __val = String(__x)
-        if ('value' in _s5) { if (_s5.value !== __val) _s5.value = __val } else { _s5.setAttribute('value', __val) }
+        if ('value' in _s5) { if (_s5.value !== __val) { _s5.value = __val; if (_s5.tagName === 'SELECT' && !_s5.multiple && _s5.value !== __val) _s5.selectedIndex = 0 } } else { _s5.setAttribute('value', __val) }
       }
       __l[0] = __x }
     }

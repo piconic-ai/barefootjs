@@ -50,7 +50,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
       { const __x = input()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         const __val = String(__x)
-        if ('value' in _s6) { if (_s6.value !== __val) _s6.value = __val } else { _s6.setAttribute('value', __val) }
+        if ('value' in _s6) { if (_s6.value !== __val) { _s6.value = __val; if (_s6.tagName === 'SELECT' && !_s6.multiple && _s6.value !== __val) _s6.selectedIndex = 0 } } else { _s6.setAttribute('value', __val) }
       }
       __l[0] = __x }
       { const __x = isStreaming()

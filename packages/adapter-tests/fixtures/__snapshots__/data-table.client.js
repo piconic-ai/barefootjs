@@ -3715,7 +3715,7 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
       { const __x = filter()
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         const __val = String(__x)
-        if ('value' in _s0) { if (_s0.value !== __val) _s0.value = __val } else { _s0.setAttribute('value', __val) }
+        if ('value' in _s0) { if (_s0.value !== __val) { _s0.value = __val; if (_s0.tagName === 'SELECT' && !_s0.multiple && _s0.value !== __val) _s0.selectedIndex = 0 } } else { _s0.setAttribute('value', __val) }
       }
       __l[0] = __x }
     }

@@ -1365,6 +1365,37 @@ describe('Client JS generation', () => {
       expect(clientJs!.content).toContain('.value =')
       expect(clientJs!.content).toContain("setAttribute('value'")
     })
+
+    // #3066: a controlled <select> whose value matches no <option> falls
+    // back to selectedIndex 0 (the #2852 SSR placeholder) instead of
+    // leaving the browser's own out-of-range resolution (selectedIndex -1)
+    // as the live post-hydration state, which SSR never rendered.
+    test('a controlled <select> value falls back to selectedIndex 0 on no match (#3066)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function OutOfRangeSelect() {
+          const [val] = createSignal(7)
+          return (
+            <select value={String(val())}>
+              <option value="0">Zero</option>
+              <option value="1">One</option>
+            </select>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'OutOfRangeSelect.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain("tagName === 'SELECT'")
+      expect(clientJs!.content).toContain('!')
+      expect(clientJs!.content).toContain('.multiple')
+      expect(clientJs!.content).toContain('.selectedIndex = 0')
+    })
   })
 
   describe('comment scope flag for fragment roots (#381)', () => {

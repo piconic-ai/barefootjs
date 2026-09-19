@@ -92,15 +92,17 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   },
   // #2852 (fixing #2758) made SSR select a hidden placeholder for an
   // out-of-range controlled select instead of the browser's first-option
-  // default; the surviving half is the live state — placeholder selected
-  // (`selectedIndex` 0) on the server, nothing selected (-1) once the
-  // hydration effect assigns the out-of-range value. Both read as blank.
-  'select-out-of-range-hydration': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR has the placeholder option selected (selectedIndex 0); the hydration controlled-value effect assigns the out-of-range value and the browser resolves it to selectedIndex -1.',
-    limitation: 'select-out-of-range-selected-index',
-  },
+  // default; graduated (#3066): the controlled-value effect now falls
+  // back to `selectedIndex = 0` (the same placeholder) when the assigned
+  // value matches no `<option>`, instead of leaving the browser's own
+  // out-of-range resolution (`selectedIndex` -1) as the live post-
+  // hydration state — see `emitValueUpdateStatements`'s docstring in
+  // `emit-reactive.ts`. The fix is a single tag-gated branch in the one
+  // shared codegen function every `<select value={…}>` compiles through
+  // regardless of surrounding structure, so the pairwise sweep's
+  // `controlled-select` × out-of-range cases (former
+  // `select-out-of-range-selected-index` citations, now removed from
+  // `pairwise-quarantine.ts`) graduate the same way.
   // `idempotence` graduated in two steps: #2717 fixed the
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the
