@@ -4502,6 +4502,32 @@
         "text"
       ]
     },
+    "opaque-local-accessor-call": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "opaque-local-accessor-call-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "optional-chaining-prop": {
       "kinds": [
         "identifier",
@@ -7014,11 +7040,11 @@
     "array-method": 72,
     "arrow": 76,
     "binary": 109,
-    "call": 291,
+    "call": 293,
     "conditional": 34,
-    "identifier": 413,
+    "identifier": 415,
     "index-access": 15,
-    "literal": 328,
+    "literal": 330,
     "logical": 53,
     "member": 244,
     "object-literal": 96,
@@ -7064,7 +7090,7 @@
     "binary:>=": 1,
     "literal:boolean": 72,
     "literal:null": 26,
-    "literal:number": 151,
+    "literal:number": 153,
     "literal:string": 222,
     "logical:&&": 7,
     "logical:??": 44,
