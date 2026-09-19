@@ -139,31 +139,42 @@ export function isSSRPortal(element: HTMLElement): boolean {
  * @returns The found element, or null
  */
 export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElement | null {
-  // #3059 self-owner SSR-portal case, checked FIRST: `el`'s own root is a
-  // child COMPONENT (carries bf-h/bf-m — DialogOverlay/DialogContent/
-  // PopoverContent/etc., the shapes this function actually gets called
-  // on) that may already be SSR-placed at the portal outlet from the very
-  // first paint. `bf-h` names the REAL host scope this slot was upserted
-  // from — the same scope the actual sibling trigger was upserted from
-  // too, since both are declared as siblings in that host's own JSX — so
-  // it is ALWAYS the correctly-scoped anchor when present, portal-placed
-  // or not. Trying it first (not as a fallback after "direct" fails)
-  // matters: once portal-placed, `el.parentElement` is the outlet's
-  // shared container (document.body or wherever `<BfPortals />` renders)
-  // — on a page with more than one instance of the same component (every
-  // `site/ui` reference page stacks Basic/Preview/Form demos side by
-  // side), `el.parentElement.querySelector(selector)` doesn't fail, it
-  // WRONGLY SUCCEEDS on the FIRST matching sibling slot in document
-  // order, which may belong to a DIFFERENT instance than `el`'s own —
-  // trying it first would never even reach this correct path. (Measured:
-  // a Select/Popover on such a page anchored `updatePosition()` to the
-  // wrong instance's trigger and Playwright's click landed "outside the
-  // viewport".)
-  const hostId = el.getAttribute(BF_HOST)
-  if (hostId) {
-    const host = document.querySelector(`[${BF_SCOPE}="${hostId}"]`)
-    const inHost = host?.querySelector(slotSelector) as HTMLElement | null
-    if (inHost) return inHost
+  // #3059 self-owner SSR-portal case, checked FIRST — but only when `el`
+  // actually IS SSR-portal-placed (`isSSRPortal(el)`): `el`'s own root is
+  // a child COMPONENT (carries bf-h/bf-m — DialogOverlay/DialogContent/
+  // PopoverContent/etc.) that may already be SSR-placed at the portal
+  // outlet from the very first paint. `bf-h` names the REAL host scope
+  // this slot was upserted from — the same scope the actual sibling
+  // trigger was upserted from too, since both are declared as siblings in
+  // that host's own JSX — so it is the correctly-scoped anchor once
+  // portal-placement is confirmed. Trying it first in THAT case (not as a
+  // fallback after "direct" fails) matters: once portal-placed,
+  // `el.parentElement` is the outlet's shared container (document.body or
+  // wherever `<BfPortals />` renders) — on a page with more than one
+  // instance of the same component (every `site/ui` reference page stacks
+  // Basic/Preview/Form demos side by side), `el.parentElement.
+  // querySelector(selector)` doesn't fail, it WRONGLY SUCCEEDS on the
+  // FIRST matching sibling slot in document order, which may belong to a
+  // DIFFERENT instance than `el`'s own — trying it first would never even
+  // reach this correct path. (Measured: a Select/Popover on such a page
+  // anchored `updatePosition()` to the wrong instance's trigger and
+  // Playwright's click landed "outside the viewport".)
+  //
+  // `bf-h` is stamped on every child-component root regardless of SSR
+  // portal placement (it names the child's host scope for upsertion in
+  // general, not just the #3059 shape), so gating on `isSSRPortal(el)` is
+  // required — components that were never SSR-portal-placed (ContextMenu,
+  // Drawer; anything outside #3059's Dialog/DropdownMenu/Popover/
+  // Combobox/Select scope) keep the original "direct parent" lookup as
+  // their first try, unaffected by a host-scope path that only exists to
+  // handle SSR-relocated markup.
+  if (isSSRPortal(el)) {
+    const hostId = el.getAttribute(BF_HOST)
+    if (hostId) {
+      const host = document.querySelector(`[${BF_SCOPE}="${hostId}"]`)
+      const inHost = host?.querySelector(slotSelector) as HTMLElement | null
+      if (inHost) return inHost
+    }
   }
 
   // Direct parent lookup (normal case: el carries no bf-h, e.g. a plain
