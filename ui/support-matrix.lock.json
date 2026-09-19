@@ -2585,6 +2585,12 @@
               ]
             },
             {
+              "fixture": "signal-optional-init",
+              "limitations": [
+                "optional-typed-signal-initial-value-dropped"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4037,6 +4043,12 @@
               ]
             },
             {
+              "fixture": "signal-optional-init",
+              "limitations": [
+                "optional-typed-signal-initial-value-dropped"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5362,6 +5374,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-optional-init",
+              "limitations": [
+                "optional-typed-signal-initial-value-dropped"
               ]
             },
             {
@@ -12403,6 +12421,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-optional-init",
+              "limitations": [
+                "optional-typed-signal-initial-value-dropped"
               ]
             },
             {

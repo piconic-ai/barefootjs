@@ -140,7 +140,7 @@
     {
       "getter": "canScrollNext",
       "setter": "setCanScrollNext",
-      "initialValue": "false"
+      "initialValue": "true"
     }
   ],
   "memos": [

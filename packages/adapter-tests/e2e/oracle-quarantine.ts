@@ -145,12 +145,15 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Row hydration rewrites each forwarded cell text with textContent, dropping the <!--bf:^sN--> slot markers SSR emitted; the text itself is unchanged.',
     limitation: 'loop-row-child-text-children-markers-dropped',
   },
-  // Portal-origin marker (`bf-po`) present in the SSR placeholder, gone
-  // after hydration moves the portaled content to its real destination —
-  // plausibly the INTENDED cleanup once the portal claims its content
-  // rather than a bug, but flagged since this oracle has no way to tell
-  // "expected marker removal" apart from "lost attribute" on its own —
-  // worth a human look before assuming either.
+  // Registry limitation `ref-callback-portal-content-inline-at-ssr`
+  // (direction corrected 2026-09-18 — `assertSnapshotsAgree` reports
+  // Received = SSR, Expected = hydrated): SSR renders the overlay/content
+  // subtree INLINE at its source position with no `bf-po`; the hydrate-time
+  // `ref` callback's `createPortal` then moves it to the end of
+  // `document.body` and stamps `bf-po`. So the marker is not "lost" after
+  // hydration — it is ADDED, together with the relocation, because a `ref`
+  // callback never runs at SSR and no adapter places the subtree at its
+  // portal destination server-side.
   // `idempotence` graduated (#2717): the hydrated and csr-mount legs used
   // to disagree on where in `document.body`'s child order the portal
   // content sits relative to the main content — `[root, …portals]` vs
@@ -164,41 +167,27 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // step ran, so it was a mount-order defect, not an interaction one.
   dialog: {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="DialogBasicDemo_test_s1"; gone after hydration relocates the portal content — may be by-design portal cleanup, not a defect.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
+    reason:
+      'SSR renders the dialog overlay/content inline inside the component root with no bf-po; hydration\'s createPortal moves it to the end of document.body and stamps bf-po="DialogBasicDemo_test_s1".',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   'dropdown-menu': {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="DropdownMenuCheckboxDemo_test_s5"; gone after hydration — same shape as dialog.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
+    reason:
+      'SSR renders the menu content inline with no bf-po; hydration relocates it to document.body and stamps bf-po="DropdownMenuCheckboxDemo_test_s5" — same shape as dialog.',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   popover: {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="PopoverBasicDemo_test_s1"; gone after hydration — same shape as dialog.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
+    reason:
+      'SSR renders the popover content inline with no bf-po; hydration relocates it to document.body and stamps bf-po="PopoverBasicDemo_test_s1" — same shape as dialog.',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   portal: {
     oracles: ['snap', 'three-point'],
-    reason: 'SSR placeholder carries bf-po="PortalExample_test"; gone after hydration — same shape as dialog (this fixture IS the portal primitive demo).',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2717',
-  },
-  // Layout-dependent: embla measures real geometry, which the CSS-less
-  // fixture-hydrate host page can't provide consistently pre/post
-  // hydration — the existing `hostStyles` determinism caveat (#1971)
-  // already calls this class out for interaction assertions; this oracle
-  // hits the same wall on the static transform style.
-  carousel: {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR bakes style="transform: translate3d(0px, 0px, 0px)" on the track; hydration (embla measuring real, CSS-less-page geometry) removes the inline style — likely the #1971 layout-dependence caveat, not a hydration defect.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
-  },
-  // `data-key` loop-reconciliation marker present in SSR, gone after
-  // hydration claims the row — plausibly intended cleanup, same caveat
-  // as the portal-origin-marker group above.
-  'tag-cloud': {
-    oracles: ['snap', 'three-point'],
-    reason: 'SSR <li> carries data-key="1:a &amp; b"; absent after hydration claims the loop row.',
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2718',
+    reason:
+      'SSR renders the overlay and content divs inline with no bf-po; hydration relocates both to document.body and stamps bf-po="PortalExample_test" — same shape as dialog (this fixture IS the portal primitive demo).',
+    limitation: 'ref-callback-portal-content-inline-at-ssr',
   },
   // `tabs` graduated (#2728): fixed in `materializeComponent`
   // (`packages/client/src/runtime/component.ts`) — see the changeset for

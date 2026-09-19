@@ -11,7 +11,7 @@ import { assertNever } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, type CsrEnv } from './csr-substitute.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import type { ClientJsContext } from './types.ts'
-import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } from '@barefootjs/shared'
+import { BF_KEY, BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { renderChildScopeArgs } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
@@ -644,10 +644,30 @@ export function flatMapLeafKeyExpr(ir: IRNode): string | null {
   }
 }
 
-/** Copy of `ir` with the loop `key` attribute removed (element leaves only). */
-function stripLeafKeyAttr(ir: IRNode): IRNode {
+/**
+ * Copy of `ir` with the loop `key` attribute replaced by the reconciliation
+ * attribute the runtime keys on: `data-key={String(<key>)}` (element leaves
+ * only; a keyless leaf just loses nothing). This is the one client-side
+ * rendering of a flatMap leaf's key — the hydrate template, the CSR
+ * descriptor and the module-scope template all go through it — and it
+ * mirrors what SSR emits from the rawBody (`flatMapRawBodyWithLeafKeys`,
+ * jsx-to-ir.ts) and what `mapArray` stamps on adoption/creation (`BF_KEY`;
+ * the descriptor path never passes a depth-suffixed name), so every
+ * construction path agrees on the attribute. Rendered as an ordinary
+ * expression attribute, so it is escaped like one.
+ */
+function leafKeyAsDataKeyAttr(ir: IRNode): IRNode {
   if (ir.type !== 'element') return ir
-  return { ...ir, attrs: ir.attrs.filter((a) => a.name !== 'key') }
+  const keyExpr = flatMapLeafKeyExpr(ir)
+  if (keyExpr === null) return { ...ir, attrs: ir.attrs.filter((a) => a.name !== 'key') }
+  // In place, not appended: SSR splices `data-key` at the `key` attribute's
+  // position, so the attribute order matches byte-for-byte.
+  return {
+    ...ir,
+    attrs: ir.attrs.map((a) =>
+      a.name === 'key' ? { ...a, name: BF_KEY, value: { kind: 'expression' as const, expr: `String(${keyExpr})` } } : a,
+    ),
+  }
 }
 
 /**
@@ -675,7 +695,7 @@ export function renderFlatMapClientBody(
     rawLeaf: true,
     renderLeaf: (ir) => {
       const key = flatMapLeafKeyExpr(ir)
-      const html = irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, 1, undefined, undefined)
+      const html = irToHtmlTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, 1, undefined, undefined)
       return `({ k: ${key ?? 'undefined'}, h: \`${html}\` })`
     },
   })
@@ -974,12 +994,13 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       if (node.flatMapCallback) {
         // Complex flatMap: the body is structured segments, rendered through
         // the same single door as map preambles.
-        // Leaf `key` is stripped from the string form: SSR (Hono rawBody)
-        // never emits data-key for flatMap leaves, and reconciliation
-        // identity is stamped by mapArray via setAttribute — emitting it
-        // here was the CSR/SSR data-key asymmetry (unescaped, client-only).
+        // The leaf `key` renders as `data-key={String(<key>)}` here, in the
+        // CSR descriptor (`renderFlatMapClientBody`) and in the SSR rawBody
+        // (`flatMapRawBodyWithLeafKeys`, jsx-to-ir.ts) alike — the attribute
+        // `mapArray` stamps on adoption/creation, so SSR, hydrate template and
+        // csr-mount agree on it (see `leafKeyAsDataKeyAttr`).
         const body = renderPreamble(node.flatMapCallback, {
-          renderLeaf: (ir) => irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar),
+          renderLeaf: (ir) => irToHtmlTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar),
         })
         mapExpr = interp(mappedRowsMarkup(wrappedArray, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
@@ -1445,8 +1466,8 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       let mapExpr: string
       if (node.flatMapCallback) {
         const body = renderPreamble(node.flatMapCallback, {
-          // Leaf `key` stripped — see the irToHtmlTemplate site above.
-          renderLeaf: (ir) => irToPlaceholderTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams),
+          // Leaf `key` → `data-key` — see the irToHtmlTemplate site above.
+          renderLeaf: (ir) => irToPlaceholderTemplate(leafKeyAsDataKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams),
         })
         mapExpr = interp(mappedRowsMarkup(wrappedArray, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
@@ -2791,8 +2812,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         const body = renderPreamble(node.flatMapCallback, {
           textVariant: 'template',
           transformJs: (t) => rewritePropsObjectRef(t, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: childScope }),
-          // Leaf `key` stripped — see the irToHtmlTemplate site above.
-          renderLeaf: (ir) => recurseInLoopBody(stripLeafKeyAttr(ir)),
+          // Leaf `key` → `data-key` — see the irToHtmlTemplate site above.
+          renderLeaf: (ir) => recurseInLoopBody(leafKeyAsDataKeyAttr(ir)),
         })
         mapExpr = interp(mappedRowsMarkup(iterArrayExpr, 'flatMap', node.flatMapCallback.params, body))
       } else if (node.preamble) {
