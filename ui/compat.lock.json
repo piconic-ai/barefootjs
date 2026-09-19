@@ -4344,14 +4344,6 @@
           }
         }
       },
-      "signal-optional-init": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "optional-typed-signal-initial-value-dropped"
-          ]
-        }
-      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -5012,10 +5004,6 @@
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
       },
-      "signal-optional-init": {
-        "description": "a signal declared as `T | undefined` with a literal initial value renders that value at SSR as an…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-optional-init.ts"
-      },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
@@ -5435,19 +5423,6 @@
       "diagnostics": [
         "BF021",
         "BF101"
-      ]
-    },
-    "optional-typed-signal-initial-value-dropped": {
-      "title": "A signal declared with an explicit `T | undefined` type argument loses its literal initial value at SSR",
-      "kind": "silent",
-      "given": "a signal created as `createSignal<string | undefined>('one')` whose getter is rendered as an attribute (`title={label()}`) or as a text expression",
-      "expected": "the server HTML carries the literal initial value (`title=\"one\"` and the text `one`), as the reference renders",
-      "actual": "seeds the field from the union type instead of the literal (`Label interface{}` initialised to `nil`), so the server HTML renders `title=\"\"` and empty text until hydration writes the real value",
-      "fixtures": [
-        "signal-optional-init"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "ref-callback-portal-content-inline-at-ssr": {

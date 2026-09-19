@@ -118,8 +118,30 @@ export function convertInitialValue(
     return propRef(param)
   }
 
-  if (typeInfo.kind === 'primitive') {
-    if (typeInfo.primitive === 'boolean') {
+  // A `T | undefined`/`T | null` union (the controlled-component idiom's
+  // widened signal type, e.g. `createSignal<string | undefined>('one')`)
+  // only documents nullability at the TYPE level — it says nothing about
+  // the INITIAL VALUE, which may well be the concrete literal (#3061).
+  // `collapseLiteralUnion` above intentionally leaves this heterogeneous
+  // union alone (member families differ: `string` vs `undefined`), so none
+  // of the primitive/array/interface branches below ever matched and a
+  // literal initial value silently fell through to `nil`. Unwrap to the
+  // union's single non-nullish branch for THIS literal-baking decision only
+  // (the field itself keeps its `interface{}` type from `typeInfoToGo`,
+  // which doesn't collapse this shape either — an `interface{}` holding a
+  // baked Go string/bool/float64 still renders correctly through
+  // `{{.Field}}`/`title="{{.Field}}"`, and the `undefined` step of a
+  // toggling signal keeps its `nil` zero value on the branches that don't
+  // match below).
+  const literalTypeInfo =
+    typeInfo.kind === 'union' && typeInfo.unionTypes?.length === 2
+      ? (typeInfo.unionTypes.find(
+          t => t.kind === 'primitive' && t.primitive !== 'undefined' && t.primitive !== 'null',
+        ) ?? typeInfo)
+      : typeInfo
+
+  if (literalTypeInfo.kind === 'primitive') {
+    if (literalTypeInfo.primitive === 'boolean') {
       // Structural first: the SAME initial value, already parsed
       // (`SignalInfo.parsed`/module-const `parsed`) — text-matching
       // `value === 'true'` is the fallback for a caller with no `preParsed`
@@ -129,7 +151,7 @@ export function convertInitialValue(
       }
       return value === 'true' ? 'true' : 'false'
     }
-    if (typeInfo.primitive === 'number') {
+    if (literalTypeInfo.primitive === 'number') {
       // Structural first — `numberLiteralRawGo` unwraps a leading unary minus
       // (#2168 math-methods: `createSignal(-7.6)`) off the literal's OWN
       // `raw` token (exact source spelling, never a re-stringified value).
@@ -143,7 +165,7 @@ export function convertInitialValue(
       if (/^-?\d+\.\d+$/.test(value)) return value
       return '0'
     }
-    if (typeInfo.primitive === 'string') {
+    if (literalTypeInfo.primitive === 'string') {
       // Structural first: `JSON.stringify` re-quotes/escapes the literal's
       // unquoted `value` for Go — correct for any embedded quote/backslash,
       // unlike the text fallback's blind `'` → `"` swap below.
@@ -174,13 +196,13 @@ export function convertInitialValue(
     }
   }
 
-  if (typeInfo.kind === 'array') {
-    return jsLiteralToGo(ctx, typeInfo, preParsed) ?? 'nil'
+  if (literalTypeInfo.kind === 'array') {
+    return jsLiteralToGo(ctx, literalTypeInfo, preParsed) ?? 'nil'
   }
 
   // A string type-alias keeps its string value instead of falling to nil.
-  if (typeInfo.kind === 'interface' && typeInfo.raw) {
-    const aliasBase = ctx.state.localTypeAliases.get(typeInfo.raw)
+  if (literalTypeInfo.kind === 'interface' && literalTypeInfo.raw) {
+    const aliasBase = ctx.state.localTypeAliases.get(literalTypeInfo.raw)
     if (aliasBase === 'string') {
       if (value.startsWith("'") || value.startsWith('"')) {
         return value.replace(/'/g, '"')
@@ -196,8 +218,8 @@ export function convertInitialValue(
     // fell straight through to `nil` — a compile error for a non-pointer
     // struct field (`cannot use nil as User value in struct literal`), not
     // merely a silently-dropped initial value.
-    if (ctx.state.localStructFields.has(typeInfo.raw)) {
-      const baked = jsLiteralToGo(ctx, typeInfo, preParsed)
+    if (ctx.state.localStructFields.has(literalTypeInfo.raw)) {
+      const baked = jsLiteralToGo(ctx, literalTypeInfo, preParsed)
       if (baked !== null) return baked
       // Baking failed (a non-literal initial value, or no `preParsed` tree)
       // — `nil` is STILL invalid Go for this non-pointer struct field, so
@@ -206,7 +228,7 @@ export function convertInitialValue(
       // correct fallback here — mirrors this function's own docstring
       // ("falls back to the type's zero value") for every other typed
       // branch above.
-      return `${typeInfo.raw}{}`
+      return `${literalTypeInfo.raw}{}`
     }
   }
 

@@ -2467,7 +2467,7 @@
           ]
         },
         "go-template": {
-          "pass": 266,
+          "pass": 267,
           "total": 291,
           "gaps": [
             {
@@ -2582,12 +2582,6 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
-              ]
-            },
-            {
-              "fixture": "signal-optional-init",
-              "limitations": [
-                "optional-typed-signal-initial-value-dropped"
               ]
             },
             {
@@ -3901,7 +3895,7 @@
           ]
         },
         "go-template": {
-          "pass": 383,
+          "pass": 384,
           "total": 413,
           "gaps": [
             {
@@ -4040,12 +4034,6 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
-              ]
-            },
-            {
-              "fixture": "signal-optional-init",
-              "limitations": [
-                "optional-typed-signal-initial-value-dropped"
               ]
             },
             {
@@ -5289,7 +5277,7 @@
           ]
         },
         "go-template": {
-          "pass": 308,
+          "pass": 309,
           "total": 328,
           "gaps": [
             {
@@ -5374,12 +5362,6 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
-              ]
-            },
-            {
-              "fixture": "signal-optional-init",
-              "limitations": [
-                "optional-typed-signal-initial-value-dropped"
               ]
             },
             {
@@ -12372,7 +12354,7 @@
           ]
         },
         "go-template": {
-          "pass": 211,
+          "pass": 212,
           "total": 222,
           "gaps": [
             {
@@ -12421,12 +12403,6 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
-              ]
-            },
-            {
-              "fixture": "signal-optional-init",
-              "limitations": [
-                "optional-typed-signal-initial-value-dropped"
               ]
             },
             {
