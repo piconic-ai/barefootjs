@@ -31,17 +31,8 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // typed shape Go's Input struct requires. Go-side expectedHtml pins the SSR
   // contract; CSR runtime parity is a tracked harness follow-up.
   'jsx-spread-props-object',
-  // #1467 multi-export class (NOT #1407): the shared source compiles several
-  // components and the harness's `__lastComponent` renders
-  // `PropsReactivityComparison`, not the pinned `ReactiveProps` — verified by
-  // the rendered output's `props-reactivity-comparison` container class.
-  'reactive-props',
   // Keyed child-component loop materializes at init — same as `static-array-from-props`.
   'todo-app',
-  // #1467: multi-export source — the harness's `__lastComponent` renders
-  // `KbdGroup`, not the pinned `Kbd`; SSR `componentName` pin keeps Hono
-  // honest, and `kbd` ships no interactions anyway.
-  'kbd',
   // #1467: `placeholder` flows through `{...props}` → `applyRestAttrs` at
   // init, which the harness stubs as a noop — same class as
   // `jsx-spread-props-object`; the fixture-hydrate layer exercises it for real.
@@ -55,6 +46,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // conformance pins the SSR contract (and is where the go-template gap
   // this fixture exists for shows up).
   'composite-row-child-rest-bag-prop',
+  // Same fixture with the child declared after the parent — same harness
+  // limitation on the `{...rest}`-delivered `title`; the declaration-order
+  // contract it exists for is pinned by per-adapter render conformance.
+  'composite-row-child-rest-bag-prop-hoisted',
   // #2754: the stateless sibling of `rest-spread-child-attrs`, and the same
   // harness limitation — the CSR path here evaluates only the `template`
   // lambda, and `data-probe` arrives through `applyRestAttrs` in `init`,
@@ -63,16 +58,15 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // allocates); the client half is pinned by
   // `packages/jsx/src/__tests__/issue-2754-rest-spread-needs-slot.test.ts`.
   'stateless-rest-spread-forward',
-  // #1467: same multi-export limitation as `kbd` — `__lastComponent` renders
-  // the last demo export instead of the pinned basic demo (radio-group,
-  // accordion, tabs, dialog, popover, tooltip, select, dropdown-menu,
-  // combobox, command; data-table also hits the default-prop gap below).
-  'radio-group',
+  // The harness now mounts the fixture's `componentName` (the #1467
+  // multi-export class — `__lastComponent` rendering the last demo export
+  // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,
+  // popover, tooltip, kbd and reactive-props pass). What still diverges in
+  // these demos is their icon markup: the CSR template emits the SVG
+  // `viewBox` attribute as `view-box` (camelCase SVG attribute kebab-cased
+  // on the client-built DOM) where SSR keeps `viewBox`. data-table also
+  // hits the default-prop gap below.
   'accordion',
-  'tabs',
-  'dialog',
-  'popover',
-  'tooltip',
   'select',
   'dropdown-menu',
   'combobox',
