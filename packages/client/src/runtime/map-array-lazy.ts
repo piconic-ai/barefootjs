@@ -58,11 +58,11 @@
  *   selector), whose accessor subscribes the caller only to the specific
  *   keys it was called with — so a reconcile can leave the effect
  *   subscribed to keys that no longer matter and NOT subscribed to keys
- *   that now do. Every
- *   loop with an `applyOuter` therefore re-runs it after any reconcile that
- *   created a row or changed an item (removals strand nothing). Applied
- *   unconditionally rather than gated on a compiler judgement about which
- *   reads are per-key: see the seam's comment inside `mapArrayLazy` for why
+ *   that now do. Every loop with an `applyOuter` therefore re-runs it
+ *   after any reconcile that created a row or changed an item (removals
+ *   strand nothing). Applied unconditionally rather than gated on a
+ *   compiler judgement about which reads are per-key: see the seam's
+ *   comment inside `mapArrayLazy` for why
  *   (a misclassification must be harmless, not silently wrong) and for the
  *   three stranding sequences it prevents, each reproduced before it existed.
  *
