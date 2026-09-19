@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 435,
+    "totalFixtures": 437,
     "fixtures": {
       "child-prop-rest-forward": {
         "go-template": {
@@ -3880,6 +3880,62 @@
           ]
         }
       },
+      "opaque-local-accessor-call": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "opaque-local-accessor-call"
+          ]
+        }
+      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -4984,6 +5040,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "opaque-local-accessor-call": {
+        "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
+      },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/preamble-cells.ts"
@@ -5423,6 +5483,27 @@
       "diagnostics": [
         "BF021",
         "BF101"
+      ]
+    },
+    "opaque-local-accessor-call": {
+      "title": "Opaque local accessor invoked from a template position",
+      "kind": "silent",
+      "given": "a component-body `const` bound to the result of a call the compiler cannot evaluate (a helper returning a function, or an accessor returned by a library), invoked with `()` in text position",
+      "expected": "the accessor runs at render time and its result renders in the server HTML",
+      "actual": "emits the slot as a bare template-variable lookup named after the const (an empty slot in the CSR template lambda), with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
+      "fixtures": [
+        "opaque-local-accessor-call"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "ref-callback-portal-content-inline-at-ssr": {
