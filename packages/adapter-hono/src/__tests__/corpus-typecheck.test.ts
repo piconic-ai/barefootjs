@@ -28,6 +28,7 @@ const HERE = resolve(import.meta.dir)
 const REPO = resolve(HERE, '../../../..')
 const UI = join(REPO, 'ui/components/ui')
 const UI_TYPES = join(REPO, 'ui/types/index.tsx')
+const UI_LIB = join(REPO, 'ui/lib')
 
 /**
  * Pre-existing type-level debt in emitted templates, tracked in
@@ -58,6 +59,10 @@ describe('ui corpus type-check gate (#2570 / #2573)', () => {
       mkdirSync(join(tmp, 'components', 'types'), { recursive: true })
       cpSync(UI_TYPES, join(tmp, 'types', 'index.tsx'))
       cpSync(UI_TYPES, join(tmp, 'components', 'types', 'index.tsx'))
+      // `../../../lib/<name>` — ui-internal runtime helpers (`ui/lib/*.ts`,
+      // e.g. `track-position`) that components import alongside `types`.
+      // Mirror the directory wholesale so the emitted templates resolve them.
+      cpSync(UI_LIB, join(tmp, 'lib'), { recursive: true })
 
       const roots: string[] = []
       for (const name of readdirSync(UI).sort()) {

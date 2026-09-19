@@ -1,5 +1,4 @@
 import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
-import { trackPosition } from '../../../lib/track-position'
 
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -373,3 +372,55 @@ export function initPopoverFormDemo(__scope, _p = {}) {
 
 hydrate('PopoverFormDemo', { init: initPopoverFormDemo, template: (_p) => `${renderChild('Popover', {open: (false), children: `${renderChild('PopoverTrigger', {children: `<span class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></span>`}, undefined, 's0')}${renderChild('PopoverContent', {align: "start", className: "w-80", children: `<div class="grid gap-4"><div class="space-y-2"><h4 class="font-medium leading-none">Notifications</h4><p class="text-sm text-muted-foreground"> Configure how you receive notifications. </p></div><div class="grid gap-3"><div class="flex items-center justify-between"><label class="text-sm" for="popover-email">Email</label><input id="popover-email" type="email" placeholder="you@example.com" class="h-8 w-48 rounded-md border bg-background px-3 text-sm" /></div><div class="flex items-center justify-between"><label class="text-sm" for="popover-frequency">Frequency</label><select id="popover-frequency" class="h-8 w-48 rounded-md border bg-background px-3 text-sm"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div></div><div class="flex justify-between">${renderChild('PopoverClose', {className: "inline-flex items-center justify-center rounded-md border bg-background px-3 py-1.5 text-sm hover:bg-accent", children: `<span>Cancel</span>`}, undefined, 's1')}<button type="button" class="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90" bf="^s3">${(false) ? `<!--bf-cond-start:^s2-->${escapeText('Saved!')}<!--bf-cond-end:^s2-->` : `<!--bf-cond-start:^s2-->${escapeText('Save')}<!--bf-cond-end:^s2-->`}</button></div></div>`}, undefined, 's4')}`}, undefined, 's5')}`, comment: true })
 export function PopoverFormDemo(_p, __bfKey) { return createComponent('PopoverFormDemo', _p, __bfKey) }
+
+// ---- inlined ui/lib/track-position.ts ----
+/**
+ * BarefootJS UI - Floating-element position tracking
+ *
+ * Keeps a `position: fixed` overlay (menu, popover, listbox, hover card)
+ * anchored to its trigger for as long as it is open. Shared by every
+ * `ui/` overlay that positions itself from `getBoundingClientRect()` so
+ * the decision below is made in one place (#2848).
+ *
+ * Internal to `ui/` — not part of `@barefootjs/client`'s public runtime
+ * surface (moved out in #3090: this is floating-UI plumbing used only by
+ * `ui/` components, not a general-purpose reactive primitive).
+ */
+/**
+ * Run `update` now, re-run it on every scroll (capture phase, so a
+ * nested scroll container counts too) and on resize, and return the
+ * dispose that detaches both listeners.
+ *
+ * The dispose re-runs `update` ONCE, synchronously, before detaching —
+ * that final sample is the whole point of this helper. `scroll` events
+ * are coalesced per rendering frame and report the scroll position at
+ * dispatch time, not at scroll time. A programmatic scroll that landed
+ * in the current frame (a `focus()` on an offscreen item, a
+ * `scrollIntoView()`) has therefore not dispatched yet when a close
+ * runs in the same frame; the listener is gone by the time the event
+ * fires, and whatever position the listener would have written is lost.
+ * Without the final sample the closed element's inline position depends
+ * on whether a frame boundary happened to fall between that scroll and
+ * the close — measured as the `dropdown-menu` idempotence oracle
+ * landing on `top: -580px` / `-606px` / `33px` for the same action
+ * sequence. Sampling once at dispose makes the closed position a
+ * function of the geometry at close time only.
+ *
+ * (An `overflow: hidden` scroll lock does not narrow this window: it
+ * blocks user gestures, never programmatic scrolling, on `html` and
+ * `body` alike — verified in Chromium against the fixture-hydrate host.)
+ *
+ * @param update - Positions the element from current geometry.
+ * @returns Dispose: re-runs `update` once, then detaches the listeners.
+ */
+export function trackPosition(update) {
+    update();
+    const onChange = () => update();
+    window.addEventListener('scroll', onChange, true);
+    window.addEventListener('resize', onChange);
+    return () => {
+        window.removeEventListener('scroll', onChange, true);
+        window.removeEventListener('resize', onChange);
+        update();
+    };
+}
