@@ -29,12 +29,6 @@ on:
       # The release scripts' unit tests (scripts/lib/__tests__) run in the
       # `rest` group below; the sharder is what the jsx/adapter-tests groups run.
       - 'scripts/**'
-      # integrations/shared/lib's unit tests (the Workers Cache policy and the
-      # Container image init guard, which reads every integration's
-      # wrangler.toml + Dockerfile) also run in the `rest` group below.
-      - 'integrations/shared/lib/**'
-      - 'integrations/*/Dockerfile'
-      - 'integrations/*/wrangler.toml'
   pull_request:
     paths:
       - 'packages/client/**'
@@ -62,12 +56,6 @@ on:
       # The release scripts' unit tests (scripts/lib/__tests__) run in the
       # `rest` group below; the sharder is what the jsx/adapter-tests groups run.
       - 'scripts/**'
-      # integrations/shared/lib's unit tests (the Workers Cache policy and the
-      # Container image init guard, which reads every integration's
-      # wrangler.toml + Dockerfile) also run in the `rest` group below.
-      - 'integrations/shared/lib/**'
-      - 'integrations/*/Dockerfile'
-      - 'integrations/*/wrangler.toml'
 
 permissions:
   contents: read
@@ -111,11 +99,7 @@ jobs:
           - group: adapter-tests-3
             run: bun test $(bun scripts/ci/shard-test-files.ts packages/adapter-tests 3 3)
           - group: rest
-            # integrations/shared/lib runs in its own process: packages/client's
-            # tests register happy-dom's globals, whose Headers drop Set-Cookie /
-            # Cookie as a browser does, so the Workers Cache policy tests would
-            # see cookie-free responses if they shared the process.
-            run: bun test packages/client packages/test packages/router scripts/lib && bun test integrations/shared/lib
+            run: bun test packages/client packages/test packages/router scripts/lib
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

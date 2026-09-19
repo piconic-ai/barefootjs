@@ -7,7 +7,6 @@
 # alongside index.php.
 
 FROM php:8.4-cli
-RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -r -s /bin/false app
 WORKDIR /app
 
@@ -19,16 +18,12 @@ COPY composer.json composer.lock ./
 
 ENV BASE_PATH=/integrations/blade
 ENV APP_ENV=production
+# The Cloudflare Container worker probes defaultPort 8080 (container.ts);
+# without this the app falls back to its dev port 3015 and never comes up.
+ENV PORT=8080
+EXPOSE 8080
+USER app
 # PHP_CLI_SERVER_WORKERS gives the built-in server a small worker pool so the
 # SSE stream (/api/ai-chat) doesn't stall other in-flight requests -- see
 # index.php's top docstring.
-ENV PHP_CLI_SERVER_WORKERS=8
-EXPOSE 8080
-USER app
-# Run the server under an init so the Container's SIGTERM actually stops it
-# -- see "Why production images run under tini" in integrations/README.md.
-ENTRYPOINT ["tini", "-g", "--"]
-# Exec form, so the server is tini's direct child with no shell in between.
-# The Cloudflare Container worker probes defaultPort 8080 (container.ts), so
-# the listen port is spelled out here rather than expanded from $PORT.
-CMD ["php", "-S", "0.0.0.0:8080", "index.php"]
+CMD ["sh", "-c", "PHP_CLI_SERVER_WORKERS=8 php -S 0.0.0.0:${PORT} index.php"]

@@ -6,7 +6,6 @@
 # (BarefootJS Python runtime) exist alongside app.py.
 
 FROM python:3.12-slim
-RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -r -s /bin/false app
 WORKDIR /app
 
@@ -24,7 +23,4 @@ ENV DJANGO_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 USER app
-# Run the server under an init so the Container's SIGTERM actually stops it
-# -- see "Why production images run under tini" in integrations/README.md.
-ENTRYPOINT ["tini", "-g", "--"]
 CMD ["python3", "app.py"]

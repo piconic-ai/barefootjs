@@ -34,7 +34,6 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 
 FROM alpine:3.19
 
-RUN apk add --no-cache tini
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
@@ -44,7 +43,4 @@ COPY integrations/nethttp/dist ./dist
 ENV BASE_PATH=/integrations/nethttp
 EXPOSE 8083
 USER app
-# Run the server under an init so the Container's SIGTERM actually stops it
-# -- see "Why production images run under tini" in integrations/README.md.
-ENTRYPOINT ["tini", "-g", "--"]
 CMD ["/app/nethttp-server"]
