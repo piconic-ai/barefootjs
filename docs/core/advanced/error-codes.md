@@ -446,7 +446,6 @@ decision, not a per-adapter capability gap.
 ```tsx
 // ❌ BF056
 import { formatDate } from '@barefootjs/client'
-
 export function Post({ createdAt }: { createdAt: Date }) {
   return <time>{formatDate(createdAt, 'YYYY-MM-DD')}</time>
 }
