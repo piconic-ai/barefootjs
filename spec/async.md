@@ -99,7 +99,7 @@ correctness is a compiler invariant").
 
 Composing components needs no new law. `ready` is **natural**: transforming a value with a
 plain function `g: T -> S` before or after wrapping it in `AsyncState` gives the same result
-(`ready_S ∘ g = map(g) ∘ ready_S`). Pasting that naturality square against the child
+(`ready_S ∘ g = map(g) ∘ ready_T`). Pasting that naturality square against the child
 component's own fold triangle (`fold_S ∘ ready_S = f_S`) composes for free:
 
 ```mermaid
@@ -199,9 +199,9 @@ query's `initial` seed is lowered directly into every adapter's own template at 
 (the same registry `queryHref` already uses, [`packages/jsx/src/builtin-lowering-plugins.ts`](../packages/jsx/src/builtin-lowering-plugins.ts)),
 not a brand-packaged runtime call the SSR path would have to skip. Rendering a `pending`
 placeholder that never resolves on the server, then re-deferring the read on the client, is
-exactly the failure this constraint avoids — a live instance of the general shape is on file
-as the `opaque-local-accessor-call` known limitation
-(`packages/adapter-tests/limitations/opaque-local-accessor-call.ts`): a value the compiler
-cannot evaluate at compile time silently degrades to an empty slot with no diagnostic. Layer 0
-has to be built so that shape cannot happen for `createQuery` specifically, not merely
-documented as a risk.
+exactly the failure this constraint avoids. A related silent gap is already on file as the
+`opaque-local-accessor-call` known limitation
+(`packages/adapter-tests/limitations/opaque-local-accessor-call.ts`): a local accessor the
+compiler cannot evaluate (`const q = someCall()`, then `{q()}`) lowers to an empty slot with no
+diagnostic on every DSL adapter. Layer 0 has to be built so that shape cannot happen for
+`createQuery` specifically, not merely documented as a risk.
