@@ -5,12 +5,16 @@
  * Used by adapter-tests conformance runner.
  */
 
+/** @jsxImportSource hono/jsx */
+
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter } from '@barefootjs/jsx'
 import { Hono } from 'hono'
+import { jsxRenderer } from 'hono/jsx-renderer'
 import { readFileSync } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { BfPortals } from "./portals.tsx"
 
 // Place temp files inside the hono package so hono/jsx resolves correctly
 const RENDER_TEMP_DIR = resolve(import.meta.dir, '../.render-temp')
@@ -272,10 +276,33 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
 
     const Component = mod[resolvedName]
 
-    // Render using Hono's app.request()
+    // Render using Hono's app.request(), through the `jsxRenderer`
+    // middleware + `<BfPortals />` outlet — matching the real page shape
+    // (`site/ui/renderer.tsx`'s `{children}<BfPortals /><BfScripts />`)
+    // instead of the bare `c.html(Component(...))` this used before #3059:
+    // an SSR-portal-marked element (`ssrPortalOwnerScope`) is collected via
+    // `useRequestContext()` (from `hono/jsx-renderer`) and only reachable
+    // through this middleware — without it `collectSsrPortalElement` falls
+    // back to inline rendering (its documented no-context fallback), silently
+    // hiding the very divergence this harness exists to catch. `docType:
+    // false` keeps the fixture's `expectedHtml` free of an added
+    // `<!DOCTYPE html>` prefix; no other fixture's output changes, since
+    // `BfPortals` renders nothing when nothing was collected.
     const app = new Hono()
+    app.use(
+      '*',
+      jsxRenderer(({ children }) => <>{children}<BfPortals /></>, { docType: false }),
+    )
+    // `<Component .../>` (a lazy element), NOT `Component(...)` (an eager
+    // call): `Component(...)` would run the WHOLE component body —
+    // including any `collectSsrPortalElement` call inside it — as an
+    // ordinary argument evaluation, BEFORE `c.render` gets a chance to
+    // wrap it in the `RequestContext.Provider` that
+    // `useRequestContext()` reads from. JSX defers that call to Hono's
+    // own stringification walk, which happens AFTER the render tree
+    // (and so the Provider) is in place.
     app.get('/', (c) =>
-      c.html(Component({ __instanceId: 'test', __bfChild: false, ...props })),
+      c.render(<Component __instanceId="test" __bfChild={false} {...props} />),
     )
 
     const res = await app.request('/')

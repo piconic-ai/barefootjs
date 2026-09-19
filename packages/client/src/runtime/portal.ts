@@ -94,14 +94,33 @@ export type PortalChildren = HTMLElement | string | Renderable
  * portal.unmount()
  */
 /**
- * Check if an element is inside an SSR-rendered portal.
- * SSR portals are marked with bf-pi attribute.
+ * Check if an element is inside — or, since #3059, itself already IS — an
+ * SSR-placed portal target.
+ *
+ * Two distinct SSR portal shapes stamp two distinct markers, both checked
+ * here:
+ *
+ *   - The explicit `<Portal>` component (`@barefootjs/hono`'s
+ *     `portal-ssr.tsx`) wraps arbitrary children in its own container,
+ *     `<div bf-pi="…" bf-po="…">`, so its descendants are INSIDE a
+ *     `[bf-pi]` ancestor.
+ *   - The compiler's `ref`-callback SSR-portal recognition
+ *     (`ssrPortalOwnerScope`, `isSsrPortalRefCallback` in
+ *     `@barefootjs/jsx`) stamps `bf-po` directly on the ONE element
+ *     itself — no wrapper — matching exactly what `createPortal` below
+ *     stamps onto the same element at hydrate time. That element's own
+ *     `ref` callback receives ITSELF as `element`, so the check must also
+ *     recognize `bf-po` on `element` and not just on an ancestor.
+ *
+ * Either shape means: this DOM was already placed at its portal
+ * destination by SSR, so a `ref` callback guarded on `!isSSRPortal(el)`
+ * correctly treats `createPortal` as a no-op.
  *
  * @param element - Element to check
- * @returns true if element is inside an SSR portal
+ * @returns true if the element is an SSR-placed portal target (or inside one)
  */
 export function isSSRPortal(element: HTMLElement): boolean {
-  return element.closest(`[${BF_PORTAL_ID}]`) !== null
+  return element.closest(`[${BF_PORTAL_ID}], [${BF_PORTAL_OWNER}]`) !== null
 }
 
 /**

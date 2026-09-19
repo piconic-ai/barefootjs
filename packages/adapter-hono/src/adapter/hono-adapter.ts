@@ -48,7 +48,7 @@ type HonoRenderCtx = {
   isRootOfClientComponent?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, escapeHtml } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, escapeHtml } from '@barefootjs/shared'
 
 /**
  * The synthetic hydration props every generated component accepts, as one
@@ -366,6 +366,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       lines.push(`import { provideContextSSR } from '@barefootjs/hono/client-shim'`)
     }
 
+    // #3059: `renderElement` emits `collectSsrPortalElement(...)` for an
+    // element carrying `ssrPortalOwnerScope` — only when the component
+    // actually has one.
+    if (/\bcollectSsrPortalElement\(/.test(componentCode)) {
+      lines.push(`import { collectSsrPortalElement } from '@barefootjs/hono/portals'`)
+    }
+
     return lines.join('\n')
   }
 
@@ -676,9 +683,22 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       return lines.join('\n')
     }
 
+    // A JSX-expression-container child (`{expr}`) is only valid syntax
+    // INSIDE a JSX element's children — `renderElement`'s `{collectSsrPortalElement(…)}`
+    // for an `ssrPortalOwnerScope` element (#3059) is exactly that shape.
+    // Most element roots render as a literal `<tag>…</tag>` (already a
+    // valid bare return expression), but a portal-marked element CAN be
+    // its own component's root (`DialogOverlay`/`DialogContent`/
+    // `PopoverContent`/`DropdownMenuContent` each return their portaled
+    // div directly) — `return ({expr})` there is a syntax error (`{`
+    // right after `(` parses as an object literal). Wrapping in an empty
+    // Fragment makes the SAME `{expr}` a valid children position again,
+    // with no runtime effect (Fragment emits no wrapper markup).
+    const returnBody = jsxBody.trimStart().startsWith('{') ? `<>${jsxBody}</>` : jsxBody
+
     if (this.hasScriptAssets()) {
       lines.push(`  return wrapWithInlineScripts((`)
-      lines.push(`    ${jsxBody}`)
+      lines.push(`    ${returnBody}`)
       lines.push(
         this.hasPreloadAssets()
           ? `  ), __bfInlineScripts, __bfInlinePreloads)`
@@ -686,7 +706,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       )
     } else {
       lines.push(`  return (`)
-      lines.push(`    ${jsxBody}`)
+      lines.push(`    ${returnBody}`)
       lines.push(`  )`)
     }
     lines.push(`}`)
@@ -834,12 +854,25 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
-
-    if (children) {
-      return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
-    } else {
-      return `<${tag}${attrs}${hydrationAttrs} />`
+    // #3059: the recognized `ref`-callback SSR-portal pattern. Stamp
+    // `bf-po` directly on this element's own tag — matching exactly what
+    // the client `createPortal(el, document.body, { ownerScope })` stamps
+    // onto the SAME element at hydrate time (see `portal.ts`) — then route
+    // the whole element through `collectSsrPortalElement` instead of
+    // returning it for inline placement, so it renders at the `<BfPortals
+    // />` outlet (see that function's docstring in `../portals.tsx`).
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}={__scopeId}`
     }
+
+    const rendered = children
+      ? `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+      : `<${tag}${attrs}${hydrationAttrs} />`
+
+    if (element.ssrPortalOwnerScope) {
+      return `{collectSsrPortalElement(__scopeId, ${rendered})}`
+    }
+    return rendered
   }
 
   private renderText(text: IRText): string {

@@ -59,7 +59,7 @@
       "import": "./src/utils.ts"
     },
     "./test-render": {
-      "bun": "./src/test-render.ts"
+      "bun": "./src/test-render.tsx"
     },
     "./vite": {
       "types": "./src/vite.ts",
@@ -136,7 +136,7 @@
         "import": "./dist/utils.js"
       },
       "./test-render": {
-        "bun": "./src/test-render.ts"
+        "bun": "./src/test-render.tsx"
       },
       "./vite": {
         "types": "./dist/vite.d.ts",

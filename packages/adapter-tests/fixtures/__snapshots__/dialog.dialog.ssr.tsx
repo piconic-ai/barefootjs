@@ -3,6 +3,7 @@ import { serializeHydrationProps } from '@barefootjs/hono/utils'
 import { createContext, useContext, createEffect, createPortal, isSSRPortal, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { collectSsrPortalElement } from '@barefootjs/hono/portals'
 
 interface DialogContextValue {
   open: () => boolean
@@ -228,7 +229,7 @@ export function DialogOverlay(__allProps: DialogOverlayProps & { __instanceId?: 
   const __scopeId = __instanceId || `DialogOverlay_${Math.random().toString(36).slice(2, 8)}`
 
   return (
-    <div data-slot="dialog-overlay" data-state="closed" id={props.id} className={`${dialogOverlayBaseClasses} ${dialogOverlayClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" />
+    <>{collectSsrPortalElement(__scopeId, <div data-slot="dialog-overlay" data-state="closed" id={props.id} className={`${dialogOverlayBaseClasses} ${dialogOverlayClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" bf-po={__scopeId} />)}</>
   )
 }
 
@@ -250,7 +251,7 @@ export function DialogContent(__allProps: DialogContentProps & { __instanceId?: 
   }
 
   return (
-    <div data-slot="dialog-content" data-state="closed" role="dialog" aria-modal="true" aria-labelledby={props.ariaLabelledby} aria-describedby={props.ariaDescribedby} tabindex={-1} id={props.id} className={`${dialogContentBaseClasses} ${dialogContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
+    <>{collectSsrPortalElement(__scopeId, <div data-slot="dialog-content" data-state="closed" role="dialog" aria-modal="true" aria-labelledby={props.ariaLabelledby} aria-describedby={props.ariaDescribedby} tabindex={-1} id={props.id} className={`${dialogContentBaseClasses} ${dialogContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" bf-po={__scopeId}>{props.children}</div>)}</>
   )
 }
 

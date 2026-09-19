@@ -4,6 +4,7 @@ import { createContext, useContext, createSignal, createMemo, createEffect, crea
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon } from '../icon'
+import { collectSsrPortalElement } from '@barefootjs/hono/portals'
 
 interface SelectContextValue {
   open: () => boolean
@@ -224,7 +225,7 @@ export function SelectContent(__allProps: SelectContentProps & { __instanceId?: 
   }
 
   return (
-    <div data-slot="select-content" data-state="closed" role="listbox" id={props.id} tabindex={-1} className={`${selectContentBaseClasses} ${selectContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
+    <>{collectSsrPortalElement(__scopeId, <div data-slot="select-content" data-state="closed" role="listbox" id={props.id} tabindex={-1} className={`${selectContentBaseClasses} ${selectContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" bf-po={__scopeId}>{props.children}</div>)}</>
   )
 }
 

@@ -7,7 +7,7 @@
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { createPortal } from '../../src/runtime/portal'
+import { createPortal, isSSRPortal } from '../../src/runtime/portal'
 
 beforeAll(() => {
   if (typeof window === 'undefined') {
@@ -546,5 +546,48 @@ describe('createPortal', () => {
 
       expect(Array.from(container.children)).toEqual([root, target])
     })
+  })
+})
+
+// #3059: `isSSRPortal` must recognize BOTH SSR portal shapes — the
+// explicit `<Portal>` component's `bf-pi` wrapper ancestor (already
+// covered before this change) AND the compiler's `ref`-callback
+// SSR-portal recognition, which stamps `bf-po` directly on the target
+// element itself with no wrapper (the Hono adapter's
+// `collectSsrPortalElement`, `packages/adapter-hono/src/portals.tsx`).
+// A `ref`-callback portal's own `el` IS the element `isSSRPortal` is
+// asked about, never a descendant of it, so the direct-attribute case
+// is the one the shipped `dialog`/`popover`/`dropdown-menu`/`portal`
+// primitives actually exercise.
+describe('isSSRPortal', () => {
+  test('false for a plain element with neither marker', () => {
+    const el = document.createElement('div')
+    expect(isSSRPortal(el)).toBe(false)
+  })
+
+  test('true for an element carrying bf-po directly (ref-callback SSR-portal shape, #3059)', () => {
+    const el = document.createElement('div')
+    el.setAttribute('bf-po', 'Demo_test')
+    expect(isSSRPortal(el)).toBe(true)
+  })
+
+  test('true for an element inside a bf-pi wrapper ancestor (explicit <Portal> shape)', () => {
+    const wrapper = document.createElement('div')
+    wrapper.setAttribute('bf-pi', 'bf-portal-1')
+    wrapper.setAttribute('bf-po', 'Demo_test')
+    const child = document.createElement('div')
+    wrapper.appendChild(child)
+    expect(isSSRPortal(child)).toBe(true)
+  })
+
+  test('a ref-callback SSR-portal element already placed at document.body never re-triggers createPortal', () => {
+    // The exact guard every shipped portal-ref-callback uses:
+    // `if (el && el.parentNode !== document.body && !isSSRPortal(el))`.
+    const el = document.createElement('div')
+    el.setAttribute('bf-po', 'Demo_test')
+    document.body.appendChild(el)
+    const shouldMove = el.parentNode !== document.body && !isSSRPortal(el)
+    expect(shouldMove).toBe(false)
+    document.body.removeChild(el)
   })
 })
