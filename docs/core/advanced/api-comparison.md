@@ -123,7 +123,7 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 
 | Solid (baseline) | React | BarefootJS | Symmetry | Imp. | Notes |
 |---|---|---|---|---|---|
-| `useSearchParams` (Solid Router) | `useSearchParams` (React Router) | [`createSearchParams`](./api-reference.md#createsearchparams) Beta | match | 4 | signal-shaped; query-only navigation updates the signal without a swap. ui=0 site=2 (`site/ui/components/catalog-filter.tsx`, `site/ui/pages/components/catalog.tsx`) integrations=1 (`integrations/shared/blog/PostList.tsx`) |
+| `useSearchParams` (Solid Router) | `useSearchParams` (React Router) | [`createSearchParams`](./api-reference.md#createsearchparams) Beta | match | 4 | signal-shaped; query-only navigation updates the signal without a swap. ui=0 site=1 (`site/ui/components/catalog-filter.tsx`) integrations=1 (`integrations/shared/blog/PostList.tsx`) |
 | `<A href>` / `useNavigate` | `<Link>` / `useNavigate` | plain `<a>` + [`queryHref()`](./api-reference.md#queryhref) Beta + router `navigate()` | partial | 4 | `queryHref` also lowered to SSR adapters. ui=0 site=1 (`site/ui/components/catalog-filter.tsx`) integrations=1 (same PostList.tsx) |
 | — | — (Next `layout.tsx` is close) | [`<Region>`](./api-reference.md#region) Beta | BF-only | 4 | page lifecycle boundary, compiled to `bf-region`; [`spec/router.md`](../../../spec/router.md). Keep |
 

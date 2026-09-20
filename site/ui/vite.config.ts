@@ -1,5 +1,15 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { barefoot } from '@barefootjs/hono/vite'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+// The catalog page's `@barefootjs/router` bootstrap (client/router-entry.ts)
+// is a hand-written script, not a `.tsx` component, so `barefoot()`'s own
+// discovery never sees it: `rollupOptions.input` below requests the bundling,
+// and `assets.RouterEntry` resolves the content-hashed URL `catalog.tsx`
+// reads from `dist/bf-assets.ts`.
+const routerEntry = resolve(HERE, 'client/router-entry.ts')
 
 // `dist/` is simultaneously the Workers asset root ([assets] in
 // wrangler.toml) AND a source directory the Worker bundle imports from
@@ -14,6 +24,9 @@ export default defineConfig({
   build: {
     outDir: 'dist/static/components',
     emptyOutDir: true,
+    rollupOptions: {
+      input: { 'router-entry': routerEntry },
+    },
   },
   plugins: barefoot({
     components: [
@@ -28,5 +41,6 @@ export default defineConfig({
       '../shared/components',
     ],
     templates: 'dist/components',
+    assets: { RouterEntry: routerEntry },
   }),
 })

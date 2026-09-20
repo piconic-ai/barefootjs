@@ -2,13 +2,16 @@
  * Component Catalog Page
  *
  * Visual card grid catalog at /components with tag-based filtering
- * (`/components?tag=input`). Reads the same `?tag=` query as `CatalogFilter`
- * via `createSearchParams()` and renders only the matching cards — the grid
- * is SSR-filtered, so there's no flash and no client-side DOM poking.
+ * (`/components?tag=input`). The cards are all server-rendered here, as the
+ * following sibling of the `CatalogFilter` island, which exposes the active
+ * `?tag=` as a reactive `data-filter` attribute that `globals.css` filters the
+ * grid on — so a deep link is already filtered in the server HTML (no flash)
+ * and a chip click is a soft `?tag=` navigation (`client/router-entry.ts`)
+ * that flips one attribute. Keep the grid a later sibling of the filter: the
+ * stylesheet reaches it with the `~` combinator.
  * Ref: #3103 (was #517)
  */
 
-import { createSearchParams } from '@barefootjs/client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +27,8 @@ import { Toggle } from '@/components/ui/toggle'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
 import { CatalogFilter } from '@/components/catalog-filter'
-import { type ComponentCategory, asCatalogTag } from '../../components/shared/component-registry'
+import { type ComponentCategory } from '../../components/shared/component-registry'
+import { Assets } from '@/bf-assets'
 import { Accordion, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Calendar } from '@/components/ui/calendar'
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
@@ -700,12 +704,6 @@ function ComponentCard({ entry }: { entry: CatalogEntry }) {
 }
 
 export function ComponentCatalogPage() {
-  const [searchParams] = createSearchParams()
-  const activeTag = asCatalogTag(searchParams().get('tag'))
-  const visibleEntries = activeTag
-    ? catalogEntries.filter(entry => entry.tags.includes(activeTag))
-    : catalogEntries
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -719,12 +717,16 @@ export function ComponentCatalogPage() {
       {/* Search + tag filter */}
       <CatalogFilter />
 
-      {/* Card grid */}
+      {/* Card grid — a later sibling of CatalogFilter; globals.css hides the
+          cards that don't match the filter's data-filter attribute */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {visibleEntries.map(entry => (
+        {catalogEntries.map(entry => (
           <ComponentCard key={entry.slug} entry={entry} />
         ))}
       </div>
+
+      {/* Boots @barefootjs/router for the filter chips (soft ?tag= navigation). */}
+      <script type="module" src={Assets.RouterEntry} />
     </div>
   )
 }
