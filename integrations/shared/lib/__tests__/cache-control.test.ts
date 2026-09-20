@@ -24,6 +24,31 @@ describe('withCacheControl', () => {
     expect(res.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
+  test('caches a permanent redirect so it does not wake the Container every visit', () => {
+    const res = withCacheControl(req('/integrations/flask'), new Response(null, { status: 308, headers: { Location: '/integrations/flask/' } }))
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=3600, stale-while-revalidate=86400')
+  })
+
+  test('leaves a temporary redirect uncached (it may point elsewhere next time)', () => {
+    const res = withCacheControl(req('/integrations/flask'), new Response(null, { status: 302, headers: { Location: '/integrations/flask/' } }))
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  test('does not cache a permanent redirect for a visitor carrying a session cookie', () => {
+    const request = req('/integrations/flask', { headers: { Cookie: 'bf_session=abc' } })
+    const res = withCacheControl(request, new Response(null, { status: 308, headers: { Location: '/integrations/flask/' } }))
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  test('does not cache a permanent redirect that mints a session cookie', () => {
+    const backendResponse = new Response(null, {
+      status: 308,
+      headers: { Location: '/integrations/flask/', 'Set-Cookie': 'bf_session=abc; Path=/integrations/flask' },
+    })
+    const res = withCacheControl(req('/integrations/flask'), backendResponse)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
   test('does not override a Cache-Control the backend already set', () => {
     const backendResponse = new Response('', { headers: { 'Cache-Control': 'no-store' } })
     const res = withCacheControl(req('/integrations/flask/'), backendResponse)

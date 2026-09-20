@@ -33,13 +33,15 @@
  * response shape nobody has reasoned about yet inherits "not cached" —
  * unsafe-by-default instead of cached-by-default.
  *
- * Both cacheable cases below still require `response.ok && !Set-Cookie` —
- * asset-extension path matching is a heuristic on the URL, not proof the
- * response actually IS a safe static asset. Without that shared gate, a
- * 404/error on an asset-shaped path gets pinned `immutable` for a year
- * (purge-only recovery), and a response that happens to carry `Set-Cookie`
- * on an asset-shaped path gets cached and replayed — the exact #2784 leak
- * class, just reached through the asset branch instead of the HTML one.
+ * Every cacheable case below still requires `!Set-Cookie`, and the 2xx cases
+ * require `response.ok` — asset-extension path matching is a heuristic on the
+ * URL, not proof the response actually IS a safe static asset. Without that
+ * shared gate, a 404/error on an asset-shaped path gets pinned `immutable`
+ * for a year (purge-only recovery), and a response that happens to carry
+ * `Set-Cookie` on an asset-shaped path gets cached and replayed — the exact
+ * #2784 leak class, just reached through the asset branch instead of the HTML
+ * one. Permanent redirects (301/308) are the one non-2xx case that earns a
+ * TTL, and only cookie-free ones.
  */
 
 const ASSET_EXTENSION = /\.(?:js|mjs|css|woff2?|ttf|svg|png|jpe?g|gif|webp|ico)$/
@@ -53,6 +55,13 @@ const ASSET_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 // The default. Must be set explicitly (not just "no Cache-Control") because
 // an absent header still gets Cloudflare's heuristic-freshness default TTL.
 const PRIVATE_CACHE_CONTROL = 'private, no-store'
+// A permanent redirect's target does not change, so it is as cacheable as the
+// page it points at -- and worth caching for the same reason: an uncacheable
+// redirect wakes the Container on every visit just to hand back a Location.
+// Only the permanent statuses: 302/303/307 are by definition free to point
+// somewhere else on the next request.
+const PERMANENT_REDIRECT_STATUS = new Set([301, 308])
+const REDIRECT_CACHE_CONTROL = HTML_CACHE_CONTROL
 
 /**
  * Adds a `Cache-Control` header to a Container response so Workers Cache
@@ -74,19 +83,24 @@ export function withCacheControl(request: Request, response: Response): Response
   // Default: do not cache. Every case below must explicitly opt in.
   let cacheControl = PRIVATE_CACHE_CONTROL
 
-  // Shared gate for both cacheable cases: a non-2xx or Set-Cookie response
-  // is never cached, whether or not its path happens to look like an asset.
-  if (response.ok && !response.headers.has('Set-Cookie')) {
-    if (ASSET_EXTENSION.test(pathname)) {
+  // Shared gate for every cacheable case: a Set-Cookie response is never
+  // cached, whatever its status or path.
+  if (!response.headers.has('Set-Cookie')) {
+    if (response.ok && ASSET_EXTENSION.test(pathname)) {
       cacheControl = ASSET_CACHE_CONTROL
-    } else if (!request.headers.has('Cookie')) {
-      // A clean 2xx exchange with no session cookie on either side. This is
-      // the one non-asset case presumed safe: no auth, no per-visitor state.
-      // (Assets don't need this extra Cookie check: a returning visitor's
-      // browser attaches the session cookie to every same-origin request,
-      // asset requests included, so gating assets on it too would defeat
-      // asset caching for exactly the repeat visits this exists to help.)
+    } else if (request.headers.has('Cookie')) {
+      // A session cookie on the request means the response may be
+      // visitor-specific; leave it at the no-store default. (Assets skip this
+      // check: a returning visitor's browser attaches the session cookie to
+      // every same-origin request, asset requests included, so gating assets
+      // on it too would defeat asset caching for exactly the repeat visits
+      // this exists to help.)
+    } else if (response.ok) {
+      // A clean 2xx exchange with no session cookie on either side: no auth,
+      // no per-visitor state.
       cacheControl = HTML_CACHE_CONTROL
+    } else if (PERMANENT_REDIRECT_STATUS.has(response.status)) {
+      cacheControl = REDIRECT_CACHE_CONTROL
     }
   }
 
