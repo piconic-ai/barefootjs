@@ -9,6 +9,6 @@ export default defineLimitation({
   expected:
     "the row's markup re-renders on every signal update the same way it does outside a loop: the forwarded element's attributes track the live signal value",
   actual:
-    'keeps the attribute at whichever value the signal held when the row was built during SSR/CSR-template construction; no effect is ever emitted for it, so nothing touches it again after that',
+    "keeps the attribute at whichever value the signal held when the row was built during SSR/CSR-template construction (no effect is ever emitted for it, so nothing touches it again after that), or on an adapter whose loop-array construction the shape also defeats (go-template: a function-body-local const array), drops the row entirely from SSR — same underlying gap, caught earlier",
   fixtures: ['loop-row-child-children-attrs'],
 })
