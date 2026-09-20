@@ -91,6 +91,20 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+  // Go's manifestation is more severe than the shared entry's `actual`
+  // describes (a frozen-but-present attribute): `NewLoopRowChildChildrenAttrsProps`
+  // never populates the `Chips []...Ctx` slice field at all when the
+  // loop's source array (`opts`) is a FUNCTION-BODY-local const — the
+  // struct field exists but the constructor only bakes it when the same
+  // array literal is declared at MODULE scope (verified directly: hoisting
+  // `const opts = ['a', 'b']` out of the component function makes the
+  // constructor emit `chipsData := []interface{}{"a", "b"}` and populate
+  // `Chips` correctly). So on Go the whole loop is silently absent from
+  // SSR, not just non-reactive after hydration — still an instance of the
+  // same "loop-row-forwarded-children never track their own reactive data"
+  // contract violation, just caught one step earlier (at construction
+  // instead of at update).
+  'loop-row-child-children-attrs': { limitation: 'loop-row-child-children-attrs-frozen' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
