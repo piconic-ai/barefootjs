@@ -171,7 +171,7 @@
           ]
         },
         "go-template": {
-          "pass": 106,
+          "pass": 105,
           "total": 120,
           "gaps": [
             {
@@ -214,6 +214,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -1773,7 +1779,7 @@
           ]
         },
         "go-template": {
-          "pass": 101,
+          "pass": 100,
           "total": 110,
           "gaps": [
             {
@@ -1810,6 +1816,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -2497,7 +2509,7 @@
           ]
         },
         "go-template": {
-          "pass": 271,
+          "pass": 270,
           "total": 295,
           "gaps": [
             {
@@ -2552,6 +2564,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -3545,7 +3563,7 @@
           ]
         },
         "go-template": {
-          "pass": 33,
+          "pass": 32,
           "total": 36,
           "gaps": [
             {
@@ -3558,6 +3576,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -4083,7 +4107,7 @@
           ]
         },
         "go-template": {
-          "pass": 388,
+          "pass": 387,
           "total": 417,
           "gaps": [
             {
@@ -4150,6 +4174,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -5559,7 +5589,7 @@
           ]
         },
         "go-template": {
-          "pass": 311,
+          "pass": 310,
           "total": 331,
           "gaps": [
             {
@@ -5602,6 +5632,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -8061,9 +8097,15 @@
           ]
         },
         "go-template": {
-          "pass": 31,
+          "pass": 30,
           "total": 32,
           "gaps": [
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
+              ]
+            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -11245,7 +11287,7 @@
           ]
         },
         "go-template": {
-          "pass": 48,
+          "pass": 47,
           "total": 56,
           "gaps": [
             {
@@ -11282,6 +11324,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {
@@ -12764,7 +12812,7 @@
           ]
         },
         "go-template": {
-          "pass": 213,
+          "pass": 212,
           "total": 223,
           "gaps": [
             {
@@ -12801,6 +12849,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-children-attrs",
+              "limitations": [
+                "loop-row-child-children-attrs-frozen"
               ]
             },
             {

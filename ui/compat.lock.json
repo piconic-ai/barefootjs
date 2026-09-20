@@ -3177,6 +3177,14 @@
           ]
         }
       },
+      "loop-row-child-children-attrs": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-children-attrs-frozen"
+          ]
+        }
+      },
       "map-array-builder-body": {
         "blade": {
           "kind": "refusal",
@@ -5084,6 +5092,10 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
+      "loop-row-child-children-attrs": {
+        "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
+      },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
@@ -5445,7 +5457,9 @@
       "fixtures": [
         "loop-row-child-children-attrs"
       ],
-      "adapters": []
+      "adapters": [
+        "go-template"
+      ]
     },
     "loop-row-child-text-children-markers-dropped": {
       "title": "Forwarded text children of a child component inside a keyed loop row lose their SSR slot markers on hydration",
