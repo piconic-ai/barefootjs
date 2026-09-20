@@ -830,6 +830,12 @@ if __name__ == "__main__":
         # `proxy_headers` is on by default but only trusted from 127.0.0.1, so
         # the Worker's `X-Forwarded-Proto` is ignored and Starlette builds
         # redirect Locations as plain http -- the browser then gets bounced
-        # from http to https, an extra round trip. Trusting every peer is right
-        # here: nothing but the Worker's proxy can reach the Container.
+        # from http to https, an extra round trip.
+        #
+        # This is a wider grant than flask's `ProxyFix(x_proto=1, x_host=1)`
+        # for the same problem, which caps trust at one hop: uvicorn has no
+        # hop-count equivalent, and the proxy's address inside a Cloudflare
+        # Container is not a documented constant to name here. What makes it
+        # safe is the topology -- the Container publishes no ports, so the
+        # Worker's proxy is the only peer that can open a connection at all.
         uvicorn.run(app, host="0.0.0.0", port=PORT, forwarded_allow_ips="*")

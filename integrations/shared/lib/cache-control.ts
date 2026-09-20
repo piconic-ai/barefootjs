@@ -58,8 +58,8 @@ const PRIVATE_CACHE_CONTROL = 'private, no-store'
 // A permanent redirect's target does not change, so it is as cacheable as the
 // page it points at -- and worth caching for the same reason: an uncacheable
 // redirect wakes the Container on every visit just to hand back a Location.
-// Only the permanent statuses: 302/303/307 are by definition free to point
-// somewhere else on the next request.
+// Only the permanent statuses (301/308) qualify. The temporary ones
+// (302/303/307) are by definition free to point somewhere else next request.
 const PERMANENT_REDIRECT_STATUS = new Set([301, 308])
 const REDIRECT_CACHE_CONTROL = HTML_CACHE_CONTROL
 
