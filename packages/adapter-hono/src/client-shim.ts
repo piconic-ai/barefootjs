@@ -130,12 +130,6 @@ export function createSignal<T>(_initial?: T): never {
 export function createMemo<T>(_fn: () => T): never {
   return calledAtSSR('createMemo')
 }
-export function createSelector<T, U = T>(
-  _source: () => T,
-  _fn?: (key: U, value: T) => boolean,
-): never {
-  return calledAtSSR('createSelector')
-}
 export function createEffect(_fn: () => void): never {
   return calledAtSSR('createEffect')
 }
@@ -180,16 +174,3 @@ export function findSiblingSlot(_el: unknown, _slotSelector: string): null {
   return null
 }
 
-export function cleanupPortalPlaceholder(_portalId: string): void {
-  // no-op
-}
-
-// ---------------------------------------------------------------------------
-// Floating-element positioning — geometry exists only in the browser
-// ---------------------------------------------------------------------------
-
-export function trackPosition(_update: () => void): () => void {
-  return () => {
-    // no-op
-  }
-}

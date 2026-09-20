@@ -225,7 +225,7 @@ function buildSuggestion(
   if (method === 'toLocaleDateString' && typeName === 'Date') {
     return {
       message:
-        "Pass a literal locale and an explicit literal timeZone — .toLocaleDateString('ja-JP', { timeZone: 'UTC' }), a fixed '±HH:MM' offset, or a canonical IANA zone ID like 'Asia/Tokyo' (exact case; #2344) — to compile it to the format_date helper; for a runtime locale, resolve the pattern in your i18n layer and use formatDate(date, pattern, tz) from @barefootjs/client. " +
+        "Pass a literal locale and an explicit literal timeZone — .toLocaleDateString('ja-JP', { timeZone: 'UTC' }), a fixed '±HH:MM' offset, or a canonical IANA zone ID like 'Asia/Tokyo' (exact case; #2344) — to compile it to the format_date helper; for a runtime locale, defer the whole read to the client with /* @client */, which can call any date-formatting API you like (Intl.DateTimeFormat, your i18n layer, ...) since it runs as real JS in the browser — formatDate itself is compiler ABI and cannot be called by name (BF056). " +
         `Alternatively pre-compute server-side, or evaluate client-only by ${revivalExpr} — ${revivalReason}.`,
       escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }, { kind: 'client-directive' }],
     }

@@ -101,16 +101,9 @@ const handleMount = (el: HTMLElement) => {
 }
 ```
 
-After hydration, remove SSR placeholders:
-
-```tsx
-"use client"
-import { cleanupPortalPlaceholder } from '@barefootjs/client'
-
-declare const portalId: string
-cleanupPortalPlaceholder(portalId)
-```
-
+The server-rendered `<template bf-pp="...">` placeholder left behind at the
+portaled element's original position is inert — an untargeted `<template>`
+element renders nothing and needs no cleanup after hydration.
 
 ## Owner Scope
 

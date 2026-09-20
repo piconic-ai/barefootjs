@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, spreadAttrs, trackPosition, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3840,3 +3840,55 @@ export function initDropdownMenuProfileDemo(__scope, _p = {}) {
 
 hydrate('DropdownMenuProfileDemo', { init: initDropdownMenuProfileDemo, template: (_p) => `${renderChild('DropdownMenu', {open: (false), children: `${renderChild('DropdownMenuTrigger', {className: "rounded-full p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background", children: `<span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium" aria-label="Profile menu"> KK </span>`}, undefined, 's0')}${renderChild('DropdownMenuContent', {align: "end", children: `${renderChild('DropdownMenuLabel', {children: `My Account`}, undefined, 's1')}${renderChild('DropdownMenuSeparator', {}, undefined, 's2')}${renderChild('DropdownMenuGroup', {children: `${renderChild('DropdownMenuItem', {children: `${renderChild('SettingsIcon', {size: "sm"}, undefined, 's3')}<span>Settings</span>${renderChild('DropdownMenuShortcut', {children: `⇧⌘,`}, undefined, 's4')}`}, undefined, 's5')}${renderChild('DropdownMenuSub', {children: `${renderChild('DropdownMenuSubTrigger', {children: `${renderChild('GlobeIcon', {size: "sm"}, undefined, 's6')}<span>Language</span>`}, undefined, 's7')}${renderChild('DropdownMenuSubContent', {children: `${renderChild('DropdownMenuRadioGroup', {value: ('en'), children: `${renderChild('DropdownMenuRadioItem', {value: "en", children: `<span>English</span>`}, undefined, 's8')}${renderChild('DropdownMenuRadioItem', {value: "ja", children: `<span>Japanese</span>`}, undefined, 's9')}${renderChild('DropdownMenuRadioItem', {value: "fr", children: `<span>French</span>`}, undefined, 's10')}`}, undefined, 's11')}`}, undefined, 's12')}`}, undefined, 's13')}${renderChild('DropdownMenuItem', {children: `${renderChild('CircleHelpIcon', {size: "sm"}, undefined, 's14')}<span>Help</span>`}, undefined, 's15')}`}, undefined, 's16')}${renderChild('DropdownMenuSeparator', {}, undefined, 's17')}${renderChild('DropdownMenuGroup', {children: `${renderChild('DropdownMenuCheckboxItem', {checked: (true), children: `<span>Show Bookmarks Bar</span>`}, undefined, 's18')}${renderChild('DropdownMenuCheckboxItem', {checked: (false), children: `<span>Show Toolbar</span>`}, undefined, 's19')}`}, undefined, 's20')}${renderChild('DropdownMenuSeparator', {}, undefined, 's21')}${renderChild('DropdownMenuItem', {variant: "destructive", children: `${renderChild('LogOutIcon', {size: "sm"}, undefined, 's22')}<span>Log out</span>`}, undefined, 's23')}`}, undefined, 's24')}`}, undefined, 's25')}`, comment: true })
 export function DropdownMenuProfileDemo(_p, __bfKey) { return createComponent('DropdownMenuProfileDemo', _p, __bfKey) }
+
+// ---- inlined ui/lib/track-position.ts ----
+/**
+ * BarefootJS UI - Floating-element position tracking
+ *
+ * Keeps a `position: fixed` overlay (menu, popover, listbox, hover card)
+ * anchored to its trigger for as long as it is open. Shared by every
+ * `ui/` overlay that positions itself from `getBoundingClientRect()` so
+ * the decision below is made in one place (#2848).
+ *
+ * Internal to `ui/` — not part of `@barefootjs/client`'s public runtime
+ * surface (moved out in #3090: this is floating-UI plumbing used only by
+ * `ui/` components, not a general-purpose reactive primitive).
+ */
+/**
+ * Run `update` now, re-run it on every scroll (capture phase, so a
+ * nested scroll container counts too) and on resize, and return the
+ * dispose that detaches both listeners.
+ *
+ * The dispose re-runs `update` ONCE, synchronously, before detaching —
+ * that final sample is the whole point of this helper. `scroll` events
+ * are coalesced per rendering frame and report the scroll position at
+ * dispatch time, not at scroll time. A programmatic scroll that landed
+ * in the current frame (a `focus()` on an offscreen item, a
+ * `scrollIntoView()`) has therefore not dispatched yet when a close
+ * runs in the same frame; the listener is gone by the time the event
+ * fires, and whatever position the listener would have written is lost.
+ * Without the final sample the closed element's inline position depends
+ * on whether a frame boundary happened to fall between that scroll and
+ * the close — measured as the `dropdown-menu` idempotence oracle
+ * landing on `top: -580px` / `-606px` / `33px` for the same action
+ * sequence. Sampling once at dispose makes the closed position a
+ * function of the geometry at close time only.
+ *
+ * (An `overflow: hidden` scroll lock does not narrow this window: it
+ * blocks user gestures, never programmatic scrolling, on `html` and
+ * `body` alike — verified in Chromium against the fixture-hydrate host.)
+ *
+ * @param update - Positions the element from current geometry.
+ * @returns Dispose: re-runs `update` once, then detaches the listeners.
+ */
+export function trackPosition(update) {
+    update();
+    const onChange = () => update();
+    window.addEventListener('scroll', onChange, true);
+    window.addEventListener('resize', onChange);
+    return () => {
+        window.removeEventListener('scroll', onChange, true);
+        window.removeEventListener('resize', onChange);
+        update();
+    };
+}

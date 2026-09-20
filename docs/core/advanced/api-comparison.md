@@ -56,7 +56,6 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 | `batch` | automatic batching (React 18) | [`batch`](./api-reference.md#batch) Beta | match | 3 | site=5 |
 | `untrack` | — (deps array) | [`untrack`](./api-reference.md#untrack) Beta | match | 3 | the only way to narrow dependencies (no `on()`) |
 | `on(deps, fn)` | deps array | — | none | 2 | write with `untrack` instead; no action |
-| `createSelector` | — | [`createSelector`](./api-reference.md#createselector) Alpha | match | 2 | analyzer recognises the brand; ui=0 site=0 (task C of #3078) |
 | `createStore` / `produce` / `reconcile` | `useReducer` / external store | — | none | 3 | put the object in a signal; forms live in `@barefootjs/form` |
 | `createRoot` | — (ReactDOM's `createRoot` is a mount API) | [`createRoot`](./api-reference.md#createroot) Alpha | match | 2 | test / CSR harness use; ui=0 site=0 |
 | `getOwner` / `runWithOwner` | — | — (not exported) | none | 1 | ownership is internal scope |
@@ -80,7 +79,7 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 | `<Switch>` / `<Match>` | ternary chain | ternary chain | partial | 2 | |
 | `<Dynamic component>` | variable as tag | — (`asChild` / `Slot` cover most uses) | none | 2 | |
 | `<ErrorBoundary>` / `catchError` | Error Boundary | — | none | 3 | SSR errors are the backend's; only client effect / handler errors remain |
-| `<Portal>` | `createPortal` (ReactDOM) | [`createPortal`](./api-reference.md#createportal) Beta + [`isSSRPortal`](./api-reference.md#isssrportal) / [`findSiblingSlot`](./api-reference.md#findsiblingslot) | partial | 4 | imperative (move a `ref` element to `body`); SSR leaves a placeholder. [`cleanupPortalPlaceholder`](./api-reference.md#cleanupportalplaceholder) (the placeholder's own cleanup) is Beta too, with zero in-repo callers. uses 14 / 13 / 6 / 0 |
+| `<Portal>` | `createPortal` (ReactDOM) | [`createPortal`](./api-reference.md#createportal) Beta + [`isSSRPortal`](./api-reference.md#isssrportal) / [`findSiblingSlot`](./api-reference.md#findsiblingslot) | partial | 4 | imperative (move a `ref` element to `body`); SSR leaves an inert placeholder that needs no cleanup. uses 14 / 13 / 6 |
 | `<Suspense fallback>` | `<Suspense fallback>` | [`<Async fallback>`](./api-reference.md#async) Beta | partial | 4 | Solid: client boundary on suspense-tracked reads. BF: SSR streaming only, compiled away to the adapter primitive; client-side boundary is layer 1 of [`spec/async.md`](../../../spec/async.md) |
 | `<SuspenseList>` | experimental | — | none | 1 | |
 | `lazy()` | `React.lazy` | — (Vite dynamic import) | partial | 3 | islands split per entry anyway |
@@ -132,8 +131,7 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 
 | BarefootJS | Tier | Imp. | Notes |
 |---|---|---|---|
-| `formatDate` | Beta | 2 | adapter-lowered helper on 9 adapters; ui=1 site=2 (task C of #3078) |
-| `trackPosition` | Alpha | 2 | floating UI; ui=6 (task C) |
+| `formatDate` | **compiler ABI, not public** | 1 | the `.toLocaleDateString(locale, { timeZone, ... })` sugar's lowering target on 9 adapters; an authored call refuses with BF056 (task C of #3078) |
 | `beginTurn` / `endTurn` / `createRecordingSink` / `setProfilerSink` / `ProfilerEvent*` | **compiler ABI, not public** | 1 | profiler plumbing; compiler-emitted + `bf debug profile` |
 
 ## Sources

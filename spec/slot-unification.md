@@ -579,11 +579,15 @@ answers:
 
 ### 9.3a The re-subscribe seam
 
-`createSelector` subscribes its CALLER **per key**. So `applyOuter` is
-subscribed only to the keys present on its first run, and a reconcile can
-strand that subscription set: add row C (written correctly by `createRow`,
-under `untrack`, so C's key is never registered), then select C — only key C
-flips, nobody is subscribed to it, and C's binding goes stale.
+A per-key subscription accessor (the motivating case was `@barefootjs/client`'s
+former `createSelector`, removed in #3091 for having no authored caller;
+the same shape now exists whenever a component builds one from
+`createMemo`, one memo per key) subscribes its CALLER **per key**. So
+`applyOuter` is subscribed only to the keys present on its first run, and a
+reconcile can strand that subscription set: add row C (written correctly by
+`createRow`, under `untrack`, so C's key is never registered), then select
+C — only key C flips, nobody is subscribed to it, and C's binding goes
+stale.
 
 An "empty → non-empty" trigger never sees that sequence. The seam must
 re-subscribe whenever the entry set changes membership. Implemented as one
@@ -593,9 +597,10 @@ subscription set is rebuilt against the current keys. Unconditional — not
 something the compiler opts a loop into, and not something a user chooses.
 
 This also removed the compiler's priming obligation for opaque outer reads.
-Compiler priming was considered and rejected as a general answer:
-`createSelector`'s dependency chain runs through an IMPORT, so provability
-breaks unless framework primitives are catalogued.
+Compiler priming was considered and rejected as a general answer: a
+per-key selector's dependency chain runs through an IMPORT or a local
+factory call, so provability breaks unless framework primitives are
+catalogued.
 
 ### 9.4 Eligibility (fallback = eager emission)
 
@@ -705,7 +710,9 @@ outer-involving text pay nothing for the widening. Concatenations, template
 literals, and explicit `String(cond ? a : b)` are lazy; the bare ternary is
 the exception noted above.
 
-**Where the gate is currently binding**: the krausest bench component uses
-`const isSelected = createSelector(selected)`. Before the seam that made the
-loop ineligible; it is eligible now, which is why DOM-suite memory moved.
-Loops still refused are the ones in the table above.
+**Where the gate is currently binding**: the krausest bench component used to
+have `const isSelected = createSelector(selected)`, an opaque local whose
+CALL was the reactive read — that shape was ineligible before the seam
+existed and eligible after, which is why DOM-suite memory moved
+(`createSelector` was later removed in #3091; the app now reads the
+signal directly). Loops still refused are the ones in the table above.

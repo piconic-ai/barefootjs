@@ -341,12 +341,13 @@ describe('classifyLazyBinding — fail-safe', () => {
   })
 
   test('an import, a local function, and a non-literal const are all OPAQUE, not inert', () => {
-    // A reactive accessor hides behind ordinary-looking names — the
-    // `createSelector` const is the canonical case. Guessing "inert" here
-    // would emit an applyOuter effect that reads them non-reactively.
+    // A reactive accessor hides behind ordinary-looking names — a local
+    // `const isSelected = someFactory(selected)` is the canonical case.
+    // Guessing "inert" here would emit an applyOuter effect that reads them
+    // non-reactively.
     const selScope = makeScope({
       signals: scope.signals,
-      constants: new Map<string, ReadonlySet<string> | null>([['isSelected', new Set(['createSelector', 'selected'])]]),
+      constants: new Map<string, ReadonlySet<string> | null>([['isSelected', new Set(['someFactory', 'selected'])]]),
       inert: new Set(['clsx']),
     })
     const c = classifyLazyBinding({

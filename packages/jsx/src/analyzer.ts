@@ -55,11 +55,6 @@ export function needsTypeBasedDetection(source: string): boolean {
   if (REACTIVE_BRAND_PACKAGES.some(pkg => source.includes(pkg))) return true
   // BF023/BF024 nullable-key check needs getTypeAtLocation() on the key expression.
   if (/\.map\s*\(/.test(source)) return true
-  // createSelector's returned accessor is Reactive<>-branded like a library
-  // accessor above — a selector call outside any `.map()` (no loop in the
-  // file at all) would otherwise skip the TypeChecker entirely and miss the
-  // brand.
-  if (source.includes('createSelector')) return true
   return false
 }
 
@@ -2134,14 +2129,10 @@ function collectLocalDeclarations(root: ts.Node): Set<string> {
 // and are emitted by the compiler for 'use client' components.
 const CLIENT_EXPORTS = new Set([
   'createSignal', 'createEffect', 'createDisposableEffect', 'createMemo',
-  'createSelector',
   'createRoot', 'onCleanup', 'onMount', 'untrack', 'batch', 'splitProps',
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
-  'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
-  // Floating-element position tracking (#2848) — same runtime-only shape
-  // as the portal entries above.
-  'trackPosition',
+  'createPortal', 'isSSRPortal', 'findSiblingSlot',
   // Request-scoped environment signal factory (router v0.5) — `createSignal`-
   // shaped, recognised structurally (#2057) so its getter is just a signal
   // getter; the compiler lowers the reader value per adapter via the signal's
@@ -2151,9 +2142,14 @@ const CLIENT_EXPORTS = new Set([
   // `searchParams`. Runs natively on the client; SSR adapters lower a
   // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
   'queryHref',
-  // Pure date formatter (#2324). Runs natively on the client; SSR adapters
-  // lower a `formatDate(date, pattern, tz)` call to their `format_date`
-  // helper (spec/template-helpers.md).
+  // Pure date formatter (#2324), demoted to compiler ABI in #3089: it is
+  // still a REAL (now `@internal`) export — the lowering TARGET the
+  // `.toLocaleDateString()` sugar rewrites to, and the emitted client JS's
+  // own import — so it stays in this set to keep `WRONG_PACKAGE_IMPORT`'s
+  // "is this actually exported" check truthful (same reasoning as
+  // `forwardProps`/`unwrap` above, also `@internal` and also still listed).
+  // An AUTHORED call is refused separately and more specifically by
+  // `format-date-refusal.ts`'s BF056, which fires regardless of this entry.
   'formatDate',
   // Compile-away JSX built-ins (#1915) — importing them is what scopes the
   // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
@@ -4404,8 +4400,6 @@ export const BROWSER_ONLY_CLIENT_APIS = new Set([
   'createPortal',
   'isSSRPortal',
   'findSiblingSlot',
-  'cleanupPortalPlaceholder',
-  'trackPosition',
 ])
 
 function importsBrowserOnlyClientApi(ctx: AnalyzerContext): boolean {

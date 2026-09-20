@@ -7,14 +7,36 @@
 
 import { mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import * as ts from 'typescript'
 
 const ROOT_DIR = dirname(import.meta.path)
 const DIST_DIR = resolve(ROOT_DIR, 'dist/r')
 
 /**
+ * Relative module specifiers a source file imports from, via a TS AST walk
+ * — never regex (CLAUDE.md bans regex/string-matching for import parsing:
+ * it false-matches inside string/template literals and comments). Used
+ * below to detect the `ui/lib/*` shared-helper import; the sibling-component
+ * and `../../../types` detections predate that rule and are left as their
+ * existing regex form to keep this change scoped.
+ */
+function collectRelativeImportSpecifiers(content: string, filePath: string): string[] {
+  const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const specifiers: string[] = []
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    const spec = stmt.moduleSpecifier.text
+    if (spec.startsWith('.')) specifiers.push(spec)
+  }
+  return specifiers
+}
+
+/**
  * Scan a component's source file and collect internal UI dependencies.
  * Detects `from '../{dep}'` patterns and recurses one level for transitive deps.
- * Also detects `from '../../../types'` to include types/index.tsx.
+ * Also detects `from '../../../types'` to include types/index.tsx, and
+ * `from '../../../lib/*'` to include the matching `ui/lib/*.ts` helper.
  */
 async function resolveFiles(name: string): Promise<string[]> {
   const paths: string[] = []
@@ -43,6 +65,16 @@ async function resolveFiles(name: string): Promise<string[]> {
         seen.add('__types__')
         paths.push('types/index.tsx')
       }
+    }
+
+    // Detect shared `ui/lib/*` helper imports: from '../../../lib/<name>'
+    for (const specifier of collectRelativeImportSpecifiers(content, absPath)) {
+      const libMatch = /^\.\.\/\.\.\/\.\.\/lib\/([a-z][\w-]*)$/.exec(specifier)
+      if (!libMatch) continue
+      const libKey = `__lib_${libMatch[1]}__`
+      if (seen.has(libKey)) continue
+      seen.add(libKey)
+      paths.push(`lib/${libMatch[1]}.ts`)
     }
   }
 

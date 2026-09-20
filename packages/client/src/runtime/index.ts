@@ -13,7 +13,6 @@ export {
   createEffect,
   createDisposableEffect,
   createMemo,
-  createSelector,
   createRoot,
   onCleanup,
   onMount,
@@ -70,15 +69,11 @@ export {
   createPortal,
   isSSRPortal,
   findSiblingSlot,
-  cleanupPortalPlaceholder,
   type Portal,
   type PortalOptions,
   type Renderable,
   type PortalChildren,
 } from './portal.ts'
-
-// Floating-element positioning (#2848)
-export { trackPosition } from './track-position.ts'
 
 // Loop boundary marker lookup (used by mapArray/mapArrayAnchored consumers
 // and compiler-generated clearing code — see ./loop-markers.ts docstring)
