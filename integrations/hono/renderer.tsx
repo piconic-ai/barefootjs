@@ -14,6 +14,7 @@
  */
 
 import { jsxRenderer } from 'hono/jsx-renderer'
+import { BfPortals } from '../../packages/adapter-hono/src/portals'
 import { BfScripts } from '../../packages/adapter-hono/src/scripts'
 import { BfDevReload } from '../../packages/adapter-hono/src/app'
 
@@ -54,6 +55,7 @@ export const renderer = jsxRenderer(
         <body>
           <SiteHeader />
           {children}
+          <BfPortals />
           <BfScripts />
           <BfDevReload endpoint={`${BASE_PATH}/_bf/reload`} />
         </body>
