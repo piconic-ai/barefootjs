@@ -19,6 +19,7 @@ on:
       - 'integrations/shared/lib/**'
       - 'integrations/shared/package.json'
       - 'scripts/ci/check-worker-bundles.ts'
+      - 'scripts/lib/container-integrations.ts'
       - '.github/workflows/ci-worker-bundles.yml'
   pull_request:
     paths:
@@ -28,6 +29,7 @@ on:
       - 'integrations/shared/lib/**'
       - 'integrations/shared/package.json'
       - 'scripts/ci/check-worker-bundles.ts'
+      - 'scripts/lib/container-integrations.ts'
       - '.github/workflows/ci-worker-bundles.yml'
 
 permissions:

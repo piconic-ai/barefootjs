@@ -17,28 +17,13 @@
  */
 
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
+import { type ContainerIntegration, containerIntegrations } from '../lib/container-integrations'
 
-const INTEGRATIONS_DIR = resolve(import.meta.dir, '../../integrations')
 const CONCURRENCY = 4
 
-type Target = { name: string; dir: string; config: Record<string, unknown> }
-
-function containerIntegrations(): Target[] {
-  return readdirSync(INTEGRATIONS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .flatMap((entry) => {
-      const wranglerToml = join(INTEGRATIONS_DIR, entry.name, 'wrangler.toml')
-      if (!existsSync(wranglerToml)) return []
-      const config = Bun.TOML.parse(readFileSync(wranglerToml, 'utf8')) as Record<string, unknown>
-      if (!Array.isArray(config.containers) || config.containers.length === 0) return []
-      return [{ name: entry.name, dir: dirname(wranglerToml), config }]
-    })
-}
-
-async function bundle(target: Target, workDir: string): Promise<string | null> {
+async function bundle(target: ContainerIntegration, workDir: string): Promise<string | null> {
   const { containers, routes, ...rest } = target.config
   void containers // the image build is what this check exists to skip
   void routes // a route on the zone is not part of bundling, and needs an account
