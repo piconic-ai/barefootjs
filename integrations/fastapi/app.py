@@ -345,6 +345,12 @@ def html_response_cached(html: str, status: int = 200) -> Response:
     return response
 
 
+# Registered under both spellings so the bare `/integrations/fastapi` renders
+# instead of being 307'd to the trailing-slash form: every other integration
+# answers the bare path directly, the index page links to it, and a redirect
+# would be an uncacheable round trip that wakes the Container (see
+# cache-control.ts).
+@router.get("")
 @router.get("/")
 async def home_route() -> Response:
     return html_response_cached(home_page())
@@ -808,7 +814,7 @@ app.mount(f"{BASE}/styles", StaticFiles(directory=str(HERE / "dist" / "styles"))
 # `mount '/' => sub { [302, [Location => "$BASE/"], []] }`).
 @app.get("/")
 async def root_redirect() -> Response:
-    return RedirectResponse(url=f"{BASE}/")
+    return RedirectResponse(url=BASE)
 
 
 if __name__ == "__main__":
@@ -821,4 +827,9 @@ if __name__ == "__main__":
     if watch:
         uvicorn.run("app:app", host="0.0.0.0", port=PORT, reload=True)
     else:
-        uvicorn.run(app, host="0.0.0.0", port=PORT)
+        # `proxy_headers` is on by default but only trusted from 127.0.0.1, so
+        # the Worker's `X-Forwarded-Proto` is ignored and Starlette builds
+        # redirect Locations as plain http -- the browser then gets bounced
+        # from http to https, an extra round trip. Trusting every peer is right
+        # here: nothing but the Worker's proxy can reach the Container.
+        uvicorn.run(app, host="0.0.0.0", port=PORT, forwarded_allow_ips="*")
