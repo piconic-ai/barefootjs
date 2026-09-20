@@ -3,14 +3,14 @@
  * the Sinatra (Rack) app running inside a Cloudflare Container.
  */
 
-import { Container } from '@cloudflare/containers'
+import { SelfHealingContainer } from 'barefootjs-integrations-shared/lib/self-healing-container'
 import { withCacheControl } from 'barefootjs-integrations-shared/lib/cache-control'
 
 type Env = {
   SINATRA_CONTAINER: DurableObjectNamespace
 }
 
-export class SinatraContainer extends Container<Env> {
+export class SinatraContainer extends SelfHealingContainer<Env> {
   defaultPort = 8080
   // Billing runs for every second the instance is up, idle included, so this
   // window is the cost knob. This stack starts fast enough that a cold start
