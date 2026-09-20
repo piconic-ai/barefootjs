@@ -1,11 +1,14 @@
 /**
  * Component Catalog Page
  *
- * Visual card grid catalog at /components with tag-based filtering.
- * Each card shows a live-rendered component preview with the component name.
- * Ref: #517
+ * Visual card grid catalog at /components with tag-based filtering
+ * (`/components?tag=input`). Reads the same `?tag=` query as `CatalogFilter`
+ * via `createSearchParams()` and renders only the matching cards — the grid
+ * is SSR-filtered, so there's no flash and no client-side DOM poking.
+ * Ref: #3103 (was #517)
  */
 
+import { createSearchParams } from '@barefootjs/client'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,7 +24,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
 import { CatalogFilter } from '@/components/catalog-filter'
-import { type ComponentCategory } from '../../components/shared/component-registry'
+import { type ComponentCategory, asCatalogTag } from '../../components/shared/component-registry'
 import { Accordion, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Calendar } from '@/components/ui/calendar'
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
@@ -697,6 +700,12 @@ function ComponentCard({ entry }: { entry: CatalogEntry }) {
 }
 
 export function ComponentCatalogPage() {
+  const [searchParams] = createSearchParams()
+  const activeTag = asCatalogTag(searchParams().get('tag'))
+  const visibleEntries = activeTag
+    ? catalogEntries.filter(entry => entry.tags.includes(activeTag))
+    : catalogEntries
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -712,8 +721,8 @@ export function ComponentCatalogPage() {
 
       {/* Card grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {catalogEntries.map(entry => (
-          <ComponentCard entry={entry} />
+        {visibleEntries.map(entry => (
+          <ComponentCard key={entry.slug} entry={entry} />
         ))}
       </div>
     </div>
