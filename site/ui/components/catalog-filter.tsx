@@ -23,7 +23,7 @@ import { categoryOrder, categoryLabels, asCatalogTag, type CatalogTag } from './
 
 const tagOptions: Array<{ label: string; value: CatalogTag }> = [
   { label: 'All', value: '' },
-  ...categoryOrder.map((category) => ({ label: categoryLabels[category], value: category as CatalogTag })),
+  ...categoryOrder.map((category) => ({ label: categoryLabels[category], value: category })),
 ]
 
 export function CatalogFilter() {
