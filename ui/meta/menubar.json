@@ -65,6 +65,12 @@
           "type": "'start' | 'end'",
           "required": false,
           "description": "Alignment relative to trigger"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "required": false,
+          "description": "The owning MenubarMenu's value. Match it to the sibling MenubarMenu's own `value` prop. Content is SSR-placed at the portal outlet (#3059) before any client JS runs, so by the time this component mounts it is no longer a DOM descendant of its MenubarMenu — `closest('[data-slot=\"menubar-menu\"]')` finds nothing there. Passing `value` explicitly is the only way to recover it; omitting it falls back to the closest()-based lookup, which only still works pre-hydration/pre-portal (e.g. non-SSR tests)."
         }
       ]
     },
@@ -282,6 +288,7 @@
   },
   "dependencies": {
     "internal": [
+      "track-position",
       "icon"
     ],
     "external": [

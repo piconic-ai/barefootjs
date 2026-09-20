@@ -7,9 +7,9 @@
  * API inspired by React's createPortal(children, domNode).
  */
 
-import { BF_SCOPE, BF_HOST, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_PORTAL_ID, BF_PORTAL_OWNER } from '@barefootjs/shared'
 import { parseHTML } from './component.ts'
-import { getPortalScopeId } from './scope.ts'
+import { getPortalScopeId, findInScope } from './scope.ts'
 
 /**
  * The handle `createPortal` returns.
@@ -134,6 +134,12 @@ export function isSSRPortal(element: HTMLElement): boolean {
  * Handles the SSR portal case where the element is inside a portal wrapper
  * (bf-pi) instead of its original parent container.
  *
+ * `slotSelector` may also match the resolved host/owner scope element
+ * itself, not just its descendants — useful when the "sibling" being
+ * looked up is the shared root a whole group of items hangs off of,
+ * rather than one specific descendant (e.g. a bar-level root read by
+ * every one of its portaled items).
+ *
  * @param el - Element to search from
  * @param slotSelector - CSS selector for the sibling slot (e.g., '[data-slot="popover-trigger"]')
  * @returns The found element, or null
@@ -163,16 +169,28 @@ export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElem
   // `bf-h` is stamped on every child-component root regardless of SSR
   // portal placement (it names the child's host scope for upsertion in
   // general, not just the #3059 shape), so gating on `isSSRPortal(el)` is
-  // required — components that were never SSR-portal-placed (ContextMenu,
-  // Drawer; anything outside #3059's Dialog/DropdownMenu/Popover/
-  // Combobox/Select scope) keep the original "direct parent" lookup as
-  // their first try, unaffected by a host-scope path that only exists to
-  // handle SSR-relocated markup.
+  // required — a component that was never SSR-portal-placed keeps the
+  // original "direct parent" lookup as its first try, unaffected by a
+  // host-scope path that only exists to handle SSR-relocated markup.
   if (isSSRPortal(el)) {
     const hostId = el.getAttribute(BF_HOST)
     if (hostId) {
-      const host = document.querySelector(`[${BF_SCOPE}="${hostId}"]`)
-      const inHost = host?.querySelector(slotSelector) as HTMLElement | null
+      // `findInScope` (not a bare `[bf-s="…"]` lookup, nor `find()` from
+      // query.ts) because the host can be comment-scoped (a fragment
+      // root, or a root-is-a-child-call wrapper, #2649) with no element
+      // of its own to carry the id — a plain attribute lookup silently
+      // misses it and falls through to the unscoped "direct parent"
+      // branch below, right back into the cross-instance leak this bf-h
+      // path exists to prevent. `find()` doesn't fit either: its
+      // `belongsToScope` check rejects a candidate that carries its own
+      // `bf-s`, which is exactly the shape of a sibling that is itself a
+      // scoped component (e.g. `<ContextMenuTrigger>` next to
+      // `<ContextMenuContent>` under one `<ContextMenu>`). Measured: a
+      // ContextMenu whose demo wrapper is a single child-component call
+      // (comment-scoped) resolved every instance's trigger to the page's
+      // first one once the plain lookup missed and this path's `find()`
+      // attempt then rejected the real trigger too.
+      const inHost = findInScope(hostId, slotSelector) as HTMLElement | null
       if (inHost) return inHost
     }
   }
@@ -189,18 +207,9 @@ export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElem
   const ownerScopeId = portalWrapper.getAttribute(BF_PORTAL_OWNER)
   if (!ownerScopeId) return null
 
-  // Find owner scope by exact bf-s match (#1249 — no `~` prefix).
-  const ownerScope = document.querySelector(`[${BF_SCOPE}="${ownerScopeId}"]`)
-  if (!ownerScope) return null
-
-  return ownerScope.querySelector(slotSelector) as HTMLElement | null
-}
-
-export function cleanupPortalPlaceholder(portalId: string): void {
-  const placeholder = document.querySelector(
-    `template[${BF_PORTAL_PLACEHOLDER}="${portalId}"]`
-  )
-  placeholder?.remove()
+  // Find owner scope by exact bf-s match (#1249 — no `~` prefix), or its
+  // comment-scope range when the owner has no `bf-s` element of its own.
+  return findInScope(ownerScopeId, slotSelector) as HTMLElement | null
 }
 
 /**

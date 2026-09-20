@@ -24,7 +24,7 @@ export function NavigationMenuBasicDemo() {
       <NavigationMenuList>
         <NavigationMenuItem value="getting-started">
           <NavigationMenuTrigger>Getting Started</NavigationMenuTrigger>
-          <NavigationMenuContent className="w-[400px] md:w-[500px]">
+          <NavigationMenuContent value="getting-started" className="w-[400px] md:w-[500px]">
             <ul className="grid gap-3 p-4 md:grid-cols-2">
               <li>
                 <NavigationMenuLink href="/docs">
@@ -64,7 +64,7 @@ export function NavigationMenuBasicDemo() {
 
         <NavigationMenuItem value="components">
           <NavigationMenuTrigger>Components</NavigationMenuTrigger>
-          <NavigationMenuContent className="w-[400px] md:w-[500px]">
+          <NavigationMenuContent value="components" className="w-[400px] md:w-[500px]">
             <ul className="grid gap-3 p-4 md:grid-cols-2">
               <li>
                 <NavigationMenuLink href="/components/button">
@@ -115,7 +115,7 @@ export function NavigationMenuWithLinksDemo() {
       <NavigationMenuList>
         <NavigationMenuItem value="docs">
           <NavigationMenuTrigger>Documentation</NavigationMenuTrigger>
-          <NavigationMenuContent className="w-[300px]">
+          <NavigationMenuContent value="docs" className="w-[300px]">
             <ul className="grid gap-3 p-4">
               <li>
                 <NavigationMenuLink href="/docs/introduction">

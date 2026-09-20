@@ -31,9 +31,11 @@
  *     timezone, the implicit-environment hole #2273 closed;
  *   - an OPEN-typed runtime locale (`locale: string`) — build-time CLDR
  *     resolution is impossible; the app's i18n layer owns locale → pattern
- *     there, feeding `formatDate` directly. An OPTIONAL union prop also
- *     declines: `undefined` at runtime makes real `toLocaleDateString` read
- *     the host locale, which no frozen pattern table can reproduce;
+ *     there, deferring the whole read to the client with `/* @client *\/`
+ *     (`formatDate` itself is compiler ABI and cannot be called by name —
+ *     BF056, #3089). An OPTIONAL union prop also declines: `undefined` at
+ *     runtime makes real `toLocaleDateString` read the host locale, which
+ *     no frozen pattern table can reproduce;
  *   - an IANA `timeZone` literal the build machine cannot verify (#2344):
  *     a named zone IS admitted when the build's own `Intl` echoes it back
  *     verbatim from `resolvedOptions().timeZone` — the canonical primary
@@ -89,7 +91,8 @@ const tzProbeCache = new Map<string, boolean>()
  * spellings are exactly where backend tzdata layers disagree (Go/Python/
  * Ruby/Rust resolve the exact ID set; PHP folds case; link availability
  * varies by tzdata vintage). Anything the probe can't verify declines
- * (→ BF021) — the `formatDate` primitive stays available for edge cases.
+ * (→ BF021) — `/* @client *\/` stays available for edge cases (`formatDate`
+ * itself is compiler ABI and cannot be called by name — BF056, #3089).
  */
 export function isBuildResolvableTimeZone(value: string): boolean {
   const cached = tzProbeCache.get(value)

@@ -10,6 +10,7 @@
 
 import { BF_HOST, BF_PORTAL_OWNER, BF_SCOPE } from '@barefootjs/shared'
 import type { Context } from '../context.ts'
+import { resolveScopeElement } from './scope.ts'
 
 export { createContext, type Context } from '../context.ts'
 
@@ -60,7 +61,7 @@ export function useContext<T>(context: Context<T>): T {
       // Follow portal owner chain: if this element has bf-po, jump to the owner scope
       const portalOwnerId: string | null = el.getAttribute(BF_PORTAL_OWNER)
       if (portalOwnerId) {
-        const ownerEl: Element | null = document.querySelector(`[${BF_SCOPE}="${portalOwnerId}"]`)
+        const ownerEl: Element | null = resolveScopeElement(portalOwnerId)
         if (ownerEl && ownerEl !== el) {
           el = ownerEl
           continue
@@ -89,7 +90,7 @@ export function useContext<T>(context: Context<T>): T {
       // consumer's own.)
       const hostId: string | null = el.getAttribute(BF_HOST)
       if (hostId) {
-        const hostEl: Element | null = document.querySelector(`[${BF_SCOPE}="${hostId}"]`)
+        const hostEl: Element | null = resolveScopeElement(hostId)
         if (hostEl && hostEl !== el) {
           el = hostEl
           continue

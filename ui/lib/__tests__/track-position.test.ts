@@ -1,7 +1,7 @@
 /**
- * `trackPosition` (#2848): keeps a floating element anchored while open
- * and — the load-bearing part — samples the position ONE more time,
- * synchronously, at dispose.
+ * `trackPosition` (#2848, moved to `ui/lib` in #3090): keeps a floating
+ * element anchored while open and — the load-bearing part — samples the
+ * position ONE more time, synchronously, at dispose.
  *
  * `scroll` events are coalesced per rendering frame and dispatch with the
  * scroll position current at dispatch time, so a scroll that lands in the
@@ -11,7 +11,7 @@
  */
 import { describe, test, expect, beforeAll } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { trackPosition } from '../../src/runtime/track-position'
+import { trackPosition } from '../track-position'
 
 beforeAll(() => {
   if (typeof window === 'undefined') {

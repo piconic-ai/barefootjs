@@ -85,6 +85,12 @@
           "type": "Child",
           "required": false,
           "description": "Content panel"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "required": false,
+          "description": "The owning NavigationMenuItem's value. Match it to the sibling NavigationMenuItem's own `value` prop. Content is SSR-placed at the portal outlet (#3059) before any client JS runs, so by the time this component mounts it is no longer a DOM descendant of its NavigationMenuItem — `closest('[data-slot=\"navigation-menu-item\"]')` finds nothing there. Passing `value` explicitly is the only way to recover it; omitting it falls back to the closest()-based lookup, which only still works pre-hydration/pre-portal (e.g. non-SSR tests)."
         }
       ]
     },
@@ -133,6 +139,7 @@
   },
   "dependencies": {
     "internal": [
+      "track-position",
       "icon"
     ],
     "external": [

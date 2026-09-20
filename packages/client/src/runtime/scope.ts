@@ -30,6 +30,96 @@ export function getPortalScopeId(element: Element): string | null {
 }
 
 /**
+ * Find the `<!--bf-scope:ID-->` (or `bf-scope:ID|props`) comment for a
+ * scope id, searching the whole document. Shared by `resolveScopeElement`
+ * and `findInScope` below — both need this same lookup, then do
+ * different things with the hit.
+ */
+function findScopeComment(scopeId: string): Comment | null {
+  const prefix = BF_SCOPE_COMMENT_PREFIX + scopeId
+  const walker = document.createTreeWalker(document, NodeFilter.SHOW_COMMENT)
+  let node: Comment | null
+  while ((node = walker.nextNode() as Comment | null)) {
+    const value = node.nodeValue ?? ''
+    if (value === prefix || value.startsWith(`${prefix}|`)) return node
+  }
+  return null
+}
+
+/**
+ * Resolve the DOM element standing in for a scope id, whether that scope
+ * is element-based (`bf-s="<id>"`) or comment-based (a fragment root, or
+ * a root-is-a-child-call wrapper, #2649) — the shape a `bf-h` value can
+ * legally name either way.
+ *
+ * A comment scope has no element of its own to carry the id, so a bare
+ * `[bf-s="<id>"]` lookup silently returns null for it. Every caller that
+ * jumps to a `bf-h`/`bf-po` target by id (`useContext`'s DOM-ancestor
+ * walk, `findSiblingSlot`) needs that case too, or it falls through to
+ * an UNSCOPED, page-wide search — reintroducing exactly the cross-
+ * instance-leak bug class those jumps exist to prevent (measured: a
+ * ContextMenu on a reference page stacking several demo instances, each
+ * `<ContextMenuBasicDemo>`-style wrapper a single child-component call
+ * and therefore comment-scoped, resolved every instance's trigger to
+ * the page's FIRST context-menu-trigger once bf-h lookup silently failed
+ * and the caller fell back to `document.body.querySelector(...)`).
+ *
+ * Returns the exact element `hydrateCommentScope` (hydrate.ts) registers
+ * in `commentScopeRegistry` for the comment case — the comment's own next
+ * element sibling, or its parent when it has none — recomputed by the
+ * same rule against the live DOM, so identity-keyed lookups against that
+ * registry still hit.
+ */
+export function resolveScopeElement(scopeId: string): Element | null {
+  const direct = document.querySelector(`[${BF_SCOPE}="${scopeId}"]`)
+  if (direct) return direct
+
+  const comment = findScopeComment(scopeId)
+  return comment ? (comment.nextElementSibling ?? comment.parentElement) : null
+}
+
+/**
+ * Find a descendant of a scope id matching `selector` — a PLAIN, unfiltered
+ * match (self or `querySelector`), comment-scope aware.
+ *
+ * Deliberately NOT `find()` (query.ts): `find()`'s `candidatesInScope`/
+ * `belongsToScope` exist to resolve the COMPILER's own declared slot
+ * children, and reject a candidate that carries its own `bf-s` — correct
+ * there (it means the candidate belongs to a nested child scope, not this
+ * one's own template), but wrong for this caller's question, which is
+ * just "does an element matching this selector live in this scope's
+ * content, however deep, even if it's itself a separately-scoped
+ * component?" (e.g. `<ContextMenuTrigger>`, itself a scoped child, living
+ * beside `<ContextMenuContent>` under the same `<ContextMenu>` scope) —
+ * `find()` rejects exactly that shape and silently returns null.
+ *
+ * The comment-scope case additionally can't stop at one element: a
+ * fragment-root/root-is-a-child-call scope's content may be SEVERAL
+ * top-level sibling nodes in the comment's range, not just the one
+ * `resolveScopeElement` returns as a representative proxy.
+ */
+export function findInScope(scopeId: string, selector: string): Element | null {
+  const direct = document.querySelector(`[${BF_SCOPE}="${scopeId}"]`)
+  if (direct) return direct.matches(selector) ? direct : direct.querySelector(selector)
+
+  const comment = findScopeComment(scopeId)
+  if (!comment) return null
+
+  const boundary = getCommentScopeBoundary(comment)
+  let node: Node | null = comment.nextSibling
+  while (node && node !== boundary) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element
+      if (el.matches(selector)) return el
+      const found = el.querySelector(selector)
+      if (found) return found
+    }
+    node = node.nextSibling
+  }
+  return null
+}
+
+/**
  * Resolve the scope id a component's OWN init body should use for
  * `[bf-h="<id>"]`/`[bf-s$="_<slot>"]` child lookups (#2910).
  *

@@ -21,7 +21,16 @@ export class RailsContainer extends Container<Env> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const id = env.RAILS_CONTAINER.idFromName('singleton')
+    // Not 'singleton': the instance under that name got stuck after an idle
+    // stop -- it went on holding the running-instance slot although it had
+    // stopped, so this Durable Object skipped the start and proxied into a
+    // dead port (500 "The container is not listening"), and the first
+    // requests under the new name were refused for six minutes with
+    // "Maximum number of running container instances exceeded" until the
+    // platform let the old one go. Not reproducible on a copy of this worker
+    // with the same image and instance type, so it is the instance that is
+    // stuck, not anything this repo controls.
+    const id = env.RAILS_CONTAINER.idFromName('singleton-2')
     const stub = env.RAILS_CONTAINER.get(id) as unknown as { fetch: typeof fetch }
     return withCacheControl(request, await stub.fetch(request))
   },

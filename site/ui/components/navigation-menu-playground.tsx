@@ -63,7 +63,7 @@ function NavigationMenuPlayground(_props: {}) {
             <NavigationMenuList>
               <NavigationMenuItem value="getting-started">
                 <NavigationMenuTrigger>Getting Started</NavigationMenuTrigger>
-                <NavigationMenuContent className="w-[400px]">
+                <NavigationMenuContent value="getting-started" className="w-[400px]">
                   <ul className="grid gap-3 p-4 md:grid-cols-2">
                     <li>
                       <NavigationMenuLink href="/docs">
@@ -86,7 +86,7 @@ function NavigationMenuPlayground(_props: {}) {
               </NavigationMenuItem>
               <NavigationMenuItem value="components">
                 <NavigationMenuTrigger>Components</NavigationMenuTrigger>
-                <NavigationMenuContent className="w-[400px]">
+                <NavigationMenuContent value="components" className="w-[400px]">
                   <ul className="grid gap-3 p-4 md:grid-cols-2">
                     <li>
                       <NavigationMenuLink href="/components/button">

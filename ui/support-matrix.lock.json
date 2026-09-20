@@ -3067,13 +3067,19 @@
       "total": 294,
       "cells": {
         "hono": {
-          "pass": 292,
+          "pass": 291,
           "total": 294,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -3085,7 +3091,7 @@
           ]
         },
         "blade": {
-          "pass": 267,
+          "pass": 266,
           "total": 294,
           "gaps": [
             {
@@ -3152,6 +3158,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -3253,7 +3265,7 @@
           ]
         },
         "erb": {
-          "pass": 268,
+          "pass": 267,
           "total": 294,
           "gaps": [
             {
@@ -3314,6 +3326,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -3415,7 +3433,7 @@
           ]
         },
         "go-template": {
-          "pass": 265,
+          "pass": 264,
           "total": 294,
           "gaps": [
             {
@@ -3482,6 +3500,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -3595,7 +3619,7 @@
           ]
         },
         "jinja": {
-          "pass": 267,
+          "pass": 266,
           "total": 294,
           "gaps": [
             {
@@ -3662,6 +3686,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -3763,7 +3793,7 @@
           ]
         },
         "minijinja": {
-          "pass": 267,
+          "pass": 266,
           "total": 294,
           "gaps": [
             {
@@ -3830,6 +3860,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -3931,7 +3967,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 268,
+          "pass": 267,
           "total": 294,
           "gaps": [
             {
@@ -3992,6 +4028,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4093,7 +4135,7 @@
           ]
         },
         "pebble": {
-          "pass": 267,
+          "pass": 266,
           "total": 294,
           "gaps": [
             {
@@ -4160,6 +4202,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4261,7 +4309,7 @@
           ]
         },
         "twig": {
-          "pass": 267,
+          "pass": 266,
           "total": 294,
           "gaps": [
             {
@@ -4328,6 +4376,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4429,7 +4483,7 @@
           ]
         },
         "xslate": {
-          "pass": 267,
+          "pass": 266,
           "total": 294,
           "gaps": [
             {
@@ -4496,6 +4550,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4610,15 +4670,23 @@
       }
     },
     "conditional": {
-      "total": 34,
+      "total": 35,
       "cells": {
         "hono": {
           "pass": 34,
-          "total": 34
+          "total": 35,
+          "gaps": [
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            }
+          ]
         },
         "blade": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4636,6 +4704,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4654,7 +4728,7 @@
         },
         "erb": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4672,6 +4746,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4690,7 +4770,7 @@
         },
         "go-template": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4708,6 +4788,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4726,7 +4812,7 @@
         },
         "jinja": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4744,6 +4830,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4762,7 +4854,7 @@
         },
         "minijinja": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4780,6 +4872,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4798,7 +4896,7 @@
         },
         "mojolicious": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4816,6 +4914,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4834,7 +4938,7 @@
         },
         "pebble": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4852,6 +4956,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4870,7 +4980,7 @@
         },
         "twig": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4888,6 +4998,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4906,7 +5022,7 @@
         },
         "xslate": {
           "pass": 29,
-          "total": 34,
+          "total": 35,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4924,6 +5040,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4957,13 +5079,19 @@
       "total": 416,
       "cells": {
         "hono": {
-          "pass": 412,
+          "pass": 411,
           "total": 416,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -4987,6 +5115,204 @@
           ]
         },
         "blade": {
+          "pass": 384,
+          "total": 416,
+          "gaps": [
+            {
+              "fixture": "combobox",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "limitations": [
+                "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "dialog",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "dropdown-menu",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "limitations": [
+                "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "jsx-element-prop-array",
+              "limitations": [
+                "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "limitations": [
+                "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "map-array-builder-body",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "map-array-builder-escaping",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "limitations": [
+                "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "popover",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "portal",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "select",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            }
+          ]
+        },
+        "erb": {
           "pass": 385,
           "total": 416,
           "gaps": [
@@ -5027,12 +5353,6 @@
               ]
             },
             {
-              "fixture": "filter-nested-callback-predicate",
-              "limitations": [
-                "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
               "fixture": "filter-nested-find-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
@@ -5057,189 +5377,9 @@
               ]
             },
             {
-              "fixture": "jsx-element-prop-array",
+              "fixture": "format-date",
               "limitations": [
-                "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "jsx-element-prop-ternary",
-              "limitations": [
-                "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "map-array-builder-body",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "map-array-builder-escaping",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "module-const-arrow-helper",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-loop-source-computed",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "module-function-helper-chain",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-helper-boolcontext-call",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "namespace-import-primitive",
-              "limitations": [
-                "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "opaque-local-accessor-call",
-              "limitations": [
-                "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "preamble-cells",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "reduce-right-typeof-body",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "reduce-typeof-body",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "tag-cloud",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            }
-          ]
-        },
-        "erb": {
-          "pass": 386,
-          "total": 416,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "date-method-uncatalogued",
-              "limitations": [
-                "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fill-unsupported",
-              "limitations": [
-                "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-nested-find-predicate",
-              "limitations": [
-                "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "limitations": [
-                "off-subset-callback-body"
+                "authored-format-date-call"
               ]
             },
             {
@@ -5365,7 +5505,7 @@
           ]
         },
         "go-template": {
-          "pass": 382,
+          "pass": 381,
           "total": 416,
           "gaps": [
             {
@@ -5432,6 +5572,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -5575,7 +5721,7 @@
           ]
         },
         "jinja": {
-          "pass": 385,
+          "pass": 384,
           "total": 416,
           "gaps": [
             {
@@ -5642,6 +5788,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -5767,7 +5919,7 @@
           ]
         },
         "minijinja": {
-          "pass": 385,
+          "pass": 384,
           "total": 416,
           "gaps": [
             {
@@ -5834,6 +5986,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -5959,7 +6117,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 384,
+          "pass": 383,
           "total": 416,
           "gaps": [
             {
@@ -6020,6 +6178,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -6157,7 +6321,7 @@
           ]
         },
         "pebble": {
-          "pass": 385,
+          "pass": 384,
           "total": 416,
           "gaps": [
             {
@@ -6224,6 +6388,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -6349,7 +6519,7 @@
           ]
         },
         "twig": {
-          "pass": 385,
+          "pass": 384,
           "total": 416,
           "gaps": [
             {
@@ -6416,6 +6586,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -6541,7 +6717,7 @@
           ]
         },
         "xslate": {
-          "pass": 383,
+          "pass": 382,
           "total": 416,
           "gaps": [
             {
@@ -6608,6 +6784,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -6997,9 +7179,15 @@
       "total": 330,
       "cells": {
         "hono": {
-          "pass": 329,
+          "pass": 328,
           "total": 330,
           "gaps": [
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -7009,7 +7197,7 @@
           ]
         },
         "blade": {
-          "pass": 308,
+          "pass": 307,
           "total": 330,
           "gaps": [
             {
@@ -7058,6 +7246,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -7147,7 +7341,7 @@
           ]
         },
         "erb": {
-          "pass": 308,
+          "pass": 307,
           "total": 330,
           "gaps": [
             {
@@ -7196,6 +7390,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -7285,7 +7485,7 @@
           ]
         },
         "go-template": {
-          "pass": 305,
+          "pass": 304,
           "total": 330,
           "gaps": [
             {
@@ -7334,6 +7534,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -7441,7 +7647,7 @@
           ]
         },
         "jinja": {
-          "pass": 308,
+          "pass": 307,
           "total": 330,
           "gaps": [
             {
@@ -7490,6 +7696,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -7579,7 +7791,7 @@
           ]
         },
         "minijinja": {
-          "pass": 308,
+          "pass": 307,
           "total": 330,
           "gaps": [
             {
@@ -7628,6 +7840,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -7717,7 +7935,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 306,
+          "pass": 305,
           "total": 330,
           "gaps": [
             {
@@ -7766,6 +7984,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -7867,7 +8091,7 @@
           ]
         },
         "pebble": {
-          "pass": 308,
+          "pass": 307,
           "total": 330,
           "gaps": [
             {
@@ -7916,6 +8140,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -8005,7 +8235,7 @@
           ]
         },
         "twig": {
-          "pass": 308,
+          "pass": 307,
           "total": 330,
           "gaps": [
             {
@@ -8054,6 +8284,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -8143,7 +8379,7 @@
           ]
         },
         "xslate": {
-          "pass": 306,
+          "pass": 305,
           "total": 330,
           "gaps": [
             {
@@ -8192,6 +8428,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -17840,178 +18082,18 @@
       "total": 222,
       "cells": {
         "hono": {
-          "pass": 222,
-          "total": 222
+          "pass": 221,
+          "total": 222,
+          "gaps": [
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            }
+          ]
         },
         "blade": {
-          "pass": 209,
-          "total": 222,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fill-unsupported",
-              "limitations": [
-                "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "preamble-cells",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            }
-          ]
-        },
-        "erb": {
-          "pass": 209,
-          "total": 222,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fill-unsupported",
-              "limitations": [
-                "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "preamble-cells",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            }
-          ]
-        },
-        "go-template": {
           "pass": 208,
           "total": 222,
           "gaps": [
@@ -18064,6 +18146,12 @@
               ]
             },
             {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
               "fixture": "popover",
               "limitations": [
                 "ref-callback-portal-content-inline-at-ssr"
@@ -18082,12 +18170,6 @@
               ]
             },
             {
-              "fixture": "signal-object-spread-init",
-              "limitations": [
-                "derived-object-literal-signal"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18101,8 +18183,8 @@
             }
           ]
         },
-        "jinja": {
-          "pass": 209,
+        "erb": {
+          "pass": 208,
           "total": 222,
           "gaps": [
             {
@@ -18154,87 +18236,9 @@
               ]
             },
             {
-              "fixture": "popover",
+              "fixture": "format-date",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "preamble-cells",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "pass": 209,
-          "total": 222,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fill-unsupported",
-              "limitations": [
-                "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "limitations": [
-                "off-subset-callback-body"
+                "authored-format-date-call"
               ]
             },
             {
@@ -18269,7 +18273,7 @@
             }
           ]
         },
-        "mojolicious": {
+        "go-template": {
           "pass": 207,
           "total": 222,
           "gaps": [
@@ -18319,6 +18323,288 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "popover",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "select",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-object-spread-init",
+              "limitations": [
+                "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 208,
+          "total": 222,
+          "gaps": [
+            {
+              "fixture": "combobox",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "dialog",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "dropdown-menu",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "limitations": [
+                "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "popover",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "select",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 208,
+          "total": 222,
+          "gaps": [
+            {
+              "fixture": "combobox",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "dialog",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "dropdown-menu",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "limitations": [
+                "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "popover",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "select",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 206,
+          "total": 222,
+          "gaps": [
+            {
+              "fixture": "combobox",
+              "limitations": [
+                "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "dialog",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "dropdown-menu",
+              "limitations": [
+                "ref-callback-portal-content-inline-at-ssr"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "limitations": [
+                "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -18366,7 +18652,7 @@
           ]
         },
         "pebble": {
-          "pass": 209,
+          "pass": 208,
           "total": 222,
           "gaps": [
             {
@@ -18415,6 +18701,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -18450,7 +18742,7 @@
           ]
         },
         "twig": {
-          "pass": 209,
+          "pass": 208,
           "total": 222,
           "gaps": [
             {
@@ -18499,6 +18791,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -18534,7 +18832,7 @@
           ]
         },
         "xslate": {
-          "pass": 207,
+          "pass": 206,
           "total": 222,
           "gaps": [
             {
@@ -18583,6 +18881,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
               ]
             },
             {
@@ -19384,61 +19688,6 @@
         "fixture": "date-catalogued",
         "description": "Date-typed prop: toISOString() and getUTCFullYear() render via the catalogued date helper",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-catalogued.ts"
-      }
-    },
-    "lowering:formatDate": {
-      "total": 2,
-      "cells": {
-        "hono": {
-          "pass": 2,
-          "total": 2
-        },
-        "blade": {
-          "pass": 2,
-          "total": 2
-        },
-        "erb": {
-          "pass": 2,
-          "total": 2
-        },
-        "go-template": {
-          "pass": 2,
-          "total": 2
-        },
-        "jinja": {
-          "pass": 2,
-          "total": 2
-        },
-        "minijinja": {
-          "pass": 2,
-          "total": 2
-        },
-        "mojolicious": {
-          "pass": 2,
-          "total": 2
-        },
-        "pebble": {
-          "pass": 2,
-          "total": 2
-        },
-        "twig": {
-          "pass": 2,
-          "total": 2
-        },
-        "xslate": {
-          "pass": 2,
-          "total": 2
-        }
-      },
-      "source": {
-        "file": "packages/adapter-tests/src/coverage-map.ts",
-        "line": 178,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L178"
-      },
-      "example": {
-        "fixture": "format-date",
-        "description": "formatDate(date, pattern, timeZone) renders via the catalogued format_date helper",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       }
     },
     "lowering:queryHref": {
