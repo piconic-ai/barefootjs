@@ -8,7 +8,7 @@
  * A global store is kept as a fallback for non-scoped usage.
  */
 
-import { BF_PORTAL_OWNER, BF_SCOPE } from '@barefootjs/shared'
+import { BF_HOST, BF_PORTAL_OWNER, BF_SCOPE } from '@barefootjs/shared'
 import type { Context } from '../context.ts'
 
 export { createContext, type Context } from '../context.ts'
@@ -63,6 +63,35 @@ export function useContext<T>(context: Context<T>): T {
         const ownerEl: Element | null = document.querySelector(`[${BF_SCOPE}="${portalOwnerId}"]`)
         if (ownerEl && ownerEl !== el) {
           el = ownerEl
+          continue
+        }
+      }
+      // Self-owner portal case: `el` is itself a component (carries its
+      // own bf-s), so a plain `.closest('[bf-s]')` computed by the caller
+      // before the portal move resolves to `el` ITSELF, and the caller
+      // stamps that self-referential id as `bf-po` — the `ownerEl !== el`
+      // guard above correctly refuses to "jump" to itself, but that also
+      // means bf-po can never locate the true provider for this shape.
+      // `bf-h` doesn't have this problem: it names the host scope this
+      // element was upserted FROM (set once, at upsert time, before any
+      // portal move) and is never self-referential — the framework's own
+      // (bf-h, bf-m) slot-identity invariant guarantees a `bf-h` value
+      // always names an ancestor, never the element carrying it. Once a
+      // portal move has detached `el` from that ancestor's DOM subtree,
+      // this is the only marker left that still points at it correctly,
+      // so it's tried whether or not bf-po helped. (#3059 follow-up:
+      // multiple NavigationMenu/Menubar/ContextMenu instances on one
+      // `site/ui` reference page were observed sharing ONE instance's
+      // open/active state, because every affected Content's DOM-ancestor
+      // walk fell through this exact self-owner gap straight to the
+      // global `contextStore` fallback below — which holds whichever
+      // instance's provider registered there most recently, not this
+      // consumer's own.)
+      const hostId: string | null = el.getAttribute(BF_HOST)
+      if (hostId) {
+        const hostEl: Element | null = document.querySelector(`[${BF_SCOPE}="${hostId}"]`)
+        if (hostEl && hostEl !== el) {
+          el = hostEl
           continue
         }
       }

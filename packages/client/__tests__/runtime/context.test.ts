@@ -1,6 +1,13 @@
-import { describe, test, expect } from 'bun:test'
-import { createContext, useContext, provideContext } from '../../src/runtime/context'
+import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
+import { createContext, useContext, provideContext, setCurrentScope } from '../../src/runtime/context'
 import { createSignal } from '../../src/reactive'
+import { GlobalRegistrator } from '@happy-dom/global-registrator'
+
+beforeAll(() => {
+  if (typeof window === 'undefined') {
+    GlobalRegistrator.register()
+  }
+})
 
 describe('createContext', () => {
   test('creates context with unique id', () => {
@@ -136,5 +143,85 @@ describe('provideContext + useContext', () => {
     // val1 captured the value 1, val2 captured 2
     expect(val1).toBe(1)
     expect(val2).toBe(2)
+  })
+})
+
+// #3059 follow-up: multiple instances of a component using a
+// self-owner-portaled child (NavigationMenu/Menubar/ContextMenu's
+// Content/Overlay, whose own root carries bf-s and is portaled via
+// createPortal — never SSR-portal-placed, so this is unrelated to #3059's
+// own SSR outlet work) were observed on a real `site/ui` reference page
+// sharing ONE instance's open/active state instead of each reading its
+// own. Reproduces the exact DOM shape: two independent host instances,
+// each with a portaled self-owner content element carrying a
+// self-referential bf-po (the shape `createPortal`'s
+// `el.closest('[bf-s]')` produces when the portaled element is itself a
+// component) and a correct, non-self-referential bf-h naming its real
+// host.
+describe('useContext — self-owner portaled child, multiple instances (#3059 follow-up)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function setupInstance(hostId: string, contentId: string) {
+    const host = document.createElement('div')
+    host.setAttribute('bf-s', hostId)
+    document.body.appendChild(host)
+
+    // Content starts as a host descendant (its SSR position)…
+    const content = document.createElement('div')
+    content.setAttribute('bf-s', contentId)
+    content.setAttribute('bf-h', hostId)
+    host.appendChild(content)
+
+    // …then createPortal relocates it to document.body, stamping a
+    // self-referential bf-po (content IS a component, so
+    // `el.closest('[bf-s]')` computed before the move resolves to
+    // itself).
+    content.setAttribute('bf-po', contentId)
+    document.body.appendChild(content)
+
+    return { host, content }
+  }
+
+  test('each instance resolves its own provided value, not another instance\'s', () => {
+    const ctx = createContext<{ label: string }>()
+
+    const a = setupInstance('NavMenuA', 'NavMenuA_content')
+    const b = setupInstance('NavMenuB', 'NavMenuB_content')
+
+    // Each host provides its own value, as the real Context.Provider
+    // compiles down to — provideContext also pre-seeds descendants still
+    // in their SSR position, but by the time both hosts have provided,
+    // only ONE value survives in the module-level global fallback.
+    setCurrentScope(a.host)
+    provideContext(ctx, { label: 'A' })
+    setCurrentScope(b.host)
+    provideContext(ctx, { label: 'B' })
+    setCurrentScope(null)
+
+    setCurrentScope(a.content)
+    const fromA = useContext(ctx)
+    setCurrentScope(b.content)
+    const fromB = useContext(ctx)
+    setCurrentScope(null)
+
+    expect(fromA.label).toBe('A')
+    expect(fromB.label).toBe('B')
+  })
+
+  test('falls back to the global store only when no bf-h/bf-po path resolves', () => {
+    const ctx = createContext<string>('default')
+    provideContext(ctx, 'global')
+
+    const orphan = document.createElement('div')
+    orphan.setAttribute('bf-s', 'Orphan_1')
+    document.body.appendChild(orphan)
+
+    setCurrentScope(orphan)
+    const result = useContext(ctx)
+    setCurrentScope(null)
+
+    expect(result).toBe('global')
   })
 })
