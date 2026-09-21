@@ -874,3 +874,43 @@ describe('$c — self-owner SSR-portal child (#3059)', () => {
     expect(result).toBeNull()
   })
 })
+
+/**
+ * `$()` resolving a `^`-prefixed parent-owned element slot inside a
+ * relocated (SSR-portaled) descendant (#3059). Regression pin for the
+ * click-handler half of the real repro: `DrawerFormDemo`'s `+`/`-` buttons
+ * (`^`-prefixed element slots the demo forwards into `DrawerContent`) never
+ * bound their click listeners once `DrawerContent` started rendering at the
+ * `<BfPortals />` outlet instead of inline — `$(scope, '^s6', '^s9')`
+ * resolved to `[null, null]`, silently. The text half of the same repro
+ * (`{goal()}`) is pinned in `claim-slots.test.ts`.
+ */
+describe('$ — parent-owned element slot inside a relocated descendant (#3059)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('resolves a ^-prefixed slot forwarded into a self-owner-portaled child', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13">
+        <button bf="^s9" aria-label="Increase goal"></button>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="A"]')!
+    const [button] = $(scope, '^s9')
+    expect(button).toBe(document.querySelector('[bf="^s9"]'))
+  })
+
+  test('does not cross-match a DIFFERENT instance\'s relocated child sharing the same slot id', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13"><button bf="^s9" id="a-button"></button></div>
+      <div bf-s="B"></div>
+      <div bf-s="B_s13" bf-h="B" bf-m="s13" bf-po="B_s13"><button bf="^s9" id="b-button"></button></div>
+    `
+    const scopeA = document.querySelector('[bf-s="A"]')!
+    const [button] = $(scopeA, '^s9')
+    expect(button?.id).toBe('a-button')
+  })
+})

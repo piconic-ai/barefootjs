@@ -10,8 +10,9 @@
  * See `spec/compiler.md` "Slot identity" for the marker contract.
  */
 
-import { BF_SCOPE, BF_HOST, BF_AT, BF_PORTAL_OWNER } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
 import { cssEscape, findCommentChildScope } from './query.ts'
+import { relocatedDescendants } from './scope.ts'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-
@@ -67,21 +68,23 @@ export function findSsrScopeBySlotIn(
 
   // SSR-portal fallback (#3059): a child whose own root the compiler
   // recognized as an SSR-portal ref-callback target (`ssrPortalOwnerScope`)
-  // is NOT a descendant of `parent` in the SSR markup at all — the
-  // adapter places it at its portal outlet (`<BfPortals />`, a
-  // document.body-level sibling of the whole page tree), stamping `bf-po`
-  // directly on the element alongside its normal (bf-h, bf-m) pair (see
-  // `HonoAdapter.renderElement`'s `ssrPortalOwnerScope` branch). The
-  // primary `parent.querySelector` lookup above can never reach it, so
-  // once that fails, widen the SAME (bf-h, bf-m) selector to a document-
-  // wide search scoped to this parent's own portal-owned elements — (bf-h,
-  // bf-m) is unique by construction at SSR emit time (spec/compiler.md
-  // "Slot identity"), so this can't false-match a different parent's
-  // child even though the search is no longer subtree-local.
-  if (parentBfs) {
-    const portalSelector = `[${BF_PORTAL_OWNER}="${cssEscape(parentBfs)}"][${BF_HOST}="${cssEscape(parentBfs)}"][${BF_AT}="${slotId}"]`
-    const portaled = document.querySelector(portalSelector) as HTMLElement | null
-    if (portaled) return portaled
+  // is NOT a descendant of `parent` in the SSR markup at all — the adapter
+  // places it at its portal outlet (`<BfPortals />`, a document.body-level
+  // sibling of the whole page tree). The primary `parent.querySelector`
+  // lookups above can never reach it, so widen to `relocatedDescendants`
+  // (scope.ts) once they fail: it finds a self-owner-portaled child by its
+  // `bf-h` (its `bf-po` is self-referential — the child's own root carries
+  // `bf-s`, so it can never carry `bf-po="<parentBfs>"` — see
+  // `logicalHost`'s doc comment for why `bf-po` alone can't find this
+  // shape) and an explicit `<Portal>` wrapper by its `bf-po`, either
+  // transitively through further forwarding. `(bf-h, bf-m)` stays the match
+  // key — unique by construction at SSR emit time (spec/compiler.md "Slot
+  // identity") — so this can't false-match a different parent's child.
+  const hostEl = anchorScope ?? parent.closest(`[${BF_SCOPE}]`)
+  if (hostEl) {
+    for (const el of relocatedDescendants(hostEl)) {
+      if (el.getAttribute(BF_AT) === slotId) return el as HTMLElement
+    }
   }
 
   // Fragment-root child: its scope is a bf-scope: comment, not an element

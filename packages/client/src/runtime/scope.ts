@@ -5,7 +5,7 @@
  * Maps an element to its comment node and the sibling range boundary.
  */
 
-import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX, BF_LOOP_ITEM, BF_LOOP_END } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX, BF_LOOP_ITEM, BF_LOOP_END, BF_HOST, BF_PORTAL_OWNER } from '@barefootjs/shared'
 
 /**
  * Information about a comment-based scope.
@@ -143,6 +143,101 @@ export function findInScope(scopeId: string, selector: string): Element | null {
  */
 export function ownScopeId(element: Element): string | null {
   return commentScopeRegistry.get(element)?.scopeId ?? element.getAttribute(BF_SCOPE)
+}
+
+/**
+ * True if `el` physically sits inside `scope`'s own DOM range: its subtree
+ * for an element scope, or the registered comment's sibling range for a
+ * comment-anchored scope. Used by `relocatedDescendants` to tell a
+ * genuinely relocated element (SSR-portal outlet placement, or a
+ * hydrate-time `createPortal` that already ran) apart from one that merely
+ * carries `bf-h`/`bf-po` pointing at `scope` while still sitting in its
+ * normal SSR position (an adapter with no portal outlet, or a client
+ * portal that hasn't run yet).
+ */
+function isWithinScope(scope: Element, el: Element): boolean {
+  if (scope === el) return true
+  const info = commentScopeRegistry.get(scope)
+  if (!info) return scope.contains(el)
+  const boundary = getCommentScopeBoundary(info.commentNode)
+  for (let node: Node | null = info.commentNode.nextSibling; node && node !== boundary; node = node.nextSibling) {
+    if (node === el || (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(el))) return true
+  }
+  return false
+}
+
+/**
+ * The scope element a relocated element `el` logically hangs off: its
+ * `bf-h` (the host it was upserted from — by the (bf-h, bf-m) slot-identity
+ * invariant this is never `el` itself) when set, else a non-self `bf-po`
+ * (an explicit `<Portal>` wrapper, or an owner-stamped element whose
+ * `ownerScope` was a true ancestor rather than itself). `null` when neither
+ * attribute points anywhere but `el`. This is the SAME child-to-host hop
+ * `useContext` already walks (`context.ts`'s bf-po-then-bf-h fallback) —
+ * `relocatedDescendants` below uses it in the opposite (host-to-child)
+ * direction to find its own relocated descendants.
+ */
+function logicalHost(el: Element): Element | null {
+  const own = ownScopeId(el)
+  const hostId = el.getAttribute(BF_HOST)
+  const ownerId = el.getAttribute(BF_PORTAL_OWNER)
+  const id = hostId && hostId !== own ? hostId : ownerId && ownerId !== own ? ownerId : null
+  if (!id) return null
+  const host = resolveScopeElement(id)
+  return host && host !== el ? host : null
+}
+
+/**
+ * Elements that physically render OUTSIDE `scope`'s own DOM range but still
+ * logically belong to it. The SSR-portal-outlet placement (#3059) and
+ * `createPortal`'s hydrate-time relocation both move a scope's own children
+ * out from under it, breaking every consumer that finds "this scope's
+ * content" by walking its literal subtree — `commentsInScope`, `find`'s
+ * portal fallback, `$t`, `findSsrScopeBySlotIn`. This generator is the
+ * physical complement of those subtree walks: elements reachable from
+ * `scope` by (bf-h, bf-po) but NOT already inside its own range. Every
+ * consumer here returns on first match and only pulls from this generator
+ * AFTER its own in-range search already failed, so the common,
+ * non-relocated path never runs this body at all.
+ *
+ * Two passes:
+ *  1. Direct hop — an element whose `bf-h` names `scope` outright (a
+ *     self-owner-portaled child component, whose own root carries `bf-s`
+ *     and therefore stamps `bf-po` to ITS OWN id, never `scope`'s — see
+ *     `logicalHost`'s doc comment), or an explicit `<Portal>` wrapper
+ *     (`bf-pi`, no `bf-s`) whose `bf-po` names `scope` directly.
+ *  2. Transitive — only walked once the direct hop is exhausted. Covers
+ *     multi-hop forwarding: a component that itself forwards `children`
+ *     into a portaled grandchild (e.g. `CommandDialog` forwarding into
+ *     `DialogContent`) — the candidate's own host chain (`logicalHost`,
+ *     followed repeatedly) eventually lands inside `scope`. Bounded at 16
+ *     hops so malformed/cyclic markup can't loop forever; every real
+ *     forwarding chain in this codebase is at most two or three deep.
+ */
+export function* relocatedDescendants(scope: Element): Generator<Element> {
+  const id = ownScopeId(scope)
+  if (!id) return
+
+  const seen = new Set<Element>()
+  for (const el of document.querySelectorAll(
+    `[${BF_HOST}="${id}"][${BF_PORTAL_OWNER}], [${BF_PORTAL_OWNER}="${id}"]`
+  )) {
+    if (isWithinScope(scope, el)) continue
+    seen.add(el)
+    yield el
+  }
+
+  for (const el of document.querySelectorAll(`[${BF_PORTAL_OWNER}]`)) {
+    if (seen.has(el) || isWithinScope(scope, el)) continue
+    let cur: Element | null = el
+    for (let hops = 0; hops < 16 && cur; hops++) {
+      cur = logicalHost(cur)
+      if (cur && isWithinScope(scope, cur)) {
+        yield el
+        break
+      }
+    }
+  }
 }
 
 /**

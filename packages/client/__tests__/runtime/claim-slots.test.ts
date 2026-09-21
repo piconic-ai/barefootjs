@@ -6,7 +6,7 @@
  * once claimed, writes go through held references and never re-scan.
  */
 
-import { describe, test, expect, beforeAll } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 beforeAll(() => {
@@ -651,5 +651,111 @@ describe('claimed-slot read door', () => {
     const door = lazyClaimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
     expect(door.read('s0')).toBe('')
     expect(row.innerHTML).toBe(before)
+  })
+})
+
+/**
+ * Parent-owned (`^`-prefixed) slots forwarded into a component that got
+ * SSR-portal-placed (#3059) at a shared outlet — a `document.body`-level
+ * sibling of the claiming component's own scope element, not a descendant
+ * of it. `findOwnedMarker`'s fallback scan (`commentsInScope` →
+ * `relocatedDescendants`, `scope.ts`) must still find the marker by
+ * following `bf-h`/`bf-po`, since a bare subtree walk rooted at the
+ * claiming scope can never reach it. Regression pin for the real repro:
+ * `DrawerFormDemo`'s `{goal()}` text and its `+`/`-` buttons went silently
+ * unclaimed once `DrawerContent` started rendering at the outlet instead of
+ * inline — `slot ^s7 marker not found; skipping` / `no claimed slot for id
+ * ^s7; write ignored`, with the click handlers on the buttons (a SEPARATE,
+ * `find()`-based lookup — see `query.test.ts`) equally unreachable.
+ *
+ * Every test here attaches to `document.body`, since `relocatedDescendants`
+ * finds its target via `document.querySelectorAll` — a detached tree (this
+ * file's `mount()` helper) would never be found.
+ */
+describe('parent-owned slot inside a relocated (SSR-portaled) descendant (#3059)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('self-owner shape: claims and writes through the relocated child\'s own subtree, no warning', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13">
+        <span bf="^s8"><!--bf:^s7-->350<!--/--></span>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="A"]')!
+    const plan: SlotSpec[] = [{ id: '^s7', kind: 'markup', path: [] }]
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(scope, plan)
+      claimed.write('^s7', '360')
+    })
+
+    expect(warnings).toEqual([])
+    expect(document.querySelector('[bf="^s8"]')!.innerHTML).toBe('<!--bf:^s7-->360<!--/-->')
+  })
+
+  test('does not cross-match a DIFFERENT instance\'s relocated child sharing the same slot id', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13"><span><!--bf:^s7-->A's own<!--/--></span></div>
+      <div bf-s="B"></div>
+      <div bf-s="B_s13" bf-h="B" bf-m="s13" bf-po="B_s13"><span><!--bf:^s7-->B's own<!--/--></span></div>
+    `
+    const scopeA = document.querySelector('[bf-s="A"]')!
+    const claimed = claimSlots(scopeA, [{ id: '^s7', kind: 'markup', path: [] }])
+    claimed.write('^s7', 'patched')
+
+    const [contentA, contentB] = document.querySelectorAll('[bf-h]')
+    expect(contentA.textContent).toBe('patched')
+    expect(contentB.textContent).toBe("B's own")
+  })
+
+  test('explicit <Portal> wrapper shape (bf-pi, no bf-s of its own) resolves by bf-po alone', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-pi="p1" bf-po="A"><span><!--bf:^s7-->before<!--/--></span></div>
+    `
+    const scope = document.querySelector('[bf-s="A"]')!
+    const claimed = claimSlots(scope, [{ id: '^s7', kind: 'markup', path: [] }])
+    claimed.write('^s7', 'after')
+
+    expect(document.querySelector('[bf-pi="p1"]')!.textContent).toBe('after')
+  })
+
+  test('a non-parent-owned id inside a relocated child is still never claimed (ownership rule intact)', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13"><!--bf:s0-->child's own<!--/--></div>
+    `
+    const scope = document.querySelector('[bf-s="A"]')!
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(scope, [{ id: 's0', kind: 'text', path: [] }])
+      claimed.write('s0', 'patched')
+    })
+
+    expect(warnings).toEqual([
+      '[barefootjs] slot s0 marker not found; skipping',
+      '[barefootjs] no claimed slot for id s0; write ignored',
+    ])
+    expect(document.querySelector('[bf-h="A"]')!.textContent).toBe("child's own")
+  })
+
+  test('multi-hop forwarding: resolves through an intermediate relocated child\'s own bf-h chain', () => {
+    // A forwards `^s7` into `<CommandDialog>` (W), which itself forwards it
+    // on into `<DialogContent>` — W's own root stays inline (bf-h="A"), but
+    // its child (bf-h="W") is the one that actually got SSR-portal-placed.
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s1" bf-h="A" bf-m="s1"></div>
+      <div bf-s="A_s1_s2" bf-h="A_s1" bf-m="s2" bf-po="A_s1_s2"><span><!--bf:^s7-->before<!--/--></span></div>
+    `
+    const scope = document.querySelector('[bf-s="A"]')!
+    const claimed = claimSlots(scope, [{ id: '^s7', kind: 'markup', path: [] }])
+    claimed.write('^s7', 'after')
+
+    expect(document.querySelector('[bf-po="A_s1_s2"]')!.textContent).toBe('after')
   })
 })
