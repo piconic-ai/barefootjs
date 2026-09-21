@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { containerIntegrations } from '../../../../scripts/lib/container-integrations'
 
 /**
  * Every Cloudflare Container integration starts its server under `tini`, so
@@ -8,13 +8,10 @@ import { dirname, join, resolve } from 'node:path'
  * being dropped by a server running as PID 1 -- see "Why production images
  * run under tini" in integrations/README.md.
  *
- * The images are derived from each integration's wrangler.toml
- * `[[containers]]` entries (the image `wrangler deploy` actually builds),
- * never a hand-written list, so a new integration is covered the moment it
- * declares a container.
+ * The images come from `containerIntegrations()`, which reads each
+ * integration's wrangler.toml -- the same walk the Worker bundle check uses,
+ * so "which integrations are Container integrations" has one answer.
  */
-
-const INTEGRATIONS_DIR = resolve(import.meta.dir, '../../..')
 
 type Instruction = { keyword: string; args: string }
 
@@ -38,21 +35,9 @@ function parseDockerfile(source: string): Instruction[] {
   return instructions
 }
 
-function containerDockerfiles(): { name: string; dockerfile: string }[] {
-  return readdirSync(INTEGRATIONS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .flatMap((entry) => {
-      const wranglerToml = join(INTEGRATIONS_DIR, entry.name, 'wrangler.toml')
-      if (!existsSync(wranglerToml)) return []
-      const config = Bun.TOML.parse(readFileSync(wranglerToml, 'utf8')) as { containers?: { image: string }[] }
-      return (config.containers ?? []).map((container) => ({
-        name: entry.name,
-        dockerfile: resolve(dirname(wranglerToml), container.image),
-      }))
-    })
-}
-
-const images = containerDockerfiles()
+const images = containerIntegrations().flatMap((integration) =>
+  integration.dockerfiles.map((dockerfile) => ({ name: integration.name, dockerfile })),
+)
 
 describe('Container integration images', () => {
   test('are discovered from wrangler.toml', () => {

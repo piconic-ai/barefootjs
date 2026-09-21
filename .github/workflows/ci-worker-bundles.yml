@@ -1,0 +1,63 @@
+name: CI — Worker bundles
+
+# Every Container integration's Worker is bundled the way `wrangler deploy`
+# would bundle it. Deploys only run on main, so until this existed a Worker
+# that imported an unresolvable module reached main before anything noticed:
+# #3106 broke all sixteen deploys at once that way.
+#
+# Only the integrations' own Worker sources and the shared modules they import
+# are involved, so this does not need `bun run build` -- see
+# scripts/ci/check-worker-bundles.ts for why the container image is skipped.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'integrations/*/container.ts'
+      - 'integrations/*/wrangler.toml'
+      - 'integrations/*/package.json'
+      - 'integrations/shared/lib/**'
+      - 'integrations/shared/package.json'
+      - 'scripts/ci/check-worker-bundles.ts'
+      - 'scripts/lib/container-integrations.ts'
+      - '.github/workflows/ci-worker-bundles.yml'
+  pull_request:
+    paths:
+      - 'integrations/*/container.ts'
+      - 'integrations/*/wrangler.toml'
+      - 'integrations/*/package.json'
+      - 'integrations/shared/lib/**'
+      - 'integrations/shared/package.json'
+      - 'scripts/ci/check-worker-bundles.ts'
+      - 'scripts/lib/container-integrations.ts'
+      - '.github/workflows/ci-worker-bundles.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-worker-bundles-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Bundle every Container integration's Worker
+        run: bun scripts/ci/check-worker-bundles.ts

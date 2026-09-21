@@ -715,6 +715,14 @@ import { fixture as staticLoopClientOnlyNestedPrecomputed } from './static-loop-
 // delivered through a prop the child captures only via `...rest`.
 import { fixture as compositeRowChildRestBagProp } from './composite-row-child-rest-bag-prop'
 import { fixture as compositeRowChildRestBagPropHoisted } from './composite-row-child-rest-bag-prop-hoisted'
+// #3107: a .map() loop row calling a child component with a JSX element
+// as `children`, where that element has its own reactive attributes.
+// SSR is correct; the attributes never patch after a signal update — no
+// diagnostic, silent. Registry limitation
+// `loop-row-child-children-attrs-frozen`; quarantined in
+// `fixture-hydrate-quarantine.ts` (fixture-only, per CLAUDE.md's
+// "reproducible defect lands as a fixture" rule — not fixed here).
+import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-attrs'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1181,4 +1189,5 @@ export const jsxFixtures: JSXFixture[] = [
   staticLoopClientOnlyNestedPrecomputed,
   compositeRowChildRestBagProp,
   compositeRowChildRestBagPropHoisted,
+  loopRowChildChildrenAttrs,
 ]

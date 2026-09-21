@@ -31,6 +31,22 @@ export const categoryLabels: Record<ComponentCategory, string> = {
   layout: 'Layout',
 }
 
+/**
+ * The `/components` catalog's `?tag=` filter value — a known category, or
+ * `''` for "All". Shared by `CatalogFilter` (the chip links) and
+ * `ComponentCatalogPage` (the card grid) so both derive the active filter
+ * from the same validated value (#3103).
+ */
+export type CatalogTag = ComponentCategory | ''
+
+/**
+ * Validate a raw `?tag=` query value against the known categories, falling
+ * back to `''` (All) for anything else — e.g. `?tag=bogus` renders as "All"
+ * rather than an empty grid.
+ */
+export const asCatalogTag = (raw: string | null): CatalogTag =>
+  categoryOrder.includes(raw as ComponentCategory) ? (raw as ComponentCategory) : ''
+
 // All components sorted alphabetically within each category
 export const componentEntries: ComponentEntry[] = [
   // Input (15)

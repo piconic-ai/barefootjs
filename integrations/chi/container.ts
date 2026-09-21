@@ -7,14 +7,14 @@
  * lifecycle to.
  */
 
-import { Container } from '@cloudflare/containers'
+import { SelfHealingContainer } from 'barefootjs-integrations-shared/lib/self-healing-container'
 import { withCacheControl } from 'barefootjs-integrations-shared/lib/cache-control'
 
 type Env = {
   CHI_CONTAINER: DurableObjectNamespace
 }
 
-export class ChiContainer extends Container<Env> {
+export class ChiContainer extends SelfHealingContainer<Env> {
   defaultPort = 8082
   // Billing runs for every second the instance is up, idle included, so this
   // window is the cost knob. This stack starts fast enough that a cold start

@@ -129,6 +129,20 @@ html.theme-transition *::after {
 }
 
 
+/* /components catalog filter — the CatalogFilter island's `data-filter`
+ * attribute is the only reactive thing (it reads `searchParams()`); the card
+ * grid is its following sibling, so these rules hide the cards that don't
+ * carry the active tag. A deep link is filtered by the server-rendered
+ * attribute at first paint and a soft `?tag=` navigation flips one attribute.
+ * Categories: `categoryOrder` in components/shared/component-registry.ts. */
+[data-catalog-filter][data-filter="input"] ~ div [data-catalog-card]:not([data-tags~="input"]),
+[data-catalog-filter][data-filter="display"] ~ div [data-catalog-card]:not([data-tags~="display"]),
+[data-catalog-filter][data-filter="feedback"] ~ div [data-catalog-card]:not([data-tags~="feedback"]),
+[data-catalog-filter][data-filter="navigation"] ~ div [data-catalog-card]:not([data-tags~="navigation"]),
+[data-catalog-filter][data-filter="layout"] ~ div [data-catalog-card]:not([data-tags~="layout"]) {
+  display: none;
+}
+
 /* Ensure hidden attribute works with flexbox items */
 [hidden] {
   display: none !important;

@@ -8,11 +8,14 @@
     "./components/*": "./components/*",
     "./styles/*": "./styles/*",
     "./lib/*": "./lib/*",
-    "./lib/cache-control": "./lib/cache-control.ts"
+    "./lib/cache-control": "./lib/cache-control.ts",
+    "./lib/self-healing-container": "./lib/self-healing-container.ts",
+    "./lib/stuck-container-response": "./lib/stuck-container-response.ts"
   },
   "devDependencies": {
     "@barefootjs/client": "workspace:*",
     "@barefootjs/hono": "workspace:*",
+    "@cloudflare/containers": "^0.3.2",
     "bun-types": "^1.1.0"
   }
 }
