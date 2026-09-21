@@ -771,12 +771,18 @@ function findChildScope(scope: Element, selector: string): Element | null {
   // the TRUE ancestor (`scopeId`). A child COMPONENT's own root, though,
   // carries bf-s itself, so `closest()` (which checks `el` before its
   // ancestors) returns the element itself — `bf-po` is self-referential,
-  // never `scopeId`, and `findInPortals` can never match it. `selector`
-  // here always targets one globally-unique bf-s identity (the (parent,
-  // slot) suffix or the component-name prefix, per this function's two
-  // callers above), so once the scoped searches fail, a document-wide
-  // match of that SAME selector is the correct element wherever the SSR
-  // portal outlet placed it — not a broader or looser match.
+  // never `scopeId`, and `findInPortals` can never match it. For the
+  // slot-id caller (`$cSingle`'s `[bf-s$="<parentId>_<slotId>"]` path),
+  // `selector` always targets one globally-unique bf-s identity, so once
+  // the scoped searches fail, a document-wide match of that SAME selector
+  // is the correct element wherever the SSR portal outlet placed it — not
+  // a broader or looser match. The bare component-name-prefix caller
+  // (`[bf-s^="<name>_"]`, `$cSingle`'s non-slot-id branch) is NOT
+  // similarly unique when multiple same-named instances render on one
+  // page — the compiler's generated code never actually emits that call
+  // form today (only the slot-id form), so this path is unreachable from
+  // real compiled output, but a future/manual `$c()` caller relying on the
+  // name-prefix branch should not assume uniqueness here.
   return document.querySelector(selector)
 }
 

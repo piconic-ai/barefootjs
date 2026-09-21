@@ -30,7 +30,7 @@
  * <Menubar>
  *   <MenubarMenu value="file">
  *     <MenubarTrigger>File</MenubarTrigger>
- *     <MenubarContent>
+ *     <MenubarContent value="file">
  *       <MenubarItem>New Tab</MenubarItem>
  *       <MenubarItem>New Window</MenubarItem>
  *     </MenubarContent>
