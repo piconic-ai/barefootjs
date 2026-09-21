@@ -20,7 +20,8 @@ This is an in-progress prototype, not a polished/final deck.
   `terminal`, `ships` (six tiles), `showcase` (the composed UI-kit page), `arcade`
   (the full-bleed shooter), `command`, `end`. Layout-specific CSS for the last two lives
   in `css/showcase.css` and `css/arcade.css`.
-- `css/base.css` — deck styling.
+- `css/base.css` — deck styling, including the phone/portrait layouts (see "Canvas shape"
+  below).
 - `css/0-fonts.css` — the deck's web fonts, embedded as data URIs (generated
   from `fontsrc/`, which is not checked in — see below).
 - `assets/hero.mp4` + `assets/hero.jpg` — the cover's looping clip and its
@@ -37,8 +38,9 @@ This is an in-progress prototype, not a polished/final deck.
   layouts emit and mounts the matching component into them — in the light-DOM
   distribution viewer, and in the Shadow DOM one `peitho present` and
   peitho-studio use; `component/narration.ts` adds the deck's progress bar,
-  slide counter, and headline word-reveal, and is loaded by the distribution
-  viewer only.
+  slide counter, and headline word-reveal, docks the chrome into a bottom bar
+  and grows the canvas on phones (see "Canvas shape"), and is loaded by the
+  distribution viewer only.
 - `slide.json` — the page `<title>`.
 - `css/1-ui-kit.css` — theme tokens, minimal base resets, and UnoCSS utilities
   for the `ui/components/ui/*` components the "62 components, designed after
@@ -55,6 +57,31 @@ Not checked in: `fontsrc/` (the raw `.woff2` files and a scratch
 needs the already-embedded `css/0-fonts.css` at runtime — and the build script's
 working output: `component/dist/`, `component/node_modules/`, and the `*.js`
 it copies into `assets/`.
+
+## Canvas shape (phones, portrait previews)
+
+The single-column, larger-type layouts follow the shape of the canvas itself, not the
+viewer. `.peitho-slide` is a size container (`container-name: peitho-canvas`), and the
+block at the end of `css/base.css` (plus the last one in `css/showcase.css`) is a
+`@container peitho-canvas (max-aspect-ratio: 1)` query: it applies whenever the viewer
+gives a slide a canvas at least as tall as it is wide, by setting
+`--peitho-canvas-width` / `--peitho-canvas-height` (which `.peitho-slide` already reads
+for its own size). The distribution viewer does that on phones (`fitCanvas()` in
+`component/narration.ts`, about 1280x2500); peitho-studio's Phone preview does it too.
+No class or attribute on `body` is involved, so a viewer that sets those two variables
+gets the same layout with nothing deck-specific to know about.
+
+- A slide whose root `<section>` says `data-canvas="fixed"` (the arcade) keeps the 16:9
+  canvas and so never matches; `css/arcade.css` grows its caption on narrow viewports with
+  a plain `@media (max-width: 820px)` instead, the width `narration.ts` treats as narrow.
+- A container query cannot restyle the container itself, so what `.peitho-slide`'s own box
+  needs in this shape (the padding, the showcase's gap) is computed from the same two
+  variables through `--canvas-tall` (see `css/base.css`).
+- Selectors inside the query start with `section.peitho-slide` (the layout's root, which is
+  the container) for specificity, so they are settled against the `html[lang="ja"]` rules by
+  source order rather than losing to them.
+- Needs container queries (Safari 16+, Chrome 105+, Firefox 110+). Where they are missing
+  a tall canvas keeps the desktop layout: the layouts above simply do not apply.
 
 ## Building
 
