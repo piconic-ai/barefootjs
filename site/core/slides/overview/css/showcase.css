@@ -21,7 +21,12 @@
 /* this layout's title runs long ("62 components, designed after
  * shadcn/ui.") — shrink it (and the optional lede) so the header leaves
  * most of the 720px canvas to the showcase itself. */
-.layout-showcase.peitho-slide { padding-top: 42px; padding-bottom: 34px; gap: 8px; }
+.layout-showcase.peitho-slide {
+  /* 96px / 120px / 28px on a tall canvas (see the canvas-shape block at the end) */
+  padding-top: calc(42px + var(--canvas-tall) * 54);
+  padding-bottom: calc(34px + var(--canvas-tall) * 86);
+  gap: calc(8px + var(--canvas-tall) * 20);
+}
 .layout-showcase h1 { font-size: 42px; line-height: 1.08; }
 .layout-showcase .lede { font-size: 15px; margin-top: 2px; max-width: none; }
 
@@ -140,12 +145,14 @@
 html[lang="ja"] .layout-showcase h1 { font-size: 38px; line-height: 1.2; }
 html[lang="ja"] .layout-showcase .lede { font-size: 15px; line-height: 1.5; }
 
-/* Compact canvas (body.bf-compact, see base.css): the composition is authored at
-   a 669px width and scaled 1.65x, so the kit's rem-based type doubles with it and one
-   card fills the row; the header follows the deck's compact sizes. */
-body.bf-compact .layout-showcase.peitho-slide { padding-top: 96px; gap: 28px; }
-body.bf-compact .layout-showcase h1 { font-size: 90px; line-height: 1.1; }
-body.bf-compact .layout-showcase .head { font-size: 44px; line-height: 1.5; }
-body.bf-compact .showcase { width: 669px; transform: translateX(-50%) scale(1.65); transform-origin: top center; }
-body.bf-compact .showcase-grid { grid-template-columns: 1fr; gap: 16px; }
-body.bf-compact .showcase-messages { grid-column: auto; }
+/* Canvas-shape layout (see base.css): the composition is authored at a 669px width
+   and scaled 1.65x, so the kit's rem-based type doubles with it and one card fills
+   the row; the header follows the deck's tall-canvas sizes. The slide's own padding
+   and gap are the --canvas-tall terms at the top of this file. */
+@container peitho-canvas (max-aspect-ratio: 1) {
+  section.peitho-slide.layout-showcase h1 { font-size: 90px; line-height: 1.1; }
+  section.peitho-slide.layout-showcase .head { font-size: 44px; line-height: 1.5; }
+  section.peitho-slide .showcase { width: 669px; transform: translateX(-50%) scale(1.65); transform-origin: top center; }
+  section.peitho-slide .showcase-grid { grid-template-columns: 1fr; gap: 16px; }
+  section.peitho-slide .showcase-messages { grid-column: auto; }
+}

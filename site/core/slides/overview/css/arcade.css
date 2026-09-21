@@ -516,8 +516,14 @@
   .a-demo.is-on { animation: none; }
 }
 
-/* Compact canvas (body.bf-compact, see base.css): this slide keeps the 16:9 canvas
-   (data-canvas="fixed"), so only the caption type grows; the field is a demo at
-   phone scale either way. */
-body.bf-compact .layout-arcade .arcade-title { font-size: 52px; line-height: 1.2; }
-body.bf-compact .layout-arcade .arcade-body { font-size: 26px; line-height: 1.5; }
+/* Small screens. This slide keeps the 16:9 canvas (data-canvas="fixed"), so the
+   canvas-shape layouts of base.css never apply to it and only the caption type
+   grows; the field is a demo at phone scale either way. The one signal left is the
+   viewport, because nothing inside a slide can see how small its canvas is shown:
+   820px is the width component/narration.ts calls a narrow screen (narrowQuery).
+   The selectors are heavy on purpose (as base.css's canvas-shape block): they must
+   outrank the Japanese caption sizes in base.css, which loads after this file. */
+@media (max-width: 820px) {
+  section.peitho-slide.layout-arcade .arcade-title { font-size: 52px; line-height: 1.2; }
+  section.peitho-slide.layout-arcade .arcade-body { font-size: 26px; line-height: 1.5; }
+}
