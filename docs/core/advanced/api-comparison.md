@@ -100,9 +100,9 @@ grep -rlw --include='*.ts' --include='*.tsx' <api> <dir> | grep -v -E '(^|/)(__t
 
 | Solid (baseline) | React | BarefootJS | Symmetry | Imp. | Notes |
 |---|---|---|---|---|---|
-| `createResource` (`loading` / `error` / `latest` / `state`) | `use(promise)` + Suspense | — | none | 5 | design: [`spec/async.md`](../../../spec/async.md) layer 0 — `createQuery` with the `AsyncState` sum type, sync accessors `q()` / `q.loading()` / `q.error()`. Not implemented yet |
-| `query(fn, name)` / `createAsync` (Solid Router) | RSC / router loaders | — | none | 4 | key = name + serialized args; cross-island cache sharing |
-| `action()` / `useSubmission` (pending · input · result · error · url · clear) | `useActionState` → `[state, dispatch, isPending]`; `useFormStatus` (inside `<form>` only) | — (nearest: `createForm().isSubmitting()`) | partial | 4 | design: [`spec/async.md`](../../../spec/async.md) layer 0 — `createAction`. Not implemented yet |
+| `createResource` (`loading` / `error` / `latest` / `state`) | `use(promise)` + Suspense | — | none | 5 | design: [`spec/async.md`](../../../spec/async.md) layer 0 — `createQuery(() => http.get(…), { initial })` → `[value, action]`, sync accessors `value()` / `action.isPending()` / `action.error()`. Not implemented yet |
+| `query(fn, name)` / `createAsync` (Solid Router) | RSC / router loaders | — | none | 4 | design: [`spec/async.md`](../../../spec/async.md) §7.2 — no definition-side API; the key is the request descriptor (`method + url + body`), so cross-island sharing needs no registry |
+| `action()` / `useSubmission` (pending · input · result · error · url · clear) | `useActionState` → `[state, dispatch, isPending]`; `useFormStatus` (inside `<form>` only) | — (nearest: `createForm().isSubmitting()`) | partial | 4 | design: [`spec/async.md`](../../../spec/async.md) layer 0 — `createMutation(() => http.post(…))` → `[value, action]`, `action.isPending()` / `action.error()`. Not implemented yet |
 | `createResource` `mutate` | `useOptimistic` | — | none | 3 | hand-written today |
 | `useTransition` → `[pending, start]` | `useTransition` / `useDeferredValue` | — | none | 2 | server `pending()` always false in Solid; [`spec/async.md`](../../../spec/async.md) layer 2, gated |
 | — (community) | `<ViewTransition>` (19.3 canary) | — | none | 3 | router only sets `data-bf-navigating`; not in the async layer by design |
