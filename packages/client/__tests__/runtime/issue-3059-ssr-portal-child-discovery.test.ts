@@ -16,11 +16,18 @@
  * was inert.
  *
  * Fixed in `findSsrScopeBySlotIn` (`slot-resolver.ts`): once the
- * descendant-scoped lookups (primary, suffix) fail, fall back to a
- * document-wide search for the SAME `(bf-h, bf-m)` pair scoped to this
- * parent's own portal-owned elements (`bf-po="<parentScope>"`) — the
- * exact attribute the adapter now stamps directly on an
- * `ssrPortalOwnerScope` element's own tag.
+ * descendant-scoped lookups (primary, suffix) fail, fall back to
+ * `relocatedDescendants(hostEl)` (`scope.ts`) — the same host-by-`bf-h`
+ * (with a bounded transitive pass for multi-hop forwarding) walk the
+ * parent-owned-slot claim system uses — filtered to the SAME `(bf-h,
+ * bf-m)` pair this parent would have matched had the child stayed
+ * in-subtree. A self-owner-portaled element (a child component whose OWN
+ * root carries `bf-s`) always stamps `bf-po` to ITS OWN scope id, never
+ * its parent's — see `logicalHost`'s doc comment in `scope.ts` — so the
+ * fixtures below give the portal-placed element its own `bf-po`, matching
+ * exactly what `HonoAdapter.renderElement`'s `ssrPortalOwnerScope` branch
+ * emits, not a `bf-po` naming the parent (a shape the adapter never
+ * actually produces).
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
@@ -68,7 +75,7 @@ describe('upsertChild — SSR-portal child discovery (#3059)', () => {
     // `HonoAdapter.renderElement`'s `ssrPortalOwnerScope` branch.
     const outlet = document.createElement('div')
     outlet.innerHTML =
-      '<div data-slot="popover-content" bf-h="PopoverBasicDemo_test" bf-m="s9" bf-s="PopoverBasicDemo_test_s9" bf-po="PopoverBasicDemo_test" bf="s0"></div>'
+      '<div data-slot="popover-content" bf-h="PopoverBasicDemo_test" bf-m="s9" bf-s="PopoverBasicDemo_test_s9" bf-po="PopoverBasicDemo_test_s9" bf="s0"></div>'
     document.body.appendChild(outlet)
 
     const found = upsertChild(parent, 'PopoverContent', 's9', {}, undefined, parent)
@@ -120,10 +127,36 @@ describe('upsertChild — SSR-portal child discovery (#3059)', () => {
     // PopoverA.
     const outlet = document.createElement('div')
     outlet.innerHTML =
-      '<div bf-h="PopoverB_test" bf-m="s9" bf-s="PopoverB_test_s9" bf-po="PopoverB_test" bf="s0"></div>'
+      '<div bf-h="PopoverB_test" bf-m="s9" bf-s="PopoverB_test_s9" bf-po="PopoverB_test_s9" bf="s0"></div>'
     document.body.appendChild(outlet)
 
     const found = upsertChild(parentA, 'PopoverContentB', 's9', {}, undefined, parentA)
+    expect(found).toBeNull()
+  })
+
+  test('does not match a slot id belonging to an INTERMEDIATE host reached via the transitive pass', () => {
+    // A never declared an "s2" slot of its own — the only "s2" in the
+    // document belongs to W (bf-s="A_test_s1"), an ordinary in-subtree
+    // child of A that itself hosts a relocated grandchild. Compiler slot
+    // ids are assigned independently per component file, so this
+    // collision is expected, not a corner case (#2316's class). Before
+    // matching on the FULL (bf-h, bf-m) pair, `relocatedDescendants`'s
+    // transitive pass could walk past W to reach A and wrongly hand A's
+    // lookup this grandchild.
+    const parent = document.createElement('div')
+    parent.setAttribute('bf-s', 'A_test')
+    document.body.appendChild(parent)
+
+    const w = document.createElement('div')
+    w.innerHTML = '<div bf-s="A_test_s1" bf-h="A_test" bf-m="s1"></div>'
+    document.body.appendChild(w.firstElementChild!)
+
+    const outlet = document.createElement('div')
+    outlet.innerHTML =
+      '<div bf-s="A_test_s1_s2" bf-h="A_test_s1" bf-m="s2" bf-po="A_test_s1_s2" bf="s0"></div>'
+    document.body.appendChild(outlet)
+
+    const found = upsertChild(parent, 'SomeChild', 's2', {}, undefined, parent)
     expect(found).toBeNull()
   })
 })

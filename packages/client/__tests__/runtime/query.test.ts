@@ -840,9 +840,9 @@ describe('$c — self-owner SSR-portal child (#3059)', () => {
     // branch emits: the child's own root carries bf-s, so its client-side
     // `el.closest('[bf-s]')` ownerScope is ITSELF — `bf-po` is
     // self-referential (equal to the child's own bf-s), never the
-    // parent's. `findInPortals`'s `[bf-po="<parentScopeId>"]` search can
-    // never match this shape; only the document-wide selector fallback
-    // (added alongside it) can.
+    // parent's. `findInPortals`'s bare `[bf-po="<parentScopeId>"]` search
+    // could never match this shape; `relocatedDescendants` (scope.ts)
+    // finds it instead by the parent's `bf-h`.
     document.body.innerHTML = `
       <div bf-s="PopoverBasicDemo_test">
         <button bf-s="PopoverBasicDemo_test_s0" data-slot="popover-trigger">Open</button>
@@ -865,8 +865,8 @@ describe('$c — self-owner SSR-portal child (#3059)', () => {
     const scopeA = document.querySelector('[bf-s="PopoverA_test"]')!
     // PopoverA never declared a child at slot s1 — searching from its own
     // scope for "s1" must not accidentally pick up PopoverB's unrelated
-    // portal-placed child just because the document-wide fallback widened
-    // the search. The slot-ID suffix selector `[bf-s$="PopoverA_test_s1"]`
+    // portal-placed child just because `relocatedDescendants` widened the
+    // search. The slot-ID suffix selector `[bf-s$="PopoverA_test_s1"]`
     // simply doesn't match PopoverB's child (`PopoverB_test_s1`), so the
     // fallback correctly returns null here — it widens WHERE the search
     // looks, not WHAT counts as a match.

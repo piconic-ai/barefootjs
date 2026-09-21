@@ -12,7 +12,7 @@
 
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
 import { cssEscape, findCommentChildScope } from './query.ts'
-import { relocatedDescendants } from './scope.ts'
+import { relocatedDescendants, ownScopeId } from './scope.ts'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-
@@ -82,8 +82,26 @@ export function findSsrScopeBySlotIn(
   // identity") — so this can't false-match a different parent's child.
   const hostEl = anchorScope ?? parent.closest(`[${BF_SCOPE}]`)
   if (hostEl) {
+    // Match on the FULL (bf-h, bf-m) pair, not bf-m alone: `relocatedDescendants`'s
+    // transitive pass can yield a GRANDCHILD whose own bf-h names an
+    // INTERMEDIATE host, not `hostEl` itself, and compiler slot ids are
+    // assigned independently per component file — a `slotId` collision
+    // between `hostEl`'s own (absent-from-SSR, e.g. behind a conditional)
+    // child and an unrelated forwarded grandchild is expected, not a
+    // corner case. A bf-m-only match would silently hand `hostEl` a
+    // grandchild that was never its own declared child.
+    //
+    // Compared against `ownScopeId(hostEl)`, not the raw `parentBfs`
+    // attribute: for a comment-scoped host (#2910), `hostEl`'s own bf-s
+    // attribute names ITS parent, not itself — `ownScopeId` is the same
+    // registry-preferring resolution `relocatedDescendants` already used
+    // internally to find these candidates in the first place, so the two
+    // must agree for the match to be reachable at all.
+    const hostId = ownScopeId(hostEl)
     for (const el of relocatedDescendants(hostEl)) {
-      if (el.getAttribute(BF_AT) === slotId) return el as HTMLElement
+      if (el.getAttribute(BF_HOST) === hostId && el.getAttribute(BF_AT) === slotId) {
+        return el as HTMLElement
+      }
     }
   }
 

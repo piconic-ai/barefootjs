@@ -6,7 +6,7 @@
  * nested scope boundaries and comment-based scopes.
  */
 
-import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants } from './scope.ts'
+import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { BF_SCOPE, BF_SLOT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
@@ -315,22 +315,6 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
       else if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX) && depth > 0) depth--
     }
     sib = sib.nextSibling
-  }
-  return false
-}
-
-/**
- * Check if an element is within the range of a comment-based scope.
- * The range is from the comment node to the next bf-scope: comment (or end of parent).
- */
-function isInCommentScopeRange(element: Element, commentNode: Comment): boolean {
-  const boundary = getCommentScopeBoundary(commentNode)
-  let node: Node | null = commentNode.nextSibling
-  while (node && node !== boundary) {
-    if (node === element || (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(element))) {
-      return true
-    }
-    node = node.nextSibling
   }
   return false
 }
@@ -772,22 +756,7 @@ function findChildScope(scope: Element, selector: string): Element | null {
   // `bf-po`, and either shape transitively through further forwarding.
   // `ignoreScope: true` — this function's contract is that `selector` is
   // already precise enough to identify the correct element.
-  const inPortal = findInPortals(scope, selector, /* ignoreScope */ true)
-  if (inPortal) return inPortal
-
-  // Last-resort, document-wide backstop for a selector `relocatedDescendants`
-  // couldn't reach from `scope` (e.g. `scope` itself has no resolvable id).
-  // For the slot-id caller (`$cSingle`'s `[bf-s$="<parentId>_<slotId>"]`
-  // path) `selector` targets one globally-unique bf-s identity, so a
-  // document-wide match of that SAME selector is still the correct element.
-  // The bare component-name-prefix caller (`[bf-s^="<name>_"]`, `$cSingle`'s
-  // non-slot-id branch) is NOT similarly unique when multiple same-named
-  // instances render on one page — the compiler's generated code never
-  // actually emits that call form today (only the slot-id form), so this
-  // path is unreachable from real compiled output, but a future/manual
-  // `$c()` caller relying on the name-prefix branch should not assume
-  // uniqueness here.
-  return document.querySelector(selector)
+  return findInPortals(scope, selector, /* ignoreScope */ true)
 }
 
 /**

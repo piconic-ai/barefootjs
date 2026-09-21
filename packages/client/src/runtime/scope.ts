@@ -146,6 +146,26 @@ export function ownScopeId(element: Element): string | null {
 }
 
 /**
+ * True if `element` sits within a comment-based scope's sibling range — the
+ * comment node itself to the next `bf-scope:`/end-marker comment (or the
+ * end of the parent's children). Exported for `query.ts`'s `find()`/
+ * `findCondTarget()`/`commentBelongsToScope()`, which need this same check
+ * against a comment they already hold, not a registered scope element —
+ * `isWithinScope` below is the scope-element-keyed sibling.
+ */
+export function isInCommentScopeRange(element: Element, commentNode: Comment): boolean {
+  const boundary = getCommentScopeBoundary(commentNode)
+  let node: Node | null = commentNode.nextSibling
+  while (node && node !== boundary) {
+    if (node === element || (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(element))) {
+      return true
+    }
+    node = node.nextSibling
+  }
+  return false
+}
+
+/**
  * True if `el` physically sits inside `scope`'s own DOM range: its subtree
  * for an element scope, or the registered comment's sibling range for a
  * comment-anchored scope. Used by `relocatedDescendants` to tell a
@@ -158,26 +178,30 @@ export function ownScopeId(element: Element): string | null {
 function isWithinScope(scope: Element, el: Element): boolean {
   if (scope === el) return true
   const info = commentScopeRegistry.get(scope)
-  if (!info) return scope.contains(el)
-  const boundary = getCommentScopeBoundary(info.commentNode)
-  for (let node: Node | null = info.commentNode.nextSibling; node && node !== boundary; node = node.nextSibling) {
-    if (node === el || (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(el))) return true
-  }
-  return false
+  return info ? isInCommentScopeRange(el, info.commentNode) : scope.contains(el)
 }
 
 /**
  * The scope element a relocated element `el` logically hangs off: its
  * `bf-h` (the host it was upserted from — by the (bf-h, bf-m) slot-identity
  * invariant this is never `el` itself) when set, else a non-self `bf-po`
- * (an explicit `<Portal>` wrapper, or an owner-stamped element whose
- * `ownerScope` was a true ancestor rather than itself). `null` when neither
- * attribute points anywhere but `el`. This is the SAME child-to-host hop
- * `useContext` already walks (`context.ts`'s bf-po-then-bf-h fallback) —
+ * (an explicit `<Portal>` wrapper, which has no `bf-h` of its own, or a
+ * self-owner-stamped component root whose `bf-po` happens to equal a TRUE
+ * ancestor rather than itself — doesn't occur in any shipped shape today,
+ * but the check costs nothing to keep). `null` when neither attribute
+ * points anywhere but `el`.
+ *
+ * The ONE child-to-host hop in the runtime: `useContext` (`context.ts`)
+ * calls this directly for its own DOM-ancestor walk, and
  * `relocatedDescendants` below uses it in the opposite (host-to-child)
- * direction to find its own relocated descendants.
+ * direction to find its own relocated descendants. bf-h is tried before
+ * bf-po (rather than the other way around) because it's the stronger
+ * invariant — never self-referential by construction — so for the shape
+ * that actually has both attributes (a self-owner component root, whose
+ * `bf-po` IS self-referential) bf-h alone is already the right answer,
+ * with no need to try `bf-po` and discover it's useless first.
  */
-function logicalHost(el: Element): Element | null {
+export function logicalHost(el: Element): Element | null {
   const own = ownScopeId(el)
   const hostId = el.getAttribute(BF_HOST)
   const ownerId = el.getAttribute(BF_PORTAL_OWNER)
