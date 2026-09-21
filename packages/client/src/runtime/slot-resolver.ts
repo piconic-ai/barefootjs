@@ -13,6 +13,7 @@
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
 import { cssEscape, findCommentChildScope } from './query.ts'
 import { relocatedDescendants, ownScopeId } from './scope.ts'
+import { hydratedScopes } from './hydration-state.ts'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-
@@ -97,9 +98,31 @@ export function findSsrScopeBySlotIn(
     // registry-preferring resolution `relocatedDescendants` already used
     // internally to find these candidates in the first place, so the two
     // must agree for the match to be reachable at all.
+    //
+    // Skip an already-hydrated match: a component instantiated once per
+    // `.map()` loop row (a Select rendered inside a heterogeneous field
+    // list, say) shares the exact same (bf-h, bf-m) pair across every row
+    // — that pair addresses a JSX POSITION, not a physical instance, and
+    // is only unique for a non-looped child. Before #3059, a row's own
+    // copy was still reachable because this search never ran: a looped
+    // child's SSR markup stayed nested in ITS OWN row, so the primary
+    // subtree-scoped lookups above already found it. Once #3059 moves a
+    // looped child's markup to the shared outlet, every row's copy
+    // collapses into IDENTICAL siblings, and returning the first match
+    // for every row (a) never advances any row past row 0's, and (b)
+    // hands `initChild` (registry.ts) a scope its `hydratedScopes` guard
+    // then silently no-ops on for every row after the first — rows 1+
+    // never get their OWN `init()` call at all. Skipping an
+    // already-claimed candidate and returning the NEXT one instead mirrors
+    // `findScope`'s existing `!hydratedScopes.has(s)` filter for the
+    // same-named-top-level-instances case (query.ts) — it works here for
+    // the identical reason: hydration walks rows in the same left-to-right
+    // document order `<BfPortals />` collected them in (SSR renders a
+    // `.map()` synchronously in array order), so the Nth still-unclaimed
+    // match is always this row's own.
     const hostId = ownScopeId(hostEl)
     for (const el of relocatedDescendants(hostEl)) {
-      if (el.getAttribute(BF_HOST) === hostId && el.getAttribute(BF_AT) === slotId) {
+      if (el.getAttribute(BF_HOST) === hostId && el.getAttribute(BF_AT) === slotId && !hydratedScopes.has(el)) {
         return el as HTMLElement
       }
     }

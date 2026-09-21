@@ -10,7 +10,7 @@
 
 import { BF_SCOPE } from '@barefootjs/shared'
 import type { Context } from '../context.ts'
-import { logicalHost } from './scope.ts'
+import { logicalHost, relocatedDescendants } from './scope.ts'
 
 export { createContext, type Context } from '../context.ts'
 
@@ -78,6 +78,19 @@ export function useContext<T>(context: Context<T>): T {
   return context.defaultValue as T
 }
 
+/** Set `context.id` on `el`'s ctxMap unless it's already provided there
+ *  (never override a nested provider). */
+function seedContextIfAbsent<T>(el: Element, context: Context<T>, value: T): void {
+  let ctxMap = (el as any)[CONTEXT_KEY] as Map<symbol, unknown> | undefined
+  if (!ctxMap) {
+    ctxMap = new Map()
+    ;(el as any)[CONTEXT_KEY] = ctxMap
+  }
+  if (!ctxMap.has(context.id)) {
+    ctxMap.set(context.id, value)
+  }
+}
+
 /**
  * Provide a value for a context.
  *
@@ -95,18 +108,45 @@ export function provideContext<T>(context: Context<T>, value: T): void {
     ctxMap.set(context.id, value)
 
     // Propagate context to child scope elements so portal-moved children
-    // can find it via DOM ancestor walk. At provideContext time, children
-    // are still in their original SSR positions (portals haven't moved them yet).
-    const childScopes = currentScope.querySelectorAll(`[${BF_SCOPE}]`)
-    for (const child of childScopes) {
-      let childCtxMap = (child as any)[CONTEXT_KEY] as Map<symbol, unknown> | undefined
-      if (!childCtxMap) {
-        childCtxMap = new Map()
-        ;(child as any)[CONTEXT_KEY] = childCtxMap
-      }
-      // Only set if not already provided (don't override nested providers)
-      if (!childCtxMap.has(context.id)) {
-        childCtxMap.set(context.id, value)
+    // can find it via useContext's DOM-ancestor walk without needing a
+    // bf-h/bf-po jump at all (seeding here beats them to it). For an
+    // ELEMENT still in its original SSR position — including any adapter
+    // with no SSR-portal outlet, and a plain `createPortal` that hasn't
+    // moved yet — this literal descendant walk is enough.
+    for (const child of currentScope.querySelectorAll(`[${BF_SCOPE}]`)) {
+      seedContextIfAbsent(child, context, value)
+    }
+
+    // ALSO seed relocatedDescendants (#3059): an SSR-portal-outlet target
+    // is NOT a literal descendant of `currentScope` even at this, the
+    // EARLIEST point any client JS runs — the adapter already placed it at
+    // the shared outlet in the SSR bytes themselves, so the assumption the
+    // walk above relies on ("children are still in their original SSR
+    // position") is false for it from the start. Its OWN bf-s-scoped
+    // descendants (e.g. a `SelectItem` authored by the same caller as
+    // `SelectContent`, forwarded as `children`, and therefore ALSO
+    // relocated as part of the same collected subtree) need the same seed
+    // — `useContext`'s bf-h jump from one of THOSE overshoots past this
+    // scope straight to whichever ancestor originally authored the JSX,
+    // since `bf-h` names "who upserted me", not "my nearest reactive
+    // parent" (the two differ exactly when content is forwarded through
+    // more than one layer). Without this, `SelectItem`'s own `useContext`
+    // call falls through to the global `contextStore` fallback — which
+    // holds whichever instance provided most recently, not this one's own.
+    //
+    // Does NOT cover a `currentScope` instantiated once per `.map()` row
+    // (#3115): `relocatedDescendants` can only find a candidate whose `bf-h`
+    // names `currentScope` itself, or resolves to it through a chain — and a
+    // forwarded grandchild's `bf-h` usually names the OUTERMOST authoring
+    // component (here: the component that owns the `.map()`), never an
+    // intermediate wrapper like `Select`, so `relocatedDescendants` yields
+    // nothing at all for a looped `Select`'s own scope, seeded or not. That
+    // shape still falls through to the global `contextStore` fallback,
+    // tracked separately in #3115 rather than fixed here.
+    for (const relocated of relocatedDescendants(currentScope)) {
+      seedContextIfAbsent(relocated, context, value)
+      for (const nested of relocated.querySelectorAll(`[${BF_SCOPE}]`)) {
+        seedContextIfAbsent(nested, context, value)
       }
     }
   }

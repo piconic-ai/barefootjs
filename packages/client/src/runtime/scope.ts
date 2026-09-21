@@ -237,6 +237,18 @@ export function logicalHost(el: Element): Element | null {
  *     followed repeatedly) eventually lands inside `scope`. Bounded at 16
  *     hops so malformed/cyclic markup can't loop forever; every real
  *     forwarding chain in this codebase is at most two or three deep.
+ *
+ * Does NOT disambiguate a `scope` whose own id is shared across `.map()`
+ * rows (#3115): `__bfParent` is the ENCLOSING component's own instance id,
+ * computed once for the whole loop, not once per row (`hono-adapter.ts`),
+ * so every row's Select/SelectContent/SelectItem-alike carries the IDENTICAL
+ * (bf-h, bf-m) pair. Worse, a forwarded grandchild's `bf-h` typically names
+ * the OUTERMOST authoring component (the `.map()`'s own enclosing
+ * component), never an intermediate wrapper like `Select` — so this
+ * scope-to-descendant graph walk, seeded from `Select`'s own scope, can
+ * never even reach it (wrong host entirely, not just the wrong row). That
+ * shape needs row correlation this function does not attempt; tracked in
+ * #3115, not fixed here.
  */
 export function* relocatedDescendants(scope: Element): Generator<Element> {
   const id = ownScopeId(scope)
