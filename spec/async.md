@@ -142,7 +142,7 @@ the law, nothing about composing components over it needs new machinery.
 ```mermaid
 graph TD
   L0["Layer 0 — value<br/>createQuery, createMutation, http descriptors<br/>mandatory · all adapters · IR-visible"]
-  L1["Layer 1 — boundary<br/>&lt;Async fallback errorFallback&gt; folds the queries read beneath it<br/>compile-time desugaring · no new public API"]
+  L1["Layer 1 — boundary<br/>&lt;Async fallback errorFallback&gt; folds the queries read beneath it<br/>compile-time desugaring · no new export, one new prop"]
   L2["Layer 2 — transitions<br/>gated behind three real UI requirements the value axis cannot satisfy<br/>the only IR-invisible layer"]
   L0 --> L1 --> L2
 ```
@@ -153,7 +153,9 @@ graph TD
   alone is the whole model — §§1–3 hold with nothing else.
 - **Layer 1 — boundary.** `<Async>` already exists as the SSR streaming boundary (lowered to
   the adapter's streaming primitive, compiled away — see [API Reference](../docs/core/advanced/api-reference.md#async)).
-  On the client it doubles as a *fold* over the queries read directly beneath it:
+  On the client it doubles as a *fold* over the queries read directly beneath it (no new
+  export; `errorFallback` is one new prop on the existing element, which today has only
+  `fallback` and `children`):
   `<Async fallback>` desugars to the value-axis branch (`a() === undefined || b() === undefined`),
   `<Async errorFallback={(error, reset) => …}>` to the settlement-axis branch
   (`fetchA.error() ?? fetchB.error()`, `reset` re-sends). Both are ordinary conditionals in
@@ -336,8 +338,9 @@ decision.
 
 `action()` returns `Promise<T>`, so `await saveComment()` before navigating is expressible.
 `invalidates: ['/api/posts']` marks every cached query whose key starts with that prefix
-stale on success and rides the router's invalidation bus (R6 of the query design), so the
-page cache is evicted with it.
+stale on success and rides the router's invalidation bus, so the page cache is evicted
+with it (a mutation that only evicted the query cache would let a later navigation restore
+the pre-mutation HTML from the page cache).
 
 ### 7.5 Options
 
@@ -397,8 +400,10 @@ Compiler: `action.isPending()` / `error()` lower on all nine adapters (seeds `fa
 `undefined`); `options.initial` seeds the value on all nine adapters without the same-name
 prop collision (#2669); the request function is emitted like an effect body and never
 evaluated by the SSR shim or the CSR template lambda; an unrecognised tuple-returning
-factory becomes a **loud** diagnostic (today it silently turns into a prop accessor — a
-known silent gap to file in the limitation registry with its fixture); hydration parity for
+factory becomes a **loud** diagnostic (today it silently turns into a prop accessor — the
+same shape as the `opaque-local-accessor-call` entry in the limitation registry,
+`packages/adapter-tests/limitations/opaque-local-accessor-call.ts`; extend that entry and
+its fixture rather than filing a second one); hydration parity for
 mode A and mode B via `renderToTest` with and without `initial`; the method check
 (`createMutation` with a safe method warns).
 
@@ -406,9 +411,12 @@ Runtime: descriptor purity and key stability (body serialisation independent of 
 the init rule (`initial` present → no send, cached, re-fetched after `ttl`; absent → send);
 mutation trigger and `invalidates`; the generation guard on `1 → 2 → 1` dependency changes;
 previous-value retention across pending and error, `error` cleared by the next success;
-disposal drops in-flight resolutions (R5).
+disposal drops in-flight resolutions (the query is owned by its scope, so `disposeScope`
+on a region swap or a removed `.map()` row releases it and nothing leaks across
+navigations).
 
 Around it: the memo chain resolves its SSR seed from `initial`; the value type follows the
 prop's optionality; `bf debug graph` shows query nodes with edges from the signals the
-function reads (R13). Per `subset-conformance.md`'s change-time coupling rule, the factory,
+function reads (a query is a signal source; one the graph does not show cannot be traced).
+Per `subset-conformance.md`'s change-time coupling rule, the factory,
 its fixtures, the runtime unit tests and this spec's status line land in the same PR.
