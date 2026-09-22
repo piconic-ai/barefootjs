@@ -45,6 +45,7 @@
 
 import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
 import { trackPosition } from '../../../lib/track-position'
+import { clampHoverCardPosition } from '../../../lib/clamp-hover-card-position'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
@@ -335,20 +336,15 @@ function HoverCardContent(props: HoverCardContentProps) {
       const align = props.align ?? 'center'
       const side = props.side ?? 'bottom'
 
-      if (side === 'bottom') {
-        el.style.top = `${rect.bottom + 4}px`
-      } else {
-        el.style.top = `${rect.top - el.offsetHeight - 4}px`
-      }
-
-      if (align === 'start') {
-        el.style.left = `${rect.left}px`
-      } else if (align === 'end') {
-        el.style.left = `${rect.right - el.offsetWidth}px`
-      } else {
-        // center
-        el.style.left = `${rect.left + rect.width / 2 - el.offsetWidth / 2}px`
-      }
+      const { top, left } = clampHoverCardPosition(
+        rect,
+        { width: el.offsetWidth, height: el.offsetHeight },
+        { width: window.innerWidth, height: window.innerHeight },
+        side,
+        align,
+      )
+      el.style.top = `${top}px`
+      el.style.left = `${left}px`
     }
 
     // Track cleanup functions for global listeners
