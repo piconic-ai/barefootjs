@@ -110,7 +110,8 @@
   },
   "dependencies": {
     "internal": [
-      "track-position"
+      "track-position",
+      "clamp-hover-card-position"
     ],
     "external": [
       "@barefootjs/client"

@@ -292,6 +292,7 @@
   "dependencies": {
     "internal": [
       "track-position",
+      "clamp-dropdown-menu-position",
       "icon"
     ],
     "external": [

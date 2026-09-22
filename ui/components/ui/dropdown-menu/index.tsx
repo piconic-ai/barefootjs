@@ -48,6 +48,7 @@
 
 import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
 import { trackPosition } from '../../../lib/track-position'
+import { clampDropdownMenuPosition } from '../../../lib/clamp-dropdown-menu-position'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
@@ -295,12 +296,15 @@ function DropdownMenuContent(props: DropdownMenuContentProps) {
     const updatePosition = () => {
       if (!positionTarget) return
       const rect = positionTarget.getBoundingClientRect()
-      el.style.top = `${rect.bottom + 4}px`
-      if (props.align === 'end') {
-        el.style.left = `${rect.right - el.offsetWidth}px`
-      } else {
-        el.style.left = `${rect.left}px`
-      }
+
+      const { top, left } = clampDropdownMenuPosition(
+        rect,
+        { width: el.offsetWidth, height: el.offsetHeight },
+        { width: window.innerWidth, height: window.innerHeight },
+        props.align,
+      )
+      el.style.top = `${top}px`
+      el.style.left = `${left}px`
     }
 
     // Track cleanup functions for global listeners

@@ -140,6 +140,7 @@
   "dependencies": {
     "internal": [
       "track-position",
+      "clamp-navigation-menu-position",
       "icon"
     ],
     "external": [
