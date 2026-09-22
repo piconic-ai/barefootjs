@@ -388,10 +388,34 @@ ${propsInit}
 	// nothing else sets this flag. Without it every fixture's bf-p attribute
 	// is silently absent regardless of what the adapter itself does.
 	props.BfIsRoot = true
+	// Also mirrors renderComponentInto's portal-collector wiring: a real
+	// app gets this via Renderer.Render/RenderFragment, but this harness
+	// calls tmpl.ExecuteTemplate directly. Without a live, RECURSIVELY
+	// propagated collector here, both the explicit <Portal> component's
+	// .Portals.Add and the ref-callback SSR-portal pattern's
+	// .Portals.AddElement (#3119) would call a method on a nil
+	// *bf.PortalCollector for any portal-owning element that isn't a
+	// DIRECT field of the top-level Props struct (which is the common
+	// case — DialogOverlay/DialogContent live inside Dialog, itself a
+	// child of the page's own demo component). Safe either way (both are
+	// nil-receiver-safe, runtime/bf.go) but silent: every portal fixture
+	// would render as if it had no portal content at all. bf.PropagatePortals
+	// is the exported (capital P) twin of renderComponentInto's own
+	// unexported recursive propagation, provided for exactly this
+	// direct-ExecuteTemplate harness shape.
+	portalCollector := bf.NewPortalCollector()
+	bf.PropagatePortals(&props, portalCollector)
 ${dynamicSeedingLines.length > 0 ? dynamicSeedingLines.join('\n') + '\n' : ''}	if err := tmpl.ExecuteTemplate(os.Stdout, "${componentName}", props); err != nil {
 		os.Stderr.WriteString("template error: " + err.Error() + "\\n")
 		os.Exit(1)
 	}
+	// Outlet: mirrors an app's own layout placing <BfPortals/> (Hono) /
+	// {{.Portals.Render}} (Go) right after the component root, near
+	// </body> — the collected portal content (both the explicit <Portal>
+	// component's wrapped entries and the ref-callback SSR-portal
+	// pattern's unwrapped elements, #3119) is otherwise collected but
+	// never emitted anywhere, since this harness renders no layout at all.
+	os.Stdout.WriteString(string(portalCollector.Render()))
 }
 `
     await Bun.write(resolve(tempDir, 'main.go'), mainGo)

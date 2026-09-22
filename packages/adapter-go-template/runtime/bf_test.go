@@ -1247,6 +1247,164 @@ func contains(s, substr string) bool {
 }
 
 // =============================================================================
+// PortalCollector.AddElement / PropagatePortals (#3119)
+// =============================================================================
+
+func TestPortalCollector_AddElement(t *testing.T) {
+	pc := NewPortalCollector()
+	result := pc.AddElement(`<div bf-po="scope-1"></div>`)
+	if result != "" {
+		t.Errorf("AddElement() should return empty string, got %q", result)
+	}
+	if len(pc.elements) != 1 {
+		t.Fatalf("After AddElement(), elements count should be 1, got %d", len(pc.elements))
+	}
+	// Unlike Add, no bf-pi/bf-po wrapper div — the caller already stamped
+	// bf-po directly on the element's own tag.
+	if string(pc.elements[0]) != `<div bf-po="scope-1"></div>` {
+		t.Errorf("elements[0] = %q, want the content unchanged", pc.elements[0])
+	}
+}
+
+func TestPortalCollector_AddElement_Nil(t *testing.T) {
+	var pc *PortalCollector
+	result := pc.AddElement("<div></div>")
+	if result != "" {
+		t.Errorf("AddElement() on nil collector should return empty string, got %q", result)
+	}
+}
+
+func TestPortalCollector_Add_Nil(t *testing.T) {
+	var pc *PortalCollector
+	result := pc.Add("scope-1", "<div></div>")
+	if result != "" {
+		t.Errorf("Add() on nil collector should return empty string, got %q", result)
+	}
+}
+
+// Render emits explicit <Portal> content wrapped (bf-pi/bf-po container
+// div) AND ref-callback SSR-portal elements unwrapped, in one output.
+func TestPortalCollector_Render_MixedAddAndAddElement(t *testing.T) {
+	pc := NewPortalCollector()
+	pc.Add("scope-1", "<div>Portal children</div>")
+	pc.AddElement(`<div data-slot="dialog-content" bf-po="scope-2"></div>`)
+
+	result := string(pc.Render())
+	if !contains(result, `bf-pi="bf-portal-1" bf-po="scope-1"`) {
+		t.Error("Render() should still wrap explicit <Portal> content in its bf-pi/bf-po div")
+	}
+	if !contains(result, `<div data-slot="dialog-content" bf-po="scope-2"></div>`) {
+		t.Error("Render() should emit the AddElement entry UNWRAPPED, with its own bf-po intact")
+	}
+	// The AddElement entry must NOT also pick up an Add-style bf-pi
+	// wrapper — that would double the bf-po attribute pattern and diverge
+	// from what the client's createPortal stamps at hydrate time.
+	if contains(result, `bf-pi="bf-portal-1" bf-po="scope-2"`) {
+		t.Error("Render() must not wrap an AddElement entry in Add's bf-pi/bf-po container div")
+	}
+}
+
+func TestPortalCollector_Render_ElementsOnly(t *testing.T) {
+	pc := NewPortalCollector()
+	pc.AddElement(`<div bf-po="scope-1">overlay</div>`)
+	result := string(pc.Render())
+	expected := `<div bf-po="scope-1">overlay</div>` + "\n"
+	if result != expected {
+		t.Errorf("Render() = %q, want %q", result, expected)
+	}
+}
+
+// PropagatePortals must reach a portal-owning element nested TWO
+// "use client" component boundaries below the page root (the shape
+// DialogOverlay/DialogContent-inside-Dialog actually has) — not just a
+// direct child, which single-level propagation (the pattern Scripts still
+// uses) would miss entirely.
+type grandchildProps struct {
+	ScopeID string
+	Scripts *ScriptCollector
+	Portals *PortalCollector
+}
+
+type childProps struct {
+	ScopeID    string
+	Scripts    *ScriptCollector
+	Portals    *PortalCollector
+	Grandchild *grandchildProps
+}
+
+type rootPropsForPropagation struct {
+	ScopeID string
+	Scripts *ScriptCollector
+	Portals *PortalCollector
+	Child   *childProps
+}
+
+func TestPropagatePortals_ReachesGrandchild(t *testing.T) {
+	root := &rootPropsForPropagation{
+		ScopeID: "root",
+		Child: &childProps{
+			ScopeID:    "child",
+			Grandchild: &grandchildProps{ScopeID: "grandchild"},
+		},
+	}
+	collector := NewPortalCollector()
+
+	PropagatePortals(root, collector)
+
+	if root.Portals != collector {
+		t.Error("PropagatePortals did not set the root's own Portals field")
+	}
+	if root.Child.Portals != collector {
+		t.Error("PropagatePortals did not reach the direct child's Portals field")
+	}
+	if root.Child.Grandchild.Portals != collector {
+		t.Error("PropagatePortals did not reach the GRANDCHILD's Portals field — single-level propagation regression (#3119)")
+	}
+
+	// The SAME collector instance everywhere — not three independently
+	// allocated ones — is what lets an element collected two levels deep
+	// reach the SAME outlet the page root's own template reads.
+	if root.Portals != root.Child.Portals || root.Child.Portals != root.Child.Grandchild.Portals {
+		t.Error("PropagatePortals should install the SAME collector instance at every level")
+	}
+
+	root.Child.Grandchild.Portals.AddElement(`<div bf-po="grandchild"></div>`)
+	rendered := string(collector.Render())
+	if !contains(rendered, `<div bf-po="grandchild"></div>`) {
+		t.Errorf("an element added via the grandchild's Portals field should be visible through the SHARED collector's Render(); got %q", rendered)
+	}
+}
+
+type childSliceItemProps struct {
+	ScopeID string
+	Scripts *ScriptCollector
+	Portals *PortalCollector
+}
+
+type rootWithSliceProps struct {
+	ScopeID string
+	Scripts *ScriptCollector
+	Portals *PortalCollector
+	Items   []childSliceItemProps
+}
+
+func TestPropagatePortals_ReachesSliceChildren(t *testing.T) {
+	root := &rootWithSliceProps{
+		ScopeID: "root",
+		Items:   []childSliceItemProps{{ScopeID: "item-0"}, {ScopeID: "item-1"}},
+	}
+	collector := NewPortalCollector()
+
+	PropagatePortals(root, collector)
+
+	for i, item := range root.Items {
+		if item.Portals != collector {
+			t.Errorf("Items[%d].Portals not propagated (got %v, want %v)", i, item.Portals, collector)
+		}
+	}
+}
+
+// =============================================================================
 // Sort Tests
 // =============================================================================
 
