@@ -290,6 +290,16 @@ $bf = new \\Barefoot\\BarefootJS(null, ['backend' => $backend]);
 // Honour an explicit __instanceId so shared-component fixtures match the
 // scope ids Hono / Go / Jinja emit; default to 'test'.
 $bf->_scope_id(${phpStr(rootScopeIdRaw)});
+// (#3119) Seed a REAL shared collector, mirroring the production
+// \`new_script_collector\` (integrations/twig/index.php): \`_portal_elements\`'s
+// default-builder (BarefootJS::__call) hands back a plain PHP array on
+// first access, which is a copy-on-write VALUE, not a reference -- passed
+// down through \`buildChildRenderersPhp\`'s \`$child_bf->_portal_elements($bf->_portal_elements())\`
+// unseeded, a nested child's own \`register_portal_element\` call would
+// mutate only ITS OWN local copy, invisible when \`$bf->portals()\` is read
+// below. An \`ArrayObject\` is a real object handle, so every level shares
+// the SAME collector, exactly like scripts/preloads do in production.
+$bf->_portal_elements(new \\ArrayObject());
 
 $vars = (array) json_decode(file_get_contents('props.json'));
 ${literalAssignments.join('\n')}
@@ -297,6 +307,14 @@ ${literalAssignments.join('\n')}
 ${childRenderers}
 $html = $backend->render_named(${phpStr(toSnakeCase(componentName))}, $bf, $vars);
 echo $html;
+// Outlet: mirrors an app's own layout placing \`{{ bf.portals() }}\` near
+// \`</body>\`, right after the component root (#3119) -- the collected
+// \`ref\`-callback SSR-portal elements are otherwise collected but never
+// emitted anywhere, since this harness renders no layout at all. Matches
+// the Hono reference's \`<BfPortals />\` placement (immediately after the
+// component subtree) that the shared \`__snapshots__/*.html\` fixtures
+// encode.
+echo $bf->portals();
 `
     await Bun.write(resolve(tempDir, 'render.php'), renderScript)
 
@@ -473,6 +491,10 @@ function buildChildRenderersPhp(
     lines.push(`    $child_bf->_child_renderers($bf->_child_renderers());`)
     lines.push(`    $child_bf->_scripts($bf->_scripts());`)
     lines.push(`    $child_bf->_script_seen($bf->_script_seen());`)
+    // Shares the root's `_portal_elements` ArrayObject (#3119) — must
+    // reach the SAME collector the harness reads via `$bf->portals()`
+    // above, exactly like Blade's twin harness.
+    lines.push(`    $child_bf->_portal_elements($bf->_portal_elements());`)
     // Seed template vars through the production `deriveStashFromDefaults` —
     // resolves each entry's `propName` against the REAL `$child_props`,
     // falling back to the static `value`; `isRestProps` entries pass the
