@@ -99,6 +99,22 @@ export function findSsrScopeBySlotIn(
     // internally to find these candidates in the first place, so the two
     // must agree for the match to be reachable at all.
     //
+    // Search each relocated candidate SELF *and* its own subtree, not the
+    // candidate alone: `relocatedDescendants` only yields elements that
+    // are THEMSELVES portal-owned (carry `bf-po`) — a target that is
+    // instead a plain forwarded descendant of one of those (e.g. a
+    // `SelectItem`, itself never `bf-po`-stamped, physically nested inside
+    // a relocated `SelectContent`) never appears in that generator at all,
+    // so a self-only check can never find it: `findSsrScopeBySlotIn`
+    // returned `null` for every `SelectItem` in a portaled `<Select>`,
+    // `upsertChild` fell through to its placeholder branch (no SSR-side
+    // `data-bf-ph` to adopt), and the item's own `init()` never ran —
+    // no console warning, no error, just a click handler that was never
+    // attached (measured: #3059's SSR-portal placement broke every
+    // `<Select>`'s items this way, looped row or not — `query.ts`'s
+    // `findInPortals` already does the same self-or-descend search for
+    // exactly this reason, for the `$c`/`$t`/`$()` paths it serves).
+    //
     // Skip an already-hydrated match: a component instantiated once per
     // `.map()` loop row (a Select rendered inside a heterogeneous field
     // list, say) shares the exact same (bf-h, bf-m) pair across every row
@@ -119,11 +135,21 @@ export function findSsrScopeBySlotIn(
     // the identical reason: hydration walks rows in the same left-to-right
     // document order `<BfPortals />` collected them in (SSR renders a
     // `.map()` synchronously in array order), so the Nth still-unclaimed
-    // match is always this row's own.
+    // match is always this row's own. The same skip disambiguates a
+    // SLOT NESTED inside a relocated candidate too — a looped `Select`'s
+    // `SelectItem` copies are found one relocated `SelectContent` at a
+    // time, in the same document order, so the Nth still-unclaimed nested
+    // match is likewise always this row's own.
     const hostId = ownScopeId(hostEl)
-    for (const el of relocatedDescendants(hostEl)) {
-      if (el.getAttribute(BF_HOST) === hostId && el.getAttribute(BF_AT) === slotId && !hydratedScopes.has(el)) {
-        return el as HTMLElement
+    if (hostId) {
+      const relocatedSelector = `[${BF_HOST}="${cssEscape(hostId)}"][${BF_AT}="${slotId}"]`
+      for (const rel of relocatedDescendants(hostEl)) {
+        if (rel.matches(relocatedSelector) && !hydratedScopes.has(rel)) {
+          return rel as HTMLElement
+        }
+        for (const el of rel.querySelectorAll(relocatedSelector)) {
+          if (!hydratedScopes.has(el)) return el as HTMLElement
+        }
       }
     }
   }

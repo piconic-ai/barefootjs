@@ -122,27 +122,29 @@ export function provideContext<T>(context: Context<T>, value: T): void {
     // EARLIEST point any client JS runs — the adapter already placed it at
     // the shared outlet in the SSR bytes themselves, so the assumption the
     // walk above relies on ("children are still in their original SSR
-    // position") is false for it from the start. Its OWN bf-s-scoped
-    // descendants (e.g. a `SelectItem` authored by the same caller as
-    // `SelectContent`, forwarded as `children`, and therefore ALSO
-    // relocated as part of the same collected subtree) need the same seed
-    // — `useContext`'s bf-h jump from one of THOSE overshoots past this
-    // scope straight to whichever ancestor originally authored the JSX,
-    // since `bf-h` names "who upserted me", not "my nearest reactive
-    // parent" (the two differ exactly when content is forwarded through
-    // more than one layer). Without this, `SelectItem`'s own `useContext`
-    // call falls through to the global `contextStore` fallback — which
-    // holds whichever instance provided most recently, not this one's own.
+    // position") is false for it from the start. Covers a provider whose
+    // OWN root is itself SSR-portal-relocated (e.g. a self-owner-portaled
+    // component, or an explicit `<Portal>`) and that authors a
+    // `Context.Provider` around content forwarded straight through it —
+    // `relocatedDescendants(currentScope)` still finds a candidate whose
+    // `bf-h`/`bf-po` names `currentScope` itself in that shape, unlike the
+    // multi-hop-forwarding case below.
     //
-    // Does NOT cover a `currentScope` instantiated once per `.map()` row
-    // (#3115): `relocatedDescendants` can only find a candidate whose `bf-h`
-    // names `currentScope` itself, or resolves to it through a chain — and a
-    // forwarded grandchild's `bf-h` usually names the OUTERMOST authoring
-    // component (here: the component that owns the `.map()`), never an
-    // intermediate wrapper like `Select`, so `relocatedDescendants` yields
-    // nothing at all for a looped `Select`'s own scope, seeded or not. That
-    // shape still falls through to the global `contextStore` fallback,
-    // tracked separately in #3115 rather than fixed here.
+    // NOT a fix for content forwarded through more than one authoring
+    // layer (e.g. `Select` > `SelectContent` > `SelectItem`, all three
+    // authored directly in one caller's JSX): `bf-h` on the innermost piece
+    // names the OUTERMOST author, not the intermediate component that
+    // actually calls `provideContext` — so `relocatedDescendants(Select's
+    // own scope)` can never reach `SelectItem` there, seeded or not,
+    // looped row or not (`scope.ts`'s `relocatedDescendants` doc comment
+    // has the full trace). A `<Select>` rendered once per `.map()` row
+    // silently failing to react to item clicks turned out NOT to be this
+    // gap in practice — it was `findSsrScopeBySlotIn`'s portal fallback
+    // (`slot-resolver.ts`) never discovering `SelectItem` at all, so its
+    // own `init()` never ran; fixed there. As of this fix no shipped
+    // `ui/components/ui/*` component exercises the shape this block below
+    // is actually for (a `Context.Provider` whose own root is relocated) —
+    // kept as defense for one, unverified by a regression test.
     for (const relocated of relocatedDescendants(currentScope)) {
       seedContextIfAbsent(relocated, context, value)
       for (const nested of relocated.querySelectorAll(`[${BF_SCOPE}]`)) {

@@ -28,6 +28,20 @@
  * exactly what `HonoAdapter.renderElement`'s `ssrPortalOwnerScope` branch
  * emits, not a `bf-po` naming the parent (a shape the adapter never
  * actually produces).
+ *
+ * A second gap surfaced later (#3115, driving PR #3099's `.map()`-loop
+ * regression in `form-builder.spec.ts`): a target forwarded through MORE
+ * than one authoring layer (e.g. `Select` > `SelectContent` > `SelectItem`,
+ * all three called directly in one caller's JSX) is never itself
+ * portal-owned — only the OUTERMOST relocated piece (`SelectContent`) is —
+ * so `relocatedDescendants` never yields the inner target (`SelectItem`)
+ * at all, and the portal fallback's original self-only check could never
+ * find it either. `findSsrScopeBySlotIn` now searches each relocated
+ * candidate's own SUBTREE too, not just the candidate itself (mirroring
+ * `findInPortals` in `query.ts`, which already did this), with the same
+ * `hydratedScopes` order tiebreak resolving which row's nested copy is
+ * "this row's own" once a `.map()` loop repeats the identical
+ * `(bf-h, bf-m)` pair on both the outer and inner piece.
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
@@ -132,6 +146,58 @@ describe('upsertChild — SSR-portal child discovery (#3059)', () => {
 
     const found = upsertChild(parentA, 'PopoverContentB', 's9', {}, undefined, parentA)
     expect(found).toBeNull()
+  })
+
+  test('finds a slot NESTED inside a relocated candidate, not the candidate itself, and picks a distinct match per already-hydrated row (#3115)', () => {
+    // A component forwarded through more than one authoring layer (e.g.
+    // `Select` > `SelectContent` > `SelectItem`, all three called directly
+    // in one caller's own JSX) stamps EVERY one of them with the outermost
+    // author's bf-h — so the inner slot ("s6", an item) is never itself
+    // portal-owned (no bf-po of its own); it's a plain descendant of the
+    // relocated candidate that IS portal-owned ("s11", the content). A
+    // `.map()` loop compounds this: `__bfParent` is the enclosing
+    // component's own instance id, computed once for the whole loop, so
+    // every row's copy of this forwarded chain shares the identical
+    // (bf-h, bf-m) pair for BOTH slots.
+    let itemInits = 0
+    hydrate('SelectItem', {
+      init: () => {
+        itemInits++
+      },
+      template: () => '<div bf="s0"></div>',
+    })
+    flushHydration()
+
+    const parent = document.createElement('div')
+    parent.setAttribute('bf-s', 'FormBuilderDemo_test')
+    document.body.appendChild(parent)
+
+    // Two rows' worth of relocated "select-content" (bf-m="s11"), each
+    // with ONE nested "select-item" (bf-m="s6") — byte-identical
+    // (bf-h, bf-m) pairs on both the outer content and the inner item,
+    // exactly as `.map()` over a looped `<Select>` emits once SSR-portal
+    // placement (#3059) applies.
+    const outlet = document.createElement('div')
+    outlet.innerHTML =
+      '<div bf-h="FormBuilderDemo_test" bf-m="s11" bf-s="FormBuilderDemo_test_s11" bf-po="FormBuilderDemo_test_s11" bf="s0">' +
+      '<div bf-h="FormBuilderDemo_test" bf-m="s6" bf-s="FormBuilderDemo_test_s6" bf="s1"></div>' +
+      '</div>' +
+      '<div bf-h="FormBuilderDemo_test" bf-m="s11" bf-s="FormBuilderDemo_test_s11" bf-po="FormBuilderDemo_test_s11" bf="s0">' +
+      '<div bf-h="FormBuilderDemo_test" bf-m="s6" bf-s="FormBuilderDemo_test_s6" bf="s1"></div>' +
+      '</div>'
+    document.body.appendChild(outlet)
+
+    const row0Item = outlet.children[0].firstElementChild
+    const row1Item = outlet.children[1].firstElementChild
+
+    const foundRow0 = upsertChild(parent, 'SelectItem', 's6', {}, undefined, parent)
+    expect(foundRow0).toBe(row0Item as HTMLElement)
+
+    const foundRow1 = upsertChild(parent, 'SelectItem', 's6', {}, undefined, parent)
+    expect(foundRow1).toBe(row1Item as HTMLElement)
+    expect(foundRow1).not.toBe(foundRow0)
+
+    expect(itemInits).toBe(2)
   })
 
   test('does not match a slot id belonging to an INTERMEDIATE host reached via the transitive pass', () => {
