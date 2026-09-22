@@ -635,6 +635,7 @@ sub home_page () {
         heading => 'BarefootJS + Text::Xslate Example',
         back    => '',
         scripts => '',
+        portals => '',
         body    => <<"HTML",
 <p>This example renders the same shared JSX components with Text::Xslate (Kolon)
 under a plain Plack/PSGI app — no web framework required.</p>
