@@ -548,6 +548,7 @@ class BarefootJS:
     _script_seen = _dual_accessor("_script_seen", lambda self: {})
     _preloads = _dual_accessor("_preloads", lambda self: [])
     _preload_seen = _dual_accessor("_preload_seen", lambda self: {})
+    _portal_elements = _dual_accessor("_portal_elements", lambda self: [])
     _child_renderers = _dual_accessor("_child_renderers", lambda self: {})
     _is_child = _dual_accessor("_is_child", False)
     _scope_id = _dual_accessor("_scope_id")
@@ -740,6 +741,39 @@ class BarefootJS:
         self._preloads().append(path)
 
     # -----------------------------------------------------------------
+    # SSR Portal Element Registration (#3119)
+    # -----------------------------------------------------------------
+
+    def register_portal_element(self, content: str) -> None:
+        """Collects an `ssrPortalOwnerScope`-flagged element's already-
+        rendered, fully-evaluated markup (`jinja-adapter.ts`'s
+        `wrapSsrPortalElement` captures it via a Jinja `{% set %}` set-block
+        before calling here) so it can be emitted at the `portals()` outlet
+        near `</body>` instead of at its source position -- the `ref`-
+        callback SSR-portal pattern the dialog-style primitives use
+        (`DialogOverlay`/`DialogContent`, `DropdownMenuContent`,
+        `PopoverContent`, the explicit `<Portal>` component). `content`
+        already carries its own `bf-po` attribute (stamped directly on its
+        own tag by the compiler, matching exactly what the client
+        `createPortal(el, document.body, { ownerScope })` stamps onto the
+        SAME element at hydrate time), so unlike a hypothetical "wrap
+        arbitrary children" collector this appends `content` UNWRAPPED -- no
+        extra `bf-pi`/`bf-po` container element, which would diverge from
+        what the client stamps directly onto the element itself. Returns
+        `None` -- the caller sinks it through `{% set _ = ... %}`, never
+        `{{ }}`, so nothing prints at the source position."""
+        self._portal_elements().append(content)
+        return None
+
+    def portals(self) -> str:
+        """Emits every collected SSR-portal element, in registration order.
+        Place `{{ bf.portals() | safe }}` once near `</body>` in the app's
+        own layout -- mirrors `scripts()` above (same "collect during
+        render, emit at a single outlet" shape) and the Hono reference
+        adapter's `<BfPortals />`."""
+        return "\n".join(self._portal_elements())
+
+    # -----------------------------------------------------------------
     # Child Component Rendering
     # -----------------------------------------------------------------
 
@@ -854,6 +888,16 @@ class BarefootJS:
                     child_bf._script_seen(parent._script_seen())
                     child_bf._preloads(parent._preloads())
                     child_bf._preload_seen(parent._preload_seen())
+                    # Shares the SAME root-level list object as `_scripts`
+                    # above -- every child renderer registered here closes
+                    # over `parent` (the instance
+                    # `register_components_from_manifest` was called on, the
+                    # page root), so this reaches ANY "use client" nesting
+                    # depth for free, unlike the Go adapter's
+                    # `PropagatePortals`, which needed an explicit recursive
+                    # walk because Go structs copy fields by value rather
+                    # than sharing a mutable reference (#3119).
+                    child_bf._portal_elements(parent._portal_elements())
 
                     extra: dict = {}
                     if signal_init_fn:
