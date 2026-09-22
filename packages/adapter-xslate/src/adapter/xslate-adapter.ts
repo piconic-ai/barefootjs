@@ -84,7 +84,7 @@ import {
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
 import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -595,17 +595,63 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
+    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
+    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) — the overlay/content
+    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
+    // this element's own tag, matching exactly what the client
+    // `createPortal(el, document.body, { ownerScope })` stamps onto the
+    // SAME element at hydrate time (`packages/client/src/runtime/
+    // portal.ts`), mirroring the Hono reference adapter's identical
+    // `BF_PORTAL_OWNER` stamp. The element itself is then routed through
+    // `wrapSsrPortalElement` below instead of returned for inline
+    // placement, so it renders at the `$bf.portals()` outlet the app's own
+    // layout places near `</body>` — see that method's docstring.
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="<: $bf.scope_attr() :>"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
       'link', 'meta', 'param', 'source', 'track', 'wbr',
     ]
 
-    if (voidElements.includes(tag.toLowerCase())) {
-      return `<${tag}${attrs}${hydrationAttrs}>`
-    }
+    const rendered = voidElements.includes(tag.toLowerCase())
+      ? `<${tag}${attrs}${hydrationAttrs}>`
+      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+    if (element.ssrPortalOwnerScope) {
+      return this.wrapSsrPortalElement(rendered)
+    }
+    return rendered
+  }
+
+  /**
+   * Route an `ssrPortalOwnerScope`-flagged element's ALREADY-RENDERED
+   * markup (the `bf-po` attribute already stamped on its own tag) into
+   * `$bf.register_portal_element` instead of leaving it at its source
+   * position (#3119).
+   *
+   * Reuses Kolon's own zero-arg `macro` block-capture — the SAME mechanism
+   * `renderComponent` already uses to forward JSX children (see this
+   * file's "Content capture" notes near the children-macro call sites):
+   * the element renders inline as normal Kolon (its own `<: :>`
+   * interpolations evaluate exactly as they would anywhere else), the
+   * macro captures the nested render, and calling it (`NAME()`) produces
+   * its already-rendered HTML. A `:`-line statement (never a bare `<: :>`
+   * printing tag) hands that string to the portal collector, bound to a
+   * throwaway `my` local so `register_portal_element`'s return value isn't
+   * auto-printed by Kolon's line-statement marker — the SAME no-output
+   * trick `register_script`/`register_preload` use above (see this file's
+   * script-registration methods) — so nothing prints at the source
+   * position. `\n` surrounds the `:`-line the same way every other
+   * embedded line-statement in this file does (`: if (...) { ... : }`),
+   * since Kolon recognizes `:` as a line marker only at the start of a
+   * physical line.
+   */
+  private wrapSsrPortalElement(rendered: string): string {
+    const macroName = `bf_po_${this.childrenCaptureCounter++}`
+    const varName = `$_bf_po_reg_${this.childrenCaptureCounter++}`
+    return `<: macro ${macroName} -> () { :>${rendered}<: } :>\n: my ${varName} = $bf.register_portal_element(${macroName}());\n`
   }
 
   /**

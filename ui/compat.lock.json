@@ -2168,12 +2168,6 @@
           "limitations": [
             "ref-callback-portal-content-inline-at-ssr"
           ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
         }
       },
       "dropdown-menu": {
@@ -2190,12 +2184,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "ref-callback-portal-content-inline-at-ssr"
@@ -4146,12 +4134,6 @@
           "limitations": [
             "ref-callback-portal-content-inline-at-ssr"
           ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
         }
       },
       "portal": {
@@ -4168,12 +4150,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "ref-callback-portal-content-inline-at-ssr"
@@ -5857,8 +5833,7 @@
       "adapters": [
         "minijinja",
         "pebble",
-        "twig",
-        "xslate"
+        "twig"
       ]
     },
     "ref-effect-attr-state-ssr": {

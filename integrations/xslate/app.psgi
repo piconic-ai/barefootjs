@@ -137,9 +137,16 @@ sub render_component ($component, %opts) {
                                           : "${child_template}_" . rand_suffix());
             $child_bf->_is_child(1);
             # Share the parent's script collector so a child's register_script
-            # de-dupes against the page's existing <script> set.
+            # de-dupes against the page's existing <script> set. `_portal_
+            # elements` shares the same arrayref propagation (#3119): an
+            # `ssrPortalOwnerScope`-flagged element (DialogContent,
+            # DropdownMenuContent, PopoverContent, the explicit `<Portal>`
+            # component) inside a hand-registered child like this one needs
+            # to reach the SAME collector the page root reads back via
+            # `$bf->portals` below.
             $child_bf->_scripts($bf->_scripts);
             $child_bf->_script_seen($bf->_script_seen);
+            $child_bf->_portal_elements($bf->_portal_elements);
             my %extra = $child_init ? $child_init->($props) : ();
             return $backend->render_named($child_template, $child_bf, { %$props, %extra });
         });
@@ -151,6 +158,7 @@ sub render_component ($component, %opts) {
         heading   => $opts{heading} // '',
         body      => $body,
         scripts   => $bf->scripts,
+        portals   => $bf->portals,
         extra_css => $opts{extra_css} // '',
     );
 }
@@ -193,6 +201,7 @@ sub layout (%a) {
     $heading_html
     <div id="app">$a{body}</div>
     $back_html
+    $a{portals}
     $a{scripts}
     $dev_snippet
 </body>
@@ -422,6 +431,10 @@ sub _register_blog_child ($parent_bf, $slot, $component, $extra_seed = {}) {
         $child->_child_renderers($parent_bf->_child_renderers);
         $child->_scripts($parent_bf->_scripts);
         $child->_script_seen($parent_bf->_script_seen);
+        # Shares the SAME arrayref as `_scripts` above (#3119) so a portal-
+        # owning element nested inside this child reaches the same
+        # collector the page root reads back via `$root->portals`.
+        $child->_portal_elements($parent_bf->_portal_elements);
         my %extra = $defaults
             ? BarefootJS::_derive_stash_from_defaults($defaults, $props) : ();
         # Per-child SSR seeds the static extractor can't supply (e.g. NowPlaying's
@@ -442,6 +455,10 @@ sub blog_island ($root, $component, $props = {}, $extra = {}, $children = {}) {
     $bf->_scripts($root->_scripts);
     $bf->_script_seen($root->_script_seen);
     $bf->_child_renderers($root->_child_renderers);
+    # Shares the SAME arrayref as `_scripts` above (#3119): an
+    # `ssrPortalOwnerScope`-flagged element inside this island needs to
+    # reach the SAME collector `blog_page` reads back via `$root->portals`.
+    $bf->_portal_elements($root->_portal_elements);
     # Each child is `slot => 'Template'` or `slot => ['Template', \%extra_seed]`.
     for my $slot (keys %$children) {
         my $spec = $children->{$slot};
@@ -466,6 +483,12 @@ sub blog_page ($root, $title, $base, $content_html) {
         { reader_toolbar => 'ReaderToolbar' });
     my $router_entry = $BLOG_ASSETS->{RouterEntry} // '';
     my $scripts   = $root->scripts;
+    # #3119: `$root` is the shared render-tree anchor every island above
+    # closes over, so an `ssrPortalOwnerScope`-flagged element anywhere in
+    # that tree registers its markup with it rather than returning it
+    # inline -- flush it here or it would be silently dropped from the
+    # page instead of rendered.
+    my $portals   = $root->portals;
     my $esc_title = _esc($title);
     return <<"HTML";
 <!DOCTYPE html>
@@ -485,6 +508,7 @@ sub blog_page ($root, $title, $base, $content_html) {
 <aside bf-region="nav:0">$sidebar</aside>
 <main>$shell</main>
 </div>
+$portals
 $scripts
 <script type="module" src="$router_entry"></script>
 </body>
@@ -611,6 +635,7 @@ sub home_page () {
         heading => 'BarefootJS + Text::Xslate Example',
         back    => '',
         scripts => '',
+        portals => '',
         body    => <<"HTML",
 <p>This example renders the same shared JSX components with Text::Xslate (Kolon)
 under a plain Plack/PSGI app — no web framework required.</p>
