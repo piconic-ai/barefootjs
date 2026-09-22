@@ -91,7 +91,7 @@ import {
   resolveRelativeImportToFile,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
-import { BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
   GO_IDENTIFIER,
@@ -3559,6 +3559,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\tBfDataKey string `json:"-"`')
 
     lines.push('\tScripts *bf.ScriptCollector `json:"-"`')
+    // #3119: was never emitted on ANY generated Props struct, even though
+    // `renderComponentInto` (runtime/bf.go) already calls
+    // `setPortalsField`/`setPortalsOnSlice`/`setPortalsOnSingle` — those
+    // reflection-based injectors silently no-op when the target field
+    // doesn't exist, so `.Portals.Add`/`.Portals.AddElement` in a rendered
+    // template (the explicit `<Portal>` component, and now the
+    // `ref`-callback SSR-portal pattern below) referenced a nil field on
+    // every component, a latent break in the (until now dormant) explicit
+    // `<Portal>` mechanism independent of this fix. Unconditional, like
+    // `Scripts`, for the same reason: a nested child's OWN template may
+    // use either mechanism even when this component's own template does
+    // not.
+    lines.push('\tPortals *bf.PortalCollector `json:"-"`')
 
     // Request-scoped `searchParams()` SSR value. Read by the template as
     // `.SearchParams.Get "key"`. Not serialised for hydration (`json:"-"`) — the
@@ -5013,17 +5026,67 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
+    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
+    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) — the overlay/content
+    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
+    // this element's own tag, matching exactly what the client
+    // `createPortal(el, document.body, { ownerScope })` stamps onto the
+    // SAME element at hydrate time (`packages/client/src/runtime/
+    // portal.ts`), mirroring the Hono reference adapter
+    // (`hono-adapter.ts`'s identical `BF_PORTAL_OWNER` stamp). The element
+    // itself is then routed through `.Portals.AddElement` below instead of
+    // returned for inline placement, so it renders at the collector's
+    // `{{.Portals.Render}}` outlet the app's own layout places near
+    // `</body>` — see `wrapSsrPortalElement`'s docstring for why this
+    // needs its own runtime path distinct from the explicit `<Portal>`
+    // component's `.Portals.Add`.
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{bfScopeAttr .}}"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
       'link', 'meta', 'param', 'source', 'track', 'wbr',
     ]
 
-    if (voidElements.includes(tag.toLowerCase())) {
-      return `<${tag}${attrs}${hydrationAttrs}>`
-    }
+    const rendered = voidElements.includes(tag.toLowerCase())
+      ? `<${tag}${attrs}${hydrationAttrs}>`
+      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+    if (element.ssrPortalOwnerScope) {
+      return this.wrapSsrPortalElement(rendered)
+    }
+    return rendered
+  }
+
+  /**
+   * Route an `ssrPortalOwnerScope`-flagged element's ALREADY-RENDERED
+   * markup (the `bf-po` attribute already stamped on its own tag) through
+   * `.Portals.AddElement` instead of returning it for inline placement
+   * (#3119).
+   *
+   * Mirrors `renderPortalComponent`'s dynamic/static split — `.Add`'s own
+   * comment on `PortalCollector` (`runtime/bf.go`) explains why this
+   * two-step (collect a STRING, re-execute it as a template at the
+   * outlet via `bfPortalHTML`) is the only way to get a value out of
+   * `html/template`'s otherwise write-only `{{template}}` action — but
+   * calls `.Portals.AddElement`, a SEPARATE accumulator from `.Add`'s
+   * `portals`: `.Add` wraps arbitrary `<Portal>` children in its own
+   * `bf-pi`/`bf-po` container div (needed because `children` may not be a
+   * single element); THIS content is the ONE element the compiler already
+   * rendered with `bf-po` on its own tag, matching exactly what the
+   * client `createPortal` stamps onto the SAME element at hydrate time —
+   * wrapping it in another div would diverge from that. Mirrors Hono's
+   * `collectSsrPortalElement` / `BfPortals`'s `elements` array
+   * (`packages/adapter-hono/src/portals.tsx`) keeping the same two-list
+   * split for the same reason.
+   */
+  private wrapSsrPortalElement(rendered: string): string {
+    const escaped = rendered.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+    if (rendered.includes('{{')) {
+      return `{{.Portals.AddElement (bfPortalHTML . "${escaped}")}}`
+    }
+    return `{{.Portals.AddElement "${escaped}"}}`
   }
 
   /**

@@ -3222,8 +3222,9 @@ type PortalContent struct {
 // PortalCollector collects portal content during template rendering.
 // Portal content is rendered at </body> to avoid z-index issues.
 type PortalCollector struct {
-	portals []PortalContent
-	counter int
+	portals  []PortalContent
+	elements []template.HTML
+	counter  int
 }
 
 // NewPortalCollector creates a new PortalCollector.
@@ -3234,8 +3235,15 @@ func NewPortalCollector() *PortalCollector {
 	}
 }
 
-// Add registers portal content to be rendered at body end.
+// Add registers portal content to be rendered at body end. Nil-receiver-safe
+// (a no-op) like Render, so a component whose Props struct wasn't wired to a
+// live collector (e.g. a caller that never set the Portals field) doesn't
+// panic mid-render — it just silently collects nothing, same as any other
+// unconfigured collector.
 func (pc *PortalCollector) Add(ownerID string, content template.HTML) string {
+	if pc == nil {
+		return ""
+	}
 	pc.counter++
 	id := "bf-portal-" + strconv.Itoa(pc.counter)
 	pc.portals = append(pc.portals, PortalContent{
@@ -3246,10 +3254,34 @@ func (pc *PortalCollector) Add(ownerID string, content template.HTML) string {
 	return "" // Return empty string for template use
 }
 
-// Render outputs all collected portals as HTML.
-// Each portal is wrapped in a div with bf-pi (portal ID) and bf-po (portal owner).
+// AddElement registers an already-rendered element to be output at body end
+// UNWRAPPED — the `ref`-callback SSR-portal pattern's own element (#3119),
+// not an explicit `<Portal>` component's arbitrary `children`. Unlike Add,
+// which wraps content in its own `bf-pi`/`bf-po` container div (needed
+// because Portal's children may not be a single element), `content` here
+// is the ONE element the go-template adapter already rendered with
+// `bf-po` set directly on its own tag — matching exactly what the client
+// `createPortal(el, document.body, { ownerScope })` stamps onto the SAME
+// element at hydrate time, so wrapping it in another div would diverge
+// from that. Mirrors the Hono reference adapter's `collectSsrPortalElement`
+// (`packages/adapter-hono/src/portals.tsx`).
+// Nil-receiver-safe (a no-op) like Add/Render — see Add's docstring.
+func (pc *PortalCollector) AddElement(content template.HTML) string {
+	if pc == nil {
+		return ""
+	}
+	pc.elements = append(pc.elements, content)
+	return "" // Return empty string for template use
+}
+
+// Render outputs all collected portal content as HTML: explicit `<Portal>`
+// content first, each wrapped in a div with bf-pi (portal ID) and bf-po
+// (portal owner), followed by `ref`-callback SSR-portal elements (#3119),
+// each already carrying its own `bf-po` and emitted unwrapped (see
+// AddElement). Order between the two groups is arbitrary — hydration
+// matches by (bf-h, bf-m) / bf-po, not document position.
 func (pc *PortalCollector) Render() template.HTML {
-	if pc == nil || len(pc.portals) == 0 {
+	if pc == nil || (len(pc.portals) == 0 && len(pc.elements) == 0) {
 		return ""
 	}
 	var buf strings.Builder
@@ -3261,6 +3293,10 @@ func (pc *PortalCollector) Render() template.HTML {
 		buf.WriteString(`">`)
 		buf.WriteString(string(p.Content))
 		buf.WriteString("</div>\n")
+	}
+	for _, e := range pc.elements {
+		buf.WriteString(string(e))
+		buf.WriteString("\n")
 	}
 	return template.HTML(buf.String())
 }
@@ -3467,14 +3503,15 @@ func renderTemplateErrorPanel(componentName string, err error) string {
 func (r *Renderer) renderComponentInto(opts RenderOptions, scriptCollector *ScriptCollector, portalCollector *PortalCollector) template.HTML {
 	// Inject the shared collectors into the props.
 	setScriptsField(opts.Props, scriptCollector)
-	setPortalsField(opts.Props, portalCollector)
+	// Portals propagate RECURSIVELY (PropagatePortals), not just to direct
+	// children like Scripts below — see that function's docstring (#3119).
+	PropagatePortals(opts.Props, portalCollector)
 
 	// Auto-detect and process child component props (slices)
 	childSlices := findChildComponentSlices(opts.Props)
 	for _, slice := range childSlices {
 		setScopeIDsOnSlice(slice)
 		setScriptsOnSlice(slice, scriptCollector)
-		setPortalsOnSlice(slice, portalCollector)
 		setBoolOnSlice(slice, "BfIsChild", true)
 	}
 
@@ -3483,7 +3520,6 @@ func (r *Renderer) renderComponentInto(opts RenderOptions, scriptCollector *Scri
 	for _, child := range singleChildren {
 		setScopeIDOnSingle(child)
 		setScriptsOnSingle(child, scriptCollector)
-		setPortalsOnSingle(child, portalCollector)
 		setBoolField(child, "BfIsChild", true)
 	}
 
@@ -3597,6 +3633,64 @@ func setPortalsField(v interface{}, collector *PortalCollector) {
 	field := val.FieldByName("Portals")
 	if field.IsValid() && field.CanSet() {
 		field.Set(reflect.ValueOf(collector))
+	}
+}
+
+// PropagatePortals sets the shared collector on props, THEN RECURSES into
+// every nested "use client" child component — both single struct fields
+// and slice fields — so the SAME collector reaches a child ANY number of
+// component boundaries deep from the page root, not just a direct child
+// (#3119).
+//
+// This differs from Scripts' propagation (setScriptsField/
+// setScriptsOnSlice/setScriptsOnSingle in renderComponentInto below),
+// which stays genuinely one-level-deep — that mismatch is deliberate, not
+// an oversight left for later: Scripts propagation was already exercised
+// (every "use client" component registers its OWN .client.js, and a
+// one-level-nested demo already worked), so widening it is a separate,
+// unverified change with its own snapshot-risk. Portals had NO verified
+// callers at any depth before #3119 (the Portals struct field didn't
+// even exist on any generated Props type — see emitPropsStructHeader,
+// go-template-adapter.ts), so there is no existing one-level-only
+// behavior to preserve: going straight to the depth the ACTUAL portal
+// primitives need is correct, not scope creep. The primitives this
+// pattern serves (DialogOverlay/DialogContent, DropdownMenuContent,
+// PopoverContent, …) are themselves nested inside an outer "use client"
+// boundary the page's own component renders (Dialog/DropdownMenu/
+// Popover) — two "use client" boundaries from the page root, not one —
+// so one-level propagation would leave every real-world portal-owning
+// element with a nil Portals field, silently collecting nothing (both
+// Add and AddElement are nil-receiver-safe, so this fails quiet, not
+// loud, without this fix).
+//
+// Exported (capital P) — `renderComponentInto` (below) is the normal
+// production caller via Render/RenderFragment, but it's UNEXPORTED, so a
+// harness that drives `template.Execute`/`ExecuteTemplate` directly
+// instead of going through `Renderer` (e.g. the adapter-tests conformance
+// harness's generated `main.go`, `test-render.ts`) has no other way to
+// wire live portal collection before executing. `props` must be a
+// pointer (`&props`) for the reflection-based field writes to reach the
+// SAME struct value the caller then hands to `Execute`.
+func PropagatePortals(props interface{}, collector *PortalCollector) {
+	setPortalsField(props, collector)
+	for _, slice := range findChildComponentSlices(props) {
+		val := reflect.ValueOf(slice)
+		for i := 0; i < val.Len(); i++ {
+			item := val.Index(i)
+			if item.Kind() != reflect.Ptr {
+				item = item.Addr()
+			}
+			PropagatePortals(item.Interface(), collector)
+		}
+	}
+	// findSingleChildComponents already returns an addressable *ChildProps
+	// pointer (field.Addr().Interface()) for each match, so recursing
+	// directly on it — rather than going through the now-redundant
+	// setPortalsOnSingle — both sets ITS Portals field and, via the
+	// recursive call, keeps walking into whatever child components IT
+	// renders.
+	for _, child := range findSingleChildComponents(props) {
+		PropagatePortals(child, collector)
 	}
 }
 
@@ -3806,25 +3900,11 @@ func setBoolOnSlice(slice interface{}, fieldName string, val bool) {
 	}
 }
 
-// setPortalsOnSlice sets Portals on all items in a slice.
-func setPortalsOnSlice(slice interface{}, collector *PortalCollector) {
-	val := reflect.ValueOf(slice)
-	if val.Kind() != reflect.Slice {
-		return
-	}
-	for i := 0; i < val.Len(); i++ {
-		item := val.Index(i)
-		if item.Kind() == reflect.Ptr {
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Struct {
-			field := item.FieldByName("Portals")
-			if field.IsValid() && field.CanSet() {
-				field.Set(reflect.ValueOf(collector))
-			}
-		}
-	}
-}
+// Portals' slice/single propagation is `PropagatePortals` (recursive,
+// see its docstring next to `setPortalsField` above) — no
+// `setPortalsOnSlice`/`setPortalsOnSingle` twins here; Scripts keeps its
+// own one-level-only setScriptsOnSlice/setScriptsOnSingle below
+// unchanged (#3119 deliberately doesn't touch Scripts' depth).
 
 // findSingleChildComponents finds single struct fields containing child component props.
 // Child props are identified by having ScopeID and Scripts fields.
@@ -3874,20 +3954,6 @@ func setScriptsOnSingle(child interface{}, collector *ScriptCollector) {
 	}
 	if val.Kind() == reflect.Struct {
 		field := val.FieldByName("Scripts")
-		if field.IsValid() && field.CanSet() {
-			field.Set(reflect.ValueOf(collector))
-		}
-	}
-}
-
-// setPortalsOnSingle sets Portals on a single struct child component.
-func setPortalsOnSingle(child interface{}, collector *PortalCollector) {
-	val := reflect.ValueOf(child)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if val.Kind() == reflect.Struct {
-		field := val.FieldByName("Portals")
 		if field.IsValid() && field.CanSet() {
 			field.Set(reflect.ValueOf(collector))
 		}

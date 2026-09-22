@@ -42,6 +42,7 @@ type AIChatInteractiveProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Messages []Message `json:"-"`
 	Input string `json:"-"`
@@ -68,6 +69,7 @@ type BodyLiveChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -92,6 +94,7 @@ type BodyDestructuredPropsLiveProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Count int `json:"-"`
 	Picked int `json:"-"`
@@ -115,6 +118,7 @@ type CheckboxNativeProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Subscribed bool `json:"-"`
 }
@@ -136,6 +140,7 @@ type ConditionalReturnProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Variant string `json:"variant"`
 	Count int `json:"-"`
@@ -158,6 +163,7 @@ type CounterProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Initial int `json:"initial"`
 	Count int `json:"-"`
@@ -183,6 +189,7 @@ type LiveChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -207,6 +214,7 @@ type DestructuredPropsLiveProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Count int `json:"-"`
 	Picked int `json:"-"`
@@ -230,6 +238,7 @@ type DetailsFaqProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Open bool `json:"-"`
 }
@@ -250,6 +259,7 @@ type FormProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Accepted bool `json:"-"`
 }
@@ -278,6 +288,7 @@ type NestedCondToggleListProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Items []ToggleItem `json:"items"`
 }
@@ -298,6 +309,7 @@ type NoteBoxNativeProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Note string `json:"-"`
 }
@@ -318,6 +330,7 @@ type PortalExampleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Open bool `json:"-"`
 }
@@ -341,6 +354,7 @@ type ReactiveChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -363,6 +377,7 @@ type ReactivePropsProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Count int `json:"-"`
 	Doubled int `json:"-"`
@@ -388,6 +403,7 @@ type PropsStyleChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -412,6 +428,7 @@ type DestructuredStyleChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -434,6 +451,7 @@ type PropsReactivityComparisonProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Count int `json:"-"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
@@ -462,6 +480,7 @@ type SelectNativeProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Fruits []Fruit `json:"-"`
 	Picked string `json:"-"`
@@ -484,6 +503,7 @@ type TextEscapeProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Label string `json:"label"`
 	Count int `json:"-"`
@@ -524,6 +544,7 @@ type TodoAppProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
 	Todos []Todo `json:"-"`
@@ -556,6 +577,7 @@ type TodoAppSSRProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
 	Todos []Todo `json:"-"`
@@ -585,6 +607,7 @@ type TodoItemProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Todo Todo `json:"todo"`
 	OnToggle interface{} `json:"onToggle"`
@@ -611,6 +634,7 @@ type ToggleItemProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Label string `json:"label"`
 	DefaultOn bool `json:"defaultOn"`
@@ -634,6 +658,7 @@ type ToggleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	ToggleItems []ToggleItemProps `json:"toggleItems"`
 }
@@ -654,6 +679,7 @@ type LikeButtonProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Likes int `json:"-"`
 }
@@ -674,6 +700,7 @@ type NowPlayingProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Playing bool `json:"-"`
 	Elapsed int `json:"-"`
@@ -696,6 +723,7 @@ type PageShellProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Children interface{} `json:"-"`
 	ReaderToolbarSlot0 ReaderToolbarProps `json:"-"`
@@ -729,6 +757,7 @@ type PostArticleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Slug string `json:"slug"`
 	Title string `json:"title"`
@@ -779,6 +808,7 @@ type PostListProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	SearchParams bf.SearchParams `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Items []Item `json:"items"`
@@ -810,6 +840,7 @@ type PostListItemProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Href string `json:"href"`
 	Title string `json:"title"`
@@ -834,6 +865,7 @@ type ReaderToolbarProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Level int `json:"-"`
 }
@@ -854,6 +886,7 @@ type ReadingTimerProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Secs int `json:"-"`
 }
@@ -874,6 +907,7 @@ type SidebarProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Pins int `json:"-"`
 }
@@ -894,6 +928,7 @@ type ThemeToggleProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
+	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Light bool `json:"-"`
 }
