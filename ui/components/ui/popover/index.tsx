@@ -41,6 +41,7 @@
 import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { clampPopoverPosition } from './clamp-position'
 
 // Context for parent-child state sharing
 interface PopoverContextValue {
@@ -241,25 +242,16 @@ function PopoverContent(props: PopoverContentProps) {
       const rect = positionEl.getBoundingClientRect()
       const align = props.align ?? 'center'
       const side = props.side ?? 'bottom'
-      const gap = 4
 
-      if (side === 'bottom') {
-        const maxTop = window.innerHeight - el.offsetHeight - gap
-        el.style.top = `${Math.max(gap, Math.min(rect.bottom + gap, maxTop))}px`
-      } else {
-        el.style.top = `${Math.max(gap, rect.top - el.offsetHeight - gap)}px`
-      }
-
-      const maxLeft = window.innerWidth - el.offsetWidth - gap
-      if (align === 'start') {
-        el.style.left = `${Math.max(gap, Math.min(rect.left, maxLeft))}px`
-      } else if (align === 'end') {
-        el.style.left = `${Math.max(gap, Math.min(rect.right - el.offsetWidth, maxLeft))}px`
-      } else {
-        // center
-        const left = rect.left + rect.width / 2 - el.offsetWidth / 2
-        el.style.left = `${Math.max(gap, Math.min(left, maxLeft))}px`
-      }
+      const { top, left } = clampPopoverPosition(
+        rect,
+        { width: el.offsetWidth, height: el.offsetHeight },
+        { width: window.innerWidth, height: window.innerHeight },
+        side,
+        align,
+      )
+      el.style.top = `${top}px`
+      el.style.left = `${left}px`
     }
 
     // Track cleanup functions for global listeners

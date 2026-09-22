@@ -3,6 +3,7 @@ import { serializeHydrationProps } from '@barefootjs/hono/utils'
 import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition, provideContextSSR } from '@barefootjs/hono/client-shim'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { clampPopoverPosition } from './clamp-position'
 
 interface PopoverContextValue {
   open: () => boolean
