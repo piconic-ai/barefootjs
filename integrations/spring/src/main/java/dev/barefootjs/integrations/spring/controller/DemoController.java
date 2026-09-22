@@ -98,7 +98,8 @@ public class DemoController {
           .title(title)
           .heading(heading)
           .body(rendered.body())
-          .scripts(rendered.scripts())));
+          .scripts(rendered.scripts())
+          .portals(rendered.portals())));
     } catch (IOException e) {
       return Layout.renderError(e);
     }

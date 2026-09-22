@@ -64,6 +64,7 @@ public class AiChatController {
           .heading("AI Chat -- SSE Streaming")
           .body(rendered.body())
           .scripts(rendered.scripts())
+          .portals(rendered.portals())
           .extraCss(extraCss)));
     } catch (IOException e) {
       return Layout.renderError(e);

@@ -121,11 +121,16 @@ public final class Main {
     if (rawSearchParams instanceof String) {
       context.put("searchParams", new SearchParams((String) rawSearchParams));
     }
-    context.put("bf", new Bf(scopeId, engine, manifest));
+    Bf bf = new Bf(scopeId, engine, manifest);
+    context.put("bf", bf);
 
     StringWriter writer = new StringWriter();
     template.evaluate(writer, context);
-    return writer.toString();
+    // Mirrors where a real host's own layout places the SSR-portal outlet
+    // (see `integrations/spring`'s `Layout.render`, `opts.portals`) — after
+    // the component's own output (#3119). Collected but never emitted
+    // otherwise, since this single-component CLI renders no layout at all.
+    return writer.toString() + bf.portals();
   }
 
 }

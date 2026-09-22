@@ -2157,12 +2157,6 @@
             "ref-callback-portal-content-inline-at-ssr"
           ]
         },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -2172,12 +2166,6 @@
       },
       "dropdown-menu": {
         "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "ref-callback-portal-content-inline-at-ssr"
@@ -4123,12 +4111,6 @@
             "ref-callback-portal-content-inline-at-ssr"
           ]
         },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -4138,12 +4120,6 @@
       },
       "portal": {
         "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "ref-callback-portal-content-inline-at-ssr"
@@ -5832,7 +5808,6 @@
       ],
       "adapters": [
         "minijinja",
-        "pebble",
         "twig"
       ]
     },
