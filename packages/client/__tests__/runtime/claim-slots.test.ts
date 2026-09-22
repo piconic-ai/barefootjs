@@ -511,6 +511,71 @@ describe('comment-scope proxy claim root (#1665 whole-item loop conditionals)', 
   })
 })
 
+describe('component-root child claim root (#3122)', () => {
+  // A "root is a single child-component call" comment-scoped component
+  // (#2649) mounts its child directly on the SAME element the walker
+  // registers as the ancestor's comment-scope proxy (`ownScopeId`'s
+  // docstring, scope.ts) — so that one element is BOTH registered in
+  // `commentScopeRegistry` under the ANCESTOR's scope id AND carries its
+  // OWN, different `bf-s` (the child's real scope). The child's own
+  // `lazySlots`/`claimSlots` calls with `root` = that element, and must
+  // still find markers nested inside its own subtree — the registry entry
+  // describes an ancestor relationship, not this claim.
+  function mountComponentRootChild(childHtml: string): { child: Element; container: Element } {
+    const container = document.createElement('div')
+    const anchor = document.createComment('scope:Outer_abc')
+    const endAnchor = document.createComment('/scope:Outer_abc')
+    container.appendChild(anchor)
+    const child = document.createElement('div')
+    child.setAttribute('bf-s', 'Outer_abc_s0')
+    child.innerHTML = childHtml
+    container.appendChild(child)
+    container.appendChild(endAnchor)
+    commentScopeRegistry.set(child, { commentNode: anchor, scopeId: 'Outer_abc' })
+    return { child, container }
+  }
+
+  test('markup kind resolves a marker nested under the dual-purpose root without warning', () => {
+    const { child } = mountComponentRootChild('<p aria-label="label"><!--bf:s0--><!--/--></p>')
+    const plan: SlotSpec[] = [{ id: 's0', kind: 'markup', path: [] }]
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(child, plan)
+      claimed.write('s0', 'loaded')
+    })
+
+    expect(warnings).toEqual([])
+    expect(child.innerHTML).toBe('<p aria-label="label"><!--bf:s0-->loaded<!--/--></p>')
+  })
+
+  test('text kind resolves a marker nested under the dual-purpose root without warning', () => {
+    const { child } = mountComponentRootChild('<p aria-label="label"><!--bf:s0-->hi<!--/--></p>')
+    const plan: SlotSpec[] = [{ id: 's0', kind: 'text', path: [] }]
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(child, plan)
+      claimed.write('s0', 'loaded')
+    })
+
+    expect(warnings).toEqual([])
+    expect(child.innerHTML).toBe('<p aria-label="label"><!--bf:s0-->loaded<!--/--></p>')
+  })
+
+  test('still rejects a same-id marker owned by a further-nested child component', () => {
+    const { child } = mountComponentRootChild(
+      '<section bf-s="Badge_x1"><!--bf:s0-->nested<!--/--></section><!--bf:s0-->own<!--/-->',
+    )
+    const plan: SlotSpec[] = [{ id: 's0', kind: 'text', path: [] }]
+
+    const claimed = claimSlots(child, plan)
+    claimed.write('s0', 'patched')
+
+    expect(child.innerHTML).toBe(
+      '<section bf-s="Badge_x1"><!--bf:s0-->nested<!--/--></section><!--bf:s0-->patched<!--/-->',
+    )
+  })
+})
+
 describe('path-miss fallback', () => {
   test('an empty path (no compile-time path available) falls back silently, without warning', () => {
     const root = mount('<div><!--bf:s9b-->hello<!--/--></div>')

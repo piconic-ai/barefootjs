@@ -255,7 +255,19 @@ function isSlotComment(node: Node | null, id: string): node is Comment {
  * `root`'s (empty) descendants. The ownership boundary adapts to match:
  * every node in a comment-scope's range shares the registered comment's
  * OWN parent element, so that (not the unreachable proxy `root`) is where
- * the ancestor walk must stop.
+ * the ancestor walk must stop — UNLESS `root` itself carries a real `bf-s`
+ * (#3122): a "root is a single child-component call" proxy (#2649) is
+ * registered under its ANCESTOR's comment scope for `ownScopeId` to resolve
+ * (`scope.ts`'s docstring), but that SAME element is also the claiming
+ * child's own genuine scope root — its `bf-s` names the child, not the
+ * ancestor. Walking all the way out to the ancestor comment's parent then
+ * crosses back UP INTO `root`'s own `bf-s` attribute on the way from a
+ * marker `root` legitimately owns, rejecting it as "nested". A pure
+ * fragment-root proxy never has this problem (it carries no `bf-s` of its
+ * own by construction, see `isCommentScopedRoot`'s docstring), so checking
+ * for one here only ever narrows the boundary for the dual-purpose shape,
+ * never for the sibling-spanning case this docstring's first paragraph
+ * describes.
  *
  * Parent-owned slots (`^`-prefixed id, `BF_PARENT_OWNED_PREFIX`) skip the
  * ownership walk entirely — same carve-out as `query.ts`'s `$()` and its
@@ -274,7 +286,7 @@ function findOwnedMarker(root: Element, id: string): Comment | null {
   const marker = `bf:${id}`
   const parentOwned = id.startsWith(BF_PARENT_OWNED_PREFIX)
   const registryInfo = commentScopeRegistry.get(root)
-  const boundary = registryInfo ? registryInfo.commentNode.parentElement : root
+  const boundary = registryInfo && !root.hasAttribute(BF_SCOPE) ? registryInfo.commentNode.parentElement : root
   for (const comment of commentsInScope(root)) {
     if (comment.nodeValue !== marker) continue
     if (parentOwned) return comment
