@@ -37,6 +37,7 @@
 
 import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
 import { trackPosition } from '../../../lib/track-position'
+import { clampNavigationMenuPosition } from '../../../lib/clamp-navigation-menu-position'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { ChevronDownIcon } from '../icon'
@@ -367,8 +368,14 @@ function NavigationMenuContent(props: NavigationMenuContentProps) {
     const updatePosition = () => {
       if (!triggerEl) return
       const rect = triggerEl.getBoundingClientRect()
-      el.style.top = `${rect.bottom + 8}px`
-      el.style.left = `${rect.left}px`
+
+      const { top, left } = clampNavigationMenuPosition(
+        rect,
+        { width: el.offsetWidth, height: el.offsetHeight },
+        { width: window.innerWidth, height: window.innerHeight },
+      )
+      el.style.top = `${top}px`
+      el.style.left = `${left}px`
     }
 
     let cleanupFns: Function[] = []

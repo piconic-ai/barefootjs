@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { renderToTest } from '@barefootjs/test'
+import { clampNavigationMenuPosition } from '../../../lib/clamp-navigation-menu-position'
 
 const source = readFileSync(resolve(__dirname, 'index.tsx'), 'utf-8')
 
@@ -206,6 +207,50 @@ describe('NavigationMenuContent', () => {
   test('toStructure() shows content with data-state', () => {
     const structure = result.toStructure()
     expect(structure).toContain('[data-state]')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// clampNavigationMenuPosition (viewport-edge clamp math, #3117)
+// ---------------------------------------------------------------------------
+
+describe('clampNavigationMenuPosition', () => {
+  const viewport = { width: 1024, height: 768 }
+  const gap = 8
+
+  test('normal case: content flush with the trigger’s left edge, below it', () => {
+    const rect = { bottom: 130, left: 200 }
+    const { top, left } = clampNavigationMenuPosition(rect, { width: 200, height: 80 }, viewport)
+    expect(top).toBe(138) // rect.bottom + gap
+    expect(left).toBe(200) // rect.left
+  })
+
+  // The off-screen bug #3117 fixes (Popover's version was fixed in #3100):
+  // a trigger near the viewport's bottom edge with tall content used to
+  // render partly below `innerHeight`, off-screen and unreachable (a
+  // `position: fixed` overlay doesn't scroll into view).
+  test('a trigger near the viewport bottom clamps content to stay fully visible', () => {
+    const rect = { bottom: 730, left: 400 }
+    const contentSize = { width: 300, height: 400 } // taller than the remaining viewport space
+    const { top } = clampNavigationMenuPosition(rect, contentSize, viewport)
+    expect(top).toBe(viewport.height - contentSize.height - gap) // clamped, not rect.bottom + gap (738, off-screen)
+    expect(top + contentSize.height).toBeLessThanOrEqual(viewport.height)
+  })
+
+  test('a trigger near the viewport right edge clamps left to stay on-screen', () => {
+    const rect = { bottom: 130, left: 950 }
+    const contentSize = { width: 200, height: 80 }
+    const { left } = clampNavigationMenuPosition(rect, contentSize, viewport)
+    expect(left).toBe(viewport.width - contentSize.width - gap) // clamped, not rect.left (950, would overflow)
+    expect(left + contentSize.width).toBeLessThanOrEqual(viewport.width)
+  })
+
+  test('content larger than the viewport still clamps to the gap floor on both axes (no negative overflow)', () => {
+    const rect = { bottom: 130, left: 100 }
+    const contentSize = { width: viewport.width + 500, height: viewport.height + 500 }
+    const { top, left } = clampNavigationMenuPosition(rect, contentSize, viewport)
+    expect(top).toBe(gap)
+    expect(left).toBe(gap)
   })
 })
 
