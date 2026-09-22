@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { renderToTest } from '@barefootjs/test'
-import { clampPopoverPosition } from './clamp-position'
+import { clampPopoverPosition } from '../../../lib/clamp-position'
 
 const popoverSource = readFileSync(resolve(__dirname, 'index.tsx'), 'utf-8')
 
