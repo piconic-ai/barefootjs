@@ -324,6 +324,16 @@ function new_script_collector(BarefootJS $bf): void
     // docblock in BarefootJS.php.
     $bf->_preloads(new \ArrayObject());
     $bf->_preload_seen(new \ArrayObject());
+    // Same reasoning again for the ref-callback SSR-portal element
+    // collector (#3119) -- see `register_portal_element`'s docblock in
+    // BarefootJS.php. Without this, the FIRST `_portal_elements()` access
+    // anywhere in the tree lazily creates a plain PHP array (a value, not
+    // a reference) via BarefootJS::__call's default, and every later
+    // `register_portal_element()` call mutates its own component's copy
+    // instead of the page's shared list -- so a Dialog/Popover/etc.
+    // nested inside another "use client" island would silently never
+    // reach the root's `portals()` output.
+    $bf->_portal_elements(new \ArrayObject());
 }
 
 function share_script_collector(BarefootJS $from, BarefootJS $to): void
@@ -332,6 +342,7 @@ function share_script_collector(BarefootJS $from, BarefootJS $to): void
     $to->_script_seen($from->_script_seen());
     $to->_preloads($from->_preloads());
     $to->_preload_seen($from->_preload_seen());
+    $to->_portal_elements($from->_portal_elements());
 }
 
 function render_component(
@@ -383,12 +394,13 @@ function render_component(
         heading: $heading,
         body: $body,
         scripts: $bf->scripts(),
+        portals: $bf->portals(),
         extraCss: $extraCss,
         back: $back,
     );
 }
 
-function layout(string $title, string $heading, string $body, string $scripts, string $extraCss = '', ?string $back = null): string
+function layout(string $title, string $heading, string $body, string $scripts, string $portals = '', string $extraCss = '', ?string $back = null): string
 {
     global $BASE;
     $headingHtml = $heading !== '' ? "<h1>{$heading}</h1>" : '';
@@ -427,6 +439,7 @@ function layout(string $title, string $heading, string $body, string $scripts, s
     {$headingHtml}
     <div id="app">{$body}</div>
     {$backHtml}
+    {$portals}
     {$scripts}
 </body>
 </html>
@@ -621,6 +634,7 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
         ['reader_toolbar' => 'ReaderToolbar'],
     );
     $scripts = $root->scripts();
+    $portals = $root->portals();
     $routerEntry = $ASSETS['RouterEntry'] ?? '';
     $escTitle = htmlspecialchars($title, ENT_QUOTES);
     return <<<HTML
@@ -641,6 +655,7 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
 <aside bf-region="nav:0">{$sidebar}</aside>
 <main>{$shell}</main>
 </div>
+{$portals}
 {$scripts}
 <script type="module" src="{$routerEntry}"></script>
 </body>

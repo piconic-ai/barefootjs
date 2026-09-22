@@ -97,7 +97,8 @@ final class BarefootJS
      * collection-typed attrs); calling with one positional arg writes and
      * returns `$this` for chaining. Covers `_scope_id`, `_bf_parent`,
      * `_bf_mount`, `_props`, `_data_key`, `_is_child`, `_scripts`,
-     * `_script_seen`, `_preloads`, `_preload_seen`, `_child_renderers` --
+     * `_script_seen`, `_preloads`, `_preload_seen`, `_child_renderers`,
+     * `_portal_elements` --
      * the internal state generated render scripts and the test harness
      * poke directly (e.g.
      * `$bf->_scope_id('Widget_test')`), mirroring the Python port's
@@ -122,7 +123,7 @@ final class BarefootJS
         if (
             $name === '_scripts' || $name === '_script_seen'
             || $name === '_preloads' || $name === '_preload_seen'
-            || $name === '_child_renderers'
+            || $name === '_child_renderers' || $name === '_portal_elements'
         ) {
             if ($args) {
                 $this->attrs[$name] = $args[0];
@@ -391,6 +392,57 @@ final class BarefootJS
     }
 
     // -----------------------------------------------------------------
+    // SSR Portal Collection (#3119)
+    // -----------------------------------------------------------------
+
+    /**
+     * Register an already-rendered element (with `bf-po` stamped directly
+     * on its own tag, matching what the client `createPortal(el,
+     * document.body, { ownerScope })` stamps onto the SAME element at
+     * hydrate time -- see `packages/client/src/runtime/portal.ts`) to be
+     * output at the `bf.portals()` outlet instead of its original inline
+     * position -- the compiler's `ref`-callback SSR-portal pattern
+     * (`ssrPortalOwnerScope`, `isSsrPortalRefCallback` in `@barefootjs/jsx`),
+     * the overlay/content pattern the dialog-style primitives use. Mirrors
+     * `register_script`'s shared-by-reference-collector reliance (see that
+     * method's docblock, and the host's `new_script_collector` /
+     * `share_script_collector` in e.g. `integrations/php/index.php`) --
+     * `_portal_elements` needs the SAME `ArrayObject` treatment the host
+     * seeds for `_scripts` for cross-component propagation to actually
+     * reach the root's `portals()` output.
+     *
+     * No dedup (unlike `register_script`): each call renders a distinct
+     * element instance, never the same URL registered twice. Called from
+     * the compiled template as `{{ $bf->register_portal_element(...) }}` /
+     * `@php($bf->register_portal_element(...))` and always returns `''` so
+     * it is safe wherever the caller echoes its result.
+     */
+    public function register_portal_element(string $html): string
+    {
+        $elements = $this->_portal_elements();
+        $elements[] = $html;
+        $this->_portal_elements($elements);
+        return '';
+    }
+
+    /**
+     * Renders every collected `ref`-callback SSR-portal element (#3119),
+     * UNWRAPPED, in registration order. Place this near `</body>` in the
+     * page's own layout -- mirrors the Hono reference adapter's
+     * `<BfPortals />` (`packages/adapter-hono/src/portals.tsx`) and the
+     * Go adapter's `{{.Portals.Render}}` (`packages/adapter-go-template/
+     * runtime/bf.go`).
+     */
+    public function portals(): string
+    {
+        $out = [];
+        foreach ($this->_portal_elements() as $html) {
+            $out[] = $html;
+        }
+        return implode("\n", $out);
+    }
+
+    // -----------------------------------------------------------------
     // Child Component Rendering
     // -----------------------------------------------------------------
 
@@ -525,6 +577,12 @@ final class BarefootJS
                 $childBf->_script_seen($parent->_script_seen());
                 $childBf->_preloads($parent->_preloads());
                 $childBf->_preload_seen($parent->_preload_seen());
+                // (#3119) Same reference-sharing reasoning as scripts/preloads
+                // above -- a portal-owning element nested several "use client"
+                // boundaries deep (DialogContent inside Dialog inside the
+                // page's own component) must reach the SAME collector the
+                // root's `portals()` reads.
+                $childBf->_portal_elements($parent->_portal_elements());
 
                 $extra = [];
                 if ($signalInit !== null) {

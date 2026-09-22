@@ -299,7 +299,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { BladeRenderCtx } from './lib/types.ts'
 import { BLADE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -758,17 +758,54 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
+    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
+    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) -- the overlay/content
+    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
+    // this element's own tag, matching exactly what the client
+    // `createPortal(el, document.body, { ownerScope })` stamps onto the
+    // SAME element at hydrate time (`packages/client/src/runtime/
+    // portal.ts`) -- mirrors the Hono/Go reference adapters' identical
+    // `BF_PORTAL_OWNER` stamp. `$bf->scope_attr()` is this element's OWN
+    // component instance's scope id, exactly what `renderScopeMarker`
+    // stamps as `bf-s` above.
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{!! e($bf->scope_attr()) !!}"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
       'link', 'meta', 'param', 'source', 'track', 'wbr',
     ]
 
-    if (voidElements.includes(tag.toLowerCase())) {
-      return `<${tag}${attrs}${hydrationAttrs}>`
-    }
+    const rendered = voidElements.includes(tag.toLowerCase())
+      ? `<${tag}${attrs}${hydrationAttrs}>`
+      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+    if (element.ssrPortalOwnerScope) {
+      return this.wrapSsrPortalElement(rendered)
+    }
+    return rendered
+  }
+
+  /**
+   * Route an `ssrPortalOwnerScope`-flagged element's ALREADY-RENDERED
+   * markup (the `bf-po` attribute already stamped on its own tag) through
+   * `BarefootJS::register_portal_element` instead of returning it for
+   * inline placement (#3119), so it renders at the `{{ $bf->portals() }}`
+   * outlet an app's own layout places near `</body>` — mirrors the Go
+   * adapter's `wrapSsrPortalElement` (`go-template-adapter.ts`).
+   *
+   * Unlike Go's `html/template` (write-only `{{template}}` actions, hence
+   * the string-re-parse-as-template indirection there), Blade compiles
+   * directly to interleaved PHP + HTML: wrapping the rendered markup in
+   * `ob_start()` / `ob_get_clean()` captures whatever it echoes (including
+   * any `{{ }}`/`{!! !!}` interpolations it contains, already evaluated)
+   * as a plain string, with NOTHING reaching the page at this position —
+   * `register_portal_element` returns `''`, which nothing echoes since
+   * `@php(...)` (unlike `{{ }}`) never prints its expression's value.
+   */
+  private wrapSsrPortalElement(rendered: string): string {
+    return `@php(ob_start())\n${rendered}\n@php($bf->register_portal_element(ob_get_clean()))`
   }
 
   /**

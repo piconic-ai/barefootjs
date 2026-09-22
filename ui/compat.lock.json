@@ -2151,12 +2151,6 @@
         }
       },
       "dialog": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "erb": {
           "kind": "render",
           "limitations": [
@@ -2201,12 +2195,6 @@
         }
       },
       "dropdown-menu": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "erb": {
           "kind": "render",
           "limitations": [
@@ -4177,12 +4165,6 @@
         }
       },
       "popover": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "erb": {
           "kind": "render",
           "limitations": [
@@ -4227,12 +4209,6 @@
         }
       },
       "portal": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "erb": {
           "kind": "render",
           "limitations": [
@@ -5951,7 +5927,6 @@
         "portal"
       ],
       "adapters": [
-        "blade",
         "erb",
         "jinja",
         "minijinja",
