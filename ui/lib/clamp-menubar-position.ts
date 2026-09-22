@@ -7,9 +7,9 @@
  * `snapshot-generator.ts` inlines it into the compiled fixture bundle via
  * its `../../../lib/<name>` convention (`inlineUiLibImports`) instead of
  * leaving a same-directory sibling import that 404s in the
- * `fixture-hydrate`/`oracle` e2e harness (the failure mode
- * `ui/lib/clamp-position.ts`'s own header comment documents, measured on
- * Popover's #3100).
+ * `fixture-hydrate`/`oracle` e2e harness — the same failure mode
+ * Popover's own viewport-clamp fix hit and moved out of a
+ * same-directory sibling to avoid (#3100).
  *
  * Same `'start' | 'end'`-only alignment shape as `DropdownMenuContent`
  * (no `side`, no `'center'`) but with an 8px gap (Menubar's pre-fix
