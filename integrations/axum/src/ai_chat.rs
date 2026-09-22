@@ -39,6 +39,7 @@ pub async fn page_route(State(state): State<AppState>) -> Response {
                 heading: "AI Chat -- SSE Streaming".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css,
                 back: None,
             },

@@ -2151,12 +2151,6 @@
         }
       },
       "dialog": {
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -2165,12 +2159,6 @@
         }
       },
       "dropdown-menu": {
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -4105,12 +4093,6 @@
         }
       },
       "popover": {
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -4119,12 +4101,6 @@
         }
       },
       "portal": {
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "twig": {
           "kind": "render",
           "limitations": [
@@ -5807,7 +5783,6 @@
         "portal"
       ],
       "adapters": [
-        "minijinja",
         "twig"
       ]
     },

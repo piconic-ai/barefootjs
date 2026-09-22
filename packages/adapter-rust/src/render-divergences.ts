@@ -48,18 +48,12 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
-  // #3059: the compiler now recognizes the `ref`-callback SSR-portal
-  // pattern (`ssrPortalOwnerScope`) and the Hono reference adapter
-  // places the flagged element at its `<BfPortals />` outlet instead of
-  // rendering it inline — this adapter has no such outlet yet (a
-  // template-language-specific design the issue leaves open), so it
-  // still renders the element at its ORIGINAL inline position with no
-  // `bf-po`, diverging from the now-correct reference. See
-  // `ref-callback-portal-content-inline-at-ssr`.
-  dialog: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  'dropdown-menu': { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  popover: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  portal: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
+  // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
+  // tag and routes through `bf.register_portal_element`/`bf.portals()`
+  // instead of rendering inline — see `wrapSsrPortalElement`
+  // (`adapter/minijinja-adapter.ts`) and `register_portal_element`/
+  // `portals` (`runtime/src/runtime.rs`'s `RenderSession`/`BfInstance`).
   // `combobox` / `select` carry the SAME #3059 portal-position divergence
   // (their Content element is the same `ref`-callback SSR-portal pattern),
   // but the registry lists a fixture on exactly one entry and these two

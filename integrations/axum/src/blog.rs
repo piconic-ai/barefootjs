@@ -171,6 +171,12 @@ fn blog_page(state: &AppState, session: &std::sync::Arc<barefootjs::RenderSessio
     let sidebar = render_island(state, session, "Sidebar", empty_obj(), empty_obj())?;
     let (shell, _) = render_component_with_raw_children(state, session, "PageShell", empty_obj(), empty_obj(), content_html)?;
     let scripts = scripts_html(session);
+    // #3119: `session` is the shared render-tree anchor every island above
+    // renders against, so an `ssrPortalOwnerScope`-flagged element
+    // anywhere in that tree registers its markup with it rather than
+    // returning it inline -- flush it here or it would be silently
+    // dropped from the page instead of rendered.
+    let portals = session.portals();
     let router_entry = state.assets.get("RouterEntry").cloned().unwrap_or_default();
 
     Ok(format!(
@@ -191,6 +197,7 @@ fn blog_page(state: &AppState, session: &std::sync::Arc<barefootjs::RenderSessio
 <aside bf-region="nav:0">{sidebar}</aside>
 <main>{shell}</main>
 </div>
+{portals}
 {scripts}
 <script type="module" src="{router_entry}"></script>
 </body>
@@ -202,6 +209,7 @@ fn blog_page(state: &AppState, session: &std::sync::Arc<barefootjs::RenderSessio
         theme = theme,
         sidebar = sidebar,
         shell = shell,
+        portals = portals,
         scripts = scripts,
         router_entry = router_entry,
     ))

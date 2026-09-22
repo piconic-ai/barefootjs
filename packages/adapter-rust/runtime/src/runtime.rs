@@ -827,6 +827,17 @@ pub struct RenderSession {
     pub preload_seen: Mutex<HashSet<String>>,
     pub child_renderers: Mutex<HashMap<String, ChildRendererSpec>>,
     pub context_stacks: Mutex<HashMap<String, Vec<JsValue>>>,
+    /// SSR-portal elements (#3119) -- an `ssrPortalOwnerScope`-flagged
+    /// element's already-rendered markup, collected during render and
+    /// emitted at the [`BfInstance::portals`] outlet instead of at its
+    /// source position. Same "one `Mutex<Vec<String>>`, shared via the
+    /// session's `Arc`" shape as `scripts` above -- every `BfInstance`
+    /// clone in this render tree (root and every `render_child`
+    /// descendant, at any depth) holds the SAME `Arc`, so a portal-owning
+    /// element registered several levels deep is visible to the root's
+    /// `portals()` call with no separate propagation step needed, exactly
+    /// like `register_preload`'s docstring explains for `preloads`.
+    pub portal_elements: Mutex<Vec<String>>,
     rng_counter: Mutex<u64>,
 }
 
@@ -839,6 +850,7 @@ impl RenderSession {
             preload_seen: Mutex::new(HashSet::new()),
             child_renderers: Mutex::new(HashMap::new()),
             context_stacks: Mutex::new(HashMap::new()),
+            portal_elements: Mutex::new(Vec::new()),
             rng_counter: Mutex::new(0),
         })
     }
@@ -860,6 +872,17 @@ impl RenderSession {
     /// `integrations/flask/app.py`'s `f"{component}_{rand_suffix()}"`) --
     /// see `packages/adapter-rust/runtime/src/manifest.rs` and the axum
     /// integration's route handlers.
+    /// Read back the FULL accumulated SSR-portal element list for this
+    /// session (#3119) -- portal elements are session-level state (shared
+    /// by every island rendered against it, exactly like `scripts` above),
+    /// so this can be called directly on the `Arc<RenderSession>` a route
+    /// handler already holds, with no `BfInstance` needed (unlike
+    /// `scripts_html`'s `BfInstance::root(...).scripts()` workaround in
+    /// `render.rs`, added before this method existed).
+    pub fn portals(&self) -> String {
+        self.portal_elements.lock().unwrap().join("\n")
+    }
+
     pub fn next_rand_hex6(&self) -> String {
         let mut counter = self.rng_counter.lock().unwrap();
         *counter = counter.wrapping_add(0x9E37_79B9_7F4A_7C15);
@@ -1040,6 +1063,30 @@ impl BfInstance {
             .map(|p| format!("<script type=\"module\" src=\"{p}\"></script>"))
             .collect::<Vec<_>>();
         preload_tags.into_iter().chain(script_tags).collect::<Vec<_>>().join("\n")
+    }
+
+    /// Collects an `ssrPortalOwnerScope`-flagged element's already-
+    /// rendered, fully-evaluated markup so it can be emitted at
+    /// [`BfInstance::portals`]'s outlet near `</body>` instead of at its
+    /// source position (#3119). `content` already carries its own `bf-po`
+    /// attribute (stamped directly on its own tag by the compiler,
+    /// matching exactly what the client `createPortal(el, document.body,
+    /// { ownerScope })` stamps onto the SAME element at hydrate time), so
+    /// unlike a hypothetical "wrap arbitrary children" collector this
+    /// appends `content` UNWRAPPED -- no extra `bf-pi`/`bf-po` container
+    /// element, which would diverge from what the client stamps directly
+    /// onto the element itself.
+    fn register_portal_element(&self, content: &str) {
+        self.session.portal_elements.lock().unwrap().push(content.to_string());
+    }
+
+    /// Emits every collected SSR-portal element, in registration order.
+    /// Place `{{ bf.portals() | safe }}` once near `</body>` in the app's
+    /// own layout -- mirrors [`Self::scripts`] above (same "collect during
+    /// render, emit at a single outlet" shape) and the Hono reference
+    /// adapter's `<BfPortals />`.
+    pub fn portals(&self) -> String {
+        self.session.portals()
     }
 
     /// Renderer contract (#1897): invoked from a template as
@@ -1446,6 +1493,13 @@ impl Object for BfInstance {
                 Ok(MjValue::from(()))
             }
             "scripts" => Ok(safe(self.scripts())),
+
+            // -- SSR portal outlet (#3119) -----------------------------------
+            "register_portal_element" => {
+                self.register_portal_element(a(0).as_str().unwrap_or(""));
+                Ok(MjValue::from(()))
+            }
+            "portals" => Ok(safe(self.portals())),
 
             // -- Streaming SSR ----------------------------------------------
             "streaming_bootstrap" => Ok(safe(STREAMING_BOOTSTRAP.to_string())),
