@@ -229,14 +229,32 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
  * `bf-c=`/`cond-start:`-style marker, which surfaced this regex gap —
  * every adapter's own template output already emitted the marker
  * correctly, only this harness-side extractor missed the caret).
+ *
+ * The `bf="<id>"` attribute form ALSO accepts a backslash-escaped quote
+ * (`bf=\"<id>\"`), matching a marker that landed inside a target-language
+ * STRING LITERAL rather than in template markup proper (#3119: the
+ * go-template adapter's `ref`-callback SSR-portal pattern renders its
+ * flagged element to a string, escapes it for a Go double-quoted literal,
+ * and passes it to `.Portals.AddElement`/`bfPortalHTML` — the element's
+ * OWN `bf="<id>"` attribute, stamped before that escaping runs, rides
+ * along escaped). Go's string-literal unescaping happens once at
+ * `go build` time, so the COMPILED template's runtime output carries the
+ * unescaped marker exactly as if it had never been wrapped — verified
+ * against a real `go run` byte-for-byte match with the Hono reference for
+ * the `portal` fixture — only this harness's static-source regex, which
+ * inspects the generated Go text before compilation, needs to look
+ * through the escaping to find it. Same harness-side-extractor-gap shape
+ * as the `^`-caret fix above: the adapter's output was already correct.
  */
 export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   const out = emptySets()
   for (const m of template.matchAll(/\bbf="(\^?[\w-]+)"/g)) out.slots.add(m[1])
+  for (const m of template.matchAll(/\bbf=\\"(\^?[\w-]+)\\"/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/bfText\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/text_start\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/bfTextStart\s+"(\^?[\w-]+)"/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/\bbf-c="(\^?[\w-]+)"/g)) out.conds.add(m[1])
+  for (const m of template.matchAll(/\bbf-c=\\"(\^?[\w-]+)\\"/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/cond-start:(\^?[\w-]+)/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/(?:^|[^/])loop:(\^?[\w-]+)/g)) out.loops.add(m[1])
   for (const m of template.matchAll(/\/loop:(\^?[\w-]+)/g)) out.loopEnds.add(m[1])
