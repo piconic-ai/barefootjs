@@ -106,6 +106,13 @@ public class BlogController {
     Render.Rendered shellRendered = Render.renderComponentWithRawChildren(
         ctx, "PageShell", Render.emptyObj(), Render.emptyObj(), contentHtml, seed);
     String scripts = seed.scripts();
+    // #3119: an `ssrPortalOwnerScope`-flagged element anywhere in this page's
+    // shared render tree (`seed` — ThemeToggle/Sidebar/PageShell all share
+    // it) registers its markup with `seed` rather than returning it inline;
+    // without flushing it here that markup would be silently dropped from
+    // the page instead of rendered, the same outlet every other layout site
+    // (`Layout.render`) now wires in.
+    String portals = seed.portals();
     String routerEntry = ctx.assets.getOrDefault("RouterEntry", "");
 
     return "<!DOCTYPE html>\n"
@@ -125,6 +132,7 @@ public class BlogController {
         + "<aside bf-region=\"nav:0\">" + sidebar + "</aside>\n"
         + "<main>" + shellRendered.body() + "</main>\n"
         + "</div>\n"
+        + portals + "\n"
         + scripts + "\n"
         + "<script type=\"module\" src=\"" + routerEntry + "\"></script>\n"
         + "</body>\n"
