@@ -182,6 +182,13 @@ final class ExampleApp
         // docblock in BarefootJS.php.
         $bf->_preloads(new \ArrayObject());
         $bf->_preload_seen(new \ArrayObject());
+        // Same reasoning again for the ref-callback SSR-portal element
+        // collector (#3119) -- see `register_portal_element`'s docblock in
+        // BarefootJS.php and integrations/blade's new_script_collector (this
+        // is a verbatim port). Without this, a Dialog/Popover/Portal nested
+        // inside another "use client" island would register its markup onto
+        // a local array copy that never reaches the root's `portals()`.
+        $bf->_portal_elements(new \ArrayObject());
     }
 
     public static function shareScriptCollector(BarefootJS $from, BarefootJS $to): void
@@ -190,6 +197,7 @@ final class ExampleApp
         $to->_script_seen($from->_script_seen());
         $to->_preloads($from->_preloads());
         $to->_preload_seen($from->_preload_seen());
+        $to->_portal_elements($from->_portal_elements());
     }
 
     // -------------------------------------------------------------------
@@ -297,6 +305,7 @@ final class ExampleApp
             ['reader_toolbar' => 'ReaderToolbar'],
         );
         $scripts = $root->scripts();
+        $portals = $root->portals();
         $routerEntry = self::assets()['RouterEntry'] ?? '';
         $escTitle = htmlspecialchars($title, ENT_QUOTES);
         return <<<HTML
@@ -317,6 +326,7 @@ final class ExampleApp
 <aside bf-region="nav:0">{$sidebar}</aside>
 <main>{$shell}</main>
 </div>
+{$portals}
 {$scripts}
 <script type="module" src="{$routerEntry}"></script>
 </body>

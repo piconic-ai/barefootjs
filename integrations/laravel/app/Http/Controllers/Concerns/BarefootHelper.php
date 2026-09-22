@@ -89,12 +89,13 @@ trait BarefootHelper
             heading: $heading,
             body: $body,
             scripts: $bf->scripts(),
+            portals: $bf->portals(),
             extraCss: $extraCss,
             back: $back,
         );
     }
 
-    protected function layout(string $title, string $heading, string $body, string $scripts, string $extraCss = '', ?string $back = null): string
+    protected function layout(string $title, string $heading, string $body, string $scripts, string $portals = '', string $extraCss = '', ?string $back = null): string
     {
         $base = ExampleApp::base();
         $headingHtml = $heading !== '' ? "<h1>{$heading}</h1>" : '';
@@ -133,6 +134,7 @@ trait BarefootHelper
     {$headingHtml}
     <div id="app">{$body}</div>
     {$backHtml}
+    {$portals}
     {$scripts}
 </body>
 </html>
