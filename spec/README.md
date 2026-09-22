@@ -7,8 +7,8 @@ normative documents for contributors and adapter authors; user-facing docs live 
 - [`compiler.md`](./compiler.md) — the full pipeline architecture, IR schema, transformation
   rules, adapter interface, and error codes.
 - [`router.md`](./router.md) — the router and `<Region>` page-lifecycle boundary design.
-- [`async.md`](./async.md) — the async value model (`AsyncState`, `createQuery`,
-  `createAction`); design draft, not yet implemented.
+- [`async.md`](./async.md) — the async value model (`createQuery`, `createMutation`, the
+  `http` request descriptors); design draft, not yet implemented.
 - [`subset-conformance.md`](./subset-conformance.md) — the JSX/expression subset the compiler
   accepts, and the oracle-conformance policy that keeps adapters faithful to it.
 - [`testing.md`](./testing.md) — the testing specification: layers, APIs, and patterns.

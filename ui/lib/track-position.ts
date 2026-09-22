@@ -1,10 +1,14 @@
 /**
- * BarefootJS - Floating-element position tracking
+ * BarefootJS UI - Floating-element position tracking
  *
  * Keeps a `position: fixed` overlay (menu, popover, listbox, hover card)
  * anchored to its trigger for as long as it is open. Shared by every
- * site/ui overlay that positions itself from `getBoundingClientRect()`
- * so the decision below is made in one place (#2848).
+ * `ui/` overlay that positions itself from `getBoundingClientRect()` so
+ * the decision below is made in one place (#2848).
+ *
+ * Internal to `ui/` — not part of `@barefootjs/client`'s public runtime
+ * surface (moved out in #3090: this is floating-UI plumbing used only by
+ * `ui/` components, not a general-purpose reactive primitive).
  */
 
 /**

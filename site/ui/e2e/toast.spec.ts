@@ -28,8 +28,14 @@ test.describe('Toast Reference Page', () => {
       const toast = page.locator('[data-slot="toast"][data-state="visible"]').first()
       await expect(toast).toBeVisible()
 
-      // Get a stable reference that won't break when data-state changes
-      const toastBySlot = page.locator('[data-slot="toast"]').first()
+      // Get a stable reference that won't break when data-state changes.
+      // Scoped by `demo`'s own instance id, not `.first()` in document
+      // order: `ToastDefaultDemo` is rendered twice on this page (preview +
+      // docs example), and every Toast instance (including the Playground
+      // demo's own) shares one portal outlet, so an unscoped `.first()` can
+      // resolve to a different, not-yet-visible instance's toast.
+      const demoScopeId = await demo.getAttribute('bf-s')
+      const toastBySlot = page.locator(`[data-slot="toast"][bf-h="${demoScopeId}"]`)
       const closeButton = toastBySlot.locator('[data-slot="toast-close"]')
       await closeButton.click()
 
@@ -73,8 +79,9 @@ test.describe('Toast Reference Page', () => {
       const toast = page.locator('[data-slot="toast"][data-variant="error"][data-state="visible"]').first()
       await expect(toast).toBeVisible()
 
-      // Get stable reference before state changes
-      const toastBySlot = page.locator('[data-slot="toast"][data-variant="error"]').first()
+      // Get stable reference before state changes. Scoped by `bf-h` for the
+      // same reason as the Default Toast case above.
+      const toastBySlot = page.locator('[data-slot="toast"][data-variant="error"][bf-h^="ToastErrorDemo_"]')
       const actionButton = toastBySlot.locator('[data-slot="toast-action"]')
       await expect(actionButton).toContainText('Try again')
       await actionButton.click()
@@ -138,8 +145,11 @@ test.describe('Toast Reference Page', () => {
       const toast = page.locator('[data-slot="toast"][data-state="visible"]').first()
       await expect(toast).toBeVisible()
 
-      // Get stable reference before state changes
-      const toastBySlot = page.locator('[data-slot="toast"]').first()
+      // Get stable reference before state changes. Scoped by `demo`'s own
+      // instance id for the same reason as the Default Toast case above
+      // (`ToastDefaultDemo` is rendered twice on this page).
+      const demoScopeId = await demo.getAttribute('bf-s')
+      const toastBySlot = page.locator(`[data-slot="toast"][bf-h="${demoScopeId}"]`)
       const closeButton = toastBySlot.locator('[data-slot="toast-close"]')
       await closeButton.click()
 

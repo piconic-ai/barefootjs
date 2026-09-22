@@ -48,8 +48,13 @@ test.describe('Popover Reference Page', () => {
       const demo = page.locator('[bf-s^="PopoverPreviewDemo_"][bf-r]').first()
       const trigger = demo.locator('[data-slot="popover-trigger"]')
 
-      // Initially closed
-      const content = page.locator('[data-slot="popover-content"]').first()
+      // Initially closed. Scoped by `bf-h` (this instance's own host prefix),
+      // not `.first()` in document order: the portal-placed content of every
+      // Popover instance on this page (including the Playground demo's own)
+      // now shares one outlet, so document order no longer matches the
+      // page's visual section order — `.first()` picked a DIFFERENT
+      // instance's content once #3059 moved portal content into that outlet.
+      const content = page.locator('[data-slot="popover-content"][bf-h^="PopoverPreviewDemo_"]')
       await expect(content).toHaveAttribute('data-state', 'closed')
 
       // Open

@@ -29,6 +29,7 @@ for candidate in (HERE / "lib", HERE.parent.parent / "packages" / "adapter-jinja
         sys.path.insert(0, p)
 
 from flask import Blueprint, Flask, Response, jsonify, redirect, request, send_from_directory, stream_with_context
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from barefootjs import BarefootJS
 from barefootjs.backend_jinja import JinjaBackend
@@ -43,6 +44,15 @@ PORT = int(os.environ.get("PORT", "3008"))
 DEV = os.environ.get("FLASK_ENV", "development") != "production"
 
 app = Flask(__name__)
+
+# Werkzeug builds absolute URLs (any `redirect()` Location, `url_for`) from the
+# request's own scheme, which is plain http inside the Container -- the TLS
+# terminates at Cloudflare. Without this the browser gets sent to
+# `http://barefootjs.dev/...` and has to be bounced back to https, an extra
+# round trip. ProxyFix reads the `X-Forwarded-Proto` / `X-Forwarded-Host` the
+# Worker's proxy sets. Trusting one hop is right here: nothing but that proxy
+# can reach the Container.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # One JinjaBackend renders every component from dist/templates. In dev the
 # template cache is disabled (`cache_size=0`) so edits picked up by
@@ -337,7 +347,11 @@ def html_response_cached(html: str, status: int = 200) -> Response:
     return response
 
 
-@bp.get("/")
+# `strict_slashes=False` so the bare `/integrations/flask` renders instead of
+# being 308'd to the trailing-slash form: every other integration answers the
+# bare path directly, the index page links to it, and a redirect would be an
+# uncacheable round trip that wakes the Container (see cache-control.ts).
+@bp.get("/", strict_slashes=False)
 def home_route():
     return html_response_cached(home_page())
 
@@ -799,7 +813,7 @@ app.register_blueprint(bp)
 # `mount '/' => sub { [302, [Location => "$BASE/"], []] }`).
 @app.get("/")
 def root_redirect():
-    return redirect(f"{BASE}/")
+    return redirect(BASE)
 
 
 if __name__ == "__main__":

@@ -43,7 +43,8 @@
  * ```
  */
 
-import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
+import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { trackPosition } from '../../../lib/track-position'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 
@@ -252,9 +253,30 @@ interface HoverCardContentProps extends HTMLBaseAttributes {
  */
 function HoverCardContent(props: HoverCardContentProps) {
   const handleMount = (el: HTMLElement) => {
-    // Capture references before portal (while still inside HoverCard container)
+    // triggerEl: `findSiblingSlot` (portal.ts) is already portal-aware —
+    // trigger and content are true siblings under the same host, so its
+    // bf-h-gated search finds the trigger correctly whether or not `el`
+    // has been SSR-portal-placed (#3059).
+    //
+    // rootEl: `[data-slot="hover-card"]` is an ANCESTOR of `el`, not a
+    // sibling — `findSiblingSlot`'s own non-portal-placed fallback
+    // (`el.parentElement?.querySelector(...)`) searches DOWNWARD and can
+    // never match an ancestor, so it isn't a drop-in replacement for a
+    // bare `el.closest(...)` here. Try it only when `el` actually IS
+    // SSR-portal-placed — its bf-h-gated branch searches the whole host
+    // scope regardless of `el`'s own position, so it still finds the
+    // (now-detached) ancestor — and fall back to `el.closest(...)` for the
+    // ordinary still-inline case (unaffected by #3059) exactly as before.
+    // Without this, `el.closest('[data-slot="hover-card"]')` alone
+    // silently finds nothing once SSR already placed `el` outside its own
+    // `<HoverCard>` wrapper, `contentRootMap` never gets `el`'s entry, and
+    // the mouseenter/mouseleave handlers below — which look up
+    // `contentRootMap.get(el)` and no-op on a miss — never cancel the
+    // trigger's pending close timer, so the card closes on schedule even
+    // while the pointer is still over the content.
     const triggerEl = findSiblingSlot(el, '[data-slot="hover-card-trigger"]')
-    const rootEl = el.closest('[data-slot="hover-card"]') as HTMLElement
+    const rootEl = (isSSRPortal(el) ? findSiblingSlot(el, '[data-slot="hover-card"]') : null)
+      ?? (el.closest('[data-slot="hover-card"]') as HTMLElement | null)
     if (triggerEl) contentTriggerMap.set(el, triggerEl)
     if (rootEl) contentRootMap.set(el, rootEl)
 

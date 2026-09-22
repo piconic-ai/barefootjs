@@ -1,9 +1,10 @@
 /** @jsxImportSource hono/jsx */
 import { serializeHydrationProps } from '@barefootjs/hono/utils'
-import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, provideContextSSR } from '@barefootjs/hono/client-shim'
+import { trackPosition } from '../../../lib/track-position'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
-import { clampPopoverPosition } from './clamp-position'
+import { collectSsrPortalElement } from '@barefootjs/hono/portals'
 
 interface PopoverContextValue {
   open: () => boolean
@@ -149,7 +150,7 @@ export function PopoverContent(__allProps: PopoverContentProps & { __instanceId?
   }
 
   return (
-    <div data-slot="popover-content" data-state="closed" tabindex={-1} id={props.id} className={`${popoverContentBaseClasses} ${popoverContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
+    <>{collectSsrPortalElement(__scopeId, <div data-slot="popover-content" data-state="closed" tabindex={-1} id={props.id} className={`${popoverContentBaseClasses} ${popoverContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" bf-po={__scopeId}>{props.children}</div>)}</>
   )
 }
 

@@ -109,7 +109,9 @@
     ]
   },
   "dependencies": {
-    "internal": [],
+    "internal": [
+      "track-position"
+    ],
     "external": [
       "@barefootjs/client"
     ]

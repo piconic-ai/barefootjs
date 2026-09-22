@@ -6,9 +6,9 @@
  * nested scope boundaries and comment-based scopes.
  */
 
-import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
+import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
-import { BF_SCOPE, BF_SLOT, BF_PORTAL_OWNER, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SLOT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
 /** CSS attribute-value escape with a fallback for environments lacking CSS.escape. */
 export const cssEscape: (s: string) => string =
@@ -319,22 +319,6 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
   return false
 }
 
-/**
- * Check if an element is within the range of a comment-based scope.
- * The range is from the comment node to the next bf-scope: comment (or end of parent).
- */
-function isInCommentScopeRange(element: Element, commentNode: Comment): boolean {
-  const boundary = getCommentScopeBoundary(commentNode)
-  let node: Node | null = commentNode.nextSibling
-  while (node && node !== boundary) {
-    if (node === element || (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(element))) {
-      return true
-    }
-    node = node.nextSibling
-  }
-  return false
-}
-
 // --- find ---
 
 /**
@@ -381,10 +365,7 @@ export function find(
   }
 
   // Portal search (outside scope's DOM subtree)
-  const scopeId = commentInfo?.scopeId ?? getScopeId(scope)
-  if (scopeId) return findInPortals(scopeId, selector)
-
-  return null
+  return findInPortals(scope, selector, ignoreScope)
 }
 
 /**
@@ -426,19 +407,25 @@ export function findCondTarget(scope: Element, selector: string): Element | null
 }
 
 /**
- * Search in portals owned by a scope.
+ * Search `scope`'s relocated descendants (SSR-portal outlet placement or a
+ * hydrate-time `createPortal`, #3059) for `selector`. `ignoreScope` mirrors
+ * `find()`'s own flag: skip the "not inside a nested child scope" ownership
+ * check entirely for a `^`-prefixed parent-owned id (content `scope` itself
+ * authored, which legitimately lands inside a descendant component's DOM).
+ * Without `ignoreScope`, a match is accepted only when its nearest `bf-s`
+ * ancestor is the relocated root itself — a self-owner-portaled component's
+ * OWN root always carries `bf-s`, so requiring "no `bf-s` ancestor at all"
+ * would reject every one of its own direct descendants; a match nested
+ * inside some OTHER, further child scope (a real "nested component scope")
+ * still correctly falls through.
  */
-function findInPortals(scopeId: string, selector: string): Element | null {
-  const portals = document.querySelectorAll(`[${BF_PORTAL_OWNER}="${scopeId}"]`)
-  for (const portal of portals) {
+function findInPortals(scope: Element, selector: string, ignoreScope?: boolean): Element | null {
+  for (const portal of relocatedDescendants(scope)) {
     if (portal.matches?.(selector)) return portal
-    // Search within portal, excluding elements inside nested component scopes
-    const matches = portal.querySelectorAll(selector)
-    for (const match of matches) {
+    for (const match of portal.querySelectorAll(selector)) {
+      if (ignoreScope) return match
       const nearestScope = match.closest(`[${BF_SCOPE}]`)
-      if (!nearestScope) {
-        return match
-      }
+      if (!nearestScope || nearestScope === portal) return match
     }
   }
   return null
@@ -731,10 +718,15 @@ export function* commentsInScope(scope: Element): Generator<Comment> {
       }
       node = node.nextSibling
     }
-    return
+  } else {
+    yield* commentsUnder(scope)
   }
 
-  yield* commentsUnder(scope)
+  // Relocated content (SSR-portal outlet placement or a hydrate-time
+  // `createPortal`, #3059): a caller only pulls this far once the in-range
+  // walk above found nothing more to give it, so the common, non-relocated
+  // case never reaches this line.
+  for (const el of relocatedDescendants(scope)) yield* commentsUnder(el)
 }
 
 function* commentsUnder(root: Element): Generator<Comment> {
@@ -757,12 +749,14 @@ function findChildScope(scope: Element, selector: string): Element | null {
     return candidate
   }
 
-  // Portal search
-  const commentInfo = commentScopeRegistry.get(scope)
-  const scopeId = commentInfo?.scopeId ?? getScopeId(scope)
-  if (scopeId) return findInPortals(scopeId, selector)
-
-  return null
+  // Portal search: `relocatedDescendants` (scope.ts, #3059) finds a
+  // self-owner-portaled child by its `bf-h` (its `bf-po` is self-
+  // referential — see `logicalHost`'s doc comment — so a `bf-po`-only
+  // search could never match it), an explicit `<Portal>` wrapper by its
+  // `bf-po`, and either shape transitively through further forwarding.
+  // `ignoreScope: true` — this function's contract is that `selector` is
+  // already precise enough to identify the correct element.
+  return findInPortals(scope, selector, /* ignoreScope */ true)
 }
 
 /**
@@ -832,6 +826,26 @@ export function $t(scope: Element | null, ...ids: string[]): (Text | null)[] {
     }
     results[entry.index] = textNodeAfterComment(comment)
     remaining--
+  }
+
+  // Relocated content (SSR-portal outlet placement or a hydrate-time
+  // `createPortal`, #3059): any still-unresolved id gets one more pass over
+  // `scope`'s relocated descendants — but only a PARENT-OWNED (`^`-prefixed)
+  // id can legitimately live there; a non-parent-owned id unresolved by the
+  // in-range walk was never going to pass `commentBelongsToScope` either, so
+  // skip it here too rather than pay for a walk that can't help it.
+  if (remaining > 0) {
+    for (const el of relocatedDescendants(scope)) {
+      if (remaining === 0) break
+      const portalWalker = document.createTreeWalker(el, NodeFilter.SHOW_COMMENT)
+      while (portalWalker.nextNode() && remaining > 0) {
+        const comment = portalWalker.currentNode as Comment
+        const entry = markerMap.get(comment.nodeValue ?? '')
+        if (!entry || results[entry.index] !== null || !entry.isParentOwned) continue
+        results[entry.index] = textNodeAfterComment(comment)
+        remaining--
+      }
+    }
   }
   return results
 }

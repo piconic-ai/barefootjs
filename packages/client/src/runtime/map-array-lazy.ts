@@ -54,14 +54,15 @@
  * - **Re-subscribe seam**: the previous bullet's "reconciles never re-run
  *   this effect" contract holds only when every outer read subscribes
  *   independently of the entries. That is true for a plain signal/memo
- *   getter and FALSE for a per-key subscription such as `createSelector`,
- *   whose selector subscribes the caller only to the specific keys it was
- *   called with — so a reconcile can leave the effect subscribed to keys
- *   that no longer matter and NOT subscribed to keys that now do. Every
- *   loop with an `applyOuter` therefore re-runs it after any reconcile that
- *   created a row or changed an item (removals strand nothing). Applied
- *   unconditionally rather than gated on a compiler judgement about which
- *   reads are per-key: see the seam's comment inside `mapArrayLazy` for why
+ *   getter and FALSE for a per-key subscription (e.g. a `createMemo`-backed
+ *   selector), whose accessor subscribes the caller only to the specific
+ *   keys it was called with — so a reconcile can leave the effect
+ *   subscribed to keys that no longer matter and NOT subscribed to keys
+ *   that now do. Every loop with an `applyOuter` therefore re-runs it
+ *   after any reconcile that created a row or changed an item (removals
+ *   strand nothing). Applied unconditionally rather than gated on a
+ *   compiler judgement about which reads are per-key: see the seam's
+ *   comment inside `mapArrayLazy` for why
  *   (a misclassification must be harmless, not silently wrong) and for the
  *   three stranding sequences it prevents, each reproduced before it existed.
  *
@@ -225,7 +226,7 @@ export function mapArrayLazy<T>(
    * Re-subscribe seam. `applyOuter` subscribes to whatever its body reads,
    * and for a NON-primable outer read that set depends on the entries it
    * iterated — so a reconcile can strand it. Three sequences, all
-   * reproduced against `createSelector` before this existed:
+   * reproduced against a per-key subscription accessor before this existed:
    *
    *  1. the entry list is EMPTY on the effect's first run, so the per-entry
    *     reads never execute, nothing is subscribed, and the loop is dead

@@ -829,3 +829,88 @@ describe('qsa', () => {
     expect(qsa(scope, '[bf-h="Toggle_test"][bf-m="s0"], [bf-s$="_s0"]')).toBe(child)
   })
 })
+
+describe('$c — self-owner SSR-portal child (#3059)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('finds a child component whose own root was SSR-placed at a portal outlet, outside the parent subtree', () => {
+    // The exact shape `HonoAdapter.renderElement`'s `ssrPortalOwnerScope`
+    // branch emits: the child's own root carries bf-s, so its client-side
+    // `el.closest('[bf-s]')` ownerScope is ITSELF — `bf-po` is
+    // self-referential (equal to the child's own bf-s), never the
+    // parent's. `findInPortals`'s bare `[bf-po="<parentScopeId>"]` search
+    // could never match this shape; `relocatedDescendants` (scope.ts)
+    // finds it instead by the parent's `bf-h`.
+    document.body.innerHTML = `
+      <div bf-s="PopoverBasicDemo_test">
+        <button bf-s="PopoverBasicDemo_test_s0" data-slot="popover-trigger">Open</button>
+      </div>
+      <div bf-h="PopoverBasicDemo_test" bf-m="s1" bf-s="PopoverBasicDemo_test_s1" bf-po="PopoverBasicDemo_test_s1" data-slot="popover-content"></div>
+    `
+    const scope = document.querySelector('[bf-s="PopoverBasicDemo_test"]')!
+    const [trigger, content] = $c(scope, 's0', 's1')
+    expect(trigger?.getAttribute('data-slot')).toBe('popover-trigger')
+    expect(content).not.toBeNull()
+    expect(content?.getAttribute('data-slot')).toBe('popover-content')
+    expect(content).toBe(document.querySelector('[data-slot="popover-content"]'))
+  })
+
+  test('does not cross-match a self-owner portal child belonging to a DIFFERENT parent scope', () => {
+    document.body.innerHTML = `
+      <div bf-s="PopoverA_test"></div>
+      <div bf-h="PopoverB_test" bf-m="s1" bf-s="PopoverB_test_s1" bf-po="PopoverB_test_s1" data-slot="popover-content"></div>
+    `
+    const scopeA = document.querySelector('[bf-s="PopoverA_test"]')!
+    // PopoverA never declared a child at slot s1 — searching from its own
+    // scope for "s1" must not accidentally pick up PopoverB's unrelated
+    // portal-placed child just because `relocatedDescendants` widened the
+    // search. The slot-ID suffix selector `[bf-s$="PopoverA_test_s1"]`
+    // simply doesn't match PopoverB's child (`PopoverB_test_s1`), so the
+    // fallback correctly returns null here — it widens WHERE the search
+    // looks, not WHAT counts as a match.
+    const [result] = $c(scopeA, 's1')
+    expect(result).toBeNull()
+  })
+})
+
+/**
+ * `$()` resolving a `^`-prefixed parent-owned element slot inside a
+ * relocated (SSR-portaled) descendant (#3059). Regression pin for the
+ * click-handler half of the real repro: `DrawerFormDemo`'s `+`/`-` buttons
+ * (`^`-prefixed element slots the demo forwards into `DrawerContent`) never
+ * bound their click listeners once `DrawerContent` started rendering at the
+ * `<BfPortals />` outlet instead of inline — `$(scope, '^s6', '^s9')`
+ * resolved to `[null, null]`, silently. The text half of the same repro
+ * (`{goal()}`) is pinned in `claim-slots.test.ts`.
+ */
+describe('$ — parent-owned element slot inside a relocated descendant (#3059)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('resolves a ^-prefixed slot forwarded into a self-owner-portaled child', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13">
+        <button bf="^s9" aria-label="Increase goal"></button>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="A"]')!
+    const [button] = $(scope, '^s9')
+    expect(button).toBe(document.querySelector('[bf="^s9"]'))
+  })
+
+  test('does not cross-match a DIFFERENT instance\'s relocated child sharing the same slot id', () => {
+    document.body.innerHTML = `
+      <div bf-s="A"></div>
+      <div bf-s="A_s13" bf-h="A" bf-m="s13" bf-po="A_s13"><button bf="^s9" id="a-button"></button></div>
+      <div bf-s="B"></div>
+      <div bf-s="B_s13" bf-h="B" bf-m="s13" bf-po="B_s13"><button bf="^s9" id="b-button"></button></div>
+    `
+    const scopeA = document.querySelector('[bf-s="A"]')!
+    const [button] = $(scopeA, '^s9')
+    expect(button?.id).toBe('a-button')
+  })
+})

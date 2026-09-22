@@ -57,7 +57,7 @@ function BasicMenubar() {
     <Menubar>
       <MenubarMenu value="file">
         <MenubarTrigger>File</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="file">
           <MenubarItem>
             <span>New Tab</span>
             <MenubarShortcut>⌘T</MenubarShortcut>
@@ -74,7 +74,7 @@ function BasicMenubar() {
       </MenubarMenu>
       <MenubarMenu value="edit">
         <MenubarTrigger>Edit</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="edit">
           <MenubarItem>
             <span>Undo</span>
             <MenubarShortcut>⌘Z</MenubarShortcut>
@@ -121,7 +121,7 @@ function AppMenubar() {
     <Menubar>
       <MenubarMenu value="file">
         <MenubarTrigger>File</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="file">
           <MenubarItem>
             <span>New Tab</span>
             <MenubarShortcut>⌘T</MenubarShortcut>
@@ -154,7 +154,7 @@ function AppMenubar() {
 
       <MenubarMenu value="view">
         <MenubarTrigger>View</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="view">
           <MenubarCheckboxItem
             checked={showBookmarks()}
             onCheckedChange={setShowBookmarks}
@@ -172,7 +172,7 @@ function AppMenubar() {
 
       <MenubarMenu value="profiles">
         <MenubarTrigger>Profiles</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="profiles">
           <MenubarRadioGroup
             value={profile()}
             onValueChange={setProfile}

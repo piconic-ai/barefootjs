@@ -39,7 +39,13 @@ test.describe('Hover Card Reference Page', () => {
 
       await trigger.hover()
 
-      const content = page.locator('[data-slot="hover-card-content"][data-state="open"]')
+      // Scoped by `bf-h`, not just `[data-state="open"]` — see the comment
+      // on the identical scoping in "has correct data-state transitions"
+      // below: every HoverCard instance's portal-placed content (including
+      // the Playground demo's own, closed one) now shares one outlet as
+      // flat siblings, and a closed instance sitting on top in that shared
+      // stacking order can intercept the mouse move onto an unscoped match.
+      const content = page.locator('[data-slot="hover-card-content"][data-state="open"][bf-h^="HoverCardPreviewDemo_"]')
       await expect(content).toBeVisible({ timeout: 3000 })
 
       // Move mouse to content - should stay open
@@ -51,7 +57,13 @@ test.describe('Hover Card Reference Page', () => {
     })
 
     test('has correct data-state transitions', async ({ page }) => {
-      const content = page.locator('[data-slot="hover-card-content"]').first()
+      // Scoped by `bf-h` (this instance's own host prefix), not `.first()` in
+      // document order: the portal-placed content of every HoverCard instance
+      // on this page (including the Playground demo's own) now shares one
+      // outlet, so document order no longer matches the page's visual section
+      // order — `.first()` picked a DIFFERENT instance's content once #3059
+      // moved portal content into that outlet.
+      const content = page.locator('[data-slot="hover-card-content"][bf-h^="HoverCardPreviewDemo_"]')
 
       // Initially closed
       await expect(content).toHaveAttribute('data-state', 'closed')

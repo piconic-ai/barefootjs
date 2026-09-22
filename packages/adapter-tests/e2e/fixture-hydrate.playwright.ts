@@ -27,6 +27,13 @@
  * in `./interaction-runner.ts` (#2481) — both shared with
  * `oracle.playwright.ts`, which compares this same fixture corpus rendered
  * three different ways instead of against a hand-authored expectation.
+ *
+ * A fixture whose `interactions` describe the CORRECT behavior but whose
+ * compiler output doesn't deliver it yet (a `silent` known limitation,
+ * landed as a fixture per CLAUDE.md's "a reproducible defect lands as a
+ * fixture" rule) is quarantined in `./fixture-hydrate-quarantine.ts`
+ * instead of being required to pass — see that file's docstring for the
+ * rot-check discipline `runQuarantined` below enforces.
  */
 
 import { test } from '@playwright/test'
@@ -35,6 +42,7 @@ import { loadAllSharedFixtures } from '../fixtures/_helpers'
 import type { JSXFixture } from '../src/types'
 import { startFixtureServer, fixtureUrl } from './fixture-host'
 import { runStep } from './interaction-runner'
+import { FIXTURE_HYDRATE_QUARANTINE } from './fixture-hydrate-quarantine'
 
 let server: Server
 let baseUrl: string
@@ -59,6 +67,35 @@ test.afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()))
 })
 
+/**
+ * Run the fixture's `interactions` under `FIXTURE_HYDRATE_QUARANTINE`'s
+ * rot-check discipline (see that file's docstring, and
+ * `oracle.playwright.ts`'s `runQuarantined`, the precedent this mirrors):
+ * a quarantined fixture is expected to still FAIL its interactions — if
+ * it unexpectedly passes, that IS the test failure (a "stale — delete the
+ * entry" message), not a silent green. An unquarantined fixture just runs
+ * `assertion` normally.
+ */
+async function runQuarantined(id: string, assertion: () => Promise<void>): Promise<void> {
+  const entry = FIXTURE_HYDRATE_QUARANTINE[id]
+  if (!entry) {
+    await assertion()
+    return
+  }
+  let failure: unknown
+  try {
+    await assertion()
+  } catch (err) {
+    failure = err
+  }
+  if (failure === undefined) {
+    throw new Error(
+      `fixture-hydrate-quarantine.ts entry for [${id}] is stale — the fixture now passes its interactions; ` +
+        `delete the entry (and the fixture graduates into a plain regression test).`,
+    )
+  }
+}
+
 for (const fixture of fixtures) {
   if (!fixture.interactions || !fixture.expectedHtml || !fixture.expectedClientJs) {
     continue
@@ -75,9 +112,11 @@ for (const fixture of fixtures) {
     // bloat Playwright artifacts as the corpus grows.
     let failed = false
     try {
-      for (const step of fixture.interactions!) {
-        await runStep(page, step)
-      }
+      await runQuarantined(fixture.id, async () => {
+        for (const step of fixture.interactions!) {
+          await runStep(page, step)
+        }
+      })
     } catch (err) {
       failed = true
       throw err

@@ -26,12 +26,16 @@
 //       differs from their package name (`minijinja`); package names are
 //       checked by `limitations.test.ts` from the workspace listing;
 //   (f) the real-browser e2e quarantine ledgers (`oracle-quarantine.ts`,
-//       `mutation-quarantine.ts`, `pairwise-quarantine.ts`) are pin sites
-//       too, for the SSR-vs-hydrated / csr-mount divergences no adapter
-//       declaration can express. An oracle row is keyed by a corpus fixture
-//       and must cite a `silent` entry listing it; a mutation row (a mutated
-//       fixture) or a pairwise row (a generated case) must cite an existing
-//       `silent` entry, nothing more.
+//       `mutation-quarantine.ts`, `pairwise-quarantine.ts`,
+//       `fixture-hydrate-quarantine.ts`) are pin sites too, for the
+//       SSR-vs-hydrated / csr-mount divergences no adapter declaration can
+//       express. An oracle row is keyed by a corpus fixture and must cite
+//       a `silent` entry listing it; a mutation row (a mutated fixture) or
+//       a pairwise row (a generated case) must cite an existing `silent`
+//       entry, nothing more. A fixture-hydrate-quarantine row is keyed by
+//       a corpus fixture (its declared `interactions` are expected to
+//       still fail) and must cite a `silent` entry listing it, same as an
+//       oracle row.
 //
 // Same `loadCompatAdapters()` precedent as compat-pins.test.ts.
 
@@ -40,6 +44,7 @@ import { MUTATION_QUARANTINE } from '../../../adapter-tests/e2e/mutation-quarant
 import { ORACLE_QUARANTINE } from '../../../adapter-tests/e2e/oracle-quarantine'
 import { PAIRWISE_QUARANTINE } from '../../../adapter-tests/e2e/pairwise-quarantine'
 import { EXPLORE_QUARANTINE } from '../../../adapter-tests/e2e/explore-quarantine'
+import { FIXTURE_HYDRATE_QUARANTINE } from '../../../adapter-tests/e2e/fixture-hydrate-quarantine'
 import { findLimitation, limitations } from '../../../adapter-tests/limitations'
 import { limitationDiagnostics } from '../../../adapter-tests/src/limitations'
 import { loadCompatAdapters } from '../adapter-registry'
@@ -49,6 +54,13 @@ const { loaded } = await loadCompatAdapters()
 /** Corpus fixture ids the oracle quarantine cites under `limitationId`. */
 function oracleFixturesCiting(limitationId: string): string[] {
   return Object.entries(ORACLE_QUARANTINE)
+    .filter(([, entry]) => entry.limitation === limitationId)
+    .map(([fixtureId]) => fixtureId)
+}
+
+/** Corpus fixture ids the fixture-hydrate quarantine cites under `limitationId`. */
+function hydrateQuarantineFixturesCiting(limitationId: string): string[] {
+  return Object.entries(FIXTURE_HYDRATE_QUARANTINE)
     .filter(([, entry]) => entry.limitation === limitationId)
     .map(([fixtureId]) => fixtureId)
 }
@@ -142,6 +154,19 @@ describe('limitation registry ↔ adapter declarations', () => {
         expect(entry.kind).toBe('silent')
       })
     }
+    for (const [fixtureId, row] of Object.entries(FIXTURE_HYDRATE_QUARANTINE)) {
+      test(`[fixture-hydrate:${fixtureId}] cites a registered silent limitation listing this fixture`, () => {
+        const entry = findLimitation(row.limitation)
+        if (!entry) {
+          throw new Error(
+            `fixture-hydrate-quarantine row '${fixtureId}' cites limitation '${row.limitation}', ` +
+              `which has no entry under packages/adapter-tests/limitations/`,
+          )
+        }
+        expect(entry.kind).toBe('silent')
+        expect(entry.fixtures).toContain(fixtureId)
+      })
+    }
   })
 
   for (const entry of limitations) {
@@ -153,8 +178,11 @@ describe('limitation registry ↔ adapter declarations', () => {
       expect(named).toEqual([])
     })
 
-    test(`[${entry.id}] every listed fixture is pinned, divergent, or oracle-quarantined under this id`, () => {
-      const quarantined = new Set(oracleFixturesCiting(entry.id))
+    test(`[${entry.id}] every listed fixture is pinned, divergent, or e2e-quarantined under this id`, () => {
+      const quarantined = new Set([
+        ...oracleFixturesCiting(entry.id),
+        ...hydrateQuarantineFixturesCiting(entry.id),
+      ])
       const orphaned = entry.fixtures.filter(fixtureId => {
         if (quarantined.has(fixtureId)) return false
         return !loaded.some(adapter => {
@@ -166,8 +194,9 @@ describe('limitation registry ↔ adapter declarations', () => {
       if (orphaned.length > 0) {
         throw new Error(
           `limitation '${entry.id}' lists fixture(s) [${orphaned.join(', ')}] that no adapter pins, no ` +
-            `render divergence declares, and no oracle-quarantine row cites under it — either the fixture ` +
-            `graduated (drop it from the entry; delete the entry when its list empties) or a pin cites the wrong id.`,
+            `render divergence declares, and no oracle-quarantine / fixture-hydrate-quarantine row cites under it ` +
+            `— either the fixture graduated (drop it from the entry; delete the entry when its list empties) or a ` +
+            `pin cites the wrong id.`,
         )
       }
     })

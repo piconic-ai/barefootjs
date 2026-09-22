@@ -7,14 +7,14 @@
  * lifecycle to.
  */
 
-import { Container } from '@cloudflare/containers'
+import { SelfHealingContainer } from 'barefootjs-integrations-shared/lib/self-healing-container'
 import { withCacheControl } from 'barefootjs-integrations-shared/lib/cache-control'
 
 type Env = {
   SPRING_CONTAINER: DurableObjectNamespace
 }
 
-export class SpringContainer extends Container<Env> {
+export class SpringContainer extends SelfHealingContainer<Env> {
   defaultPort = 8080
   // Billing runs for every second the instance is up, idle included, so this
   // window is the cost knob. A JVM's cold start (class loading, Spring

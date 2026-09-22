@@ -847,7 +847,7 @@ under a plain Django app.</p>
 # A bare-root request redirects into the base path (mirrors app.psgi's
 # `mount '/' => sub { [302, [Location => "$BASE/"], []] }`).
 def root_redirect(request):
-    return redirect(f"{BASE}/")
+    return redirect(BASE)
 
 
 # ---------------------------------------------------------------------------
@@ -856,19 +856,20 @@ def root_redirect(request):
 # ROOT_URLCONF (set above, in the Django-setup section) points straight at
 # this module, so this list is the whole "app".
 #
-# The bare prefix (no trailing slash, e.g. `/integrations/django`) needs its
-# own explicit redirect to `home_route`'s `{_prefix}/` route: Flask's
-# Blueprint and FastAPI's APIRouter both redirect a missing trailing slash to
-# the matching slashed route automatically (Werkzeug's `strict_slashes` /
-# Starlette's `redirect_slashes`), but Django's equivalent (`CommonMiddleware`
-# + `APPEND_SLASH`) is unused here since MIDDLEWARE is empty, so without this
-# entry the bare prefix 404s instead of reaching home_route.
+# The bare prefix (no trailing slash, e.g. `/integrations/django`) gets its own
+# entry pointing at the same view, so it renders directly like every other
+# integration's bare path -- which is the spelling the index page links to.
+# Redirecting instead (what Werkzeug's `strict_slashes` and Starlette's
+# `redirect_slashes` do by default, and what Django's unused
+# `CommonMiddleware` + `APPEND_SLASH` would do) costs an uncacheable round
+# trip that wakes the Container, see cache-control.ts. Django needs both
+# entries spelled out because MIDDLEWARE is empty here.
 # ---------------------------------------------------------------------------
 _prefix = BASE.lstrip("/")
 
 urlpatterns = [
     path("", root_redirect),
-    path(_prefix, root_redirect),
+    path(_prefix, home_route),
     path(f"{_prefix}/", home_route),
     path(f"{_prefix}/counter", counter_route),
     path(f"{_prefix}/toggle", toggle_route),

@@ -38,7 +38,8 @@
  * ```
  */
 
-import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot, trackPosition } from '@barefootjs/client'
+import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { trackPosition } from '../../../lib/track-position'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { clampPopoverPosition } from './clamp-position'

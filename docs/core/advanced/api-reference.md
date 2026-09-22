@@ -21,7 +21,6 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`AsyncProps`](#asyncprops) | interface | 0.15.0 | **Beta** |
 | [`batch()`](#batch) | function | 0.1.0 | **Beta** |
 | [`CleanupFn`](#cleanupfn) | type | 0.1.0 | **Beta** |
-| [`cleanupPortalPlaceholder()`](#cleanupportalplaceholder) | function | 0.1.0 | **Beta** |
 | [`Context`](#context) | type | 0.1.0 | **Beta** |
 | [`createContext()`](#createcontext) | function | 0.1.0 | **Beta** |
 | [`createEffect()`](#createeffect) | function | 0.1.0 | **Beta** |
@@ -29,11 +28,9 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`createPortal()`](#createportal) | function | 0.1.0 | **Beta** |
 | [`createRoot()`](#createroot) | function | 0.1.0 | Alpha |
 | [`createSearchParams()`](#createsearchparams) | function | 0.17.0 | **Beta** |
-| [`createSelector()`](#createselector) | function | 0.18.7 | Alpha |
 | [`createSignal()`](#createsignal) | function | 0.1.0 | **Beta** |
 | [`EffectFn`](#effectfn) | type | 0.1.0 | **Beta** |
 | [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
-| [`formatDate()`](#formatdate) | function | 0.1.0 | **Beta** |
 | [`isSSRPortal()`](#isssrportal) | function | 0.1.0 | **Beta** |
 | [`Memo`](#memo) | type | 0.1.0 | **Beta** |
 | [`onCleanup()`](#oncleanup) | function | 0.1.0 | **Beta** |
@@ -51,7 +48,6 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`SearchParamsInit`](#searchparamsinit) | type | 0.17.0 | **Beta** |
 | [`Signal`](#signal) | type | 0.1.0 | **Beta** |
 | [`splitProps()`](#splitprops) | function | 0.1.0 | Alpha |
-| [`trackPosition()`](#trackposition) | function | 0.35.0 | Alpha |
 | [`untrack()`](#untrack) | function | 0.1.0 | **Beta** |
 | [`useContext()`](#usecontext) | function | 0.1.0 | **Beta** |
 
@@ -105,18 +101,6 @@ batch(() => {
 `type` · **Beta** since 0.1.0 · `@barefootjs/client`
 
 A cleanup callback, as registered with `onCleanup` or returned from an effect.
-
-### `cleanupPortalPlaceholder()`
-
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
-
-Remove the SSR placeholder left behind for the portal with this id. Browser-only.
-
-```tsx
-"use client"
-// After hydration, drop the placeholder the server rendered in place.
-cleanupPortalPlaceholder(portalId)
-```
 
 ### `Context`
 
@@ -217,19 +201,6 @@ const sort = createMemo(() => searchParams().get('sort') ?? 'date')
 setSearchParams({ sort: 'price' })
 ```
 
-### `createSelector()`
-
-`function` · Alpha since 0.18.7 · `@barefootjs/client`
-
-O(changed) selection primitive (SolidJS-compatible `createSelector`).
-
-```tsx
-const [selected, setSelected] = createSignal<number>(0)
-const isSelected = createSelector(selected)
-// inside a loop body:
-//   <tr class={isSelected(row.id) ? 'danger' : ''}>
-```
-
 ### `createSignal()`
 
 `function` · **Beta** since 0.1.0 · `@barefootjs/client`
@@ -260,28 +231,9 @@ The nearest element matching `slotSelector` among `el`'s siblings, or `null`. Br
 const handleMount = (el: HTMLElement) => {
   const triggerEl = findSiblingSlot(el, '[data-slot="popover-trigger"]')
   if (!triggerEl) return
-  trackPosition(() => {
-    const r = triggerEl.getBoundingClientRect()
-    el.style.top = `${r.bottom + window.scrollY}px`
-  })
+  const r = triggerEl.getBoundingClientRect()
+  el.style.top = `${r.bottom + window.scrollY}px`
 }
-```
-
-### `formatDate()`
-
-`function` · **Beta** since 0.1.0 · `@barefootjs/client`
-
-Format a date with a fixed pattern and time zone. SSR adapters lower the call to their own date helper.
-
-```tsx
-const createdAt = new Date('2026-09-15T00:00:00Z')
-
-formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')  // '2026/9/15'
-formatDate(createdAt, 'YYYY-MM-DD')              // '2026-09-15' (defaults to UTC)
-
-// In a component — every SSR adapter lowers this to its own date helper,
-// so the server-rendered text matches the client byte for byte.
-<time>{formatDate(createdAt, 'YYYY/M/D', 'Asia/Tokyo')}</time>
 ```
 
 ### `isSSRPortal()`
@@ -453,24 +405,6 @@ function Checkbox(props: CheckboxProps) {
   const [local, rest] = splitProps(props, ['checked', 'onCheckedChange'])
   return <button {...rest} aria-checked={local.checked} />
 }
-```
-
-### `trackPosition()`
-
-`function` · Alpha since 0.35.0 · `@barefootjs/client`
-
-Keep a floating element positioned while open: runs `update` now, on capture-phase scroll and on resize, and once more on dispose. Browser-only.
-
-```tsx
-"use client"
-// Keep an open popover pinned to its trigger while the page scrolls.
-const dispose = trackPosition(() => {
-  const r = trigger.getBoundingClientRect()
-  el.style.top = `${r.bottom + window.scrollY}px`
-})
-
-// When the popover closes: runs `update` once more, then detaches.
-dispose()
 ```
 
 ### `untrack()`

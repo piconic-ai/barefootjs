@@ -2860,18 +2860,19 @@
     "format-date": {
       "kinds": [
         "call",
+        "conditional",
         "identifier",
         "literal"
       ],
       "axes": [
-        "literal:string",
-        "lowering:formatDate"
+        "literal:string"
       ],
       "contexts": [
+        "attribute",
         "text"
       ]
     },
-    "format-date-ternary": {
+    "format-date-client": {
       "kinds": [
         "call",
         "conditional",
@@ -2879,11 +2880,11 @@
         "literal"
       ],
       "axes": [
-        "literal:string",
-        "lowering:formatDate"
+        "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "fragment": {
@@ -3689,6 +3690,26 @@
       "contexts": [
         "attribute",
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-children-attrs": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -7049,19 +7070,19 @@
     }
   },
   "kindCounts": {
-    "array-literal": 119,
+    "array-literal": 120,
     "array-method": 72,
     "arrow": 76,
-    "binary": 109,
-    "call": 294,
-    "conditional": 34,
-    "identifier": 416,
+    "binary": 110,
+    "call": 295,
+    "conditional": 36,
+    "identifier": 417,
     "index-access": 15,
-    "literal": 330,
+    "literal": 331,
     "logical": 53,
     "member": 245,
     "object-literal": 96,
-    "template-literal": 31,
+    "template-literal": 32,
     "unary": 30,
     "unsupported": 51
   },
@@ -7098,18 +7119,17 @@
     "binary:-": 12,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 55,
+    "binary:===": 56,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 72,
     "literal:null": 26,
     "literal:number": 153,
-    "literal:string": 222,
+    "literal:string": 223,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
     "lowering:date": 4,
-    "lowering:formatDate": 2,
     "lowering:queryHref": 5,
     "lowering:toLocaleDateString": 4,
     "member:computed": 8,

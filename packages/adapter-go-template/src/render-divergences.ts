@@ -91,6 +91,40 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
+  // #3059: the compiler now recognizes the `ref`-callback SSR-portal
+  // pattern (`ssrPortalOwnerScope`) and the Hono reference adapter
+  // places the flagged element at its `<BfPortals />` outlet instead of
+  // rendering it inline — this adapter has no such outlet yet (a
+  // template-language-specific design the issue leaves open), so it
+  // still renders the element at its ORIGINAL inline position with no
+  // `bf-po`, diverging from the now-correct reference. See
+  // `ref-callback-portal-content-inline-at-ssr`.
+  dialog: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  'dropdown-menu': { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  popover: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  portal: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  // `combobox` / `select` carry the SAME #3059 portal-position divergence
+  // (their Content element is the same `ref`-callback SSR-portal pattern),
+  // but the registry lists a fixture on exactly one entry and these two
+  // are already claimed by `ref-effect-attr-state-ssr` (the data-placeholder
+  // divergence) — cite that one instead; see
+  // `ref-callback-portal-content-inline-at-ssr`'s own comment.
+  combobox: { limitation: 'ref-effect-attr-state-ssr' },
+  select: { limitation: 'ref-effect-attr-state-ssr' },
+  // Go's manifestation is more severe than the shared entry's `actual`
+  // describes (a frozen-but-present attribute): `NewLoopRowChildChildrenAttrsProps`
+  // never populates the `Chips []...Ctx` slice field at all when the
+  // loop's source array (`opts`) is a FUNCTION-BODY-local const — the
+  // struct field exists but the constructor only bakes it when the same
+  // array literal is declared at MODULE scope (verified directly: hoisting
+  // `const opts = ['a', 'b']` out of the component function makes the
+  // constructor emit `chipsData := []interface{}{"a", "b"}` and populate
+  // `Chips` correctly). So on Go the whole loop is silently absent from
+  // SSR, not just non-reactive after hydration — still an instance of the
+  // same "loop-row-forwarded-children never track their own reactive data"
+  // contract violation, just caught one step earlier (at construction
+  // instead of at update).
+  'loop-row-child-children-attrs': { limitation: 'loop-row-child-children-attrs-frozen' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

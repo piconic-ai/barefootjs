@@ -7,9 +7,9 @@
  * API inspired by React's createPortal(children, domNode).
  */
 
-import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_PORTAL_ID, BF_PORTAL_OWNER } from '@barefootjs/shared'
 import { parseHTML } from './component.ts'
-import { getPortalScopeId } from './scope.ts'
+import { getPortalScopeId, findInScope } from './scope.ts'
 
 /**
  * The handle `createPortal` returns.
@@ -94,14 +94,33 @@ export type PortalChildren = HTMLElement | string | Renderable
  * portal.unmount()
  */
 /**
- * Check if an element is inside an SSR-rendered portal.
- * SSR portals are marked with bf-pi attribute.
+ * Check if an element is inside — or, since #3059, itself already IS — an
+ * SSR-placed portal target.
+ *
+ * Two distinct SSR portal shapes stamp two distinct markers, both checked
+ * here:
+ *
+ *   - The explicit `<Portal>` component (`@barefootjs/hono`'s
+ *     `portal-ssr.tsx`) wraps arbitrary children in its own container,
+ *     `<div bf-pi="…" bf-po="…">`, so its descendants are INSIDE a
+ *     `[bf-pi]` ancestor.
+ *   - The compiler's `ref`-callback SSR-portal recognition
+ *     (`ssrPortalOwnerScope`, `isSsrPortalRefCallback` in
+ *     `@barefootjs/jsx`) stamps `bf-po` directly on the ONE element
+ *     itself — no wrapper — matching exactly what `createPortal` below
+ *     stamps onto the same element at hydrate time. That element's own
+ *     `ref` callback receives ITSELF as `element`, so the check must also
+ *     recognize `bf-po` on `element` and not just on an ancestor.
+ *
+ * Either shape means: this DOM was already placed at its portal
+ * destination by SSR, so a `ref` callback guarded on `!isSSRPortal(el)`
+ * correctly treats `createPortal` as a no-op.
  *
  * @param element - Element to check
- * @returns true if element is inside an SSR portal
+ * @returns true if the element is an SSR-placed portal target (or inside one)
  */
 export function isSSRPortal(element: HTMLElement): boolean {
-  return element.closest(`[${BF_PORTAL_ID}]`) !== null
+  return element.closest(`[${BF_PORTAL_ID}], [${BF_PORTAL_OWNER}]`) !== null
 }
 
 /**
@@ -115,12 +134,69 @@ export function isSSRPortal(element: HTMLElement): boolean {
  * Handles the SSR portal case where the element is inside a portal wrapper
  * (bf-pi) instead of its original parent container.
  *
+ * `slotSelector` may also match the resolved host/owner scope element
+ * itself, not just its descendants — useful when the "sibling" being
+ * looked up is the shared root a whole group of items hangs off of,
+ * rather than one specific descendant (e.g. a bar-level root read by
+ * every one of its portaled items).
+ *
  * @param el - Element to search from
  * @param slotSelector - CSS selector for the sibling slot (e.g., '[data-slot="popover-trigger"]')
  * @returns The found element, or null
  */
 export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElement | null {
-  // Direct parent lookup (normal case)
+  // #3059 self-owner SSR-portal case, checked FIRST — but only when `el`
+  // actually IS SSR-portal-placed (`isSSRPortal(el)`): `el`'s own root is
+  // a child COMPONENT (carries bf-h/bf-m — DialogOverlay/DialogContent/
+  // PopoverContent/etc.) that may already be SSR-placed at the portal
+  // outlet from the very first paint. `bf-h` names the REAL host scope
+  // this slot was upserted from — the same scope the actual sibling
+  // trigger was upserted from too, since both are declared as siblings in
+  // that host's own JSX — so it is the correctly-scoped anchor once
+  // portal-placement is confirmed. Trying it first in THAT case (not as a
+  // fallback after "direct" fails) matters: once portal-placed,
+  // `el.parentElement` is the outlet's shared container (document.body or
+  // wherever `<BfPortals />` renders) — on a page with more than one
+  // instance of the same component (every `site/ui` reference page stacks
+  // Basic/Preview/Form demos side by side), `el.parentElement.
+  // querySelector(selector)` doesn't fail, it WRONGLY SUCCEEDS on the
+  // FIRST matching sibling slot in document order, which may belong to a
+  // DIFFERENT instance than `el`'s own — trying it first would never even
+  // reach this correct path. (Measured: a Select/Popover on such a page
+  // anchored `updatePosition()` to the wrong instance's trigger and
+  // Playwright's click landed "outside the viewport".)
+  //
+  // `bf-h` is stamped on every child-component root regardless of SSR
+  // portal placement (it names the child's host scope for upsertion in
+  // general, not just the #3059 shape), so gating on `isSSRPortal(el)` is
+  // required — a component that was never SSR-portal-placed keeps the
+  // original "direct parent" lookup as its first try, unaffected by a
+  // host-scope path that only exists to handle SSR-relocated markup.
+  if (isSSRPortal(el)) {
+    const hostId = el.getAttribute(BF_HOST)
+    if (hostId) {
+      // `findInScope` (not a bare `[bf-s="…"]` lookup, nor `find()` from
+      // query.ts) because the host can be comment-scoped (a fragment
+      // root, or a root-is-a-child-call wrapper, #2649) with no element
+      // of its own to carry the id — a plain attribute lookup silently
+      // misses it and falls through to the unscoped "direct parent"
+      // branch below, right back into the cross-instance leak this bf-h
+      // path exists to prevent. `find()` doesn't fit either: its
+      // `belongsToScope` check rejects a candidate that carries its own
+      // `bf-s`, which is exactly the shape of a sibling that is itself a
+      // scoped component (e.g. `<ContextMenuTrigger>` next to
+      // `<ContextMenuContent>` under one `<ContextMenu>`). Measured: a
+      // ContextMenu whose demo wrapper is a single child-component call
+      // (comment-scoped) resolved every instance's trigger to the page's
+      // first one once the plain lookup missed and this path's `find()`
+      // attempt then rejected the real trigger too.
+      const inHost = findInScope(hostId, slotSelector) as HTMLElement | null
+      if (inHost) return inHost
+    }
+  }
+
+  // Direct parent lookup (normal case: el carries no bf-h, e.g. a plain
+  // non-component element portaled via the explicit `<Portal>` wrapper).
   const direct = el.parentElement?.querySelector(slotSelector) as HTMLElement | null
   if (direct) return direct
 
@@ -131,18 +207,9 @@ export function findSiblingSlot(el: HTMLElement, slotSelector: string): HTMLElem
   const ownerScopeId = portalWrapper.getAttribute(BF_PORTAL_OWNER)
   if (!ownerScopeId) return null
 
-  // Find owner scope by exact bf-s match (#1249 — no `~` prefix).
-  const ownerScope = document.querySelector(`[${BF_SCOPE}="${ownerScopeId}"]`)
-  if (!ownerScope) return null
-
-  return ownerScope.querySelector(slotSelector) as HTMLElement | null
-}
-
-export function cleanupPortalPlaceholder(portalId: string): void {
-  const placeholder = document.querySelector(
-    `template[${BF_PORTAL_PLACEHOLDER}="${portalId}"]`
-  )
-  placeholder?.remove()
+  // Find owner scope by exact bf-s match (#1249 — no `~` prefix), or its
+  // comment-scope range when the owner has no `bf-s` element of its own.
+  return findInScope(ownerScopeId, slotSelector) as HTMLElement | null
 }
 
 /**

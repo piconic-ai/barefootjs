@@ -9,7 +9,7 @@ export function Default() {
       <NavigationMenuList>
         <NavigationMenuItem value="getting-started">
           <NavigationMenuTrigger>Getting Started</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent value="getting-started">
             <NavigationMenuLink href="/docs">Documentation</NavigationMenuLink>
           </NavigationMenuContent>
         </NavigationMenuItem>

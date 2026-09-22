@@ -2000,8 +2000,64 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 438,
+    "totalFixtures": 439,
     "fixtures": {
+      "combobox": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -2091,6 +2147,118 @@
           ],
           "limitations": [
             "ambient-locale-date-formatting"
+          ]
+        }
+      },
+      "dialog": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        }
+      },
+      "dropdown-menu": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         }
       },
@@ -2901,6 +3069,98 @@
           }
         }
       },
+      "format-date": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF056"
+          ],
+          "limitations": [
+            "authored-format-date-call"
+          ]
+        }
+      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -3082,6 +3342,14 @@
           ],
           "limitations": [
             "jsx-wrapped-in-non-children-prop"
+          ]
+        }
+      },
+      "loop-row-child-children-attrs": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-child-children-attrs-frozen"
           ]
         }
       },
@@ -3920,6 +4188,118 @@
           ]
         }
       },
+      "popover": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        }
+      },
+      "portal": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ref-callback-portal-content-inline-at-ssr"
+          ]
+        }
+      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -4366,6 +4746,62 @@
           ],
           "limitations": [
             "rich-typed-prop-hydration"
+          ]
+        }
+      },
+      "select": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "ref-effect-attr-state-ssr"
           ]
         }
       },
@@ -4948,9 +5384,21 @@
       }
     },
     "docs": {
+      "combobox": {
+        "description": "site/ui Combobox demo — typed filtering hides items via the hidden attribute; selection closes and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/combobox.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
+      },
+      "dialog": {
+        "description": "site/ui Dialog demo — portal-mounted modal: open via trigger, close via ESC and DialogClose,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dialog.ts"
+      },
+      "dropdown-menu": {
+        "description": "site/ui DropdownMenu demo — checkbox items toggle reactive aria-checked without closing the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dropdown-menu.ts"
       },
       "every-typeof-predicate": {
         "description": "Off-subset `.every()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -4980,6 +5428,10 @@
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
       },
+      "format-date": {
+        "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
+      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -4987,6 +5439,10 @@
       "jsx-element-prop-ternary": {
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
+      },
+      "loop-row-child-children-attrs": {
+        "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
@@ -5020,6 +5476,14 @@
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
       },
+      "popover": {
+        "description": "site/ui Popover demo — trigger-anchored portal overlay: toggle, ESC close, aria-expanded/data-state…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/popover.ts"
+      },
+      "portal": {
+        "description": "Portal overlay + content moved to document.body via ref callback, visibility via reactive hidden…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/portal.ts"
+      },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/preamble-cells.ts"
@@ -5035,6 +5499,10 @@
       "rich-prop-client-read": {
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
+      },
+      "select": {
+        "description": "site/ui Select demo — portal listbox selection round trip: item click writes the signal, closes,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/select.ts"
       },
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
@@ -5201,6 +5669,31 @@
         "BF101"
       ]
     },
+    "authored-format-date-call": {
+      "title": "Authored call to formatDate",
+      "kind": "refusal",
+      "given": "a template-position call to `formatDate` imported by name from `@barefootjs/client` (or its `/runtime` subpath), e.g. `{formatDate(date, pattern)}`",
+      "expected": "a compile-time refusal pointing at `date.toLocaleDateString(locale, { timeZone, ... })` with literal options, or `/* @client */` to defer the read",
+      "actual": "the compiler refuses with BF056",
+      "fixtures": [
+        "format-date"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF056"
+      ]
+    },
     "boolean-in-static-loop-item": {
       "title": "Boolean field in a static loop item",
       "kind": "refusal",
@@ -5314,6 +5807,19 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "loop-row-child-children-attrs-frozen": {
+      "title": "Reactive attributes on a JSX element passed as a loop-row child component's children are never patched after hydration",
+      "kind": "silent",
+      "given": "a `.map()` loop row that calls a child component passing a JSX element as `children`, where that element carries its own reactive attributes (e.g. `<Chip><a href={sig() === item ? …}>…</a></Chip>` inside `items.map(item => …)`)",
+      "expected": "the row's markup re-renders on every signal update the same way it does outside a loop: the forwarded element's attributes track the live signal value",
+      "actual": "keeps the attribute at whichever value the signal held when the row was built during SSR/CSR-template construction (no effect is ever emitted for it, so nothing touches it again after that), or on an adapter whose loop-array construction the shape also defeats (go-template: a function-body-local const array), drops the row entirely from SSR — same underlying gap, caught earlier",
+      "fixtures": [
+        "loop-row-child-children-attrs"
+      ],
+      "adapters": [
+        "go-template"
+      ]
     },
     "loop-row-child-text-children-markers-dropped": {
       "title": "Forwarded text children of a child component inside a keyed loop row lose their SSR slot markers on hydration",
@@ -5461,14 +5967,24 @@
       "kind": "silent",
       "given": "a component that moves part of its own markup to `document.body` from a `ref` callback (`createPortal(el, document.body, { ownerScope })`), the overlay/content pattern the dialog-style primitives use",
       "expected": "the server HTML places the portaled subtree where the hydrated DOM has it — appended to the body after the component root, carrying its owner scope as `bf-po` — so hydration changes nothing",
-      "actual": "renders the portaled subtree inline at its source position with no `bf-po` (a `ref` callback never runs at SSR); the hydrate-time callback then moves it to the end of `document.body` and stamps `bf-po`, so pre- and post-hydration DOM differ structurally",
+      "actual": "renders the portaled subtree inline at its source position with no `bf-po` on every adapter besides Hono (a `ref` callback never runs at SSR); the hydrate-time callback then moves it to the end of `document.body` and stamps `bf-po`, so pre- and post-hydration DOM differ structurally",
       "fixtures": [
         "dialog",
         "dropdown-menu",
         "popover",
         "portal"
       ],
-      "adapters": []
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "ref-effect-attr-state-ssr": {
       "title": "Attribute state computed in a ref callback or mount effect never reaches SSR",
@@ -5481,7 +5997,17 @@
         "command",
         "select"
       ],
-      "adapters": []
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "rich-typed-prop-hydration": {
       "title": "Rich-typed prop read by client code",

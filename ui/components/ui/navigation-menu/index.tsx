@@ -35,7 +35,8 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, trackPosition } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
+import { trackPosition } from '../../../lib/track-position'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { ChevronDownIcon } from '../icon'
@@ -325,6 +326,18 @@ function NavigationMenuTrigger(props: NavigationMenuTriggerProps) {
 interface NavigationMenuContentProps extends HTMLBaseAttributes {
   /** Content panel */
   children?: Child
+  /**
+   * The owning NavigationMenuItem's value. Match it to the sibling
+   * NavigationMenuItem's own `value` prop.
+   *
+   * Content is SSR-placed at the portal outlet (#3059) before any client
+   * JS runs, so by the time this component mounts it is no longer a DOM
+   * descendant of its NavigationMenuItem — `closest('[data-slot="navigation-menu-item"]')`
+   * finds nothing there. Passing `value` explicitly is the only way to
+   * recover it; omitting it falls back to the closest()-based lookup,
+   * which only still works pre-hydration/pre-portal (e.g. non-SSR tests).
+   */
+  value?: string
 }
 
 /**
@@ -334,11 +347,11 @@ interface NavigationMenuContentProps extends HTMLBaseAttributes {
  */
 function NavigationMenuContent(props: NavigationMenuContentProps) {
   const handleMount = (el: HTMLElement) => {
-    // Capture references before portal
-    const itemEl = el.closest('[data-slot="navigation-menu-item"]')
-    const itemValue = itemEl?.getAttribute('data-value') ?? ''
-    const triggerEl = itemEl?.querySelector('[data-slot="navigation-menu-trigger"]') as HTMLElement
-    const rootEl = el.closest('[data-slot="navigation-menu"]') as HTMLElement
+    // Item value and trigger/root refs, resolved before portal (see the
+    // `value` prop doc above for why closest() alone can't be trusted here).
+    const itemValue = props.value ?? el.closest('[data-slot="navigation-menu-item"]')?.getAttribute('data-value') ?? ''
+    const triggerEl = findSiblingSlot(el, `[data-slot="navigation-menu-trigger"][data-value="${itemValue}"]`)
+    const rootEl = findSiblingSlot(el, '[data-slot="navigation-menu"]')
     if (triggerEl) contentTriggerMap.set(el, triggerEl)
     if (rootEl) contentRootMap.set(el, rootEl)
 

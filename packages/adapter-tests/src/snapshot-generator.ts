@@ -8,7 +8,7 @@
  * conformance corpus stay in sync from a single source of truth.
  */
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
@@ -174,6 +174,72 @@ function stripInlinedSiblingImports(clientJs: string, spec: SharedFixtureSpec): 
   return out + clientJs.slice(cursor)
 }
 
+/**
+ * `ui/lib/*.ts` — ui-internal runtime helpers (e.g. `track-position`) that
+ * components import with the relative `../../../lib/<name>` specifier.
+ * The fixture host serves only the runtime bundle, declared
+ * `externalImports` and the fixture's own frozen client JS, so a relative
+ * helper import left in the combined bundle 404s in the browser and the
+ * whole module graph fails to hydrate. Inline each helper module once
+ * (type-stripped with `ts.transpileModule`) and drop the import
+ * declarations by span — the same TS-AST / span-splice idiom
+ * `stripInlinedSiblingImports` uses, never a regex over the JS text.
+ */
+const UI_LIB_DIR = resolve(import.meta.dir, '../../../ui/lib')
+const UI_LIB_IMPORT = /^\.\.\/\.\.\/\.\.\/lib\/([a-zA-Z0-9_-]+)$/
+
+function inlineUiLibImports(clientJs: string): string {
+  const sourceFile = ts.createSourceFile(
+    'combined.js',
+    clientJs,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ false,
+    ts.ScriptKind.JS,
+  )
+  const dropSpans: Array<[number, number]> = []
+  const libNames: string[] = []
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    const m = UI_LIB_IMPORT.exec(stmt.moduleSpecifier.text)
+    if (!m) continue
+    if (!libNames.includes(m[1])) libNames.push(m[1])
+    const end = stmt.getEnd()
+    dropSpans.push([stmt.getStart(sourceFile), clientJs[end] === '\n' ? end + 1 : end])
+  }
+  if (dropSpans.length === 0) return clientJs
+  let out = ''
+  let cursor = 0
+  for (const [start, end] of dropSpans) {
+    out += clientJs.slice(cursor, start)
+    cursor = end
+  }
+  out += clientJs.slice(cursor)
+  for (const name of libNames) {
+    const libPath = resolve(UI_LIB_DIR, `${name}.ts`)
+    const libSource = readFileSync(libPath, 'utf8')
+    const libSf = ts.createSourceFile(libPath, libSource, ts.ScriptTarget.Latest, false, ts.ScriptKind.TS)
+    // A helper with its own imports would need the same treatment
+    // recursively (and a runtime import would collide with the combined
+    // bundle's). None does today — refuse loudly rather than emit a bundle
+    // that only fails once the browser loads it.
+    for (const stmt of libSf.statements) {
+      if (ts.isImportDeclaration(stmt) && !stmt.importClause?.isTypeOnly) {
+        throw new Error(
+          `inlineUiLibImports: ui/lib/${name}.ts has a value import (${stmt.moduleSpecifier.getText(libSf)}); ` +
+            'inlining a helper with runtime dependencies is not supported — keep ui/lib helpers self-contained.',
+        )
+      }
+    }
+    const { outputText } = ts.transpileModule(libSource, {
+      fileName: libPath,
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020, removeComments: false },
+    })
+    out = `${out.trimEnd()}\n\n// ---- inlined ui/lib/${name}.ts ----\n${outputText.trimEnd()}\n`
+  }
+  return out
+}
+
 export interface GenerateSnapshotOptions {
   /**
    * Root component source text to compile/render instead of the on-disk
@@ -296,6 +362,7 @@ export async function generateSharedComponentSnapshotCore(
     // those bindings.
     clientJs = stripInlinedSiblingImports(clientJs, spec)
   }
+  clientJs = inlineUiLibImports(clientJs)
 
   const outDir = options.outDir ?? SNAPSHOT_DIR
   const outBasename = options.outBasename ?? spec.id
