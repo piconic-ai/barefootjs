@@ -278,6 +278,10 @@ bf._props(${userPropsPy})
 ${childRenderers}
 html = backend.render_named(${pyStr(toSnakeCase(componentName))}, bf, props)
 sys.stdout.write(html)
+# Mirrors where an app's own layout places \`{{ bf.portals() | safe }}\`
+# near </body> — after the component's own output (#3119). Collected but
+# never emitted otherwise, since this harness renders no layout at all.
+sys.stdout.write(bf.portals())
 `
     await Bun.write(resolve(tempDir, 'render.py'), renderScript)
 
@@ -427,6 +431,13 @@ function buildChildRenderers(
     lines.push(`        child_bf._child_renderers(bf._child_renderers())`)
     lines.push(`        child_bf._scripts(bf._scripts())`)
     lines.push(`        child_bf._script_seen(bf._script_seen())`)
+    // Shares the root's `_portal_elements` list object (#3119) — same
+    // reference-propagation `register_components_from_manifest` does in
+    // production (see `runtime.py`'s `register_portal_element`
+    // docstring): an `ssrPortalOwnerScope`-flagged element nested inside a
+    // child template (e.g. DialogContent inside Dialog) must reach the
+    // SAME collector this harness reads back via `bf.portals()`.
+    lines.push(`        child_bf._portal_elements(bf._portal_elements())`)
     // Seed template vars through the production `_derive_stash_from_defaults`
     // — resolves each entry's `propName` against the REAL `child_props`
     // (already keyword-mangled above), falling back to the static `value`;

@@ -234,6 +234,13 @@ def render_component(
                 # <script> set.
                 child_bf._scripts(bf._scripts())
                 child_bf._script_seen(bf._script_seen())
+                # Shares the SAME list object as `_scripts` above (#3119):
+                # an `ssrPortalOwnerScope`-flagged element (DialogContent,
+                # DropdownMenuContent, PopoverContent, the explicit
+                # `<Portal>` component) inside a hand-registered child like
+                # this one needs to reach the SAME collector the page root
+                # reads back via `bf.portals()` below.
+                child_bf._portal_elements(bf._portal_elements())
                 extra = child_init(props) if child_init else {}
                 return backend.render_named(child_template, child_bf, {**props, **extra})
 
@@ -248,13 +255,14 @@ def render_component(
         heading=heading,
         body=body,
         scripts=bf.scripts(),
+        portals=bf.portals(),
         extra_css=extra_css,
         back=back,
     )
 
 
 def layout(
-    *, title: str, heading: str, body: str, scripts: str, extra_css: str = "", back: Optional[str] = None,
+    *, title: str, heading: str, body: str, scripts: str, portals: str = "", extra_css: str = "", back: Optional[str] = None,
 ) -> str:
     heading_html = f"<h1>{heading}</h1>" if heading else ""
     # Subpages link back to the example list ($BASE/); the list page itself
@@ -291,6 +299,7 @@ def layout(
     {heading_html}
     <div id="app">{body}</div>
     {back_html}
+    {portals}
     {scripts}
 </body>
 </html>

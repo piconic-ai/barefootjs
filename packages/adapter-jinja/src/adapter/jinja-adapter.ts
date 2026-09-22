@@ -150,7 +150,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
 import { JINJA_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -613,17 +613,59 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
+    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
+    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) — the overlay/content
+    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
+    // this element's own tag, matching exactly what the client
+    // `createPortal(el, document.body, { ownerScope })` stamps onto the
+    // SAME element at hydrate time (`packages/client/src/runtime/
+    // portal.ts`), mirroring the Hono reference adapter's identical
+    // `BF_PORTAL_OWNER` stamp. The element itself is then routed through
+    // `wrapSsrPortalElement` below instead of returned for inline
+    // placement, so it renders at the `bf.portals()` outlet the app's own
+    // layout places near `</body>` — see that method's docstring.
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="{{ bf.scope_attr() }}"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
       'link', 'meta', 'param', 'source', 'track', 'wbr',
     ]
 
-    if (voidElements.includes(tag.toLowerCase())) {
-      return `<${tag}${attrs}${hydrationAttrs}>`
-    }
+    const rendered = voidElements.includes(tag.toLowerCase())
+      ? `<${tag}${attrs}${hydrationAttrs}>`
+      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+    if (element.ssrPortalOwnerScope) {
+      return this.wrapSsrPortalElement(rendered)
+    }
+    return rendered
+  }
+
+  /**
+   * Route an `ssrPortalOwnerScope`-flagged element's ALREADY-RENDERED
+   * markup (the `bf-po` attribute already stamped on its own tag) into
+   * `bf.register_portal_element` instead of leaving it at its source
+   * position (#3119).
+   *
+   * Jinja's native `{% set NAME %}…{% endset %}` set-block already
+   * captures a nested render into a variable — the same mechanism
+   * `renderComponent` uses for forwarded JSX children (see this file's
+   * "Children capture" header section) — so no ERB/Go-style output-buffer
+   * slicing or re-templating trick is needed: the element renders inline
+   * as normal Jinja (its own `{{ }}` interpolations evaluate exactly as
+   * they would anywhere else), the set-block captures the fully-evaluated
+   * result into a local, and a SEPARATE `{% set _ = … %}` statement (never
+   * `{{ }}`, so nothing prints at the source position) hands that string to
+   * the portal collector — mirroring how `register_script` calls are
+   * already threaded through `{% set %}` purely for their side effect
+   * (`generateHead`/`generateRuntimeScripts` above).
+   */
+  private wrapSsrPortalElement(rendered: string): string {
+    const captureName = `bf_po_${this.childrenCaptureCounter++}`
+    const sinkName = `bf_po_sink_${this.childrenCaptureCounter++}`
+    return `{% set ${captureName} %}${rendered}{% endset %}{% set ${sinkName} = bf.register_portal_element(${captureName}) %}`
   }
 
   /**
