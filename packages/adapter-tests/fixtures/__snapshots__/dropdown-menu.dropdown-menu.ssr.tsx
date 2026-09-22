@@ -5,6 +5,7 @@ import { trackPosition } from '../../../lib/track-position'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
+import { collectSsrPortalElement } from '@barefootjs/hono/portals'
 
 interface DropdownMenuContextValue {
   open: () => boolean
@@ -297,7 +298,7 @@ export function DropdownMenuContent(__allProps: DropdownMenuContentProps & { __i
   }
 
   return (
-    <div data-slot="dropdown-menu-content" data-state="closed" role="menu" id={props.id} tabindex={-1} className={`${dropdownMenuContentBaseClasses} ${dropdownMenuContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
+    <>{collectSsrPortalElement(__scopeId, <div data-slot="dropdown-menu-content" data-state="closed" role="menu" id={props.id} tabindex={-1} className={`${dropdownMenuContentBaseClasses} ${dropdownMenuContentClosedClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0" bf-po={__scopeId}>{props.children}</div>)}</>
   )
 }
 

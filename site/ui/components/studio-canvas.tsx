@@ -579,7 +579,7 @@ export function StudioCanvas() {
           <Menubar>
             <MenubarMenu value="file">
               <MenubarTrigger>File</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent value="file">
                 <MenubarItem>New Tab</MenubarItem>
                 <MenubarItem>New Window</MenubarItem>
                 <MenubarSeparator />
@@ -588,14 +588,14 @@ export function StudioCanvas() {
             </MenubarMenu>
             <MenubarMenu value="edit">
               <MenubarTrigger>Edit</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent value="edit">
                 <MenubarItem>Undo</MenubarItem>
                 <MenubarItem>Redo</MenubarItem>
               </MenubarContent>
             </MenubarMenu>
             <MenubarMenu value="view">
               <MenubarTrigger>View</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent value="view">
                 <MenubarItem>Zoom In</MenubarItem>
                 <MenubarItem>Zoom Out</MenubarItem>
               </MenubarContent>
@@ -608,14 +608,14 @@ export function StudioCanvas() {
             <NavigationMenuList>
               <NavigationMenuItem value="docs">
                 <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
-                <NavigationMenuContent>
+                <NavigationMenuContent value="docs">
                   <NavigationMenuLink href="/components/button">Introduction</NavigationMenuLink>
                   <NavigationMenuLink href="/components/input">Installation</NavigationMenuLink>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem value="api">
                 <NavigationMenuTrigger>API</NavigationMenuTrigger>
-                <NavigationMenuContent>
+                <NavigationMenuContent value="api">
                   <NavigationMenuLink href="/components">Reference</NavigationMenuLink>
                 </NavigationMenuContent>
               </NavigationMenuItem>

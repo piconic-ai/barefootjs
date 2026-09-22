@@ -30,7 +30,7 @@
  * <Menubar>
  *   <MenubarMenu value="file">
  *     <MenubarTrigger>File</MenubarTrigger>
- *     <MenubarContent>
+ *     <MenubarContent value="file">
  *       <MenubarItem>New Tab</MenubarItem>
  *       <MenubarItem>New Window</MenubarItem>
  *     </MenubarContent>
@@ -39,7 +39,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal } from '@barefootjs/client'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
 import { trackPosition } from '../../../lib/track-position'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
@@ -267,19 +267,30 @@ interface MenubarContentProps extends HTMLBaseAttributes {
   children?: Child
   /** Alignment relative to trigger */
   align?: 'start' | 'end'
+  /**
+   * The owning MenubarMenu's value. Match it to the sibling MenubarMenu's
+   * own `value` prop.
+   *
+   * Content is SSR-placed at the portal outlet (#3059) before any client
+   * JS runs, so by the time this component mounts it is no longer a DOM
+   * descendant of its MenubarMenu — `closest('[data-slot="menubar-menu"]')`
+   * finds nothing there. Passing `value` explicitly is the only way to
+   * recover it; omitting it falls back to the closest()-based lookup,
+   * which only still works pre-hydration/pre-portal (e.g. non-SSR tests).
+   */
+  value?: string
 }
 
 /**
  * Content container for menu items. Portaled to body, positioned below trigger.
  * ArrowLeft/Right navigates to adjacent menubar triggers.
- * Derives menu value from parent MenubarMenu's data-value attribute.
  */
 function MenubarContent(props: MenubarContentProps) {
   const handleMount = (el: HTMLElement) => {
-    // Get menu value and trigger ref before portal
-    const menuEl = el.closest('[data-slot="menubar-menu"]')
-    const menuValue = menuEl?.getAttribute('data-value') ?? ''
-    const triggerEl = menuEl?.querySelector('[data-slot="menubar-trigger"]') as HTMLElement
+    // Menu value and trigger ref, resolved before portal (see the `value`
+    // prop doc above for why closest() alone can't be trusted here).
+    const menuValue = props.value ?? el.closest('[data-slot="menubar-menu"]')?.getAttribute('data-value') ?? ''
+    const triggerEl = findSiblingSlot(el, `[data-slot="menubar-trigger"][data-value="${menuValue}"]`)
     if (triggerEl) contentTriggerMap.set(el, triggerEl)
 
     // Portal to body

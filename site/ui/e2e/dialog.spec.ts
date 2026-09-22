@@ -88,8 +88,13 @@ test.describe('Dialog Documentation Page', () => {
       const openDialog = page.locator('[role="dialog"][aria-labelledby="dialog-title"][data-state="open"]')
       await expect(openDialog).toBeVisible()
 
-      // Overlay is also portaled to body
-      const overlay = page.locator('[data-slot="dialog-overlay"]').first()
+      // Overlay is also portaled to body. Scoped by `bf-h` (this instance's
+      // own host prefix), not `.first()` in document order: #3059 moved
+      // every Dialog instance's portal-placed overlay/content into one
+      // shared outlet, so document order no longer matches this page's
+      // visual section order — `.first()` picked a DIFFERENT instance's
+      // (e.g. the Playground demo's) overlay once portal content moved.
+      const overlay = page.locator('[data-slot="dialog-overlay"][bf-h^="DialogBasicDemo_"]')
       await overlay.click({ position: OVERLAY_CLICK_POSITION })
 
       // Dialog should be closed (data-state changes to "closed")
@@ -181,7 +186,9 @@ test.describe('Dialog Documentation Page', () => {
     test('close via overlay click', async ({ page }) => {
       const basicDemo = page.locator('[bf-s^="DialogBasicDemo_"][bf-r]').first()
       const trigger = basicDemo.locator('button:has-text("Create Task")')
-      const overlay = page.locator('[data-slot="dialog-overlay"]').first()
+      // Scoped by `bf-h`, not `.first()` — see the comment on the identical
+      // locator in the "Basic Dialog" describe block above.
+      const overlay = page.locator('[data-slot="dialog-overlay"][bf-h^="DialogBasicDemo_"]')
 
       await trigger.click()
 

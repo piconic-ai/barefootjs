@@ -5,7 +5,7 @@
  * Maps an element to its comment node and the sibling range boundary.
  */
 
-import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX, BF_LOOP_ITEM, BF_LOOP_END } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX, BF_LOOP_ITEM, BF_LOOP_END, BF_HOST, BF_PORTAL_OWNER } from '@barefootjs/shared'
 
 /**
  * Information about a comment-based scope.
@@ -27,6 +27,96 @@ export const commentScopeRegistry = new WeakMap<Element, CommentScopeInfo>()
 export function getPortalScopeId(element: Element): string | null {
   const info = commentScopeRegistry.get(element)
   return info?.scopeId ?? null
+}
+
+/**
+ * Find the `<!--bf-scope:ID-->` (or `bf-scope:ID|props`) comment for a
+ * scope id, searching the whole document. Shared by `resolveScopeElement`
+ * and `findInScope` below — both need this same lookup, then do
+ * different things with the hit.
+ */
+function findScopeComment(scopeId: string): Comment | null {
+  const prefix = BF_SCOPE_COMMENT_PREFIX + scopeId
+  const walker = document.createTreeWalker(document, NodeFilter.SHOW_COMMENT)
+  let node: Comment | null
+  while ((node = walker.nextNode() as Comment | null)) {
+    const value = node.nodeValue ?? ''
+    if (value === prefix || value.startsWith(`${prefix}|`)) return node
+  }
+  return null
+}
+
+/**
+ * Resolve the DOM element standing in for a scope id, whether that scope
+ * is element-based (`bf-s="<id>"`) or comment-based (a fragment root, or
+ * a root-is-a-child-call wrapper, #2649) — the shape a `bf-h` value can
+ * legally name either way.
+ *
+ * A comment scope has no element of its own to carry the id, so a bare
+ * `[bf-s="<id>"]` lookup silently returns null for it. Every caller that
+ * jumps to a `bf-h`/`bf-po` target by id (`useContext`'s DOM-ancestor
+ * walk, `findSiblingSlot`) needs that case too, or it falls through to
+ * an UNSCOPED, page-wide search — reintroducing exactly the cross-
+ * instance-leak bug class those jumps exist to prevent (measured: a
+ * ContextMenu on a reference page stacking several demo instances, each
+ * `<ContextMenuBasicDemo>`-style wrapper a single child-component call
+ * and therefore comment-scoped, resolved every instance's trigger to
+ * the page's FIRST context-menu-trigger once bf-h lookup silently failed
+ * and the caller fell back to `document.body.querySelector(...)`).
+ *
+ * Returns the exact element `hydrateCommentScope` (hydrate.ts) registers
+ * in `commentScopeRegistry` for the comment case — the comment's own next
+ * element sibling, or its parent when it has none — recomputed by the
+ * same rule against the live DOM, so identity-keyed lookups against that
+ * registry still hit.
+ */
+export function resolveScopeElement(scopeId: string): Element | null {
+  const direct = document.querySelector(`[${BF_SCOPE}="${scopeId}"]`)
+  if (direct) return direct
+
+  const comment = findScopeComment(scopeId)
+  return comment ? (comment.nextElementSibling ?? comment.parentElement) : null
+}
+
+/**
+ * Find a descendant of a scope id matching `selector` — a PLAIN, unfiltered
+ * match (self or `querySelector`), comment-scope aware.
+ *
+ * Deliberately NOT `find()` (query.ts): `find()`'s `candidatesInScope`/
+ * `belongsToScope` exist to resolve the COMPILER's own declared slot
+ * children, and reject a candidate that carries its own `bf-s` — correct
+ * there (it means the candidate belongs to a nested child scope, not this
+ * one's own template), but wrong for this caller's question, which is
+ * just "does an element matching this selector live in this scope's
+ * content, however deep, even if it's itself a separately-scoped
+ * component?" (e.g. `<ContextMenuTrigger>`, itself a scoped child, living
+ * beside `<ContextMenuContent>` under the same `<ContextMenu>` scope) —
+ * `find()` rejects exactly that shape and silently returns null.
+ *
+ * The comment-scope case additionally can't stop at one element: a
+ * fragment-root/root-is-a-child-call scope's content may be SEVERAL
+ * top-level sibling nodes in the comment's range, not just the one
+ * `resolveScopeElement` returns as a representative proxy.
+ */
+export function findInScope(scopeId: string, selector: string): Element | null {
+  const direct = document.querySelector(`[${BF_SCOPE}="${scopeId}"]`)
+  if (direct) return direct.matches(selector) ? direct : direct.querySelector(selector)
+
+  const comment = findScopeComment(scopeId)
+  if (!comment) return null
+
+  const boundary = getCommentScopeBoundary(comment)
+  let node: Node | null = comment.nextSibling
+  while (node && node !== boundary) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element
+      if (el.matches(selector)) return el
+      const found = el.querySelector(selector)
+      if (found) return found
+    }
+    node = node.nextSibling
+  }
+  return null
 }
 
 /**
@@ -53,6 +143,146 @@ export function getPortalScopeId(element: Element): string | null {
  */
 export function ownScopeId(element: Element): string | null {
   return commentScopeRegistry.get(element)?.scopeId ?? element.getAttribute(BF_SCOPE)
+}
+
+/**
+ * True if `element` sits within a comment-based scope's sibling range — the
+ * comment node itself to the next `bf-scope:`/end-marker comment (or the
+ * end of the parent's children). Exported for `query.ts`'s `find()`/
+ * `findCondTarget()`/`commentBelongsToScope()`, which need this same check
+ * against a comment they already hold, not a registered scope element —
+ * `isWithinScope` below is the scope-element-keyed sibling.
+ */
+export function isInCommentScopeRange(element: Element, commentNode: Comment): boolean {
+  const boundary = getCommentScopeBoundary(commentNode)
+  let node: Node | null = commentNode.nextSibling
+  while (node && node !== boundary) {
+    if (node === element || (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(element))) {
+      return true
+    }
+    node = node.nextSibling
+  }
+  return false
+}
+
+/**
+ * True if `el` physically sits inside `scope`'s own DOM range: its subtree
+ * for an element scope, or the registered comment's sibling range for a
+ * comment-anchored scope. Used by `relocatedDescendants` to tell a
+ * genuinely relocated element (SSR-portal outlet placement, or a
+ * hydrate-time `createPortal` that already ran) apart from one that merely
+ * carries `bf-h`/`bf-po` pointing at `scope` while still sitting in its
+ * normal SSR position (an adapter with no portal outlet, or a client
+ * portal that hasn't run yet).
+ */
+function isWithinScope(scope: Element, el: Element): boolean {
+  if (scope === el) return true
+  const info = commentScopeRegistry.get(scope)
+  return info ? isInCommentScopeRange(el, info.commentNode) : scope.contains(el)
+}
+
+/**
+ * The scope element a relocated element `el` logically hangs off: its
+ * `bf-h` (the host it was upserted from — by the (bf-h, bf-m) slot-identity
+ * invariant this is never `el` itself) when set, else a non-self `bf-po`
+ * (an explicit `<Portal>` wrapper, which has no `bf-h` of its own, or a
+ * self-owner-stamped component root whose `bf-po` happens to equal a TRUE
+ * ancestor rather than itself — doesn't occur in any shipped shape today,
+ * but the check costs nothing to keep). `null` when neither attribute
+ * points anywhere but `el`.
+ *
+ * The ONE child-to-host hop in the runtime: `useContext` (`context.ts`)
+ * calls this directly for its own DOM-ancestor walk, and
+ * `relocatedDescendants` below uses it in the opposite (host-to-child)
+ * direction to find its own relocated descendants. bf-h is tried before
+ * bf-po (rather than the other way around) because it's the stronger
+ * invariant — never self-referential by construction — so for the shape
+ * that actually has both attributes (a self-owner component root, whose
+ * `bf-po` IS self-referential) bf-h alone is already the right answer,
+ * with no need to try `bf-po` and discover it's useless first.
+ */
+export function logicalHost(el: Element): Element | null {
+  const own = ownScopeId(el)
+  const hostId = el.getAttribute(BF_HOST)
+  const ownerId = el.getAttribute(BF_PORTAL_OWNER)
+  const id = hostId && hostId !== own ? hostId : ownerId && ownerId !== own ? ownerId : null
+  if (!id) return null
+  const host = resolveScopeElement(id)
+  return host && host !== el ? host : null
+}
+
+/**
+ * Elements that physically render OUTSIDE `scope`'s own DOM range but still
+ * logically belong to it. The SSR-portal-outlet placement (#3059) and
+ * `createPortal`'s hydrate-time relocation both move a scope's own children
+ * out from under it, breaking every consumer that finds "this scope's
+ * content" by walking its literal subtree — `commentsInScope`, `find`'s
+ * portal fallback, `$t`, `findSsrScopeBySlotIn`. This generator is the
+ * physical complement of those subtree walks: elements reachable from
+ * `scope` by (bf-h, bf-po) but NOT already inside its own range. Every
+ * consumer here returns on first match and only pulls from this generator
+ * AFTER its own in-range search already failed, so the common,
+ * non-relocated path never runs this body at all.
+ *
+ * Two passes:
+ *  1. Direct hop — an element whose `bf-h` names `scope` outright (a
+ *     self-owner-portaled child component, whose own root carries `bf-s`
+ *     and therefore stamps `bf-po` to ITS OWN id, never `scope`'s — see
+ *     `logicalHost`'s doc comment), or an explicit `<Portal>` wrapper
+ *     (`bf-pi`, no `bf-s`) whose `bf-po` names `scope` directly.
+ *  2. Transitive — only walked once the direct hop is exhausted. Covers
+ *     multi-hop forwarding: a component that itself forwards `children`
+ *     into a portaled grandchild (e.g. `CommandDialog` forwarding into
+ *     `DialogContent`) — the candidate's own host chain (`logicalHost`,
+ *     followed repeatedly) eventually lands inside `scope`. Bounded at 16
+ *     hops so malformed/cyclic markup can't loop forever; every real
+ *     forwarding chain in this codebase is at most two or three deep.
+ *
+ * Does NOT bridge content forwarded through more than one authoring layer,
+ * looped or not: a component that itself forwards `children` into a
+ * component it did not author further down (e.g. `Select` > `SelectContent`
+ * > `SelectItem`, all three called directly in one caller's own JSX) stamps
+ * every one of them with the OUTERMOST author's `bf-h`, never an
+ * intermediate wrapper's — so seeded from `Select`'s own scope, this
+ * scope-to-descendant graph walk can never reach `SelectItem` at all (wrong
+ * host entirely, not a matching bug). `__bfParent` compounds this for a
+ * `.map()` row specifically: it is the ENCLOSING component's own instance
+ * id, computed once for the whole loop rather than once per row
+ * (`hono-adapter.ts`), so every row's copies of a forwarded chain like this
+ * one carry the IDENTICAL (bf-h, bf-m) pair too. `findSsrScopeBySlotIn`
+ * (slot-resolver.ts) works around both at once for its own DISCOVERY
+ * question ("which physical element is this row's own child at this slot")
+ * by searching each relocated candidate's own subtree, not just the
+ * candidate itself, with a `hydratedScopes`-order tiebreak for the looped
+ * case (#3115) — this generator's answer to "what is reachable FROM
+ * `scope`" stays structurally unable to answer the multi-hop-forwarding
+ * question the same way, since `scope` here is never the `bf-h` these
+ * elements actually carry.
+ */
+export function* relocatedDescendants(scope: Element): Generator<Element> {
+  const id = ownScopeId(scope)
+  if (!id) return
+
+  const seen = new Set<Element>()
+  for (const el of document.querySelectorAll(
+    `[${BF_HOST}="${id}"][${BF_PORTAL_OWNER}], [${BF_PORTAL_OWNER}="${id}"]`
+  )) {
+    if (isWithinScope(scope, el)) continue
+    seen.add(el)
+    yield el
+  }
+
+  for (const el of document.querySelectorAll(`[${BF_PORTAL_OWNER}]`)) {
+    if (seen.has(el) || isWithinScope(scope, el)) continue
+    let cur: Element | null = el
+    for (let hops = 0; hops < 16 && cur; hops++) {
+      cur = logicalHost(cur)
+      if (cur && isWithinScope(scope, cur)) {
+        yield el
+        break
+      }
+    }
+  }
 }
 
 /**

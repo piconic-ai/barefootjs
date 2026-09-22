@@ -69,7 +69,7 @@ function MenubarPlayground(_props: {}) {
         <Menubar>
           <MenubarMenu value="file">
             <MenubarTrigger>File</MenubarTrigger>
-            <MenubarContent>
+            <MenubarContent value="file">
               <MenubarItem disabled={disabled()}>
                 <span>New Tab</span>
                 <MenubarShortcut>⌘T</MenubarShortcut>

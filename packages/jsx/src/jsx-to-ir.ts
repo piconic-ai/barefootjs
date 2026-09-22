@@ -1694,7 +1694,7 @@ function transformHtmlElement(
   ctx: TransformContext,
   tagName: string
 ): IRElement {
-  const { attrs, events, ref } = processAttributes(
+  const { attrs, events, ref, ssrPortalOwnerScope } = processAttributes(
     node.openingElement.attributes,
     ctx
   )
@@ -1726,6 +1726,7 @@ function transformHtmlElement(
     children,
     slotId,
     needsScope,
+    ...(ssrPortalOwnerScope && { ssrPortalOwnerScope }),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -1759,7 +1760,7 @@ function transformSelfClosingElement(
     return transformSelfClosingComponent(node, ctx, resolved ?? tagName)
   }
 
-  const { attrs, events, ref } = processAttributes(node.attributes, ctx)
+  const { attrs, events, ref, ssrPortalOwnerScope } = processAttributes(node.attributes, ctx)
   const selfClosingChildren: IRNode[] = []
   lowerFormControlValueSsr(tagName, attrs, selfClosingChildren)
 
@@ -1779,6 +1780,7 @@ function transformSelfClosingElement(
     children: selfClosingChildren,
     slotId,
     needsScope,
+    ...(ssrPortalOwnerScope && { ssrPortalOwnerScope }),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -6422,6 +6424,8 @@ interface ProcessedAttributes {
   attrs: IRAttribute[]
   events: IREvent[]
   ref: string | null
+  /** See {@link isSsrPortalRefCallback}. */
+  ssrPortalOwnerScope: boolean
 }
 
 // Spread expansion: shared between HTML attrs and component props.
@@ -6557,6 +6561,7 @@ function processAttributes(
   const attrs: IRAttribute[] = []
   const events: IREvent[] = []
   let ref: string | null = null
+  let ssrPortalOwnerScope = false
 
   for (const attr of attributes.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
@@ -6576,6 +6581,7 @@ function processAttributes(
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         ref = ctx.getJS(attr.initializer.expression)
+        ssrPortalOwnerScope = isSsrPortalRefCallback(attr.initializer.expression, ctx)
       }
       continue
     }
@@ -6647,7 +6653,180 @@ function processAttributes(
     })
   }
 
-  return { attrs, events, ref }
+  return { attrs, events, ref, ssrPortalOwnerScope }
+}
+
+// =============================================================================
+// SSR portal ref-callback recognition (#3059)
+// =============================================================================
+
+/**
+ * Structural (AST-only, no text/regex matching) recognition of the
+ * `ref`-callback portal pattern the Dialog/DropdownMenu/Popover/Portal
+ * primitives use: a `ref` bound to a LOCAL, NAMED function (arrow-const,
+ * function-expression-const, or `function` declaration) whose body — at
+ * any statement depth, e.g. inside an `if` guard — directly calls
+ * `createPortal(<the callback's own first param>, document.body, { ownerScope: … })`.
+ *
+ * Recognizing only the DIRECT call (never through a second helper
+ * function) is a deliberate, checked choice, not a shortcut: every
+ * shipped `ref`-callback portal user (dialog, dropdown-menu, popover,
+ * portal) calls `createPortal` directly inside the `ref` callback itself
+ * — there is no indirection through a shared `moveToBody`-style helper
+ * anywhere in `ui/components/ui/*` today. Recognizing through a helper
+ * (the "worth the scope-walk?" open question from #3059) is therefore
+ * left for when a real caller needs it.
+ *
+ * A match makes `element.ssrPortalOwnerScope` true, which the Hono
+ * adapter (the only adapter with an SSR portal outlet so far) uses to
+ * place the element's SSR markup at the outlet instead of inline — see
+ * `ref-callback-portal-content-inline-at-ssr` in the known-limitation
+ * registry for the adapters that don't yet.
+ */
+function isSsrPortalRefCallback(refExpr: ts.Expression, ctx: TransformContext): boolean {
+  if (!ts.isIdentifier(refExpr)) return false
+  const owner = findEnclosingFunctionLike(refExpr)
+  if (!owner || !owner.body) return false
+  const callback = findNamedCallbackInScope(refExpr.text, owner.body)
+  if (!callback) return false
+  const { param, body } = callback
+  if (!param) return false
+  return containsSsrPortalPlacementCall(body, param)
+}
+
+interface LocalCallback {
+  param: string | undefined
+  body: ts.Node
+}
+
+type FunctionLike = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration
+
+function isFunctionLike(node: ts.Node): node is FunctionLike {
+  return ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node)
+}
+
+/**
+ * Walk `.parent` links up from `node` to the nearest enclosing function
+ * (arrow, function expression, or `function` declaration) — the
+ * component (or nested callback) whose own body directly contains the
+ * JSX this `ref` sits in.
+ */
+function findEnclosingFunctionLike(node: ts.Node): FunctionLike | undefined {
+  let current: ts.Node | undefined = node.parent
+  while (current) {
+    if (isFunctionLike(current)) return current
+    current = current.parent
+  }
+  return undefined
+}
+
+/**
+ * Find a NAMED function (`const name = (…) => {…}`, `const name =
+ * function (…) {…}`, or `function name(…) {…}`) declared directly in
+ * `scopeBody` — the enclosing component/callback's own body — and
+ * return its first parameter's name (when it's a plain identifier) and
+ * body. Deliberately scope-limited to ONE enclosing function level
+ * (real component functions declare their portal callback in their own
+ * body, never in an outer closure), and never descends into a NESTED
+ * function/arrow's own body while searching: two sibling components in
+ * the same file can each declare their own same-named callback (e.g.
+ * `DialogTrigger`'s and `DialogOverlay`'s own, unrelated `handleMount`),
+ * and reaching into the wrong one's closure would misattribute its
+ * behavior to this `ref`.
+ */
+function findNamedCallbackInScope(name: string, scopeBody: ts.Node): LocalCallback | undefined {
+  let found: LocalCallback | undefined
+  const visit = (node: ts.Node, isScopeRoot: boolean): void => {
+    if (found) return
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name &&
+      node.initializer &&
+      (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer))
+    ) {
+      found = { param: firstSimpleParamName(node.initializer), body: node.initializer.body }
+      return
+    }
+    if (ts.isFunctionDeclaration(node) && node.name?.text === name && node.body) {
+      found = { param: firstSimpleParamName(node), body: node.body }
+      return
+    }
+    // A nested function/arrow other than `scopeBody` itself is a separate
+    // lexical scope — stop, don't search inside it.
+    if (!isScopeRoot && isFunctionLike(node)) return
+    ts.forEachChild(node, child => visit(child, false))
+  }
+  visit(scopeBody, true)
+  return found
+}
+
+function firstSimpleParamName(
+  fn: ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration,
+): string | undefined {
+  const first = fn.parameters[0]
+  return first && ts.isIdentifier(first.name) ? first.name.text : undefined
+}
+
+/**
+ * Walk every descendant of `body` for a `createPortal(<paramName>,
+ * document.body, { ownerScope: … })` call — the exact triple the
+ * shipped components pass. Requires the `ownerScope` option: without it
+ * the client-side `createPortal` never stamps `bf-po`, so SSR placing
+ * the element at the outlet and adding `bf-po` would itself create a new
+ * SSR/hydration mismatch instead of closing the existing one.
+ *
+ * Deliberately does NOT stop at a nested function/arrow boundary the way
+ * `findNamedCallbackInScope` does: `SelectContent`
+ * (`ui/components/ui/select/index.tsx`) defers its call through
+ * `queueMicrotask(() => createPortal(el, document.body, { ownerScope
+ * }))` — still the SAME `ref` callback's own call, just scheduled async,
+ * not routed through a separately-declared helper — and must match here
+ * the same as a direct call. The `if (…) createPortal(…)` guard that
+ * decides WHETHER to call still runs synchronously inside `handleMount`
+ * itself; only the call is deferred. So once SSR places the element at
+ * the outlet with `bf-po`, hydration's `isSSRPortal(el)` check is true
+ * before the microtask would even be scheduled, keeping the guard a
+ * no-op exactly like the direct-call components. The "DIRECT call only"
+ * guarantee `isSsrPortalRefCallback`'s docstring describes is about NOT
+ * crossing into a separately-declared helper function's own body (see
+ * `findNamedCallbackInScope`'s scope limit for that), not about this
+ * same-callback scheduling deferral.
+ */
+function containsSsrPortalPlacementCall(body: ts.Node, paramName: string): boolean {
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    if (ts.isCallExpression(node) && isSsrPortalPlacementCall(node, paramName)) {
+      found = true
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(body)
+  return found
+}
+
+function isSsrPortalPlacementCall(call: ts.CallExpression, paramName: string): boolean {
+  if (!ts.isIdentifier(call.expression) || call.expression.text !== 'createPortal') return false
+  const [target, container, options] = call.arguments
+  if (!target || !ts.isIdentifier(target) || target.text !== paramName) return false
+  if (!container || !isDocumentBodyAccess(container)) return false
+  if (!options || !ts.isObjectLiteralExpression(options)) return false
+  return options.properties.some(p => {
+    if (ts.isShorthandPropertyAssignment(p)) return p.name.text === 'ownerScope'
+    if (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) return p.name.text === 'ownerScope'
+    return false
+  })
+}
+
+function isDocumentBodyAccess(expr: ts.Expression): boolean {
+  return (
+    ts.isPropertyAccessExpression(expr) &&
+    ts.isIdentifier(expr.expression) &&
+    expr.expression.text === 'document' &&
+    expr.name.text === 'body'
+  )
 }
 
 function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrValue {

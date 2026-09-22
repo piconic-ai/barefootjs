@@ -45,7 +45,7 @@ function BasicNavigationMenu() {
       <NavigationMenuList>
         <NavigationMenuItem value="getting-started">
           <NavigationMenuTrigger>Getting Started</NavigationMenuTrigger>
-          <NavigationMenuContent className="w-[400px] md:w-[500px]">
+          <NavigationMenuContent value="getting-started" className="w-[400px] md:w-[500px]">
             <ul className="grid gap-3 p-4 md:grid-cols-2">
               <li>
                 <NavigationMenuLink href="/docs">
@@ -80,7 +80,7 @@ function NavigationWithLinks() {
       <NavigationMenuList>
         <NavigationMenuItem value="docs">
           <NavigationMenuTrigger>Documentation</NavigationMenuTrigger>
-          <NavigationMenuContent className="w-[300px]">
+          <NavigationMenuContent value="docs" className="w-[300px]">
             <ul className="grid gap-3 p-4">
               <li>
                 <NavigationMenuLink href="/docs/intro">

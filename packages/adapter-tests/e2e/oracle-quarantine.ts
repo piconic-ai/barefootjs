@@ -142,50 +142,33 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
       'Row hydration rewrites each forwarded cell text with textContent, dropping the <!--bf:^sN--> slot markers SSR emitted; the text itself is unchanged.',
     limitation: 'loop-row-child-text-children-markers-dropped',
   },
-  // Registry limitation `ref-callback-portal-content-inline-at-ssr`
-  // (direction corrected 2026-09-18 — `assertSnapshotsAgree` reports
-  // Received = SSR, Expected = hydrated): SSR renders the overlay/content
-  // subtree INLINE at its source position with no `bf-po`; the hydrate-time
-  // `ref` callback's `createPortal` then moves it to the end of
-  // `document.body` and stamps `bf-po`. So the marker is not "lost" after
-  // hydration — it is ADDED, together with the relocation, because a `ref`
-  // callback never runs at SSR and no adapter places the subtree at its
-  // portal destination server-side.
-  // `idempotence` graduated (#2717): the hydrated and csr-mount legs used
-  // to disagree on where in `document.body`'s child order the portal
-  // content sits relative to the main content — `[root, …portals]` vs
-  // `[…portals, root]`, because a bare `createComponent()` runs `init`
-  // (and the `ref` → `createPortal` calls) before its caller appends the
-  // root. Fixed in `createPortal` (`packages/client/src/runtime/portal.ts`):
-  // a portal is still appended at call time, and is re-appended (moved to
-  // the container's end) once its `ownerScope` connects, so both paths
-  // land on the hydration order. Verified with the real
-  // oracle run; the measured divergence was present before any action
-  // step ran, so it was a mount-order defect, not an interaction one.
-  dialog: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR renders the dialog overlay/content inline inside the component root with no bf-po; hydration\'s createPortal moves it to the end of document.body and stamps bf-po="DialogBasicDemo_test_s1".',
-    limitation: 'ref-callback-portal-content-inline-at-ssr',
-  },
-  'dropdown-menu': {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR renders the menu content inline with no bf-po; hydration relocates it to document.body and stamps bf-po="DropdownMenuCheckboxDemo_test_s5" — same shape as dialog.',
-    limitation: 'ref-callback-portal-content-inline-at-ssr',
-  },
-  popover: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR renders the popover content inline with no bf-po; hydration relocates it to document.body and stamps bf-po="PopoverBasicDemo_test_s1" — same shape as dialog.',
-    limitation: 'ref-callback-portal-content-inline-at-ssr',
-  },
-  portal: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'SSR renders the overlay and content divs inline with no bf-po; hydration relocates both to document.body and stamps bf-po="PortalExample_test" — same shape as dialog (this fixture IS the portal primitive demo).',
-    limitation: 'ref-callback-portal-content-inline-at-ssr',
-  },
+  // `dialog` / `dropdown-menu` / `popover` / `portal` graduated (#3059):
+  // the compiler now recognizes the `ref`-callback SSR-portal pattern
+  // structurally (`ssrPortalOwnerScope`, `isSsrPortalRefCallback` in
+  // `@barefootjs/jsx`) and the Hono adapter places the flagged element
+  // at its `<BfPortals />` outlet during SSR (`collectSsrPortalElement`,
+  // `packages/adapter-hono/src/portals.tsx`), stamping `bf-po` directly
+  // on it — the same attribute, same position, the hydrate-time
+  // `createPortal` used to add. At hydrate time the element's
+  // `parentNode` is already the outlet's container, so the `ref`
+  // callback's own `el.parentNode !== document.body` guard is false and
+  // `createPortal` never runs — confirmed structurally by
+  // `isSSRPortal` (`packages/client/src/runtime/portal.ts`) also now
+  // recognizing `bf-po` set directly on the element (not just a `bf-pi`
+  // wrapper ancestor, the shape the explicit `<Portal>` component uses),
+  // so the guard stays a no-op even where an outlet isn't literally
+  // `document.body`'s direct child. Verified via the real
+  // `renderHonoComponent`/`generate-expected-html.ts` pipeline against
+  // the exact hydrated shape these rows used to document (`bf-po`
+  // appended after the component root); the real-browser oracle run
+  // itself could not be executed in this sandbox (Playwright's Chromium
+  // download is network-blocked here) — CI's `oracle.playwright.ts` run
+  // on the PR is the outstanding verification for this graduation.
+  // `idempotence` graduated earlier (#2717) for the same fixture group —
+  // see the registry entry `ref-callback-portal-content-inline-at-ssr`
+  // for the adapters (every one but Hono) that still exhibit the
+  // original divergence; their `expectedHtml`-vs-adapter-render
+  // conformance pins live in each adapter's `render-divergences.ts`.
   // `tabs` graduated (#2728): fixed in `materializeComponent`
   // (`packages/client/src/runtime/component.ts`) — see the changeset for
   // the root-cause narrative. Verified with the real oracle run.

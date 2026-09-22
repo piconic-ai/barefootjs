@@ -40,7 +40,7 @@ export function MenubarApplicationDemo() {
     <Menubar>
       <MenubarMenu value="file">
         <MenubarTrigger>File</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="file">
           <MenubarItem>
             <span>New Tab</span>
             <MenubarShortcut>⌘T</MenubarShortcut>
@@ -79,7 +79,7 @@ export function MenubarApplicationDemo() {
 
       <MenubarMenu value="edit">
         <MenubarTrigger>Edit</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="edit">
           <MenubarItem>
             <span>Undo</span>
             <MenubarShortcut>⌘Z</MenubarShortcut>
@@ -121,7 +121,7 @@ export function MenubarApplicationDemo() {
 
       <MenubarMenu value="view">
         <MenubarTrigger>View</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="view">
           <MenubarCheckboxItem checked={showBookmarks()} onCheckedChange={setShowBookmarks}>
             <span>Always Show Bookmarks Bar</span>
           </MenubarCheckboxItem>
@@ -150,7 +150,7 @@ export function MenubarApplicationDemo() {
 
       <MenubarMenu value="profiles">
         <MenubarTrigger>Profiles</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="profiles">
           <MenubarRadioGroup value={profile()} onValueChange={setProfile}>
             <MenubarRadioItem value="andy">
               <span>Andy</span>
@@ -184,7 +184,7 @@ export function MenubarBasicDemo() {
     <Menubar>
       <MenubarMenu value="file">
         <MenubarTrigger>File</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="file">
           <MenubarItem>
             <span>New Tab</span>
             <MenubarShortcut>⌘T</MenubarShortcut>
@@ -202,7 +202,7 @@ export function MenubarBasicDemo() {
 
       <MenubarMenu value="edit">
         <MenubarTrigger>Edit</MenubarTrigger>
-        <MenubarContent>
+        <MenubarContent value="edit">
           <MenubarItem>
             <span>Undo</span>
             <MenubarShortcut>⌘Z</MenubarShortcut>

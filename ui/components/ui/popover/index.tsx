@@ -231,7 +231,8 @@ function PopoverContent(props: PopoverContentProps) {
 
     const ctx = useContext(PopoverContext)
 
-    // Position content relative to trigger
+    // Position content relative to trigger, clamped to viewport so a trigger
+    // near an edge can't push content (and its interactive children) off-screen.
     const updatePosition = () => {
       if (!triggerEl) return
       // display:contents elements have no box model; use first element child for positioning
@@ -241,20 +242,24 @@ function PopoverContent(props: PopoverContentProps) {
       const rect = positionEl.getBoundingClientRect()
       const align = props.align ?? 'center'
       const side = props.side ?? 'bottom'
+      const gap = 4
 
       if (side === 'bottom') {
-        el.style.top = `${rect.bottom + 4}px`
+        const maxTop = window.innerHeight - el.offsetHeight - gap
+        el.style.top = `${Math.max(gap, Math.min(rect.bottom + gap, maxTop))}px`
       } else {
-        el.style.top = `${rect.top - el.offsetHeight - 4}px`
+        el.style.top = `${Math.max(gap, rect.top - el.offsetHeight - gap)}px`
       }
 
+      const maxLeft = window.innerWidth - el.offsetWidth - gap
       if (align === 'start') {
-        el.style.left = `${rect.left}px`
+        el.style.left = `${Math.max(gap, Math.min(rect.left, maxLeft))}px`
       } else if (align === 'end') {
-        el.style.left = `${rect.right - el.offsetWidth}px`
+        el.style.left = `${Math.max(gap, Math.min(rect.right - el.offsetWidth, maxLeft))}px`
       } else {
         // center
-        el.style.left = `${rect.left + rect.width / 2 - el.offsetWidth / 2}px`
+        const left = rect.left + rect.width / 2 - el.offsetWidth / 2
+        el.style.left = `${Math.max(gap, Math.min(left, maxLeft))}px`
       }
     }
 
