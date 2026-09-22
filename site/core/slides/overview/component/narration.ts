@@ -177,16 +177,16 @@ const COUNTER_RIGHT = 22, COUNTER_BOTTOM = 18, NAV_BOTTOM = 40, NAV_RIGHT = 18
 // Width alone catches a phone in portrait; the pointer clause catches a phone in landscape
 // and a tablet, where the canvas-scaled buttons would still be too small to tap.
 const compactQuery = matchMedia('(max-width: 820px), (hover: none) and (pointer: coarse)')
-// Narrow screens only (a phone in portrait) also get the phone-shaped canvas and the
-// single-column, larger-type layouts (body.bf-compact in the CSS). A tablet or a phone in
-// landscape keeps the desktop layout: at their scale the 16:9 slide is still legible, and
-// the tall canvas would not fit their height anyway.
+// Narrow screens only (a phone in portrait) also get the phone-shaped canvas: fitCanvas grows
+// it to the screen's proportion, and the deck's CSS lays the slide out in a single column of
+// larger type because the canvas is now taller than it is wide (css/base.css, "Canvas-shape
+// layouts": a container query on the canvas itself, so this script adds no class for it). A
+// tablet or a phone in landscape keeps the desktop layout: at their scale the 16:9 slide is
+// still legible, and the tall canvas would not fit their height anyway.
 const narrowQuery = matchMedia('(max-width: 820px)')
 const bar = document.createElement('div')
 bar.id = 'bf-bar'
 function dockChrome(compact: boolean) {
-  const narrow = narrowQuery.matches
-  if (document.body.classList.contains('bf-compact') !== narrow) document.body.classList.toggle('bf-compact', narrow)
   if (compact) {
     if (!bar.isConnected) document.body.append(bar)
     for (const el of [langs, counter, nav]) {
@@ -207,10 +207,10 @@ function dockChrome(compact: boolean) {
 //
 // On narrow screens the canvas also stops being 16:9: it keeps its 1280-unit width and grows
 // to the viewport's own proportion (a phone in portrait gets a canvas around 1280x2500), so
-// the single-column, larger-type layouts under body.bf-compact have room to flow. The height
-// rides on --peitho-canvas-height, which .peitho-slide already reads. A slide that declares
-// data-canvas="fixed" (the arcade: its play field is authored in 1280x720 coordinates) keeps
-// the 16:9 canvas.
+// the single-column, larger-type layouts of css/base.css have room to flow. The height rides
+// on --peitho-canvas-height, which .peitho-slide already reads (and the deck's layouts follow
+// through a container query on the canvas's shape). A slide that declares data-canvas="fixed"
+// (the arcade: its play field is authored in 1280x720 coordinates) keeps the 16:9 canvas.
 function fitCanvas(canvas: HTMLElement, narrow: boolean, bottomInset: number) {
   const avail = innerHeight - bottomInset
   const fixed = !!canvas.querySelector('section[data-canvas="fixed"]')
