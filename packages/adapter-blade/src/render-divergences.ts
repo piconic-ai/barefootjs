@@ -47,23 +47,18 @@ export const renderDivergences: RenderDivergences = {
   // the accessor at render time. Escape twin:
   // `opaque-local-accessor-call-client`.
   'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
-  // #3059: the compiler now recognizes the `ref`-callback SSR-portal
-  // pattern (`ssrPortalOwnerScope`) and the Hono reference adapter
-  // places the flagged element at its `<BfPortals />` outlet instead of
-  // rendering it inline — this adapter has no such outlet yet (a
-  // template-language-specific design the issue leaves open), so it
-  // still renders the element at its ORIGINAL inline position with no
-  // `bf-po`, diverging from the now-correct reference. See
-  // `ref-callback-portal-content-inline-at-ssr`.
-  dialog: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  'dropdown-menu': { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  popover: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  portal: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  // `combobox` / `select` carry the SAME #3059 portal-position divergence
-  // (their Content element is the same `ref`-callback SSR-portal pattern),
-  // but the registry lists a fixture on exactly one entry and these two
-  // are already claimed by `ref-effect-attr-state-ssr` (the data-placeholder
-  // divergence) — cite that one instead; see
+  // #3119 (graduated): the `ref`-callback SSR-portal pattern
+  // (`ssrPortalOwnerScope`) now renders through
+  // `BarefootJS::register_portal_element` / `bf.portals()` (an
+  // `ob_start()`/`ob_get_clean()`-captured outlet, mirroring the Hono
+  // reference's `<BfPortals />` and the Go adapter's
+  // `{{.Portals.Render}}`), so `dialog`/`dropdown-menu`/`popover`/`portal`
+  // no longer diverge here.
+  // `combobox` / `select` carry the SAME portal-position divergence (their
+  // Content element is the same `ref`-callback SSR-portal pattern), but the
+  // registry lists a fixture on exactly one entry and these two are already
+  // claimed by `ref-effect-attr-state-ssr` (the data-placeholder
+  // divergence) — cite that one instead; unaffected by this fix. See
   // `ref-callback-portal-content-inline-at-ssr`'s own comment.
   combobox: { limitation: 'ref-effect-attr-state-ssr' },
   select: { limitation: 'ref-effect-attr-state-ssr' },
