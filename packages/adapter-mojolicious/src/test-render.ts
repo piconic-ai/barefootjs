@@ -309,6 +309,10 @@ if (ref $output) {
 }
 
 print $output;
+# Mirrors where an app's own layout places \`<%= bf->portals %>\` near
+# </body> — after the component's own output (#3119). Collected but
+# never emitted otherwise, since this harness renders no layout at all.
+print $bf->portals;
 `
     await Bun.write(resolve(tempDir, 'render.pl'), renderScript)
 
@@ -407,6 +411,13 @@ function buildChildRenderers(
     // another imported component) resolve against THIS instance's
     // registry — share the parent's so they don't fail.
     lines.push(`    $child_bf->_child_renderers($bf->_child_renderers);`)
+    // Shares the root's `_portal_elements` arrayref (#3119) — same
+    // reference-propagation `_register_manifest_child` does in production
+    // (see `BarefootJS.pm`'s `register_portal_element` docstring): an
+    // `ssrPortalOwnerScope`-flagged element nested inside a child template
+    // (e.g. DialogContent inside Dialog) must reach the SAME collector
+    // this harness reads back via `$bf->portals` after rendering.
+    lines.push(`    $child_bf->_portal_elements($bf->_portal_elements);`)
     // JSX `key` (reserved prop) → data-key on the child's scope root, for
     // keyed-loop reconciliation parity with Hono.
     lines.push(`    my $data_key = delete $child_props->{key};`)

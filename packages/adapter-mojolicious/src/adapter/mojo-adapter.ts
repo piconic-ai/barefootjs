@@ -69,7 +69,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
 import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -708,17 +708,57 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
+    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
+    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) — the overlay/content
+    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
+    // this element's own tag, matching exactly what the client
+    // `createPortal(el, document.body, { ownerScope })` stamps onto the
+    // SAME element at hydrate time (`packages/client/src/runtime/
+    // portal.ts`), mirroring the Hono reference adapter's identical
+    // `BF_PORTAL_OWNER` stamp. The element itself is then routed through
+    // `wrapSsrPortalElement` below instead of returned for inline
+    // placement, so it renders at the `bf->portals` outlet the app's own
+    // layout places near `</body>` — see that method's docstring.
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="<%= bf->scope_attr %>"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
       'link', 'meta', 'param', 'source', 'track', 'wbr',
     ]
 
-    if (voidElements.includes(tag.toLowerCase())) {
-      return `<${tag}${attrs}${hydrationAttrs}>`
-    }
+    const rendered = voidElements.includes(tag.toLowerCase())
+      ? `<${tag}${attrs}${hydrationAttrs}>`
+      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+    if (element.ssrPortalOwnerScope) {
+      return this.wrapSsrPortalElement(rendered)
+    }
+    return rendered
+  }
+
+  /**
+   * Route an `ssrPortalOwnerScope`-flagged element's ALREADY-RENDERED
+   * markup (the `bf-po` attribute already stamped on its own tag) into
+   * `bf->register_portal_element` instead of leaving it at its source
+   * position (#3119).
+   *
+   * Reuses Mojo's own `begin %>…<% end` block-capture — the SAME mechanism
+   * `renderComponent` already uses to forward JSX children (see this
+   * file's "Content capture" notes near the children-capture call sites):
+   * the element renders inline as normal Mojo (its own `<%= %>`/`<%== %>`
+   * interpolations evaluate exactly as they would anywhere else), the
+   * `begin`/`end` block captures the nested render into a CODE ref, and
+   * calling that ref (`->()`) immediately materializes it to a
+   * Mojo::ByteStream — mirrors `BarefootJS::Backend::Mojo#materialize`'s
+   * own `ref($value) eq 'CODE' ? $value->() : $value` call. A separate
+   * pure-statement `<% ... %>` tag (never `<%=`/`<%==`, so nothing prints
+   * at the source position) hands that stream to the portal collector.
+   */
+  private wrapSsrPortalElement(rendered: string): string {
+    const varName = `$bf_po_${this.childrenCaptureCounter++}`
+    return `<% my ${varName} = begin %>${rendered}<% end %><% bf->register_portal_element(${varName}->()); %>`
   }
 
   /**

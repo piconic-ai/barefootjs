@@ -162,6 +162,13 @@ helper render_component => sub ($c, $component, %opts) {
             # Share script collector with parent
             $child_bf->_scripts($parent_bf->_scripts);
             $child_bf->_script_seen($parent_bf->_script_seen);
+            # Shares the SAME arrayref as `_scripts` above (#3119): an
+            # `ssrPortalOwnerScope`-flagged element (DialogContent,
+            # DropdownMenuContent, PopoverContent, the explicit `<Portal>`
+            # component) inside a hand-registered child like this one needs
+            # to reach the SAME collector the layout reads back via
+            # `bf->portals`.
+            $child_bf->_portal_elements($parent_bf->_portal_elements);
 
             # Compute signal/memo initial values from props
             my %extra;
@@ -721,6 +728,7 @@ __DATA__
     % if ($back_href ne '') {
     <p><a href="<%= $back_href %>">← Back</a></p>
     % }
+    <%== bf->portals %>
     <%== bf->scripts %>
     <%== bf_dev_snippet %>
 </body>
