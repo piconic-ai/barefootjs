@@ -669,19 +669,13 @@
           ]
         },
         "twig": {
-          "pass": 105,
+          "pass": 106,
           "total": 120,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1181,19 +1175,13 @@
           ]
         },
         "twig": {
-          "pass": 65,
+          "pass": 66,
           "total": 72,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1825,25 +1813,13 @@
           ]
         },
         "twig": {
-          "pass": 60,
+          "pass": 64,
           "total": 76,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1886,18 +1862,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2523,25 +2487,13 @@
           ]
         },
         "twig": {
-          "pass": 97,
+          "pass": 99,
           "total": 110,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3775,7 +3727,7 @@
           ]
         },
         "twig": {
-          "pass": 267,
+          "pass": 271,
           "total": 295,
           "gaps": [
             {
@@ -3788,18 +3740,6 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3884,18 +3824,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -4385,19 +4313,13 @@
           ]
         },
         "twig": {
-          "pass": 30,
+          "pass": 31,
           "total": 36,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -5757,7 +5679,7 @@
           ]
         },
         "twig": {
-          "pass": 385,
+          "pass": 389,
           "total": 417,
           "gaps": [
             {
@@ -5770,18 +5692,6 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -5890,18 +5800,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -6287,19 +6185,13 @@
           ]
         },
         "twig": {
-          "pass": 12,
+          "pass": 13,
           "total": 15,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7239,25 +7131,13 @@
           ]
         },
         "twig": {
-          "pass": 308,
+          "pass": 312,
           "total": 331,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7324,18 +7204,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7745,31 +7613,13 @@
           ]
         },
         "twig": {
-          "pass": 46,
+          "pass": 49,
           "total": 53,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -8805,7 +8655,7 @@
           ]
         },
         "twig": {
-          "pass": 221,
+          "pass": 224,
           "total": 245,
           "gaps": [
             {
@@ -8818,18 +8668,6 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -8896,12 +8734,6 @@
               "fixture": "map-array-builder-escaping",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9401,31 +9233,13 @@
           ]
         },
         "twig": {
-          "pass": 88,
+          "pass": 91,
           "total": 96,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9747,31 +9561,13 @@
           ]
         },
         "twig": {
-          "pass": 26,
+          "pass": 29,
           "total": 32,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10031,7 +9827,7 @@
           ]
         },
         "twig": {
-          "pass": 22,
+          "pass": 26,
           "total": 30,
           "gaps": [
             {
@@ -10041,33 +9837,9 @@
               ]
             },
             {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10687,25 +10459,13 @@
           ]
         },
         "twig": {
-          "pass": 35,
+          "pass": 39,
           "total": 51,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10730,18 +10490,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -11238,19 +10986,13 @@
           ]
         },
         "twig": {
-          "pass": 9,
+          "pass": 10,
           "total": 12,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13969,25 +13711,13 @@
           ]
         },
         "twig": {
-          "pass": 44,
+          "pass": 46,
           "total": 56,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -14607,7 +14337,7 @@
           ]
         },
         "twig": {
-          "pass": 64,
+          "pass": 68,
           "total": 72,
           "gaps": [
             {
@@ -14617,33 +14347,9 @@
               ]
             },
             {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -14813,19 +14519,13 @@
           ]
         },
         "twig": {
-          "pass": 24,
+          "pass": 25,
           "total": 26,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -15396,25 +15096,13 @@
           ]
         },
         "twig": {
-          "pass": 139,
+          "pass": 142,
           "total": 153,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15445,12 +15133,6 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -16126,25 +15808,13 @@
           ]
         },
         "twig": {
-          "pass": 209,
+          "pass": 212,
           "total": 223,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -16181,12 +15851,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -16586,31 +16250,13 @@
           ]
         },
         "twig": {
-          "pass": 37,
+          "pass": 40,
           "total": 44,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -17156,19 +16802,13 @@
           ]
         },
         "twig": {
-          "pass": 5,
+          "pass": 6,
           "total": 8,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -17870,7 +17510,7 @@
           ]
         },
         "twig": {
-          "pass": 17,
+          "pass": 19,
           "total": 22,
           "gaps": [
             {
@@ -17880,21 +17520,9 @@
               ]
             },
             {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "portal",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -18076,31 +17704,13 @@
           ]
         },
         "twig": {
-          "pass": 6,
+          "pass": 9,
           "total": 11,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
-              ]
-            },
-            {
-              "fixture": "dialog",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "dropdown-menu",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "popover",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {

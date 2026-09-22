@@ -2150,22 +2150,6 @@
           ]
         }
       },
-      "dialog": {
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        }
-      },
-      "dropdown-menu": {
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        }
-      },
       "every-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -4092,22 +4076,6 @@
           ]
         }
       },
-      "popover": {
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        }
-      },
-      "portal": {
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        }
-      },
       "preamble-cells": {
         "blade": {
           "kind": "refusal",
@@ -5200,14 +5168,6 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
-      "dialog": {
-        "description": "site/ui Dialog demo — portal-mounted modal: open via trigger, close via ESC and DialogClose,…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dialog.ts"
-      },
-      "dropdown-menu": {
-        "description": "site/ui DropdownMenu demo — checkbox items toggle reactive aria-checked without closing the…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dropdown-menu.ts"
-      },
       "every-typeof-predicate": {
         "description": "Off-subset `.every()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate.ts"
@@ -5283,14 +5243,6 @@
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
-      },
-      "popover": {
-        "description": "site/ui Popover demo — trigger-anchored portal overlay: toggle, ESC close, aria-expanded/data-state…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/popover.ts"
-      },
-      "portal": {
-        "description": "Portal overlay + content moved to document.body via ref callback, visibility via reactive hidden…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/portal.ts"
       },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
@@ -5782,9 +5734,7 @@
         "popover",
         "portal"
       ],
-      "adapters": [
-        "twig"
-      ]
+      "adapters": []
     },
     "ref-effect-attr-state-ssr": {
       "title": "Attribute state computed in a ref callback or mount effect never reaches SSR",

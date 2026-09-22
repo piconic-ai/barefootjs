@@ -322,6 +322,10 @@ function new_script_collector(BarefootJS $bf): void
     // docblock in BarefootJS.php.
     $bf->_preloads(new \ArrayObject());
     $bf->_preload_seen(new \ArrayObject());
+    // Same trick again for the SSR-portal-element collector (#3119) --
+    // see `register_portal_element`'s docblock in BarefootJS.php for why
+    // it needs the SAME `ArrayObject` treatment `_scripts` gets above.
+    $bf->_portal_elements(new \ArrayObject());
 }
 
 function share_script_collector(BarefootJS $from, BarefootJS $to): void
@@ -330,6 +334,7 @@ function share_script_collector(BarefootJS $from, BarefootJS $to): void
     $to->_script_seen($from->_script_seen());
     $to->_preloads($from->_preloads());
     $to->_preload_seen($from->_preload_seen());
+    $to->_portal_elements($from->_portal_elements());
 }
 
 function render_component(
@@ -381,12 +386,13 @@ function render_component(
         heading: $heading,
         body: $body,
         scripts: $bf->scripts(),
+        portals: $bf->portals(),
         extraCss: $extraCss,
         back: $back,
     );
 }
 
-function layout(string $title, string $heading, string $body, string $scripts, string $extraCss = '', ?string $back = null): string
+function layout(string $title, string $heading, string $body, string $scripts, string $portals = '', string $extraCss = '', ?string $back = null): string
 {
     global $BASE;
     $headingHtml = $heading !== '' ? "<h1>{$heading}</h1>" : '';
@@ -425,6 +431,7 @@ function layout(string $title, string $heading, string $body, string $scripts, s
     {$headingHtml}
     <div id="app">{$body}</div>
     {$backHtml}
+    {$portals}
     {$scripts}
 </body>
 </html>
