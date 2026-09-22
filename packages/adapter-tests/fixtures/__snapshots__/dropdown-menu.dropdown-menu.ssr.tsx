@@ -2,6 +2,7 @@
 import { serializeHydrationProps, bfComment } from '@barefootjs/hono/utils'
 import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot, provideContextSSR } from '@barefootjs/hono/client-shim'
 import { trackPosition } from '../../../lib/track-position'
+import { clampDropdownMenuPosition } from '../../../lib/clamp-dropdown-menu-position'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
