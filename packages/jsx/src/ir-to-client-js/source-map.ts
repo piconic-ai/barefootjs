@@ -7,6 +7,7 @@
  */
 
 import type { SourceLocation } from '../types.ts'
+import { initFunctionName } from './utils.ts'
 
 // =============================================================================
 // VLQ Base64 Encoding
@@ -271,7 +272,7 @@ export function buildSourceMapFromIR(
   mapEventHandlers(lines, ir.root, gen)
 
   // Map the init function declaration to the component function
-  const initLine = findLineIndex(lines, `export function init${meta.componentName}(`)
+  const initLine = findLineIndex(lines, `export function ${initFunctionName(meta.componentName)}(`)
   if (initLine >= 0 && ir.root.loc) {
     gen.addMappingFromLoc(initLine, 0, ir.root.loc)
   }

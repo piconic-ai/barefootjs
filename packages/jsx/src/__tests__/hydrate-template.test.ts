@@ -90,7 +90,15 @@ describe('hydrate() template generation for signal-bearing components', () => {
     // Stateless Child gets a static template (always useful).
     // Non-exported helpers are file-scoped (`Child__<hash>`) so they
     // cannot collide with same-named components in other modules.
-    expect(content).toMatch(/hydrate\('Child(?:__[a-f0-9]+)?', \{ init: initChild, template:/)
+    //
+    // The init function is `initChild$`, not `initChild` (#3113):
+    // `Child` reactively mirrors the parent's signal into a slot, so this
+    // module also imports the RUNTIME's own `initChild` (to dispatch props
+    // into a mounted child); a bare `init${name}` here would declare a
+    // SECOND top-level `initChild` binding in the same module, which is a
+    // hard `SyntaxError` under real ES module semantics — see
+    // `initFunctionName`'s docstring (`ir-to-client-js/utils.ts`).
+    expect(content).toMatch(/hydrate\('Child(?:__[a-f0-9]+)?', \{ init: initChild\$, template:/)
 
     // Parent also gets CSR fallback template for cross-file conditional use
     expect(content).toMatch(/hydrate\('Parent',.*template:/)

@@ -16,7 +16,7 @@ import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.t
 import { addConstantPropRefsToSet } from './init-declarations.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
-import { PROPS_PARAM } from './utils.ts'
+import { PROPS_PARAM, initFunctionName } from './utils.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
 import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from './component-scope.ts'
@@ -356,13 +356,14 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   lines.push(IMPORT_PLACEHOLDER)
   lines.push('')
-  lines.push(`function init${name}() {}`)
+  const initName = initFunctionName(name)
+  lines.push(`function ${initName}() {}`)
   lines.push('')
   // `name: '...'` only when the key was file-scoped — same reason as in
   // `emitRegistrationAndHydration`: the hashed key must not reach `bf-s`
   // (#2518).
   const nameField = registryKey !== name ? `, name: '${name}'` : ''
-  lines.push(`hydrate('${registryKey}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\`${nameField} })`)
+  lines.push(`hydrate('${registryKey}', { init: ${initName}, template: (${PROPS_PARAM}) => \`${templateHtml}\`${nameField} })`)
   // See `emitRegistrationAndHydration` (./emit-registration.ts) for the
   // rationale on why the component is also emitted as a callable
   // shim. The same applies for template-only components since they

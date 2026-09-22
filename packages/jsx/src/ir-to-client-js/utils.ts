@@ -27,6 +27,7 @@ import {
   toHTMLAttrName as toHtmlAttrName,
   keyAttrName as sharedKeyAttrName,
 } from '@barefootjs/shared'
+import { RUNTIME_IMPORT_CANDIDATES } from './imports.ts'
 
 export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loopStartMarker, loopEndMarker, loopItemMarker, toHtmlAttrName }
 
@@ -35,6 +36,39 @@ export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loop
  * Short name to minimize client JS bundle size.
  */
 export const PROPS_PARAM = '_p'
+
+/** Every runtime helper name a generated module may import bare (#3113). */
+const RESERVED_RUNTIME_NAMES = new Set<string>(RUNTIME_IMPORT_CANDIDATES)
+
+/**
+ * Name of the per-component init function (`init<Name>`), consistently
+ * computed wherever it's declared, registered, called, or located for
+ * source-mapping (#3113).
+ *
+ * The naive `` `init${name}` `` collides with the runtime's own imported
+ * `initChild` whenever a component is literally named `Child` — the
+ * generated module then both `import`s `initChild` from
+ * `@barefootjs/client/runtime` (to dispatch INTO this or another child)
+ * AND `export function initChild(...)` (THIS component's own compiled
+ * init) as two top-level declarations of the same identifier, which is a
+ * hard `SyntaxError` under real ES module semantics (verified against a
+ * raw `<script type="module">` load — the same unbundled-ESM shape
+ * `bf build` ships and `fixture-host.ts`'s `'hydrate'`/`'csr-mount'` modes
+ * serve, #2481). No bundler downstream can rescue a same-module identifier
+ * collision — a bundler renames colliding identifiers ACROSS merged
+ * modules, but `import { initChild } from '...'` and
+ * `function initChild() {}` live in the SAME module and are simply invalid
+ * syntax before any bundler sees them.
+ *
+ * Trailing `$` (rather than a numeric/underscore suffix) guarantees the
+ * disambiguated name can never itself collide with a *future*
+ * `RUNTIME_IMPORT_CANDIDATES` entry — none of those are, or plausibly will
+ * be, `$`-suffixed.
+ */
+export function initFunctionName(componentName: string): string {
+  const name = `init${componentName}`
+  return RESERVED_RUNTIME_NAMES.has(name) ? `${name}$` : name
+}
 
 /**
  * True when the component's rendered root is a comment-scoped proxy rather
