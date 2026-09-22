@@ -32,10 +32,21 @@ async fn todos_page(state: AppState, headers: HeaderMap, component: &str, title:
     ]);
 
     let mut response = match render_component(&state, &session, component, props, stash) {
-        Ok((body, scripts)) => html_response(layout(
-            &state,
-            LayoutOpts { title: title.to_string(), heading: String::new(), body, scripts, extra_css: String::new(), back: None },
-        )),
+        Ok((body, scripts)) => {
+            let portals = session.portals();
+            html_response(layout(
+                &state,
+                LayoutOpts {
+                    title: title.to_string(),
+                    heading: String::new(),
+                    body,
+                    scripts,
+                    portals,
+                    extra_css: String::new(),
+                    back: None,
+                },
+            ))
+        }
         Err(e) => render_error(e),
     };
     if minted {

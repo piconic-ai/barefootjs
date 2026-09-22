@@ -161,6 +161,11 @@ pub struct LayoutOpts {
     pub heading: String,
     pub body: String,
     pub scripts: String,
+    /// SSR-portal elements (`RenderSession::portal_elements`, #3119) — an
+    /// `ssrPortalOwnerScope`-flagged element's already-rendered markup,
+    /// collected during render and emitted here instead of at its source
+    /// position.
+    pub portals: String,
     pub extra_css: String,
     /// `None` -> default "back to index" link; `Some("")` suppresses it
     /// (the index page itself).
@@ -203,6 +208,7 @@ pub fn layout(state: &AppState, opts: LayoutOpts) -> String {
     {heading_html}
     <div id="app">{body}</div>
     {back_html}
+    {portals}
     {scripts}
 </body>
 </html>
@@ -213,6 +219,7 @@ pub fn layout(state: &AppState, opts: LayoutOpts) -> String {
         heading_html = heading_html,
         body = opts.body,
         back_html = back_html,
+        portals = opts.portals,
         scripts = opts.scripts,
     )
 }
@@ -279,6 +286,7 @@ runtime crate (minijinja) as the rendering backend.</p>
             heading: "BarefootJS + Axum Example".to_string(),
             body,
             scripts: String::new(),
+            portals: String::new(),
             extra_css: String::new(),
             back: Some(String::new()),
         },
@@ -295,6 +303,7 @@ async fn counter_route(State(state): State<AppState>) -> Response {
                 heading: "Counter Component".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css: String::new(),
                 back: None,
             },
@@ -316,6 +325,7 @@ async fn toggle_route(State(state): State<AppState>) -> Response {
                 heading: "Toggle Component".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css: String::new(),
                 back: None,
             },
@@ -343,6 +353,7 @@ async fn form_route(State(state): State<AppState>) -> Response {
                 heading: "Form Example".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css: String::new(),
                 back: None,
             },
@@ -362,6 +373,7 @@ async fn portal_route(State(state): State<AppState>) -> Response {
                 heading: "Portal Example".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css: String::new(),
                 back: None,
             },
@@ -381,6 +393,7 @@ async fn reactive_props_route(State(state): State<AppState>) -> Response {
                 heading: "Reactive Props Test".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css: String::new(),
                 back: None,
             },
@@ -404,6 +417,7 @@ async fn props_reactivity_route(State(state): State<AppState>) -> Response {
                 heading: "Props Reactivity Comparison".to_string(),
                 body,
                 scripts,
+                portals: session.portals(),
                 extra_css: String::new(),
                 back: None,
             },
@@ -436,7 +450,8 @@ async fn render_conditional_return(state: AppState, variant: &str) -> Response {
     };
     match render_component(&state, &session, "ConditionalReturn", props, stash) {
         Ok((body, scripts)) => {
-            html_response_cached(layout(&state, LayoutOpts { title, heading, body, scripts, extra_css: String::new(), back: None }))
+            let portals = session.portals();
+            html_response_cached(layout(&state, LayoutOpts { title, heading, body, scripts, portals, extra_css: String::new(), back: None }))
         }
         Err(e) => render_error(e),
     }

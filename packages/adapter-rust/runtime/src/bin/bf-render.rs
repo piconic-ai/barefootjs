@@ -116,7 +116,7 @@ fn run(payload_path: &str) -> Result<String, String> {
         extra.push(("searchParams".to_string(), SearchParams::new(query).to_value()));
     }
 
-    backend_minijinja::render_entry(&env, &payload.entry, root.as_mj_value(), &vars, &extra).map_err(|e| {
+    let html = backend_minijinja::render_entry(&env, &payload.entry, root.as_mj_value(), &vars, &extra).map_err(|e| {
         let mut msg = format!("{e:#}");
         let mut source = std::error::Error::source(&e);
         while let Some(s) = source {
@@ -124,7 +124,13 @@ fn run(payload_path: &str) -> Result<String, String> {
             source = s.source();
         }
         msg
-    })
+    })?;
+    // Mirrors where a real host's own layout places the SSR-portal outlet
+    // (see `integrations/axum`'s `layout()`, `scripts`/`portals` params) —
+    // after the component's own output (#3119). Collected but never
+    // emitted otherwise, since this single-component CLI renders no
+    // layout at all.
+    Ok(html + &root.portals())
 }
 
 fn main() -> ExitCode {
