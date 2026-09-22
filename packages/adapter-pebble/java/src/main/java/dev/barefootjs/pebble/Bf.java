@@ -147,6 +147,27 @@ public final class Bf {
 
   private final Set<String> preloadSeen;
 
+  /**
+   * `register_portal_element`/`portals()`'s backing store — SHARED (the
+   * same {@link List} REFERENCE, never copied) across every {@code Bf}
+   * instance in one render tree, exactly like {@link #scripts} above
+   * (#3119). Collects an {@code ssrPortalOwnerScope}-flagged element's
+   * already-rendered markup (`pebble-adapter.ts`'s
+   * {@code wrapSsrPortalElement} captures it via a {@code {% set %}}
+   * block before calling here) so it can be emitted at the
+   * {@link #portals()} outlet near {@code </body>} instead of at its
+   * source position — the {@code ref}-callback SSR-portal pattern the
+   * dialog-style primitives use (`DialogOverlay`/`DialogContent`,
+   * `DropdownMenuContent`, `PopoverContent`, the explicit `<Portal>`
+   * component). Synchronized on {@link #scripts} — the SAME shared
+   * monitor {@link #register_script}/{@link #scripts()} already use —
+   * rather than a second lock, for the identical reason {@code scripts}'s
+   * own doc comment gives: {@link #newRoot(String, Bf, Object)} makes
+   * this bundle reachable from genuinely independent top-level island
+   * renders, not just a single-threaded {@code render_child} recursion.
+   */
+  private final List<String> portalElements;
+
   public Bf(String rootScopeId) {
     this(rootScopeId, null, Map.of());
   }
@@ -184,7 +205,8 @@ public final class Bf {
         new ArrayList<>(),
         new java.util.LinkedHashSet<>(),
         new ArrayList<>(),
-        new java.util.LinkedHashSet<>());
+        new java.util.LinkedHashSet<>(),
+        new ArrayList<>());
   }
 
   /**
@@ -220,7 +242,8 @@ public final class Bf {
         sibling.scripts,
         sibling.scriptSeen,
         sibling.preloads,
-        sibling.preloadSeen);
+        sibling.preloadSeen,
+        sibling.portalElements);
   }
 
   /** {@link #newRoot(String, Bf, Object)} with no `bf-p` marker to seed. */
@@ -241,7 +264,8 @@ public final class Bf {
       List<String> scripts,
       Set<String> scriptSeen,
       List<String> preloads,
-      Set<String> preloadSeen) {
+      Set<String> preloadSeen,
+      List<String> portalElements) {
     this.rootScopeId = rootScopeId == null ? "" : rootScopeId;
     this.engine = engine;
     this.manifest = manifest == null ? Map.of() : manifest;
@@ -255,6 +279,7 @@ public final class Bf {
     this.scriptSeen = scriptSeen;
     this.preloads = preloads;
     this.preloadSeen = preloadSeen;
+    this.portalElements = portalElements;
   }
 
   // =========================================================================
@@ -1845,6 +1870,51 @@ public final class Bf {
     return sb.toString();
   }
 
+  /**
+   * Collects an {@code ssrPortalOwnerScope}-flagged element's already-
+   * rendered, fully-evaluated markup so it can be emitted at the
+   * {@link #portals()} outlet near {@code </body>} instead of at its
+   * source position (#3119). {@code content} already carries its own
+   * {@code bf-po} attribute (stamped directly on its own tag by the
+   * compiler, matching exactly what the client
+   * {@code createPortal(el, document.body, { ownerScope })} stamps onto
+   * the SAME element at hydrate time), so unlike a hypothetical "wrap
+   * arbitrary children" collector this appends {@code content} UNWRAPPED —
+   * no extra {@code bf-pi}/{@code bf-po} container element, which would
+   * diverge from what the client stamps directly onto the element itself.
+   * Returns {@code ""} — every call site discards the return value (the
+   * compiled `.peb` template's own {@code {% set _bf_poN = ... %}}
+   * pattern, mirroring {@link #register_script}), so nothing prints at
+   * the source position.
+   */
+  public String register_portal_element(Object content) {
+    String html = content == null ? "" : content.toString();
+    synchronized (scripts) {
+      portalElements.add(html);
+    }
+    return "";
+  }
+
+  /**
+   * Emits every collected SSR-portal element, in registration order. Place
+   * {@code {{ bf.portals() | raw }}} once near {@code </body>} in the
+   * app's own layout — mirrors {@link #scripts()} above (same "collect
+   * during render, emit at a single outlet" shape) and the Hono reference
+   * adapter's {@code <BfPortals />}.
+   */
+  public String portals() {
+    StringBuilder sb = new StringBuilder();
+    synchronized (scripts) {
+      for (String p : portalElements) {
+        if (sb.length() > 0) {
+          sb.append('\n');
+        }
+        sb.append(p);
+      }
+    }
+    return sb.toString();
+  }
+
   // Context provide/use — a simple stack per context name, SHARED across
   // this whole render tree (see the `contextStacks` field doc comment).
 
@@ -1986,7 +2056,7 @@ public final class Bf {
 
     Bf child = new Bf(
         childScopeId, engine, manifest, true, childBfHost, childBfMount, dataKeyValue, null,
-        contextStacks, scripts, scriptSeen, preloads, preloadSeen);
+        contextStacks, scripts, scriptSeen, preloads, preloadSeen, portalElements);
 
     Map<String, Object> vars = new LinkedHashMap<>(props);
     if (meta != null) {

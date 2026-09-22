@@ -20,6 +20,8 @@ public final class Layout {
     public String heading = "";
     public String body = "";
     public String scripts = "";
+    /** SSR-portal elements ({@link Bf#portals()}, #3119) — an `ssrPortalOwnerScope`-flagged element's already-rendered markup, collected during render and emitted here instead of at its source position. */
+    public String portals = "";
     public String extraCss = "";
     /** {@code null} -> default "back to index" link; {@code ""} suppresses it (the index page itself). */
     public String back = null;
@@ -28,6 +30,7 @@ public final class Layout {
     public Opts heading(String v) { this.heading = v; return this; }
     public Opts body(String v) { this.body = v; return this; }
     public Opts scripts(String v) { this.scripts = v; return this; }
+    public Opts portals(String v) { this.portals = v; return this; }
     public Opts extraCss(String v) { this.extraCss = v; return this; }
     public Opts back(String v) { this.back = v; return this; }
   }
@@ -66,6 +69,7 @@ public final class Layout {
         + "    " + headingHtml + "\n"
         + "    <div id=\"app\">" + opts.body + "</div>\n"
         + "    " + backHtml + "\n"
+        + "    " + opts.portals + "\n"
         + "    " + opts.scripts + "\n"
         + "</body>\n"
         + "</html>\n";

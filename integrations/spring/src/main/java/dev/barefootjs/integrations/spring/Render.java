@@ -135,8 +135,12 @@ public final class Render {
     return meta != null ? meta.ssrDefaults : Map.of();
   }
 
-  /** The rendered body HTML plus the accumulated `<script>`/`<link>` tags for every component (root + every child it reached) — see {@link Bf#scripts()}. */
-  public record Rendered(String body, String scripts) {}
+  /**
+   * The rendered body HTML plus the accumulated `<script>`/`<link>` tags
+   * ({@link Bf#scripts()}) and SSR-portal elements ({@link Bf#portals()},
+   * #3119) for every component (root + every child it reached).
+   */
+  public record Rendered(String body, String scripts, String portals) {}
 
   /**
    * Render one component as the root of a page. `props` becomes the source
@@ -245,7 +249,7 @@ public final class Render {
     PebbleTemplate template = ctx.engine().getTemplate(componentName);
     StringWriter writer = new StringWriter();
     template.evaluate(writer, context);
-    return new Rendered(writer.toString(), bf.scripts());
+    return new Rendered(writer.toString(), bf.scripts(), bf.portals());
   }
 
   /** Convenience: an empty props/stash map, for routes with nothing to pass. */
