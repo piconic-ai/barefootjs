@@ -626,6 +626,12 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
         ['reader_toolbar' => 'ReaderToolbar'],
     );
     $scripts = $root->scripts();
+    // #3119: `$root` is the shared render-tree anchor every island above
+    // closes over, so an `ssrPortalOwnerScope`-flagged element anywhere in
+    // that tree registers its markup with it rather than returning it
+    // inline -- flush it here or it would be silently dropped from the
+    // page instead of rendered.
+    $portals = $root->portals();
     $routerEntry = $ASSETS['RouterEntry'] ?? '';
     $escTitle = htmlspecialchars($title, ENT_QUOTES);
     return <<<HTML
@@ -646,6 +652,7 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
 <aside bf-region="nav:0">{$sidebar}</aside>
 <main>{$shell}</main>
 </div>
+{$portals}
 {$scripts}
 <script type="module" src="{$routerEntry}"></script>
 </body>
