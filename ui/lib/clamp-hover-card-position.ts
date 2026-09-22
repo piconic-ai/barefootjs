@@ -7,14 +7,14 @@
  * `packages/adapter-tests`'s `snapshot-generator.ts` inlines it into the
  * compiled fixture bundle via its `../../../lib/<name>` convention
  * (`inlineUiLibImports`) instead of leaving a same-directory sibling
- * import that 404s in the `fixture-hydrate`/`oracle` e2e harness — the
- * same failure mode Popover's own viewport-clamp fix hit and moved out
- * of a same-directory sibling to avoid (#3100).
+ * import that would 404 in the `fixture-hydrate`/`oracle` e2e harness
+ * (that harness serves each fixture's compiled bundle as a single file
+ * with no route for a sibling module).
  *
- * Same shape as Popover's own `clampPopoverPosition` (`side`: `'top' |
+ * Shape mirrors Popover's own `updatePosition` math (`side`: `'top' |
  * 'bottom'`, `align`: `'start' | 'center' | 'end'`, default `gap` of 4 —
  * HoverCard's pre-fix `updatePosition` used the same `rect.bottom + 4` /
- * `rect.top - height - 4` geometry) but kept as its own function per
+ * `rect.top - height - 4` geometry) but is kept as its own function per
  * #3117: HoverCard's positioning is a distinct decision from Popover's
  * (its own props, its own trigger-resolution path through
  * `display:contents`) that only happens to compute the same formula

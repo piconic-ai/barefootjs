@@ -7,16 +7,16 @@
  * without any DOM, and so `packages/adapter-tests`'s
  * `snapshot-generator.ts` inlines it into the compiled fixture bundle via
  * its `../../../lib/<name>` convention (`inlineUiLibImports`) instead of
- * leaving a same-directory sibling import that 404s in the
- * `fixture-hydrate`/`oracle` e2e harness — the same failure mode
- * Popover's own viewport-clamp fix hit and moved out of a
- * same-directory sibling to avoid (#3100).
+ * leaving a same-directory sibling import that would 404 in the
+ * `fixture-hydrate`/`oracle` e2e harness (that harness serves each
+ * fixture's compiled bundle as a single file with no route for a sibling
+ * module) — this component's own fixture is what exercises that path.
  *
  * Unlike Popover/HoverCard, DropdownMenuContent only ever opens below its
  * trigger (no `side` prop) and only supports `'start' | 'end'` alignment
  * (no `'center'`), so this is its own smaller floor/ceiling instance per
- * #3117 rather than a reuse of `clampPopoverPosition` — a different
- * decision (fewer axes to choose from), not the same one duplicated.
+ * #3117 — a different decision (fewer axes to choose from), not a shared
+ * one.
  *
  * Both axes are bounded to `[gap, viewport - contentSize - gap]`, keeping
  * content anchored as close to the trigger as the viewport allows instead
