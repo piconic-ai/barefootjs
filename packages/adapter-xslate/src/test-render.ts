@@ -284,6 +284,10 @@ ${childRenderers}
 
 my \$html = \$backend->render_named('${toSnakeCase(componentName)}', \$bf, \$props);
 print \$html;
+# Mirrors where an app's own layout places \`<: \$bf.portals() :>\` near
+# </body> — after the component's own output (#3119). Collected but
+# never emitted otherwise, since this harness renders no layout at all.
+print \$bf->portals;
 `
     await Bun.write(resolve(tempDir, 'render.pl'), renderScript)
 
@@ -421,6 +425,13 @@ function buildChildRenderers(
     lines.push(`    $child_bf->_child_renderers($bf->_child_renderers);`)
     lines.push(`    $child_bf->_scripts($bf->_scripts);`)
     lines.push(`    $child_bf->_script_seen($bf->_script_seen);`)
+    // Shares the root's `_portal_elements` arrayref (#3119) — same
+    // reference-propagation `_register_manifest_child` does in production
+    // (see `BarefootJS.pm`'s `register_portal_element` docstring): an
+    // `ssrPortalOwnerScope`-flagged element nested inside a child template
+    // (e.g. DialogContent inside Dialog) must reach the SAME collector
+    // this harness reads back via `$bf->portals` after rendering.
+    lines.push(`    $child_bf->_portal_elements($bf->_portal_elements);`)
     // Seed template vars through the production `_derive_stash_from_defaults`
     // — resolves each entry's `propName` against the REAL `$child_props`,
     // falling back to the static `value`; `isRestProps` entries pass the

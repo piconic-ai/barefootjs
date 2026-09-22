@@ -137,9 +137,16 @@ sub render_component ($component, %opts) {
                                           : "${child_template}_" . rand_suffix());
             $child_bf->_is_child(1);
             # Share the parent's script collector so a child's register_script
-            # de-dupes against the page's existing <script> set.
+            # de-dupes against the page's existing <script> set. `_portal_
+            # elements` shares the same arrayref propagation (#3119): an
+            # `ssrPortalOwnerScope`-flagged element (DialogContent,
+            # DropdownMenuContent, PopoverContent, the explicit `<Portal>`
+            # component) inside a hand-registered child like this one needs
+            # to reach the SAME collector the page root reads back via
+            # `$bf->portals` below.
             $child_bf->_scripts($bf->_scripts);
             $child_bf->_script_seen($bf->_script_seen);
+            $child_bf->_portal_elements($bf->_portal_elements);
             my %extra = $child_init ? $child_init->($props) : ();
             return $backend->render_named($child_template, $child_bf, { %$props, %extra });
         });
@@ -151,6 +158,7 @@ sub render_component ($component, %opts) {
         heading   => $opts{heading} // '',
         body      => $body,
         scripts   => $bf->scripts,
+        portals   => $bf->portals,
         extra_css => $opts{extra_css} // '',
     );
 }
@@ -193,6 +201,7 @@ sub layout (%a) {
     $heading_html
     <div id="app">$a{body}</div>
     $back_html
+    $a{portals}
     $a{scripts}
     $dev_snippet
 </body>
