@@ -70,6 +70,7 @@ module BarefootJS
     bf_accessor :_script_seen, default: -> { {} }
     bf_accessor :_preloads, default: -> { [] }
     bf_accessor :_preload_seen, default: -> { {} }
+    bf_accessor :_portal_elements, default: -> { [] }
     bf_accessor :_scope_id
     bf_accessor :_is_child, default: -> { false }
     bf_accessor :_bf_parent
@@ -272,6 +273,37 @@ module BarefootJS
     end
 
     # -----------------------------------------------------------------
+    # SSR Portal Element Registration (#3119)
+    # -----------------------------------------------------------------
+    #
+    # Collects an `ssrPortalOwnerScope`-flagged element's already-rendered,
+    # fully-evaluated markup (`erb-adapter.ts`'s `wrapSsrPortalElement`
+    # captures it via an output-buffer slice before calling here) so it can
+    # be emitted at the `portals` outlet near `</body>` instead of at its
+    # source position — the `ref`-callback SSR-portal pattern the
+    # dialog-style primitives use (`DialogOverlay`/`DialogContent`,
+    # `DropdownMenuContent`, `PopoverContent`, the explicit `<Portal>`
+    # component). `content` already carries its own `bf-po` attribute
+    # (stamped directly on its own tag by the compiler, matching exactly
+    # what the client `createPortal(el, document.body, { ownerScope })`
+    # stamps onto the SAME element at hydrate time), so unlike a hypothetical
+    # "wrap arbitrary children" collector this emits `content` UNWRAPPED —
+    # no extra `bf-pi`/`bf-po` container div, which would diverge from what
+    # the client stamps directly onto the element itself.
+    def register_portal_element(content)
+      _portal_elements.push(content)
+      nil
+    end
+
+    # Emits every collected SSR-portal element, in registration order. Place
+    # `<%= bf.portals %>` once near `</body>` in the app's own layout —
+    # mirrors `scripts` above (same "collect during render, emit at a single
+    # outlet" shape) and the Hono reference adapter's `<BfPortals />`.
+    def portals
+      _portal_elements.join("\n")
+    end
+
+    # -----------------------------------------------------------------
     # Child Component Rendering
     # -----------------------------------------------------------------
 
@@ -353,6 +385,14 @@ module BarefootJS
           child_bf._script_seen(parent._script_seen)
           child_bf._preloads(parent._preloads)
           child_bf._preload_seen(parent._preload_seen)
+          # Shares the SAME root-level array object as `_scripts` above —
+          # every child renderer registered here closes over `parent` (the
+          # instance `register_components_from_manifest` was called on, the
+          # page root), so this reaches ANY "use client" nesting depth for
+          # free, unlike the Go adapter's `PropagatePortals`, which needed
+          # an explicit recursive walk because Go structs copy fields by
+          # value rather than sharing a mutable reference (#3119).
+          child_bf._portal_elements(parent._portal_elements)
 
           extra =
             if sig_init

@@ -130,6 +130,10 @@ module ExampleApp
       child._child_renderers(parent_bf._child_renderers)
       child._scripts(parent_bf._scripts)
       child._script_seen(parent_bf._script_seen)
+      # Shares the SAME arrayref as `_scripts` above (#3119) so a portal-
+      # owning element nested inside this child reaches the same collector
+      # the page root reads back via `root.portals`.
+      child._portal_elements(parent_bf._portal_elements)
       extra = defaults ? BarefootJS::Context.derive_vars_from_defaults(defaults, props) : {}
       rendered = BACKEND.render_named(component, child, extra.merge(extra_seed).merge(props))
       rendered.chomp
@@ -145,6 +149,10 @@ module ExampleApp
     bf._scripts(root._scripts)
     bf._script_seen(root._script_seen)
     bf._child_renderers(root._child_renderers)
+    # Shares the SAME arrayref as `_scripts` above (#3119): an
+    # `ssrPortalOwnerScope`-flagged element inside this island needs to
+    # reach the SAME collector `blog_page` reads back via `root.portals`.
+    bf._portal_elements(root._portal_elements)
     children.each do |slot, spec|
       tpl, seed = spec.is_a?(Array) ? spec : [spec, {}]
       register_blog_child(bf, slot, tpl, seed)
@@ -174,6 +182,12 @@ module ExampleApp
                         { children: BACKEND.mark_raw(content_html) }, # SSR-only: page content
                         { 'reader_toolbar' => 'ReaderToolbar' })
     scripts = root.scripts
+    # #3119: `root` is the shared render-tree anchor every island above closes
+    # over, so an `ssrPortalOwnerScope`-flagged element anywhere in that tree
+    # registers its markup with `root` rather than returning it inline --
+    # flush it here (same outlet `layout` below now wires in) or it would be
+    # silently dropped from the page instead of rendered.
+    portals = root.portals
     router_entry = ASSETS['RouterEntry'] || ''
     esc_title = root.h(title)
     <<~HTML
@@ -194,6 +208,7 @@ module ExampleApp
       <aside bf-region="nav:0">#{sidebar}</aside>
       <main>#{shell}</main>
       </div>
+      #{portals}
       #{scripts}
       <script type="module" src="#{router_entry}"></script>
       </body>

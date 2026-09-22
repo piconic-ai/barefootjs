@@ -329,6 +329,10 @@ ${needsSearchParams ? "# (#1922) Request-scoped searchParams() env signal: bind 
 ${childRenderers}
 html = backend.render_named(${rubyStringLiteral(toSnakeCase(componentName))}, bf, props)
 print html
+# Mirrors where an app's own layout places \`<%= bf.portals %>\` near
+# </body> — after the component's own output (#3119). Collected but
+# never emitted otherwise, since this harness renders no layout at all.
+print bf.portals
 `
     await Bun.write(resolve(tempDir, 'render.rb'), renderScript)
 
@@ -466,6 +470,15 @@ function buildChildRenderersRuby(
     lines.push(`  child_bf._child_renderers(bf._child_renderers)`)
     lines.push(`  child_bf._scripts(bf._scripts)`)
     lines.push(`  child_bf._script_seen(bf._script_seen)`)
+    // Shares the root's `_portal_elements` array object (#3119) — same
+    // reference-propagation the production `register_components_from_
+    // manifest` closure and the hand-rolled Rails/Sinatra example
+    // `render_component` helpers now do (see `barefoot_js.rb`'s
+    // `register_portal_element` docstring): an `ssrPortalOwnerScope`-
+    // flagged element nested inside a child template (e.g.
+    // DialogContent inside Dialog) must reach the SAME collector this
+    // harness reads back via `bf.portals` below.
+    lines.push(`  child_bf._portal_elements(bf._portal_elements)`)
     // Seed template vars through the production sequence — the exact
     // call `register_components_from_manifest` makes in the published gem
     // (lib/barefoot_js.rb ~lines 283-292) — instead of a harness-local
