@@ -4,6 +4,7 @@ import { createContext, useContext, createEffect, createPortal, isSSRPortal, fin
 import { trackPosition } from '../../../lib/track-position'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { clampPopoverPosition } from '../../../lib/clamp-position'
 import { collectSsrPortalElement } from '@barefootjs/hono/portals'
 
 interface PopoverContextValue {

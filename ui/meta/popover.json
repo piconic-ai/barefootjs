@@ -115,7 +115,8 @@
   },
   "dependencies": {
     "internal": [
-      "track-position"
+      "track-position",
+      "clamp-position"
     ],
     "external": [
       "@barefootjs/client"
