@@ -6,7 +6,7 @@
 
 import type { ComponentIR, IRFragment, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { PROPS_PARAM, isCommentScopedRoot } from './utils.ts'
+import { PROPS_PARAM, isCommentScopedRoot, initFunctionName } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
@@ -218,7 +218,7 @@ export function emitRegistrationAndHydration(
   const isCommentScope = isCommentScopedRoot(_ir.root)
 
   // Build ComponentDef object for hydrate()
-  const defParts: string[] = [`init: init${name}`]
+  const defParts: string[] = [`init: ${initFunctionName(name)}`]
   if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
     const markupSlotIds = markupSlotIdsOf(ctx)
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)

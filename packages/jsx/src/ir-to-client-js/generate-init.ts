@@ -10,7 +10,7 @@
 
 import type { ComponentIR } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { PROPS_PARAM, isCommentScopedRoot } from './utils.ts'
+import { PROPS_PARAM, isCommentScopedRoot, initFunctionName } from './utils.ts'
 import { buildReferencesGraph } from './build-references.ts'
 import { computePropUsage } from './compute-prop-usage.ts'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports.ts'
@@ -40,7 +40,7 @@ export function generateInitFunction(
   emitChildComponentImports(lines, ctx, new Set(siblingComponents || []))
   lines.push('')
   lines.push(MODULE_CONSTANTS_PLACEHOLDER)
-  lines.push(`export function init${name}(__scope, ${PROPS_PARAM} = {}) {`)
+  lines.push(`export function ${initFunctionName(name)}(__scope, ${PROPS_PARAM} = {}) {`)
   lines.push(`  if (!__scope) return`)
   // Host scope id for (bf-h, bf-m) child lookups inside this init body
   // (#1249). Compile-time selectors emit
