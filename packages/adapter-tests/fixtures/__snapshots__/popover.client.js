@@ -1,4 +1,5 @@
 import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, markupOrEmpty, ownScopeId, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { clampPopoverPosition } from './clamp-position'
 
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -120,25 +121,16 @@ export function initPopoverContent(__scope, _p = {}) {
       const rect = positionEl.getBoundingClientRect()
       const align = _p.align ?? 'center'
       const side = _p.side ?? 'bottom'
-      const gap = 4
 
-      if (side === 'bottom') {
-        const maxTop = window.innerHeight - el.offsetHeight - gap
-        el.style.top = `${Math.max(gap, Math.min(rect.bottom + gap, maxTop))}px`
-      } else {
-        el.style.top = `${Math.max(gap, rect.top - el.offsetHeight - gap)}px`
-      }
-
-      const maxLeft = window.innerWidth - el.offsetWidth - gap
-      if (align === 'start') {
-        el.style.left = `${Math.max(gap, Math.min(rect.left, maxLeft))}px`
-      } else if (align === 'end') {
-        el.style.left = `${Math.max(gap, Math.min(rect.right - el.offsetWidth, maxLeft))}px`
-      } else {
-        // center
-        const left = rect.left + rect.width / 2 - el.offsetWidth / 2
-        el.style.left = `${Math.max(gap, Math.min(left, maxLeft))}px`
-      }
+      const { top, left } = clampPopoverPosition(
+        rect,
+        { width: el.offsetWidth, height: el.offsetHeight },
+        { width: window.innerWidth, height: window.innerHeight },
+        side,
+        align,
+      )
+      el.style.top = `${top}px`
+      el.style.left = `${left}px`
     }
 
     // Track cleanup functions for global listeners
