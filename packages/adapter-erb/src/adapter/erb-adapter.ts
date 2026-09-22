@@ -98,7 +98,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
 import { ERB_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -716,17 +716,70 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     if (element.regionId) {
       hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
+    // #3119: the `ref`-callback SSR-portal pattern (`ssrPortalOwnerScope`,
+    // `isSsrPortalRefCallback` in `@barefootjs/jsx`) — the overlay/content
+    // pattern the dialog-style primitives use. Stamp `bf-po` directly on
+    // this element's own tag, matching exactly what the client
+    // `createPortal(el, document.body, { ownerScope })` stamps onto the
+    // SAME element at hydrate time (`packages/client/src/runtime/
+    // portal.ts`), mirroring the Hono reference adapter's identical
+    // `BF_PORTAL_OWNER` stamp. The element itself is then routed through
+    // `wrapSsrPortalElement` below instead of returned for inline
+    // placement, so it renders at the `bf.portals` outlet the app's own
+    // layout places near `</body>` — see that method's docstring.
+    if (element.ssrPortalOwnerScope) {
+      hydrationAttrs += ` ${BF_PORTAL_OWNER}="<%= bf.scope_attr %>"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
       'link', 'meta', 'param', 'source', 'track', 'wbr',
     ]
 
-    if (voidElements.includes(tag.toLowerCase())) {
-      return `<${tag}${attrs}${hydrationAttrs}>`
-    }
+    const rendered = voidElements.includes(tag.toLowerCase())
+      ? `<${tag}${attrs}${hydrationAttrs}>`
+      : `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
 
-    return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+    if (element.ssrPortalOwnerScope) {
+      return this.wrapSsrPortalElement(rendered)
+    }
+    return rendered
+  }
+
+  /**
+   * Route an `ssrPortalOwnerScope`-flagged element's ALREADY-RENDERED markup
+   * (the `bf-po` attribute already stamped on its own tag) into
+   * `bf.register_portal_element` instead of leaving it in the main output
+   * buffer at its source position (#3119).
+   *
+   * `rendered` is plain ERB source — literal HTML text interleaved with
+   * `<%= %>` tags for the element's own dynamic parts (attrs/children) —
+   * not yet-evaluated content, so it can't just be handed to
+   * `register_portal_element` as a Ruby string literal the way a purely
+   * static element could. This reuses the SAME output-buffer-slice
+   * mechanism `renderComponent` already uses to capture forwarded JSX
+   * children (see this file's header docstring, "Content capture"): mark
+   * `_erbout`'s length, let the element render inline as normal ERB (its
+   * embedded `<%= %>` tags evaluate and append to `_erbout` exactly as
+   * they would anywhere else), then `slice!` the newly-appended span back
+   * OUT of the buffer — so it never reaches the page at its source
+   * position — into a local, and register that already-fully-evaluated
+   * HTML string with the portal collector. Mirrors the Hono reference
+   * adapter's `collectSsrPortalElement` (`packages/adapter-hono/src/
+   * portals.tsx`) and the Go/Blade adapters' `wrapSsrPortalElement`,
+   * adapted to ERB's own capture idiom instead of their
+   * re-templating / `ob_start()` tricks.
+   *
+   * Reuses `childrenCaptureCounter` (shared with `renderComponent`'s named-
+   * slot captures) for the local-variable suffix — the two call sites
+   * never race (single-pass sequential emission), and a shared counter is
+   * simpler than a second one that could theoretically collide with it.
+   */
+  private wrapSsrPortalElement(rendered: string): string {
+    const suffix = `po${this.childrenCaptureCounter++}`
+    const lenVar = `__bf_len_${suffix}`
+    const rawVar = `__bf_praw_${suffix}`
+    return `<% ${lenVar} = _erbout.length %>${rendered}<% ${rawVar} = _erbout.slice!(${lenVar}..); bf.register_portal_element(${rawVar}) %>`
   }
 
   /**

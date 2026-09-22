@@ -46,9 +46,16 @@ module BarefootHelper
         child_bf._scope_id(slot_id ? "#{scope_id}_#{slot_id}" : "#{child_template}_#{ExampleApp.rand_suffix}")
         child_bf._is_child(true)
         # Share the parent's script collector so a child's register_script
-        # de-dupes against the page's existing <script> set.
+        # de-dupes against the page's existing <script> set. `_portal_elements`
+        # shares the same array-object-reference propagation (#3119) — an
+        # `ssrPortalOwnerScope`-flagged element (DialogContent,
+        # DropdownMenuContent, PopoverContent, the explicit `<Portal>`
+        # component) inside a hand-registered child like this one needs to
+        # reach the SAME collector the page root reads back via `bf.portals`
+        # below, exactly like PortalExample's own top-level Portal does.
         child_bf._scripts(bf._scripts)
         child_bf._script_seen(bf._script_seen)
+        child_bf._portal_elements(bf._portal_elements)
         extra = child_init ? child_init.call(child_props) : {}
         ExampleApp::BACKEND.render_named(child_template, child_bf, child_props.merge(extra))
       end)
@@ -60,13 +67,14 @@ module BarefootHelper
       heading: heading,
       body: body,
       scripts: bf.scripts,
+      portals: bf.portals,
       extra_css: extra_css,
       back: back,
     )
     render html: document.html_safe, layout: false
   end
 
-  def layout(title:, heading:, body:, scripts:, extra_css: '', back: nil)
+  def layout(title:, heading:, body:, scripts:, portals: '', extra_css: '', back: nil)
     base = ExampleApp::BASE
     heading_html = heading && !heading.empty? ? "<h1>#{heading}</h1>" : ''
     # Subpages link back to the example list (BASE/); the list page itself
@@ -105,6 +113,7 @@ module BarefootHelper
           #{heading_html}
           <div id="app">#{body}</div>
           #{back_html}
+          #{portals}
           #{scripts}
           #{dev_snippet}
       </body>

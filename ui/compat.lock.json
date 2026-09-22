@@ -2151,12 +2151,6 @@
         }
       },
       "dialog": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "jinja": {
           "kind": "render",
           "limitations": [
@@ -2195,12 +2189,6 @@
         }
       },
       "dropdown-menu": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "jinja": {
           "kind": "render",
           "limitations": [
@@ -4165,12 +4153,6 @@
         }
       },
       "popover": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "jinja": {
           "kind": "render",
           "limitations": [
@@ -4209,12 +4191,6 @@
         }
       },
       "portal": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "jinja": {
           "kind": "render",
           "limitations": [
@@ -5927,7 +5903,6 @@
         "portal"
       ],
       "adapters": [
-        "erb",
         "jinja",
         "minijinja",
         "mojolicious",
