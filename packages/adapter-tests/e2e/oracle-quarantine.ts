@@ -132,9 +132,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // now write through `setTextPreservingMarkers`
   // (`ui/lib/set-text-preserving-markers.ts`), which updates only the text
   // node between the markers, mirroring the discipline the compiler's own
-  // slot writer already follows. `combobox`/`select` still carry an
-  // UNRELATED portal-positioning divergence on every adapter but
-  // Hono — see `ref-callback-portal-content-inline-at-ssr`.
+  // slot writer already follows. `combobox`/`select` do NOT carry the
+  // portal-positioning divergence dialog/dropdown-menu/popover/portal
+  // used to (#3169 found the `ref-callback-portal-content-inline-at-ssr`
+  // citation added for them was stale — never re-verified against a real
+  // render — and every non-Hono adapter already places their portaled
+  // `Content` correctly); the Go adapter alone still diverges here, for
+  // an unrelated reason — see `nested-child-dynamic-boolean-prop-dropped`.
   // Minimal, component-agnostic repro of `ref-effect-attr-state-ssr`
   // itself — added once accordion/radio-group/command/combobox/select all
   // graduated off it, so the entry keeps a live, named fixture in this
@@ -181,11 +185,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // itself could not be executed in this sandbox (Playwright's Chromium
   // download is network-blocked here) — CI's `oracle.playwright.ts` run
   // on the PR is the outstanding verification for this graduation.
-  // `idempotence` graduated earlier (#2717) for the same fixture group —
-  // see the registry entry `ref-callback-portal-content-inline-at-ssr`
-  // for the adapters (every one but Hono) that still exhibit the
-  // original divergence; their `expectedHtml`-vs-adapter-render
-  // conformance pins live in each adapter's `render-divergences.ts`.
+  // `idempotence` graduated earlier (#2717) for the same fixture group.
+  // The registry entry that used to track the remaining `dialog`/
+  // `dropdown-menu`/`popover`/`portal` divergence on every non-Hono
+  // adapter (`ref-callback-portal-content-inline-at-ssr`) is deleted —
+  // #3119 fixed the emission on all eight, and #3169 found its
+  // combobox/select citations (added afterward on an unverified
+  // assumption) were never actually broken, so nothing cites it anymore.
   // `tabs` graduated (#2728): fixed in `materializeComponent`
   // (`packages/client/src/runtime/component.ts`) — see the changeset for
   // the root-cause narrative. Verified with the real oracle run.

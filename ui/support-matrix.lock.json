@@ -21,15 +21,9 @@
           "total": 120
         },
         "blade": {
-          "pass": 106,
+          "pass": 108,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -91,12 +85,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -111,15 +99,9 @@
           ]
         },
         "erb": {
-          "pass": 107,
+          "pass": 109,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -175,12 +157,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -201,7 +177,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -273,7 +249,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -303,15 +279,9 @@
           ]
         },
         "jinja": {
-          "pass": 106,
+          "pass": 108,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -370,12 +340,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -393,15 +357,9 @@
           ]
         },
         "minijinja": {
-          "pass": 106,
+          "pass": 108,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -463,12 +421,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -483,15 +435,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 105,
+          "pass": 107,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -544,12 +490,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -579,15 +519,9 @@
           ]
         },
         "pebble": {
-          "pass": 106,
+          "pass": 108,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -646,12 +580,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -669,15 +597,9 @@
           ]
         },
         "twig": {
-          "pass": 106,
+          "pass": 108,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -736,12 +658,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -759,15 +675,9 @@
           ]
         },
         "xslate": {
-          "pass": 104,
+          "pass": 106,
           "total": 120,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -826,12 +736,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -881,15 +785,9 @@
           "total": 72
         },
         "blade": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -906,12 +804,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -923,15 +815,9 @@
           ]
         },
         "erb": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -948,12 +834,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -971,7 +851,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -995,7 +875,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -1007,15 +887,9 @@
           ]
         },
         "jinja": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1032,12 +906,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1049,15 +917,9 @@
           ]
         },
         "minijinja": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1074,12 +936,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1091,15 +947,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1116,12 +966,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1133,15 +977,9 @@
           ]
         },
         "pebble": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1158,12 +996,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1175,15 +1007,9 @@
           ]
         },
         "twig": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1200,12 +1026,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1217,15 +1037,9 @@
           ]
         },
         "xslate": {
-          "pass": 66,
+          "pass": 68,
           "total": 72,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -1242,12 +1056,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1279,15 +1087,9 @@
           "total": 77
         },
         "blade": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1337,12 +1139,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1357,15 +1153,9 @@
           ]
         },
         "erb": {
-          "pass": 66,
+          "pass": 68,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1406,12 +1196,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1435,7 +1219,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -1489,7 +1273,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -1507,15 +1291,9 @@
           ]
         },
         "jinja": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1562,12 +1340,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1585,15 +1357,9 @@
           ]
         },
         "minijinja": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1640,12 +1406,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1663,15 +1423,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 66,
+          "pass": 68,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1712,12 +1466,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1735,15 +1483,9 @@
           ]
         },
         "pebble": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1790,12 +1532,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1813,15 +1549,9 @@
           ]
         },
         "twig": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1868,12 +1598,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1891,15 +1615,9 @@
           ]
         },
         "xslate": {
-          "pass": 65,
+          "pass": 67,
           "total": 77,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -1946,12 +1664,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -1989,15 +1701,9 @@
           "total": 111
         },
         "blade": {
-          "pass": 100,
+          "pass": 102,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2041,12 +1747,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2061,15 +1761,9 @@
           ]
         },
         "erb": {
-          "pass": 101,
+          "pass": 103,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2107,12 +1801,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2133,7 +1821,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -2187,7 +1875,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -2205,15 +1893,9 @@
           ]
         },
         "jinja": {
-          "pass": 100,
+          "pass": 102,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2254,12 +1936,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2277,15 +1953,9 @@
           ]
         },
         "minijinja": {
-          "pass": 100,
+          "pass": 102,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2326,12 +1996,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2349,15 +2013,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 101,
+          "pass": 103,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2392,12 +2050,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2415,15 +2067,9 @@
           ]
         },
         "pebble": {
-          "pass": 100,
+          "pass": 102,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2464,12 +2110,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2487,15 +2127,9 @@
           ]
         },
         "twig": {
-          "pass": 100,
+          "pass": 102,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2536,12 +2170,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2559,15 +2187,9 @@
           ]
         },
         "xslate": {
-          "pass": 100,
+          "pass": 102,
           "total": 111,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -2608,12 +2230,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -2671,15 +2287,9 @@
           ]
         },
         "blade": {
-          "pass": 274,
+          "pass": 276,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -2795,12 +2405,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2827,15 +2431,9 @@
           ]
         },
         "erb": {
-          "pass": 275,
+          "pass": 277,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -2945,12 +2543,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2983,7 +2575,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -3115,7 +2707,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -3157,15 +2749,9 @@
           ]
         },
         "jinja": {
-          "pass": 274,
+          "pass": 276,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -3278,12 +2864,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3313,15 +2893,9 @@
           ]
         },
         "minijinja": {
-          "pass": 274,
+          "pass": 276,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -3434,12 +3008,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3469,15 +3037,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 275,
+          "pass": 277,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -3584,12 +3146,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3619,15 +3175,9 @@
           ]
         },
         "pebble": {
-          "pass": 274,
+          "pass": 276,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -3740,12 +3290,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3775,15 +3319,9 @@
           ]
         },
         "twig": {
-          "pass": 274,
+          "pass": 276,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -3896,12 +3434,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -3931,15 +3463,9 @@
           ]
         },
         "xslate": {
-          "pass": 274,
+          "pass": 276,
           "total": 299,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -4052,12 +3578,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -4115,15 +3635,9 @@
           ]
         },
         "blade": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4140,26 +3654,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4176,12 +3678,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -4193,7 +3689,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -4223,21 +3719,15 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4254,26 +3744,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4290,26 +3768,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4326,26 +3792,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4362,26 +3816,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4398,26 +3840,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 31,
+          "pass": 33,
           "total": 36,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "flatmap-typeof-projection",
               "limitations": [
@@ -4434,12 +3864,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -4497,15 +3921,9 @@
           ]
         },
         "blade": {
-          "pass": 392,
+          "pass": 394,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -4645,12 +4063,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4677,15 +4089,9 @@
           ]
         },
         "erb": {
-          "pass": 393,
+          "pass": 395,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -4819,12 +4225,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4857,7 +4257,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -5013,7 +4413,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -5061,15 +4461,9 @@
           ]
         },
         "jinja": {
-          "pass": 392,
+          "pass": 394,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -5206,12 +4600,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -5241,15 +4629,9 @@
           ]
         },
         "minijinja": {
-          "pass": 392,
+          "pass": 394,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -5389,12 +4771,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5421,15 +4797,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 391,
+          "pass": 393,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -5560,12 +4930,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -5607,15 +4971,9 @@
           ]
         },
         "pebble": {
-          "pass": 392,
+          "pass": 394,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -5752,12 +5110,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -5787,15 +5139,9 @@
           ]
         },
         "twig": {
-          "pass": 392,
+          "pass": 394,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -5932,12 +5278,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -5967,15 +5307,9 @@
           ]
         },
         "xslate": {
-          "pass": 390,
+          "pass": 392,
           "total": 421,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "component-root-client-scope",
               "limitations": [
@@ -6112,12 +5446,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -6179,40 +5507,12 @@
           "total": 15
         },
         "blade": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "erb": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "go-template": {
           "pass": 13,
@@ -6221,124 +5521,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "minijinja": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "pebble": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "twig": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         },
         "xslate": {
-          "pass": 13,
-          "total": 15,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 15,
+          "total": 15
         }
       },
       "source": {
@@ -6375,15 +5591,9 @@
           ]
         },
         "blade": {
-          "pass": 313,
+          "pass": 315,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -6466,12 +5676,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -6495,15 +5699,9 @@
           ]
         },
         "erb": {
-          "pass": 313,
+          "pass": 315,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -6586,12 +5784,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -6621,7 +5813,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -6717,7 +5909,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -6759,15 +5951,9 @@
           ]
         },
         "jinja": {
-          "pass": 313,
+          "pass": 315,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -6850,12 +6036,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -6879,15 +6059,9 @@
           ]
         },
         "minijinja": {
-          "pass": 313,
+          "pass": 315,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -6970,12 +6144,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -6999,15 +6167,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 311,
+          "pass": 313,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -7090,12 +6252,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7131,15 +6287,9 @@
           ]
         },
         "pebble": {
-          "pass": 313,
+          "pass": 315,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -7222,12 +6372,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7251,15 +6395,9 @@
           ]
         },
         "twig": {
-          "pass": 313,
+          "pass": 315,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -7342,12 +6480,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7371,15 +6503,9 @@
           ]
         },
         "xslate": {
-          "pass": 311,
+          "pass": 313,
           "total": 332,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -7462,12 +6588,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -7523,21 +6643,9 @@
           "total": 53
         },
         "blade": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7553,21 +6661,9 @@
           ]
         },
         "erb": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7589,13 +6685,13 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -7613,21 +6709,9 @@
           ]
         },
         "jinja": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7643,21 +6727,9 @@
           ]
         },
         "minijinja": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7673,21 +6745,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7703,21 +6763,9 @@
           ]
         },
         "pebble": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7733,21 +6781,9 @@
           ]
         },
         "twig": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7763,21 +6799,9 @@
           ]
         },
         "xslate": {
-          "pass": 49,
+          "pass": 51,
           "total": 53,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -7833,15 +6857,9 @@
           ]
         },
         "blade": {
-          "pass": 226,
+          "pass": 228,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -7933,12 +6951,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7965,15 +6977,9 @@
           ]
         },
         "erb": {
-          "pass": 227,
+          "pass": 229,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -8059,12 +7065,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8097,7 +7097,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -8205,7 +7205,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -8253,15 +7253,9 @@
           ]
         },
         "jinja": {
-          "pass": 226,
+          "pass": 228,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -8350,12 +7344,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -8385,15 +7373,9 @@
           ]
         },
         "minijinja": {
-          "pass": 226,
+          "pass": 228,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -8485,12 +7467,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8517,15 +7493,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 225,
+          "pass": 227,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -8608,12 +7578,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -8655,15 +7619,9 @@
           ]
         },
         "pebble": {
-          "pass": 226,
+          "pass": 228,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -8752,12 +7710,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -8787,15 +7739,9 @@
           ]
         },
         "twig": {
-          "pass": 226,
+          "pass": 228,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -8884,12 +7830,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -8919,15 +7859,9 @@
           ]
         },
         "xslate": {
-          "pass": 224,
+          "pass": 226,
           "total": 247,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "limitations": [
@@ -9016,12 +7950,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9083,25 +8011,13 @@
           "total": 96
         },
         "blade": {
-          "pass": 91,
+          "pass": 93,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9119,25 +8035,13 @@
           ]
         },
         "erb": {
-          "pass": 91,
+          "pass": 93,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9161,7 +8065,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -9173,7 +8077,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -9209,25 +8113,13 @@
           ]
         },
         "jinja": {
-          "pass": 91,
+          "pass": 93,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9245,25 +8137,13 @@
           ]
         },
         "minijinja": {
-          "pass": 91,
+          "pass": 93,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9281,25 +8161,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 89,
+          "pass": 91,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9329,25 +8197,13 @@
           ]
         },
         "pebble": {
-          "pass": 91,
+          "pass": 93,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9365,25 +8221,13 @@
           ]
         },
         "twig": {
-          "pass": 91,
+          "pass": 93,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9401,25 +8245,13 @@
           ]
         },
         "xslate": {
-          "pass": 89,
+          "pass": 91,
           "total": 96,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -9519,21 +8351,9 @@
           "total": 32
         },
         "blade": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9543,21 +8363,9 @@
           ]
         },
         "erb": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9573,7 +8381,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -9585,7 +8393,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -9597,21 +8405,9 @@
           ]
         },
         "jinja": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9621,21 +8417,9 @@
           ]
         },
         "minijinja": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9645,21 +8429,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9669,21 +8441,9 @@
           ]
         },
         "pebble": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9693,21 +8453,9 @@
           ]
         },
         "twig": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9717,21 +8465,9 @@
           ]
         },
         "xslate": {
-          "pass": 29,
+          "pass": 31,
           "total": 32,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "tag-cloud",
               "limitations": [
@@ -9761,15 +8497,9 @@
           "total": 30
         },
         "blade": {
-          "pass": 26,
+          "pass": 28,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -9781,35 +8511,17 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
             }
           ]
         },
         "erb": {
-          "pass": 27,
+          "pass": 29,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -9821,7 +8533,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -9839,21 +8551,15 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 26,
+          "pass": 28,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -9864,26 +8570,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 26,
+          "pass": 28,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -9894,50 +8588,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 27,
+          "pass": 29,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 26,
+          "pass": 28,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -9948,26 +8618,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 26,
+          "pass": 28,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -9978,26 +8636,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 26,
+          "pass": 28,
           "total": 30,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -10008,12 +8654,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -10039,15 +8679,9 @@
           "total": 52
         },
         "blade": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10082,12 +8716,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10117,15 +8745,9 @@
           ]
         },
         "erb": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10160,12 +8782,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10201,7 +8817,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -10243,7 +8859,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -10279,15 +8895,9 @@
           ]
         },
         "jinja": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10322,12 +8932,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10357,15 +8961,9 @@
           ]
         },
         "minijinja": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10400,12 +8998,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10435,15 +9027,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10478,12 +9064,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10513,15 +9093,9 @@
           ]
         },
         "pebble": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10556,12 +9130,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10591,15 +9159,9 @@
           ]
         },
         "twig": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10634,12 +9196,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10669,15 +9225,9 @@
           ]
         },
         "xslate": {
-          "pass": 40,
+          "pass": 42,
           "total": 52,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -10712,12 +9262,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -10992,40 +9536,12 @@
           "total": 12
         },
         "blade": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
           "pass": 10,
@@ -11034,124 +9550,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "pebble": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
@@ -11230,15 +9662,9 @@
           "total": 43
         },
         "blade": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11249,26 +9675,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11279,12 +9693,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -11296,7 +9704,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -11314,21 +9722,15 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11339,26 +9741,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11369,26 +9759,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11399,26 +9777,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11429,26 +9795,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11459,26 +9813,14 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 39,
+          "pass": 41,
           "total": 43,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -11489,12 +9831,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -12208,28 +10544,12 @@
           "total": 4
         },
         "blade": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "erb": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "go-template": {
           "pass": 3,
@@ -12238,82 +10558,34 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "minijinja": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "mojolicious": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "pebble": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "twig": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         },
         "xslate": {
-          "pass": 3,
-          "total": 4,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 4,
+          "total": 4
         }
       },
       "source": {
@@ -12797,40 +11069,12 @@
           "total": 12
         },
         "blade": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
           "pass": 10,
@@ -12839,124 +11083,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "pebble": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 10,
-          "total": 12,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
@@ -13387,15 +11547,9 @@
           "total": 56
         },
         "blade": {
-          "pass": 46,
+          "pass": 48,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13439,12 +11593,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13453,15 +11601,9 @@
           ]
         },
         "erb": {
-          "pass": 47,
+          "pass": 49,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13499,12 +11641,6 @@
               ]
             },
             {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13519,7 +11655,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -13573,7 +11709,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -13585,15 +11721,9 @@
           ]
         },
         "jinja": {
-          "pass": 46,
+          "pass": 48,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13634,12 +11764,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13651,15 +11775,9 @@
           ]
         },
         "minijinja": {
-          "pass": 46,
+          "pass": 48,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13700,12 +11818,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13717,15 +11829,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 47,
+          "pass": 49,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13760,12 +11866,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13777,15 +11877,9 @@
           ]
         },
         "pebble": {
-          "pass": 46,
+          "pass": 48,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13826,12 +11920,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13843,15 +11931,9 @@
           ]
         },
         "twig": {
-          "pass": 46,
+          "pass": 48,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13892,12 +11974,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13909,15 +11985,9 @@
           ]
         },
         "xslate": {
-          "pass": 46,
+          "pass": 48,
           "total": 56,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -13958,12 +12028,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -13995,40 +12059,12 @@
           "total": 11
         },
         "blade": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "erb": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "go-template": {
           "pass": 9,
@@ -14037,124 +12073,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "minijinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "mojolicious": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "pebble": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "twig": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "xslate": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         }
       },
       "source": {
@@ -14241,15 +12193,9 @@
           ]
         },
         "blade": {
-          "pass": 69,
+          "pass": 71,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14260,26 +12206,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "erb": {
-          "pass": 69,
+          "pass": 71,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14290,12 +12224,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -14307,7 +12235,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -14325,7 +12253,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -14337,15 +12265,9 @@
           ]
         },
         "jinja": {
-          "pass": 69,
+          "pass": 71,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14356,26 +12278,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 69,
+          "pass": 71,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14386,26 +12296,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 67,
+          "pass": 69,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14416,12 +12314,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -14439,15 +12331,9 @@
           ]
         },
         "pebble": {
-          "pass": 69,
+          "pass": 71,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14458,26 +12344,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 69,
+          "pass": 71,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14488,26 +12362,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 67,
+          "pass": 69,
           "total": 73,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -14518,12 +12380,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -14561,28 +12417,12 @@
           "total": 27
         },
         "blade": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "erb": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "go-template": {
           "pass": 26,
@@ -14591,45 +12431,23 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "minijinja": {
+          "pass": 27,
+          "total": 27
+        },
+        "mojolicious": {
           "pass": 26,
           "total": 27,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
-        },
-        "mojolicious": {
-          "pass": 25,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-loop-item-conditional",
               "limitations": [
@@ -14639,39 +12457,17 @@
           ]
         },
         "pebble": {
-          "pass": 26,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 27,
+          "total": 27
         },
         "twig": {
+          "pass": 27,
+          "total": 27
+        },
+        "xslate": {
           "pass": 26,
           "total": 27,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
-        },
-        "xslate": {
-          "pass": 25,
-          "total": 27,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-loop-item-conditional",
               "limitations": [
@@ -14700,15 +12496,9 @@
           "total": 154
         },
         "blade": {
-          "pass": 143,
+          "pass": 145,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -14755,12 +12545,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -14772,15 +12556,9 @@
           ]
         },
         "erb": {
-          "pass": 143,
+          "pass": 145,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -14827,12 +12605,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -14850,7 +12622,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -14904,7 +12676,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -14928,15 +12700,9 @@
           ]
         },
         "jinja": {
-          "pass": 143,
+          "pass": 145,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -14983,12 +12749,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15000,15 +12760,9 @@
           ]
         },
         "minijinja": {
-          "pass": 143,
+          "pass": 145,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -15055,12 +12809,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15072,15 +12820,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 141,
+          "pass": 143,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -15127,12 +12869,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15156,15 +12892,9 @@
           ]
         },
         "pebble": {
-          "pass": 143,
+          "pass": 145,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -15211,12 +12941,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15228,15 +12952,9 @@
           ]
         },
         "twig": {
-          "pass": 143,
+          "pass": 145,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -15283,12 +13001,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15300,15 +13012,9 @@
           ]
         },
         "xslate": {
-          "pass": 141,
+          "pass": 143,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "limitations": [
@@ -15355,12 +13061,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15412,15 +13112,9 @@
           ]
         },
         "blade": {
-          "pass": 212,
+          "pass": 214,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15461,12 +13155,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15484,15 +13172,9 @@
           ]
         },
         "erb": {
-          "pass": 212,
+          "pass": 214,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15533,12 +13215,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15562,7 +13238,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -15616,7 +13292,7 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -15640,15 +13316,9 @@
           ]
         },
         "jinja": {
-          "pass": 212,
+          "pass": 214,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15689,12 +13359,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15712,15 +13376,9 @@
           ]
         },
         "minijinja": {
-          "pass": 212,
+          "pass": 214,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15761,12 +13419,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15784,15 +13436,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 210,
+          "pass": 212,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15833,12 +13479,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15868,15 +13508,9 @@
           ]
         },
         "pebble": {
-          "pass": 212,
+          "pass": 214,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15917,12 +13551,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -15940,15 +13568,9 @@
           ]
         },
         "twig": {
-          "pass": 212,
+          "pass": 214,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -15989,12 +13611,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -16012,15 +13628,9 @@
           ]
         },
         "xslate": {
-          "pass": 210,
+          "pass": 212,
           "total": 223,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -16061,12 +13671,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             },
             {
@@ -16172,21 +13776,9 @@
           "total": 44
         },
         "blade": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16202,21 +13794,9 @@
           ]
         },
         "erb": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16238,13 +13818,13 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -16262,21 +13842,9 @@
           ]
         },
         "jinja": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16292,21 +13860,9 @@
           ]
         },
         "minijinja": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16322,21 +13878,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16352,21 +13896,9 @@
           ]
         },
         "pebble": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16382,21 +13914,9 @@
           ]
         },
         "twig": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16412,21 +13932,9 @@
           ]
         },
         "xslate": {
-          "pass": 40,
+          "pass": 42,
           "total": 44,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -16461,40 +13969,12 @@
           "total": 17
         },
         "blade": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "erb": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "go-template": {
           "pass": 15,
@@ -16503,124 +13983,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "minijinja": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "mojolicious": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "pebble": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "twig": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         },
         "xslate": {
-          "pass": 15,
-          "total": 17,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 17,
+          "total": 17
         }
       },
       "source": {
@@ -16808,40 +14204,12 @@
           "total": 8
         },
         "blade": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "erb": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "go-template": {
           "pass": 6,
@@ -16850,124 +14218,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "minijinja": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "mojolicious": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "pebble": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "twig": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         },
         "xslate": {
-          "pass": 6,
-          "total": 8,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 8,
+          "total": 8
         }
       },
       "source": {
@@ -17486,15 +14770,9 @@
           "total": 23
         },
         "blade": {
-          "pass": 19,
+          "pass": 21,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17506,35 +14784,17 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
             }
           ]
         },
         "erb": {
-          "pass": 20,
+          "pass": 22,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -17546,7 +14806,7 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
@@ -17564,21 +14824,15 @@
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 19,
+          "pass": 21,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17589,26 +14843,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "minijinja": {
-          "pass": 19,
+          "pass": 21,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17619,50 +14861,26 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "mojolicious": {
-          "pass": 20,
+          "pass": 22,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "pebble": {
-          "pass": 19,
+          "pass": 21,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17673,26 +14891,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "twig": {
-          "pass": 19,
+          "pass": 21,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17703,26 +14909,14 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
         },
         "xslate": {
-          "pass": 19,
+          "pass": 21,
           "total": 23,
           "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
             {
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
@@ -17733,12 +14927,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
               ]
             }
           ]
@@ -17764,40 +14952,12 @@
           "total": 11
         },
         "blade": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "erb": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "go-template": {
           "pass": 9,
@@ -17806,124 +14966,40 @@
             {
               "fixture": "combobox",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             },
             {
               "fixture": "select",
               "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
+                "nested-child-dynamic-boolean-prop-dropped"
               ]
             }
           ]
         },
         "jinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "minijinja": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "mojolicious": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "pebble": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "twig": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         },
         "xslate": {
-          "pass": 9,
-          "total": 11,
-          "gaps": [
-            {
-              "fixture": "combobox",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            },
-            {
-              "fixture": "select",
-              "limitations": [
-                "ref-callback-portal-content-inline-at-ssr"
-              ]
-            }
-          ]
+          "pass": 11,
+          "total": 11
         }
       },
       "source": {

@@ -53,16 +53,20 @@ export const renderDivergences: RenderDivergences = {
   // (`adapter/twig-adapter.ts`), reusing the `register_portal_element`/
   // `portals` methods #3123 already landed on the shared `@barefootjs/php`
   // runtime (`BarefootJS.php`) for Blade.
-  // `combobox` / `select` carry the SAME portal-position divergence
-  // (their `Content` element is the same `ref`-callback SSR-portal
-  // pattern) — tracked under the registry's own
-  // `ref-callback-portal-content-inline-at-ssr` entry. They used to cite
-  // `nested-child-static-prop-text-slot-elided` instead (a fixture can
-  // only be listed on one entry, and these two were "already claimed"
-  // by an unrelated text-slot-marker mismatch); that entry graduated
-  // (#3160), so this is their entry again.
-  combobox: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  select: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  // `combobox` / `select` were re-pinned here on the SAME assumption
+  // (their `Content` element uses the identical `ref`-callback
+  // SSR-portal pattern), but never re-verified against a real render.
+  // They in fact ALREADY render the portal correctly and match Hono
+  // byte-for-byte — `isSsrPortalRefCallback` (`jsx-to-ir.ts`) already
+  // covers `SelectContent`'s `queueMicrotask(() => createPortal(...))`
+  // deferral (see that function's own docstring), and this adapter
+  // renders `ssrPortalOwnerScope` through the same shared,
+  // component-agnostic path #3119 built for the other four. The portal
+  // divergence never applied here; the two stayed skipped only because
+  // the compiled fixture failed elsewhere the whole time (first the
+  // graduated `nested-child-static-prop-text-slot-elided` marker bug),
+  // so nobody re-ran them to notice. No divergence remains on this
+  // adapter (verified against a real render of both fixtures).
   // A client component whose whole return is a child-component call: the
   // reference wraps the child's output in the parent's `<!--bf-scope:...-->`
   // comment pair (with the parent's props) so the parent hydrates; this

@@ -2003,58 +2003,10 @@
     "totalFixtures": 444,
     "fixtures": {
       "combobox": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
+            "nested-child-dynamic-boolean-prop-dropped"
           ]
         }
       },
@@ -4592,58 +4544,10 @@
         }
       },
       "select": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "ref-callback-portal-content-inline-at-ssr"
+            "nested-child-dynamic-boolean-prop-dropped"
           ]
         }
       },
@@ -5768,6 +5672,20 @@
         "BF101"
       ]
     },
+    "nested-child-dynamic-boolean-prop-dropped": {
+      "title": "A dynamic boolean prop authored on a nested child component instance is dropped from SSR",
+      "kind": "silent",
+      "given": "a component that instantiates a sibling-file child component and passes it a boolean prop whose value is a non-literal, reactive expression rather than a literal (e.g. a negated signal read, `showPlaceholder={!value()}`) — the shape ComboboxTrigger's/SelectTrigger's `showPlaceholder` prop uses",
+      "expected": "the child's SSR HTML reflects the prop's real value (the conditional attribute present when the expression is truthy, absent when falsy), matching the caller's actual reactive state",
+      "actual": "drops the prop value before it ever reaches the child's constructor — the child's own template still declares the conditional attribute correctly, but the field goes unpopulated, so the guard is always false and the attribute never renders regardless of the expression's true value",
+      "fixtures": [
+        "combobox",
+        "select"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "nested-prop-member-signal-seed": {
       "title": "Signal seeded from a member of an object-typed prop",
       "kind": "silent",
@@ -5821,28 +5739,6 @@
       "actual": "emits the slot as a bare template-variable lookup named after the const (an empty slot in the CSR template lambda), with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
       "fixtures": [
         "opaque-local-accessor-call"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "ref-callback-portal-content-inline-at-ssr": {
-      "title": "Portal content relocated from a ref callback renders inline on the server",
-      "kind": "silent",
-      "given": "a component that moves part of its own markup to `document.body` from a `ref` callback (`createPortal(el, document.body, { ownerScope })`), the overlay/content pattern the dialog-style primitives use",
-      "expected": "the server HTML places the portaled subtree where the hydrated DOM has it — appended to the body after the component root, carrying its owner scope as `bf-po` — so hydration changes nothing",
-      "actual": "renders the portaled subtree inline at its source position with no `bf-po` on every adapter besides Hono (a `ref` callback never runs at SSR); the hydrate-time callback then moves it to the end of `document.body` and stamps `bf-po`, so pre- and post-hydration DOM differ structurally",
-      "fixtures": [
-        "combobox",
-        "select"
       ],
       "adapters": [
         "blade",

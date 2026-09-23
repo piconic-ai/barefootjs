@@ -106,16 +106,32 @@ export const renderDivergences: RenderDivergences = {
   // below the page root — DialogOverlay/DialogContent live inside
   // Dialog — which is why propagation had to go recursive, not just to
   // direct children).
-  // `combobox` / `select` carry the SAME portal-position divergence
-  // (their `Content` element is the same `ref`-callback SSR-portal
-  // pattern) — tracked under the registry's own
-  // `ref-callback-portal-content-inline-at-ssr` entry. They used to cite
-  // `nested-child-static-prop-text-slot-elided` instead (a fixture can
-  // only be listed on one entry, and these two were "already claimed"
-  // by an unrelated text-slot-marker mismatch); that entry graduated
-  // (#3160), so this is their entry again.
-  combobox: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
-  select: { limitation: 'ref-callback-portal-content-inline-at-ssr' },
+  // `combobox` / `select` were re-pinned here on the SAME assumption
+  // (their `Content` element uses the identical `ref`-callback
+  // SSR-portal pattern), but never re-verified against real `go run`
+  // output. They in fact ALREADY render `bf-po` at the correct position,
+  // byte-for-byte matching Hono — `isSsrPortalRefCallback`
+  // (`jsx-to-ir.ts`) already walks through `SelectContent`'s
+  // `queueMicrotask(() => createPortal(...))` deferral (see that
+  // function's own docstring), and `wrapSsrPortalElement` is the same
+  // shared, component-agnostic path #3119 built for the other four. The
+  // portal divergence never applied to `combobox`/`select` here; the two
+  // stayed skipped only because the compiled fixture failed elsewhere
+  // (first the graduated `nested-child-static-prop-text-slot-elided`
+  // marker bug, now the unrelated dynamic-boolean-prop gap below) the
+  // whole time, so nobody re-ran them through Go to notice.
+  //
+  // What's ACTUALLY still wrong on Go for both: `SelectTrigger`'s
+  // `showPlaceholder={!value()}` (and `ComboboxTrigger`'s twin) never
+  // reaches the compiled `SelectTrigger`/`ComboboxTrigger` constructor at
+  // all — the field is referenced correctly in the child's OWN template
+  // (`{{if .ShowPlaceholder}}data-placeholder=...{{end}}`) but the
+  // caller's (`SelectBasicDemo`'s) constructor never populates or
+  // forwards it, so `data-placeholder` never renders regardless of
+  // `value()`. Unrelated to the portal mechanism; tracked under
+  // `nested-child-dynamic-boolean-prop-dropped`.
+  combobox: { limitation: 'nested-child-dynamic-boolean-prop-dropped' },
+  select: { limitation: 'nested-child-dynamic-boolean-prop-dropped' },
   // Go's manifestation is more severe than the shared entry's `actual`
   // describes (a frozen-but-present attribute): `NewLoopRowChildChildrenAttrsProps`
   // never populates the `Chips []...Ctx` slice field at all when the

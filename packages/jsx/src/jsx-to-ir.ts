@@ -6671,17 +6671,18 @@ function processAttributes(
  * Recognizing only the DIRECT call (never through a second helper
  * function) is a deliberate, checked choice, not a shortcut: every
  * shipped `ref`-callback portal user (dialog, dropdown-menu, popover,
- * portal) calls `createPortal` directly inside the `ref` callback itself
- * — there is no indirection through a shared `moveToBody`-style helper
+ * portal, combobox, select) calls `createPortal` directly inside the
+ * `ref` callback itself (`SelectContent`/`ComboboxContent`'s deferral
+ * through `queueMicrotask` is still the SAME callback's own call, not a
+ * second helper — see `containsSsrPortalPlacementCall`'s docstring) —
+ * there is no indirection through a shared `moveToBody`-style helper
  * anywhere in `ui/components/ui/*` today. Recognizing through a helper
  * (the "worth the scope-walk?" open question from #3059) is therefore
  * left for when a real caller needs it.
  *
- * A match makes `element.ssrPortalOwnerScope` true, which the Hono
- * adapter (the only adapter with an SSR portal outlet so far) uses to
- * place the element's SSR markup at the outlet instead of inline — see
- * `ref-callback-portal-content-inline-at-ssr` in the known-limitation
- * registry for the adapters that don't yet.
+ * A match makes `element.ssrPortalOwnerScope` true, which every adapter
+ * (#3119) uses to place the element's SSR markup at its own portal
+ * outlet instead of inline.
  */
 function isSsrPortalRefCallback(refExpr: ts.Expression, ctx: TransformContext): boolean {
   if (!ts.isIdentifier(refExpr)) return false
