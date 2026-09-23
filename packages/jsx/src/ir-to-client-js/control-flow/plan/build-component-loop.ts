@@ -26,6 +26,7 @@ import {
   buildCompSelector,
   isTextOnlyConditional,
   buildChildRefBindings,
+  hasReactiveLoopBindings,
 } from '../shared.ts'
 import { irChildrenToJsExpr, renderPreamble } from '../../html-template.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
@@ -132,9 +133,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
   const rowReactiveTexts = nestedChildrenTextEffectSlotIds.size > 0
     ? elem.bindings.reactiveTexts.filter(t => !nestedChildrenTextEffectSlotIds.has(t.slotId))
     : elem.bindings.reactiveTexts
-  const hasReactiveEffects = elem.bindings.reactiveAttrs.length > 0
-    || rowReactiveTexts.length > 0
-    || elem.bindings.conditionals.length > 0
+  const hasReactiveEffects = hasReactiveLoopBindings({ ...elem.bindings, reactiveTexts: rowReactiveTexts })
 
   return {
     kind: 'component',
