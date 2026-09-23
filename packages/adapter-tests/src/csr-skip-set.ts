@@ -102,11 +102,17 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // child needs no `$c` lookup at all (it IS `__scope`) — see
   // `ClientJsContext.commentScopeRootSlotId` and
   // `comment-wrapper-grandchild-slot-collision.test.ts`.
-  // Known limitation `opaque-local-accessor-call`: `label` is an init-scope
-  // local bound to an opaque call (`makeLabel()`), so the CSR template lambda
-  // (module scope, evaluated before init) has no value for `{label()}` and
-  // emits an empty slot — the same silent gap the DSL adapters pin in their
-  // `renderDivergences`. The reference runs the accessor at render time. Its
+  // Known limitation `opaque-local-accessor-call` (now `kind: 'refusal'`,
+  // #3144): `label` is an init-scope local bound to an opaque call
+  // (`makeLabel()`), so the CSR template lambda (module scope, evaluated
+  // before init) has no value for `{label()}` and emits an empty slot — the
+  // SAME empty-slot shape the intentionally-escaped `/* @client */` twin
+  // renders on purpose, so this stays a safe degrade, not a crash. #3144
+  // fixed the SILENT half of this bug (each DSL adapter's own `call()` now
+  // refuses with BF101 instead of guessing, pinned in `conformance-pins.ts`)
+  // — this CSR-only gap is a separate, narrower concern (a pure client
+  // mount has no adapter to refuse through) left as-is. The reference runs
+  // the accessor at render time. Its
   // `/* @client */` twin (`opaque-local-accessor-call-client`) is NOT skipped.
   'opaque-local-accessor-call',
   // #3059: `renderCsrComponent`'s harness stubs `createPortal` as a no-op

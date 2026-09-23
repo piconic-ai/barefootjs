@@ -35,12 +35,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A component-body const bound to an opaque call (`const label =
-  // makeLabel()`) and invoked in text position lowers to a bare template
-  // variable named after the const, with no diagnostic — the reference runs
-  // the accessor at render time. Escape twin:
-  // `opaque-local-accessor-call-client`.
-  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
   // #3119 graduated `dialog`/`dropdown-menu`/`popover`/`portal`: an
   // `ssrPortalOwnerScope`-flagged element now stamps `bf-po` on its own
   // tag and routes through `$bf.register_portal_element`/`$bf.portals()`

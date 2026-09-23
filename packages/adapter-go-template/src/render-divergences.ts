@@ -85,12 +85,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // (`restBagOverrideFields`, `lib/types.ts`) instead of leaving it
 // undelivered.
 export const renderDivergences: RenderDivergences = {
-  // A component-body const bound to an opaque call (`const label =
-  // makeLabel()`) and invoked in text position lowers to a bare template
-  // variable named after the const, with no diagnostic — the reference runs
-  // the accessor at render time. Escape twin:
-  // `opaque-local-accessor-call-client`.
-  'opaque-local-accessor-call': { limitation: 'opaque-local-accessor-call' },
   // #3119 graduated dialog/dropdown-menu/popover/portal off
   // `ref-callback-portal-content-inline-at-ssr`: an `ssrPortalOwnerScope`
   // element (#3059's compiler-level recognition of the `ref`-callback
