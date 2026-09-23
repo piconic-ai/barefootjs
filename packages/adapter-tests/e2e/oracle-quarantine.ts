@@ -137,8 +137,8 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // used to (#3169 found the `ref-callback-portal-content-inline-at-ssr`
   // citation added for them was stale — never re-verified against a real
   // render — and every non-Hono adapter already places their portaled
-  // `Content` correctly); the Go adapter alone still diverges here, for
-  // an unrelated reason — see `nested-child-dynamic-boolean-prop-dropped`.
+  // `Content` correctly), and Go's remaining unary-not prop drop
+  // (`showPlaceholder={!value()}`) is fixed too.
   // Minimal, component-agnostic repro of `ref-effect-attr-state-ssr`
   // itself — added once accordion/radio-group/command/combobox/select all
   // graduated off it, so the entry keeps a live, named fixture in this

@@ -739,6 +739,7 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 // survived the branch's removal). Found by the explore sweep's
 // `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
+import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1211,4 +1212,5 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildRestBagPropHoisted,
   loopRowChildChildrenAttrs,
   conditionalChildListenerCleanup,
+  nestedChildNegatedProp,
 ]

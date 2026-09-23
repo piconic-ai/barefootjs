@@ -2805,6 +2805,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             )
             if (resolvedValue !== null) {
               emitChildField(prop.name, resolvedValue)
+            } else if (parsedValue?.kind === 'unary' && parsedValue.op === '!') {
+              // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
+              // recursion still can't lower (e.g. a multi-arg call, a deep
+              // member chain, `!(a && b)`) — refuse loudly instead of
+              // silently omitting the field, which left the child's own
+              // zero value (`false`) masquerading as a real answer at every
+              // call site with no diagnostic.
+              this.state.errors.push({
+                code: 'BF101',
+                severity: 'error',
+                message: `Prop '${prop.name}' on <${child.name}> is a negated expression ('${exprText}') the Go template adapter can't lower to SSR output`,
+                loc: prop.loc,
+                suggestion: {
+                  message: `Wrap <${child.name}> in /* @client */ so it renders on the client instead, or compute '${prop.name}' in the parent as its own signal/memo and pass that in as a plain prop.`,
+                  escape: [{ kind: 'client-directive' }],
+                },
+              })
             }
             break
           }
@@ -4272,6 +4289,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propsParams: { name: string; sourceName?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): string | null {
+    // A unary-not wrapping any shape this function otherwise resolves
+    // (`!value()`, `!open()`, `!props.v`, `!label` — #3174) — recurse on the
+    // negated operand and wrap the result in `bf.Truthy`, which is what the
+    // ternary-test lowering above already uses for the identical "coerce a
+    // constructor-time value to bool" question. A bare Go `!` only compiles
+    // for an already-bool operand, so it silently fails to build (or was
+    // simply never reached) for `!value()` over a STRING-typed signal field
+    // — `bf.Truthy` mirrors the runtime's own JS-truthiness coercion instead
+    // (empty string / zero / false / nil → falsy, same as JS). A literal
+    // `true`/`false` result is inverted directly rather than wrapped, so the
+    // emitted Go stays a plain boolean literal instead of an unnecessary
+    // `bf.Truthy(true)` call.
+    if (expr.startsWith('!')) {
+      const negatedGo = this.resolveDynamicPropValue(
+        expr.slice(1).trim(),
+        signals,
+        memos,
+        propsParams,
+        propFallbackVars,
+      )
+      if (negatedGo === null) return null
+      if (negatedGo === 'true') return 'false'
+      if (negatedGo === 'false') return 'true'
+      return `!bf.Truthy(${negatedGo})`
+    }
+
     // `getter() === 'lit'` / `!==` as a child-instance prop value
     // (`open={openItem() === 'item-1'}`): resolves to a Go bool when the
     // signal's initial value is a string literal.

@@ -106,32 +106,15 @@ export const renderDivergences: RenderDivergences = {
   // below the page root — DialogOverlay/DialogContent live inside
   // Dialog — which is why propagation had to go recursive, not just to
   // direct children).
-  // `combobox` / `select` were re-pinned here on the SAME assumption
-  // (their `Content` element uses the identical `ref`-callback
-  // SSR-portal pattern), but never re-verified against real `go run`
-  // output. They in fact ALREADY render `bf-po` at the correct position,
-  // byte-for-byte matching Hono — `isSsrPortalRefCallback`
-  // (`jsx-to-ir.ts`) already walks through `SelectContent`'s
-  // `queueMicrotask(() => createPortal(...))` deferral (see that
-  // function's own docstring), and `wrapSsrPortalElement` is the same
-  // shared, component-agnostic path #3119 built for the other four. The
-  // portal divergence never applied to `combobox`/`select` here; the two
-  // stayed skipped only because the compiled fixture failed elsewhere
-  // (first the graduated `nested-child-static-prop-text-slot-elided`
-  // marker bug, now the unrelated dynamic-boolean-prop gap below) the
-  // whole time, so nobody re-ran them through Go to notice.
-  //
-  // What's ACTUALLY still wrong on Go for both: `SelectTrigger`'s
-  // `showPlaceholder={!value()}` (and `ComboboxTrigger`'s twin) never
-  // reaches the child — the field is referenced correctly in the child's
-  // OWN template (`{{if .ShowPlaceholder}}data-placeholder=...{{end}}`)
-  // but a unary-not prop value is dropped on the way in, so
-  // `data-placeholder` never renders regardless of `value()` (a plain
-  // `open()` or `value() === ''` reaches it fine). Unrelated to the
-  // portal mechanism; tracked under
-  // `nested-child-dynamic-boolean-prop-dropped`.
-  combobox: { limitation: 'nested-child-dynamic-boolean-prop-dropped' },
-  select: { limitation: 'nested-child-dynamic-boolean-prop-dropped' },
+  // `combobox` / `select` use the same `ref`-callback SSR-portal pattern
+  // for their `Content`, and that part already renders `bf-po` correctly
+  // here (`isSsrPortalRefCallback` walks through `SelectContent`'s
+  // `queueMicrotask(() => createPortal(...))` deferral). They were pinned
+  // only for `SelectTrigger`'s (and `ComboboxTrigger`'s)
+  // `showPlaceholder={!value()}`, a unary-not prop value that used to be
+  // dropped on the way into a child component's SSR constructor
+  // (`emitStaticChildInstances` → `resolveDynamicPropValue`). Fixed: both
+  // now render byte-identical to Hono with no pin.
   // Go's manifestation is more severe than the shared entry's `actual`
   // describes (a frozen-but-present attribute): `NewLoopRowChildChildrenAttrsProps`
   // never populates the `Chips []...Ctx` slice field at all when the
