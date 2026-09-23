@@ -306,7 +306,9 @@ cost of no deduplication. A stream is refused because a descriptor can be sent m
 (a dependency change, `action()`) and a stream can be read only once.
 
 **Response handling is JSON-only in v0** (issue #3156). `sendRequest` — the internal function
-`createQuery` sends through — parses a successful response with `response.json()`; a successful `HEAD` resolves
+`createQuery` sends through — asks for JSON on every request with `Accept: application/json,
+*/*;q=0.5` (an `Accept` in `init.headers`, in any casing, replaces it) and parses a successful
+response with `response.json()`; a successful `HEAD` resolves
 to `undefined` (a `HEAD` response has no body). A non-2xx response, `HEAD` included, rejects
 with `HttpError`, carrying `{ status: number; body: unknown }` — `body` is the response parsed
 as JSON when possible, else raw text, else `undefined`. A network failure (the `fetch` call

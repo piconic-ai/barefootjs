@@ -420,6 +420,14 @@ async function parseErrorBody(response: Response): Promise<unknown> {
  * encoding for servers that don't assume UTF-8 for JSON. The other body kinds
  * get no default; fetch derives theirs from the body.
  */
+/**
+ * The default `Accept` on every request. The response side is JSON-only in v0
+ * (`response.json()`), so ask for JSON first; the any-type wildcard at a lower
+ * weight keeps a server that cannot produce JSON from answering 406 instead of
+ * its error body. The same default as HTTPie's.
+ */
+const DEFAULT_ACCEPT = 'application/json, */*;q=0.5'
+
 const DEFAULT_CONTENT_TYPE: Partial<Record<BodyKind, string>> = {
   json: 'application/json; charset=utf-8',
   text: 'text/plain;charset=UTF-8',
@@ -430,8 +438,8 @@ const DEFAULT_CONTENT_TYPE: Partial<Record<BodyKind, string>> = {
  * sent by its kind (see `bodyKind`): JSON with `Content-Type:
  * application/json; charset=utf-8`, a string as-is with `text/plain`, and
  * `FormData` / `URLSearchParams` / `Blob` / bytes unchanged with the type fetch
- * derives. A `Content-Type` in `init.headers`, in any casing, replaces the
- * default. The response side is JSON-only in v0: a successful
+ * derives. Every request asks for JSON with `DEFAULT_ACCEPT`. An `Accept` or
+ * `Content-Type` in `init.headers`, in any casing, replaces the default. The response side is JSON-only in v0: a successful
  * response is parsed with `response.json()` — except `HEAD`, whose successful
  * response resolves to `undefined` (a `HEAD` response has no body). A non-2xx
  * response rejects with `HttpError`, `HEAD` included; a network failure rejects
@@ -451,6 +459,7 @@ export async function sendRequest<T>(descriptor: HttpDescriptor<T>, signal?: Abo
   // (a plain-object spread keeps both keys, and fetch joins them into
   // "application/json, <override>").
   const headers = new Headers(descriptor.init?.headers)
+  if (!headers.has('Accept')) headers.set('Accept', DEFAULT_ACCEPT)
   const defaultType = kind && DEFAULT_CONTENT_TYPE[kind]
   if (defaultType && !headers.has('Content-Type')) headers.set('Content-Type', defaultType)
 

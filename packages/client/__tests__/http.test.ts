@@ -287,6 +287,22 @@ describe('sendRequest', () => {
     expect(new Headers(calls[0]!.init.headers).get('content-type')).toBe('application/vnd.api+json')
   })
 
+  test('every request asks for JSON with Accept: application/json, */*;q=0.5', async () => {
+    const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
+    await sendRequest(http.get('/api/posts'))
+    await sendRequest(http.post('/api/upload', new URLSearchParams({ a: '1' })))
+    expect(calls.map((c) => new Headers(c.init.headers).get('accept'))).toEqual([
+      'application/json, */*;q=0.5',
+      'application/json, */*;q=0.5',
+    ])
+  })
+
+  test('an init.headers Accept, in any casing, replaces the default', async () => {
+    const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
+    await sendRequest(http.get('/api/posts', undefined, { headers: { accept: 'application/vnd.api+json' } }))
+    expect(new Headers(calls[0]!.init.headers).get('accept')).toBe('application/vnd.api+json')
+  })
+
   test('other init.headers are sent alongside the default Content-Type', async () => {
     const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
     await sendRequest(http.post('/api/posts', { a: 1 }, { headers: { Authorization: 'Bearer x' } }))
