@@ -54,11 +54,13 @@ function buildDeck(slug: string): void {
   }
   console.log(`\n▸ ${slug}`)
 
-  // 1. interactive components → the deck's own assets/. vite.config.ts pins the entry names,
-  //    so vite's output is usable as-is (no re-bundling step to get a stable path). It lands
-  //    in the deck's *source* assets/ because the layouts load it as `assets/mount.js`, and
-  //    it must exist before step 2: peitho resolves every asset a layout references at build
-  //    time (copying it as assets/<hash>-mount.js) and fails on a missing one.
+  // 1. interactive components → the deck's own assets/ as two self-contained files, mount.js
+  //    and narration.js. They land in the deck's *source* assets/ because the layouts load
+  //    `assets/mount.js`, and must exist before step 2: peitho resolves every asset a layout
+  //    references at build time (copying it as assets/<hash>-mount.js) and fails on a missing
+  //    one. vite splits mount.js into per-component chunks it imports relatively, but peitho
+  //    only serves/copies the file a layout names — `peitho present` 404s on those chunks — so
+  //    `bun build` re-bundles mount.js with its chunks into one file with no imports.
   const assetsSrc = join(src, 'assets')
   const componentDir = join(src, 'component')
   const hasComponents = existsSync(join(componentDir, 'package.json'))
@@ -71,18 +73,15 @@ function buildDeck(slug: string): void {
     for (const f of readdirSync(assetsSrc)) {
       if (f.endsWith('.js')) rmSync(join(assetsSrc, f), { force: true })
     }
-    for (const name of readdirSync(componentDist)) {
-      if (name === '.vite' || name === 'templates') continue
-      cpSync(join(componentDist, name), join(assetsSrc, name), { recursive: true })
-    }
+    run(['bun', 'build', join(componentDist, 'mount.js'), '--format', 'esm', '--minify', '--outfile', join(assetsSrc, 'mount.js')], componentDir)
+    cpSync(join(componentDist, 'narration.js'), join(assetsSrc, 'narration.js'))
   }
 
   // 2. peitho: viewer + slides + css (rewrites index.html from scratch every time)
   run([PEITHO, 'build', 'deck.md', '--out', out], src)
 
-  // 3. assets/ → the output's assets/: the deck's media plus whatever step 1 built. peitho
-  //    copies only what a layout names (mount.js, hero.*), not the chunks mount.js imports
-  //    relatively (./index-*.js, ./components-*.js), so everything is copied here verbatim.
+  // 3. assets/ → the output's assets/: the deck's media plus narration.js, which no layout
+  //    names so peitho never copies it (index.html loads it in step 4).
   const assetsOut = join(out, 'assets')
   mkdirSync(assetsOut, { recursive: true })
   if (existsSync(assetsSrc)) {
