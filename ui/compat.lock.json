@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 443,
+    "totalFixtures": 444,
     "fixtures": {
       "combobox": {
         "blade": {
@@ -5768,6 +5768,18 @@
         "BF101"
       ]
     },
+    "nested-child-static-prop-text-slot-elided": {
+      "title": "A nested child's own text position loses its SSR slot marker when the caller passes it a static literal",
+      "kind": "silent",
+      "given": "a `'use client'` component that renders an incoming prop directly as its own JSX text content (not `props.children`), e.g. `{props.placeholder ?? ''}`, while ALSO overwriting that same text imperatively from a `ref`/mount effect driven by something other than that prop (a `useContext` read) — nested as a child of a sibling `'use client'` component that passes it a plain string literal for that prop (`<ComboboxValue placeholder=\"Select framework...\" />`)",
+      "expected": "the server HTML and the hydrated DOM carry the same `<!--bf:sN-->…<!--/-->` slot marker pair around the text, matching the child component's own compiled client template (which always wraps this position, since the child's OWN client init code treats it as patchable)",
+      "actual": "omits the slot markers at that nested-child SSR position, rendering a bare text string instead — the caller's literal argument reads as proof the position never changes, which only accounts for the PROP's own reactivity, not the child's independent internal effect that also writes to the same node — while the client hydration template unconditionally wraps the position in markers regardless of caller context, so hydration inserts a marker pair with no matching SSR structure, a permanent structural mismatch rather than a value change",
+      "fixtures": [
+        "combobox",
+        "select"
+      ],
+      "adapters": []
+    },
     "nested-prop-member-signal-seed": {
       "title": "Signal seeded from a member of an object-typed prop",
       "kind": "silent",
@@ -5841,8 +5853,7 @@
       "expected": "the server HTML and the hydrated DOM carry the same attribute value",
       "actual": "renders the compile-time literal (or no attribute at all) in the server HTML — a `ref` callback never runs at SSR — and the first client effect pass then writes the computed value, so pre- and post-hydration DOM differ — a visible snap at the hydrate boundary",
       "fixtures": [
-        "combobox",
-        "select"
+        "ref-mount-attr"
       ],
       "adapters": [
         "blade",
