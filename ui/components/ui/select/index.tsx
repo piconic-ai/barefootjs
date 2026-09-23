@@ -131,6 +131,14 @@ function Select(props: SelectProps) {
  * Props for SelectTrigger component.
  */
 interface SelectTriggerProps extends ButtonHTMLAttributes {
+  /**
+   * Whether no value is selected yet. Pass `!value()` (the same
+   * expression given to the parent `Select`'s `value` prop) so
+   * `data-placeholder` renders correctly in the server-rendered HTML
+   * instead of being added imperatively by `SelectValue`'s mount effect
+   * only after hydration. Falls back to that effect when omitted.
+   */
+  showPlaceholder?: boolean
   /** Trigger content (typically SelectValue) */
   children?: Child
 }
@@ -138,6 +146,8 @@ interface SelectTriggerProps extends ButtonHTMLAttributes {
 /**
  * Button that toggles the select dropdown.
  * Shows a chevron icon and reads state from context.
+ *
+ * @param props.showPlaceholder - Whether no value is selected yet (see prop doc)
  */
 function SelectTrigger(props: SelectTriggerProps) {
   const handleMount = (el: HTMLElement) => {
@@ -177,6 +187,7 @@ function SelectTrigger(props: SelectTriggerProps) {
       aria-haspopup="listbox"
       aria-autocomplete="none"
       data-state="closed"
+      data-placeholder={props.showPlaceholder ? '' : undefined}
       className={classes}
       ref={handleMount}
     >
@@ -202,6 +213,10 @@ function SelectValue(props: SelectValueProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(SelectContext)
 
+    // `SelectTrigger`'s `showPlaceholder` prop (rendered directly in its
+    // JSX) already gives the server HTML the right `data-placeholder`
+    // value for the initial state; this effect keeps it correct as the
+    // value changes afterward.
     createEffect(() => {
       const val = ctx.value()
       if (val) {

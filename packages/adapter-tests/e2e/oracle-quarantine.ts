@@ -108,26 +108,47 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // portal-content-vs-main-content body-order divergence this row used to
   // record (see the dialog/popover/portal group below), which left the
   // pair bimodal on the `combobox-empty` row's `hidden` attribute — the
-  // same rAF-deferred write as `command` (#2827), fixed the same way. The
-  // remaining oracles are the `ComboboxValue`/`SelectValue` `ref` effect
-  // that imperatively adds `data-placeholder` to the trigger on hydrate —
-  // originally miscategorized here as an instance of the compiler's
-  // named-prop child-root mirror; once that mirror was fixed these rows
-  // were the survivors, still failing for the hand-written-effect reason,
-  // which is the registry's `ref-effect-attr-state-ssr` mechanism (an
-  // attribute whose real state is computed in a `ref` callback never
-  // reaches SSR), the same entry `accordion` / `radio-group` / `command`
-  // cite.
+  // same rAF-deferred write as `command` (#2827), fixed the same way.
+  // `snap`/`three-point` graduated one mechanism (#3065) and immediately
+  // uncovered a second, unrelated one underneath: the
+  // `ComboboxValue`/`SelectValue` `ref` effect used to imperatively add
+  // `data-placeholder` to the trigger on hydrate — that was the
+  // registry's `ref-effect-attr-state-ssr` mechanism (an attribute whose
+  // real state is computed in a `ref` callback never reaches SSR), the
+  // same entry `accordion` / `radio-group` / `command` graduated under.
+  // `ComboboxTrigger`/`SelectTrigger` now take an explicit
+  // `showPlaceholder` prop (mirroring those fixes) and that mismatch is
+  // gone, but un-quarantining revealed the `ComboboxValue`/`SelectValue`
+  // text node itself was ALSO diverging for an entirely different reason
+  // (`nested-child-static-prop-text-slot-elided`, new entry): its SSR
+  // position, nested inside `ComboboxTrigger`/`SelectTrigger`, drops the
+  // `<!--bf:sN-->…<!--/-->` slot markers the client hydration template
+  // always emits for it, because the compiler reads the caller's static
+  // `placeholder="…"` literal as proof the position never changes — which
+  // only covers the PROP's own reactivity, not `ComboboxValue`'s
+  // independent `ref` effect that also targets that node. Confirmed
+  // pre-existing and unrelated to the `showPlaceholder` fix by reproducing
+  // it against the pre-fix component source (same structural diff).
   combobox: {
     oracles: ['snap', 'three-point'],
     reason:
-      'The ComboboxValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it.',
-    limitation: 'ref-effect-attr-state-ssr',
+      "ComboboxValue's placeholder text renders as a bare string when SSR'd nested inside ComboboxTrigger (a sibling passing a static literal), but the client hydration template always wraps that position in <!--bf:sN--> slot markers — hydration adds a marker pair with no matching SSR structure.",
+    limitation: 'nested-child-static-prop-text-slot-elided',
   },
   select: {
     oracles: ['snap', 'three-point'],
-    reason:
-      'The SelectValue ref effect adds data-placeholder to the trigger on hydrate; SSR markup never carries it (same shape as combobox).',
+    reason: 'The SelectValue placeholder text has the same nested-child slot-marker mismatch as combobox.',
+    limitation: 'nested-child-static-prop-text-slot-elided',
+  },
+  // Minimal, component-agnostic repro of `ref-effect-attr-state-ssr`
+  // itself — added once accordion/radio-group/command/combobox/select all
+  // graduated off it, so the entry keeps a live, named fixture in this
+  // corpus (the pairwise sweep's `…event-ref-callback…` rows reproduce
+  // the same `data-mounted` shape independently, on generated cases this
+  // ledger doesn't cover).
+  'ref-mount-attr': {
+    oracles: ['snap', 'three-point'],
+    reason: "The mount ref callback's data-mounted attribute never reaches SSR; hydration adds it.",
     limitation: 'ref-effect-attr-state-ssr',
   },
   // The mirrored `sorted` attribute this row used to record is fixed; what

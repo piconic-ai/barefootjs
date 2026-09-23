@@ -104,6 +104,14 @@ interface ComboboxProps extends HTMLBaseAttributes {
 }
 
 interface ComboboxTriggerProps extends ButtonHTMLAttributes {
+  /**
+   * Whether no value is selected yet. Pass `!value()` (the same
+   * expression given to the parent `Combobox`'s `value` prop) so
+   * `data-placeholder` renders correctly in the server-rendered HTML
+   * instead of being added imperatively by `ComboboxValue`'s mount
+   * effect only after hydration. Falls back to that effect when omitted.
+   */
+  showPlaceholder?: boolean
   /** Trigger content (typically ComboboxValue) */
   children?: Child
 }
@@ -137,6 +145,20 @@ interface ComboboxItemProps extends HTMLBaseAttributes {
   value: string
   /** Whether this item is disabled */
   disabled?: boolean
+  /**
+   * Whether this item is the list's initial keyboard-nav highlight. Pass
+   * `true` on the first `ComboboxItem` rendered (in document order, across
+   * groups) so `data-selected` renders correctly in the server-rendered
+   * HTML instead of "unselected" being corrected by `ComboboxContent`'s
+   * mount effect only after hydration — with no value selected yet, that
+   * effect always falls back to the first visible item, and with an empty
+   * initial search every item is visible, so the first-rendered item is
+   * always that fallback highlight. Leave unset (or `false` on every item)
+   * when the combobox's initial `value` is non-empty, since then the
+   * effect highlights the CHECKED item instead — pass `defaultSelected`
+   * on that item in that case.
+   */
+  defaultSelected?: boolean
   /** Item content (label text) */
   children?: Child
 }
@@ -244,12 +266,13 @@ export function ComboboxTrigger(__allProps: ComboboxTriggerProps & { __instanceI
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.showPlaceholder === 'object' && props.showPlaceholder !== null && 'isEscaped' in props.showPlaceholder)) __hydrateProps['showPlaceholder'] = props.showPlaceholder
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxTrigger', {})
   }
 
   return (
-    <button data-slot="combobox-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
+    <button data-slot="combobox-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" data-placeholder={props.showPlaceholder ? '' : undefined} className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 shrink-0 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
   )
 }
 
@@ -350,12 +373,13 @@ export function ComboboxItem(__allProps: ComboboxItemProps & { __instanceId?: st
     const __hydrateProps: Record<string, unknown> = {}
     if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.defaultSelected === 'object' && props.defaultSelected !== null && 'isEscaped' in props.defaultSelected)) __hydrateProps['defaultSelected'] = props.defaultSelected
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxItem', {})
   }
 
   return (
-    <div data-slot="combobox-item" data-value={props.value} data-state="unchecked" data-selected="false" role="option" id={props.id} aria-selected="false" aria-disabled={(isDisabled()) || undefined} tabindex={-1} className={`${itemBaseClasses} ${stateClasses()} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span data-slot="combobox-item-indicator" className={`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`} style="display:none"><CheckIcon className="size-4" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></span>{props.children}</div>
+    <div data-slot="combobox-item" data-value={props.value} data-state="unchecked" data-selected={`${props.defaultSelected ? 'true' : 'false'}`} role="option" id={props.id} aria-selected="false" aria-disabled={(isDisabled()) || undefined} tabindex={-1} className={`${itemBaseClasses} ${stateClasses()} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1"><span data-slot="combobox-item-indicator" className={`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`} style="display:none"><CheckIcon className="size-4" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></span>{props.children}</div>
   )
 }
 

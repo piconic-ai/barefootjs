@@ -57,11 +57,11 @@ export const renderDivergences: RenderDivergences = {
   // `combobox` / `select` carry the SAME portal-position divergence (their
   // Content element is the same `ref`-callback SSR-portal pattern), but the
   // registry lists a fixture on exactly one entry and these two are already
-  // claimed by `ref-effect-attr-state-ssr` (the data-placeholder
-  // divergence) — cite that one instead; unaffected by this fix. See
+  // claimed by `nested-child-static-prop-text-slot-elided` (the
+  // text-slot-marker divergence) — cite that one instead; unaffected by this fix. See
   // `ref-callback-portal-content-inline-at-ssr`'s own comment.
-  combobox: { limitation: 'ref-effect-attr-state-ssr' },
-  select: { limitation: 'ref-effect-attr-state-ssr' },
+  combobox: { limitation: 'nested-child-static-prop-text-slot-elided' },
+  select: { limitation: 'nested-child-static-prop-text-slot-elided' },
   // A client component whose whole return is a child-component call: the
   // reference wraps the child's output in the parent's `<!--bf-scope:...-->`
   // comment pair (with the parent's props) so the parent hydrates; this

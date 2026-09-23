@@ -167,6 +167,14 @@ interface ComboboxProps extends HTMLBaseAttributes {
 }
 
 interface ComboboxTriggerProps extends ButtonHTMLAttributes {
+  /**
+   * Whether no value is selected yet. Pass `!value()` (the same
+   * expression given to the parent `Combobox`'s `value` prop) so
+   * `data-placeholder` renders correctly in the server-rendered HTML
+   * instead of being added imperatively by `ComboboxValue`'s mount
+   * effect only after hydration. Falls back to that effect when omitted.
+   */
+  showPlaceholder?: boolean
   /** Trigger content (typically ComboboxValue) */
   children?: Child
 }
@@ -200,6 +208,20 @@ interface ComboboxItemProps extends HTMLBaseAttributes {
   value: string
   /** Whether this item is disabled */
   disabled?: boolean
+  /**
+   * Whether this item is the list's initial keyboard-nav highlight. Pass
+   * `true` on the first `ComboboxItem` rendered (in document order, across
+   * groups) so `data-selected` renders correctly in the server-rendered
+   * HTML instead of "unselected" being corrected by `ComboboxContent`'s
+   * mount effect only after hydration — with no value selected yet, that
+   * effect always falls back to the first visible item, and with an empty
+   * initial search every item is visible, so the first-rendered item is
+   * always that fallback highlight. Leave unset (or `false` on every item)
+   * when the combobox's initial `value` is non-empty, since then the
+   * effect highlights the CHECKED item instead — pass `defaultSelected`
+   * on that item in that case.
+   */
+  defaultSelected?: boolean
   /** Item content (label text) */
   children?: Child
 }
@@ -302,6 +324,8 @@ function Combobox(props: ComboboxProps) {
 /**
  * Button that toggles the combobox dropdown.
  * Shows a chevron icon and reads state from context.
+ *
+ * @param props.showPlaceholder - Whether no value is selected yet (see prop doc)
  */
 function ComboboxTrigger(props: ComboboxTriggerProps) {
   const handleMount = (el: HTMLElement) => {
@@ -339,6 +363,7 @@ function ComboboxTrigger(props: ComboboxTriggerProps) {
       aria-haspopup="listbox"
       aria-autocomplete="list"
       data-state="closed"
+      data-placeholder={props.showPlaceholder ? '' : undefined}
       className={classes}
       ref={handleMount}
     >
@@ -356,6 +381,10 @@ function ComboboxValue(props: ComboboxValueProps) {
   const handleMount = (el: HTMLElement) => {
     const ctx = useContext(ComboboxContext)
 
+    // `ComboboxTrigger`'s `showPlaceholder` prop (rendered directly in its
+    // JSX) already gives the server HTML the right `data-placeholder`
+    // value for the initial state; this effect keeps it correct as the
+    // value changes afterward.
     createEffect(() => {
       const val = ctx.value()
       if (val) {
@@ -507,7 +536,10 @@ function ComboboxContent(props: ComboboxContentProps) {
     // the currently checked item, fall back to the first visible. Reads
     // the root's filtered-list memo and the value signal directly rather
     // than the items' `hidden`/`data-state` attributes, so it does not
-    // depend on running after the item effects.
+    // depend on running after the item effects. `ComboboxItem`'s own
+    // `defaultSelected` prop (rendered directly in its JSX) already gives
+    // the server HTML the right initial highlight when no value is
+    // selected yet; this effect keeps it correct afterward.
     createEffect(() => {
       const visible = ctx.visibleItems()
       const checked = ctx.value()
@@ -608,6 +640,8 @@ function ComboboxEmpty(props: ComboboxEmptyProps) {
  * Individual selectable item in the combobox.
  * Self-filters based on search. Shows check indicator when selected.
  * On select: update value, close dropdown.
+ *
+ * @param props.defaultSelected - Whether this is the list's initial keyboard-nav highlight (see prop doc)
  */
 function ComboboxItem(props: ComboboxItemProps) {
   const handleMount = (el: HTMLElement) => {
@@ -675,7 +709,7 @@ function ComboboxItem(props: ComboboxItemProps) {
       data-slot="combobox-item"
       data-value={props.value}
       data-state="unchecked"
-      data-selected="false"
+      data-selected={props.defaultSelected ? 'true' : 'false'}
       role="option"
       id={props.id}
       aria-selected="false"

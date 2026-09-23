@@ -58,6 +58,14 @@ interface SelectProps extends HTMLBaseAttributes {
 }
 
 interface SelectTriggerProps extends ButtonHTMLAttributes {
+  /**
+   * Whether no value is selected yet. Pass `!value()` (the same
+   * expression given to the parent `Select`'s `value` prop) so
+   * `data-placeholder` renders correctly in the server-rendered HTML
+   * instead of being added imperatively by `SelectValue`'s mount effect
+   * only after hydration. Falls back to that effect when omitted.
+   */
+  showPlaceholder?: boolean
   /** Trigger content (typically SelectValue) */
   children?: Child
 }
@@ -179,12 +187,13 @@ export function SelectTrigger(__allProps: SelectTriggerProps & { __instanceId?: 
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    if (!(typeof props.showPlaceholder === 'object' && props.showPlaceholder !== null && 'isEscaped' in props.showPlaceholder)) __hydrateProps['showPlaceholder'] = props.showPlaceholder
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SelectTrigger', {})
   }
 
   return (
-    <button data-slot="select-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="none" data-state="closed" className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
+    <button data-slot="select-trigger" type="button" role="combobox" id={props.id} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="none" data-state="closed" data-placeholder={props.showPlaceholder ? '' : undefined} className={`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s1">{props.children}<ChevronDownIcon className="size-4 opacity-50" __instanceId={`${__scopeId}_s0`} __bfChild={true} __bfParent={__scopeId} __bfMount={'s0'} /></button>
   )
 }
 

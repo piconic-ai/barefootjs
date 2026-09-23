@@ -58,7 +58,10 @@ describe('SelectTrigger', () => {
     expect(trigger.aria).toHaveProperty('haspopup')
   })
 
-
+  test('has data-placeholder attribute wired to the showPlaceholder prop', () => {
+    const trigger = result.find({ role: 'combobox' })!
+    expect(trigger.props).toHaveProperty('data-placeholder')
+  })
 })
 
 describe('SelectContent', () => {

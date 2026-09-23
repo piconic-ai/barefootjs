@@ -109,11 +109,11 @@ export const renderDivergences: RenderDivergences = {
   // `combobox` / `select` carry the SAME portal-position divergence
   // (their Content element is the same `ref`-callback SSR-portal pattern),
   // but the registry lists a fixture on exactly one entry and these two
-  // are already claimed by `ref-effect-attr-state-ssr` (the data-placeholder
-  // divergence) — cite that one instead; see
+  // are already claimed by `nested-child-static-prop-text-slot-elided` (the
+  // text-slot-marker divergence) — cite that one instead; see
   // `ref-callback-portal-content-inline-at-ssr`'s own comment.
-  combobox: { limitation: 'ref-effect-attr-state-ssr' },
-  select: { limitation: 'ref-effect-attr-state-ssr' },
+  combobox: { limitation: 'nested-child-static-prop-text-slot-elided' },
+  select: { limitation: 'nested-child-static-prop-text-slot-elided' },
   // Go's manifestation is more severe than the shared entry's `actual`
   // describes (a frozen-but-present attribute): `NewLoopRowChildChildrenAttrsProps`
   // never populates the `Chips []...Ctx` slice field at all when the

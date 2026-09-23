@@ -3010,11 +3010,16 @@ export function initComboboxTrigger(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
       }
       __l[0] = __x }
-      { const __x = `flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`
+      { const __x = _p.showPlaceholder ? '' : undefined
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-placeholder', String(__v)); else _s1.removeAttribute('data-placeholder') }
       }
       __l[1] = __x }
+      { const __x = `flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`
+      if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+      }
+      __l[2] = __x }
     }
   }) }
 
@@ -3024,7 +3029,7 @@ export function initComboboxTrigger(__scope, _p = {}) {
   initChild('ChevronDownIcon', _s0, { className: "size-4 shrink-0 opacity-50" })
 }
 
-hydrate('ComboboxTrigger', { init: initComboboxTrigger, template: (_p) => `<button data-slot="combobox-trigger" type="button" role="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" ${(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) + '"' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {className: "size-4 shrink-0 opacity-50"}, undefined, 's0')}</button>` })
+hydrate('ComboboxTrigger', { init: initComboboxTrigger, template: (_p) => `<button data-slot="combobox-trigger" type="button" role="combobox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-expanded="false" aria-haspopup="listbox" aria-autocomplete="list" data-state="closed" ${(_p.showPlaceholder ? '' : undefined) != null ? 'data-placeholder="' + escapeAttr(_p.showPlaceholder ? '' : undefined) + '"' : ''} ${(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:border-ring focus:ring-ring/50 focus:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground ${_p.className ?? ''}`) + '"' : ''} bf="s1">${markupOrEmpty(_p.children)}${renderChild('ChevronDownIcon', {className: "size-4 shrink-0 opacity-50"}, undefined, 's0')}</button>` })
 export function ComboboxTrigger(_p, __bfKey) { return createComponent('ComboboxTrigger', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var documentOrder = documentOrder ?? function(a, b) {
@@ -3041,6 +3046,10 @@ export function initComboboxValue(__scope, _p = {}) {
   const handleMount = (el) => {
     const ctx = useContext(ComboboxContext)
 
+    // `ComboboxTrigger`'s `showPlaceholder` prop (rendered directly in its
+    // JSX) already gives the server HTML the right `data-placeholder`
+    // value for the initial state; this effect keeps it correct as the
+    // value changes afterward.
     createEffect(() => {
       const val = ctx.value()
       if (val) {
@@ -3220,7 +3229,10 @@ export function initComboboxContent(__scope, _p = {}) {
     // the currently checked item, fall back to the first visible. Reads
     // the root's filtered-list memo and the value signal directly rather
     // than the items' `hidden`/`data-state` attributes, so it does not
-    // depend on running after the item effects.
+    // depend on running after the item effects. `ComboboxItem`'s own
+    // `defaultSelected` prop (rendered directly in its JSX) already gives
+    // the server HTML the right initial highlight when no value is
+    // selected yet; this effect keeps it correct afterward.
     createEffect(() => {
       const visible = ctx.visibleItems()
       const checked = ctx.value()
@@ -3455,22 +3467,27 @@ export function initComboboxItem(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('data-value', String(__v)); else _s1.removeAttribute('data-value') }
       }
       __l[0] = __x }
-      { const __x = _p.id
+      { const __x = `${_p.defaultSelected ? 'true' : 'false'}`
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
-        { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
+        { const __v = __x; if (__v != null) _s1.setAttribute('data-selected', String(__v)); else _s1.removeAttribute('data-selected') }
       }
       __l[1] = __x }
-      { const __x = isDisabled()
+      { const __x = _p.id
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
+        { const __v = __x; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
+      }
+      __l[2] = __x }
+      { const __x = isDisabled()
+      if (!(3 in __l) || !Object.is(__l[3], __x)) {
         if (__x) _s1.setAttribute('aria-disabled', 'true')
         else _s1.removeAttribute('aria-disabled')
       }
-      __l[2] = __x }
+      __l[3] = __x }
       { const __x = `${itemBaseClasses} ${stateClasses()} ${_p.className ?? ''}`
-      if (!(3 in __l) || !Object.is(__l[3], __x)) {
+      if (!(4 in __l) || !Object.is(__l[4], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
       }
-      __l[3] = __x }
+      __l[4] = __x }
     }
   }) }
 
@@ -3480,7 +3497,7 @@ export function initComboboxItem(__scope, _p = {}) {
   initChild('CheckIcon', _s0, { className: "size-4" })
 }
 
-hydrate('ComboboxItem', { init: initComboboxItem, template: (_p) => `<div data-slot="combobox-item" ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} data-state="unchecked" data-selected="false" role="option" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-selected="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="combobox-item-indicator" ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} style="display:none">${renderChild('CheckIcon', {className: "size-4"}, undefined, 's0')}</span>${markupOrEmpty(_p.children)}</div>` })
+hydrate('ComboboxItem', { init: initComboboxItem, template: (_p) => `<div data-slot="combobox-item" ${(_p.value) != null ? 'data-value="' + escapeAttr(_p.value) + '"' : ''} data-state="unchecked" ${(`${_p.defaultSelected ? 'true' : 'false'}`) != null ? 'data-selected="' + escapeAttr(`${_p.defaultSelected ? 'true' : 'false'}`) + '"' : ''} role="option" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} aria-selected="false" ${(_p.disabled ?? false) ? 'aria-disabled' : ''} ${(-1) != null ? 'tabindex="' + escapeAttr(-1) + '"' : ''} ${(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-hidden')} ${((_p.disabled ?? false) ? ('pointer-events-none opacity-50') : ('text-popover-foreground hover:bg-accent/50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground'))} ${_p.className ?? ''}`) + '"' : ''} bf="s1"><span data-slot="combobox-item-indicator" ${(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) != null ? 'class="' + escapeAttr(`absolute left-2 flex size-3.5 shrink-0 items-center justify-center`) + '"' : ''} style="display:none">${renderChild('CheckIcon', {className: "size-4"}, undefined, 's0')}</span>${markupOrEmpty(_p.children)}</div>` })
 export function ComboboxItem(_p, __bfKey) { return createComponent('ComboboxItem', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var documentOrder = documentOrder ?? function(a, b) {
@@ -3605,23 +3622,31 @@ export function initComboboxBasicDemo(__scope, _p = {}) {
     if (__Combobox_s10El) {
       if ('value' in __Combobox_s10El) { const __val = String(value()); if (__Combobox_s10El.value !== __val) __Combobox_s10El.value = __val }
     }
+    const [__ComboboxTrigger_s1El] = $c(__scope, 's1')
+    if (__ComboboxTrigger_s1El) {
+      { const __x = !value()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        if (__m[0] ??= __ComboboxTrigger_s1El.hasAttribute('showPlaceholder')) { const __v = __x; if (__v != null) __ComboboxTrigger_s1El.setAttribute('showPlaceholder', String(__v)); else __ComboboxTrigger_s1El.removeAttribute('showPlaceholder') }
+      }
+      __l[0] = __x }
+    }
   }) }
 
   // Initialize child components with props
   initChild('Combobox', _s10, { get value() { return value() }, onValueChange: setValue })
-  initChild('ComboboxTrigger', _s1, { className: "w-[280px]" })
+  initChild('ComboboxTrigger', _s1, { className: "w-[280px]", get showPlaceholder() { return !value() } })
   initChild('ComboboxValue', _s0, { placeholder: "Select framework..." })
   initChild('ComboboxContent', _s9, {})
   initChild('ComboboxInput', _s2, { placeholder: "Search framework..." })
   initChild('ComboboxEmpty', _s3, {})
-  initChild('ComboboxItem', _s4, { value: "next" })
+  initChild('ComboboxItem', _s4, { value: "next", defaultSelected: true })
   initChild('ComboboxItem', _s5, { value: "svelte" })
   initChild('ComboboxItem', _s6, { value: "nuxt" })
   initChild('ComboboxItem', _s7, { value: "remix" })
   initChild('ComboboxItem', _s8, { value: "astro" })
 }
 
-hydrate('ComboboxBasicDemo', { init: initComboboxBasicDemo, template: (_p) => `<div class="space-y-3">${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {className: "w-[280px]", children: `${renderChild('ComboboxValue', {placeholder: "Select framework..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search framework..."}, undefined, 's2')}${renderChild('ComboboxEmpty', {children: `No framework found.`}, undefined, 's3')}${renderChild('ComboboxItem', {value: "next", children: `Next.js`}, undefined, 's4')}${renderChild('ComboboxItem', {value: "svelte", children: `SvelteKit`}, undefined, 's5')}${renderChild('ComboboxItem', {value: "nuxt", children: `Nuxt`}, undefined, 's6')}${renderChild('ComboboxItem', {value: "remix", children: `Remix`}, undefined, 's7')}${renderChild('ComboboxItem', {value: "astro", children: `Astro`}, undefined, 's8')}`}, undefined, 's9')}`}, undefined, 's10')}<p class="text-sm text-muted-foreground"> Selected: <span class="selected-value font-medium" bf="s12"><!--bf:s11-->${escapeTextOrMarkup(('') || 'None')}<!--/--></span></p></div>` })
+hydrate('ComboboxBasicDemo', { init: initComboboxBasicDemo, template: (_p) => `<div class="space-y-3">${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {className: "w-[280px]", showPlaceholder: !(''), children: `${renderChild('ComboboxValue', {placeholder: "Select framework..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search framework..."}, undefined, 's2')}${renderChild('ComboboxEmpty', {children: `No framework found.`}, undefined, 's3')}${renderChild('ComboboxItem', {value: "next", defaultSelected: true, children: `Next.js`}, undefined, 's4')}${renderChild('ComboboxItem', {value: "svelte", children: `SvelteKit`}, undefined, 's5')}${renderChild('ComboboxItem', {value: "nuxt", children: `Nuxt`}, undefined, 's6')}${renderChild('ComboboxItem', {value: "remix", children: `Remix`}, undefined, 's7')}${renderChild('ComboboxItem', {value: "astro", children: `Astro`}, undefined, 's8')}`}, undefined, 's9')}`}, undefined, 's10')}<p class="text-sm text-muted-foreground"> Selected: <span class="selected-value font-medium" bf="s12"><!--bf:s11-->${escapeTextOrMarkup(('') || 'None')}<!--/--></span></p></div>` })
 export function ComboboxBasicDemo(_p, __bfKey) { return createComponent('ComboboxBasicDemo', _p, __bfKey) }
 export function initComboboxFormDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3662,38 +3687,54 @@ export function initComboboxFormDemo(__scope, _p = {}) {
     if (__Combobox_s10El) {
       if ('value' in __Combobox_s10El) { const __val = String(language()); if (__Combobox_s10El.value !== __val) __Combobox_s10El.value = __val }
     }
+    const [__ComboboxTrigger_s1El] = $c(__scope, 's1')
+    if (__ComboboxTrigger_s1El) {
+      { const __x = !language()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        if (__m[0] ??= __ComboboxTrigger_s1El.hasAttribute('showPlaceholder')) { const __v = __x; if (__v != null) __ComboboxTrigger_s1El.setAttribute('showPlaceholder', String(__v)); else __ComboboxTrigger_s1El.removeAttribute('showPlaceholder') }
+      }
+      __l[0] = __x }
+    }
     const [__Combobox_s21El] = $c(__scope, 's21')
     if (__Combobox_s21El) {
       if ('value' in __Combobox_s21El) { const __val = String(framework()); if (__Combobox_s21El.value !== __val) __Combobox_s21El.value = __val }
+    }
+    const [__ComboboxTrigger_s12El] = $c(__scope, 's12')
+    if (__ComboboxTrigger_s12El) {
+      { const __x = !framework()
+      if (!(1 in __l) || !Object.is(__l[1], __x)) {
+        if (__m[1] ??= __ComboboxTrigger_s12El.hasAttribute('showPlaceholder')) { const __v = __x; if (__v != null) __ComboboxTrigger_s12El.setAttribute('showPlaceholder', String(__v)); else __ComboboxTrigger_s12El.removeAttribute('showPlaceholder') }
+      }
+      __l[1] = __x }
     }
   }) }
 
   // Initialize child components with props
   initChild('Combobox', _s10, { get value() { return language() }, onValueChange: setLanguage })
-  initChild('ComboboxTrigger', _s1, {})
+  initChild('ComboboxTrigger', _s1, { get showPlaceholder() { return !language() } })
   initChild('ComboboxValue', _s0, { placeholder: "Select language..." })
   initChild('ComboboxContent', _s9, {})
   initChild('ComboboxInput', _s2, { placeholder: "Search language..." })
   initChild('ComboboxEmpty', _s3, {})
-  initChild('ComboboxItem', _s4, { value: "TypeScript" })
+  initChild('ComboboxItem', _s4, { value: "TypeScript", defaultSelected: true })
   initChild('ComboboxItem', _s5, { value: "JavaScript" })
   initChild('ComboboxItem', _s6, { value: "Python" })
   initChild('ComboboxItem', _s7, { value: "Go" })
   initChild('ComboboxItem', _s8, { value: "Rust" })
   initChild('Combobox', _s21, { get value() { return framework() }, onValueChange: setFramework })
-  initChild('ComboboxTrigger', _s12, {})
+  initChild('ComboboxTrigger', _s12, { get showPlaceholder() { return !framework() } })
   initChild('ComboboxValue', _s11, { placeholder: "Select framework..." })
   initChild('ComboboxContent', _s20, {})
   initChild('ComboboxInput', _s13, { placeholder: "Search framework..." })
   initChild('ComboboxEmpty', _s14, {})
-  initChild('ComboboxItem', _s15, { value: "Next.js" })
+  initChild('ComboboxItem', _s15, { value: "Next.js", defaultSelected: true })
   initChild('ComboboxItem', _s16, { value: "Remix" })
   initChild('ComboboxItem', _s17, { value: "Hono" })
   initChild('ComboboxItem', _s18, { value: "FastAPI" })
   initChild('ComboboxItem', _s19, { value: "Actix" })
 }
 
-hydrate('ComboboxFormDemo', { init: initComboboxFormDemo, template: (_p) => `<div class="space-y-4 max-w-sm"><h4 class="text-sm font-medium leading-none">Tech Stack</h4><div class="grid gap-3"><div class="space-y-1"><span class="text-sm text-muted-foreground">Language</span>${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {children: `${renderChild('ComboboxValue', {placeholder: "Select language..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search language..."}, undefined, 's2')}${renderChild('ComboboxEmpty', {children: `No language found.`}, undefined, 's3')}${renderChild('ComboboxItem', {value: "TypeScript", children: `TypeScript`}, undefined, 's4')}${renderChild('ComboboxItem', {value: "JavaScript", children: `JavaScript`}, undefined, 's5')}${renderChild('ComboboxItem', {value: "Python", children: `Python`}, undefined, 's6')}${renderChild('ComboboxItem', {value: "Go", children: `Go`}, undefined, 's7')}${renderChild('ComboboxItem', {value: "Rust", children: `Rust`}, undefined, 's8')}`}, undefined, 's9')}`}, undefined, 's10')}</div><div class="space-y-1"><span class="text-sm text-muted-foreground">Framework</span>${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {children: `${renderChild('ComboboxValue', {placeholder: "Select framework..."}, undefined, 's11')}`}, undefined, 's12')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search framework..."}, undefined, 's13')}${renderChild('ComboboxEmpty', {children: `No framework found.`}, undefined, 's14')}${renderChild('ComboboxItem', {value: "Next.js", children: `Next.js`}, undefined, 's15')}${renderChild('ComboboxItem', {value: "Remix", children: `Remix`}, undefined, 's16')}${renderChild('ComboboxItem', {value: "Hono", children: `Hono`}, undefined, 's17')}${renderChild('ComboboxItem', {value: "FastAPI", children: `FastAPI`}, undefined, 's18')}${renderChild('ComboboxItem', {value: "Actix", children: `Actix`}, undefined, 's19')}`}, undefined, 's20')}`}, undefined, 's21')}</div></div><div class="text-sm text-muted-foreground pt-2 border-t"> Summary: <span class="summary-text font-medium" bf="s23"><!--bf:s22-->${escapeTextOrMarkup(((() => {
+hydrate('ComboboxFormDemo', { init: initComboboxFormDemo, template: (_p) => `<div class="space-y-4 max-w-sm"><h4 class="text-sm font-medium leading-none">Tech Stack</h4><div class="grid gap-3"><div class="space-y-1"><span class="text-sm text-muted-foreground">Language</span>${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {showPlaceholder: !(''), children: `${renderChild('ComboboxValue', {placeholder: "Select language..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search language..."}, undefined, 's2')}${renderChild('ComboboxEmpty', {children: `No language found.`}, undefined, 's3')}${renderChild('ComboboxItem', {value: "TypeScript", defaultSelected: true, children: `TypeScript`}, undefined, 's4')}${renderChild('ComboboxItem', {value: "JavaScript", children: `JavaScript`}, undefined, 's5')}${renderChild('ComboboxItem', {value: "Python", children: `Python`}, undefined, 's6')}${renderChild('ComboboxItem', {value: "Go", children: `Go`}, undefined, 's7')}${renderChild('ComboboxItem', {value: "Rust", children: `Rust`}, undefined, 's8')}`}, undefined, 's9')}`}, undefined, 's10')}</div><div class="space-y-1"><span class="text-sm text-muted-foreground">Framework</span>${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {showPlaceholder: !(''), children: `${renderChild('ComboboxValue', {placeholder: "Select framework..."}, undefined, 's11')}`}, undefined, 's12')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search framework..."}, undefined, 's13')}${renderChild('ComboboxEmpty', {children: `No framework found.`}, undefined, 's14')}${renderChild('ComboboxItem', {value: "Next.js", defaultSelected: true, children: `Next.js`}, undefined, 's15')}${renderChild('ComboboxItem', {value: "Remix", children: `Remix`}, undefined, 's16')}${renderChild('ComboboxItem', {value: "Hono", children: `Hono`}, undefined, 's17')}${renderChild('ComboboxItem', {value: "FastAPI", children: `FastAPI`}, undefined, 's18')}${renderChild('ComboboxItem', {value: "Actix", children: `Actix`}, undefined, 's19')}`}, undefined, 's20')}`}, undefined, 's21')}</div></div><div class="text-sm text-muted-foreground pt-2 border-t"> Summary: <span class="summary-text font-medium" bf="s23"><!--bf:s22-->${escapeTextOrMarkup(((() => {
     const parts = []
     if (('')) parts.push((''))
     if (('')) parts.push(`with ${('')}`)
@@ -3729,17 +3770,25 @@ export function initComboboxGroupedDemo(__scope, _p = {}) {
     if (__Combobox_s20El) {
       if ('value' in __Combobox_s20El) { const __val = String(timezone()); if (__Combobox_s20El.value !== __val) __Combobox_s20El.value = __val }
     }
+    const [__ComboboxTrigger_s1El] = $c(__scope, 's1')
+    if (__ComboboxTrigger_s1El) {
+      { const __x = !timezone()
+      if (!(0 in __l) || !Object.is(__l[0], __x)) {
+        if (__m[0] ??= __ComboboxTrigger_s1El.hasAttribute('showPlaceholder')) { const __v = __x; if (__v != null) __ComboboxTrigger_s1El.setAttribute('showPlaceholder', String(__v)); else __ComboboxTrigger_s1El.removeAttribute('showPlaceholder') }
+      }
+      __l[0] = __x }
+    }
   }) }
 
   // Initialize child components with props
   initChild('Combobox', _s20, { get value() { return timezone() }, onValueChange: setTimezone })
-  initChild('ComboboxTrigger', _s1, { className: "w-[320px]" })
+  initChild('ComboboxTrigger', _s1, { className: "w-[320px]", get showPlaceholder() { return !timezone() } })
   initChild('ComboboxValue', _s0, { placeholder: "Select timezone..." })
   initChild('ComboboxContent', _s19, {})
   initChild('ComboboxInput', _s2, { placeholder: "Search timezone..." })
   initChild('ComboboxEmpty', _s3, {})
   initChild('ComboboxGroup', _s8, { heading: "North America" })
-  initChild('ComboboxItem', _s4, { value: "est" })
+  initChild('ComboboxItem', _s4, { value: "est", defaultSelected: true })
   initChild('ComboboxItem', _s5, { value: "cst" })
   initChild('ComboboxItem', _s6, { value: "mst" })
   initChild('ComboboxItem', _s7, { value: "pst" })
@@ -3755,7 +3804,7 @@ export function initComboboxGroupedDemo(__scope, _p = {}) {
   initChild('ComboboxItem', _s17, { value: "jst" })
 }
 
-hydrate('ComboboxGroupedDemo', { init: initComboboxGroupedDemo, template: (_p) => `<div class="space-y-3">${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {className: "w-[320px]", children: `${renderChild('ComboboxValue', {placeholder: "Select timezone..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search timezone..."}, undefined, 's2')}${renderChild('ComboboxEmpty', {children: `No timezone found.`}, undefined, 's3')}${renderChild('ComboboxGroup', {heading: "North America", children: `${renderChild('ComboboxItem', {value: "est", children: `Eastern Standard Time (EST)`}, undefined, 's4')}${renderChild('ComboboxItem', {value: "cst", children: `Central Standard Time (CST)`}, undefined, 's5')}${renderChild('ComboboxItem', {value: "mst", children: `Mountain Standard Time (MST)`}, undefined, 's6')}${renderChild('ComboboxItem', {value: "pst", children: `Pacific Standard Time (PST)`}, undefined, 's7')}`}, undefined, 's8')}${renderChild('ComboboxSeparator', {}, undefined, 's9')}${renderChild('ComboboxGroup', {heading: "Europe", children: `${renderChild('ComboboxItem', {value: "gmt", children: `Greenwich Mean Time (GMT)`}, undefined, 's10')}${renderChild('ComboboxItem', {value: "cet", children: `Central European Time (CET)`}, undefined, 's11')}${renderChild('ComboboxItem', {value: "eet", children: `Eastern European Time (EET)`}, undefined, 's12')}`}, undefined, 's13')}${renderChild('ComboboxSeparator', {}, undefined, 's14')}${renderChild('ComboboxGroup', {heading: "Asia", children: `${renderChild('ComboboxItem', {value: "ist", children: `India Standard Time (IST)`}, undefined, 's15')}${renderChild('ComboboxItem', {value: "cst_china", children: `China Standard Time (CST)`}, undefined, 's16')}${renderChild('ComboboxItem', {value: "jst", children: `Japan Standard Time (JST)`}, undefined, 's17')}`}, undefined, 's18')}`}, undefined, 's19')}`}, undefined, 's20')}<p class="text-sm text-muted-foreground"> Selected: <span class="selected-timezone font-medium" bf="s22"><!--bf:s21-->${escapeTextOrMarkup(('') || 'None')}<!--/--></span></p></div>` })
+hydrate('ComboboxGroupedDemo', { init: initComboboxGroupedDemo, template: (_p) => `<div class="space-y-3">${renderChild('Combobox', {value: (''), children: `${renderChild('ComboboxTrigger', {className: "w-[320px]", showPlaceholder: !(''), children: `${renderChild('ComboboxValue', {placeholder: "Select timezone..."}, undefined, 's0')}`}, undefined, 's1')}${renderChild('ComboboxContent', {children: `${renderChild('ComboboxInput', {placeholder: "Search timezone..."}, undefined, 's2')}${renderChild('ComboboxEmpty', {children: `No timezone found.`}, undefined, 's3')}${renderChild('ComboboxGroup', {heading: "North America", children: `${renderChild('ComboboxItem', {value: "est", defaultSelected: true, children: `Eastern Standard Time (EST)`}, undefined, 's4')}${renderChild('ComboboxItem', {value: "cst", children: `Central Standard Time (CST)`}, undefined, 's5')}${renderChild('ComboboxItem', {value: "mst", children: `Mountain Standard Time (MST)`}, undefined, 's6')}${renderChild('ComboboxItem', {value: "pst", children: `Pacific Standard Time (PST)`}, undefined, 's7')}`}, undefined, 's8')}${renderChild('ComboboxSeparator', {}, undefined, 's9')}${renderChild('ComboboxGroup', {heading: "Europe", children: `${renderChild('ComboboxItem', {value: "gmt", children: `Greenwich Mean Time (GMT)`}, undefined, 's10')}${renderChild('ComboboxItem', {value: "cet", children: `Central European Time (CET)`}, undefined, 's11')}${renderChild('ComboboxItem', {value: "eet", children: `Eastern European Time (EET)`}, undefined, 's12')}`}, undefined, 's13')}${renderChild('ComboboxSeparator', {}, undefined, 's14')}${renderChild('ComboboxGroup', {heading: "Asia", children: `${renderChild('ComboboxItem', {value: "ist", children: `India Standard Time (IST)`}, undefined, 's15')}${renderChild('ComboboxItem', {value: "cst_china", children: `China Standard Time (CST)`}, undefined, 's16')}${renderChild('ComboboxItem', {value: "jst", children: `Japan Standard Time (JST)`}, undefined, 's17')}`}, undefined, 's18')}`}, undefined, 's19')}`}, undefined, 's20')}<p class="text-sm text-muted-foreground"> Selected: <span class="selected-timezone font-medium" bf="s22"><!--bf:s21-->${escapeTextOrMarkup(('') || 'None')}<!--/--></span></p></div>` })
 export function ComboboxGroupedDemo(_p, __bfKey) { return createComponent('ComboboxGroupedDemo', _p, __bfKey) }
 
 // ---- inlined ui/lib/track-position.ts ----
