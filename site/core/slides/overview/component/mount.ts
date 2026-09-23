@@ -1,14 +1,11 @@
 // 日記の talks/tetris/component/mount.ts を、複数コンポーネント向けに一般化したもの。
 //
 // レイアウトが置く`<div data-bf="Name" data-bf-props='{...}'>`をBarefootJSの
-// `render()`で描画する。このmodule自体は必ず「本物のscript」として静的に
-// 読み込む必要がある — スライドのフラグメントHTMLに直接書いた`<script>`は
-// HTML仕様上(`innerHTML`でパースされたものは実行されない)動かないため。
-// `peitho build`の配布ビューアにはbuild-slides.tsがindex.htmlのheadへ注入し、
-// `peitho present`/peitho-studioはlayout HTMLの`<script type="module"
-// src="assets/mount.js">`から読み込む(いずれもpeitho/peitho-studio側の
-// "re-execute injected script"対応が前提 — 参照:
-// piconic-ai/peitho-studio の todo/layout-js-console-log.md)。
+// `render()`で描画する。`peitho build`の配布ビューア・`peitho present`・
+// peitho-studioのいずれも、layout HTMLの`<script type="module"
+// src="assets/mount.js">`から読み込む(peitho v1.34.0以降、各ビューアが
+// `innerHTML`で差し込んだlayoutの`<script>`を実行し直し、`src`を
+// `assets/<hash>-mount.js`に書き換える — mizzy/peitho#529, #530)。
 //
 // 新しいスライドを見つける方法は、ビューアのDOM方式で2通りに分かれる:
 // - light DOM(`peitho build`の配布ビューア。`canvas.innerHTML =
@@ -50,16 +47,18 @@ function mountIn(root: ParentNode): void {
 new MutationObserver(() => mountIn(document)).observe(document.documentElement, { childList: true, subtree: true })
 mountIn(document)
 
-// Shadow DOM経路。`peitho present`(`packages/peitho-present/src/shell.ts`)は
-// 全スライドのhostを1回の同期処理でまとめて接続するので、module読み込み
-// (非同期)が終わって下のaddEventListenerが登録される頃には、初回分の
-// dispatchはとっくに終わっている ― 購読だけでは初回マウントを全部取りこぼす。
-// `window.__peithoShadowRoots`はその対策としてshell.tsが積んでおくバックログ
-// 配列で、ここで一度ドレインして取りこぼし分を拾う。peitho-studio
-// (`dom/slideCanvas.ts`)は1枚ずつ遅延マウントするので購読だけで間に合う。
-const backlog = (window as Window & { __peithoShadowRoots?: ParentNode[] }).__peithoShadowRoots
-for (const root of backlog ?? []) mountIn(root)
+// Shadow DOM経路。peithoのビューア(`packages/peitho-present/src/scripts.ts`、
+// mizzy/peitho#530)とpeitho-studio(`dom/slideCanvas.ts`)は、スライドを
+// マウントするたびにhostから`peitho:shadow-mounted`を発火し、同じ
+// `{ root, key, index }`を`window.__peithoShadowRoots`にも積む。
+// `peitho present`は全スライドのhostを1回の同期処理でまとめて接続するので、
+// module読み込み(非同期)が終わって下のaddEventListenerが登録される頃には、
+// 初回分のdispatchはとっくに終わっている ― 購読だけでは初回マウントを全部
+// 取りこぼすので、このバックログを一度ドレインして拾う。
+type ShadowMounted = { root: ParentNode; key: string; index: number }
+const backlog = (window as Window & { __peithoShadowRoots?: ShadowMounted[] }).__peithoShadowRoots
+for (const detail of backlog ?? []) mountIn(detail.root)
 document.addEventListener('peitho:shadow-mounted', (event) => {
-  const root = (event as CustomEvent<{ root?: ParentNode }>).detail?.root
+  const root = (event as CustomEvent<Partial<ShadowMounted>>).detail?.root
   if (root) mountIn(root)
 })
