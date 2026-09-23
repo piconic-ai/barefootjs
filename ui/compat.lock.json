@@ -4130,58 +4130,121 @@
       },
       "opaque-local-accessor-call": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "opaque-local-accessor-call"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "opaque-local-accessor-call-client"
+          }
         }
       },
       "preamble-cells": {
@@ -5456,6 +5519,10 @@
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
       },
+      "opaque-local-accessor-call-client": {
+        "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call-client.ts"
+      },
       "reduce-right-typeof-body-client": {
         "description": "Off-subset `.reduceRight()` body deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-right-typeof-body-client.ts"
@@ -5862,10 +5929,10 @@
     },
     "opaque-local-accessor-call": {
       "title": "Opaque local accessor invoked from a template position",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a component-body `const` bound to the result of a call the compiler cannot evaluate (a helper returning a function, or an accessor returned by a library), invoked with `()` in text position",
       "expected": "the accessor runs at render time and its result renders in the server HTML",
-      "actual": "emits the slot as a bare template-variable lookup named after the const (an empty slot in the CSR template lambda), with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "opaque-local-accessor-call"
       ],
@@ -5879,6 +5946,9 @@
         "pebble",
         "twig",
         "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "ref-effect-attr-state-ssr": {
