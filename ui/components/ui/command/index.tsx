@@ -176,7 +176,9 @@ interface CommandItemProps extends HTMLBaseAttributes {
    * only after hydration — the root always auto-selects the first visible
    * item once its item registry settles, and with an empty initial search
    * every item is visible, so the first-rendered item is always that
-   * initial pick.
+   * initial pick. Give that item an explicit `value` as well: the
+   * textContent fallback only resolves after hydration, so a value-less
+   * item's `data-value` still appears only then.
    */
   defaultSelected?: boolean
   /** Callback when selected */

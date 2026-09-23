@@ -5842,7 +5842,6 @@
       "actual": "renders the compile-time literal (or no attribute at all) in the server HTML — a `ref` callback never runs at SSR — and the first client effect pass then writes the computed value, so pre- and post-hydration DOM differ — a visible snap at the hydrate boundary",
       "fixtures": [
         "combobox",
-        "command",
         "select"
       ],
       "adapters": [

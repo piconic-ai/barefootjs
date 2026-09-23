@@ -554,7 +554,7 @@ export function StudioCanvas() {
               <CommandList>
                 <CommandEmpty>No results.</CommandEmpty>
                 <CommandGroup heading="Pages">
-                  <CommandItem>Home</CommandItem>
+                  <CommandItem value="Home" defaultSelected>Home</CommandItem>
                   <CommandItem>About</CommandItem>
                   <CommandItem>Settings</CommandItem>
                 </CommandGroup>

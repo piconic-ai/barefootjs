@@ -60,7 +60,7 @@ function CommandMenu() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Suggestions">
-          <CommandItem value="Calendar">Calendar</CommandItem>
+          <CommandItem value="Calendar" defaultSelected>Calendar</CommandItem>
           <CommandItem value="Search Emoji">Search Emoji</CommandItem>
           <CommandItem value="Calculator">Calculator</CommandItem>
         </CommandGroup>
@@ -125,7 +125,7 @@ function CommandDialogDemo() {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
-            <CommandItem>Calendar</CommandItem>
+            <CommandItem value="Calendar" defaultSelected>Calendar</CommandItem>
             <CommandItem>Search Emoji</CommandItem>
           </CommandGroup>
           <CommandSeparator />
@@ -161,7 +161,7 @@ function CommandFilterDemo() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Fruits">
-          <CommandItem value="Apple">Apple</CommandItem>
+          <CommandItem value="Apple" defaultSelected>Apple</CommandItem>
           <CommandItem value="Apricot">Apricot</CommandItem>
           <CommandItem value="Banana">Banana</CommandItem>
           <CommandItem value="Blueberry">Blueberry</CommandItem>
