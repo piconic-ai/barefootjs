@@ -4114,18 +4114,30 @@
       },
       "nested-prop-member-signal-seed": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "nested-prop-member-signal-seed"
-          ]
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "nested-prop-signal-child-prop": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "nested-prop-member-signal-seed"
-          ]
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "opaque-local-accessor-call": {
@@ -5884,16 +5896,19 @@
     },
     "nested-prop-member-signal-seed": {
       "title": "Signal seeded from a member of an object-typed prop",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a `createSignal` whose initial value is a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`), read by the component as text, a conditional, or a loop source, or forwarded to a child component prop",
       "expected": "the server HTML renders the seeded value, as if the member had been passed as a top-level prop",
-      "actual": "emits a `nil` seed for the signal, with no diagnostic: its own reads render the zero value (empty text, the falsy branch, an empty loop), and forwarding it to a child prop typed as a primitive makes the generated server code fail to compile",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "nested-prop-member-signal-seed",
         "nested-prop-signal-child-prop"
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "off-subset-callback-body": {

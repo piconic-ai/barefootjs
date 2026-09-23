@@ -185,6 +185,6 @@ export const conformancePins: ConformancePins = {
   // this baker doesn't build yet), so there is no `in.Initial.Label`
   // field path to bake. The other eight DSL adapters and Hono already
   // render this shape correctly.
-  'nested-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed' }],
-  'nested-prop-signal-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed' }],
+  'nested-prop-member-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed', unescapable: true }],
+  'nested-prop-signal-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'nested-prop-member-signal-seed', unescapable: true }],
 }

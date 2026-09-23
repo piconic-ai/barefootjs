@@ -59,6 +59,7 @@ describe('compileForCompat', () => {
           'derived-object-literal-signal',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
+          'nested-prop-member-signal-seed',
           'off-subset-callback-body',
           'opaque-local-accessor-call',
           'signal-read-in-nested-static-loop',
