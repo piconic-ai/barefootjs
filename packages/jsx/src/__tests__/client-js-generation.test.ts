@@ -2760,6 +2760,34 @@ describe('Client JS generation', () => {
       // collected from the branch, not from the (now absent) static init.
       expect(content).toContain("import '/* @bf-child:Spinner */'")
     })
+
+    test('a client-only branch-owned child is initialized only by the branch', () => {
+      // Same ownership rule on the `/* @client */` path, which records its
+      // conditional through `clientOnlyConditionals` instead.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { Spinner } from './spinner'
+
+        export function Parent() {
+          const [show, setShow] = createSignal(true)
+          return (
+            <div>
+              <button onClick={() => setShow(!show())}>Toggle</button>
+              {/* @client */ show() && <Spinner />}
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSX(source, 'Parent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+      const content = result.files.find(f => f.type === 'clientJs')!.content
+
+      expect(content.match(/initChild\('Spinner'/g)).toHaveLength(1)
+      expect(content).not.toContain('$c(__scope')
+      expect(content).toContain("import '/* @bf-child:Spinner */'")
+    })
   })
 
   describe('reactive props.xxx detection (#789)', () => {
