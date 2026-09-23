@@ -30,6 +30,13 @@
  *   console error during the clicked leg fails the oracle too, after the
  *   DOM comparison (a DOM diff is the more specific signal).
  *
+ *   The same clicked leg also feeds the keyed-identity oracle
+ *   (`identity-hydrate` / `identity-csr`): a keyed row whose key is present
+ *   both before and after the sequence must be the SAME DOM node. A
+ *   rebuilt row serializes identically, so the DOM comparison above is
+ *   blind to it; this is the proposal's "keyed node identity is preserved"
+ *   invariant.
+ *
  * Every failure writes a self-contained reproduction artifact
  * (`.explore/failures/<case>.json`, also attached to the Playwright
  * report): commit, scenario, initial + expected state, action sequence,
@@ -109,6 +116,56 @@ interface TransitionCapture {
   incremental: DomStateSnapshot
   fresh: DomStateSnapshot
   errors: BrowserErrors
+  /** Keyed rows (`<attr>=<key>`) that existed before the clicks and after, but as a different DOM node. */
+  recreatedRows: string[]
+}
+
+/**
+ * Keyed-row identity. A row carries its key as `data-key` (depth-0 loop)
+ * or `data-key-N` (nested loops) — `keyAttrName`, `@barefootjs/shared`.
+ * Before the first click every such element gets an expando naming its
+ * `<attr>=<key>`; after the last click, any element whose `<attr>=<key>`
+ * was present at the start but which lacks the matching expando is a row
+ * the reconciler rebuilt instead of moving. A keyed loop must keep the
+ * node for a key that survives (`cloneAll`'s "equal-looking values" and
+ * every reorder included) — the DOM-vs-fresh comparison cannot see this,
+ * since a rebuilt row serializes identically.
+ */
+const KEY_ATTR_PATTERN = '^data-key(-\\d+)?$'
+
+async function markKeyedRows(page: Page): Promise<string[]> {
+  return page.evaluate(pattern => {
+    const re = new RegExp(pattern)
+    const ids: string[] = []
+    for (const el of Array.from(document.querySelectorAll('*'))) {
+      for (const attr of el.getAttributeNames()) {
+        if (!re.test(attr)) continue
+        const id = `${attr}=${el.getAttribute(attr)}`
+        ;(el as unknown as Record<string, unknown>).__bfExploreRow = id
+        ids.push(id)
+      }
+    }
+    return ids
+  }, KEY_ATTR_PATTERN)
+}
+
+async function findRecreatedRows(page: Page, marked: string[]): Promise<string[]> {
+  return page.evaluate(
+    ({ pattern, marked }) => {
+      const re = new RegExp(pattern)
+      const initial = new Set(marked)
+      const recreated: string[] = []
+      for (const el of Array.from(document.querySelectorAll('*'))) {
+        for (const attr of el.getAttributeNames()) {
+          if (!re.test(attr)) continue
+          const id = `${attr}=${el.getAttribute(attr)}`
+          if (initial.has(id) && (el as unknown as Record<string, unknown>).__bfExploreRow !== id) recreated.push(id)
+        }
+      }
+      return recreated
+    },
+    { pattern: KEY_ATTR_PATTERN, marked },
+  )
 }
 
 /**
@@ -126,6 +183,7 @@ async function captureTransition(
   const errors = collectBrowserErrors(page)
   await page.goto(fixtureUrl(baseUrl, start.id, mode))
   await waitOneFrame(page)
+  const marked = await markKeyedRows(page)
   for (const action of actions) {
     // Bounded well under the test timeout so a genuinely missing button
     // (a real divergence) fails fast inside the quarantine wrapper's
@@ -135,11 +193,16 @@ async function captureTransition(
   }
   await waitOneFrame(page)
   const incremental = await captureDomState(page)
+  const recreatedRows = await findRecreatedRows(page, marked)
 
   await page.goto(fixtureUrl(baseUrl, end.id, mode))
   await waitOneFrame(page)
   const fresh = await captureDomState(page)
-  return { incremental, fresh, errors }
+  return { incremental, fresh, errors, recreatedRows }
+}
+
+function assertKeyedIdentity(label: string, capture: TransitionCapture): void {
+  expect(capture.recreatedRows, `${label}: keyed rows rebuilt instead of kept (key survived the sequence)`).toEqual([])
 }
 
 function assertTransitionAgrees(label: string, capture: TransitionCapture): void {
@@ -313,23 +376,46 @@ test.describe('bounded state-space exploration', () => {
         const startFixture = fixturesById.get(initial.fixtureId)!
         const endFixture = fixturesById.get(end.fixtureId)!
 
-        const legs: Array<{ oracle: ExploreOracleKind; mode: 'hydrate' | 'csr-mount' }> = [
-          { oracle: 'transition-hydrate', mode: 'hydrate' },
-          { oracle: 'transition-csr', mode: 'csr-mount' },
+        const legs: Array<{ oracle: ExploreOracleKind; identityOracle: ExploreOracleKind; mode: 'hydrate' | 'csr-mount' }> = [
+          { oracle: 'transition-hydrate', identityOracle: 'identity-hydrate', mode: 'hydrate' },
+          { oracle: 'transition-csr', identityOracle: 'identity-csr', mode: 'csr-mount' },
         ]
-        for (const { oracle, mode } of legs) {
+        for (const { oracle, identityOracle, mode } of legs) {
           test(`[${oracle}] ${path.id} → s${end.index}: incremental update equals fresh render`, async ({ page }, testInfo) => {
             test.setTimeout(30_000)
-            await runQuarantined(scenario.scenarioId, path.id, oracle, async () => {
-              let capture: TransitionCapture | undefined
+            const label = `${scenario.scenarioId} ${path.id} (${mode})`
+            // One capture feeds both oracles; each is quarantined on its own
+            // key, and both always run so a quarantined DOM divergence can't
+            // mask an identity regression on the same path (or vice versa).
+            let capture: TransitionCapture | undefined
+            let captureError: unknown
+            try {
+              capture = await captureTransition(page, mode, startFixture, endFixture, path.actions, baseUrl)
+            } catch (error) {
+              captureError = error
+            }
+            const checks: Array<{ kind: ExploreOracleKind; assert: (c: TransitionCapture) => void }> = [
+              { kind: oracle, assert: c => assertTransitionAgrees(label, c) },
+              { kind: identityOracle, assert: c => assertKeyedIdentity(label, c) },
+            ]
+            const failures: unknown[] = []
+            for (const { kind, assert } of checks) {
               try {
-                capture = await captureTransition(page, mode, startFixture, endFixture, path.actions, baseUrl)
-                assertTransitionAgrees(`${scenario.scenarioId} ${path.id} (${mode})`, capture)
+                await runQuarantined(scenario.scenarioId, path.id, kind, async () => {
+                  try {
+                    if (captureError !== undefined) throw captureError
+                    assert(capture!)
+                  } catch (error) {
+                    writeFailureArtifact(testInfo, { scenario, oracle: kind, subject: path.id, actions: path.actions, start: initial, end, capture, error })
+                    throw error
+                  }
+                })
               } catch (error) {
-                writeFailureArtifact(testInfo, { scenario, oracle, subject: path.id, actions: path.actions, start: initial, end, capture, error })
-                throw error
+                failures.push(error)
               }
-            })
+            }
+            if (failures.length === 1) throw failures[0]
+            if (failures.length > 1) throw new Error(failures.map(f => (f instanceof Error ? f.message : String(f))).join('\n\n'))
           })
         }
       }

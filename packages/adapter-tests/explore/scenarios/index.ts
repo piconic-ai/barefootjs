@@ -12,6 +12,8 @@ import { conditionalToggle } from './conditional-toggle'
 import { childMountUnmount } from './child-mount-unmount'
 import { childPropSlots } from './child-prop-slots'
 import { commentRootChildSlot } from './comment-root-child-slot'
+import { keyedLoopPositions } from './keyed-loop-positions'
+import { childPropLoopPositions } from './child-prop-loop-positions'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const SCENARIOS: ReadonlyArray<Scenario<any, string>> = [
@@ -21,4 +23,6 @@ export const SCENARIOS: ReadonlyArray<Scenario<any, string>> = [
   childMountUnmount,
   childPropSlots,
   commentRootChildSlot,
+  keyedLoopPositions,
+  childPropLoopPositions,
 ]

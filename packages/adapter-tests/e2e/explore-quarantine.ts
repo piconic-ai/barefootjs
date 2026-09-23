@@ -8,8 +8,10 @@
  *     on `state:s<index>` (the state's discovery index in the manifest).
  *   - per action PATH: the transition oracles (`transition-hydrate`,
  *     `transition-csr`) — "click this sequence from the initial state,
- *     then compare against a fresh render of the reduced state" — keyed
- *     on the path id (`append>removeLast`).
+ *     then compare against a fresh render of the reduced state" — and the
+ *     keyed-identity oracles (`identity-hydrate`, `identity-csr`) — "every
+ *     keyed row whose key survives the sequence is the same DOM node" —
+ *     keyed on the path id (`append>removeLast`).
  *
  * Same rot-check discipline as `pairwise-quarantine.ts`: a quarantined
  * row is asserted to STILL fail, so a fix that lands turns the row into a
@@ -28,7 +30,7 @@
 
 import type { OracleKind } from './oracle-quarantine'
 
-export type ExploreOracleKind = OracleKind | 'transition-hydrate' | 'transition-csr'
+export type ExploreOracleKind = OracleKind | 'transition-hydrate' | 'transition-csr' | 'identity-hydrate' | 'identity-csr'
 
 export interface ExploreQuarantineEntry {
   scenarioId: string
