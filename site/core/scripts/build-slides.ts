@@ -11,8 +11,8 @@
  *   slides/<slug>/assets/          optional — media copied verbatim into the output's assets/
  *                                  (*.md files such as SOURCES.md are skipped)
  *   slides/<slug>/component/       optional — a Vite project (barefoot() + CSRAdapter) built
- *                                  into the deck's own assets/ as mount.js + narration.js,
- *                                  which index.html loads (layouts load mount.js themselves)
+ *                                  into the deck's own assets/ as mount.js + narration.js
+ *                                  (layouts load mount.js; index.html loads narration.js)
  *
  * The output (public/slides/<slug>/) is gitignored and rebuilt by `bun run build` (see
  * build.ts), which invokes `--all` as its first step. deploy.yml and ci-slides.yml install a
@@ -54,14 +54,11 @@ function buildDeck(slug: string): void {
   }
   console.log(`\n▸ ${slug}`)
 
-  // 1. peitho: viewer + slides + css (rewrites index.html from scratch every time)
-  run([PEITHO, 'build', 'deck.md', '--out', out], src)
-
-  // 2. interactive components → the deck's own assets/. vite.config.ts pins the entry names,
+  // 1. interactive components → the deck's own assets/. vite.config.ts pins the entry names,
   //    so vite's output is usable as-is (no re-bundling step to get a stable path). It lands
-  //    in the deck's *source* assets/ rather than only in the output because the layouts load
-  //    it as `assets/mount.js` — that is also how `peitho present` and peitho-studio reach it,
-  //    neither having a head-injection step of its own. Step 3 carries it into the output.
+  //    in the deck's *source* assets/ because the layouts load it as `assets/mount.js`, and
+  //    it must exist before step 2: peitho resolves every asset a layout references at build
+  //    time (copying it as assets/<hash>-mount.js) and fails on a missing one.
   const assetsSrc = join(src, 'assets')
   const componentDir = join(src, 'component')
   const hasComponents = existsSync(join(componentDir, 'package.json'))
@@ -80,7 +77,12 @@ function buildDeck(slug: string): void {
     }
   }
 
-  // 3. assets/ → the output's assets/: the deck's media plus whatever step 2 built
+  // 2. peitho: viewer + slides + css (rewrites index.html from scratch every time)
+  run([PEITHO, 'build', 'deck.md', '--out', out], src)
+
+  // 3. assets/ → the output's assets/: the deck's media plus whatever step 1 built. peitho
+  //    copies only what a layout names (mount.js, hero.*), not the chunks mount.js imports
+  //    relatively (./index-*.js, ./components-*.js), so everything is copied here verbatim.
   const assetsOut = join(out, 'assets')
   mkdirSync(assetsOut, { recursive: true })
   if (existsSync(assetsSrc)) {
@@ -90,15 +92,13 @@ function buildDeck(slug: string): void {
     }
   }
 
-  // 4. index.html: the deck's scripts, and the page title (peitho writes "Peitho Deck").
+  // 4. index.html: narration.js, and the page title (peitho writes "Peitho Deck").
   //    narration.js is loaded here and nowhere else — it injects page-wide chrome into
   //    document.body unconditionally, which is right only for the distribution viewer.
+  //    mount.js needs no injection: the viewer runs the layouts' own <script> for it.
   let indexHtml = readFileSync(join(out, 'index.html'), 'utf8')
   if (hasComponents) {
-    indexHtml = indexHtml.replace(
-      '<head>',
-      '<head>\n  <script type="module" src="assets/mount.js"></script>\n  <script type="module" src="assets/narration.js"></script>'
-    )
+    indexHtml = indexHtml.replace('<head>', '<head>\n  <script type="module" src="assets/narration.js"></script>')
   }
   const metaPath = join(src, 'slide.json')
   if (existsSync(metaPath)) {
