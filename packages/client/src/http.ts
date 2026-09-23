@@ -103,7 +103,24 @@ export function isSafeMethod(method: HttpMethod): boolean {
   return SAFE_METHODS.has(method)
 }
 
+/**
+ * Recursively `Object.freeze` `value` and everything reachable from it.
+ * Guards against cycles with `seen` (an object already visited is skipped,
+ * not re-frozen) so a circular `body`/`params`/`init` freezes without
+ * looping — mirrors `Object.freeze`'s own no-op-on-primitive semantics.
+ */
+function deepFreeze<T>(value: T, seen: Set<unknown> = new Set()): T {
+  if (value === null || typeof value !== 'object' || seen.has(value)) return value
+  seen.add(value)
+  const values = Array.isArray(value) ? value : Object.values(value as Record<string, unknown>)
+  for (const v of values) deepFreeze(v, seen)
+  return Object.freeze(value)
+}
+
 function freeze<T>(descriptor: HttpDescriptor<T>): HttpDescriptor<T> {
+  deepFreeze(descriptor.params)
+  deepFreeze(descriptor.body)
+  deepFreeze(descriptor.init)
   return Object.freeze(descriptor)
 }
 
@@ -158,15 +175,20 @@ export const http = {
  * Append `params` onto `url` as a query string. Unlike `queryHref`, `0` and
  * `false` are kept (spec/async.md §7.2 / issue #3156): a value is omitted
  * only when it is `null`, `undefined`, or `''`. Numbers and booleans are
- * stringified; an array appends one entry per surviving member.
+ * stringified; an array appends one entry per surviving member. Keys are
+ * visited in sorted order (not insertion order) so `requestKey` — which
+ * builds its cache/dedup key from this function's output — is stable
+ * regardless of the order a caller happened to list `params` in, matching
+ * `stableBodyKey`'s equivalent guarantee for `body`.
  */
 function serializeParams(url: string, params?: HttpParams): string {
   if (!params) return url
   const usp = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
+  for (const key of Object.keys(params).sort()) {
+    const value = params[key]
     if (Array.isArray(value)) {
       for (const member of value) {
-        if (member === null || member === undefined || member === ('' as unknown)) continue
+        if (member === null || member === undefined || member === '') continue
         usp.append(key, String(member))
       }
       continue
@@ -184,16 +206,28 @@ function serializeParams(url: string, params?: HttpParams): string {
  * keys (recursively), leaving array order untouched, so
  * `JSON.stringify(sortKeysDeep(v))` is stable regardless of the original key
  * insertion order.
+ *
+ * `ancestors` tracks the objects/arrays currently being recursed into (the
+ * path from the root, not every node ever visited), so revisiting the same
+ * object via two different sibling branches is fine but a true cycle throws
+ * a `TypeError` here — the same failure `JSON.stringify` itself would
+ * raise — instead of recursing until the call stack overflows.
  */
-function sortKeysDeep(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortKeysDeep)
-  if (value !== null && typeof value === 'object') {
+function sortKeysDeep(value: unknown, ancestors: Set<unknown> = new Set()): unknown {
+  if (value === null || typeof value !== 'object') return value
+  if (ancestors.has(value)) {
+    throw new TypeError('Converting circular structure to JSON (http request body)')
+  }
+  ancestors.add(value)
+  try {
+    if (Array.isArray(value)) return value.map((v) => sortKeysDeep(v, ancestors))
     const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     const sorted: Record<string, unknown> = {}
-    for (const [key, v] of entries) sorted[key] = sortKeysDeep(v)
+    for (const [key, v] of entries) sorted[key] = sortKeysDeep(v, ancestors)
     return sorted
+  } finally {
+    ancestors.delete(value)
   }
-  return value
 }
 
 /** Stable JSON serialisation of `body` — `''` when `body` is `undefined`. */

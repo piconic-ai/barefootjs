@@ -52,6 +52,23 @@ describe('descriptors are frozen', () => {
     expect(d.method).toBe('GET')
     expect(d.url).toBe('/api/posts')
   })
+
+  test('freezing is deep: nested body/params/init objects are frozen too, not just the descriptor', () => {
+    const body = { title: 'x', tags: ['a', 'b'], author: { name: 'y' } }
+    const d = http.post('/api/posts', body)
+    expect(Object.isFrozen(d.body)).toBe(true)
+    expect(Object.isFrozen((d.body as typeof body).tags)).toBe(true)
+    expect(Object.isFrozen((d.body as typeof body).author)).toBe(true)
+
+    const params = { page: 1 }
+    const withParams = http.get('/api/posts', params)
+    expect(Object.isFrozen(withParams.params)).toBe(true)
+
+    const init = { headers: { Authorization: 'x' } }
+    const withInit = http.get('/api/posts', undefined, init)
+    expect(Object.isFrozen(withInit.init)).toBe(true)
+    expect(Object.isFrozen(withInit.init?.headers)).toBe(true)
+  })
 })
 
 describe('isHttpDescriptor / isSafeMethod', () => {
@@ -83,7 +100,7 @@ describe('params omission and stringification', () => {
 
   test('numbers and booleans are stringified, including 0 and false', () => {
     const d = http.get('/api/posts', { page: 0, active: false, limit: 10, verbose: true })
-    expect(requestKey(d)).toBe('GET /api/posts?page=0&active=false&limit=10&verbose=true ')
+    expect(requestKey(d)).toBe('GET /api/posts?active=false&limit=10&page=0&verbose=true ')
   })
 
   test('arrays append one entry per member, skipping empty members', () => {
@@ -127,6 +144,18 @@ describe('key stability', () => {
     const a = http.post('/api/posts', { title: 'x' })
     const b = http.put('/api/posts', { title: 'x' })
     expect(requestKey(a)).not.toBe(requestKey(b))
+  })
+
+  test('params key reordering produces the same key', () => {
+    const a = http.get('/api/posts', { page: 1, sort: 'date' })
+    const b = http.get('/api/posts', { sort: 'date', page: 1 })
+    expect(requestKey(a)).toBe(requestKey(b))
+  })
+
+  test('a circular body raises a TypeError instead of overflowing the call stack', () => {
+    const circular: Record<string, unknown> = { title: 'x' }
+    circular.self = circular
+    expect(() => requestKey(http.post('/api/posts', circular))).toThrow(TypeError)
   })
 })
 
