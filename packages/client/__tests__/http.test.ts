@@ -228,6 +228,12 @@ describe('sendRequest', () => {
     expect(result).toBeUndefined()
   })
 
+  test('a non-2xx HEAD rejects with HttpError, like any other method', async () => {
+    stubFetch(() => new Response(null, { status: 404 }))
+    await expect(sendRequest(http.head('/api/posts'))).rejects.toMatchObject({ status: 404 })
+    await expect(sendRequest(http.head('/api/posts'))).rejects.toBeInstanceOf(HttpError)
+  })
+
   test('a network failure rejects with the underlying error unchanged', async () => {
     const networkError = new TypeError('Failed to fetch')
     // @ts-expect-error — test stub

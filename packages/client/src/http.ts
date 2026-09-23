@@ -271,7 +271,7 @@ export class HttpError extends Error {
 }
 
 async function parseErrorBody(response: Response): Promise<unknown> {
-  const clone = response.clone ? response.clone() : response
+  const clone = response.clone()
   try {
     return await response.json()
   } catch {
@@ -287,10 +287,10 @@ async function parseErrorBody(response: Response): Promise<unknown> {
  * Send a descriptor built by `http` and resolve with its response. v0 is
  * JSON-only: a request with a body is sent with `Content-Type:
  * application/json` (unless `init.headers` overrides it), and a successful
- * response is parsed with `response.json()` — except `HEAD`, which always
- * resolves to `undefined` (a `HEAD` response has no body). A non-2xx response
- * rejects with `HttpError`; a network failure rejects with the underlying
- * error unchanged.
+ * response is parsed with `response.json()` — except `HEAD`, whose successful
+ * response resolves to `undefined` (a `HEAD` response has no body). A non-2xx
+ * response rejects with `HttpError`, `HEAD` included; a network failure rejects
+ * with the underlying error unchanged.
  *
  * Internal to `@barefootjs/client` — `createQuery` (issue #3157) is the only
  * caller. Not exported from the package's public entry.
