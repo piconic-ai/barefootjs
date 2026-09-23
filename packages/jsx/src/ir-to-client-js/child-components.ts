@@ -89,14 +89,19 @@ export function collectComponentNamesFromIR(nodes: IRNode[], names: Set<string>)
 }
 
 /**
- * Collect child component names from conditional branch loops and nested conditionals.
- * Ensures @bf-child import markers are generated for components inside
- * composite loops within conditional branches (e.g., Badge inside a branch loop).
+ * Collect child component names from conditional branches: the branch's
+ * own child components, components inside composite loops within the
+ * branch (e.g., Badge inside a branch loop), and nested conditionals.
+ * A branch-owned child is initialized by the branch's `insert()`
+ * bindEvents, not through `ctx.childInits`, so it is named here.
  */
 function collectChildNamesFromBranches(
   cond: Pick<ConditionalElement, 'whenTrue' | 'whenFalse'>,
   names: Set<string>,
 ): void {
+  for (const child of [...cond.whenTrue.childComponents, ...cond.whenFalse.childComponents]) {
+    names.add(child.name)
+  }
   for (const loop of [...cond.whenTrue.loops, ...cond.whenFalse.loops]) {
     if (loop.nestedComponents) {
       for (const comp of loop.nestedComponents) names.add(comp.name)

@@ -59,119 +59,16 @@ export function exploreQuarantineKey(scenarioId: string, subject: string, oracle
 // plants one SSR/a fresh client mount wouldn't have. All 50 rows passed and
 // were deleted.
 //
-// `child-listener-cleanup` / `child-effect-disposal`: a child inside a
+// `child-listener-cleanup` / `child-effect-disposal` formerly held 100
+// rows citing `conditional-branch-child-double-init`: a child inside a
 // reactive conditional branch that is active at hydration / client mount
-// is initialized twice, so its onMount listener or effect runs in two
-// instances and only one is disposed with the branch. Every path whose
-// counter moves while (or after) the child is mounted diverges; the
-// minimal committed reproduction is the corpus fixture
-// `conditional-child-listener-cleanup` (fixture-hydrate quarantine).
-const DOUBLE_INIT = 'conditional-branch-child-double-init'
-const LISTENER_REASON = "the conditional child's onMount listener is registered by two instances: each ping counts twice, and one listener survives unmount"
-const EFFECT_REASON = "the conditional child's effect runs in two instances: each relabel counts twice, and one effect survives unmount"
+// was initialized twice (once by the branch's own `insert()` bindEvents,
+// once by a trailing static `initChild` on a node the branch had already
+// replaced), so its onMount listener or effect ran in two instances and
+// only one was disposed with the branch. `collectElements` now leaves a
+// branch-owned child to the branch; all 100 rows passed and were deleted.
 
-const ROWS: ReadonlyArray<ExploreQuarantineEntry> = [
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>mount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>mount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping>mount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping>mount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping>unmount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>ping>unmount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>unmount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'mount>unmount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount>mount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount>mount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount>unmount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>mount>unmount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping>mount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping>mount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping>unmount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>ping>unmount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount>mount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount>mount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount>unmount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'ping>unmount>unmount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>mount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>mount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping>mount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping>mount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping>unmount', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>ping>unmount', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>unmount>ping', oracle: 'transition-csr', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-listener-cleanup', subject: 'unmount>unmount>ping', oracle: 'transition-hydrate', reason: LISTENER_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>mount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>mount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel>mount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel>mount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel>unmount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>relabel>unmount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>unmount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'mount>unmount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount>mount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount>mount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount>unmount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>mount>unmount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel>mount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel>mount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel>unmount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>relabel>unmount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount>mount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount>mount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount>unmount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'relabel>unmount>unmount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>mount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>mount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel>mount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel>mount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel>unmount', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>relabel>unmount', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>unmount>relabel', oracle: 'transition-csr', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-  { scenarioId: 'child-effect-disposal', subject: 'unmount>unmount>relabel', oracle: 'transition-hydrate', reason: EFFECT_REASON, limitation: DOUBLE_INIT },
-]
+const ROWS: ReadonlyArray<ExploreQuarantineEntry> = []
 
 export const EXPLORE_QUARANTINE: ReadonlyMap<string, ExploreQuarantineEntry> = new Map(
   ROWS.map(row => [exploreQuarantineKey(row.scenarioId, row.subject, row.oracle), row]),

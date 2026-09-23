@@ -2,10 +2,10 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
+import { type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, type LoopParamSpec } from './utils.ts'
-import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
+import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
@@ -652,6 +652,18 @@ export function collectElements(
   siblingOffsets: Map<IRLoop, IRNode[]>,
   insideConditional = false,
 ): void {
+  // Child components an emitted conditional's branch initializes itself
+  // (its `bindEvents` → `initChild`). The static child-init pass below
+  // must skip exactly these: a second, parent-owned init of the same child
+  // doubles every effect / listener and survives the branch's removal —
+  // and once `insert()` re-renders the branch it even targets a detached
+  // node, so `initChild`'s re-entry guard can't catch it.
+  const branchOwnedComponents = new Set<IRComponent>()
+  const claimBranchComponents = (c: IRConditional): void => {
+    for (const branch of [c.whenTrue, c.whenFalse]) {
+      for (const comp of collectConditionalBranchComponentNodes(branch)) branchOwnedComponents.add(comp)
+    }
+  }
   walkIR<boolean>(node, insideConditional, {
     element: ({ node: el, scope: inCond, descend }) => {
       collectFromElement(el, ctx, inCond)
@@ -692,6 +704,7 @@ export function collectElements(
     conditional: ({ node: c, scope: inCond, descend }) => {
       if (c.clientOnly && c.slotId) {
         ctx.clientOnlyConditionals.push(buildConditionalMetadata(c, ctx, siblingOffsets))
+        claimBranchComponents(c)
       } else if (c.slotId) {
         // Solid-style wrap-by-default fallback (#941, follow-up to #937/#939).
         // Wrap not only statically-proven-reactive conditions, but also any
@@ -702,6 +715,7 @@ export function collectElements(
           // are collected by the enclosing conditional via `collectBranchConditionals`
           // and emitted inside that conditional's bindEvents.
           ctx.conditionalElements.push(buildConditionalMetadata(c, ctx, siblingOffsets))
+          claimBranchComponents(c)
         }
       }
       // Recurse into both branches with insideConditional = true so
@@ -1007,11 +1021,13 @@ export function collectElements(
 
       collectReactiveChildProps(c, ctx)
 
-      ctx.childInits.push({
-        name: c.name,
-        slotId: c.slotId,
-        propsExpr: buildComponentPropsExpr(c.props, ctx),
-      })
+      if (!branchOwnedComponents.has(c)) {
+        ctx.childInits.push({
+          name: c.name,
+          slotId: c.slotId,
+          propsExpr: buildComponentPropsExpr(c.props, ctx),
+        })
+      }
 
       descend()
       // Traverse JSX prop children so events, reactive expressions, and nested

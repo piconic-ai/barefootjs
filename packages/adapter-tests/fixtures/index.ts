@@ -724,11 +724,10 @@ import { fixture as compositeRowChildRestBagPropHoisted } from './composite-row-
 // "reproducible defect lands as a fixture" rule — not fixed here).
 import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-attrs'
 // A child inside a reactive conditional branch that is active at
-// hydration is initialized twice: its onMount listener double-counts and
-// one instance survives the branch's removal. Found by the explore
-// sweep's `child-listener-cleanup` scenario. Registry limitation
-// `conditional-branch-child-double-init`; quarantined in
-// `fixture-hydrate-quarantine.ts` (fixture-only — not fixed here).
+// hydration must be initialized once, by its branch (it used to be
+// initialized twice: its onMount listener double-counted and one instance
+// survived the branch's removal). Found by the explore sweep's
+// `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
 
 import type { JSXFixture } from '../src/types'

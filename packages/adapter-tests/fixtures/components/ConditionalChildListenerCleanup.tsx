@@ -7,10 +7,8 @@
 //
 // Contract: one ping counts once while the child is mounted, and not at
 // all once the branch is removed. Found by the bounded state-space
-// exploration's `child-listener-cleanup` scenario; `compileJSX` returns
-// zero diagnostics for this shape (`kind: 'silent'` on the registry
-// entry) — see
-// `packages/adapter-tests/limitations/conditional-branch-child-double-init.ts`.
+// exploration's `child-listener-cleanup` scenario (the child used to be
+// initialized twice).
 
 import { createSignal, onCleanup, onMount } from '@barefootjs/client'
 

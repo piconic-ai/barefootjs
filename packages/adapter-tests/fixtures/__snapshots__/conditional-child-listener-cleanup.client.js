@@ -25,7 +25,6 @@ export function initConditionalChildListenerCleanup(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s4, _s5, _s0] = $(__scope, 's4', 's5', 's0')
-  const [_s1] = $c(__scope, 's1')
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
@@ -47,9 +46,6 @@ export function initConditionalChildListenerCleanup(__scope, _p = {}) {
 
   if (_s4) _s4.addEventListener('click', () => { setMounted(false) })
   if (_s5) _s5.addEventListener('click', () => { window.dispatchEvent(new Event('fixture-ping')) })
-
-  // Initialize child components with props
-  initChild('PingListener__85856cd1', _s1, { onPing: () => setCount(count() + 1) })
 }
 
 hydrate('ConditionalChildListenerCleanup', { init: initConditionalChildListenerCleanup, template: (_p) => `<div bf="s6">${(true) ? `<!--bf-cond-start:s0-->${renderChild('PingListener__85856cd1', {}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}<p class="count" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((0))}<!--/--> pings</p><button class="unmount" bf="s4">unmount</button><button class="ping" bf="s5">ping</button></div>` })

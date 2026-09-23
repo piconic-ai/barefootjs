@@ -1,18 +1,15 @@
 /**
- * Real-browser regression pin, landed as a fixture per CLAUDE.md's "a
- * reproducible defect lands as a fixture, not a prose report" rule — NOT
- * a fix. Source lives in the fixture-only root
+ * Real-browser regression test. Source lives in the fixture-only root
  * (`fixtures/components/ConditionalChildListenerCleanup.tsx`).
  *
  * A child component sits directly inside a reactive conditional branch
  * that is active at hydration, and registers a window listener in
- * `onMount` (removed in `onCleanup`). The SSR render is correct, but the
- * child is initialized twice on the client, so one ping counts twice, and
- * one of the two listeners survives the branch's removal. The
- * `interactions` below describe the CORRECT behavior and currently FAIL;
- * they are quarantined in
- * `packages/adapter-tests/e2e/fixture-hydrate-quarantine.ts` under the
- * `conditional-branch-child-double-init` registry limitation.
+ * `onMount` (removed in `onCleanup`). The child must be initialized once,
+ * by its branch: one ping counts once, and the listener goes away with
+ * the branch. It used to be initialized a second time by the component's
+ * static child-init pass (against the SSR node the branch had just
+ * re-rendered away), so each ping counted twice and one listener outlived
+ * the branch.
  *
  * Snapshots in
  * `__snapshots__/conditional-child-listener-cleanup.{html,client.js}` are
@@ -27,11 +24,11 @@ export const spec: SharedFixtureSpec = {
   componentName: 'ConditionalChildListenerCleanup',
   sourceRoot: 'fixture',
   description:
-    "A child inside a reactive conditional branch that is active at hydration initializes once: its onMount listener counts each ping once and is removed with the branch (currently broken — quarantined)",
+    'A child inside a reactive conditional branch that is active at hydration initializes once: its onMount listener counts each ping once and is removed with the branch',
   interactions: [
     { type: 'expectText', selector: '.count', text: '0 pings' },
-    // One ping while mounted counts once. Currently shows "2 pings": the
-    // child's onMount ran twice.
+    // One ping while mounted counts once (not twice: the child's onMount
+    // must run once).
     { type: 'click', selector: '.ping' },
     { type: 'expectText', selector: '.count', text: '1 pings' },
     // Removing the branch must remove its listener: a ping afterwards
