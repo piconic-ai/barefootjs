@@ -2058,6 +2058,17 @@
           ]
         }
       },
+      "conditional-return-fragment-branch": {
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -5180,6 +5191,10 @@
         "description": "site/ui Combobox demo — typed filtering hides items via the hidden attribute; selection closes and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/combobox.ts"
       },
+      "conditional-return-fragment-branch": {
+        "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -5567,14 +5582,19 @@
     },
     "fragment-wrapped-conditional-return-branch-scope": {
       "title": "Fragment-wrapped branch of a conditional return is never hydrated",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "a component with an early-return branch whose other branch is wrapped in a fragment (`if (x) return <a/>; return <><button/></>`)",
       "expected": "the rendered branch root carries the component scope id on every render path, so its events bind",
-      "actual": "renders the fragment-wrapped branch root without a scope id after hydration (the server HTML is correct, a pure client mount is correct), so its events never bind",
+      "actual": "the compiler refuses with BF029",
       "fixtures": [
         "conditional-return-fragment-branch"
       ],
-      "adapters": []
+      "adapters": [
+        "hono"
+      ],
+      "diagnostics": [
+        "BF029"
+      ]
     },
     "jsx-wrapped-in-non-children-prop": {
       "title": "JSX wrapped in a ternary or array at a non-children prop",
