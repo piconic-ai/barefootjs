@@ -6092,7 +6092,8 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
  *   binding — so today it silently produces nothing at all, not even an
  *   opaque local).
  * - **BF116 — extra arguments.** `createSignal(initialValue?)` takes 0 or 1
- *   argument; `createMemo(computeFn)` takes exactly 1. `collectSignal`/
+ *   argument; `createMemo(computeFn)` takes exactly 1; an env-signal factory
+ *   (`createSearchParams()`) takes none. `collectSignal`/
  *   `collectMemo` only ever read `arguments[0]`, so any argument beyond it
  *   (`createSignal(props.user, { from: 'router' })`) is silently dropped
  *   from the emitted client JS with no diagnostic.
@@ -6184,15 +6185,23 @@ function checkStatementsForReactiveFactoryArity(statements: readonly ts.Statemen
         }
       }
 
-      // BF116: extra call arguments. Both primitives accept at most 1.
-      if (callExpr.arguments.length > 1) {
+      // BF116: extra call arguments. `createSignal`/`createMemo` accept at
+      // most 1; an env-signal factory (`createSearchParams()`, which also
+      // resolves to kind `'signal'`) takes none — its value comes from the
+      // request env, so any argument is dropped just the same.
+      const isEnvSignal = kind === 'signal' && resolveEnvSignalKey(callExpr, ctx) !== null
+      const maxArgs = isEnvSignal ? 0 : 1
+      if (callExpr.arguments.length > maxArgs) {
         ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_EXTRA_ARGUMENTS, loc, {
           severity: 'error',
-          message:
-            `'${calleeText}(...)' accepts at most 1 argument (${kind === 'signal' ? 'the initial value' : 'the compute function'}), ` +
-            `but this call passes ${callExpr.arguments.length}. The extra argument(s) are ` +
-            `silently dropped from the compiled client JS today; remove them, or fold ` +
-            `whatever they configure into the ${kind === 'signal' ? 'initial value expression' : 'compute function body'}.`,
+          message: isEnvSignal
+            ? `'${calleeText}()' takes no arguments (its value is read from the request ` +
+              `environment), but this call passes ${callExpr.arguments.length}. The ` +
+              `argument(s) are silently dropped from the compiled client JS today; remove them.`
+            : `'${calleeText}(...)' accepts at most 1 argument (${kind === 'signal' ? 'the initial value' : 'the compute function'}), ` +
+              `but this call passes ${callExpr.arguments.length}. The extra argument(s) are ` +
+              `silently dropped from the compiled client JS today; remove them, or fold ` +
+              `whatever they configure into the ${kind === 'signal' ? 'initial value expression' : 'compute function body'}.`,
         }))
       }
     }
