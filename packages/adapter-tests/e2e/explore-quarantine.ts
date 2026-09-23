@@ -480,42 +480,6 @@ const GO_SEED_ROWS: ReadonlyArray<readonly [scenarioId: string, subject: string,
   ['nested-loop', 'reverseGroups>reverseGroups', 'transition-hydrate'],
 ]
 
-// A client component whose whole return is a child-component call
-// (`comment-root-child-slot`, from #3122): these adapters render the
-// child's output without the parent's `<!--bf-scope:...-->` comment pair,
-// so the parent never hydrates and its forwarded `load` handler does
-// nothing. Every path that reaches `loaded` diverges; the minimal
-// committed reproduction is the corpus fixture
-// `component-root-client-scope` (each adapter's `renderDivergences`).
-const COMPONENT_ROOT_SCOPE = 'component-root-client-scope-comment'
-const COMPONENT_ROOT_SCOPE_REASON = "the parent's scope comment is missing from the SSR, so the parent never hydrates and the forwarded `load` handler does nothing"
-const COMPONENT_ROOT_SCOPE_ROWS: ReadonlyArray<readonly [adapter: string, subject: string]> = [
-  ['blade', 'load'],
-  ['blade', 'load>load'],
-  ['blade', 'clear>load'],
-  ['erb', 'load'],
-  ['erb', 'load>load'],
-  ['erb', 'clear>load'],
-  ['jinja', 'load'],
-  ['jinja', 'load>load'],
-  ['jinja', 'clear>load'],
-  ['minijinja', 'load'],
-  ['minijinja', 'load>load'],
-  ['minijinja', 'clear>load'],
-  ['mojolicious', 'load'],
-  ['mojolicious', 'load>load'],
-  ['mojolicious', 'clear>load'],
-  ['pebble', 'load'],
-  ['pebble', 'load>load'],
-  ['pebble', 'clear>load'],
-  ['twig', 'load'],
-  ['twig', 'load>load'],
-  ['twig', 'clear>load'],
-  ['xslate', 'load'],
-  ['xslate', 'load>load'],
-  ['xslate', 'clear>load'],
-]
-
 const ROWS: ReadonlyArray<ExploreQuarantineEntry> = [
   ...GO_SEED_ROWS.map(([scenarioId, subject, oracle]) => ({
     adapter: 'go-template',
@@ -524,14 +488,6 @@ const ROWS: ReadonlyArray<ExploreQuarantineEntry> = [
     oracle,
     reason: GO_SEED_REASON,
     limitation: GO_SEED,
-  })),
-  ...COMPONENT_ROOT_SCOPE_ROWS.map(([adapter, subject]) => ({
-    adapter,
-    scenarioId: 'comment-root-child-slot',
-    subject,
-    oracle: 'transition-hydrate' as const,
-    reason: COMPONENT_ROOT_SCOPE_REASON,
-    limitation: COMPONENT_ROOT_SCOPE,
   })),
 ]
 

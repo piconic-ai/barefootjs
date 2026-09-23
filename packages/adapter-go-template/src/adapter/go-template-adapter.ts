@@ -8759,9 +8759,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // A root component in a client component needs a scope comment for the
-    // hydration boundary.
+    // hydration boundary. #3141: this used to emit ONLY the opening marker
+    // — the missing end marker is the #2289 sibling-leak shape (queries
+    // from this scope could read into later siblings the parent owns).
+    // Matches `comp.needsScopeComment` (`IRComponent.needsScopeComment`,
+    // #3141's shared IR flag) whenever `comp` is literally the render root,
+    // which is the only case `ctx?.isRootOfClientComponent` is set true for
+    // outside an if-statement branch.
     if (ctx?.isRootOfClientComponent) {
-      return `{{bfScopeComment .}}${templateCall}`
+      return this.wrapComponentRootScopeComment(templateCall)
     }
     return templateCall
   }
@@ -8795,9 +8801,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Comment-based scope marker for fragment roots. The end marker
       // bounds the scope range so client-side queries don't leak onto
       // later siblings (#2289).
-      return `{{bfScopeComment .}}${children}{{bfScopeCommentEnd .}}`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a root component call
+   * (#3141) — both are "this scope has no DOM element of its own to carry
+   * a struct-derived scope id", so both lean on the same runtime helpers.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `{{bfScopeComment .}}${rendered}{{bfScopeCommentEnd .}}`
   }
 
   private renderSlot(slot: IRSlot): string {

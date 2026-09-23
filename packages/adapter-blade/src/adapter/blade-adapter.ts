@@ -624,7 +624,14 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   }
 
   emitComponent(node: IRComponent, _ctx: BladeRenderCtx, _emit: EmitIRNode<BladeRenderCtx>): string {
-    return this.renderComponent(node)
+    const rendered = this.renderComponent(node)
+    // #3141: a client-interactive component whose entire render root is
+    // this single child-component call (no wrapping element) needs the
+    // same comment-based scope marker pair a `needsScopeComment` FRAGMENT
+    // root gets below — `IRComponent.needsScopeComment` is the shared flag
+    // (`packages/jsx/src/component-root-scope-comment.ts`) every adapter
+    // reads instead of re-deriving "root is a component" locally.
+    return node.needsScopeComment ? this.wrapComponentRootScopeComment(rendered) : rendered
   }
 
   emitFragment(node: IRFragment, _ctx: BladeRenderCtx, _emit: EmitIRNode<BladeRenderCtx>): string {
@@ -1522,9 +1529,19 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // End marker bounds the scope's sibling range — without it, queries
       // from the fragment scope leak onto later siblings owned by the
       // parent (#2289).
-      return `{!! $bf->scope_comment() !!}${children}{!! $bf->scope_comment_end() !!}`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a `needsScopeComment`
+   * component root (#3141) — both are "this scope has no DOM element of its
+   * own to carry bf-s/bf-p", so both lean on the same runtime helper pair.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `{!! $bf->scope_comment() !!}${rendered}{!! $bf->scope_comment_end() !!}`
   }
 
   private renderSlot(_slot: IRSlot): string {

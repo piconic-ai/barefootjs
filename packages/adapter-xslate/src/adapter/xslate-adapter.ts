@@ -461,7 +461,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   emitComponent(node: IRComponent, _ctx: XslateRenderCtx, _emit: EmitIRNode<XslateRenderCtx>): string {
-    return this.renderComponent(node)
+    const rendered = this.renderComponent(node)
+    // #3141: see `wrapComponentRootScopeComment`'s docstring.
+    return node.needsScopeComment ? this.wrapComponentRootScopeComment(rendered) : rendered
   }
 
   emitFragment(node: IRFragment, _ctx: XslateRenderCtx, _emit: EmitIRNode<XslateRenderCtx>): string {
@@ -1345,9 +1347,19 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // End marker bounds the scope's sibling range — without it, queries
       // from the fragment scope leak onto later siblings owned by the
       // parent (#2289).
-      return `<: $bf.scope_comment() | mark_raw :>${children}<: $bf.scope_comment_end() | mark_raw :>`
+      return this.wrapComponentRootScopeComment(children)
     }
     return children
+  }
+
+  /**
+   * Wrap already-rendered output in the comment-based scope marker pair.
+   * Shared by a `needsScopeComment` fragment root and a `needsScopeComment`
+   * component root (#3141) — both are "this scope has no DOM element of its
+   * own to carry bf-s/bf-p", so both lean on the same runtime helper pair.
+   */
+  private wrapComponentRootScopeComment(rendered: string): string {
+    return `<: $bf.scope_comment() | mark_raw :>${rendered}<: $bf.scope_comment_end() | mark_raw :>`
   }
 
   private renderSlot(_slot: IRSlot): string {
