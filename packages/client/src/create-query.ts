@@ -15,6 +15,7 @@
 
 import { createSignal, createEffect, onCleanup, untrack, type Reactive } from './reactive.ts'
 import { isHttpDescriptor, requestKey, sendRequest, HttpError, type HttpDescriptor } from './http.ts'
+import { scheduleMicrotask } from './schedule-microtask.ts'
 
 /** Default freshness window — the router page cache's fresh window (spec/async.md §7.5). */
 const DEFAULT_TTL_MS = 15_000
@@ -185,7 +186,7 @@ export function createQuery<T>(
     pendingSend = { descriptor, key }
     if (!microtaskScheduled) {
       microtaskScheduled = true
-      queueMicrotask(flush)
+      scheduleMicrotask(flush)
     }
   }
 
@@ -215,7 +216,11 @@ export function createQuery<T>(
       },
       (err) => {
         if (!disposed && myGeneration === generation) {
-          setError(err as HttpError | Error)
+          // `err` can be anything a rejected promise carries (some fetch
+          // polyfills/test runtimes reject with a non-Error) — `error()`'s
+          // documented type is `HttpError | Error`, so normalize anything
+          // else into a real `Error` rather than lying about the type.
+          setError(err instanceof Error ? err : new Error(String(err)))
           setIsPending(false)
         }
         throw err

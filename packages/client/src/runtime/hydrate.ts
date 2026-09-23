@@ -44,6 +44,7 @@ import { registerComponent } from './registry.ts'
 import { registerTemplate } from './template.ts'
 import { BF_SCOPE, BF_PROPS, BF_HOST, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
 import { createRoot } from '@barefootjs/client/reactive'
+import { scheduleMicrotask } from '../schedule-microtask.ts'
 import type { ComponentDef } from './types.ts'
 
 /**
@@ -66,19 +67,6 @@ export function getRegisteredDef(name: string): ComponentDef | undefined {
 
 let microtaskScheduled = false
 let rafScheduled = false
-
-/**
- * Cross-runtime microtask scheduler. `queueMicrotask` is widely
- * supported but absent in some test DOMs / older runtimes; fall back
- * to `Promise.resolve().then(...)` so importing this module never
- * throws on environments missing the global.
- */
-const scheduleMicrotask: (cb: () => void) => void =
-  typeof queueMicrotask === 'function'
-    ? queueMicrotask
-    : (cb) => {
-        Promise.resolve().then(cb)
-      }
 
 /**
  * Schedule the document-order walk once per tick (microtask) and once

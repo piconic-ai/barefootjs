@@ -248,6 +248,16 @@ describe('rule 6: previous value retention', () => {
     await waitUntil(() => posts()?.page === 3)
     expect(fetchAction.error()).toBeUndefined() // cleared by the next success
   })
+
+  test('error() is always a real Error, even when the underlying rejection is not one', async () => {
+    // Some fetch polyfills / embedded runtimes reject with a plain value
+    // rather than an Error instance; error()'s type is `HttpError | Error`.
+    globalThis.fetch = (() => Promise.reject('a plain string rejection')) as unknown as typeof fetch
+    const [, fetchAction] = createQuery(() => http.get('/api/posts'))
+    await waitUntil(() => fetchAction.error() !== undefined)
+    expect(fetchAction.error()).toBeInstanceOf(Error)
+    expect(fetchAction.error()?.message).toBe('a plain string rejection')
+  })
 })
 
 // -- rule 7: generation guard --------------------------------------------
