@@ -232,4 +232,39 @@ describe('BF116: createSignal/createMemo extra call arguments (#3159)', () => {
     const result = compileJSX(source, 'Counter.tsx', { adapter })
     expect(result.errors.find(e => e.code === 'BF116')).toBeUndefined()
   })
+
+  // `createSearchParams` resolves to kind 'signal' too, but takes no
+  // arguments at all — its value comes from the request env — so the
+  // 1-argument allowance `createSignal` gets must not cover it.
+  test('any argument to createSearchParams is a compile error', () => {
+    const source = `
+      'use client'
+      import { createSearchParams } from '@barefootjs/client'
+
+      export function Sort() {
+        const [sp, setSp] = createSearchParams('sort=date')
+        return <button onClick={() => setSp({ sort: 'price' })}>{sp().get('sort')}</button>
+      }
+    `
+    const result = compileJSX(source, 'Sort.tsx', { adapter })
+    const bf116 = result.errors.find(e => e.code === 'BF116')
+    expect(bf116).toBeDefined()
+    expect(bf116!.severity).toBe('error')
+    expect(bf116!.message).toContain('createSearchParams')
+    expect(bf116!.message).toContain('takes no arguments')
+  })
+
+  test('createSearchParams with zero arguments is still valid — no BF116', () => {
+    const source = `
+      'use client'
+      import { createSearchParams } from '@barefootjs/client'
+
+      export function Sort() {
+        const [sp, setSp] = createSearchParams()
+        return <button onClick={() => setSp({ sort: 'price' })}>{sp().get('sort')}</button>
+      }
+    `
+    const result = compileJSX(source, 'Sort.tsx', { adapter })
+    expect(result.errors.find(e => e.code === 'BF116')).toBeUndefined()
+  })
 })

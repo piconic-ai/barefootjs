@@ -306,7 +306,7 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.REACTIVE_FACTORY_EXTRA_ARGUMENTS]:
     "'createSignal'/'createMemo' call passes more arguments than the primitive accepts " +
-    '(`createSignal(initialValue?)`, `createMemo(computeFn)`). The extra argument(s) are ' +
+    '(`createSignal(initialValue?)`, `createMemo(computeFn)`, `createSearchParams()`). The extra argument(s) are ' +
     'silently dropped from the compiled client JS.',
 }
 
