@@ -121,6 +121,48 @@ describe('BF115: createSignal/createMemo tuple-destructure arity (#3159)', () =>
     expect(result.errors.find(e => e.code === 'BF115')).toBeUndefined()
   })
 
+  test('a 0-element destructure gets an accurate message, not the "extra binding(s)" text', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Counter() {
+        const [] = createSignal(0)
+        return <span>static</span>
+      }
+    `
+    const result = compileJSX(source, 'Counter.tsx', { adapter })
+    const bf115 = result.errors.find(e => e.code === 'BF115')
+    expect(bf115).toBeDefined()
+    // The old wording ("extra binding(s) are silently dropped") makes no
+    // sense when nothing at all is bound — nothing is "extra".
+    expect(bf115!.message).not.toContain('extra binding')
+    expect(bf115!.message).toContain('0 elements')
+  })
+
+  test('a bad-arity createSignal destructure inside a conditional-return branch is still caught (#1414 branch signals)', () => {
+    // `collectBranchSignals` gives a top-level `if` whose then-branch returns
+    // JSX its own signal-collection scope — the same silent-drop bug BF115
+    // exists for at the top level reproduces here too if the diagnostic only
+    // ever looks at the component's own top-level statements.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Profile({ flag, user }: { flag: boolean; user: string }) {
+        if (flag) {
+          const [user2, setUser, extra] = createSignal(user)
+          return <button onClick={() => setUser('x')}>{user2()}</button>
+        }
+        return <div>static</div>
+      }
+    `
+    const result = compileJSX(source, 'Profile.tsx', { adapter })
+    const bf115 = result.errors.find(e => e.code === 'BF115')
+    expect(bf115).toBeDefined()
+    expect(bf115!.message).toContain('createSignal')
+  })
+
   // Alias resolution itself (`import { createSignal as sig }`) is covered by
   // `primitive-resolver-alias.test.ts`, which requires a real `ts.Program`
   // to exercise the TypeChecker-backed slow path. This check delegates to
