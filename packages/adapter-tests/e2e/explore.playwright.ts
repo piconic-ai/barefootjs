@@ -381,7 +381,7 @@ test.describe('bounded state-space exploration', () => {
           { oracle: 'transition-csr', identityOracle: 'identity-csr', mode: 'csr-mount' },
         ]
         for (const { oracle, identityOracle, mode } of legs) {
-          test(`[${oracle}] ${path.id} → s${end.index}: incremental update equals fresh render`, async ({ page }, testInfo) => {
+          test(`[${oracle}/${identityOracle}] ${path.id} → s${end.index}: incremental update equals fresh render, keyed rows kept`, async ({ page }, testInfo) => {
             test.setTimeout(30_000)
             const label = `${scenario.scenarioId} ${path.id} (${mode})`
             // One capture feeds both oracles; each is quarantined on its own
