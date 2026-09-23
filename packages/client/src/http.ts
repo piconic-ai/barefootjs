@@ -413,14 +413,6 @@ async function parseErrorBody(response: Response): Promise<unknown> {
 }
 
 /**
- * The default `Content-Type` for a JSON body and a string body. fetch encodes
- * both as UTF-8, and both types are set explicitly rather than left to fetch:
- * a string body goes out as `text/plain;charset=UTF-8` in browsers and Node,
- * but with no type at all in Bun. The charset on the JSON type states the
- * encoding for servers that don't assume UTF-8 for JSON. The other body kinds
- * get no default; fetch derives theirs from the body.
- */
-/**
  * The default `Accept` on every request. The response side is JSON-only in v0
  * (`response.json()`), so ask for JSON first; the any-type wildcard at a lower
  * weight keeps a server that cannot produce JSON from answering 406 instead of
@@ -428,6 +420,14 @@ async function parseErrorBody(response: Response): Promise<unknown> {
  */
 const DEFAULT_ACCEPT = 'application/json, */*;q=0.5'
 
+/**
+ * The default `Content-Type` for a JSON body and a string body. fetch encodes
+ * both as UTF-8, and both types are set explicitly rather than left to fetch:
+ * a string body goes out as `text/plain;charset=UTF-8` in browsers and Node,
+ * but with no type at all in Bun. The charset on the JSON type states the
+ * encoding for servers that don't assume UTF-8 for JSON. The other body kinds
+ * get no default; fetch derives theirs from the body.
+ */
 const DEFAULT_CONTENT_TYPE: Partial<Record<BodyKind, string>> = {
   json: 'application/json; charset=utf-8',
   text: 'text/plain;charset=UTF-8',
