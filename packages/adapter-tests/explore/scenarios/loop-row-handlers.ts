@@ -44,7 +44,7 @@ export function LoopRowHandlers({ initial }: { initial: State }) {
         {items().map(item => (
           <li key={item.id}>
             <span>{item.id}: {item.n}</span>
-            <button data-action="bumpRow" onClick={() => setItems(items().map(x => (x.id === item.id ? { ...x, n: x.n + 1 } : x)))}>bump</button>
+            <button data-action="bumpRow" onClick={() => setItems(items().map(x => (x.id === item.id ? { ...x, n: item.n + 1 } : x)))}>bump</button>
           </li>
         ))}
       </ul>
