@@ -99,40 +99,40 @@ function nillableAwarePropRef(
 }
 
 /**
- * #3142: whether `preParsed` is a signal seed that reads a MEMBER of an
- * object-typed prop — `createSignal(initial.label)` (destructured
- * component) or `createSignal(props.initial.label)` (SolidJS-style
- * `propsObjectName` component) — a shape `extractPropNameFromInitialValue`
- * (which only ever matches a FLAT `prop.field` or `prop.field ?? fallback`)
- * never recognises, and that `convertInitialValue`'s literal-baking
- * branches below can't reach either (`initial.label` parses to a `member`
- * node, never a `literal`). Returns the prop name + member field so the
- * caller can refuse with an actionable message instead of silently baking
- * `nil` — a real fix would need the object prop typed as its synthesized
- * struct (so `in.Initial.Label` is a valid Go field path) and a child's
- * typed Input field to accept it, out of scope for this loud stopgap.
+ * #3142: whether `preParsed` is a signal seed read through a member chain
+ * rooted in a prop, at any depth: `createSignal(initial.label)`,
+ * `createSignal(initial.address.city)` (destructured component) or
+ * `createSignal(props.initial.label)` (SolidJS-style `propsObjectName`
+ * component). `extractPropNameFromInitialValue` only matches a FLAT prop
+ * (`createSignal(label)` / `createSignal(props.label)`), and none of
+ * `convertInitialValue`'s literal-baking branches match a `member` node,
+ * so every such seed used to bake `nil` silently. Returns the prop name
+ * and the member path so the caller can refuse. A real fix would need the
+ * object prop typed as its synthesized struct (so `in.Initial.Label` is a
+ * valid Go field path), which is out of scope for this loud stopgap. A
+ * computed hop (`initial[key]`) stops the match and keeps the old path.
  */
 function unresolvedPropMemberSeed(
   ctx: GoEmitContext,
   preParsed: ParsedExpr | undefined,
   propsParams: { name: string; sourceName?: string }[] | undefined,
-): { propName: string; property: string } | null {
-  if (!preParsed || preParsed.kind !== 'member' || preParsed.computed) return null
-  const obj = preParsed.object
-  if (obj.kind === 'identifier') {
-    if (propsParams?.some(p => p.name === obj.name)) {
-      return { propName: obj.name, property: preParsed.property }
-    }
-    return null
+): { propName: string; path: string[] } | null {
+  if (!preParsed || preParsed.kind !== 'member') return null
+  const path: string[] = []
+  let node: ParsedExpr = preParsed
+  while (node.kind === 'member') {
+    if (node.computed) return null
+    path.unshift(node.property)
+    node = node.object
   }
-  if (
-    obj.kind === 'member' &&
-    !obj.computed &&
-    obj.object.kind === 'identifier' &&
-    ctx.state.propsObjectName !== null &&
-    obj.object.name === ctx.state.propsObjectName
-  ) {
-    return { propName: obj.property, property: preParsed.property }
+  if (node.kind !== 'identifier') return null
+  if (propsParams?.some(p => p.name === node.name)) {
+    return { propName: node.name, path }
+  }
+  // `props.x` alone is a flat prop (resolved earlier); only a deeper
+  // chain (`props.x.y…`) reads through a member of prop `x`.
+  if (ctx.state.propsObjectName !== null && node.name === ctx.state.propsObjectName && path.length >= 2) {
+    return { propName: path[0], path: path.slice(1) }
   }
   return null
 }
@@ -192,10 +192,10 @@ export function convertInitialValue(
     ctx.state.errors.push({
       code: 'BF101',
       severity: 'error',
-      message: `Signal seeded from '${memberSeed.propName}.${memberSeed.property}' has no Go template lowering — a member of an object-typed prop cannot be baked into the constructor as a nested struct field.`,
+      message: `Signal seeded from '${memberSeed.propName}.${memberSeed.path.join('.')}' has no Go template lowering — a value read through a member of prop '${memberSeed.propName}' cannot be baked into the constructor.`,
       loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
       suggestion: {
-        message: `Pass '${memberSeed.property}' as its own top-level prop instead of nesting it inside '${memberSeed.propName}'.`,
+        message: `Pass the value as its own top-level prop instead of reading it through '${memberSeed.propName}'.`,
       },
     })
   }

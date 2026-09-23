@@ -2077,6 +2077,44 @@ export function Widget(props: { initial: { label: string } }) {
       expect(bf101).toHaveLength(1)
     })
 
+    test('a deeper member chain refuses too, on both prop styles', () => {
+      for (const [sig, seed] of [
+        ['{ initial }: { initial: { address: { city: string } } }', 'initial.address.city'],
+        ['props: { initial: { address: { city: string } } }', 'props.initial.address.city'],
+      ]) {
+        const adapter = new GoTemplateAdapter()
+        const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Widget(${sig}) {
+  const [city] = createSignal(${seed})
+  return <span>{city()}</span>
+}
+`, adapter)
+        adapter.generate(ir)
+        const bf101 = ir.errors.filter(e => e.code === 'BF101')
+        expect(bf101).toHaveLength(1)
+        expect(bf101[0].message).toContain('initial.address.city')
+      }
+    })
+
+    test('a member of a non-object prop refuses with an accurate message', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Widget({ name }: { name: string }) {
+  const [len] = createSignal(name.length)
+  return <span>{len()}</span>
+}
+`, adapter)
+      adapter.generate(ir)
+      const bf101 = ir.errors.filter(e => e.code === 'BF101')
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain("name.length")
+      expect(bf101[0].message).not.toContain('object-typed')
+    })
+
     test('a FLAT prop member (not nested) still resolves normally, no refusal', () => {
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
