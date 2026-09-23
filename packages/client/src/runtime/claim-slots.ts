@@ -252,40 +252,31 @@ function isSlotComment(node: Node | null, id: string): node is Comment {
  * resolves correctly: the proxy has no DOM children of its own — the row's
  * real content lives as SIBLINGS of the registered comment — and
  * `commentsInScope` already knows to walk that sibling range instead of
- * `root`'s (empty) descendants. The ownership boundary adapts to match:
- * every node in a comment-scope's range shares the registered comment's
- * OWN parent element, so that (not the unreachable proxy `root`) is where
- * the ancestor walk must stop for a candidate marker that is a SIBLING of
- * `root` (outside its subtree) — a genuine multi-child fragment root
- * (`needsScopeComment`) can have further top-level siblings after its
- * first child, and `root` (the registered proxy, `findCommentChildScope`'s
- * "first element sibling after the comment") is never an ancestor of one.
+ * `root`'s (empty) descendants. The ownership boundary adapts to match,
+ * resolved PER CANDIDATE rather than once for the whole scan:
  *
- * That wide boundary is wrong, though, for a candidate that IS inside
- * `root`'s own subtree, whenever `root` itself carries a real `bf-s`
- * (#3122): a "root is a single child-component call" proxy (#2649), or a
- * fragment root whose first child happens to be a stateful scoped
- * component, is registered under its ANCESTOR's comment scope for
- * `ownScopeId` to resolve (`scope.ts`'s docstring) — but that SAME element
- * is ALSO that child's own genuine scope root, with its own real `bf-s`.
- * Using the wide boundary there walks past `root` on the way up from a
- * marker `root` legitimately owns and crosses back UP INTO `root`'s own
- * `bf-s`, misclassifying it as "nested" and dropping it (the original
- * #3122 bug). But using `root` as the boundary UNCONDITIONALLY — the
- * first fix attempted here — broke the sibling case above: when the
- * candidate is a sibling of `root`, not a descendant, `root` never appears
- * in that candidate's own ancestor chain at all, so `el !== boundary` never
- * becomes false and the walk keeps climbing the real page DOM past the
- * intended container, misclassifying against whatever unrelated `bf-s` it
- * hits further up (caught by review before landing).
+ *   - Marker OUTSIDE `root`'s own subtree (a sibling within the wider
+ *     comment-scope range): a genuine multi-child fragment root
+ *     (`needsScopeComment`) can have further top-level siblings after its
+ *     first child, and `root` (the registered proxy, `findCommentChildScope`'s
+ *     "first element sibling after the comment") is never an ancestor of
+ *     one — the walk must stop at the registered comment's OWN parent
+ *     element instead, since that's the shared ancestor every node in the
+ *     range has.
+ *   - Marker INSIDE `root`'s own subtree, when `root` itself carries a real
+ *     `bf-s` (#3122): a "root is a single child-component call" proxy
+ *     (#2649), or a fragment root whose first child happens to be a
+ *     stateful scoped component, is registered under its ANCESTOR's
+ *     comment scope for `ownScopeId` to resolve (`scope.ts`'s docstring) —
+ *     but that SAME element is ALSO that child's own genuine scope root,
+ *     with its own real `bf-s`. Stopping at the wider boundary here walks
+ *     past `root` on the way up from a marker `root` legitimately owns and
+ *     crosses back UP INTO `root`'s own `bf-s`, misclassifying it as
+ *     "nested" — the walk must stop at `root` itself instead.
  *
- * The two needs don't conflict once resolved PER CANDIDATE rather than
- * once for the whole scan: `root.contains(comment)` decides which boundary
- * this particular marker's walk needs — `root` itself when the marker is
- * inside root's own subtree (so root's own `bf-s`, if any, can never
- * disqualify root's own content), the wider registered boundary when it
- * isn't (a sibling within the comment-scope's range, where root's `bf-s`
- * is irrelevant since the walk never reaches it anyway).
+ * `root.contains(comment)` is the per-candidate test that picks between
+ * them; root's own `bf-s`, if any, can only ever matter for a marker
+ * actually inside root's own subtree.
  *
  * Parent-owned slots (`^`-prefixed id, `BF_PARENT_OWNED_PREFIX`) skip the
  * ownership walk entirely — same carve-out as `query.ts`'s `$()` and its
@@ -308,7 +299,10 @@ function findOwnedMarker(root: Element, id: string): Comment | null {
   for (const comment of commentsInScope(root)) {
     if (comment.nodeValue !== marker) continue
     if (parentOwned) return comment
-    const boundary = root.contains(comment) ? root : wideBoundary
+    // `registryInfo` absent means `wideBoundary` already IS `root`, so the
+    // `contains()` check can only change the outcome when a wider boundary
+    // is actually in play — skip it (short-circuited by `&&`) otherwise.
+    const boundary = registryInfo && !root.contains(comment) ? wideBoundary : root
     let owned = true
     for (let el = comment.parentElement; el && el !== boundary; el = el.parentElement) {
       if (el.hasAttribute(BF_SCOPE)) {
