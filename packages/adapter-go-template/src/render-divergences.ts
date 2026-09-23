@@ -123,12 +123,12 @@ export const renderDivergences: RenderDivergences = {
   //
   // What's ACTUALLY still wrong on Go for both: `SelectTrigger`'s
   // `showPlaceholder={!value()}` (and `ComboboxTrigger`'s twin) never
-  // reaches the compiled `SelectTrigger`/`ComboboxTrigger` constructor at
-  // all — the field is referenced correctly in the child's OWN template
-  // (`{{if .ShowPlaceholder}}data-placeholder=...{{end}}`) but the
-  // caller's (`SelectBasicDemo`'s) constructor never populates or
-  // forwards it, so `data-placeholder` never renders regardless of
-  // `value()`. Unrelated to the portal mechanism; tracked under
+  // reaches the child — the field is referenced correctly in the child's
+  // OWN template (`{{if .ShowPlaceholder}}data-placeholder=...{{end}}`)
+  // but a unary-not prop value is dropped on the way in, so
+  // `data-placeholder` never renders regardless of `value()` (a plain
+  // `open()` or `value() === ''` reaches it fine). Unrelated to the
+  // portal mechanism; tracked under
   // `nested-child-dynamic-boolean-prop-dropped`.
   combobox: { limitation: 'nested-child-dynamic-boolean-prop-dropped' },
   select: { limitation: 'nested-child-dynamic-boolean-prop-dropped' },
