@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 444,
+    "totalFixtures": 445,
     "fixtures": {
       "combobox": {
         "blade": {
@@ -5678,11 +5678,11 @@
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
     "loop-row-child-children-attrs-frozen": {
-      "title": "A loop-row child component's forwarded JSX children never reach SSR when the loop's source array is a function-body-local const",
+      "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
       "kind": "silent",
-      "given": "a `.map()` loop row that calls a child component passing a JSX element as `children` (e.g. `<Chip><a href={sig() === item ? …}>…</a></Chip>` inside `items.map(item => …)`), where the loop's source array is declared as a `const` local to the component function body (not at module scope)",
-      "expected": "the row's markup — including the forwarded child element — renders at SSR the same way it does for a module-scope array",
-      "actual": "drops the whole loop from SSR silently on an adapter whose loop-array construction the shape defeats (go-template: the generated constructor never populates the corresponding struct slice field for a function-body-local array, only for a module-scope one)",
+      "given": "a static `.map()` loop row that calls a child component passing a JSX element as `children`, where that element reads an OUTER signal/memo — not just the row's own item (e.g. `<Chip><a href={active() === item ? …}>…</a></Chip>` inside `items.map(item => …)`, module- or function-scope array alike)",
+      "expected": "the row's markup — including the forwarded child element, evaluated against the signal's initial value — renders at SSR the same way a non-loop reference to the same signal does",
+      "actual": "drops the whole loop from SSR silently on an adapter whose per-row forwarded-children rendering has no path back to the enclosing component's own reactive state (go-template: the row's forwarded children render through a companion template executed as a fresh, independent invocation — `bf_tmpl`/`ExecuteTemplate`, `runtime/bf.go` — whose data is the row's own item only, so the signal's field is unreachable from inside it; the adapter detects this and conservatively leaves the loop unbaked rather than emit Go source that would crash at `go run` time)",
       "fixtures": [
         "loop-row-child-children-attrs"
       ],

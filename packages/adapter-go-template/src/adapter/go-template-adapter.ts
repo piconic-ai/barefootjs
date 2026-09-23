@@ -2041,22 +2041,65 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * `'interface{}'` for a loop over an inline primitive-literal array whose body
-   * renders the bare item (`[1,2,3,4,5].map(n => …{n}…)`), else null. Such
-   * scalar-item loops have no datum fields, so the value is carried on the
-   * wrapper's synthetic `BfLoopItem`; object/field loops and non-literal sources
-   * keep the datum-field path.
+   * Resolve a loop's array-source NAME to the local const it references —
+   * module-scope or function-scope alike (#2946/#3164). The one shared
+   * lookup every loop-array-baking call site uses (constructor-time value
+   * baking in `emitStaticBodyWrappers`, element-shape detection in
+   * `resolveLoopArraySourceParsed`) so they can't drift on what counts as a
+   * safely-bakeable const: never a name an enclosing loop's own callback
+   * param shadows (`staticLoopSourceBoundNames`, the coarse whole-component
+   * Set this class already computes for the SAME reason
+   * `getBakedStaticChildLoop` does — this runs both inside and outside the
+   * live tree walk), never a binding mutated after its declaration (#2910 —
+   * its initializer is a stale snapshot).
+   */
+  private resolveLoopArraySourceConst(name: string | undefined): ConstantInfo | null {
+    if (!name || this.state.staticLoopSourceBoundNames.has(name)) return null
+    return (
+      this.state.localConstants.find(
+        c =>
+          c.name === name &&
+          (c.origin?.scope === 'module' || c.origin?.scope === 'init') &&
+          !c.mutatedAfterDeclaration,
+      ) ?? null
+    )
+  }
+
+  /**
+   * A loop-array-source `ParsedExpr` is either an inline array-literal
+   * (`[1,2,3].map(...)`) or a bare identifier naming a local const whose
+   * initializer IS an array-literal. Resolves the latter to the former
+   * (via `resolveLoopArraySourceConst`) so every caller that needs to
+   * inspect the array's element shape (`scalarLiteralLoopGoType`) sees
+   * through the named reference the same way constructor-time baking does,
+   * instead of only working for an inline literal with no name.
+   */
+  private resolveLoopArraySourceParsed(arrayParsed: ParsedExpr | undefined): ParsedExpr | undefined {
+    if (!arrayParsed || arrayParsed.kind !== 'identifier') return arrayParsed
+    const local = this.resolveLoopArraySourceConst(arrayParsed.name)
+    return local?.parsed ?? arrayParsed
+  }
+
+  /**
+   * `'interface{}'` for a loop over a primitive-literal array — inline
+   * (`[1,2,3,4,5].map(n => …{n}…)`) or a named local const resolved through
+   * `resolveLoopArraySourceParsed` (module- or function-scope, #3164) —
+   * whose body renders the bare item, else null. Such scalar-item loops have
+   * no datum fields, so the value is carried on the wrapper's synthetic
+   * `BfLoopItem`; object/field loops and non-literal sources keep the
+   * datum-field path.
    */
   private scalarLiteralLoopGoType(
     arrayParsed: ParsedExpr | undefined,
     itemType: TypeInfo | null | undefined,
   ): string | null {
     if (this.resolveLoopDatumFields(itemType).length > 0) return null
-    if (!arrayParsed) return null
-    if (arrayParsed.kind !== 'array-literal' || arrayParsed.elements.length === 0) {
+    const resolved = this.resolveLoopArraySourceParsed(arrayParsed)
+    if (!resolved) return null
+    if (resolved.kind !== 'array-literal' || resolved.elements.length === 0) {
       return null
     }
-    for (const el of arrayParsed.elements) {
+    for (const el of resolved.elements) {
       const isStr = el.kind === 'literal' && el.literalType === 'string'
       // A numeric literal, or a unary-minus wrapping one (`-1`).
       const isNum =
@@ -2938,6 +2981,47 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
+  /**
+   * Conservative check: does any element attribute or text expression inside
+   * a static loop's forwarded body-children tree call a signal getter or
+   * memo (`callsReactiveGetters`, computed by the analyzer — #940/#942)?
+   * Such a reference has no live binding once `emitStaticBodyWrappers` bakes
+   * this static array's rows ahead of time: the row's forwarded children
+   * render through a SEPARATE `bf_tmpl`-executed companion define
+   * (`queueLoopBodyChildrenDefine`) whose data is the row's own item, with
+   * no path back to the parent's signal fields (Go's `$` resets on every
+   * `ExecuteTemplate` call — `runtime/bf.go`'s `TemplateFuncMap`). Baking
+   * the array anyway would let `go run` crash at template-EXECUTE time
+   * (`can't evaluate field ... in type ...`) instead of the existing,
+   * already-pinned silent-empty-loop fallback (`loop-row-child-children-attrs-frozen`)
+   * — a regression from silently-incomplete to loudly-broken-at-runtime.
+   * Any node shape this walk doesn't specifically clear (a conditional, a
+   * nested loop, a component, a slot) is treated as unsafe too, matching
+   * `analyzeBakeableStaticElementLoop`'s own "a loud/safe refusal beats
+   * silently wrong output" conservatism — reaching outer reactive state
+   * from a loop-forwarded child on Go is a separate, unsolved capability
+   * gap (#3164 fixes the array-source scope only), not something this
+   * narrow check attempts to resolve.
+   */
+  private bodyChildrenReferenceOuterReactiveState(nodes: readonly IRNode[]): boolean {
+    for (const node of nodes) {
+      switch (node.type) {
+        case 'text':
+          continue
+        case 'expression':
+          if (node.callsReactiveGetters) return true
+          continue
+        case 'element':
+          if (node.attrs.some(a => a.callsReactiveGetters)) return true
+          if (this.bodyChildrenReferenceOuterReactiveState(node.children)) return true
+          continue
+        default:
+          return true
+      }
+    }
+    return false
+  }
+
   private emitStaticBodyWrappers(
     lines: string[],
     ir: ComponentIR,
@@ -2945,18 +3029,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     staticWithBody: NestedComponentInfo[],
     emittedWrapperVars: Set<string>,
   ): void {
-    // Bake the module-const array into the constructor so wrappers get their
+    // Bake the array-source const into the constructor so wrappers get their
     // datum fields from the data (Input items carry only child-component params).
+    // The const can live at module scope OR be local to the component
+    // function body (#2946/#3164, `resolveLoopArraySourceConst`) — Go's
+    // `convertInitialValue` only needs the initializer's text/type, not
+    // where it's declared. This path used to accept module scope only, so
+    // a function-body-local array (`const opts = [...]` inside the
+    // component) baked nothing and the whole loop silently dropped from
+    // SSR (#3164).
     for (const nested of staticWithBody) {
-      const loopArray = nested.loopArray
-      const moduleConst = loopArray
-        ? (ir.metadata.localConstants ?? []).find(
-            c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
-          )
-        : null
+      // A forwarded child element reading an outer signal/memo has no path
+      // back to it from the row's own companion define — keep the existing
+      // silent-empty-loop fallback for that shape rather than baking Go
+      // source that crashes at `go run` time (see the doc comment above).
+      if (nested.bodyChildren && this.bodyChildrenReferenceOuterReactiveState(nested.bodyChildren)) {
+        continue
+      }
+      const found = this.resolveLoopArraySourceConst(nested.loopArray)
+      const localConst = found?.value && found.type ? found : null
       const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
-      let bakedValue = moduleConst?.type
-        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams, moduleConst.parsed)
+      let bakedValue = localConst?.type
+        ? convertInitialValue(this.emitCtx, localConst.value!, localConst.type, ir.metadata.propsParams, localConst.parsed)
         : null
       // Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no named const,
       // so bake the literal slice directly (else SSR renders an empty loop).

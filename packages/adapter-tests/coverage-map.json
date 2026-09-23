@@ -3759,6 +3759,22 @@
         "text"
       ]
     },
+    "loop-row-child-children-fn-scope-array": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-controlled-input": {
       "kinds": [
         "array-literal",
@@ -7140,19 +7156,19 @@
     }
   },
   "kindCounts": {
-    "array-literal": 120,
+    "array-literal": 121,
     "array-method": 72,
     "arrow": 77,
     "binary": 112,
     "call": 300,
     "conditional": 36,
-    "identifier": 422,
+    "identifier": 423,
     "index-access": 15,
-    "literal": 333,
+    "literal": 334,
     "logical": 53,
     "member": 247,
     "object-literal": 96,
-    "template-literal": 32,
+    "template-literal": 33,
     "unary": 30,
     "unsupported": 51
   },
@@ -7195,7 +7211,7 @@
     "literal:boolean": 74,
     "literal:null": 27,
     "literal:number": 155,
-    "literal:string": 223,
+    "literal:string": 224,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
