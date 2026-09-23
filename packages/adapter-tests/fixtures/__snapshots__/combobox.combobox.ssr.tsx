@@ -110,6 +110,11 @@ interface ComboboxTriggerProps extends ButtonHTMLAttributes {
    * `data-placeholder` renders correctly in the server-rendered HTML
    * instead of being added imperatively by `ComboboxValue`'s mount
    * effect only after hydration. Falls back to that effect when omitted.
+   *
+   * Only correct when the child `ComboboxValue` has a non-empty
+   * `placeholder` (the common case) — its mount effect sets
+   * `data-placeholder` solely when its OWN `placeholder` prop is truthy,
+   * so `!value()` alone over-fires SSR if `ComboboxValue` has none.
    */
   showPlaceholder?: boolean
   /** Trigger content (typically ComboboxValue) */
