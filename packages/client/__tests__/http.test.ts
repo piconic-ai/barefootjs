@@ -210,14 +210,14 @@ describe('sendRequest', () => {
     globalThis.fetch = originalFetch
   })
 
-  test('sends a JSON body with Content-Type: application/json', async () => {
+  test('sends a JSON body with Content-Type: application/json; charset=utf-8', async () => {
     const { calls } = stubFetch(() => new Response(JSON.stringify({ id: 1 }), { status: 200 }))
     const result = await sendRequest(http.post<{ id: number }>('/api/posts', { title: 'x' }))
     expect(result).toEqual({ id: 1 })
     expect(calls.length).toBe(1)
     expect(calls[0]!.init.method).toBe('POST')
     expect(calls[0]!.init.body).toBe(JSON.stringify({ title: 'x' }))
-    expect(new Headers(calls[0]!.init.headers).get('content-type')).toBe('application/json')
+    expect(new Headers(calls[0]!.init.headers).get('content-type')).toBe('application/json; charset=utf-8')
   })
 
   test('a request with no body sends no Content-Type header', async () => {
@@ -291,7 +291,7 @@ describe('sendRequest', () => {
     const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
     await sendRequest(http.post('/api/posts', { a: 1 }, { headers: { Authorization: 'Bearer x' } }))
     const headers = new Headers(calls[0]!.init.headers)
-    expect(headers.get('content-type')).toBe('application/json')
+    expect(headers.get('content-type')).toBe('application/json; charset=utf-8')
     expect(headers.get('authorization')).toBe('Bearer x')
   })
 })

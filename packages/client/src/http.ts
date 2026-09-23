@@ -296,9 +296,20 @@ async function parseErrorBody(response: Response): Promise<unknown> {
 }
 
 /**
+ * The `Content-Type` a request with a body is sent with. v0 always sends the
+ * body as `JSON.stringify(body)`, which fetch encodes as UTF-8, so the type is
+ * fixed rather than left to fetch: a string body otherwise goes out as
+ * `text/plain;charset=UTF-8` in browsers and Node, and with no type at all in
+ * Bun. The charset states the encoding explicitly for servers that don't
+ * assume UTF-8 for JSON.
+ */
+const JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
+
+/**
  * Send a descriptor built by `http` and resolve with its response. v0 is
  * JSON-only: a request with a body is sent with `Content-Type:
- * application/json` (unless `init.headers` overrides it), and a successful
+ * application/json; charset=utf-8` (unless `init.headers` sets a
+ * `Content-Type`, in any casing), and a successful
  * response is parsed with `response.json()` — except `HEAD`, whose successful
  * response resolves to `undefined` (a `HEAD` response has no body). A non-2xx
  * response rejects with `HttpError`, `HEAD` included; a network failure rejects
@@ -317,7 +328,7 @@ export async function sendRequest<T>(descriptor: HttpDescriptor<T>, signal?: Abo
   // (a plain-object spread keeps both keys, and fetch joins them into
   // "application/json, <override>").
   const headers = new Headers(descriptor.init?.headers)
-  if (hasBody && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  if (hasBody && !headers.has('Content-Type')) headers.set('Content-Type', JSON_CONTENT_TYPE)
 
   const response = await fetch(url, {
     method: descriptor.method,

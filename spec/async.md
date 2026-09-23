@@ -284,8 +284,8 @@ The function returns a **request descriptor** built by the `http` namespace:
 | third argument on any of them | `{ headers, credentials }` | |
 
 **Response handling is JSON-only in v0** (issue #3156). `sendRequest` — the internal function
-`createQuery` sends through — sends with `Content-Type: application/json` when there is a
-body, and parses a successful response with `response.json()`; a successful `HEAD` resolves
+`createQuery` sends through — sends with `Content-Type: application/json; charset=utf-8` when
+there is a body (a `Content-Type` in `init.headers`, in any casing, replaces it), and parses a successful response with `response.json()`; a successful `HEAD` resolves
 to `undefined` (a `HEAD` response has no body). A non-2xx response, `HEAD` included, rejects
 with `HttpError`, carrying `{ status: number; body: unknown }` — `body` is the response parsed
 as JSON when possible, else raw text, else `undefined`. A network failure (the `fetch` call
