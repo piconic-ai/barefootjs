@@ -217,15 +217,13 @@ describe('sendRequest', () => {
     expect(calls.length).toBe(1)
     expect(calls[0]!.init.method).toBe('POST')
     expect(calls[0]!.init.body).toBe(JSON.stringify({ title: 'x' }))
-    const headers = calls[0]!.init.headers as Record<string, string>
-    expect(headers['Content-Type']).toBe('application/json')
+    expect(new Headers(calls[0]!.init.headers).get('content-type')).toBe('application/json')
   })
 
   test('a request with no body sends no Content-Type header', async () => {
     const { calls } = stubFetch(() => new Response(JSON.stringify([]), { status: 200 }))
     await sendRequest(http.get('/api/posts', { page: 1 }))
-    const headers = (calls[0]!.init.headers ?? {}) as Record<string, string>
-    expect(headers['Content-Type']).toBeUndefined()
+    expect(new Headers(calls[0]!.init.headers).has('content-type')).toBe(false)
     expect(calls[0]!.url).toBe('/api/posts?page=1')
   })
 
@@ -277,7 +275,23 @@ describe('sendRequest', () => {
   test('init.headers can override the default Content-Type', async () => {
     const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
     await sendRequest(http.post('/api/posts', { a: 1 }, { headers: { 'Content-Type': 'application/vnd.api+json' } }))
-    const headers = calls[0]!.init.headers as Record<string, string>
-    expect(headers['Content-Type']).toBe('application/vnd.api+json')
+    expect(new Headers(calls[0]!.init.headers).get('content-type')).toBe('application/vnd.api+json')
+  })
+
+  // Header names are case-insensitive: an override spelled `content-type`
+  // must replace the default, not be sent alongside it as
+  // "application/json, text/plain".
+  test('an init.headers override of Content-Type is case-insensitive', async () => {
+    const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
+    await sendRequest(http.post('/api/posts', { a: 1 }, { headers: { 'content-type': 'application/vnd.api+json' } }))
+    expect(new Headers(calls[0]!.init.headers).get('content-type')).toBe('application/vnd.api+json')
+  })
+
+  test('other init.headers are sent alongside the default Content-Type', async () => {
+    const { calls } = stubFetch(() => new Response(JSON.stringify({}), { status: 200 }))
+    await sendRequest(http.post('/api/posts', { a: 1 }, { headers: { Authorization: 'Bearer x' } }))
+    const headers = new Headers(calls[0]!.init.headers)
+    expect(headers.get('content-type')).toBe('application/json')
+    expect(headers.get('authorization')).toBe('Bearer x')
   })
 })

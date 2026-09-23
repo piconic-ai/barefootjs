@@ -312,10 +312,12 @@ async function parseErrorBody(response: Response): Promise<unknown> {
 export async function sendRequest<T>(descriptor: HttpDescriptor<T>, signal?: AbortSignal): Promise<T> {
   const url = serializeParams(descriptor.url, descriptor.params)
   const hasBody = descriptor.body !== undefined
-  const headers: Record<string, string> = {
-    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-    ...(descriptor.init?.headers ?? {}),
-  }
+  // `Headers` compares names case-insensitively, so an override spelled
+  // `content-type` replaces the default instead of being sent alongside it
+  // (a plain-object spread keeps both keys, and fetch joins them into
+  // "application/json, <override>").
+  const headers = new Headers(descriptor.init?.headers)
+  if (hasBody && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
   const response = await fetch(url, {
     method: descriptor.method,
