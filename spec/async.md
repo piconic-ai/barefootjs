@@ -241,9 +241,17 @@ const [saved, saveComment] = createMutation(
 
 Both factories return `[value, action]` — noun, verb — the same shape as
 `createSignal`'s `[count, setCount]`. `action` is callable and carries two reactive
-accessors, `isPending` and `error`, the same accessor-on-a-factory-result pattern
-`createForm` already uses (`form.isSubmitting()`, `field.error()`). They are properties of
-the *action*, not of the value getter, so BF044 (a getter passed uncalled) does not apply.
+accessors, `isPending` and `error` — the same *shape* `createForm` already uses
+(`form.isSubmitting()`, `field.error()`), accessors on the action/form object rather than the
+value. But the seeding differs: `form.isSubmitting()` goes through
+`shouldAutoDeferReactiveBrand` (`packages/jsx/src/jsx-to-ir.ts`) and is never rendered
+server-side — it starts `undefined`/absent in SSR HTML and is only ever true on the client.
+`createQuery`'s `value()`, `isPending()` and `error()` are seeded during SSR instead (#3158):
+`isPending()` is `false` and `error()` is `undefined` on every adapter, as ordinary IR-visible
+values, so a component's pending/error branches (`{fetchPosts.isPending() ? <Spinner/> : …}`)
+render normally server-side and `renderToTest` can assert them — `createQuery`'s accessors
+must not take the auto-defer path. They are properties of the *action*, not of the value
+getter, so BF044 (a getter passed uncalled) does not apply.
 
 `createSignal` and `createMemo` are unchanged. `createQuery` and `createMutation` are
 **recognised composites** — at runtime a signal plus an effect, like `createForm` — that the
@@ -336,6 +344,15 @@ binding name) plus the values of the signals read synchronously, and `initial` i
 lazily (the first navigation back to the initial key re-fetches once). Pass `key` to opt back
 into eager priming. The read/write distinction is carried by the factory name, so a bare
 Promise never needs to declare a trigger.
+
+**Descriptors only in v0** (issue #3157). The bare-`Promise` shape above is design intent for
+a *later* PR — the compiler-assigned site-id keying, lazy priming and `key` option it
+describes are **not implemented**. The v0 runtime (`createQuery` in `@barefootjs/client`)
+accepts only an `http` descriptor: a request function that returns anything else — a
+`Promise`, `undefined`, a plain object — throws synchronously, naming `createQuery` and
+pointing at this section, the same run the function executes on to learn its initial key.
+Non-HTTP request functions stay **undecided** until that later PR designs the site-id keying
+for real.
 
 **Reuse the descriptor, not the query.** Share `postsAt = (page) => http.get('/api/posts', { page })`
 as an ordinary function and write `createQuery(() => postsAt(page()), …)` in each component.
