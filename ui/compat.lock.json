@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 440,
+    "totalFixtures": 442,
     "fixtures": {
       "combobox": {
         "blade": {
@@ -4020,6 +4020,22 @@
           ]
         }
       },
+      "nested-prop-member-signal-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nested-prop-member-signal-seed"
+          ]
+        }
+      },
+      "nested-prop-signal-child-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nested-prop-member-signal-seed"
+          ]
+        }
+      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "render",
@@ -5240,6 +5256,14 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "nested-prop-member-signal-seed": {
+        "description": "signals seeded from nested prop members render their seed at SSR (text, conditional, keyed loop)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-member-signal-seed.ts"
+      },
+      "nested-prop-signal-child-prop": {
+        "description": "a signal seeded from a nested prop member reaches a child component prop at SSR",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-prop-signal-child-prop.ts"
+      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -5668,6 +5692,20 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "nested-prop-member-signal-seed": {
+      "title": "Signal seeded from a member of an object-typed prop",
+      "kind": "silent",
+      "given": "a `createSignal` whose initial value is a member of an object-typed prop (`createSignal(initial.label)`, `createSignal(initial.items)`), read by the component as text, a conditional, or a loop source, or forwarded to a child component prop",
+      "expected": "the server HTML renders the seeded value, as if the member had been passed as a top-level prop",
+      "actual": "emits a `nil` seed for the signal, with no diagnostic: its own reads render the zero value (empty text, the falsy branch, an empty loop), and forwarding it to a child prop typed as a primitive makes the generated server code fail to compile",
+      "fixtures": [
+        "nested-prop-member-signal-seed",
+        "nested-prop-signal-child-prop"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "off-subset-callback-body": {

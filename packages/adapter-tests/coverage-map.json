@@ -4424,6 +4424,20 @@
         "text"
       ]
     },
+    "nested-prop-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "nested-prop-object-array-with-component": {
       "kinds": [
         "binary",
@@ -4438,6 +4452,17 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "nested-prop-signal-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },
@@ -7093,13 +7118,13 @@
     "array-method": 72,
     "arrow": 77,
     "binary": 111,
-    "call": 296,
+    "call": 298,
     "conditional": 36,
-    "identifier": 418,
+    "identifier": 420,
     "index-access": 15,
     "literal": 332,
     "logical": 53,
-    "member": 245,
+    "member": 247,
     "object-literal": 96,
     "template-literal": 32,
     "unary": 30,

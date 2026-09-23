@@ -128,6 +128,14 @@ export const renderDivergences: RenderDivergences = {
   // contract violation, just caught one step earlier (at construction
   // instead of at update).
   'loop-row-child-children-attrs': { limitation: 'loop-row-child-children-attrs-frozen' },
+  // A signal seeded from an object prop's member (`createSignal(initial.label)`)
+  // bakes `nil` into its own `interface{}` field: text reads render empty,
+  // a conditional takes its falsy branch, a loop over it renders no rows.
+  // Forwarded to a child's `string` Input field (`Label: nil`), `go run`
+  // fails to compile `types.go`. Found by the explore harness's adapter
+  // axis, where every scenario seeds its signals from an `initial` prop.
+  'nested-prop-member-signal-seed': { limitation: 'nested-prop-member-signal-seed' },
+  'nested-prop-signal-child-prop': { limitation: 'nested-prop-member-signal-seed' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

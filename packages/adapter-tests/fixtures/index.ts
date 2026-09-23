@@ -665,6 +665,8 @@ import { fixture as keyedLoopIndexReorder } from './keyed-loop-index-reorder'
 // twin of `select-value-no-match-ssr`.
 import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydration'
 import { fixture as signalOptionalInit } from './signal-optional-init'
+import { fixture as nestedPropSignalChildProp } from './nested-prop-signal-child-prop'
+import { fixture as nestedPropMemberSignalSeed } from './nested-prop-member-signal-seed'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
@@ -1179,6 +1181,8 @@ export const jsxFixtures: JSXFixture[] = [
   keyedLoopIndexReorder,
   selectOutOfRangeHydration,
   signalOptionalInit,
+  nestedPropSignalChildProp,
+  nestedPropMemberSignalSeed,
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,

@@ -67,7 +67,7 @@ import { captureDomState, diffDomState, type DomStateSnapshot } from './dom-stat
 import { normalizeForCompare, runSnapOracle, runThreePointOracle, waitOneFrame } from './oracle-core'
 import { runStep } from './interaction-runner'
 import { exploreQuarantineEntry, type ExploreOracleKind } from './explore-quarantine'
-import type { ExploreManifest, ExploreManifestEntry, ExploreStateEntry } from '../scripts/explore-generate'
+import type { ExploreAdapterRun, ExploreManifest, ExploreManifestEntry, ExplorePathEntry, ExploreStateEntry } from '../scripts/explore-generate'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const EXPLORE_DIR = resolve(HERE, '../.explore')
@@ -235,6 +235,8 @@ function assertTransitionAgrees(label: string, capture: TransitionCapture): void
 
 interface FailureArtifactInput {
   scenario: ExploreManifestEntry
+  /** SSR adapter of the run; `hono` for the reference run. */
+  adapter: string
   oracle: ExploreOracleKind
   subject: string
   actions: ReadonlyArray<string>
@@ -251,11 +253,13 @@ interface FailureArtifactInput {
  * overwrite.
  */
 function writeFailureArtifact(testInfo: TestInfo, input: FailureArtifactInput): void {
-  const { scenario, oracle, subject, actions, start, end, capture, error } = input
+  const { scenario, adapter, oracle, subject, actions, start, end, capture, error } = input
   const readOut = (file: string): string => readFileSync(resolve(EXPLORE_DIR, file), 'utf8')
-  const caseId = `${scenario.scenarioId}__${subject.replace(/[^a-zA-Z0-9]+/g, '_')}__${oracle}`
+  const adapterPrefix = adapter === 'hono' ? '' : `${adapter}__`
+  const caseId = `${adapterPrefix}${scenario.scenarioId}__${subject.replace(/[^a-zA-Z0-9]+/g, '_')}__${oracle}`
   const artifact = {
     commit: manifest?.commit ?? 'unknown',
+    adapter,
     scenarioId: scenario.scenarioId,
     componentName: scenario.componentName,
     oracle,
@@ -316,9 +320,28 @@ test.describe('bounded state-space exploration', () => {
     })
   }
 
+  /**
+   * An adapter run's states in the reference run's `ExploreStateEntry`
+   * shape — same index / key / state, the adapter's own SSR file and
+   * fixture id — so every oracle and the failure artifact treat both
+   * runs alike.
+   */
+  function adapterStates(run: ExploreAdapterRun, scenario: ExploreManifestEntry): ExploreStateEntry[] {
+    const byIndex = new Map(scenario.states!.map(s => [s.index, s]))
+    return run.states!.map(s => ({ ...byIndex.get(s.index)!, fixtureId: s.fixtureId, htmlFile: s.htmlFile, clientJsFile: s.clientJsFile }))
+  }
+
+  const okAdapterRuns = (manifest.adapterRuns ?? []).filter(
+    run => run.status === 'ok' && okScenarios.some(s => s.scenarioId === run.scenarioId),
+  )
+
   const fixturesById = new Map<string, JSXFixture>()
   for (const scenario of okScenarios) {
     for (const state of scenario.states) fixturesById.set(state.fixtureId, loadStateFixture(scenario, state))
+  }
+  for (const run of okAdapterRuns) {
+    const scenario = okScenarios.find(s => s.scenarioId === run.scenarioId)!
+    for (const state of adapterStates(run, scenario)) fixturesById.set(state.fixtureId, loadStateFixture(scenario, state))
   }
 
   let server: Server
@@ -332,14 +355,15 @@ test.describe('bounded state-space exploration', () => {
     await new Promise<void>(resolveClose => server.close(() => resolveClose()))
   })
 
-  /** Mirrors `pairwise.playwright.ts`'s `runQuarantined`, keyed on the (scenario, subject, oracle) triple. */
+  /** Mirrors `pairwise.playwright.ts`'s `runQuarantined`, keyed on the (adapter, scenario, subject, oracle) tuple. */
   async function runQuarantined(
+    adapter: string,
     scenarioId: string,
     subject: string,
     oracle: ExploreOracleKind,
     assertion: () => Promise<void>,
   ): Promise<void> {
-    const entry = exploreQuarantineEntry(scenarioId, subject, oracle)
+    const entry = exploreQuarantineEntry(scenarioId, subject, oracle, adapter)
     if (!entry) {
       await assertion()
       return
@@ -352,10 +376,84 @@ test.describe('bounded state-space exploration', () => {
     }
     if (failure === undefined) {
       throw new Error(
-        `explore-quarantine.ts entry for [${scenarioId}]/[${subject}]/'${oracle}' is stale — the case now passes this oracle; ` +
+        `explore-quarantine.ts entry for [${adapter}]/[${scenarioId}]/[${subject}]/'${oracle}' is stale — the case now passes this oracle; ` +
           `delete the entry (and drop the reproduction from limitation '${entry.limitation}' if it was its last citation).`,
       )
     }
+  }
+
+  function registerSnapTest(adapter: string, scenario: ExploreManifestEntry, state: ExploreStateEntry, fixture: JSXFixture): void {
+    const subject = `state:s${state.index}`
+    test(`[snap] ${subject} ${state.key}: hydration is a no-op on SSR state`, async ({ page }, testInfo) => {
+      await runQuarantined(adapter, scenario.scenarioId, subject, 'snap', async () => {
+        try {
+          await runSnapOracle(page, fixture, baseUrl)
+        } catch (error) {
+          writeFailureArtifact(testInfo, { scenario, adapter, oracle: 'snap', subject, actions: [], start: state, end: state, error })
+          throw error
+        }
+      })
+    })
+  }
+
+  interface TransitionLeg {
+    oracle: ExploreOracleKind
+    identityOracle: ExploreOracleKind
+    mode: 'hydrate' | 'csr-mount'
+  }
+
+  const HYDRATE_LEG: TransitionLeg = { oracle: 'transition-hydrate', identityOracle: 'identity-hydrate', mode: 'hydrate' }
+  const CSR_LEG: TransitionLeg = { oracle: 'transition-csr', identityOracle: 'identity-csr', mode: 'csr-mount' }
+
+  function registerTransitionTest(
+    adapter: string,
+    scenario: ExploreManifestEntry,
+    path: ExplorePathEntry,
+    start: ExploreStateEntry,
+    end: ExploreStateEntry,
+    { oracle, identityOracle, mode }: TransitionLeg,
+  ): void {
+    const startFixture = fixturesById.get(start.fixtureId)!
+    const endFixture = fixturesById.get(end.fixtureId)!
+    test(`[${oracle}/${identityOracle}] ${path.id} → s${end.index}: incremental update equals fresh render, keyed rows kept`, async ({ page }, testInfo) => {
+      test.setTimeout(30_000)
+      const label = `${adapter === 'hono' ? '' : `[${adapter}] `}${scenario.scenarioId} ${path.id} (${mode})`
+      // One capture feeds both oracles; each is quarantined on its own
+      // key, and both always run so a quarantined DOM divergence can't
+      // mask an identity regression on the same path (or vice versa).
+      let capture: TransitionCapture | undefined
+      let captureError: unknown
+      try {
+        capture = await captureTransition(page, mode, startFixture, endFixture, path.actions, baseUrl)
+      } catch (error) {
+        captureError = error
+      }
+      // Identity is only defined once the clicked leg completed: a capture
+      // failure (a missing button, a failed load) is the transition
+      // oracle's alone.
+      const checks: Array<{ kind: ExploreOracleKind; assert: (c: TransitionCapture) => void }> = [
+        { kind: oracle, assert: c => assertTransitionAgrees(label, c) },
+        ...(captureError === undefined ? [{ kind: identityOracle, assert: (c: TransitionCapture) => assertKeyedIdentity(label, c) }] : []),
+      ]
+      const failures: unknown[] = []
+      for (const { kind, assert } of checks) {
+        try {
+          await runQuarantined(adapter, scenario.scenarioId, path.id, kind, async () => {
+            try {
+              if (captureError !== undefined) throw captureError
+              assert(capture!)
+            } catch (error) {
+              writeFailureArtifact(testInfo, { scenario, adapter, oracle: kind, subject: path.id, actions: path.actions, start, end, capture, error })
+              throw error
+            }
+          })
+        } catch (error) {
+          failures.push(error)
+        }
+      }
+      if (failures.length === 1) throw failures[0]
+      if (failures.length > 1) throw new Error(failures.map(f => (f instanceof Error ? f.message : String(f))).join('\n\n'))
+    })
   }
 
   for (const scenario of okScenarios) {
@@ -366,24 +464,14 @@ test.describe('bounded state-space exploration', () => {
       for (const state of scenario.states) {
         const fixture = fixturesById.get(state.fixtureId)!
         const subject = `state:s${state.index}`
-
-        test(`[snap] ${subject} ${state.key}: hydration is a no-op on SSR state`, async ({ page }, testInfo) => {
-          await runQuarantined(scenario.scenarioId, subject, 'snap', async () => {
-            try {
-              await runSnapOracle(page, fixture, baseUrl)
-            } catch (error) {
-              writeFailureArtifact(testInfo, { scenario, oracle: 'snap', subject, actions: [], start: state, end: state, error })
-              throw error
-            }
-          })
-        })
+        registerSnapTest('hono', scenario, state, fixture)
 
         test(`[three-point] ${subject} ${state.key}: SSR ≡ hydrated ≡ csr-mount`, async ({ page }, testInfo) => {
-          await runQuarantined(scenario.scenarioId, subject, 'three-point', async () => {
+          await runQuarantined('hono', scenario.scenarioId, subject, 'three-point', async () => {
             try {
               await runThreePointOracle(page, fixture, baseUrl)
             } catch (error) {
-              writeFailureArtifact(testInfo, { scenario, oracle: 'three-point', subject, actions: [], start: state, end: state, error })
+              writeFailureArtifact(testInfo, { scenario, adapter: 'hono', oracle: 'three-point', subject, actions: [], start: state, end: state, error })
               throw error
             }
           })
@@ -393,54 +481,44 @@ test.describe('bounded state-space exploration', () => {
       for (const path of scenario.paths) {
         if (path.actions.length === 0) continue
         const end = stateByIndex.get(path.toIndex)!
-        const startFixture = fixturesById.get(initial.fixtureId)!
-        const endFixture = fixturesById.get(end.fixtureId)!
+        for (const leg of [HYDRATE_LEG, CSR_LEG]) registerTransitionTest('hono', scenario, path, initial, end, leg)
+      }
+    })
+  }
 
-        const legs: Array<{ oracle: ExploreOracleKind; identityOracle: ExploreOracleKind; mode: 'hydrate' | 'csr-mount' }> = [
-          { oracle: 'transition-hydrate', identityOracle: 'identity-hydrate', mode: 'hydrate' },
-          { oracle: 'transition-csr', identityOracle: 'identity-csr', mode: 'csr-mount' },
-        ]
-        for (const { oracle, identityOracle, mode } of legs) {
-          test(`[${oracle}/${identityOracle}] ${path.id} → s${end.index}: incremental update equals fresh render, keyed rows kept`, async ({ page }, testInfo) => {
-            test.setTimeout(30_000)
-            const label = `${scenario.scenarioId} ${path.id} (${mode})`
-            // One capture feeds both oracles; each is quarantined on its own
-            // key, and both always run so a quarantined DOM divergence can't
-            // mask an identity regression on the same path (or vice versa).
-            let capture: TransitionCapture | undefined
-            let captureError: unknown
-            try {
-              capture = await captureTransition(page, mode, startFixture, endFixture, path.actions, baseUrl)
-            } catch (error) {
-              captureError = error
-            }
-            // Identity is only defined once the clicked leg completed: a
-            // capture failure (a missing button, a failed load) is the
-            // transition oracle's alone.
-            const checks: Array<{ kind: ExploreOracleKind; assert: (c: TransitionCapture) => void }> = [
-              { kind: oracle, assert: c => assertTransitionAgrees(label, c) },
-              ...(captureError === undefined ? [{ kind: identityOracle, assert: (c: TransitionCapture) => assertKeyedIdentity(label, c) }] : []),
-            ]
-            const failures: unknown[] = []
-            for (const { kind, assert } of checks) {
-              try {
-                await runQuarantined(scenario.scenarioId, path.id, kind, async () => {
-                  try {
-                    if (captureError !== undefined) throw captureError
-                    assert(capture!)
-                  } catch (error) {
-                    writeFailureArtifact(testInfo, { scenario, oracle: kind, subject: path.id, actions: path.actions, start: initial, end, capture, error })
-                    throw error
-                  }
-                })
-              } catch (error) {
-                failures.push(error)
-              }
-            }
-            if (failures.length === 1) throw failures[0]
-            if (failures.length > 1) throw new Error(failures.map(f => (f instanceof Error ? f.message : String(f))).join('\n\n'))
-          })
-        }
+  // Adapter axis: the same states, SSR-rendered by another adapter's real
+  // backend and hydrated by the same client JS. Only the hydrate leg and
+  // the per-state snap apply — csr-mount (and so `three-point` /
+  // `transition-csr`) renders no SSR markup and is adapter-independent.
+  //
+  // `render` gates the rest: a run that failed to render some state
+  // (`broken` — e.g. generated server code that does not compile) or
+  // whose backend toolchain was missing (`unavailable`) registers one
+  // failing test instead of silently dropping the adapter's cases. A
+  // `refused` run is a loud compile-time refusal, which is the contract
+  // for an unsupported shape, so it registers nothing.
+  for (const run of manifest.adapterRuns ?? []) {
+    if (run.status !== 'broken' && run.status !== 'unavailable') continue
+    if (!okScenarios.some(s => s.scenarioId === run.scenarioId)) continue
+    test.describe(`[${run.adapter}] ${run.scenarioId}`, () => {
+      test(`[render] every reachable state renders on the adapter's backend`, async () => {
+        await runQuarantined(run.adapter, run.scenarioId, 'scenario', 'render', async () => {
+          throw new Error(`[${run.adapter}] ${run.scenarioId}: ${run.status} — ${run.reason ?? '(no reason recorded)'}`)
+        })
+      })
+    })
+  }
+
+  for (const run of okAdapterRuns) {
+    const scenario = okScenarios.find(s => s.scenarioId === run.scenarioId)!
+    const stateByIndex = new Map(adapterStates(run, scenario).map(s => [s.index, s]))
+    const initial = stateByIndex.get(0)!
+
+    test.describe(`[${run.adapter}] ${run.scenarioId}`, () => {
+      for (const state of stateByIndex.values()) registerSnapTest(run.adapter, scenario, state, fixturesById.get(state.fixtureId)!)
+      for (const path of scenario.paths) {
+        if (path.actions.length === 0) continue
+        registerTransitionTest(run.adapter, scenario, path, initial, stateByIndex.get(path.toIndex)!, HYDRATE_LEG)
       }
     })
   }
