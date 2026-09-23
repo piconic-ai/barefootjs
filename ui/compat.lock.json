@@ -2006,55 +2006,55 @@
         "blade": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         }
       },
@@ -4595,55 +4595,55 @@
         "blade": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "ref-effect-attr-state-ssr"
+            "nested-child-static-prop-text-slot-elided"
           ]
         }
       },
@@ -5778,7 +5778,17 @@
         "combobox",
         "select"
       ],
-      "adapters": []
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "nested-prop-member-signal-seed": {
       "title": "Signal seeded from a member of an object-typed prop",
@@ -5855,17 +5865,7 @@
       "fixtures": [
         "ref-mount-attr"
       ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
+      "adapters": []
     },
     "rich-typed-prop-hydration": {
       "title": "Rich-typed prop read by client code",

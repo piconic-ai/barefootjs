@@ -5111,6 +5111,13 @@
         "text"
       ]
     },
+    "ref-mount-attr": {
+      "kinds": [
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": []
+    },
     "region-boundary": {
       "kinds": [],
       "axes": [],
@@ -5370,6 +5377,7 @@
         "logical:??",
         "logical:||",
         "member:computed",
+        "unary:!",
         "unary:-"
       ],
       "contexts": [
@@ -7138,7 +7146,7 @@
     "object-literal": 96,
     "template-literal": 32,
     "unary": 30,
-    "unsupported": 51
+    "unsupported": 52
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -7196,7 +7204,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 22,
+    "unary:!": 23,
     "unary:-": 11
   },
   "uncoveredKinds": [
