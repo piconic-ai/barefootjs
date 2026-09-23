@@ -46,4 +46,15 @@ export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuaranti
       "the <a> children element's href/data-current attributes never patch after the toggle click — no effect is ever emitted for them, so they stay at their SSR values",
     limitation: 'loop-row-child-children-attrs-frozen',
   },
+  // A diamond (one signal → two memos → one effect) is dispatched
+  // synchronously in subscription order with no topological stage, so the
+  // effect's first re-run sees the first memo updated and the second
+  // stale, and it runs three times per write. The fixture's `interactions`
+  // describe the CONTRACT (one run per write, consistent reads — see
+  // `fixtures/diamond-propagation.ts`) and fail today.
+  'diamond-propagation': {
+    reason:
+      'after one click `.runs` reads 3 and `.glitches` reads 1 — the effect re-runs once per memo recompute plus once for its own subscription, and its first re-run observes `b` updated while `c` is stale',
+    limitation: 'diamond-propagation-glitch',
+  },
 }

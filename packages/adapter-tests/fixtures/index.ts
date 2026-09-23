@@ -723,6 +723,13 @@ import { fixture as compositeRowChildRestBagPropHoisted } from './composite-row-
 // `fixture-hydrate-quarantine.ts` (fixture-only, per CLAUDE.md's
 // "reproducible defect lands as a fixture" rule — not fixed here).
 import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-attrs'
+// Diamond propagation: one signal read through two memos by one effect.
+// The runtime dispatches synchronously in subscription order, so the
+// effect's first re-run sees a half-updated memo pair and it runs three
+// times per write — no diagnostic, silent, invisible in the settled DOM.
+// Registry limitation `diamond-propagation-glitch`; quarantined in
+// `fixture-hydrate-quarantine.ts` (fixture-only, not fixed here).
+import { fixture as diamondPropagation } from './diamond-propagation'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1190,4 +1197,5 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildRestBagProp,
   compositeRowChildRestBagPropHoisted,
   loopRowChildChildrenAttrs,
+  diamondPropagation,
 ]

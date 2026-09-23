@@ -261,6 +261,19 @@ would wrap; that made `createQuery`'s argument the one place outside JSX where a
 is re-evaluated, so the explicit function stays — one token buys the absence of a special
 rule.
 
+**One send per tick.** The function is an effect body, and the reactive runtime dispatches a
+write synchronously in subscription order with no topological stage: behind a diamond (one
+signal read through two memos) the body is re-run once with a half-updated snapshot before
+the consistent one (pinned by the `diamond-propagation` fixture under the
+`diamond-propagation-glitch` registry limitation,
+`packages/adapter-tests/limitations/diamond-propagation-glitch.ts`). Because building a
+descriptor is pure (below), that extra evaluation is harmless as long as nothing is sent
+from inside the run: the runtime records the descriptor each run produces and sends once, at
+the end of the current tick (a microtask), so only the last key a tick produced goes out. This
+is the same "same tick" window §7.7's batcher uses, and it delays nothing the user can see —
+the send still leaves before the handler's frame is painted. A bare-`Promise` function (below)
+gets no such protection, which is one more reason to prefer descriptors.
+
 The function returns a **request descriptor** built by the `http` namespace:
 
 | Constructor | Returns | Notes |
@@ -408,6 +421,8 @@ mode A and mode B via `renderToTest` with and without `initial`; the method chec
 (`createMutation` with a safe method warns).
 
 Runtime: descriptor purity and key stability (body serialisation independent of key order);
+one send per tick (a diamond in the function's dependencies — the `diamond-propagation`
+fixture's shape — produces exactly one request, keyed by the consistent snapshot);
 the init rule (`initial` present → no send, cached, re-fetched after `ttl`; absent → send);
 mutation trigger and `invalidates`; the generation guard on `1 → 2 → 1` dependency changes;
 previous-value retention across pending and error, `error` cleared by the next success;
