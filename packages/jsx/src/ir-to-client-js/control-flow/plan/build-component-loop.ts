@@ -12,6 +12,7 @@
  */
 
 import type { TopLevelLoop } from '../../types.ts'
+import type { IRNode } from '../../../types.ts'
 import {
   buildChainedArrayExpr,
   varSlotId,
@@ -30,6 +31,31 @@ import { irChildrenToJsExpr, renderPreamble } from '../../html-template.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from './types.ts'
 import { internalInvariant } from '../../../errors.ts'
+
+/**
+ * Collect the `slotId` of every `expression` leaf reachable through
+ * `nodes` — recursing only through `text`/`expression`/text-only
+ * `conditional` nodes, mirroring exactly the shape `isTextOnlyConditional`
+ * validates. Used to find which of a component-root loop's own
+ * `elem.bindings.reactiveTexts` entries (collected via the generic,
+ * depth-unaware `collectLoopChildBindings` walk — see the comment below)
+ * are already patched by a NESTED child component's `childrenTextEffect`,
+ * so the row-level wiring doesn't ALSO patch them (#3143 follow-up: two
+ * independent effects racing to write — and, before #3064's marker-aware
+ * patch, one destroying the other's `<!--bf:^sN-->` markers outright —
+ * caught by `update-expected-html` fixture drift on `data-table`, whose
+ * `TableRow` loop forwards `<TableCell>{payment.id}</TableCell>` nested
+ * components).
+ */
+function collectTextOnlySlotIds(nodes: readonly IRNode[], into: Set<string>): void {
+  for (const node of nodes) {
+    if (node.type === 'expression') {
+      if (node.slotId) into.add(node.slotId)
+    } else if (node.type === 'conditional' && isTextOnlyConditional(node)) {
+      collectTextOnlySlotIds([node.whenTrue, node.whenFalse], into)
+    }
+  }
+}
 
 /** @internal — prefer `buildLoopPlan`. */
 export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?: string): ComponentLoopPlan {
@@ -56,6 +82,10 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
 
   // Only init components at loopDepth 0 — inner-loop components are handled by their own loop
   const outerNestedComps = (elem.nestedComponents ?? []).filter(c => !c.loopDepth)
+  // Slot ids already patched by a nested component's OWN `childrenTextEffect`
+  // below — collected up front so the row-level reactive-texts wiring further
+  // down can exclude them (see the comment on that filter for why).
+  const nestedChildrenTextEffectSlotIds = new Set<string>()
   const nestedComps: NestedComponentInit[] = outerNestedComps.map(comp => {
     const isTextOnly = comp.children?.length
       ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
@@ -64,6 +94,9 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     const childrenFreeIds = isTextOnly && comp.children ? irChildrenFreeIds(comp.children) : undefined
     const childrenRefsLoop = rawChildrenExpr != null && childrenFreeIds != null
       && (childrenFreeIds.has(elem.param) || (!!elem.index && childrenFreeIds.has(elem.index)))
+    if (childrenRefsLoop && comp.children) {
+      collectTextOnlySlotIds(comp.children, nestedChildrenTextEffectSlotIds)
+    }
     return {
       componentName: comp.name,
       selector: buildCompSelector(comp),
@@ -88,9 +121,19 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
   // conditionals already used fixes it — see `stringifyComponentLoop`'s
   // gate, widened alongside this to actually emit the effects on the
   // no-nested-components ("simple") path too.
-  const hasReactiveEffects =
-    elem.bindings.reactiveAttrs.length > 0
-    || elem.bindings.reactiveTexts.length > 0
+  //
+  // The SAME depth-unaware collector also reaches text expressions that
+  // are a NESTED component's own children (`<TableRow><TableCell>
+  // {payment.id}</TableCell></TableRow>`) — those already get their own
+  // patch via `nestedComps[].childrenTextEffect` above, so wiring them
+  // AGAIN here would emit two independent effects for the same slot (see
+  // `collectTextOnlySlotIds`'s doc comment). Filtered out before either
+  // the presence check or the plan itself sees them.
+  const rowReactiveTexts = nestedChildrenTextEffectSlotIds.size > 0
+    ? elem.bindings.reactiveTexts.filter(t => !nestedChildrenTextEffectSlotIds.has(t.slotId))
+    : elem.bindings.reactiveTexts
+  const hasReactiveEffects = elem.bindings.reactiveAttrs.length > 0
+    || rowReactiveTexts.length > 0
     || elem.bindings.conditionals.length > 0
 
   return {
@@ -121,7 +164,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
           attrs: elem.bindings.reactiveAttrs,
-          texts: elem.bindings.reactiveTexts,
+          texts: rowReactiveTexts,
           conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,

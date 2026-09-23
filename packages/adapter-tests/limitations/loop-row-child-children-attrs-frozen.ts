@@ -15,6 +15,6 @@ export default defineLimitation({
   expected:
     "the row's markup — including the forwarded child element — renders at SSR the same way it does for a module-scope array",
   actual:
-    "on an adapter whose loop-array construction the shape defeats (go-template: the generated constructor never populates the corresponding struct slice field for a function-body-local array, only for a module-scope one), the whole loop is silently absent from SSR",
+    "drops the whole loop from SSR silently on an adapter whose loop-array construction the shape defeats (go-template: the generated constructor never populates the corresponding struct slice field for a function-body-local array, only for a module-scope one)",
   fixtures: ['loop-row-child-children-attrs'],
 })

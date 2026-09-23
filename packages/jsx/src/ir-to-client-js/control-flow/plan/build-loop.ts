@@ -33,6 +33,7 @@ import {
   loopKeyFn,
   buildChildRefBindings,
   buildStaticChildRefBindings,
+  hasReactiveLoopBindings,
 } from '../shared.ts'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildPlainRowCore } from './build-plain-row.ts'
@@ -112,9 +113,7 @@ export function buildPlainLoopPlan(
   profileComponentName?: string,
   lazyScope?: LazyRowScopeInfo,
 ): PlainLoopPlan {
-  const hasReactive = elem.bindings.reactiveAttrs.length > 0
-    || elem.bindings.reactiveTexts.length > 0
-    || elem.bindings.conditionals.length > 0
+  const hasReactive = hasReactiveLoopBindings(elem.bindings)
 
   // flatMap descriptor mode: reconcile the FLATTENED leaves. The source
   // accessor runs the flatMap body (plain items — per-item signals don't

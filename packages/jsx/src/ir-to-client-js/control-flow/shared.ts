@@ -12,7 +12,7 @@
  *   control-flow.ts -> control-flow/{plan,stringify}/* -> shared.ts
  */
 
-import type { LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
+import type { LoopChildBindings, LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
 import type { IRLoopChildComponent, LoopParamBinding } from '../../types.ts'
 import { preambleAnalysisText } from '../../types.ts'
 import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
@@ -406,6 +406,21 @@ export function buildCompSelector(comp: { slotId?: string | null; name: string }
  * For new elements (CSR): replaces placeholders with createComponent.
  * For SSR elements (hydration): finds scope elements and calls initChild.
  */
+/**
+ * Whether a loop row's collected bindings need a `ReactiveEffectsPlan` at
+ * all (#3143). The three-field check (`reactiveAttrs` / `reactiveTexts` /
+ * `conditionals`) was independently duplicated across the plain, static,
+ * composite and component-root loop builders — see CLAUDE.md's "One
+ * decision, two implementations" note. This is the single implementation;
+ * builders that build their own `LoopChildBindings`-shaped value (e.g. a
+ * `BranchLoop`'s `.bindings`) call it too since the field shape is shared.
+ */
+export function hasReactiveLoopBindings(bindings: LoopChildBindings): boolean {
+  return bindings.reactiveAttrs.length > 0
+    || bindings.reactiveTexts.length > 0
+    || bindings.conditionals.length > 0
+}
+
 /** Check if an IR node is a conditional whose branches are text/expression only. */
 export function isTextOnlyConditional(node: { type: string; [k: string]: any }): boolean {
   if (node.type !== 'conditional') return false
