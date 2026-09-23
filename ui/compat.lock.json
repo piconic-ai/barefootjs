@@ -2000,16 +2000,8 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 444,
+    "totalFixtures": 445,
     "fixtures": {
-      "combobox": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nested-child-dynamic-boolean-prop-dropped"
-          ]
-        }
-      },
       "component-root-client-scope": {
         "blade": {
           "kind": "render",
@@ -4543,14 +4535,6 @@
           ]
         }
       },
-      "select": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nested-child-dynamic-boolean-prop-dropped"
-          ]
-        }
-      },
       "signal-object-spread-init": {
         "go-template": {
           "kind": "refusal",
@@ -5130,10 +5114,6 @@
       }
     },
     "docs": {
-      "combobox": {
-        "description": "site/ui Combobox demo — typed filtering hides items via the hidden attribute; selection closes and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/combobox.ts"
-      },
       "component-root-client-scope": {
         "description": "a client component whose root is a child-component call renders its own scope comment so it hydrates",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-root-client-scope.ts"
@@ -5241,10 +5221,6 @@
       "rich-prop-client-read": {
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
-      },
-      "select": {
-        "description": "site/ui Select demo — portal listbox selection round trip: item click writes the signal, closes,…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/select.ts"
       },
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
@@ -5670,20 +5646,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "nested-child-dynamic-boolean-prop-dropped": {
-      "title": "A negated expression passed as a child component prop is dropped from SSR",
-      "kind": "silent",
-      "given": "a component that renders a child component and passes it a prop whose value is a unary-not expression (`showPlaceholder={!value()}`, `{!open()}`, `{!props.v}`) — the shape ComboboxTrigger's/SelectTrigger's `showPlaceholder` prop uses; the same prop passed a plain signal read or a comparison is not affected",
-      "expected": "the child's SSR HTML reflects the negated value (the conditional attribute present when the expression is truthy, absent when falsy)",
-      "actual": "drops the prop value before it reaches the child — the child's own template still guards the conditional attribute correctly, but its field keeps the zero value, so the attribute never renders regardless of the expression's real value",
-      "fixtures": [
-        "combobox",
-        "select"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "nested-prop-member-signal-seed": {

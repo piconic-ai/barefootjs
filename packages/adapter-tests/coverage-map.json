@@ -4289,6 +4289,24 @@
         "text"
       ]
     },
+    "nested-child-negated-prop": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nested-elements": {
       "kinds": [
         "call",
@@ -7136,16 +7154,16 @@
     "array-method": 72,
     "arrow": 77,
     "binary": 111,
-    "call": 299,
-    "conditional": 36,
-    "identifier": 421,
+    "call": 300,
+    "conditional": 37,
+    "identifier": 422,
     "index-access": 15,
-    "literal": 332,
+    "literal": 333,
     "logical": 53,
-    "member": 247,
+    "member": 248,
     "object-literal": 96,
     "template-literal": 32,
-    "unary": 30,
+    "unary": 31,
     "unsupported": 52
   },
   "axisCounts": {
@@ -7187,7 +7205,7 @@
     "literal:boolean": 73,
     "literal:null": 27,
     "literal:number": 154,
-    "literal:string": 223,
+    "literal:string": 224,
     "logical:&&": 7,
     "logical:??": 44,
     "logical:||": 17,
@@ -7204,7 +7222,7 @@
     "sort-target:field": 7,
     "sort-target:self": 1,
     "sort:multi-key": 1,
-    "unary:!": 23,
+    "unary:!": 24,
     "unary:-": 11
   },
   "uncoveredKinds": [
