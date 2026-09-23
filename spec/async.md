@@ -279,13 +279,34 @@ The function returns a **request descriptor** built by the `http` namespace:
 | Constructor | Returns | Notes |
 |---|---|---|
 | `http.get(url, params?)`, `http.head(url, params?)` | descriptor with a *safe* method | `params` values are `string \| number \| boolean \| (string \| number)[] \| null \| undefined`; `null`/`undefined`/`''` are omitted, an array appends one entry per member. **Not** `queryHref`'s string-only rule — descriptors are never lowered to an SSR template, so the SSR-parity reason for string-only values doesn't apply, and `0`/`false` are kept (stringified, not treated as falsy) |
-| `http.query(url, body?)` | descriptor with a *safe* method (HTTP QUERY: a read with a body) | `body` is JSON |
-| `http.post(url, body?)`, `http.put(url, body?)`, `http.patch(url, body?)`, `http.delete(url, body?)` | descriptor with an *unsafe* method | `body` is JSON |
+| `http.query(url, body?)` | descriptor with a *safe* method (HTTP QUERY: a read with a body) | `body` per the body rules below |
+| `http.post(url, body?)`, `http.put(url, body?)`, `http.patch(url, body?)`, `http.delete(url, body?)` | descriptor with an *unsafe* method | `body` per the body rules below |
 | third argument on any of them | `{ headers, credentials }` | |
 
+**Bodies are JSON by default; anything else fetch can send is sent as fetch would send it.**
+The body's runtime type decides how it goes on the wire, and the same decision drives its
+part of the cache key:
+
+| `body` | Sent as | Default `Content-Type` | Key |
+|---|---|---|---|
+| plain object, array, number, boolean, `null` | `JSON.stringify(body)` | `application/json; charset=utf-8` | stable JSON (object keys sorted) |
+| string | as-is | `text/plain;charset=UTF-8` | the text |
+| `URLSearchParams` | as-is | fetch's (`application/x-www-form-urlencoded`) | the encoded text |
+| `FormData` | as-is | fetch's (multipart, with its boundary) | the entries, if all are strings; otherwise unique to the descriptor |
+| `Blob` / `File` | as-is | fetch's (the Blob's own type) | the Blob's identity (a Blob cannot change) |
+| `ArrayBuffer` / an `ArrayBuffer` view | as-is | none | unique to the descriptor |
+| `ReadableStream` | refused when the descriptor is built | — | — |
+
+A `Content-Type` in `init.headers`, in any casing, replaces the default. The descriptor holds its
+own copy of the body (JSON deep-copied and frozen, `FormData` / `URLSearchParams` rebuilt, bytes
+copied), so a later write to the caller's object reaches neither the key nor the request. A body
+whose contents cannot be compared cheaply gets a key no other descriptor shares: it is never
+served from another descriptor's cache entry or joined to another's in-flight request, at the
+cost of no deduplication. A stream is refused because a descriptor can be sent more than once
+(a dependency change, `action()`) and a stream can be read only once.
+
 **Response handling is JSON-only in v0** (issue #3156). `sendRequest` — the internal function
-`createQuery` sends through — sends with `Content-Type: application/json; charset=utf-8` when
-there is a body (a `Content-Type` in `init.headers`, in any casing, replaces it), and parses a successful response with `response.json()`; a successful `HEAD` resolves
+`createQuery` sends through — parses a successful response with `response.json()`; a successful `HEAD` resolves
 to `undefined` (a `HEAD` response has no body). A non-2xx response, `HEAD` included, rejects
 with `HttpError`, carrying `{ status: number; body: unknown }` — `body` is the response parsed
 as JSON when possible, else raw text, else `undefined`. A network failure (the `fetch` call
@@ -294,7 +315,7 @@ itself rejecting) rejects with the underlying error unchanged, not wrapped in `H
 Descriptors are **pure data** — constructing one performs no I/O. That purity is load-bearing
 three times over:
 
-- the **cache key** is `method + url + stable serialisation of body`, computable before
+- the **cache key** is `method + url + the body's key` (table above), computable before
   anything is sent;
 - during **init** the function can be evaluated to learn the initial key without a request
   going out, so `initial` can be primed into the cache (§7.5);

@@ -10,6 +10,10 @@
  * methods) are mutually exclusive per constructor; the shared `HttpDescriptor`
  * shape just has both fields optional so `requestKey` / `sendRequest` can stay
  * uniform.
+ *
+ * A `body` is JSON by default; the other kinds are sent as fetch would send
+ * them. `bodyKind` below is the one place that decides which is which, and
+ * `snapshot`, `requestKey` and `sendRequest` all follow it.
  */
 
 /**
@@ -104,6 +108,45 @@ export function isSafeMethod(method: HttpMethod): boolean {
 }
 
 /**
+ * How a `body` is sent, decided once from its runtime type:
+ *
+ * - `json` — plain objects, arrays, numbers, booleans, `null` (the default).
+ *   Sent as `JSON.stringify(body)` with `application/json; charset=utf-8`.
+ * - `text` — a string. Sent as-is with `text/plain;charset=UTF-8`.
+ * - `form` / `urlencoded` / `blob` / `bytes` — `FormData`, `URLSearchParams`,
+ *   `Blob` (and `File`), `ArrayBuffer` or an `ArrayBuffer` view. Handed to
+ *   fetch unchanged with no `Content-Type` of ours, so fetch derives it
+ *   (multipart with its boundary, form-urlencoded, the Blob's own type).
+ *
+ * A `Content-Type` in `init.headers` replaces the default for any kind.
+ */
+type BodyKind = 'json' | 'text' | 'form' | 'urlencoded' | 'blob' | 'bytes'
+
+function bodyKind(body: unknown): BodyKind {
+  if (typeof body === 'string') return 'text'
+  if (typeof FormData !== 'undefined' && body instanceof FormData) return 'form'
+  if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) return 'urlencoded'
+  if (typeof Blob !== 'undefined' && body instanceof Blob) return 'blob'
+  if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return 'bytes'
+  return 'json'
+}
+
+/**
+ * A descriptor can be sent more than once (a dependency change, `action()`),
+ * and a stream can be read only once, so a stream body is refused where the
+ * descriptor is built rather than failing on the second send.
+ */
+function assertResendable(method: HttpMethod, body: unknown): void {
+  if (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) {
+    throw new TypeError(
+      `http.${method.toLowerCase()}: a ReadableStream body is not supported. A descriptor can be sent ` +
+        'more than once (a dependency change, action()), and a stream can be read only once. ' +
+        'Read it into a Blob or an ArrayBuffer first.',
+    )
+  }
+}
+
+/**
  * Recursively `Object.freeze` `value` and everything reachable from it.
  * Guards against cycles with `seen` (an object already visited is skipped,
  * not re-frozen) so a circular `body`/`params`/`init` freezes without
@@ -134,12 +177,39 @@ function snapshot<T>(value: T): T {
   return deepFreeze(structuredClone(value))
 }
 
+/**
+ * The descriptor's own copy of `body`, for the same reason as `snapshot`.
+ * `FormData` and `URLSearchParams` are rebuilt from their entries (a `File`
+ * entry is shared: a `Blob` cannot change), bytes are copied, a `Blob` is
+ * kept as is, and a string needs no copy.
+ */
+function snapshotBody(body: unknown): unknown {
+  switch (bodyKind(body)) {
+    case 'json':
+      return snapshot(body)
+    case 'form': {
+      const copy = new FormData()
+      for (const [name, value] of body as FormData) copy.append(name, value)
+      return copy
+    }
+    case 'urlencoded':
+      return new URLSearchParams(body as URLSearchParams)
+    case 'bytes': {
+      const view = ArrayBuffer.isView(body) ? body : new Uint8Array(body as ArrayBuffer)
+      return new Uint8Array(view.buffer, view.byteOffset, view.byteLength).slice()
+    }
+    default:
+      return body
+  }
+}
+
 function withParams<T>(method: HttpMethod, url: string, params?: HttpParams, init?: HttpInit): HttpDescriptor<T> {
   return Object.freeze({ kind: 'http', method, url, params: snapshot(params), init: snapshot(init) })
 }
 
 function withBody<T>(method: HttpMethod, url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
-  return Object.freeze({ kind: 'http', method, url, body: snapshot(body), init: snapshot(init) })
+  assertResendable(method, body)
+  return Object.freeze({ kind: 'http', method, url, body: snapshotBody(body), init: snapshot(init) })
 }
 
 /**
@@ -155,7 +225,7 @@ export const http = {
   get<T>(url: string, params?: HttpParams, init?: HttpInit): HttpDescriptor<T> {
     return withParams<T>('GET', url, params, init)
   },
-  /** Safe — HTTP QUERY: a read with a body. `body` is optional JSON. */
+  /** Safe — HTTP QUERY: a read with a body. `body` is optional; JSON unless it is a string, `FormData`, `URLSearchParams`, `Blob` or bytes. */
   query<T>(url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
     return withBody<T>('QUERY', url, body, init)
   },
@@ -163,19 +233,19 @@ export const http = {
   head<T>(url: string, params?: HttpParams, init?: HttpInit): HttpDescriptor<T> {
     return withParams<T>('HEAD', url, params, init)
   },
-  /** Unsafe. `body` is optional JSON. */
+  /** Unsafe. `body` is optional; JSON unless it is a string, `FormData`, `URLSearchParams`, `Blob` or bytes. */
   post<T>(url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
     return withBody<T>('POST', url, body, init)
   },
-  /** Unsafe. `body` is optional JSON. */
+  /** Unsafe. `body` is optional; JSON unless it is a string, `FormData`, `URLSearchParams`, `Blob` or bytes. */
   put<T>(url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
     return withBody<T>('PUT', url, body, init)
   },
-  /** Unsafe. `body` is optional JSON. */
+  /** Unsafe. `body` is optional; JSON unless it is a string, `FormData`, `URLSearchParams`, `Blob` or bytes. */
   patch<T>(url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
     return withBody<T>('PATCH', url, body, init)
   },
-  /** Unsafe. `body` is optional JSON. */
+  /** Unsafe. `body` is optional; JSON unless it is a string, `FormData`, `URLSearchParams`, `Blob` or bytes. */
   delete<T>(url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
     return withBody<T>('DELETE', url, body, init)
   },
@@ -240,10 +310,57 @@ function sortKeysDeep(value: unknown, ancestors: Set<unknown> = new Set()): unkn
   }
 }
 
-/** Stable JSON serialisation of `body` — `''` when `body` is `undefined`. */
+const objectIds = new WeakMap<object, number>()
+let nextObjectId = 0
+
+/** A process-unique id for `obj`, stable for as long as `obj` lives. */
+function objectId(obj: object): number {
+  let id = objectIds.get(obj)
+  if (id === undefined) {
+    id = ++nextObjectId
+    objectIds.set(obj, id)
+  }
+  return id
+}
+
+/**
+ * The body part of the request key — `''` when there is no body.
+ *
+ * A JSON body is its stable JSON, untagged (JSON text never starts with the
+ * tags below, so the kinds cannot collide). The other kinds are tagged:
+ * a string and `URLSearchParams` by their text; `FormData` of string fields by
+ * its entries in order; a `Blob` by its identity, which is sound because a
+ * `Blob` cannot change.
+ *
+ * Bytes, and `FormData` holding a file, are keyed by the identity of the
+ * descriptor's own copy, so two such descriptors never share a cache or
+ * in-flight entry. Their contents cannot be compared cheaply, and a file's
+ * name, size and type do not identify its contents (two different uploads
+ * sharing a key would be deduplicated into one). A file's identity does not
+ * work either: `FormData` may hand back a new `File` for the same entry.
+ */
 function stableBodyKey(body: unknown): string {
   if (body === undefined) return ''
-  return JSON.stringify(sortKeysDeep(body))
+  switch (bodyKind(body)) {
+    case 'text':
+      return `text:${body as string}`
+    case 'urlencoded':
+      return `urlencoded:${(body as URLSearchParams).toString()}`
+    case 'form': {
+      const entries: [string, string][] = []
+      for (const [name, value] of body as FormData) {
+        if (typeof value !== 'string') return `form#${objectId(body as FormData)}`
+        entries.push([name, value])
+      }
+      return `form:${JSON.stringify(entries)}`
+    }
+    case 'blob':
+      return `blob#${objectId(body as Blob)}`
+    case 'bytes':
+      return `bytes#${objectId(body as object)}`
+    default:
+      return JSON.stringify(sortKeysDeep(body))
+  }
 }
 
 /**
@@ -296,20 +413,25 @@ async function parseErrorBody(response: Response): Promise<unknown> {
 }
 
 /**
- * The `Content-Type` a request with a body is sent with. v0 always sends the
- * body as `JSON.stringify(body)`, which fetch encodes as UTF-8, so the type is
- * fixed rather than left to fetch: a string body otherwise goes out as
- * `text/plain;charset=UTF-8` in browsers and Node, and with no type at all in
- * Bun. The charset states the encoding explicitly for servers that don't
- * assume UTF-8 for JSON.
+ * The default `Content-Type` for a JSON body and a string body. fetch encodes
+ * both as UTF-8, and both types are set explicitly rather than left to fetch:
+ * a string body goes out as `text/plain;charset=UTF-8` in browsers and Node,
+ * but with no type at all in Bun. The charset on the JSON type states the
+ * encoding for servers that don't assume UTF-8 for JSON. The other body kinds
+ * get no default; fetch derives theirs from the body.
  */
-const JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
+const DEFAULT_CONTENT_TYPE: Partial<Record<BodyKind, string>> = {
+  json: 'application/json; charset=utf-8',
+  text: 'text/plain;charset=UTF-8',
+}
 
 /**
- * Send a descriptor built by `http` and resolve with its response. v0 is
- * JSON-only: a request with a body is sent with `Content-Type:
- * application/json; charset=utf-8` (unless `init.headers` sets a
- * `Content-Type`, in any casing), and a successful
+ * Send a descriptor built by `http` and resolve with its response. The body is
+ * sent by its kind (see `bodyKind`): JSON with `Content-Type:
+ * application/json; charset=utf-8`, a string as-is with `text/plain`, and
+ * `FormData` / `URLSearchParams` / `Blob` / bytes unchanged with the type fetch
+ * derives. A `Content-Type` in `init.headers`, in any casing, replaces the
+ * default. The response side is JSON-only in v0: a successful
  * response is parsed with `response.json()` — except `HEAD`, whose successful
  * response resolves to `undefined` (a `HEAD` response has no body). A non-2xx
  * response rejects with `HttpError`, `HEAD` included; a network failure rejects
@@ -323,17 +445,19 @@ const JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
 export async function sendRequest<T>(descriptor: HttpDescriptor<T>, signal?: AbortSignal): Promise<T> {
   const url = serializeParams(descriptor.url, descriptor.params)
   const hasBody = descriptor.body !== undefined
+  const kind = hasBody ? bodyKind(descriptor.body) : undefined
   // `Headers` compares names case-insensitively, so an override spelled
   // `content-type` replaces the default instead of being sent alongside it
   // (a plain-object spread keeps both keys, and fetch joins them into
   // "application/json, <override>").
   const headers = new Headers(descriptor.init?.headers)
-  if (hasBody && !headers.has('Content-Type')) headers.set('Content-Type', JSON_CONTENT_TYPE)
+  const defaultType = kind && DEFAULT_CONTENT_TYPE[kind]
+  if (defaultType && !headers.has('Content-Type')) headers.set('Content-Type', defaultType)
 
   const response = await fetch(url, {
     method: descriptor.method,
     headers,
-    body: hasBody ? JSON.stringify(descriptor.body) : undefined,
+    body: kind === 'json' ? JSON.stringify(descriptor.body) : (descriptor.body as BodyInit | undefined),
     credentials: descriptor.init?.credentials,
     signal,
   })

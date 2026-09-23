@@ -295,3 +295,139 @@ describe('sendRequest', () => {
     expect(headers.get('authorization')).toBe('Bearer x')
   })
 })
+
+// --- non-JSON bodies ---------------------------------------------------------
+//
+// JSON is the default; any other body fetch can send is sent the way fetch
+// would send it. Each case builds the real `Request` fetch would build from
+// `sendRequest`'s arguments, so the asserted `Content-Type` and bytes are what
+// goes on the wire, not what `sendRequest` happened to pass along.
+
+describe('non-JSON bodies', () => {
+  const originalFetch = globalThis.fetch
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  async function sent(descriptor: HttpDescriptor<unknown>): Promise<Request> {
+    let request: Request | undefined
+    // @ts-expect-error — test stub
+    globalThis.fetch = (url: string, init: RequestInit) => {
+      request = new Request(`http://localhost${url}`, init)
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    }
+    await sendRequest(descriptor)
+    return request!
+  }
+
+  test('a string is sent as-is, as text/plain;charset=UTF-8', async () => {
+    const req = await sent(http.post('/api/notes', 'hello'))
+    expect(req.headers.get('content-type')).toBe('text/plain;charset=UTF-8')
+    expect(await req.text()).toBe('hello')
+  })
+
+  test('a string with a Content-Type override is sent as-is under that type', async () => {
+    const json = JSON.stringify({ a: 1 })
+    const req = await sent(http.post('/api/notes', json, { headers: { 'content-type': 'application/json' } }))
+    expect(req.headers.get('content-type')).toBe('application/json')
+    expect(await req.text()).toBe('{"a":1}')
+  })
+
+  test('FormData is sent as multipart with the boundary fetch chose', async () => {
+    const form = new FormData()
+    form.append('title', 'x')
+    form.append('file', new File(['abc'], 'a.txt', { type: 'text/plain' }))
+    const req = await sent(http.post('/api/upload', form))
+    expect(req.headers.get('content-type')).toMatch(/^multipart\/form-data; ?boundary=/)
+    const received = await req.formData()
+    expect(received.get('title')).toBe('x')
+    expect(await (received.get('file') as File).text()).toBe('abc')
+  })
+
+  test('URLSearchParams is sent as application/x-www-form-urlencoded', async () => {
+    const req = await sent(http.post('/api/login', new URLSearchParams({ user: 'a', pass: 'b c' })))
+    expect(req.headers.get('content-type')).toMatch(/^application\/x-www-form-urlencoded/)
+    expect(await req.text()).toBe('user=a&pass=b+c')
+  })
+
+  test("a Blob is sent with the Blob's own type", async () => {
+    const req = await sent(http.put('/api/avatar', new Blob(['png-bytes'], { type: 'image/png' })))
+    expect(req.headers.get('content-type')).toBe('image/png')
+    expect(await req.text()).toBe('png-bytes')
+  })
+
+  test('bytes (ArrayBuffer and views) are sent unchanged', async () => {
+    const bytes = new Uint8Array([1, 2, 3])
+    const req = await sent(http.put('/api/raw', bytes, { headers: { 'Content-Type': 'application/octet-stream' } }))
+    expect(req.headers.get('content-type')).toBe('application/octet-stream')
+    expect(new Uint8Array(await req.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]))
+    const fromBuffer = await sent(http.put('/api/raw', new Uint8Array([4, 5]).buffer))
+    expect(new Uint8Array(await fromBuffer.arrayBuffer())).toEqual(new Uint8Array([4, 5]))
+  })
+
+  test("later writes to the caller's FormData, URLSearchParams or bytes do not reach the request", async () => {
+    const form = new FormData()
+    form.append('a', '1')
+    const params = new URLSearchParams({ a: '1' })
+    const bytes = new Uint8Array([1])
+    const dForm = http.post('/x', form)
+    const dParams = http.post('/x', params)
+    const dBytes = http.post('/x', bytes)
+    const keys = [requestKey(dForm), requestKey(dParams), requestKey(dBytes)]
+    form.append('b', '2')
+    params.append('b', '2')
+    bytes[0] = 9
+    expect([requestKey(dForm), requestKey(dParams), requestKey(dBytes)]).toEqual(keys)
+    expect([...(await (await sent(dForm)).formData()).keys()]).toEqual(['a'])
+    expect(await (await sent(dParams)).text()).toBe('a=1')
+    expect(new Uint8Array(await (await sent(dBytes)).arrayBuffer())).toEqual(new Uint8Array([1]))
+  })
+
+  test('a ReadableStream body is refused where the descriptor is built', () => {
+    const stream = new ReadableStream({ start: (c) => c.close() })
+    expect(() => http.post('/api/upload', stream)).toThrow(TypeError)
+    expect(() => http.post('/api/upload', stream)).toThrow(/http\.post: a ReadableStream body is not supported/)
+  })
+})
+
+describe('requestKey for non-JSON bodies', () => {
+  test('a string and the JSON body it spells out get different keys', () => {
+    expect(requestKey(http.post('/x', '{"a":1}'))).not.toBe(requestKey(http.post('/x', { a: 1 })))
+  })
+
+  test('equal string-only FormData / URLSearchParams contents give equal keys; different contents do not', () => {
+    const form = (title: string) => {
+      const f = new FormData()
+      f.append('title', title)
+      f.append('tag', 'a')
+      return f
+    }
+    expect(requestKey(http.post('/x', form('x')))).toBe(requestKey(http.post('/x', form('x'))))
+    expect(requestKey(http.post('/x', form('y')))).not.toBe(requestKey(http.post('/x', form('x'))))
+    expect(requestKey(http.post('/x', new URLSearchParams('a=1')))).toBe(requestKey(http.post('/x', new URLSearchParams('a=1'))))
+    expect(requestKey(http.post('/x', new URLSearchParams('a=2')))).not.toBe(requestKey(http.post('/x', new URLSearchParams('a=1'))))
+  })
+
+  test('FormData holding a file never shares a key, even with the same file or the same file metadata', () => {
+    const withFile = (file: File) => {
+      const f = new FormData()
+      f.append('file', file)
+      return f
+    }
+    const file = new File(['abc'], 'a.txt', { type: 'text/plain', lastModified: 0 })
+    expect(requestKey(http.post('/x', withFile(file)))).not.toBe(requestKey(http.post('/x', withFile(file))))
+    const sameMeta = new File(['xyz'], 'a.txt', { type: 'text/plain', lastModified: 0 })
+    expect(requestKey(http.post('/x', withFile(file)))).not.toBe(requestKey(http.post('/x', withFile(sameMeta))))
+    // …but one descriptor's key is stable, so it can still be matched against itself.
+    const d = http.post('/x', withFile(file))
+    expect(requestKey(d)).toBe(requestKey(d))
+  })
+
+  test('the same Blob gives the same key; bytes never share a key', () => {
+    const blob = new Blob(['x'])
+    expect(requestKey(http.put('/x', blob))).toBe(requestKey(http.put('/x', blob)))
+    expect(requestKey(http.put('/x', new Blob(['x'])))).not.toBe(requestKey(http.put('/x', new Blob(['x']))))
+    const bytes = new Uint8Array([1])
+    expect(requestKey(http.put('/x', bytes))).not.toBe(requestKey(http.put('/x', bytes)))
+  })
+})
