@@ -315,6 +315,34 @@ describe('rule 7: generation guard', () => {
     expect(posts()).toEqual({ page: 1 })
     expect(fetchPosts.isPending()).toBe(false)
   })
+
+  test('a re-run that lands on the key already in flight does not supersede that send', async () => {
+    const { calls, resolveNth } = deferredFetch()
+    // `unrelated` is read by the request function but does not change its key.
+    const [unrelated, setUnrelated] = createSignal(0)
+    const [posts, fetchPosts] = createQuery(
+      () => {
+        unrelated()
+        return http.get<{ v: number }>('/api/same-key')
+      },
+      { initial: { v: 0 } }, // the key is cached fresh; no automatic send
+    )
+
+    const forced = fetchPosts() // action(): force-sends the key, left in flight
+    await waitUntil(() => calls.length === 1)
+    expect(fetchPosts.isPending()).toBe(true)
+
+    setUnrelated(1) // re-run: same key, fresh in the cache, and already in flight
+    await settle()
+    expect(calls.length).toBe(1)
+    expect(fetchPosts.isPending()).toBe(true) // the forced send is still the one that counts
+
+    resolveNth(0, { v: 1 })
+    await forced
+    await settle()
+    expect(posts()).toEqual({ v: 1 })
+    expect(fetchPosts.isPending()).toBe(false)
+  })
 })
 
 // -- rule 8: action --------------------------------------------------------

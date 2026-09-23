@@ -146,6 +146,9 @@ export function createQuery<T>(
   let generation = 0
   let firstRun = true
   let pendingSend: { descriptor: HttpDescriptor<T>; key: string } | null = null
+  // Key of the latest send while it is unsettled; `null` once it settles or
+  // is superseded by a cache hit.
+  let inflightKey: string | null = null
   let microtaskScheduled = false
 
   // Rule 9: owned by the *current* reactive owner — the scope active when
@@ -162,6 +165,13 @@ export function createQuery<T>(
     pendingSend = null
     if (!send || disposed) return
 
+    // The latest send is already fetching this exact key (e.g. an `action()`
+    // force-send, then a re-run of `fn` that reads a signal the key doesn't
+    // depend on): its resolution will write, so there is nothing to do. The
+    // cache-hit branch below must not run here — its generation bump would
+    // discard that send's result.
+    if (send.key === inflightKey) return
+
     const cached = cache.get(send.key)
     if (cached) {
       // Rule 5 / rule 3's diamond exception: the value currently held for this
@@ -170,15 +180,19 @@ export function createQuery<T>(
       // key equals the key of the value currently held" — nothing is sent.
       setValue(() => cached.value as T)
       setError(undefined)
-      // Rule 7 covers this write too: the value now belongs to `send.key`, so
-      // any send still in flight for an earlier key is superseded. Bump the
-      // generation so its resolution cannot overwrite this value (1 -> 2 -> 1
-      // where the return to 1 is a cache hit), and clear `isPending`, which
-      // described that superseded send. A stale entry falls through to
-      // `doSend`, which bumps the generation again and sets `isPending`.
-      generation++
-      setIsPending(false)
-      if (!isStale(cached, ttl)) return
+      if (!isStale(cached, ttl)) {
+        // Rule 7 covers this write too: the value now belongs to `send.key`,
+        // so any send still in flight for an earlier key is superseded. Bump
+        // the generation so its resolution cannot overwrite this value
+        // (1 -> 2 -> 1 where the return to 1 is a cache hit), and clear
+        // `isPending`, which described that superseded send.
+        generation++
+        inflightKey = null
+        setIsPending(false)
+        return
+      }
+      // Stale: shown now, re-fetched below — `doSend` bumps the generation
+      // and keeps `isPending` true, so it is not toggled off in between.
     }
 
     // Errors from an internally-scheduled send are already observable via
@@ -200,6 +214,7 @@ export function createQuery<T>(
 
   function doSend(descriptor: HttpDescriptor<T>, key: string): Promise<T> {
     const myGeneration = ++generation
+    inflightKey = key
     setIsPending(true)
 
     let promise = inflight.get(key) as Promise<T> | undefined
@@ -215,6 +230,7 @@ export function createQuery<T>(
         // Rule 7 (generation guard) + rule 9 (disposal): an older or
         // post-disposal resolution never writes.
         if (!disposed && myGeneration === generation) {
+          inflightKey = null
           cache.set(key, { value: result, timestamp: Date.now() })
           setValue(() => result)
           setError(undefined)
@@ -224,6 +240,7 @@ export function createQuery<T>(
       },
       (err) => {
         if (!disposed && myGeneration === generation) {
+          inflightKey = null
           // `err` can be anything a rejected promise carries (some fetch
           // polyfills/test runtimes reject with a non-Error) — `error()`'s
           // documented type is `HttpError | Error`, so normalize anything
