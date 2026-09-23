@@ -74,7 +74,24 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     }
   })
 
-  const hasChildConds = elem.bindings.conditionals.length > 0
+  // #3143: a component-root loop's own reactive attrs/texts — collected via
+  // `collectLoopChildBindings` into `elem.bindings` the same way as every
+  // other loop shape (`collect-elements.ts`'s `loop:` visitor calls it
+  // unconditionally) — used to be silently dropped here: this builder only
+  // ever read `elem.bindings.conditionals`, never `.reactiveAttrs` /
+  // `.reactiveTexts`. Those two collectors DO reach a forwarded element
+  // inside the root component's own `<Chip>...</Chip>` JSX-children body
+  // (`traverseElements`'s default `walkIR` descent into an `IRComponent`
+  // node's `.children` — no `component:` visitor override needed, unlike
+  // the JSX-children PROP form), so the bindings were computed and then
+  // thrown away. Routing them through the same `ReactiveEffectsPlan` the
+  // conditionals already used fixes it — see `stringifyComponentLoop`'s
+  // gate, widened alongside this to actually emit the effects on the
+  // no-nested-components ("simple") path too.
+  const hasReactiveEffects =
+    elem.bindings.reactiveAttrs.length > 0
+    || elem.bindings.reactiveTexts.length > 0
+    || elem.bindings.conditionals.length > 0
 
   return {
     kind: 'component',
@@ -101,10 +118,10 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     // `childRefs`) is preserved; populated as empty.
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings, elem.index),
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
-    childConditionalEffects: hasChildConds
+    reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
-          attrs: [],
-          texts: [],
+          attrs: elem.bindings.reactiveAttrs,
+          texts: elem.bindings.reactiveTexts,
           conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,

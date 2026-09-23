@@ -192,12 +192,17 @@ interface PlainLoopVariant extends DynamicLoopCommon {
  * Loop body is a single child component (with or without nested child
  * components inside it).
  *
- * `nestedComps.length === 0`  → simple two-line renderItem.
- * `nestedComps.length > 0`    → SSR/CSR split that initialises both the
- *                               outer component and each nested child.
+ * `nestedComps.length === 0 && reactiveEffects === null` → simple two-line
+ *                               renderItem.
+ * otherwise                   → SSR/CSR split that initialises the outer
+ *                               component, each nested child, and any
+ *                               reactive effect on the outer component's
+ *                               own forwarded children / conditionals.
  *
- * `childConditionalEffects` is non-null when the body contains reactive
- * conditionals; same plan shape as plain/composite `reactiveEffects`.
+ * `reactiveEffects` is non-null when the row has a reactive attr/text on an
+ * element forwarded as the ROOT component's own `children` (#3143) or a
+ * reactive conditional in the body; same plan shape as plain/composite
+ * `reactiveEffects`.
  */
 interface ComponentLoopVariant extends DynamicLoopCommon {
   kind: 'component'
@@ -209,8 +214,15 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
   keyExpr: string
   /** Nested child component initialisers; empty for the simple case. */
   nestedComps: NestedComponentInit[]
-  /** Reactive-effects plan for `childConditionals` inside the loop body. */
-  childConditionalEffects: ReactiveEffectsPlan | null
+  /**
+   * Reactive-effects plan for the loop ROOT component's own reactive attrs /
+   * texts / conditionals — i.e. bindings on elements forwarded as the root
+   * component's `children` (`<Chip><a href={...}>...</a></Chip>`, #3143),
+   * plus any reactive conditional in the row. Named to match
+   * `PlainLoopVariant.reactiveEffects` (not just `childConditionalEffects` —
+   * it used to carry only conditionals, before #3143 widened it).
+   */
+  reactiveEffects: ReactiveEffectsPlan | null
   /**
    * Profile-mode loop id (#1690, #1795 Phase 3) for the component loop's
    * `mapArray`. Undefined off → byte-identical (SR8).

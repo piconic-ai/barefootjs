@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal, escapeAttr, escapeText, initChild, lazySlots, qsaChildScopes, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal, escapeAttr, escapeText, initChild, lazySlots, qsa, qsaChildScopes, renderChild } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -14,11 +14,29 @@ export function initLoopRowChildChildrenAttrs(__scope, _p = {}) {
   const [_s3, _s4] = $(__scope, 's3', 's4')
 
   if (_s3) _s3.addEventListener('click', () => { setActive('b') })
-  // Reactive texts in static array children
+  // Reactive attributes / reactive texts in static array children
   if (_s4) {
     opts.forEach((opt, __idx) => {
       let __iterEl = _s4.children[__idx]
       if (__iterEl) {
+        const __l = []
+        const __t_s1 = qsa(__iterEl, '[bf="^s1"]')
+        if (__t_s1) {
+          createEffect(() => {
+            { const __x = active() === opt ? '/current' : `/other/${opt}`
+            if (!(0 in __l) || !Object.is(__l[0], __x)) {
+              { const __v = __x; if (__v != null) __t_s1.setAttribute('href', String(__v)); else __t_s1.removeAttribute('href') }
+            }
+            __l[0] = __x }
+          })
+          createEffect(() => {
+            { const __x = `${active() === opt ? 'true' : 'false'}`
+            if (!(1 in __l) || !Object.is(__l[1], __x)) {
+              { const __v = __x; if (__v != null) __t_s1.setAttribute('data-current', String(__v)); else __t_s1.removeAttribute('data-current') }
+            }
+            __l[1] = __x }
+          })
+        }
         const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
         createEffect(() => { __bfw_s0('^s0', String(opt)) })
       }
