@@ -99,6 +99,7 @@ export function exploreQuarantineKey(
 const GO_SEED = 'nested-prop-member-signal-seed'
 const GO_SEED_REASON = "a signal seeded from a member of the `initial` prop is baked as `nil` on Go, so the SSR renders its zero value (or `types.go` fails to compile)"
 const GO_SEED_ROWS: ReadonlyArray<readonly [scenarioId: string, subject: string, oracle: ExploreOracleKind]> = [
+  ['comment-root-child-slot', 'state:s1', 'snap'],
   ['child-effect-disposal', 'scenario', 'render'],
   ['child-listener-cleanup', 'state:s0', 'snap'],
   ['child-listener-cleanup', 'state:s1', 'snap'],
@@ -230,24 +231,14 @@ const GO_SEED_ROWS: ReadonlyArray<readonly [scenarioId: string, subject: string,
   ['keyed-loop-inline', 'append>cloneAll', 'transition-hydrate'],
   ['keyed-loop-inline', 'append>removeLast', 'transition-hydrate'],
   ['keyed-loop-inline', 'append>rotate', 'transition-hydrate'],
-  ['keyed-loop-inline', 'clear', 'transition-hydrate'],
   ['keyed-loop-inline', 'clear>append', 'transition-hydrate'],
-  ['keyed-loop-inline', 'clear>clear', 'transition-hydrate'],
-  ['keyed-loop-inline', 'clear>cloneAll', 'transition-hydrate'],
-  ['keyed-loop-inline', 'clear>removeLast', 'transition-hydrate'],
-  ['keyed-loop-inline', 'clear>rotate', 'transition-hydrate'],
   ['keyed-loop-inline', 'cloneAll', 'transition-hydrate'],
   ['keyed-loop-inline', 'cloneAll>append', 'transition-hydrate'],
   ['keyed-loop-inline', 'cloneAll>clear', 'transition-hydrate'],
   ['keyed-loop-inline', 'cloneAll>cloneAll', 'transition-hydrate'],
   ['keyed-loop-inline', 'cloneAll>removeLast', 'transition-hydrate'],
   ['keyed-loop-inline', 'cloneAll>rotate', 'transition-hydrate'],
-  ['keyed-loop-inline', 'removeLast', 'transition-hydrate'],
   ['keyed-loop-inline', 'removeLast>append', 'transition-hydrate'],
-  ['keyed-loop-inline', 'removeLast>clear', 'transition-hydrate'],
-  ['keyed-loop-inline', 'removeLast>cloneAll', 'transition-hydrate'],
-  ['keyed-loop-inline', 'removeLast>removeLast', 'transition-hydrate'],
-  ['keyed-loop-inline', 'removeLast>rotate', 'transition-hydrate'],
   ['keyed-loop-inline', 'rotate', 'transition-hydrate'],
   ['keyed-loop-inline', 'rotate>append', 'transition-hydrate'],
   ['keyed-loop-inline', 'rotate>clear', 'transition-hydrate'],
@@ -422,7 +413,6 @@ const GO_SEED_ROWS: ReadonlyArray<readonly [scenarioId: string, subject: string,
   ['loop-row-handlers', 'prepend>reverse>prepend', 'transition-hydrate'],
   ['loop-row-handlers', 'prepend>reverse>removeFirst', 'transition-hydrate'],
   ['loop-row-handlers', 'prepend>reverse>reverse', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>bumpRow', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>bumpRow>bumpRow', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>bumpRow>prepend', 'transition-hydrate'],
@@ -431,18 +421,11 @@ const GO_SEED_ROWS: ReadonlyArray<readonly [scenarioId: string, subject: string,
   ['loop-row-handlers', 'removeFirst>prepend', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>prepend>bumpRow', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>prepend>prepend', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>prepend>removeFirst', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>prepend>reverse', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>removeFirst', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>removeFirst>bumpRow', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>removeFirst>prepend', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>removeFirst>removeFirst', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>removeFirst>reverse', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>reverse', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>reverse>bumpRow', 'transition-hydrate'],
   ['loop-row-handlers', 'removeFirst>reverse>prepend', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>reverse>removeFirst', 'transition-hydrate'],
-  ['loop-row-handlers', 'removeFirst>reverse>reverse', 'transition-hydrate'],
   ['loop-row-handlers', 'reverse', 'transition-hydrate'],
   ['loop-row-handlers', 'reverse>bumpRow', 'transition-hydrate'],
   ['loop-row-handlers', 'reverse>bumpRow>bumpRow', 'transition-hydrate'],
@@ -497,14 +480,60 @@ const GO_SEED_ROWS: ReadonlyArray<readonly [scenarioId: string, subject: string,
   ['nested-loop', 'reverseGroups>reverseGroups', 'transition-hydrate'],
 ]
 
-const ROWS: ReadonlyArray<ExploreQuarantineEntry> = GO_SEED_ROWS.map(([scenarioId, subject, oracle]) => ({
-  adapter: 'go-template',
-  scenarioId,
-  subject,
-  oracle,
-  reason: GO_SEED_REASON,
-  limitation: GO_SEED,
-}))
+// A client component whose whole return is a child-component call
+// (`comment-root-child-slot`, from #3122): these adapters render the
+// child's output without the parent's `<!--bf-scope:...-->` comment pair,
+// so the parent never hydrates and its forwarded `load` handler does
+// nothing. Every path that reaches `loaded` diverges; the minimal
+// committed reproduction is the corpus fixture
+// `component-root-client-scope` (each adapter's `renderDivergences`).
+const COMPONENT_ROOT_SCOPE = 'component-root-client-scope-comment'
+const COMPONENT_ROOT_SCOPE_REASON = "the parent's scope comment is missing from the SSR, so the parent never hydrates and the forwarded `load` handler does nothing"
+const COMPONENT_ROOT_SCOPE_ROWS: ReadonlyArray<readonly [adapter: string, subject: string]> = [
+  ['blade', 'load'],
+  ['blade', 'load>load'],
+  ['blade', 'clear>load'],
+  ['erb', 'load'],
+  ['erb', 'load>load'],
+  ['erb', 'clear>load'],
+  ['jinja', 'load'],
+  ['jinja', 'load>load'],
+  ['jinja', 'clear>load'],
+  ['minijinja', 'load'],
+  ['minijinja', 'load>load'],
+  ['minijinja', 'clear>load'],
+  ['mojolicious', 'load'],
+  ['mojolicious', 'load>load'],
+  ['mojolicious', 'clear>load'],
+  ['pebble', 'load'],
+  ['pebble', 'load>load'],
+  ['pebble', 'clear>load'],
+  ['twig', 'load'],
+  ['twig', 'load>load'],
+  ['twig', 'clear>load'],
+  ['xslate', 'load'],
+  ['xslate', 'load>load'],
+  ['xslate', 'clear>load'],
+]
+
+const ROWS: ReadonlyArray<ExploreQuarantineEntry> = [
+  ...GO_SEED_ROWS.map(([scenarioId, subject, oracle]) => ({
+    adapter: 'go-template',
+    scenarioId,
+    subject,
+    oracle,
+    reason: GO_SEED_REASON,
+    limitation: GO_SEED,
+  })),
+  ...COMPONENT_ROOT_SCOPE_ROWS.map(([adapter, subject]) => ({
+    adapter,
+    scenarioId: 'comment-root-child-slot',
+    subject,
+    oracle: 'transition-hydrate' as const,
+    reason: COMPONENT_ROOT_SCOPE_REASON,
+    limitation: COMPONENT_ROOT_SCOPE,
+  })),
+]
 
 export const EXPLORE_QUARANTINE: ReadonlyMap<string, ExploreQuarantineEntry> = new Map(
   ROWS.map(row => [exploreQuarantineKey(row.scenarioId, row.subject, row.oracle, row.adapter), row]),

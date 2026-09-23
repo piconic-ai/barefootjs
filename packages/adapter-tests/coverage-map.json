@@ -1477,6 +1477,16 @@
         "text"
       ]
     },
+    "component-root-client-scope": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-row-loop-preamble-handler": {
       "kinds": [
         "array-literal",
@@ -7118,9 +7128,9 @@
     "array-method": 72,
     "arrow": 77,
     "binary": 111,
-    "call": 298,
+    "call": 299,
     "conditional": 36,
-    "identifier": 420,
+    "identifier": 421,
     "index-access": 15,
     "literal": 332,
     "logical": 53,

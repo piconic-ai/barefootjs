@@ -667,6 +667,7 @@ import { fixture as selectOutOfRangeHydration } from './select-out-of-range-hydr
 import { fixture as signalOptionalInit } from './signal-optional-init'
 import { fixture as nestedPropSignalChildProp } from './nested-prop-signal-child-prop'
 import { fixture as nestedPropMemberSignalSeed } from './nested-prop-member-signal-seed'
+import { fixture as componentRootClientScope } from './component-root-client-scope'
 // #2859 follow-on: the same index-reorder shape, but with no per-row
 // imperative content — stays on the lazy row graph instead of forcing eager.
 import { fixture as lazyRowIndexReorder } from './lazy-row-index-reorder'
@@ -1183,6 +1184,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalOptionalInit,
   nestedPropSignalChildProp,
   nestedPropMemberSignalSeed,
+  componentRootClientScope,
   lazyRowIndexReorder,
   condArmTagCollision,
   componentPropBareGetter,

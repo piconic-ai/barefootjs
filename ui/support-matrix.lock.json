@@ -2644,11 +2644,11 @@
       }
     },
     "call": {
-      "total": 298,
+      "total": 299,
       "cells": {
         "hono": {
-          "pass": 295,
-          "total": 298,
+          "pass": 296,
+          "total": 299,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2672,12 +2672,18 @@
         },
         "blade": {
           "pass": 274,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -2822,12 +2828,18 @@
         },
         "erb": {
           "pass": 275,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -2965,8 +2977,8 @@
           ]
         },
         "go-template": {
-          "pass": 269,
-          "total": 298,
+          "pass": 270,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3146,12 +3158,18 @@
         },
         "jinja": {
           "pass": 274,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -3296,12 +3314,18 @@
         },
         "minijinja": {
           "pass": 274,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -3446,12 +3470,18 @@
         },
         "mojolicious": {
           "pass": 275,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -3590,12 +3620,18 @@
         },
         "pebble": {
           "pass": 274,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -3740,12 +3776,18 @@
         },
         "twig": {
           "pass": 274,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -3890,12 +3932,18 @@
         },
         "xslate": {
           "pass": 274,
-          "total": 298,
+          "total": 299,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -4410,11 +4458,11 @@
       }
     },
     "identifier": {
-      "total": 420,
+      "total": 421,
       "cells": {
         "hono": {
-          "pass": 415,
-          "total": 420,
+          "pass": 416,
+          "total": 421,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4450,12 +4498,18 @@
         },
         "blade": {
           "pass": 392,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -4624,12 +4678,18 @@
         },
         "erb": {
           "pass": 393,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -4791,8 +4851,8 @@
           ]
         },
         "go-template": {
-          "pass": 386,
-          "total": 420,
+          "pass": 387,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5002,12 +5062,18 @@
         },
         "jinja": {
           "pass": 392,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -5176,12 +5242,18 @@
         },
         "minijinja": {
           "pass": 392,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -5350,12 +5422,18 @@
         },
         "mojolicious": {
           "pass": 391,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -5530,12 +5608,18 @@
         },
         "pebble": {
           "pass": 392,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -5704,12 +5788,18 @@
         },
         "twig": {
           "pass": 392,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
@@ -5878,12 +5968,18 @@
         },
         "xslate": {
           "pass": 390,
-          "total": 420,
+          "total": 421,
           "gaps": [
             {
               "fixture": "combobox",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "component-root-client-scope",
+              "limitations": [
+                "component-root-client-scope-comment"
               ]
             },
             {
