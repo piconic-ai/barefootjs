@@ -178,6 +178,17 @@ export const ErrorCodes = {
   REACTIVE_FACTORY_MODULE_CAPTURE: 'BF112',
   REACTIVE_FACTORY_IMPORT_COLLISION: 'BF113',
   REACTIVE_FACTORY_PARAM_SHADOWED: 'BF114',
+  // A tuple destructure of `createSignal`/`createMemo` whose element count
+  // the factory doesn't return (#3159). Before this code existed, an
+  // over-arity destructure (`const [a, b, c] = createSignal(...)`) silently
+  // dropped the WHOLE declaration from the compiled output — every
+  // reference then fell through to an unrelated same-name prop accessor if
+  // one happened to exist, or threw ReferenceError at hydrate if not.
+  REACTIVE_FACTORY_ARITY_MISMATCH: 'BF115',
+  // An authored `createSignal`/`createMemo` call with more arguments than
+  // the primitive accepts (#3159). Before this code existed, the extra
+  // argument(s) were silently dropped from the emitted client JS.
+  REACTIVE_FACTORY_EXTRA_ARGUMENTS: 'BF116',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -301,6 +312,17 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.REACTIVE_FACTORY_PARAM_SHADOWED]:
     'Reactive factory parameter is shadowed by a nested declaration inside the factory body, so argument substitution at the inline site would be ambiguous. Rename the inner binding so it does not collide with the parameter.',
+
+  [ErrorCodes.REACTIVE_FACTORY_ARITY_MISMATCH]:
+    "Tuple destructure of 'createSignal'/'createMemo' does not match the number of " +
+    'elements the factory returns. `createSignal` returns `[getter, setter]` (destructure ' +
+    '1 or 2 elements); `createMemo` returns a single getter (do not destructure it as an ' +
+    'array at all).',
+
+  [ErrorCodes.REACTIVE_FACTORY_EXTRA_ARGUMENTS]:
+    "'createSignal'/'createMemo' call passes more arguments than the primitive accepts " +
+    '(`createSignal(initialValue?)`, `createMemo(computeFn)`). The extra argument(s) are ' +
+    'silently dropped from the compiled client JS.',
 }
 
 // =============================================================================
