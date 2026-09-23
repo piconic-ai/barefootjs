@@ -333,10 +333,39 @@ export type CompositeLoopPlan = Extract<LoopPlan, { kind: 'composite' }>
 export type StaticLoopPlan = Extract<LoopPlan, { kind: 'static' }>
 
 /**
+ * How a loop-row nested/forwarded child component's text-only `children`
+ * should be kept in sync with the loop's per-row signal (#3064).
+ *
+ * `'markers'` (preferred): one patch per `expression`-type child, each
+ * writing through its own SSR-emitted `<!--bf:^sN-->…<!--/-->` marker pair
+ * via the marker-aware `$t` primitive — the row's own text markers and
+ * static text siblings (e.g. the `"$"` in a `${amount}` cell) are left
+ * untouched, matching how a parent-owned text patches everywhere else.
+ *
+ * `'textContent'` (legacy fallback): the whole joined value is written with
+ * a single `.textContent =` assignment, discarding any marker/text
+ * structure in the child root. Used only when the children mix in a
+ * text-only CONDITIONAL (`isTextOnlyConditional`) — which patches through
+ * its own `insert()`, not a stable per-slot marker this scheme can target —
+ * or, defensively, if some `expression` child was never granted a slot id.
+ *
+ * Built by `buildChildrenTextEffect` and stringified by
+ * `stringifyChildrenTextEffect` (both `../shared.ts`) — defined here, not
+ * there, so `shared.ts` (which the whole `plan`/`stringify` tree feeds data
+ * through, per this file's one-way dependency note) doesn't need a type
+ * import pointing back at `plan/loop.ts`, mirroring how `shared.ts` already
+ * imports `LoopChildRefBinding`/`PreambleRegionPlan` FROM here.
+ */
+export type NestedChildrenTextEffect =
+  | { readonly kind: 'markers'; readonly slotPatches: ReadonlyArray<{ readonly slotId: string; readonly wrappedExpr: string }> }
+  | { readonly kind: 'textContent'; readonly wrappedChildren: string }
+
+/**
  * One nested child component to initialise inside a renderItem body.
  * `childrenTextEffect` is non-null when the component's children are
  * text-equivalent AND reference the outer loop param — in that case the
- * stringifier emits a `createEffect` that updates the child's `textContent`.
+ * stringifier emits a reactive effect (marker-scoped where possible, #3064)
+ * that keeps the child's forwarded text in sync alongside `initChild`.
  */
 export interface NestedComponentInit {
   componentName: string
@@ -344,8 +373,8 @@ export interface NestedComponentInit {
   selector: string
   /** Pre-built props object expression for the nested component. */
   propsExpr: string
-  /** When non-null, emit a reactive textContent effect alongside `initChild`. */
-  childrenTextEffect: { wrappedChildren: string } | null
+  /** When non-null, emit a reactive children-text effect alongside `initChild` — see `NestedChildrenTextEffect` (../shared.ts). */
+  childrenTextEffect: NestedChildrenTextEffect | null
 }
 
 /**

@@ -35,6 +35,7 @@
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
+import { stringifyChildrenTextEffect } from '../shared.ts'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {
@@ -106,7 +107,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
 function emitNestedInit(lines: string[], indent: string, parentVar: string, nc: NestedComponentInit): void {
   const scopedNc = nameForRegistryRef(nc.componentName)
   if (nc.childrenTextEffect) {
-    lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); createEffect(() => { const __v = ${nc.childrenTextEffect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+    lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); ${stringifyChildrenTextEffect(nc.childrenTextEffect)} } }`)
   } else {
     lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) initChild('${scopedNc}', __c, ${nc.propsExpr}) }`)
   }

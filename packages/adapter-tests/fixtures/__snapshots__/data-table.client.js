@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, $t, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -3391,17 +3391,31 @@ export function initDataTablePreviewDemo(__scope, _p = {}) {
   mapArray(() => sortedData(), _s17, (payment) => String(payment.id), (payment, __idx, __existing) => {
     if (__existing) {
       initChild('TableRow', __existing, { get children() { return [createComponent('TableCell', { get className() { return "font-medium" }, get children() { return payment().id } }), createComponent('TableCell', { get children() { return payment().status } }), createComponent('TableCell', { get children() { return payment().email } }), createComponent('TableCell', { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } })] } })
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); createEffect(() => { const __v = payment().id; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); createEffect(() => { const __v = payment().status; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); createEffect(() => { const __v = payment().email; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); createEffect(() => { const __v = ["$", payment().amount.toFixed(2)]; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); { const [__ct0] = $t(__c, '^s8'); createEffect(() => { if (__ct0) __ct0.data = String(payment().id ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); { const [__ct0] = $t(__c, '^s10'); createEffect(() => { if (__ct0) __ct0.data = String(payment().status ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); { const [__ct0] = $t(__c, '^s12'); createEffect(() => { if (__ct0) __ct0.data = String(payment().email ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); { const [__ct0] = $t(__c, '^s14'); createEffect(() => { if (__ct0) __ct0.data = String(payment().amount.toFixed(2) ?? '') }) } } }
+      const __bfw_s8 = lazySlots(__existing, [{ id: '^s8', kind: 'text', path: [] }, { id: '^s10', kind: 'text', path: [] }, { id: '^s12', kind: 'text', path: [] }, { id: '^s14', kind: 'text', path: [] }])
+      createEffect(() => {
+        __bfw_s8('^s8', String(payment().id))
+        __bfw_s8('^s10', String(payment().status))
+        __bfw_s8('^s12', String(payment().email))
+        __bfw_s8('^s14', String(payment().amount.toFixed(2)))
+      })
       return __existing
     }
     const __csrEl = createComponent('TableRow', { get children() { return [createComponent('TableCell', { get className() { return "font-medium" }, get children() { return payment().id } }), createComponent('TableCell', { get children() { return payment().status } }), createComponent('TableCell', { get children() { return payment().email } }), createComponent('TableCell', { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } })] } }, payment().id)
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); createEffect(() => { const __v = payment().id; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); createEffect(() => { const __v = payment().status; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); createEffect(() => { const __v = payment().email; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); createEffect(() => { const __v = ["$", payment().amount.toFixed(2)]; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); { const [__ct0] = $t(__c, '^s8'); createEffect(() => { if (__ct0) __ct0.data = String(payment().id ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); { const [__ct0] = $t(__c, '^s10'); createEffect(() => { if (__ct0) __ct0.data = String(payment().status ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); { const [__ct0] = $t(__c, '^s12'); createEffect(() => { if (__ct0) __ct0.data = String(payment().email ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); { const [__ct0] = $t(__c, '^s14'); createEffect(() => { if (__ct0) __ct0.data = String(payment().amount.toFixed(2) ?? '') }) } } }
+    const __bfw_s8 = lazySlots(__csrEl, [{ id: '^s8', kind: 'text', path: [] }, { id: '^s10', kind: 'text', path: [] }, { id: '^s12', kind: 'text', path: [] }, { id: '^s14', kind: 'text', path: [] }])
+    createEffect(() => {
+      __bfw_s8('^s8', String(payment().id))
+      __bfw_s8('^s10', String(payment().status))
+      __bfw_s8('^s12', String(payment().email))
+      __bfw_s8('^s14', String(payment().amount.toFixed(2)))
+    })
     return __csrEl
   }, 'l0')
 
@@ -3547,17 +3561,31 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
   mapArray(() => paginatedData(), _s17, (payment) => String(payment.id), (payment, __idx, __existing) => {
     if (__existing) {
       initChild('TableRow', __existing, { get children() { return [createComponent('TableCell', { get className() { return "font-medium" }, get children() { return payment().id } }), createComponent('TableCell', { get children() { return payment().status } }), createComponent('TableCell', { get children() { return payment().email } }), createComponent('TableCell', { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } })] } })
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); createEffect(() => { const __v = payment().id; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); createEffect(() => { const __v = payment().status; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); createEffect(() => { const __v = payment().email; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); createEffect(() => { const __v = ["$", payment().amount.toFixed(2)]; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); { const [__ct0] = $t(__c, '^s8'); createEffect(() => { if (__ct0) __ct0.data = String(payment().id ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); { const [__ct0] = $t(__c, '^s10'); createEffect(() => { if (__ct0) __ct0.data = String(payment().status ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); { const [__ct0] = $t(__c, '^s12'); createEffect(() => { if (__ct0) __ct0.data = String(payment().email ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); { const [__ct0] = $t(__c, '^s14'); createEffect(() => { if (__ct0) __ct0.data = String(payment().amount.toFixed(2) ?? '') }) } } }
+      const __bfw_s8 = lazySlots(__existing, [{ id: '^s8', kind: 'text', path: [] }, { id: '^s10', kind: 'text', path: [] }, { id: '^s12', kind: 'text', path: [] }, { id: '^s14', kind: 'text', path: [] }])
+      createEffect(() => {
+        __bfw_s8('^s8', String(payment().id))
+        __bfw_s8('^s10', String(payment().status))
+        __bfw_s8('^s12', String(payment().email))
+        __bfw_s8('^s14', String(payment().amount.toFixed(2)))
+      })
       return __existing
     }
     const __csrEl = createComponent('TableRow', { get children() { return [createComponent('TableCell', { get className() { return "font-medium" }, get children() { return payment().id } }), createComponent('TableCell', { get children() { return payment().status } }), createComponent('TableCell', { get children() { return payment().email } }), createComponent('TableCell', { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } })] } }, payment().id)
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); createEffect(() => { const __v = payment().id; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); createEffect(() => { const __v = payment().status; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); createEffect(() => { const __v = payment().email; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); createEffect(() => { const __v = ["$", payment().amount.toFixed(2)]; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); { const [__ct0] = $t(__c, '^s8'); createEffect(() => { if (__ct0) __ct0.data = String(payment().id ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); { const [__ct0] = $t(__c, '^s10'); createEffect(() => { if (__ct0) __ct0.data = String(payment().status ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); { const [__ct0] = $t(__c, '^s12'); createEffect(() => { if (__ct0) __ct0.data = String(payment().email ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); { const [__ct0] = $t(__c, '^s14'); createEffect(() => { if (__ct0) __ct0.data = String(payment().amount.toFixed(2) ?? '') }) } } }
+    const __bfw_s8 = lazySlots(__csrEl, [{ id: '^s8', kind: 'text', path: [] }, { id: '^s10', kind: 'text', path: [] }, { id: '^s12', kind: 'text', path: [] }, { id: '^s14', kind: 'text', path: [] }])
+    createEffect(() => {
+      __bfw_s8('^s8', String(payment().id))
+      __bfw_s8('^s10', String(payment().status))
+      __bfw_s8('^s12', String(payment().email))
+      __bfw_s8('^s14', String(payment().amount.toFixed(2)))
+    })
     return __csrEl
   }, 'l0')
 
@@ -3744,17 +3772,31 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
   mapArray(() => paginatedData(), _s16, (payment) => String(payment.id), (payment, __idx, __existing) => {
     if (__existing) {
       initChild('TableRow', __existing, { get children() { return [createComponent('TableCell', { get className() { return "font-medium" }, get children() { return payment().id } }), createComponent('TableCell', { get children() { return payment().status } }), createComponent('TableCell', { get children() { return payment().email } }), createComponent('TableCell', { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } })] } })
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s8"], [bf-s$="_s8"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); createEffect(() => { const __v = payment().id; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s10"], [bf-s$="_s10"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); createEffect(() => { const __v = payment().status; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s12"], [bf-s$="_s12"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); createEffect(() => { const __v = payment().email; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s14"], [bf-s$="_s14"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); createEffect(() => { const __v = ["$", payment().amount.toFixed(2)]; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s8"], [bf-s$="_s8"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); { const [__ct0] = $t(__c, '^s7'); createEffect(() => { if (__ct0) __ct0.data = String(payment().id ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s10"], [bf-s$="_s10"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); { const [__ct0] = $t(__c, '^s9'); createEffect(() => { if (__ct0) __ct0.data = String(payment().status ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s12"], [bf-s$="_s12"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); { const [__ct0] = $t(__c, '^s11'); createEffect(() => { if (__ct0) __ct0.data = String(payment().email ?? '') }) } } }
+      { const __c = qsa(__existing, `[bf-h="${__scopeId}"][bf-m="s14"], [bf-s$="_s14"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); { const [__ct0] = $t(__c, '^s13'); createEffect(() => { if (__ct0) __ct0.data = String(payment().amount.toFixed(2) ?? '') }) } } }
+      const __bfw_s7 = lazySlots(__existing, [{ id: '^s7', kind: 'text', path: [] }, { id: '^s9', kind: 'text', path: [] }, { id: '^s11', kind: 'text', path: [] }, { id: '^s13', kind: 'text', path: [] }])
+      createEffect(() => {
+        __bfw_s7('^s7', String(payment().id))
+        __bfw_s7('^s9', String(payment().status))
+        __bfw_s7('^s11', String(payment().email))
+        __bfw_s7('^s13', String(payment().amount.toFixed(2)))
+      })
       return __existing
     }
     const __csrEl = createComponent('TableRow', { get children() { return [createComponent('TableCell', { get className() { return "font-medium" }, get children() { return payment().id } }), createComponent('TableCell', { get children() { return payment().status } }), createComponent('TableCell', { get children() { return payment().email } }), createComponent('TableCell', { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } })] } }, payment().id)
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s8"], [bf-s$="_s8"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); createEffect(() => { const __v = payment().id; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s10"], [bf-s$="_s10"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); createEffect(() => { const __v = payment().status; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s12"], [bf-s$="_s12"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); createEffect(() => { const __v = payment().email; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
-    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s14"], [bf-s$="_s14"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); createEffect(() => { const __v = ["$", payment().amount.toFixed(2)]; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s8"], [bf-s$="_s8"]`); if (__c) { initChild('TableCell', __c, { get className() { return "font-medium" }, get children() { return payment().id } }); { const [__ct0] = $t(__c, '^s7'); createEffect(() => { if (__ct0) __ct0.data = String(payment().id ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s10"], [bf-s$="_s10"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().status } }); { const [__ct0] = $t(__c, '^s9'); createEffect(() => { if (__ct0) __ct0.data = String(payment().status ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s12"], [bf-s$="_s12"]`); if (__c) { initChild('TableCell', __c, { get children() { return payment().email } }); { const [__ct0] = $t(__c, '^s11'); createEffect(() => { if (__ct0) __ct0.data = String(payment().email ?? '') }) } } }
+    { const __c = qsa(__csrEl, `[bf-h="${__scopeId}"][bf-m="s14"], [bf-s$="_s14"]`); if (__c) { initChild('TableCell', __c, { get className() { return "text-right" }, get children() { return ["$", payment().amount.toFixed(2)] } }); { const [__ct0] = $t(__c, '^s13'); createEffect(() => { if (__ct0) __ct0.data = String(payment().amount.toFixed(2) ?? '') }) } } }
+    const __bfw_s7 = lazySlots(__csrEl, [{ id: '^s7', kind: 'text', path: [] }, { id: '^s9', kind: 'text', path: [] }, { id: '^s11', kind: 'text', path: [] }, { id: '^s13', kind: 'text', path: [] }])
+    createEffect(() => {
+      __bfw_s7('^s7', String(payment().id))
+      __bfw_s7('^s9', String(payment().status))
+      __bfw_s7('^s11', String(payment().email))
+      __bfw_s7('^s13', String(payment().amount.toFixed(2)))
+    })
     return __csrEl
   }, 'l0')
 

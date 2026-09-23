@@ -27,6 +27,7 @@ import {
   isTextOnlyConditional,
   buildChildRefBindings,
   hasReactiveLoopBindings,
+  buildChildrenTextEffect,
 } from '../shared.ts'
 import { irChildrenToJsExpr, renderPreamble } from '../../html-template.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
@@ -83,6 +84,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
 
   // Only init components at loopDepth 0 — inner-loop components are handled by their own loop
   const outerNestedComps = (elem.nestedComponents ?? []).filter(c => !c.loopDepth)
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings, elem.index)
   // Slot ids already patched by a nested component's OWN `childrenTextEffect`
   // below — collected up front so the row-level reactive-texts wiring further
   // down can exclude them (see the comment on that filter for why).
@@ -102,8 +104,9 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
       componentName: comp.name,
       selector: buildCompSelector(comp),
       propsExpr: buildComponentPropsExpr(comp, elem.param, undefined, elem.index),
+      // #3064: marker-scoped where possible — see `buildChildrenTextEffect`.
       childrenTextEffect: childrenRefsLoop
-        ? { wrappedChildren: wrapLoopParamAsAccessor(rawChildrenExpr!, elem.param, elem.paramBindings, elem.index) }
+        ? buildChildrenTextEffect(comp.children!, rawChildrenExpr!, wrap)
         : null,
     }
   })
