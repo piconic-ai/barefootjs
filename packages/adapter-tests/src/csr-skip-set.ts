@@ -82,15 +82,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // the deferred runtime region work (spec/router.md), not this lowering
   // spike. SSR emit is pinned by the `region-boundary` JSX conformance test.
   'region-boundary',
-  // Registry limitation `fragment-wrapped-conditional-return-branch-scope`:
-  // SSR wraps the fragment-wrapped default branch in a `<!--bf-scope:-->`
-  // comment pair, but the emitted client JS carries no `comment: true`
-  // (the flag is decided once per component, not per branch), so a pure
-  // client mount puts `bf-s` on the `<button>` root instead. That SSR-vs-
-  // csr-mount split IS the limitation (quarantined against the
-  // `'three-point'` oracle in `oracle-quarantine.ts`); per-adapter render
-  // conformance pins the SSR contract, which every adapter matches.
-  'conditional-return-fragment-branch',
+  // `conditional-return-fragment-branch` graduated out of this set (#3063):
+  // the shape now refuses to compile (BF029) instead of silently diverging
+  // between SSR and a pure client mount, so the fixture carries no
+  // `expectedHtml` and the CSR conformance loop's own `!fixture.expectedHtml`
+  // guard already skips it — no skip entry needed.
   // Priority-12 sweep: REAL SSR/CSR divergences (not harness artifacts),
   // skipped until the pipeline reconciles the two paths.
   // `jsx-element-prop` graduated (#2651 fixed): a non-children JSX prop now

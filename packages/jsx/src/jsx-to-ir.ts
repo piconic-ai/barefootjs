@@ -285,6 +285,43 @@ function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFil
 }
 
 /**
+ * #3063: refuse a fragment-wrapped branch of a multi-return client
+ * component loudly instead of silently shipping a branch whose events
+ * never bind after hydrating existing SSR markup (see
+ * `ErrorCodes.FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH`'s docstring for
+ * the mechanism). Called once per branch from `buildIfStatementChain`,
+ * right after that branch transforms — `rawNode` is the branch's own raw
+ * JSX return expression (needed for the `/* @client *\/` escape check;
+ * `transformNode`'s output doesn't retain a pointer back to it), `node` is
+ * what that transform produced.
+ *
+ * A non-client component never hydrates, so it can't hit this — gated on
+ * `hasUseClientDirective` rather than the fuller `needsInit`-inclusive
+ * `hasClientInteractivity` formula (`component-root-scope-comment.ts`)
+ * both because a bare fragment branch has no nested component call to
+ * force `needsInit` the way #3141's shape structurally does, and because
+ * scoping this to the directive keeps the refusal narrow and predictable
+ * for authors (event handlers inside a non-"use client" file already fail
+ * earlier, at `BF001`).
+ */
+function checkFragmentWrappedConditionalReturnBranch(
+  node: IRNode | null,
+  rawNode: ts.Expression | null | undefined,
+  ctx: TransformContext
+): void {
+  if (!ctx.analyzer.hasUseClientDirective) return
+  if (!node || node.type !== 'fragment' || !(node as IRFragment).needsScopeComment) return
+  if (!rawNode || hasLeadingClientDirective(rawNode, ctx.sourceFile)) return
+  ctx.analyzer.errors.push(
+    createError(ErrorCodes.FRAGMENT_WRAPPED_CONDITIONAL_RETURN_BRANCH, node.loc, {
+      suggestion: {
+        message: 'Add /* @client */ immediately before this branch\'s JSX to compile it anyway.',
+      },
+    })
+  )
+}
+
+/**
  * The set of known reactive getter names (signal accessors + memo names) for the
  * component, built once and cached on `ctx`. These reads are idempotent within a
  * render, so consumers can treat `getter()` as a pure value (e.g. the block-fold
@@ -8839,6 +8876,14 @@ function buildIfStatementChain(
   if (analyzer.jsxReturn) {
     ctx.isRoot = !asConditional
     alternate = transformNode(analyzer.jsxReturn, ctx)
+    // #3063: only the `if-statement` chain shape is at risk — in
+    // `asConditional` mode (#2463) branches sit inside the caller's
+    // synthetic `display:contents` wrapper element and never claim their
+    // own root scope, so the per-component `comment`/`fragmentRoot` flag
+    // this refusal exists for doesn't apply.
+    if (!asConditional) {
+      checkFragmentWrappedConditionalReturnBranch(alternate, analyzer.jsxReturn, ctx)
+    }
   }
 
   // Build the if-else chain from the last conditional to the first
@@ -8971,6 +9016,9 @@ function buildIfStatementChain(
     let consequent: IRNode | null
     try {
       consequent = transformNode(condReturn.jsxReturn, ctx)
+      if (!asConditional) {
+        checkFragmentWrappedConditionalReturnBranch(consequent, condReturn.jsxReturn, ctx)
+      }
     } finally {
       if (branchNames.length > 0) {
         ctx.getJS = prevCtxGetJS
