@@ -2059,7 +2059,88 @@
         }
       },
       "conditional-return-fragment-branch": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
         "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF029"
+          ],
+          "limitations": [
+            "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        },
+        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF029"
@@ -5590,7 +5671,16 @@
         "conditional-return-fragment-branch"
       ],
       "adapters": [
-        "hono"
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ],
       "diagnostics": [
         "BF029"
