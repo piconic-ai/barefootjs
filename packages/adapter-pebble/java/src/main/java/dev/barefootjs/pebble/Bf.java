@@ -94,7 +94,7 @@ public final class Bf {
   /** JSX `key` prop popped by `render_child`, threaded onto `data_key_attr()`. `null` unless this is a keyed loop-row child. */
   private final Object dataKey;
 
-  /** Props payload for `props_attr()`/`scope_comment()`'s `bf-p`/props-JSON segment. Never populated by `render_child` (mirrors the Jinja/Rust ports, where the equivalent field is likewise always absent for a CHILD — see this class's own render-state-helpers header); every helper vector / hand-written-`.peb` smoke test in this package also leaves it `null`. A REAL production root render DOES need it set — see the `(String, PebbleEngine, Map, Object)` constructor and {@link #newRoot(String, Bf, Object)}, both added for exactly that (`integrations/spring`'s `Render.renderRoot`). */
+  /** Props payload for `props_attr()`/`scope_comment()`'s `bf-p`/props-JSON segment. Never populated by `render_child` (mirrors the Jinja/Rust ports, where the equivalent field is likewise always absent for a CHILD — see this class's own render-state-helpers header); every helper vector / hand-written-`.peb` smoke test in this package also leaves it `null`. A REAL root render DOES need it set — see the `(String, PebbleEngine, Map, Object)` constructor and {@link #newRoot(String, Bf, Object)}, both added for exactly that (`integrations/spring`'s `Render.renderRoot`; the conformance harness's `Main` seeds it the same way from `vars.json`'s reserved `__bf_root_props` key). */
   private final Object markerProps;
 
   /**
@@ -180,9 +180,10 @@ public final class Bf {
    * Like {@link #Bf(String, PebbleEngine, Map)}, but ALSO seeding this
    * root's {@code bf-p} hydration-payload marker (see
    * {@link #props_attr()}/{@link #scope_comment}) with {@code rootProps} —
-   * needed for a REAL production host (this Java runtime's own conformance
-   * harness never populates it — see {@link #markerProps}'s doc comment —
-   * but a real page render must, or the client runtime re-hydrates a
+   * needed for a REAL production host (and seeded the same way by this
+   * Java runtime's own conformance harness via {@link Main} — see
+   * {@link #markerProps}'s doc comment — since a real page render must, or
+   * the client runtime re-hydrates a
    * `@client` root's reactive state from NOTHING rather than the actual
    * props it was rendered with, silently discarding an SSR'd list/object
    * prop on hydration). Mirrors `render.rs`'s `render_root` setting
