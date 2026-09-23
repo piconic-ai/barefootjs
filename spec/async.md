@@ -278,9 +278,18 @@ The function returns a **request descriptor** built by the `http` namespace:
 
 | Constructor | Returns | Notes |
 |---|---|---|
-| `http.get(url, params?)`, `http.query(url, body?)`, `http.head(url, params?)` | descriptor with a *safe* method | `params` is serialised with `queryHref` semantics (empty / `undefined` omitted) |
+| `http.get(url, params?)`, `http.head(url, params?)` | descriptor with a *safe* method | `params` values are `string \| number \| boolean \| (string \| number)[] \| null \| undefined`; `null`/`undefined`/`''` are omitted, an array appends one entry per member. **Not** `queryHref`'s string-only rule — descriptors are never lowered to an SSR template, so the SSR-parity reason for string-only values doesn't apply, and `0`/`false` are kept (stringified, not treated as falsy) |
+| `http.query(url, body?)` | descriptor with a *safe* method (HTTP QUERY: a read with a body) | `body` is JSON |
 | `http.post(url, body?)`, `http.put(url, body?)`, `http.patch(url, body?)`, `http.delete(url, body?)` | descriptor with an *unsafe* method | `body` is JSON |
 | third argument on any of them | `{ headers, credentials }` | |
+
+**Response handling is JSON-only in v0** (issue #3156). `sendRequest` — the internal function
+`createQuery` sends through — sends with `Content-Type: application/json` when there is a
+body, and parses a successful response with `response.json()`; `HEAD` always resolves to
+`undefined` regardless of status (a `HEAD` response has no body). A non-2xx response rejects
+with `HttpError`, carrying `{ status: number; body: unknown }` — `body` is the response parsed
+as JSON when possible, else raw text, else `undefined`. A network failure (the `fetch` call
+itself rejecting) rejects with the underlying error unchanged, not wrapped in `HttpError`.
 
 Descriptors are **pure data** — constructing one performs no I/O. That purity is load-bearing
 three times over:
