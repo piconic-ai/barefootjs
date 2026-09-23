@@ -99,6 +99,45 @@ function nillableAwarePropRef(
 }
 
 /**
+ * #3142: whether `preParsed` is a signal seed that reads a MEMBER of an
+ * object-typed prop — `createSignal(initial.label)` (destructured
+ * component) or `createSignal(props.initial.label)` (SolidJS-style
+ * `propsObjectName` component) — a shape `extractPropNameFromInitialValue`
+ * (which only ever matches a FLAT `prop.field` or `prop.field ?? fallback`)
+ * never recognises, and that `convertInitialValue`'s literal-baking
+ * branches below can't reach either (`initial.label` parses to a `member`
+ * node, never a `literal`). Returns the prop name + member field so the
+ * caller can refuse with an actionable message instead of silently baking
+ * `nil` — a real fix would need the object prop typed as its synthesized
+ * struct (so `in.Initial.Label` is a valid Go field path) and a child's
+ * typed Input field to accept it, out of scope for this loud stopgap.
+ */
+function unresolvedPropMemberSeed(
+  ctx: GoEmitContext,
+  preParsed: ParsedExpr | undefined,
+  propsParams: { name: string; sourceName?: string }[] | undefined,
+): { propName: string; property: string } | null {
+  if (!preParsed || preParsed.kind !== 'member' || preParsed.computed) return null
+  const obj = preParsed.object
+  if (obj.kind === 'identifier') {
+    if (propsParams?.some(p => p.name === obj.name)) {
+      return { propName: obj.name, property: preParsed.property }
+    }
+    return null
+  }
+  if (
+    obj.kind === 'member' &&
+    !obj.computed &&
+    obj.object.kind === 'identifier' &&
+    ctx.state.propsObjectName !== null &&
+    obj.object.name === ctx.state.propsObjectName
+  ) {
+    return { propName: obj.property, property: preParsed.property }
+  }
+  return null
+}
+
+/**
  * Lower a signal/const initial value to its Go SSR literal: a prop reference
  * becomes `in.<Field>`, a non-literal falls back to the type's zero value.
  */
@@ -143,6 +182,22 @@ export function convertInitialValue(
   const param = propName ? propsParams?.find(p => p.name === propName) : undefined
   if (param) {
     return propRef(param)
+  }
+
+  // #3142: refuse loudly instead of falling through to the literal-baking
+  // branches below (none of which match a `member` node) and silently
+  // baking `nil`.
+  const memberSeed = unresolvedPropMemberSeed(ctx, preParsed, propsParams)
+  if (memberSeed) {
+    ctx.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Signal seeded from '${memberSeed.propName}.${memberSeed.property}' has no Go template lowering — a member of an object-typed prop cannot be baked into the constructor as a nested struct field.`,
+      loc: { file: `${ctx.state.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+      suggestion: {
+        message: `Pass '${memberSeed.property}' as its own top-level prop instead of nesting it inside '${memberSeed.propName}'.`,
+      },
+    })
   }
 
   // A `T | undefined`/`T | null` union's literal initial value silently fell

@@ -2039,6 +2039,60 @@ export function Host() {
     })
   })
 
+  describe('#3142 signal seeded from a member of an object-typed prop', () => {
+    // `createSignal(initial.label)` (destructured) / `createSignal(props.initial.label)`
+    // (SolidJS-style) parse `initial.label` as a `member` node, never a
+    // `literal` — none of `convertInitialValue`'s literal-baking branches
+    // match it, and `extractPropNameFromInitialValue` only ever matches a
+    // FLAT `prop.field`, so this used to silently bake `Label: nil,`. Now
+    // refuses loudly (BF101) instead.
+    test('destructured component: refuses instead of baking Label: nil,', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Widget({ initial }: { initial: { label: string } }) {
+  const [label] = createSignal(initial.label)
+  return <span>{label()}</span>
+}
+`, adapter)
+      adapter.generate(ir)
+      const bf101 = ir.errors.filter(e => e.code === 'BF101')
+      expect(bf101).toHaveLength(1)
+      expect(bf101[0].message).toContain("initial.label")
+    })
+
+    test('non-destructured (propsObjectName) component: refuses the same shape', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Widget(props: { initial: { label: string } }) {
+  const [label] = createSignal(props.initial.label)
+  return <span>{label()}</span>
+}
+`, adapter)
+      adapter.generate(ir)
+      const bf101 = ir.errors.filter(e => e.code === 'BF101')
+      expect(bf101).toHaveLength(1)
+    })
+
+    test('a FLAT prop member (not nested) still resolves normally, no refusal', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Widget({ label }: { label: string }) {
+  const [text] = createSignal(label)
+  return <span>{text()}</span>
+}
+`, adapter)
+      const result = adapter.generate(ir)
+      expect(ir.errors.filter(e => e.code === 'BF101')).toHaveLength(0)
+      expect(result.types).not.toContain('Text: nil,')
+    })
+  })
+
   describe('#2925 nested-child getter/object-literal props', () => {
     // Companion to the #2674 collision test above (`a synthesized-name
     // collision gracefully falls back...`), but for `registerChildComponentShape`'s
