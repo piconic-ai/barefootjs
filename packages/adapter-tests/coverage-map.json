@@ -2278,6 +2278,22 @@
         "attribute"
       ]
     },
+    "diamond-propagation": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:boolean",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "dropdown-menu": {
       "kinds": [
         "array-literal",
@@ -7127,12 +7143,12 @@
     "array-literal": 120,
     "array-method": 72,
     "arrow": 77,
-    "binary": 111,
-    "call": 299,
+    "binary": 112,
+    "call": 300,
     "conditional": 36,
-    "identifier": 421,
+    "identifier": 422,
     "index-access": 15,
-    "literal": 332,
+    "literal": 333,
     "logical": 53,
     "member": 247,
     "object-literal": 96,
@@ -7168,7 +7184,7 @@
     "binary:!=": 2,
     "binary:!==": 12,
     "binary:%": 1,
-    "binary:*": 14,
+    "binary:*": 15,
     "binary:+": 27,
     "binary:-": 12,
     "binary:/": 1,
@@ -7176,9 +7192,9 @@
     "binary:===": 56,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 73,
+    "literal:boolean": 74,
     "literal:null": 27,
-    "literal:number": 154,
+    "literal:number": 155,
     "literal:string": 223,
     "logical:&&": 7,
     "logical:??": 44,

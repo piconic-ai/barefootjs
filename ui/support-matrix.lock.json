@@ -1982,15 +1982,15 @@
       }
     },
     "binary": {
-      "total": 111,
+      "total": 112,
       "cells": {
         "hono": {
-          "pass": 111,
-          "total": 111
+          "pass": 112,
+          "total": 112
         },
         "blade": {
-          "pass": 100,
-          "total": 111,
+          "pass": 101,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2061,8 +2061,8 @@
           ]
         },
         "erb": {
-          "pass": 101,
-          "total": 111,
+          "pass": 102,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2127,8 +2127,8 @@
           ]
         },
         "go-template": {
-          "pass": 99,
-          "total": 111,
+          "pass": 100,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2205,8 +2205,8 @@
           ]
         },
         "jinja": {
-          "pass": 100,
-          "total": 111,
+          "pass": 101,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2277,8 +2277,8 @@
           ]
         },
         "minijinja": {
-          "pass": 100,
-          "total": 111,
+          "pass": 101,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2349,8 +2349,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 101,
-          "total": 111,
+          "pass": 102,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2415,8 +2415,8 @@
           ]
         },
         "pebble": {
-          "pass": 100,
-          "total": 111,
+          "pass": 101,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2487,8 +2487,8 @@
           ]
         },
         "twig": {
-          "pass": 100,
-          "total": 111,
+          "pass": 101,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2559,8 +2559,8 @@
           ]
         },
         "xslate": {
-          "pass": 100,
-          "total": 111,
+          "pass": 101,
+          "total": 112,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2644,11 +2644,11 @@
       }
     },
     "call": {
-      "total": 299,
+      "total": 300,
       "cells": {
         "hono": {
-          "pass": 296,
-          "total": 299,
+          "pass": 297,
+          "total": 300,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2671,8 +2671,8 @@
           ]
         },
         "blade": {
-          "pass": 275,
-          "total": 299,
+          "pass": 276,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2821,8 +2821,8 @@
           ]
         },
         "erb": {
-          "pass": 276,
-          "total": 299,
+          "pass": 277,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -2965,8 +2965,8 @@
           ]
         },
         "go-template": {
-          "pass": 270,
-          "total": 299,
+          "pass": 271,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3145,8 +3145,8 @@
           ]
         },
         "jinja": {
-          "pass": 275,
-          "total": 299,
+          "pass": 276,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3295,8 +3295,8 @@
           ]
         },
         "minijinja": {
-          "pass": 275,
-          "total": 299,
+          "pass": 276,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3445,8 +3445,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 276,
-          "total": 299,
+          "pass": 277,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3589,8 +3589,8 @@
           ]
         },
         "pebble": {
-          "pass": 275,
-          "total": 299,
+          "pass": 276,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3739,8 +3739,8 @@
           ]
         },
         "twig": {
-          "pass": 275,
-          "total": 299,
+          "pass": 276,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -3889,8 +3889,8 @@
           ]
         },
         "xslate": {
-          "pass": 275,
-          "total": 299,
+          "pass": 276,
+          "total": 300,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4410,11 +4410,11 @@
       }
     },
     "identifier": {
-      "total": 421,
+      "total": 422,
       "cells": {
         "hono": {
-          "pass": 416,
-          "total": 421,
+          "pass": 417,
+          "total": 422,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -4449,8 +4449,8 @@
           ]
         },
         "blade": {
-          "pass": 393,
-          "total": 421,
+          "pass": 394,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4623,8 +4623,8 @@
           ]
         },
         "erb": {
-          "pass": 394,
-          "total": 421,
+          "pass": 395,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -4791,8 +4791,8 @@
           ]
         },
         "go-template": {
-          "pass": 387,
-          "total": 421,
+          "pass": 388,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5001,8 +5001,8 @@
           ]
         },
         "jinja": {
-          "pass": 393,
-          "total": 421,
+          "pass": 394,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5175,8 +5175,8 @@
           ]
         },
         "minijinja": {
-          "pass": 393,
-          "total": 421,
+          "pass": 394,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5349,8 +5349,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 392,
-          "total": 421,
+          "pass": 393,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5529,8 +5529,8 @@
           ]
         },
         "pebble": {
-          "pass": 393,
-          "total": 421,
+          "pass": 394,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5703,8 +5703,8 @@
           ]
         },
         "twig": {
-          "pass": 393,
-          "total": 421,
+          "pass": 394,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -5877,8 +5877,8 @@
           ]
         },
         "xslate": {
-          "pass": 391,
-          "total": 421,
+          "pass": 392,
+          "total": 422,
           "gaps": [
             {
               "fixture": "combobox",
@@ -6258,11 +6258,11 @@
       }
     },
     "literal": {
-      "total": 332,
+      "total": 333,
       "cells": {
         "hono": {
-          "pass": 330,
-          "total": 332,
+          "pass": 331,
+          "total": 333,
           "gaps": [
             {
               "fixture": "format-date",
@@ -6279,8 +6279,8 @@
           ]
         },
         "blade": {
-          "pass": 313,
-          "total": 332,
+          "pass": 314,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -6399,8 +6399,8 @@
           ]
         },
         "erb": {
-          "pass": 313,
-          "total": 332,
+          "pass": 314,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -6519,8 +6519,8 @@
           ]
         },
         "go-template": {
-          "pass": 309,
-          "total": 332,
+          "pass": 310,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -6663,8 +6663,8 @@
           ]
         },
         "jinja": {
-          "pass": 313,
-          "total": 332,
+          "pass": 314,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -6783,8 +6783,8 @@
           ]
         },
         "minijinja": {
-          "pass": 313,
-          "total": 332,
+          "pass": 314,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -6903,8 +6903,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 311,
-          "total": 332,
+          "pass": 312,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -7035,8 +7035,8 @@
           ]
         },
         "pebble": {
-          "pass": 313,
-          "total": 332,
+          "pass": 314,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -7155,8 +7155,8 @@
           ]
         },
         "twig": {
-          "pass": 313,
-          "total": 332,
+          "pass": 314,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -7275,8 +7275,8 @@
           ]
         },
         "xslate": {
-          "pass": 311,
-          "total": 332,
+          "pass": 312,
+          "total": 333,
           "gaps": [
             {
               "fixture": "combobox",
@@ -12932,47 +12932,47 @@
       }
     },
     "binary:*": {
-      "total": 14,
+      "total": 15,
       "cells": {
         "hono": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "blade": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "erb": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "go-template": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "jinja": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "minijinja": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "mojolicious": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "pebble": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "twig": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         },
         "xslate": {
-          "pass": 14,
-          "total": 14
+          "pass": 15,
+          "total": 15
         }
       },
       "source": {
@@ -14130,11 +14130,11 @@
       }
     },
     "literal:boolean": {
-      "total": 73,
+      "total": 74,
       "cells": {
         "hono": {
-          "pass": 72,
-          "total": 73,
+          "pass": 73,
+          "total": 74,
           "gaps": [
             {
               "fixture": "jsx-element-prop-ternary",
@@ -14145,8 +14145,8 @@
           ]
         },
         "blade": {
-          "pass": 69,
-          "total": 73,
+          "pass": 70,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14175,8 +14175,8 @@
           ]
         },
         "erb": {
-          "pass": 69,
-          "total": 73,
+          "pass": 70,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14205,8 +14205,8 @@
           ]
         },
         "go-template": {
-          "pass": 68,
-          "total": 73,
+          "pass": 69,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14241,8 +14241,8 @@
           ]
         },
         "jinja": {
-          "pass": 69,
-          "total": 73,
+          "pass": 70,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14271,8 +14271,8 @@
           ]
         },
         "minijinja": {
-          "pass": 69,
-          "total": 73,
+          "pass": 70,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14301,8 +14301,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 67,
-          "total": 73,
+          "pass": 68,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14343,8 +14343,8 @@
           ]
         },
         "pebble": {
-          "pass": 69,
-          "total": 73,
+          "pass": 70,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14373,8 +14373,8 @@
           ]
         },
         "twig": {
-          "pass": 69,
-          "total": 73,
+          "pass": 70,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14403,8 +14403,8 @@
           ]
         },
         "xslate": {
-          "pass": 67,
-          "total": 73,
+          "pass": 68,
+          "total": 74,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14597,15 +14597,15 @@
       }
     },
     "literal:number": {
-      "total": 154,
+      "total": 155,
       "cells": {
         "hono": {
-          "pass": 154,
-          "total": 154
+          "pass": 155,
+          "total": 155
         },
         "blade": {
-          "pass": 143,
-          "total": 154,
+          "pass": 144,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14676,8 +14676,8 @@
           ]
         },
         "erb": {
-          "pass": 143,
-          "total": 154,
+          "pass": 144,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14748,8 +14748,8 @@
           ]
         },
         "go-template": {
-          "pass": 141,
-          "total": 154,
+          "pass": 142,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14832,8 +14832,8 @@
           ]
         },
         "jinja": {
-          "pass": 143,
-          "total": 154,
+          "pass": 144,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14904,8 +14904,8 @@
           ]
         },
         "minijinja": {
-          "pass": 143,
-          "total": 154,
+          "pass": 144,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -14976,8 +14976,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 141,
-          "total": 154,
+          "pass": 142,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -15060,8 +15060,8 @@
           ]
         },
         "pebble": {
-          "pass": 143,
-          "total": 154,
+          "pass": 144,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -15132,8 +15132,8 @@
           ]
         },
         "twig": {
-          "pass": 143,
-          "total": 154,
+          "pass": 144,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",
@@ -15204,8 +15204,8 @@
           ]
         },
         "xslate": {
-          "pass": 141,
-          "total": 154,
+          "pass": 142,
+          "total": 155,
           "gaps": [
             {
               "fixture": "combobox",

@@ -732,6 +732,13 @@ import { fixture as loopRowChildChildrenAttrs } from './loop-row-child-children-
 // survived the branch's removal). Found by the explore sweep's
 // `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
+// Diamond propagation: one signal read through two memos by one effect.
+// The runtime dispatches synchronously in subscription order, so the
+// effect's first re-run sees a half-updated memo pair and it runs three
+// times per write — no diagnostic, silent, invisible in the settled DOM.
+// Registry limitation `diamond-propagation-glitch`; quarantined in
+// `fixture-hydrate-quarantine.ts` (fixture-only, not fixed here).
+import { fixture as diamondPropagation } from './diamond-propagation'
 
 import type { JSXFixture } from '../src/types'
 
@@ -1203,4 +1210,5 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildRestBagPropHoisted,
   loopRowChildChildrenAttrs,
   conditionalChildListenerCleanup,
+  diamondPropagation,
 ]
