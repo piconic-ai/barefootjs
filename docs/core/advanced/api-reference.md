@@ -33,6 +33,7 @@ Everything `@barefootjs/client` exports. **Beta** is the set a component author 
 | [`findSiblingSlot()`](#findsiblingslot) | function | 0.1.0 | **Beta** |
 | [`http`](#http) | const | 0.38.0 | Alpha |
 | [`HttpDescriptor`](#httpdescriptor) | type | 0.38.0 | Alpha |
+| [`HttpError`](#httperror) | class | 0.38.0 | Alpha |
 | [`HttpInit`](#httpinit) | interface | 0.38.0 | Alpha |
 | [`HttpMethod`](#httpmethod) | type | 0.38.0 | Alpha |
 | [`HttpParams`](#httpparams) | type | 0.38.0 | Alpha |
@@ -253,6 +254,12 @@ Build `http` request descriptors — pure, synchronous, no I/O. See the module d
 `type` · Alpha since 0.38.0 · `@barefootjs/client`
 
 A pure request descriptor. Constructing one performs no I/O — see the `http` namespace below. `T` is a phantom: it is never set on the runtime object, only carried in the type so `createQuery`'s `initial` and `value()` can be checked against it.
+
+### `HttpError`
+
+`class` · Alpha since 0.38.0 · `@barefootjs/client`
+
+A non-2xx HTTP response to a request sent from an `http` descriptor — what a query's `error()` holds when the server answered with an error status (a network failure is the underlying error instead). `status` is the response status; `body` is the response body parsed as JSON when possible, else the raw text, else `undefined`.
 
 ### `HttpInit`
 

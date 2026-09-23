@@ -108,6 +108,10 @@ export function isSafeMethod(method: HttpMethod): boolean {
  * Guards against cycles with `seen` (an object already visited is skipped,
  * not re-frozen) so a circular `body`/`params`/`init` freezes without
  * looping — mirrors `Object.freeze`'s own no-op-on-primitive semantics.
+ *
+ * Only ever called on `snapshot`'s copy, never on a value the caller passed
+ * in: freezing the caller's own object would make a later in-place write to
+ * it (a signal's value object passed straight in as `body`) throw.
  */
 function deepFreeze<T>(value: T, seen: Set<unknown> = new Set()): T {
   if (value === null || typeof value !== 'object' || seen.has(value)) return value
@@ -117,19 +121,25 @@ function deepFreeze<T>(value: T, seen: Set<unknown> = new Set()): T {
   return Object.freeze(value)
 }
 
-function freeze<T>(descriptor: HttpDescriptor<T>): HttpDescriptor<T> {
-  deepFreeze(descriptor.params)
-  deepFreeze(descriptor.body)
-  deepFreeze(descriptor.init)
-  return Object.freeze(descriptor)
+/**
+ * A frozen deep copy of `value`. The descriptor holds this copy rather than
+ * the caller's object, so the key computed from it and the request later sent
+ * from it cannot drift if the caller mutates their object in between (the
+ * send runs at the end of the tick), and the caller's object stays mutable.
+ * `structuredClone` preserves cycles, so a circular `body` still reaches
+ * `requestKey`'s `TypeError` rather than failing here.
+ */
+function snapshot<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value
+  return deepFreeze(structuredClone(value))
 }
 
 function withParams<T>(method: HttpMethod, url: string, params?: HttpParams, init?: HttpInit): HttpDescriptor<T> {
-  return freeze({ kind: 'http', method, url, params, init })
+  return Object.freeze({ kind: 'http', method, url, params: snapshot(params), init: snapshot(init) })
 }
 
 function withBody<T>(method: HttpMethod, url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
-  return freeze({ kind: 'http', method, url, body, init })
+  return Object.freeze({ kind: 'http', method, url, body: snapshot(body), init: snapshot(init) })
 }
 
 /**
@@ -149,7 +159,7 @@ export const http = {
   query<T>(url: string, body?: unknown, init?: HttpInit): HttpDescriptor<T> {
     return withBody<T>('QUERY', url, body, init)
   },
-  /** Safe. `params` (query string) is optional. Always resolves to `undefined`. */
+  /** Safe. `params` (query string) is optional. A successful response resolves to `undefined` (no body); a non-2xx one rejects with `HttpError`. */
   head<T>(url: string, params?: HttpParams, init?: HttpInit): HttpDescriptor<T> {
     return withParams<T>('HEAD', url, params, init)
   },
@@ -251,9 +261,11 @@ export function requestKey(descriptor: HttpDescriptor<unknown>): string {
 }
 
 /**
- * A non-2xx HTTP response, thrown by `sendRequest`. `body` is the parsed JSON
- * body when the response could be parsed as JSON, else the raw text, else
- * `undefined`.
+ * A non-2xx HTTP response to a request sent from an `http` descriptor — what a
+ * query's `error()` holds when the server answered with an error status (a
+ * network failure is the underlying error instead). `status` is the response
+ * status; `body` is the response body parsed as JSON when possible, else the
+ * raw text, else `undefined`.
  *
  * @since 0.38.0
  * @stability alpha

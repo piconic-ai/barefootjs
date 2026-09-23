@@ -69,6 +69,39 @@ describe('descriptors are frozen', () => {
     expect(Object.isFrozen(withInit.init)).toBe(true)
     expect(Object.isFrozen(withInit.init?.headers)).toBe(true)
   })
+
+  test("the caller's own objects are copied, not frozen in place", () => {
+    const body = { title: 'x', tags: ['a'] }
+    const params = { page: 1 }
+    const init = { headers: { Authorization: 'x' } }
+    http.post('/api/posts', body, init)
+    http.get('/api/posts', params)
+    expect(Object.isFrozen(body)).toBe(false)
+    expect(Object.isFrozen(body.tags)).toBe(false)
+    expect(Object.isFrozen(params)).toBe(false)
+    expect(Object.isFrozen(init.headers)).toBe(false)
+    // A later in-place write (strict mode) must not throw.
+    expect(() => {
+      body.title = 'y'
+      body.tags.push('b')
+    }).not.toThrow()
+  })
+
+  test('a later write to the caller object changes neither the descriptor nor its key', () => {
+    const body = { title: 'x' }
+    const d = http.post('/api/posts', body)
+    const keyBefore = requestKey(d)
+    body.title = 'changed'
+    expect((d.body as typeof body).title).toBe('x')
+    expect(requestKey(d)).toBe(keyBefore)
+  })
+})
+
+describe('public entry', () => {
+  test('HttpError is exported from @barefootjs/client for instanceof checks on error()', async () => {
+    const entry = await import('../src/index')
+    expect(entry.HttpError).toBe(HttpError)
+  })
 })
 
 describe('isHttpDescriptor / isSafeMethod', () => {
