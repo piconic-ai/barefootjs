@@ -5678,11 +5678,11 @@
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
     "loop-row-child-children-attrs-frozen": {
-      "title": "Reactive attributes on a JSX element passed as a loop-row child component's children are never patched after hydration",
+      "title": "A loop-row child component's forwarded JSX children never reach SSR when the loop's source array is a function-body-local const",
       "kind": "silent",
-      "given": "a `.map()` loop row that calls a child component passing a JSX element as `children`, where that element carries its own reactive attributes (e.g. `<Chip><a href={sig() === item ? …}>…</a></Chip>` inside `items.map(item => …)`)",
-      "expected": "the row's markup re-renders on every signal update the same way it does outside a loop: the forwarded element's attributes track the live signal value",
-      "actual": "keeps the attribute at whichever value the signal held when the row was built during SSR/CSR-template construction (no effect is ever emitted for it, so nothing touches it again after that), or on an adapter whose loop-array construction the shape also defeats (go-template: a function-body-local const array), drops the row entirely from SSR — same underlying gap, caught earlier",
+      "given": "a `.map()` loop row that calls a child component passing a JSX element as `children` (e.g. `<Chip><a href={sig() === item ? …}>…</a></Chip>` inside `items.map(item => …)`), where the loop's source array is declared as a `const` local to the component function body (not at module scope)",
+      "expected": "the row's markup — including the forwarded child element — renders at SSR the same way it does for a module-scope array",
+      "actual": "drops the whole loop from SSR silently on an adapter whose loop-array construction the shape defeats (go-template: the generated constructor never populates the corresponding struct slice field for a function-body-local array, only for a module-scope one)",
       "fixtures": [
         "loop-row-child-children-attrs"
       ],
