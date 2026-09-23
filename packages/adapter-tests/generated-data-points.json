@@ -911,22 +911,6 @@
       }
     }
   ],
-  "conditional-return-fragment-branch": [
-    {
-      "name": "gen:asLink:true",
-      "props": {
-        "__instanceId": "ConditionalReturnFragmentBranch_test",
-        "asLink": true
-      }
-    },
-    {
-      "name": "gen:asLink:false",
-      "props": {
-        "__instanceId": "ConditionalReturnFragmentBranch_test",
-        "asLink": false
-      }
-    }
-  ],
   "conditional-return-link": [
     {
       "name": "gen:variant:absent",
