@@ -61,12 +61,13 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // writes landing one frame after the item `hidden` writes; the root now
   // derives all of them synchronously from an item-registry signal (see
   // `IDEMPOTENCE_EXCLUDED`'s docstring in `oracle.playwright.ts`).
-  command: {
-    oracles: ['snap', 'three-point'],
-    reason:
-      'Default-selected command item SSRs the hard-coded data-selected="false" (no data-value at all); hydration corrects to data-selected="true" data-value="Calendar".',
-    limitation: 'ref-effect-attr-state-ssr',
-  },
+  // `command` graduated (#3065): CommandItem's `data-value` now comes
+  // straight from `props.value` (already the common case in every real
+  // usage) and a new `defaultSelected` prop — the caller marks whichever
+  // item is first in document order — renders `data-selected` instead of
+  // the hard-coded `"false"` literal, mirroring the accordion/radio-group
+  // fix. The mount effect still keeps both correct once the search
+  // narrows the auto-selected item.
   // Reactive child-prop DOM mirroring has no SSR counterpart (#2715,
   // direction and mechanism corrected 2026-08-26): `emitReactiveChildProps`
   // (emit-reactive.ts) mirrors a non-standard NAMED child prop onto the

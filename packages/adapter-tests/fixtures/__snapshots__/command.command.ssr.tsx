@@ -119,6 +119,17 @@ interface CommandItemProps extends HTMLBaseAttributes {
   keywords?: string[]
   /** Whether disabled */
   disabled?: boolean
+  /**
+   * Whether this item is the list's initial auto-selection. Pass `true` on
+   * the first `CommandItem` rendered (in document order, across groups) so
+   * `data-selected` renders correctly in the server-rendered HTML instead
+   * of "unselected" being corrected by the root `Command`'s mount effect
+   * only after hydration — the root always auto-selects the first visible
+   * item once its item registry settles, and with an empty initial search
+   * every item is visible, so the first-rendered item is always that
+   * initial pick.
+   */
+  defaultSelected?: boolean
   /** Callback when selected */
   onSelect?: (value: string) => void
   /** Children */
@@ -335,12 +346,13 @@ export function CommandItem(__allProps: CommandItemProps & { __instanceId?: stri
     if (!(typeof props.value === 'object' && props.value !== null && 'isEscaped' in props.value)) __hydrateProps['value'] = props.value
     if (!(typeof props.keywords === 'object' && props.keywords !== null && 'isEscaped' in props.keywords)) __hydrateProps['keywords'] = props.keywords
     if (!(typeof props.disabled === 'object' && props.disabled !== null && 'isEscaped' in props.disabled)) __hydrateProps['disabled'] = props.disabled
+    if (!(typeof props.defaultSelected === 'object' && props.defaultSelected !== null && 'isEscaped' in props.defaultSelected)) __hydrateProps['defaultSelected'] = props.defaultSelected
     if (!(typeof props.children === 'object' && props.children !== null && 'isEscaped' in props.children)) __hydrateProps['children'] = props.children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CommandItem', {})
   }
 
   return (
-    <div data-slot="command-item" id={props.id} role="option" data-disabled={(isDisabled()) || undefined} data-selected="false" className={`${commandItemClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
+    <div data-slot="command-item" id={props.id} role="option" data-disabled={(isDisabled()) || undefined} data-value={props.value} data-selected={`${props.defaultSelected ? 'true' : 'false'}`} className={`${commandItemClasses} ${props.className ?? ''}`} bf-s={__scopeId} {...(__bfParent ? { "bf-h": __bfParent } : {})} {...(__bfMount ? { "bf-m": __bfMount } : {})} {...(!__bfChild ? { "bf-r": "" } : {})} {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})} {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})} bf="s0">{props.children}</div>
   )
 }
 
