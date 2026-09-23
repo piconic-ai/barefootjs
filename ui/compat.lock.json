@@ -2000,7 +2000,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
-    "totalFixtures": 439,
+    "totalFixtures": 440,
     "fixtures": {
       "combobox": {
         "blade": {
@@ -5513,6 +5513,17 @@
       "diagnostics": [
         "BF101"
       ]
+    },
+    "conditional-branch-child-double-init": {
+      "title": "A child component inside a reactive conditional branch that is active at hydration is initialized twice",
+      "kind": "silent",
+      "given": "a child component rendered directly inside a reactive conditional branch (`{cond() ? <Child /> : null}` or `{cond() && <Child />}`) whose branch is active when the page hydrates or client-mounts, where the child has client-side effects (an `onMount` listener, a `createEffect`)",
+      "expected": "the child is initialized once and owned by its branch: each effect / listener runs once per trigger, and all of them are disposed when the branch is removed",
+      "actual": "keeps a second client-side instance of the child that the branch does not own: every effect and listener fires twice per trigger, and removing the branch disposes only one of the two, so the other keeps reacting after the child is gone from the DOM (SSR markup is unaffected)",
+      "fixtures": [
+        "conditional-child-listener-cleanup"
+      ],
+      "adapters": []
     },
     "derived-object-literal-signal": {
       "title": "Derived object-literal signal initializer",
