@@ -170,6 +170,14 @@ export function createQuery<T>(
       // key equals the key of the value currently held" — nothing is sent.
       setValue(() => cached.value as T)
       setError(undefined)
+      // Rule 7 covers this write too: the value now belongs to `send.key`, so
+      // any send still in flight for an earlier key is superseded. Bump the
+      // generation so its resolution cannot overwrite this value (1 -> 2 -> 1
+      // where the return to 1 is a cache hit), and clear `isPending`, which
+      // described that superseded send. A stale entry falls through to
+      // `doSend`, which bumps the generation again and sets `isPending`.
+      generation++
+      setIsPending(false)
       if (!isStale(cached, ttl)) return
     }
 

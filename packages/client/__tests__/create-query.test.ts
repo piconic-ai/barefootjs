@@ -288,6 +288,33 @@ describe('rule 7: generation guard', () => {
     await waitUntil(() => posts() !== undefined)
     expect(posts()).toEqual({ page: 1 })
   })
+
+  test('1 -> 2 -> 1 where the return to 1 is a fresh cache hit: the stale send for 2 never writes', async () => {
+    const { calls, resolveNth } = deferredFetch()
+    const [page, setPage] = createSignal(1)
+    const [posts, fetchPosts] = createQuery(
+      () => http.get<{ page: number }>('/api/posts', { page: page() }),
+      { initial: { page: 1 } }, // primes page=1 into the cache as fresh; no send
+    )
+    await settle()
+    expect(calls.length).toBe(0)
+
+    setPage(2)
+    await waitUntil(() => calls.length === 1) // send for page=2, left in flight
+    expect(fetchPosts.isPending()).toBe(true)
+
+    setPage(1) // fresh cache hit: answered synchronously in the flush, no send
+    await settle()
+    expect(calls.length).toBe(1)
+    expect(posts()).toEqual({ page: 1 })
+    expect(fetchPosts.isPending()).toBe(false) // nothing is in flight for the current key
+
+    // The older page=2 response arrives last and must not overwrite page=1.
+    resolveNth(0, { page: 2 })
+    await settle()
+    expect(posts()).toEqual({ page: 1 })
+    expect(fetchPosts.isPending()).toBe(false)
+  })
 })
 
 // -- rule 8: action --------------------------------------------------------
