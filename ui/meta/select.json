@@ -175,7 +175,8 @@
   },
   "dependencies": {
     "internal": [
-      "icon"
+      "icon",
+      "set-text-preserving-markers"
     ],
     "external": [
       "@barefootjs/client"

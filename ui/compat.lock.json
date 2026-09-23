@@ -2006,55 +2006,55 @@
         "blade": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         }
       },
@@ -4595,55 +4595,55 @@
         "blade": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "nested-child-static-prop-text-slot-elided"
+            "ref-callback-portal-content-inline-at-ssr"
           ]
         }
       },
@@ -5768,28 +5768,6 @@
         "BF101"
       ]
     },
-    "nested-child-static-prop-text-slot-elided": {
-      "title": "A nested child's own text position loses its SSR slot marker when the caller passes it a static literal",
-      "kind": "silent",
-      "given": "a `'use client'` component that renders an incoming prop directly as its own JSX text content (not `props.children`), e.g. `{props.placeholder ?? ''}`, while ALSO overwriting that same text imperatively from a `ref`/mount effect driven by something other than that prop (a `useContext` read) — nested as a child of a sibling `'use client'` component that passes it a plain string literal for that prop (`<ComboboxValue placeholder=\"Select framework...\" />`)",
-      "expected": "the server HTML and the hydrated DOM carry the same `<!--bf:sN-->…<!--/-->` slot marker pair around the text, matching the child component's own compiled client template (which always wraps this position, since the child's OWN client init code treats it as patchable)",
-      "actual": "omits the slot markers at that nested-child SSR position, rendering a bare text string instead — the caller's literal argument reads as proof the position never changes, which only accounts for the PROP's own reactivity, not the child's independent internal effect that also writes to the same node — while the client hydration template unconditionally wraps the position in markers regardless of caller context, so hydration inserts a marker pair with no matching SSR structure, a permanent structural mismatch rather than a value change",
-      "fixtures": [
-        "combobox",
-        "select"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "nested-prop-member-signal-seed": {
       "title": "Signal seeded from a member of an object-typed prop",
       "kind": "silent",
@@ -5843,6 +5821,28 @@
       "actual": "emits the slot as a bare template-variable lookup named after the const (an empty slot in the CSR template lambda), with no diagnostic, so the backend renders an empty slot or fails on the unbound name",
       "fixtures": [
         "opaque-local-accessor-call"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "ref-callback-portal-content-inline-at-ssr": {
+      "title": "Portal content relocated from a ref callback renders inline on the server",
+      "kind": "silent",
+      "given": "a component that moves part of its own markup to `document.body` from a `ref` callback (`createPortal(el, document.body, { ownerScope })`), the overlay/content pattern the dialog-style primitives use",
+      "expected": "the server HTML places the portaled subtree where the hydrated DOM has it — appended to the body after the component root, carrying its owner scope as `bf-po` — so hydration changes nothing",
+      "actual": "renders the portaled subtree inline at its source position with no `bf-po` on every adapter besides Hono (a `ref` callback never runs at SSR); the hydrate-time callback then moves it to the end of `document.body` and stamps `bf-po`, so pre- and post-hydration DOM differ structurally",
+      "fixtures": [
+        "combobox",
+        "select"
       ],
       "adapters": [
         "blade",

@@ -195,6 +195,7 @@
   "dependencies": {
     "internal": [
       "track-position",
+      "set-text-preserving-markers",
       "icon"
     ],
     "external": [
